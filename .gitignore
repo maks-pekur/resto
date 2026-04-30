@@ -50,5 +50,7 @@ Thumbs.db
 generated/
 .openapi/
 
-# Local Claude session settings
-.claude/settings.local.json
+# Claude session settings and local CLAUDE.md instructions
+.claude/
+CLAUDE.md
+**/CLAUDE.md
