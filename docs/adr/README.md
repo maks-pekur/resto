@@ -16,16 +16,15 @@ the starting point for a new ADR.
 | 0006 | Multi-tenancy via row-level + Postgres RLS, with dedicated-DB graduation path | accepted |
 | 0007 | Nx + pnpm monorepo                                                            | accepted |
 | 0008 | OpenTelemetry + Grafana stack + Sentry for observability                      | accepted |
+| 0009 | Stripe Connect (Express) as the payments provider                             | accepted |
+| 0010 | MVP-1 scope — tenancy, identity, catalog, qr-menu (read-only)                 | accepted |
 
 ## Pending
 
 - **Hosting target** (Hetzner managed K8s / DigitalOcean / AWS / GCP).
   Drives Terraform/Pulumi provider choice, Helm values, networking
-  primitives.
-- **Payments provider** (Stripe Connect for marketplace model vs.
-  alternatives). Drives the `payments` bounded-context contract and
-  marketplace fee model.
-- **MVP-1 scope** (which bounded contexts ship in the first release).
+  primitives. Until decided, deployment artifacts are kept portable
+  (Docker images + plain Helm charts).
 
 ## Conventions
 
