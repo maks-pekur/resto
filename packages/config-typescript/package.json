@@ -1,0 +1,10 @@
+{
+  "name": "@resto/config-typescript",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared TypeScript config presets for Resto.",
+  "license": "UNLICENSED",
+  "files": [
+    "*.json"
+  ]
+}

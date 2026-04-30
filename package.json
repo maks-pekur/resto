@@ -1,0 +1,37 @@
+{
+  "name": "resto",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Multi-tenant SaaS platform for restaurants — admin, website, QR-menu, mobile.",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "build": "nx run-many -t build",
+    "lint": "nx run-many -t lint",
+    "lint:fix": "nx run-many -t lint --fix",
+    "typecheck": "nx run-many -t typecheck",
+    "test": "nx run-many -t test",
+    "test:e2e": "nx run-many -t e2e",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "dev:up": "docker compose -f infra/docker/docker-compose.dev.yml up -d",
+    "dev:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
+    "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",
+    "dev:reset": "docker compose -f infra/docker/docker-compose.dev.yml down -v",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@types/node": "^22.10.5",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.3.0",
+    "nx": "20.3.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Resto Expo",
+  "extends": "./react.json",
+  "compilerOptions": {
+    "lib": ["ES2023"],
+    "jsx": "react-native",
+    "moduleResolution": "Bundler",
+    "noEmit": true
+  }
+}

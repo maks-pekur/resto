@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Resto Vite",
+  "extends": "./react.json",
+  "compilerOptions": {
+    "moduleResolution": "Bundler",
+    "useDefineForClassFields": true,
+    "noEmit": true,
+    "types": ["vite/client"]
+  }
+}
