@@ -9,5 +9,6 @@ export * from './tenants';
 export * from './users';
 export * from './menu';
 export * from './audit';
+export * from './outbox';
 
 export type { LocalizedText } from './_types';
