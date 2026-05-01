@@ -4,13 +4,18 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
+import { TenancyModule } from './contexts/tenancy/tenancy.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, NatsModule, HealthModule],
-  providers: [{ provide: APP_FILTER, useClass: ProblemDetailsFilter }],
+  imports: [ConfigModule, DatabaseModule, NatsModule, HealthModule, TenancyModule],
+  providers: [
+    { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+    CorrelationMiddleware,
+    TenantContextMiddleware,
+  ],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {

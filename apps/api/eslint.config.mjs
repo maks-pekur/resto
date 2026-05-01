@@ -35,6 +35,21 @@ export default [
     },
   },
   {
+    // Test files lean on Vitest's `vi.fn()` mocks and lambda-style
+    // assertion expressions; the type-aware checks fight with idiomatic
+    // test code where mock return types are intentionally untyped (the
+    // test asserts the shape rather than declares it).
+    files: ['test/**/*.ts'],
+    rules: {
+      '@typescript-eslint/unbound-method': 'off',
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+    },
+  },
+  {
     ignores: ['dist/**', 'dist-spec/**', 'eslint.config.mjs', 'vitest.config.ts', 'build.mjs'],
   },
 ];

@@ -30,6 +30,13 @@ export const envSchema = z.object({
 
   KEYCLOAK_ISSUER_URL: z.string().url().optional(),
 
+  /**
+   * Shared secret for `/internal/v1/*` routes. Required outside dev — the
+   * `InternalTokenGuard` allows unauthenticated requests in development
+   * for tooling ergonomics. Real IAM lands with RES-79.
+   */
+  INTERNAL_API_TOKEN: z.string().min(16).optional(),
+
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
   OTEL_SERVICE_NAME: z.string().default('resto-api'),
 
