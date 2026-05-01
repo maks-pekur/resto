@@ -1,3 +1,4 @@
+import type { ServerResponse } from 'node:http';
 import {
   ArgumentsHost,
   Catch,
@@ -79,6 +80,23 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       this.logger.warn({ problem }, 'Request rejected');
     }
 
-    void res.status(status).type('application/problem+json').send(problem);
+    sendProblem(res, status, problem);
   }
 }
+
+/**
+ * Write the problem-details response. NestJS's exception-filter contract
+ * does not guarantee whether `getResponse()` returns the framework
+ * (FastifyReply) wrapper or the raw Node response — landing on the raw
+ * response is portable and avoids relying on adapter internals.
+ */
+const sendProblem = (
+  res: FastifyReply | ServerResponse,
+  status: number,
+  problem: unknown,
+): void => {
+  const raw: ServerResponse = 'raw' in res ? res.raw : res;
+  raw.statusCode = status;
+  raw.setHeader('content-type', 'application/problem+json');
+  raw.end(JSON.stringify(problem));
+};
