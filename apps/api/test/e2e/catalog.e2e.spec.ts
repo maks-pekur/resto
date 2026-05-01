@@ -120,12 +120,12 @@ const provisionTenant = async (
 suite('Catalog — internal write → public read → cross-tenant isolation', () => {
   let stack: Stack;
   let tenantA: { id: string };
-  let tenantB: { id: string };
 
   beforeAll(async () => {
     stack = await startStack();
     tenantA = await provisionTenant(stack.app, { slug: 'cafe-a', displayName: 'Cafe A' });
-    tenantB = await provisionTenant(stack.app, { slug: 'cafe-b', displayName: 'Cafe B' });
+    // Tenant B exists so the cross-tenant test has a host to send requests against.
+    await provisionTenant(stack.app, { slug: 'cafe-b', displayName: 'Cafe B' });
   }, 180_000);
 
   afterAll(async () => {
@@ -177,7 +177,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       headers: { 'x-tenant-slug': 'cafe-a' },
     });
     expect(menuRes.statusCode).toBe(200);
-    const menu = menuRes.json<{ items: Array<{ id: string; slug: string }> }>();
+    const menu = menuRes.json<{ items: { id: string; slug: string }[] }>();
     expect(menu.items.find((i) => i.id === itemId)?.slug).toBe('margherita');
   }, 60_000);
 

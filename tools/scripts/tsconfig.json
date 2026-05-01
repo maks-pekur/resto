@@ -1,0 +1,10 @@
+{
+  "extends": "@resto/config-typescript/node.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "baseUrl": "."
+  },
+  "include": ["seed/**/*.ts", "test/**/*.ts", "vitest.config.ts", "eslint.config.mjs"],
+  "exclude": ["node_modules", "dist"]
+}
