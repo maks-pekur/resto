@@ -1,0 +1,48 @@
+{
+  "name": "@resto/api",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Resto backend monolith — NestJS + Fastify, modular DDD bounded contexts.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/main.js",
+  "scripts": {
+    "openapi:emit": "tsx src/openapi.ts"
+  },
+  "dependencies": {
+    "@fastify/helmet": "^12.0.1",
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/config": "^3.3.0",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-fastify": "^10.4.15",
+    "@nestjs/swagger": "^8.1.0",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.55.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.57.0",
+    "@opentelemetry/resources": "^1.30.0",
+    "@opentelemetry/sdk-node": "^0.57.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "@resto/db": "workspace:*",
+    "@resto/domain": "workspace:*",
+    "@resto/events": "workspace:*",
+    "drizzle-orm": "^0.36.4",
+    "fastify": "^4.28.1",
+    "pino": "^9.5.0",
+    "pino-pretty": "^11.3.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1",
+    "yaml": "^2.6.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@nestjs/testing": "^10.4.15",
+    "@resto/config-eslint": "workspace:*",
+    "@resto/config-typescript": "workspace:*",
+    "@types/node": "^22.10.5",
+    "esbuild": "^0.24.2",
+    "eslint": "^9.17.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
