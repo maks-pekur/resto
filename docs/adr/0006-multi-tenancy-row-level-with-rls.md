@@ -77,5 +77,12 @@ to its own database is a configuration change, not a code change.
   authorization and is logged.
 - Tenant resolver lives in `apps/api/src/contexts/tenancy/`; it maps
   subdomain or custom domain → tenant id → connection pool.
+- **Two-role connection model.** Postgres superusers and `BYPASSRLS`
+  roles ignore RLS regardless of `FORCE`. The application connects as
+  `resto_app` (NOSUPERUSER, NOBYPASSRLS); migrations connect as
+  `resto_admin`. App startup runs `assertNoRlsBypass()` so a
+  misconfiguration fails fast in logs rather than silently leaking
+  data. Provisioning, rotation, and provider notes live in
+  `docs/runbooks/database-roles.md`.
 - Dedicated-DB graduation runbook: `docs/runbooks/graduate-tenant-to-dedicated-db.md`
   (to be written before the first enterprise tenant is provisioned).

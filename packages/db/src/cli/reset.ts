@@ -13,9 +13,11 @@ const main = async (): Promise<void> => {
     process.exit(1);
   }
 
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
   if (!url) {
-    logger.error('DATABASE_URL is required to reset the dev database.');
+    logger.error(
+      'DATABASE_ADMIN_URL (preferred) or DATABASE_URL is required to reset the dev database.',
+    );
     process.exit(1);
   }
 

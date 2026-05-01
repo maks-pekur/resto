@@ -46,6 +46,42 @@ Tenant isolation is enforced two ways:
 Both layers must agree for a query to return rows. If you bypass one,
 the other still protects you.
 
+### Two-role connection model
+
+Postgres superusers and roles with `BYPASSRLS` ignore RLS regardless of
+`FORCE`. The application MUST connect as a non-superuser, NOBYPASSRLS
+role — otherwise the entire RLS layer collapses silently. We enforce
+this by splitting credentials:
+
+| role          | used by                             | privileges                                           |
+| ------------- | ----------------------------------- | ---------------------------------------------------- |
+| `resto_admin` | migrations only (`pnpm db:migrate`) | schema owner; effectively superuser within the DB    |
+| `resto_app`   | runtime (`apps/api`, every service) | LOGIN NOSUPERUSER NOBYPASSRLS; CRUD + sequences only |
+
+The dev stack provisions `resto_app` automatically via
+`infra/docker/postgres/init/02-app-role.sql`. Production provisioning
+follows the same SQL — see `docs/runbooks/database-roles.md`. The
+canonical script lives at `packages/db/sql/roles.sql`; the
+`provisionAppRole(client, { appPassword })` helper applies it from Node.
+
+Apps must call `assertNoRlsBypass(DATABASE_URL)` once at startup. It
+runs a single SELECT against `pg_roles` and throws `RlsBypassError` if
+the connected role has `rolsuper` or `rolbypassrls`. Operators see the
+misconfiguration in the very first log line, not when a tenant
+discovers another tenant's data.
+
+```ts
+import { assertNoRlsBypass } from '@resto/db';
+
+await assertNoRlsBypass(process.env.DATABASE_URL!);
+```
+
+Migrations and the `db:reset` CLI prefer `DATABASE_ADMIN_URL` over
+`DATABASE_URL` — when both are set they connect as the admin role; when
+only `DATABASE_URL` is set they fall back with a warning. In production
+`DATABASE_ADMIN_URL` MUST be set separately so admin credentials never
+sit in the running app's environment.
+
 ### Using the client
 
 ```ts
