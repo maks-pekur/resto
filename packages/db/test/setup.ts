@@ -4,21 +4,32 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
-import { createDb, type TenantAwareDb } from '../src/index';
+import { createDb, provisionAppRole, RESTO_APP_ROLE, type TenantAwareDb } from '../src/index';
 
 export interface TestPg {
   readonly container: StartedPostgreSqlContainer;
+  /**
+   * Connection URL for the bootstrap superuser. Use this from tests that
+   * specifically need to exercise the "wrong credentials" path.
+   */
+  readonly adminUrl: string;
+  /**
+   * Connection URL for the runtime `resto_app` role. This is what the
+   * application would use in production — non-superuser, NOBYPASSRLS.
+   */
   readonly url: string;
   readonly db: TenantAwareDb;
 }
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, '..', 'migrations');
+const APP_ROLE_PASSWORD = 'resto_app';
 
 /**
- * Start a fresh Postgres 16 container, apply all migrations (schema +
- * RLS), drop superuser from the test role so RLS is actually enforced
- * (Postgres superusers bypass RLS regardless of FORCE), and return a
- * tenant-aware client wired to it.
+ * Start a fresh Postgres 16 container, apply all migrations, provision
+ * the runtime `resto_app` role via the canonical `roles.sql`, and return
+ * a tenant-aware client connected through that role. Connecting through
+ * a NOBYPASSRLS role is the only way to actually exercise RLS — Postgres
+ * superusers bypass RLS regardless of `FORCE`.
  *
  * Each test file calls this in `beforeAll` and tears down in `afterAll`.
  * Container start is the slow step (~5-8s).
@@ -32,30 +43,21 @@ export const startPostgres = async (): Promise<TestPg> => {
 
   const adminUrl = container.getConnectionUri();
 
-  // Migrate as the bootstrap superuser. Then create a non-superuser app
-  // role and grant it the privileges the TenantAwareDb needs. Connecting
-  // through that role is the only way to actually exercise RLS — Postgres
-  // superusers bypass RLS regardless of FORCE.
-  const migrationClient = postgres(adminUrl, { max: 1, prepare: false });
+  const adminClient = postgres(adminUrl, { max: 1, prepare: false });
   try {
-    await migrate(drizzle(migrationClient), { migrationsFolder: MIGRATIONS_FOLDER });
-    await migrationClient.unsafe(`
-      CREATE ROLE resto_app LOGIN PASSWORD 'resto_app' NOSUPERUSER NOBYPASSRLS;
-      GRANT USAGE ON SCHEMA public TO resto_app;
-      GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO resto_app;
-      GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO resto_app;
-      GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO resto_app;
-      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO resto_app;
-    `);
+    await migrate(drizzle(adminClient), { migrationsFolder: MIGRATIONS_FOLDER });
+    await provisionAppRole(adminClient, { appPassword: APP_ROLE_PASSWORD });
   } finally {
-    await migrationClient.end({ timeout: 5 });
+    await adminClient.end({ timeout: 5 });
   }
 
   const appUrl = new URL(adminUrl);
-  appUrl.username = 'resto_app';
-  appUrl.password = 'resto_app';
-  const db = createDb({ url: appUrl.toString() });
-  return { container, url: appUrl.toString(), db };
+  appUrl.username = RESTO_APP_ROLE;
+  appUrl.password = APP_ROLE_PASSWORD;
+  const url = appUrl.toString();
+
+  const db = createDb({ url });
+  return { container, adminUrl, url, db };
 };
 
 export const stopPostgres = async (tp: TestPg): Promise<void> => {

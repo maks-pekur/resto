@@ -19,4 +19,6 @@ export {
   requireTenantContext,
   type TenantContext,
 } from './context';
+export { assertNoRlsBypass, RlsBypassError } from './preflight';
+export { provisionAppRole, RESTO_APP_ROLE } from './roles';
 export type { LocalizedText } from './schema/_types';
