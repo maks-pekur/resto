@@ -1,0 +1,24 @@
+{
+  "extends": "@resto/config-typescript/node.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "declaration": false,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@resto/db": ["../../packages/db/src/index.ts"],
+      "@resto/db/*": ["../../packages/db/src/*"],
+      "@resto/domain": ["../../packages/domain/src/index.ts"],
+      "@resto/domain/*": ["../../packages/domain/src/*"],
+      "@resto/events": ["../../packages/events/src/index.ts"],
+      "@resto/events/*": ["../../packages/events/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "test", "**/*.spec.ts", "**/*.test.ts"]
+}
