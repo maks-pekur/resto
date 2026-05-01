@@ -4,13 +4,14 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
+import { IdentityModule } from './contexts/identity/identity.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, NatsModule, HealthModule, TenancyModule],
+  imports: [ConfigModule, DatabaseModule, NatsModule, HealthModule, IdentityModule, TenancyModule],
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     CorrelationMiddleware,

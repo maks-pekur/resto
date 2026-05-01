@@ -29,6 +29,10 @@ export const envSchema = z.object({
   NATS_STREAM: z.string().default('RESTO_EVENTS'),
 
   KEYCLOAK_ISSUER_URL: z.string().url().optional(),
+  /** Confidential client id used by the api for admin operations. */
+  KEYCLOAK_CLIENT_ID: z.string().default('resto-api'),
+  /** Confidential client secret. Required for Keycloak admin operations (RES-81). */
+  KEYCLOAK_CLIENT_SECRET: z.string().optional(),
 
   /**
    * Shared secret for `/internal/v1/*` routes. Required outside dev — the
