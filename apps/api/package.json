@@ -27,6 +27,7 @@
     "@resto/events": "workspace:*",
     "drizzle-orm": "^0.36.4",
     "fastify": "^4.28.1",
+    "jose": "^5.9.6",
     "pino": "^9.5.0",
     "pino-pretty": "^11.3.0",
     "reflect-metadata": "^0.2.2",
