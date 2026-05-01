@@ -1,0 +1,31 @@
+{
+  "name": "@resto/events",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Resto event contracts, transactional outbox dispatcher, and broker adapters.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@resto/db": "workspace:*",
+    "@resto/domain": "workspace:*",
+    "drizzle-orm": "^0.36.4",
+    "nats": "^2.29.1",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@resto/config-eslint": "workspace:*",
+    "@resto/config-typescript": "workspace:*",
+    "@testcontainers/postgresql": "^10.16.0",
+    "@types/node": "^22.10.5",
+    "eslint": "^9.17.0",
+    "postgres": "^3.4.5",
+    "testcontainers": "^10.16.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

@@ -127,6 +127,52 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@22.19.17)
 
+  packages/events:
+    dependencies:
+      '@resto/db':
+        specifier: workspace:*
+        version: link:../db
+      '@resto/domain':
+        specifier: workspace:*
+        version: link:../domain
+      drizzle-orm:
+        specifier: ^0.36.4
+        version: 0.36.4(postgres@3.4.9)
+      nats:
+        specifier: ^2.29.1
+        version: 2.29.3
+      zod:
+        specifier: ^3.24.1
+        version: 3.25.76
+    devDependencies:
+      '@resto/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@resto/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      '@testcontainers/postgresql':
+        specifier: ^10.16.0
+        version: 10.28.0
+      '@types/node':
+        specifier: ^22.10.5
+        version: 22.19.17
+      eslint:
+        specifier: ^9.17.0
+        version: 9.39.4(jiti@2.6.1)
+      postgres:
+        specifier: ^3.4.5
+        version: 3.4.9
+      testcontainers:
+        specifier: ^10.16.0
+        version: 10.28.0
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.8
+        version: 2.1.9(@types/node@22.19.17)
+
 packages:
 
   '@babel/code-frame@7.29.0':
@@ -2660,8 +2706,16 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
+  nats@2.29.3:
+    resolution: {integrity: sha512-tOQCRCwC74DgBTk4pWZ9V45sk4d7peoE2njVprMRCBXrhJ5q5cYM7i6W+Uvw2qUrcfOSnuisrX7bEx3b3Wx4QA==}
+    engines: {node: '>= 14.0.0'}
+
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
+
+  nkeys.js@1.1.0:
+    resolution: {integrity: sha512-tB/a0shZL5UZWSwsoeyqfTszONTt4k2YS0tuQioMOD180+MbombYVgzDUYHlx+gejYK6rgf08n/2Df99WY0Sxg==}
+    engines: {node: '>=10.0.0'}
 
   node-exports-info@1.6.0:
     resolution: {integrity: sha512-pyFS63ptit/P5WqUkt+UUfe+4oevH+bFeIiPPdfb0pFeYEu/1ELnJu5l+5EcTKYL5M7zaAa7S8ddywgXypqKCw==}
@@ -3264,6 +3318,9 @@ packages:
 
   tweetnacl@0.14.5:
     resolution: {integrity: sha512-KXXFFdAbFXY4geFIwoyNK+f5Z1b7swfXABfL7HXCmoIWMKU3dmS26672A4EeQtDzLKy7SXmfBu51JolvEKwtGA==}
+
+  tweetnacl@1.0.3:
+    resolution: {integrity: sha512-6rt+RN7aOi1nGMyC4Xa5DdYiukl2UWCbcJft7YhxReBGQD7OAM8Pbxw6YMo4r2diNEA8FEmu32YOn9rhaiE5yw==}
 
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
@@ -5794,7 +5851,15 @@ snapshots:
 
   nanoid@3.3.12: {}
 
+  nats@2.29.3:
+    dependencies:
+      nkeys.js: 1.1.0
+
   natural-compare@1.4.0: {}
+
+  nkeys.js@1.1.0:
+    dependencies:
+      tweetnacl: 1.0.3
 
   node-exports-info@1.6.0:
     dependencies:
@@ -6569,6 +6634,8 @@ snapshots:
       fsevents: 2.3.3
 
   tweetnacl@0.14.5: {}
+
+  tweetnacl@1.0.3: {}
 
   type-check@0.4.0:
     dependencies:
