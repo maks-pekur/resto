@@ -58,7 +58,17 @@ export class AuthGuard implements CanActivate {
     // Read tenant from ALS — bound by TenantContextMiddleware before this guard runs.
     const alsTenantId = getTenantContext()?.tenantId;
 
-    const principal = buildPrincipal(session, alsTenantId);
+    // BA infers getSession() from the base session type; the organization
+    // plugin augments the session object with activeOrganizationId at runtime
+    // but the cast above (`as unknown as BetterAuthPlugin`) in auth.config.ts
+    // loses that type information. Cast to the narrower shape we depend on.
+    const principal = buildPrincipal(
+      session as {
+        user: { id: string; email: string; phoneNumber?: string | null };
+        session: { activeOrganizationId?: string | null };
+      },
+      alsTenantId,
+    );
 
     if (
       principal.kind !== 'anonymous' &&
