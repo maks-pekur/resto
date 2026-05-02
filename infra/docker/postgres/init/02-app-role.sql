@@ -32,3 +32,20 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO resto_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT EXECUTE ON FUNCTIONS TO resto_app;
+
+-- ---------------------------------------------------------------------------
+-- resto_auth — BYPASSRLS role for Better Auth's drizzle client.
+-- DEV ONLY password — production uses Vault-rotated secrets via runbook.
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_auth') THEN
+    CREATE ROLE resto_auth WITH LOGIN NOSUPERUSER BYPASSRLS PASSWORD 'auth_password_dev';
+  END IF;
+END $$;
+GRANT USAGE ON SCHEMA public TO resto_auth;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO resto_auth;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO resto_auth;
+GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO resto_auth;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO resto_auth;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO resto_auth;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT EXECUTE ON FUNCTIONS TO resto_auth;
