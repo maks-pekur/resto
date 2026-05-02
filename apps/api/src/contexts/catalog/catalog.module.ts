@@ -7,9 +7,15 @@ import { PublishMenuService } from './application/publish-menu.service';
 import { UpsertCategoryService } from './application/upsert-category.service';
 import { UpsertItemService } from './application/upsert-item.service';
 import { UpsertModifierService } from './application/upsert-modifier.service';
-import { CATALOG_CACHE_PORT, CATALOG_REPOSITORY, MENU_VERSION_PORT } from './domain/ports';
+import {
+  CATALOG_CACHE_PORT,
+  CATALOG_REPOSITORY,
+  IMAGE_URL_PORT,
+  MENU_VERSION_PORT,
+} from './domain/ports';
 import { CatalogDrizzleRepository } from './infrastructure/catalog-drizzle.repository';
 import { RedisCatalogCacheAdapter } from './infrastructure/redis-catalog-cache.adapter';
+import { S3SignedImageUrlAdapter } from './infrastructure/s3-signed-image-url.adapter';
 import { InternalCatalogController } from './interfaces/http/internal-catalog.controller';
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
@@ -21,6 +27,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     RedisCatalogCacheAdapter,
     { provide: CATALOG_CACHE_PORT, useExisting: RedisCatalogCacheAdapter },
     { provide: MENU_VERSION_PORT, useExisting: RedisCatalogCacheAdapter },
+    { provide: IMAGE_URL_PORT, useClass: S3SignedImageUrlAdapter },
     GetPublishedMenuService,
     GetMenuItemService,
     UpsertCategoryService,

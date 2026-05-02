@@ -10,6 +10,7 @@ import { execSync } from 'node:child_process';
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { AppModule } from '../../src/app.module';
+import { IMAGE_URL_PORT } from '../../src/contexts/catalog/domain/ports';
 import { JWT_VERIFIER } from '../../src/contexts/identity/domain/ports';
 import type { Principal } from '../../src/contexts/identity/domain/principal';
 
@@ -87,6 +88,13 @@ const startStack = async (): Promise<Stack> => {
         return Promise.resolve(principalRef.current);
       },
     })
+    // Don't reach for MinIO in tests — produce a deterministic signed URL
+    // shape so the assertion stays focused on "raw key never leaks".
+    .overrideProvider(IMAGE_URL_PORT)
+    .useValue({
+      presignGet: (key: string, ttl: number): Promise<string> =>
+        Promise.resolve(`https://signed.test/${key}?expires=${ttl.toString()}`),
+    })
     .compile();
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter({ logger: false }),
@@ -158,6 +166,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
         name: { en: 'Margherita' },
         basePrice: '12.50',
         currency: 'USD',
+        imageS3Key: 'menu/margherita.webp',
         status: 'published',
       },
     });
@@ -177,8 +186,15 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       headers: { 'x-tenant-slug': 'cafe-a' },
     });
     expect(menuRes.statusCode).toBe(200);
-    const menu = menuRes.json<{ items: { id: string; slug: string }[] }>();
-    expect(menu.items.find((i) => i.id === itemId)?.slug).toBe('margherita');
+    const menu = menuRes.json<{
+      items: { id: string; slug: string; imageUrl: string | null }[];
+    }>();
+    const item = menu.items.find((i) => i.id === itemId);
+    expect(item?.slug).toBe('margherita');
+    // RES-92: raw S3 key never crosses the wire; the response carries
+    // a presigned URL instead.
+    expect(item?.imageUrl).toBe('https://signed.test/menu/margherita.webp?expires=300');
+    expect(JSON.stringify(menu)).not.toContain('imageS3Key');
   }, 60_000);
 
   it("tenant B sniffing tenant A's item id gets 404 (RLS-backed)", async () => {

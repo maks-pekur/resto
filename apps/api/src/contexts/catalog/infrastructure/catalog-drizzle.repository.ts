@@ -11,11 +11,13 @@ import {
   TenantId,
 } from '@resto/domain';
 import { and, eq, inArray } from 'drizzle-orm';
-import type {
-  CatalogRepository,
-  UpsertCategoryRow,
-  UpsertItemRow,
-  UpsertModifierRow,
+import {
+  IMAGE_URL_PORT,
+  type CatalogRepository,
+  type ImageUrlPort,
+  type UpsertCategoryRow,
+  type UpsertItemRow,
+  type UpsertModifierRow,
 } from '../domain/ports';
 import type {
   PublishedMenu,
@@ -26,9 +28,20 @@ import type {
   PublishedMenuVariant,
 } from '../domain/published-menu';
 
+/** Signed image URLs match the catalog cache TTL — see GetPublishedMenuService. */
+const IMAGE_URL_TTL_SECONDS = 300;
+
 @Injectable()
 export class CatalogDrizzleRepository implements CatalogRepository {
-  constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
+  constructor(
+    @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
+    @Inject(IMAGE_URL_PORT) private readonly imageUrl: ImageUrlPort,
+  ) {}
+
+  private signImage(s3Key: string | null): Promise<string | null> {
+    if (!s3Key) return Promise.resolve(null);
+    return this.imageUrl.presignGet(s3Key, IMAGE_URL_TTL_SECONDS);
+  }
 
   async loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu> {
     return this.db.withTenant(async (tx) => {
@@ -59,30 +72,32 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const modifiersByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
       const optionsByModifier = groupBy(optionsRows, (r) => r.modifierId);
 
-      const items = itemsRows
-        .filter((r) => itemIds.includes(r.id))
-        .map<PublishedMenuItem>((r) => ({
-          id: MenuItemId.parse(r.id),
-          slug: r.slug,
-          categoryId: MenuCategoryId.parse(r.categoryId),
-          name: r.name,
-          description: r.description ?? null,
-          basePrice: MoneyAmount.parse(r.basePrice),
-          currency: Currency.parse(r.currency),
-          imageS3Key: r.imageS3Key,
-          allergens: r.allergens ?? [],
-          sortOrder: r.sortOrder,
-          variants: (variantsByItem.get(r.id) ?? []).map<PublishedMenuVariant>((v) => ({
-            id: MenuVariantId.parse(v.id),
-            name: v.name,
-            priceDelta: PriceDelta.parse(v.priceDelta),
-            isDefault: v.isDefault,
-            sortOrder: v.sortOrder,
+      const items = await Promise.all(
+        itemsRows
+          .filter((r) => itemIds.includes(r.id))
+          .map<Promise<PublishedMenuItem>>(async (r) => ({
+            id: MenuItemId.parse(r.id),
+            slug: r.slug,
+            categoryId: MenuCategoryId.parse(r.categoryId),
+            name: r.name,
+            description: r.description ?? null,
+            basePrice: MoneyAmount.parse(r.basePrice),
+            currency: Currency.parse(r.currency),
+            imageUrl: await this.signImage(r.imageS3Key),
+            allergens: r.allergens ?? [],
+            sortOrder: r.sortOrder,
+            variants: (variantsByItem.get(r.id) ?? []).map<PublishedMenuVariant>((v) => ({
+              id: MenuVariantId.parse(v.id),
+              name: v.name,
+              priceDelta: PriceDelta.parse(v.priceDelta),
+              isDefault: v.isDefault,
+              sortOrder: v.sortOrder,
+            })),
+            modifierIds: (modifiersByItem.get(r.id) ?? []).map((m) =>
+              MenuModifierId.parse(m.modifierId),
+            ),
           })),
-          modifierIds: (modifiersByItem.get(r.id) ?? []).map((m) =>
-            MenuModifierId.parse(m.modifierId),
-          ),
-        }));
+      );
 
       const categories = categoriesRows.map<PublishedMenuCategory>((r) => ({
         id: MenuCategoryId.parse(r.id),
@@ -143,7 +158,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: row.description ?? null,
         basePrice: MoneyAmount.parse(row.basePrice),
         currency: Currency.parse(row.currency),
-        imageS3Key: row.imageS3Key,
+        imageUrl: await this.signImage(row.imageS3Key),
         allergens: row.allergens ?? [],
         sortOrder: row.sortOrder,
         variants: variants.map<PublishedMenuVariant>((v) => ({

@@ -11,8 +11,8 @@ export const ItemDetail = ({ item, onBack }: Props) => (
     <button type="button" className="item__back" onClick={onBack}>
       ← {t('item.back')}
     </button>
-    {item.imageS3Key ? (
-      <img className="item__image" src={item.imageS3Key} alt="" loading="lazy" />
+    {item.imageUrl ? (
+      <img className="item__image" src={item.imageUrl} alt="" loading="lazy" />
     ) : (
       <div className="item__image item__image--placeholder" aria-hidden="true" />
     )}

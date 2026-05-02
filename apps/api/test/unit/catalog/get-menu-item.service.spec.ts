@@ -16,7 +16,7 @@ const buildItem = (): PublishedMenuItem => ({
   description: null,
   basePrice: '12.50' as PublishedMenuItem['basePrice'],
   currency: Currency.parse('USD'),
-  imageS3Key: null,
+  imageUrl: null,
   allergens: [],
   sortOrder: 0,
   variants: [],

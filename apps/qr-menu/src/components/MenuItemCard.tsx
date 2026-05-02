@@ -22,10 +22,10 @@ export const MenuItemCard = ({ item, onSelect }: Props) => {
       onClick={onActivate}
       aria-label={localized(item.name)}
     >
-      {item.imageS3Key ? (
+      {item.imageUrl ? (
         <img
           className="menu-item__image"
-          src={item.imageS3Key}
+          src={item.imageUrl}
           alt=""
           loading="lazy"
           decoding="async"
