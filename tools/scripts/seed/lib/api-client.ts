@@ -1,8 +1,7 @@
 /**
  * Thin client for the Resto api's `/internal/v1/*` surface. The CLI
- * authenticates with the shared `INTERNAL_API_TOKEN` (RES-78) for
- * tenant provisioning and with a Keycloak-issued bearer for catalog
- * writes (RES-80) — the latter is supplied per-call.
+ * authenticates with the shared `INTERNAL_API_TOKEN` (ADR-0012); per-
+ * user IAM is deferred to MVP-2.
  */
 
 export interface ApiClientOptions {
@@ -10,8 +9,6 @@ export interface ApiClientOptions {
   readonly internalToken: string;
   /** Optional: if set, attached as `X-Tenant-Slug` for routes that need a tenant context. */
   readonly tenantSlug?: string;
-  /** Optional: bearer JWT for catalog writes. */
-  readonly bearerToken?: string;
 }
 
 export class ApiClient {
@@ -19,10 +16,6 @@ export class ApiClient {
 
   withTenantSlug(tenantSlug: string): ApiClient {
     return new ApiClient({ ...this.options, tenantSlug });
-  }
-
-  withBearer(bearerToken: string): ApiClient {
-    return new ApiClient({ ...this.options, bearerToken });
   }
 
   async post<TResponse>(path: string, body: unknown): Promise<TResponse> {
@@ -43,7 +36,6 @@ export class ApiClient {
       'x-internal-token': this.options.internalToken,
     };
     if (this.options.tenantSlug) headers['x-tenant-slug'] = this.options.tenantSlug;
-    if (this.options.bearerToken) headers.authorization = `Bearer ${this.options.bearerToken}`;
 
     const init: RequestInit = { method, headers };
     if (body !== undefined) init.body = JSON.stringify(body);

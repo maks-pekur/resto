@@ -12,7 +12,7 @@ import type { Env } from '../config/env.schema';
 
 export const EVENT_PUBLISHER = Symbol('EVENT_PUBLISHER');
 
-const STREAM_SUBJECTS = ['tenancy.>', 'identity.>', 'catalog.>', 'ordering.>', 'billing.>'];
+const STREAM_SUBJECTS = ['tenancy.>', 'catalog.>', 'ordering.>', 'billing.>'];
 
 const moduleLogger = new Logger('NatsModule');
 

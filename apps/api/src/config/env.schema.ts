@@ -28,16 +28,11 @@ export const envSchema = z.object({
   /** JetStream stream the app's events flow through. */
   NATS_STREAM: z.string().default('RESTO_EVENTS'),
 
-  KEYCLOAK_ISSUER_URL: z.string().url().optional(),
-  /** Confidential client id used by the api for admin operations. */
-  KEYCLOAK_CLIENT_ID: z.string().default('resto-api'),
-  /** Confidential client secret. Required for Keycloak admin operations (RES-81). */
-  KEYCLOAK_CLIENT_SECRET: z.string().optional(),
-
   /**
-   * Shared secret for `/internal/v1/*` routes. Required outside dev — the
+   * Shared secret for `/internal/v1/*` routes — the only auth in MVP-1
+   * (ADR-0012 deferred per-user IAM to MVP-2). Required outside dev;
    * `InternalTokenGuard` allows unauthenticated requests in development
-   * for tooling ergonomics. Real IAM lands with RES-79.
+   * for tooling ergonomics.
    */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
 

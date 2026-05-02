@@ -51,15 +51,18 @@ describe('requireFlag', () => {
 describe('resolveRuntimeOptions', () => {
   const baseEnv = {
     INTERNAL_API_TOKEN: 'token-1234567890123456',
-    KEYCLOAK_ADMIN_PASSWORD: 'pw',
   } satisfies NodeJS.ProcessEnv;
 
   it('reads required env and applies sensible defaults', () => {
     const opts = resolveRuntimeOptions([], baseEnv);
     expect(opts.apiUrl).toBe('http://localhost:3000');
-    expect(opts.keycloakAdminUrl).toBe('http://localhost:8080');
-    expect(opts.keycloakAdminUsername).toBe('admin');
-    expect(opts.keycloakRealm).toBe('resto');
+    expect(opts.internalToken).toBe(baseEnv.INTERNAL_API_TOKEN);
+    expect(opts.dryRun).toBe(false);
+  });
+
+  it('honours RESTO_API_URL override', () => {
+    const opts = resolveRuntimeOptions([], { ...baseEnv, RESTO_API_URL: 'https://api.example' });
+    expect(opts.apiUrl).toBe('https://api.example');
   });
 
   it('detects --dry-run', () => {
@@ -68,8 +71,6 @@ describe('resolveRuntimeOptions', () => {
   });
 
   it('throws MissingEnvError when INTERNAL_API_TOKEN is unset', () => {
-    expect(() => resolveRuntimeOptions([], { KEYCLOAK_ADMIN_PASSWORD: 'pw' })).toThrow(
-      MissingEnvError,
-    );
+    expect(() => resolveRuntimeOptions([], {})).toThrow(MissingEnvError);
   });
 });

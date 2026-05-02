@@ -18,6 +18,6 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.mjs', 'vitest.config.ts', 'keycloak-seed.mjs'],
+    ignores: ['eslint.config.mjs', 'vitest.config.ts'],
   },
 ];

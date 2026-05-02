@@ -11,8 +11,6 @@ import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainer
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
 import { AppModule } from '../../src/app.module';
 import { IMAGE_URL_PORT } from '../../src/contexts/catalog/domain/ports';
-import { JWT_VERIFIER } from '../../src/contexts/identity/domain/ports';
-import type { Principal } from '../../src/contexts/identity/domain/principal';
 
 const dockerOk = ((): boolean => {
   try {
@@ -41,7 +39,6 @@ interface Stack {
   pg: StartedPostgreSqlContainer;
   nats: StartedTestContainer;
   app: NestFastifyApplication;
-  principalRef: { current: Principal | null };
 }
 
 const startStack = async (): Promise<Stack> => {
@@ -75,19 +72,8 @@ const startStack = async (): Promise<Stack> => {
   process.env.NATS_URL = `nats://${nats.getHost()}:${nats.getMappedPort(4222).toString()}`;
   process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
   delete process.env.REDIS_URL;
-  delete process.env.KEYCLOAK_ISSUER_URL;
 
-  const principalRef: { current: Principal | null } = { current: null };
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    .overrideProvider(JWT_VERIFIER)
-    .useValue({
-      verify: (_token: string): Promise<Principal> => {
-        if (!principalRef.current) {
-          return Promise.reject(new Error('test JWT verifier: principal not set'));
-        }
-        return Promise.resolve(principalRef.current);
-      },
-    })
     // Don't reach for MinIO in tests — produce a deterministic signed URL
     // shape so the assertion stays focused on "raw key never leaks".
     .overrideProvider(IMAGE_URL_PORT)
@@ -101,7 +87,7 @@ const startStack = async (): Promise<Stack> => {
   );
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
-  return { pg, nats, app, principalRef };
+  return { pg, nats, app };
 };
 
 const stopStack = async (stack: Stack): Promise<void> => {
@@ -127,11 +113,10 @@ const provisionTenant = async (
 
 suite('Catalog — internal write → public read → cross-tenant isolation', () => {
   let stack: Stack;
-  let tenantA: { id: string };
 
   beforeAll(async () => {
     stack = await startStack();
-    tenantA = await provisionTenant(stack.app, { slug: 'cafe-a', displayName: 'Cafe A' });
+    await provisionTenant(stack.app, { slug: 'cafe-a', displayName: 'Cafe A' });
     // Tenant B exists so the cross-tenant test has a host to send requests against.
     await provisionTenant(stack.app, { slug: 'cafe-b', displayName: 'Cafe B' });
   }, 180_000);
@@ -140,17 +125,13 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     await stopStack(stack);
   });
 
-  it('owner can upsert a category, item, then publish, and the public menu surfaces the item', async () => {
-    stack.principalRef.current = {
-      subject: 'kc-test',
-      tenantId: tenantA.id,
-      roles: ['owner'],
-    };
+  it('operator with internal token can upsert + publish, and the public menu surfaces the item', async () => {
+    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/categories',
-      headers: { authorization: 'Bearer fake', 'x-tenant-slug': 'cafe-a' },
+      headers: internalAuth,
       payload: { slug: 'pizza', name: { en: 'Pizza' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -159,7 +140,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const itemRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/items',
-      headers: { authorization: 'Bearer fake', 'x-tenant-slug': 'cafe-a' },
+      headers: internalAuth,
       payload: {
         categoryId,
         slug: 'margherita',
@@ -176,7 +157,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const publishRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/publish',
-      headers: { authorization: 'Bearer fake', 'x-tenant-slug': 'cafe-a' },
+      headers: internalAuth,
     });
     expect(publishRes.statusCode).toBe(200);
 
@@ -197,24 +178,29 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(JSON.stringify(menu)).not.toContain('imageS3Key');
   }, 60_000);
 
+  it('rejects internal write without the shared token', async () => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/categories',
+      headers: { 'x-tenant-slug': 'cafe-a' },
+      payload: { slug: 'drinks', name: { en: 'Drinks' } },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
   it("tenant B sniffing tenant A's item id gets 404 (RLS-backed)", async () => {
-    // Provision an item under tenant A.
-    stack.principalRef.current = {
-      subject: 'kc-test',
-      tenantId: tenantA.id,
-      roles: ['owner'],
-    };
+    const internalAuthA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
     const categoryRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/categories',
-      headers: { authorization: 'Bearer fake', 'x-tenant-slug': 'cafe-a' },
+      headers: internalAuthA,
       payload: { slug: 'drinks', name: { en: 'Drinks' } },
     });
     const categoryId = categoryRes.json<{ id: string }>().id;
     const itemRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/items',
-      headers: { authorization: 'Bearer fake', 'x-tenant-slug': 'cafe-a' },
+      headers: internalAuthA,
       payload: {
         categoryId,
         slug: 'cola',
