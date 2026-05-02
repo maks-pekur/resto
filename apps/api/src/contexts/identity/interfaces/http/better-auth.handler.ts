@@ -14,8 +14,13 @@ export const registerBetterAuthHandler = (fastify: FastifyInstance, auth: Auth):
     const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
-      if (Array.isArray(v)) v.forEach((vv) => headers.append(k, vv));
-      else if (typeof v === 'string') headers.set(k, v);
+      if (Array.isArray(v)) {
+        v.forEach((vv) => {
+          headers.append(k, vv);
+        });
+      } else if (typeof v === 'string') {
+        headers.set(k, v);
+      }
     }
 
     let body: string | undefined;
@@ -46,7 +51,9 @@ export const registerBetterAuthHandler = (fastify: FastifyInstance, auth: Auth):
     const response = await auth.handler(webRequest);
 
     reply.status(response.status);
-    response.headers.forEach((value, key) => reply.header(key, value));
+    response.headers.forEach((value, key) => {
+      reply.header(key, value);
+    });
     const text = await response.text();
     reply.send(text === '' ? undefined : text);
   });

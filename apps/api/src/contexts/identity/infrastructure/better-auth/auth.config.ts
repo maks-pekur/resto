@@ -54,7 +54,7 @@ export const buildAuth = (opts: BuildOpts) =>
         ac,
         roles: { owner: ownerRole, admin: adminRole, staff: staffRole },
         dynamicAccessControl: { enabled: true },
-        sendInvitationEmail: opts.sendInvitationEmail ?? (async () => undefined),
+        sendInvitationEmail: opts.sendInvitationEmail ?? (() => Promise.resolve()),
       }) as unknown as BetterAuthPlugin,
       twoFactor(),
       bearer(),

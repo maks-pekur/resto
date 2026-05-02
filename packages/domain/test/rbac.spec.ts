@@ -10,7 +10,7 @@ describe('RBAC permission catalogue', () => {
 
   it('owner has every permission in the statement', () => {
     for (const [resource, actions] of Object.entries(PERMISSIONS_STATEMENT)) {
-      const owner = SYSTEM_ROLES.owner[resource as keyof typeof PERMISSIONS_STATEMENT] ?? [];
+      const owner = SYSTEM_ROLES.owner[resource as keyof typeof PERMISSIONS_STATEMENT];
       for (const action of actions) {
         expect(owner, `owner missing ${resource}:${action}`).toContain(action);
       }

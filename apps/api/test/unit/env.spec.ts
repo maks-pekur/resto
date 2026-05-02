@@ -38,9 +38,18 @@ describe('loadEnv', () => {
   });
 
   it('rejects TENANT_DEV_FALLBACK_SLUG outside development', () => {
-    expect(() =>
-      loadEnv({ ...baseEnv, NODE_ENV: 'production', TENANT_DEV_FALLBACK_SLUG: 'demo' }),
-    ).toThrow(/development/);
+    // In production, BA env vars are also required — supply them so the
+    // only validation issue is TENANT_DEV_FALLBACK_SLUG itself.
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      TENANT_DEV_FALLBACK_SLUG: 'demo',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/development/);
   });
 
   it('accepts TENANT_DEV_FALLBACK_SLUG in development', () => {

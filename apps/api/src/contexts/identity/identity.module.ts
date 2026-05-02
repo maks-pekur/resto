@@ -1,5 +1,6 @@
 import { Inject, Module, type OnModuleInit, type Provider } from '@nestjs/common';
 import { HttpAdapterHost } from '@nestjs/core';
+import type { FastifyInstance } from 'fastify';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
 import { buildAuth, type Auth } from './infrastructure/better-auth/auth.config';
@@ -55,7 +56,7 @@ export class IdentityModule implements OnModuleInit {
   ) {}
 
   onModuleInit(): void {
-    const fastify = this.httpHost.httpAdapter.getInstance();
+    const fastify: FastifyInstance = this.httpHost.httpAdapter.getInstance();
     registerBetterAuthHandler(fastify, this.auth);
   }
 }
