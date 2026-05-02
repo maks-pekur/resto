@@ -10,6 +10,6 @@ export * from './menu';
 export * from './audit';
 export * from './outbox';
 export * from './auth';
-// export * from './customer-profiles'; // TODO: Task 3 will add this file
+export * from './customer-profiles';
 
 export type { LocalizedText } from './_types';
