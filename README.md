@@ -8,7 +8,8 @@ customer-facing mobile app, all driven by a shared backend platform.
 
 - **Backend:** NestJS (modular monolith with DDD bounded contexts) + Drizzle
   ORM + PostgreSQL 16 with Row-Level Security + Redis + NATS JetStream
-- **Identity:** Self-hosted Keycloak (OIDC/OAuth2) with RBAC + ABAC
+- **Identity:** Deferred to MVP-2 (see [ADR-0012](./docs/adr/0012-defer-identity-to-mvp-2.md));
+  MVP-1 internal endpoints use a shared `INTERNAL_API_TOKEN`, customer reads are public
 - **Frontend:** Next.js 15 (App Router, RSC) for admin & tenant websites,
   Vite + React for the QR-menu, React Native (Expo) for mobile
 - **Monorepo:** Nx + pnpm workspaces
@@ -42,7 +43,7 @@ tools/        → workspace tooling and codemods
 ```bash
 corepack enable
 pnpm install
-pnpm dev:up        # start postgres, redis, nats, keycloak, minio, mailhog, jaeger
+pnpm dev:up        # start postgres, redis, nats, minio, mailhog, jaeger
 ```
 
 ### Common commands

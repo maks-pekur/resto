@@ -1,5 +1,4 @@
 import { ApiClient } from '../lib/api-client';
-import { KeycloakAdmin } from '../lib/keycloak-admin';
 import { loadMenuYaml, type MenuYaml } from '../lib/menu-yaml';
 import { log } from '../lib/logger';
 import { parseFlags, requireFlag, type RuntimeOptions } from '../lib/options';
@@ -15,10 +14,6 @@ export const runSeedMenu = async (
   const flags = parseFlags(argv);
   const tenantSlug = requireFlag(flags, 'tenant');
   const file = requireFlag(flags, 'file');
-  const ownerEmail = flags.named.get('owner-email');
-  const ownerPassword = flags.named.get('owner-password');
-  const clientId = flags.named.get('client-id') ?? 'resto-api';
-  const clientSecret = flags.named.get('client-secret') ?? '';
 
   const menu: MenuYaml = loadMenuYaml(file);
   log('seed-menu.parsed', {
@@ -34,31 +29,10 @@ export const runSeedMenu = async (
     return;
   }
 
-  if (!ownerEmail || !ownerPassword) {
-    throw new Error(
-      'seed-menu requires --owner-email and --owner-password to obtain a bearer token. ' +
-        'Use the credentials issued by `provision-tenant`.',
-    );
-  }
-
-  const keycloak = new KeycloakAdmin({
-    adminUrl: options.keycloakAdminUrl,
-    adminUsername: options.keycloakAdminUsername,
-    adminPassword: options.keycloakAdminPassword,
-    realm: options.keycloakRealm,
-  });
-  const { accessToken } = await keycloak.issueOwnerToken({
-    clientId,
-    clientSecret,
-    email: ownerEmail,
-    password: ownerPassword,
-  });
-
   const api = new ApiClient({
     apiUrl: options.apiUrl,
     internalToken: options.internalToken,
     tenantSlug,
-    bearerToken: accessToken,
   });
 
   const categoryIdBySlug = new Map<string, string>();

@@ -1,6 +1,5 @@
 #!/usr/bin/env tsx
 import { runProvisionTenant } from './commands/provision-tenant';
-import { runRotateTenantCredentials } from './commands/rotate-tenant-credentials';
 import { runSeedMenu } from './commands/seed-menu';
 import { logError } from './lib/logger';
 import { resolveRuntimeOptions } from './lib/options';
@@ -9,26 +8,19 @@ const HELP = `
 resto-seed — operator CLI for onboarding tenants
 
 Commands:
-  provision-tenant         --slug <slug> --name <displayName> --owner-email <e>
-                           --initial-password <pw> [--currency USD] [--locations 1]
-  seed-menu                --tenant <slug> --file <menu.yaml>
-                           --owner-email <e> --owner-password <pw>
-                           [--client-id resto-api] [--client-secret <s>]
-  rotate-tenant-credentials --tenant <slug> --owner-email <e> --new-password <pw>
+  provision-tenant   --slug <slug> --name <displayName>
+                     [--currency USD] [--locations 1]
+  seed-menu          --tenant <slug> --file <menu.yaml>
 
 Global flags:
-  --dry-run                Print intended changes without writing.
-  --help                   Show this message.
+  --dry-run          Print intended changes without writing.
+  --help             Show this message.
 
 Required env vars:
-  INTERNAL_API_TOKEN       Shared secret for /internal/v1/* (matches api).
-  KEYCLOAK_ADMIN_PASSWORD  Master-realm admin password.
+  INTERNAL_API_TOKEN  Shared secret for /internal/v1/* (matches api).
 
 Optional env vars:
-  RESTO_API_URL            Default http://localhost:3000
-  KEYCLOAK_ADMIN_URL       Default http://localhost:8080
-  KEYCLOAK_ADMIN           Default 'admin'
-  KEYCLOAK_REALM           Default 'resto'
+  RESTO_API_URL       Default http://localhost:3000
 `;
 
 const main = async (): Promise<void> => {
@@ -47,9 +39,6 @@ const main = async (): Promise<void> => {
       return;
     case 'seed-menu':
       await runSeedMenu(rest, options);
-      return;
-    case 'rotate-tenant-credentials':
-      await runRotateTenantCredentials(rest, options);
       return;
     default:
       throw new Error(`Unknown command "${command ?? ''}". Run with --help for usage.`);

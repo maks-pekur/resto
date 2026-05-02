@@ -1,6 +1,6 @@
 # ADR 0005: Self-hosted Keycloak as the identity provider
 
-- **Status:** accepted
+- **Status:** superseded by [ADR 0012](./0012-defer-identity-to-mvp-2.md)
 - **Date:** 2026-04-30
 - **Deciders:** Resto core team
 

@@ -1,20 +1,15 @@
 # resto-seed CLI
 
 Operator CLI used by the Resto team to onboard design-partner
-restaurants until the admin UI ships in MVP-2. Runs against a live
-Resto api + Keycloak — there is no offline mode.
+restaurants until the admin UI ships in MVP-2. Calls the api's
+`/internal/v1/*` surface authenticated by the shared
+`INTERNAL_API_TOKEN` (see ADR-0012). There is no offline mode.
 
 ## Prerequisites
 
 1. Resto api reachable at `RESTO_API_URL` (default `http://localhost:3000`).
-2. Keycloak reachable at `KEYCLOAK_ADMIN_URL` (default `http://localhost:8080`).
-3. Required env vars in your shell:
-   - `INTERNAL_API_TOKEN` — same shared secret the api accepts on
-     `/internal/v1/*` (RES-78). In dev, set it on the api before
-     calling the CLI.
-   - `KEYCLOAK_ADMIN_PASSWORD` — master-realm admin password.
-4. Optional: `KEYCLOAK_ADMIN` (default `admin`), `KEYCLOAK_REALM`
-   (default `resto`).
+2. `INTERNAL_API_TOKEN` env var — same shared secret the api enforces
+   on `/internal/v1/*` (RES-78).
 
 ## Commands
 
@@ -28,46 +23,26 @@ provisioned slug is a no-op.
 pnpm resto:seed provision-tenant \
   --slug cafe-roma \
   --name "Cafe Roma" \
-  --owner-email owner@cafe-roma.test \
-  --initial-password "$(openssl rand -base64 24)" \
   --currency USD
 ```
 
-Creates the tenant row + the auto subdomain in the api, then ensures
-the realm roles + the owner user in Keycloak. The owner password is
-marked **temporary** — they reset it on first login. The CLI logs the
-new tenant id and Keycloak subject as JSON to stdout.
+Creates the tenant row + the auto subdomain in the api. Logs the
+new tenant id as JSON to stdout.
 
 ### `seed-menu`
 
 ```bash
 pnpm resto:seed seed-menu \
   --tenant cafe-roma \
-  --file menus/cafe-roma.yaml \
-  --owner-email owner@cafe-roma.test \
-  --owner-password '<one-time password printed by provision-tenant>' \
-  --client-id resto-api \
-  --client-secret '<from Keycloak>'
+  --file menus/cafe-roma.yaml
 ```
 
 Validates the YAML against `@resto/domain` Zod schemas (currency,
 slug, money, localized text), then upserts categories → items →
-modifiers and finally calls `POST /internal/v1/catalog/publish`. The
-write endpoints require the owner's bearer token, obtained via the
-Keycloak password grant — `seed-menu` runs the grant for you using the
-flags you pass.
-
-### `rotate-tenant-credentials`
-
-```bash
-pnpm resto:seed rotate-tenant-credentials \
-  --tenant cafe-roma \
-  --owner-email owner@cafe-roma.test \
-  --new-password '<new pw>'
-```
-
-Resets the owner's password and force-logs-out their active sessions.
-Use after offboarding an operator or in an incident response.
+modifiers and finally calls `POST /internal/v1/catalog/publish`.
+Calls go to `/internal/v1/*` with the shared internal token; the
+api resolves the tenant from `--tenant` via the `X-Tenant-Slug`
+header.
 
 ## Menu YAML shape
 
@@ -113,12 +88,8 @@ exact path; nothing is written to the api in that case.
   value the api enforces on `/internal/v1/*`.
 - **`provision-tenant` returns 401** — `INTERNAL_API_TOKEN` mismatch
   between the CLI and the api.
-- **`seed-menu` returns 403** — owner credentials don't have the
-  `owner` role, or the token's `tenant_id` claim does not match the
-  resolved subdomain (RES-79's cross-tenant guard fired).
-- **`Token grant failed`** — Keycloak rejected the password grant.
-  Verify the client is confidential, that direct-access grants are
-  enabled, and that the client secret matches.
+- **`seed-menu` returns 404** — tenant slug does not exist; run
+  `provision-tenant` first.
 
 ## Recovery
 
@@ -127,14 +98,12 @@ The CLI is idempotent. If a run fails partway through:
 1. Read the structured error and fix the cause.
 2. Re-run the **same command** — already-applied state is detected and
    skipped, never duplicated.
-3. If you need to start clean in dev, `pnpm dev:reset` wipes Postgres
-   and Keycloak's data volumes; `pnpm dev:keycloak-seed` re-seeds the
-   dev realm.
+3. If you need to start clean in dev, `pnpm dev:reset` wipes Postgres.
 
 ## CI smoke test
 
 A smoke test (deferred — see RES-81 PR notes) provisions a fixture
-tenant + seeds a fixture menu against ephemeral Postgres + Keycloak,
-then asserts `GET /v1/menu` against the tenant's host returns the
-seeded items. Until that lands, run `tools/scripts/seed/test/` locally
-against the dev stack as a release-readiness check.
+tenant + seeds a fixture menu against ephemeral Postgres, then asserts
+`GET /v1/menu` against the tenant's host returns the seeded items.
+Until that lands, run `tools/scripts/seed/test/` locally against the
+dev stack as a release-readiness check.

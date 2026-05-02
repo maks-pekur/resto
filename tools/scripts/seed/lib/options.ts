@@ -1,7 +1,7 @@
 /**
  * CLI options resolution. Reads from process.argv (for command-specific
  * flags) and from environment variables (for connection details — the
- * api URL, the internal token, the Keycloak admin credentials).
+ * api URL and the internal token).
  *
  * The resolver is intentionally minimal — no commander/yargs dep. The
  * surface is small, the parser is straightforward, and the tests cover
@@ -11,10 +11,6 @@
 export interface RuntimeOptions {
   readonly apiUrl: string;
   readonly internalToken: string;
-  readonly keycloakAdminUrl: string;
-  readonly keycloakAdminUsername: string;
-  readonly keycloakAdminPassword: string;
-  readonly keycloakRealm: string;
   readonly dryRun: boolean;
 }
 
@@ -39,10 +35,6 @@ export const resolveRuntimeOptions = (
 ): RuntimeOptions => ({
   apiUrl: env.RESTO_API_URL ?? 'http://localhost:3000',
   internalToken: requireEnv('INTERNAL_API_TOKEN', env),
-  keycloakAdminUrl: env.KEYCLOAK_ADMIN_URL ?? 'http://localhost:8080',
-  keycloakAdminUsername: env.KEYCLOAK_ADMIN ?? 'admin',
-  keycloakAdminPassword: requireEnv('KEYCLOAK_ADMIN_PASSWORD', env),
-  keycloakRealm: env.KEYCLOAK_REALM ?? 'resto',
   dryRun: argv.includes('--dry-run'),
 });
 

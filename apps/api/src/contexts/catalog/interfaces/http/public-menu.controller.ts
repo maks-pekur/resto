@@ -1,7 +1,6 @@
 import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { requireTenantContext } from '@resto/db';
-import { Public } from '../../../identity/interfaces/http/public.decorator';
 import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
@@ -22,7 +21,6 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
  * makes sense at a tenant subdomain).
  */
 @ApiTags('catalog')
-@Public()
 @Controller('v1/menu')
 export class PublicMenuController {
   constructor(

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { IdentityModule } from '../identity/identity.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { GetMenuItemService } from './application/get-menu-item.service';
 import { GetPublishedMenuService } from './application/get-published-menu.service';
@@ -20,7 +19,7 @@ import { InternalCatalogController } from './interfaces/http/internal-catalog.co
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
 @Module({
-  imports: [IdentityModule, TenancyModule],
+  imports: [TenancyModule],
   controllers: [PublicMenuController, InternalCatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },

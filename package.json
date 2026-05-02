@@ -22,7 +22,6 @@
     "dev:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",
     "dev:reset": "docker compose -f infra/docker/docker-compose.dev.yml down -v",
-    "dev:keycloak-seed": "node tools/scripts/keycloak-seed.mjs",
     "resto:seed": "tsx tools/scripts/seed/cli.ts",
     "prepare": "husky"
   },
