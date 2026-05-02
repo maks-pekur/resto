@@ -1,6 +1,7 @@
 # ADR 0005: Self-hosted Keycloak as the identity provider
 
 - **Status:** superseded by [ADR 0012](./0012-defer-identity-to-mvp-2.md)
+- **Reopened by:** [ADR 0013](./0013-better-auth-for-mvp2-identity.md) — MVP-2 identity adoption picked Better Auth over Keycloak after the matrix was re-evaluated to include customer-side phone+OTP requirements.
 - **Date:** 2026-04-30
 - **Deciders:** Resto core team
 

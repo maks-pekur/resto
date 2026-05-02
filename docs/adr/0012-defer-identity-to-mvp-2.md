@@ -1,6 +1,6 @@
 # ADR 0012: Defer the identity provider to MVP-2
 
-- **Status:** accepted
+- **Status:** superseded by [ADR 0013](./0013-better-auth-for-mvp2-identity.md)
 - **Date:** 2026-05-01
 - **Supersedes:** [ADR 0005](./0005-keycloak-self-hosted-identity.md)
 - **Deciders:** Resto core team
