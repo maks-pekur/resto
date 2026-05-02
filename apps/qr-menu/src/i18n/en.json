@@ -1,0 +1,12 @@
+{
+  "menu.title": "Menu",
+  "menu.empty": "The menu is empty right now. Please check back in a moment.",
+  "menu.notFound.title": "Menu not available",
+  "menu.notFound.body": "We couldn't find a menu for this address. Please scan the QR code at your table again.",
+  "menu.error.title": "Something went wrong",
+  "menu.error.body": "Please try again in a moment.",
+  "item.back": "Back to menu",
+  "item.priceFrom": "from {price} {currency}",
+  "item.allergens": "Allergens",
+  "item.variant.default": "default"
+}

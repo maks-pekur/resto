@@ -1,0 +1,12 @@
+{
+  "menu.title": "Меню",
+  "menu.empty": "Меню сейчас пустое. Загляните чуть позже.",
+  "menu.notFound.title": "Меню недоступно",
+  "menu.notFound.body": "По этому адресу меню не найдено. Попробуйте отсканировать QR-код за столом ещё раз.",
+  "menu.error.title": "Что-то пошло не так",
+  "menu.error.body": "Попробуйте ещё раз через минуту.",
+  "item.back": "Назад в меню",
+  "item.priceFrom": "от {price} {currency}",
+  "item.allergens": "Аллергены",
+  "item.variant.default": "по умолчанию"
+}
