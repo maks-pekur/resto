@@ -7,10 +7,11 @@ import { STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
 import { NoopStripeConnectAdapter } from './infrastructure/stripe-connect.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
 import { InternalTokenGuard } from './interfaces/http/internal-token.guard';
+import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 
 @Module({
-  controllers: [TenantsController],
+  controllers: [InternalTenantsController, TenantsController],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: STRIPE_CONNECT_PORT, useClass: NoopStripeConnectAdapter },
