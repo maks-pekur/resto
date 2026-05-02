@@ -10,6 +10,7 @@ import { PERMISSION_CHECKER } from './application/ports/permission-checker.port'
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
 import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
+import { MeController } from './interfaces/http/me.controller';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
@@ -53,6 +54,7 @@ const permissionCheckerProvider: Provider = {
 };
 
 @Module({
+  controllers: [MeController],
   providers: [
     authDrizzleProvider,
     authProvider,
