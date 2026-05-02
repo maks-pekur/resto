@@ -119,14 +119,4 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     // Idempotent: still exactly one outbox row.
     expect(outboxRows).toHaveLength(1);
   });
-
-  // TODO(RES-106 T15): legacy GET /:slug removed from internal controller; rewrite as operator GET /me
-  // it('returns 404 when fetching an unknown slug', async () => {
-  //   const res = await stack.app.inject({
-  //     method: 'GET',
-  //     url: '/internal/v1/tenants/unknown-tenant',
-  //     headers: { 'x-internal-token': 'integration-test-token-1234567890' },
-  //   });
-  //   expect(res.statusCode).toBe(404);
-  // });
 });
