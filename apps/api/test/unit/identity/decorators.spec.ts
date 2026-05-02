@@ -23,7 +23,9 @@ describe('decorators', () => {
     it('sets identity:public metadata to true', () => {
       class Ctrl {
         @Public()
-        method() {}
+        method(): void {
+          /* metadata target */
+        }
       }
       const reflector = new Reflector();
       const value = reflector.get(IS_PUBLIC_KEY, Ctrl.prototype.method);
@@ -35,7 +37,9 @@ describe('decorators', () => {
     it('sets identity:permissions metadata with the spec', () => {
       class Ctrl {
         @Permissions({ menu: ['update'] })
-        method() {}
+        method(): void {
+          /* metadata target */
+        }
       }
       const reflector = new Reflector();
       const value = reflector.get(PERMISSIONS_KEY, Ctrl.prototype.method);

@@ -37,7 +37,7 @@ export class PermissionsGuard implements CanActivate {
 
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const principal = req.principal;
-    if (!principal || principal.kind !== 'operator') {
+    if (principal?.kind !== 'operator') {
       throw new ForbiddenException({
         code: 'auth.forbidden',
         message: 'Operator principal required.',

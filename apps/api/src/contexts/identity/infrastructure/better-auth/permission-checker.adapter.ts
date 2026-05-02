@@ -43,7 +43,7 @@ export class BetterAuthPermissionChecker implements PermissionChecker {
         headers,
         body: { permissions: required as Record<string, string[]> },
       });
-      return result?.success === true;
+      return result.success;
     } catch {
       return false;
     }

@@ -13,7 +13,7 @@ export const extractCurrentOperator = (
 ): OperatorPrincipal => {
   const req = ctx.switchToHttp().getRequest<FastifyRequest>();
   const principal = req.principal;
-  if (!principal || principal.kind !== 'operator') {
+  if (principal?.kind !== 'operator') {
     throw new ForbiddenException({
       code: 'auth.principal_kind_mismatch',
       message: 'Operator principal required.',
@@ -28,7 +28,7 @@ export const extractCurrentCustomer = (
 ): CustomerPrincipal => {
   const req = ctx.switchToHttp().getRequest<FastifyRequest>();
   const principal = req.principal;
-  if (!principal || principal.kind !== 'customer') {
+  if (principal?.kind !== 'customer') {
     throw new ForbiddenException({
       code: 'auth.principal_kind_mismatch',
       message: 'Customer principal required.',

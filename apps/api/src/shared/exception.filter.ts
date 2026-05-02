@@ -51,7 +51,7 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       status = exception.getStatus();
       title = exception.message;
       const body = exception.getResponse();
-      if (typeof body === 'object' && body !== null) {
+      if (typeof body === 'object') {
         if ('message' in body) {
           const messageField: unknown = body.message;
           if (typeof messageField === 'string') {

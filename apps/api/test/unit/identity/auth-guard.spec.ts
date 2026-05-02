@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import { type ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../../src/contexts/identity/interfaces/http/guards/auth.guard';
 
@@ -17,7 +17,7 @@ const buildContext = (req: Record<string, unknown>): ExecutionContext =>
   ({
     switchToHttp: () => ({ getRequest: () => req }),
     getHandler: () => () => undefined,
-    getClass: () => class {},
+    getClass: () => Object,
   }) as unknown as ExecutionContext;
 
 const buildAuthStub = (

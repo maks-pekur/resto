@@ -7,25 +7,25 @@
  * signed-up user has no organization membership yet — that case is
  * exercised by Phase A's smoke test and remains valid here.
  */
-export type OperatorPrincipal = {
+export interface OperatorPrincipal {
   kind: 'operator';
   userId: string;
   email: string;
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
-};
+}
 
-export type CustomerPrincipal = {
+export interface CustomerPrincipal {
   kind: 'customer';
   userId: string;
   phone: string;
   tenantId: string;
   /** Populated in Phase E by the BA verify hook; undefined in Phase B. */
   customerProfileId?: string;
-};
+}
 
-export type AnonymousPrincipal = {
+export interface AnonymousPrincipal {
   kind: 'anonymous';
-};
+}
 
 export type Principal = OperatorPrincipal | CustomerPrincipal | AnonymousPrincipal;

@@ -1,11 +1,8 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { type ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import {
-  PermissionsGuard,
-  PERMISSIONS_KEY,
-} from '../../../src/contexts/identity/interfaces/http/guards/permissions.guard';
+import { PermissionsGuard } from '../../../src/contexts/identity/interfaces/http/guards/permissions.guard';
 import type { Principal } from '../../../src/contexts/identity/domain/principal';
 
 const buildContext = (req: {
@@ -15,7 +12,7 @@ const buildContext = (req: {
   ({
     switchToHttp: () => ({ getRequest: () => req }),
     getHandler: () => () => undefined,
-    getClass: () => class {},
+    getClass: () => Object,
   }) as unknown as ExecutionContext;
 
 const operator: Principal = {
@@ -38,7 +35,7 @@ describe('PermissionsGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
     const checker = { hasPermission: vi.fn() };
-    const guard = new PermissionsGuard(reflector, checker as never);
+    const guard = new PermissionsGuard(reflector, checker);
     const ctx = buildContext({ principal: operator, headers: {} });
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(checker.hasPermission).not.toHaveBeenCalled();
@@ -48,7 +45,7 @@ describe('PermissionsGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ menu: ['update'] });
     const checker = { hasPermission: vi.fn() };
-    const guard = new PermissionsGuard(reflector, checker as never);
+    const guard = new PermissionsGuard(reflector, checker);
     const ctx = buildContext({ principal: customer, headers: {} });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
   });
@@ -57,7 +54,7 @@ describe('PermissionsGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ menu: ['update'] });
     const checker = { hasPermission: vi.fn() };
-    const guard = new PermissionsGuard(reflector, checker as never);
+    const guard = new PermissionsGuard(reflector, checker);
     const ctx = buildContext({ headers: {} });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
   });
@@ -66,7 +63,7 @@ describe('PermissionsGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ menu: ['update'] });
     const checker = { hasPermission: vi.fn().mockResolvedValue(true) };
-    const guard = new PermissionsGuard(reflector, checker as never);
+    const guard = new PermissionsGuard(reflector, checker);
     const ctx = buildContext({ principal: operator, headers: {} });
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(checker.hasPermission).toHaveBeenCalledWith(
@@ -80,7 +77,7 @@ describe('PermissionsGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ billing: ['update'] });
     const checker = { hasPermission: vi.fn().mockResolvedValue(false) };
-    const guard = new PermissionsGuard(reflector, checker as never);
+    const guard = new PermissionsGuard(reflector, checker);
     const ctx = buildContext({ principal: operator, headers: {} });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
   });
