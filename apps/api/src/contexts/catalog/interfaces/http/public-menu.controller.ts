@@ -5,6 +5,7 @@ import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
+import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
@@ -21,6 +22,7 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
  * makes sense at a tenant subdomain).
  */
 @ApiTags('catalog')
+@Public()
 @Controller('v1/menu')
 export class PublicMenuController {
   constructor(

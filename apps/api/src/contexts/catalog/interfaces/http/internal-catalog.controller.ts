@@ -16,6 +16,7 @@ import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
+import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
 
 /**
  * Internal catalog write surface. Used by the seed CLI to provision the
@@ -28,6 +29,7 @@ import { UpsertModifierService } from '../../application/upsert-modifier.service
  * internal token is the only call site.
  */
 @ApiTags('catalog/internal')
+@Public()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/catalog')
 export class InternalCatalogController {
