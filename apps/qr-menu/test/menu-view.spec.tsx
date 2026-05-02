@@ -19,7 +19,7 @@ const buildMenu = (): MenuDto => ({
       description: null,
       basePrice: '12.50',
       currency: 'USD',
-      imageS3Key: null,
+      imageUrl: null,
       allergens: [],
       sortOrder: 0,
       variants: [],

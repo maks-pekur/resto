@@ -41,6 +41,13 @@ export const envSchema = z.object({
    */
   INTERNAL_API_TOKEN: z.string().min(16).optional(),
 
+  /** S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev). */
+  S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
+  S3_REGION: z.string().default('us-east-1'),
+  S3_BUCKET: z.string().default('resto-dev'),
+  S3_ACCESS_KEY: z.string().default('minio'),
+  S3_SECRET_KEY: z.string().default('minio_dev_password'),
+
   OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
   OTEL_SERVICE_NAME: z.string().default('resto-api'),
 

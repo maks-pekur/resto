@@ -22,7 +22,11 @@ export interface MenuItemDto {
   description: LocalizedText | null;
   basePrice: string;
   currency: string;
-  imageS3Key: string | null;
+  /**
+   * Short-lived presigned GET URL for the item image, or `null` if the
+   * item has no photo. The api never returns the raw S3 key (RES-92).
+   */
+  imageUrl: string | null;
   allergens: readonly string[];
   sortOrder: number;
   variants: readonly MenuVariantDto[];

@@ -49,7 +49,13 @@ export interface PublishedMenuItem {
   readonly description: LocalizedText | null;
   readonly basePrice: MoneyAmount;
   readonly currency: Currency;
-  readonly imageS3Key: string | null;
+  /**
+   * Short-lived presigned GET URL for the item image, or `null` if the
+   * item has no photo. The raw S3 key never crosses the API boundary
+   * (RES-92): the bucket is private, presigning happens server-side at
+   * read time. URL TTL matches the catalog cache TTL.
+   */
+  readonly imageUrl: string | null;
   readonly allergens: readonly string[];
   readonly sortOrder: number;
   readonly variants: readonly PublishedMenuVariant[];

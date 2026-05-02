@@ -40,6 +40,21 @@ export interface CatalogCachePort {
 
 export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
 
+/**
+ * Image-URL signing port.
+ *
+ * Catalog images live in a private S3-compatible bucket (R2 / AWS S3 /
+ * MinIO in dev). The public read path MUST NOT leak the raw S3 key —
+ * a public bucket would expose every tenant's catalog (including
+ * unpublished items) to the world. This port turns a key into a
+ * short-lived presigned GET URL the qr-menu can render.
+ */
+export interface ImageUrlPort {
+  presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
+}
+
+export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
+
 // ---- Write DTOs ----
 
 export interface UpsertCategoryRow {
