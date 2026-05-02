@@ -6,9 +6,10 @@
  * `_*.ts` files and are not re-exported.
  */
 export * from './tenants';
-export * from './users';
 export * from './menu';
 export * from './audit';
 export * from './outbox';
+export * from './auth';
+// export * from './customer-profiles'; // TODO: Task 3 will add this file
 
 export type { LocalizedText } from './_types';
