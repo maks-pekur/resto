@@ -1,0 +1,82 @@
+/* Tiny, no-framework CSS. Tokens via CSS variables so per-tenant
+ * theming (RES-82's deferred slice) can override at the :root level. */
+:root {
+  --resto-bg: #f7f5f2;
+  --resto-fg: #111;
+  --resto-muted: #555;
+  --resto-accent: #c1272d;
+  --resto-card-bg: #fff;
+  --resto-radius: 12px;
+  --resto-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  background: var(--resto-bg);
+  color: var(--resto-fg);
+  font-family: var(--resto-font);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.menu, .item, .state {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+.menu__title, .state h1 { margin: 8px 0 16px; }
+.menu__section { margin-bottom: 32px; }
+.menu__items { list-style: none; padding: 0; display: grid; gap: 12px; grid-template-columns: 1fr; }
+
+@media (min-width: 640px) {
+  .menu__items { grid-template-columns: 1fr 1fr; }
+}
+
+.menu-item {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  background: var(--resto-card-bg);
+  border: none;
+  border-radius: var(--resto-radius);
+  padding: 8px;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.menu-item:focus-visible { outline: 2px solid var(--resto-accent); outline-offset: 2px; }
+.menu-item__image {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #eee;
+  flex-shrink: 0;
+}
+.menu-item__image--placeholder { background: #ebe6df; }
+.menu-item__body { flex: 1; min-width: 0; }
+.menu-item__name { margin: 0 0 4px; font-size: 1rem; }
+.menu-item__description { margin: 0 0 8px; color: var(--resto-muted); font-size: 0.875rem; }
+.menu-item__price { margin: 0; color: var(--resto-accent); font-weight: 600; }
+
+.item__back {
+  background: transparent;
+  border: none;
+  font: inherit;
+  color: var(--resto-accent);
+  padding: 8px 0;
+  cursor: pointer;
+}
+.item__image { width: 100%; max-height: 320px; object-fit: cover; border-radius: var(--resto-radius); }
+.item__name { margin: 12px 0 8px; }
+.item__price { font-size: 1.25rem; font-weight: 700; color: var(--resto-accent); }
+.item__variants { list-style: none; padding: 0; }
+.item__variants li { display: flex; justify-content: space-between; padding: 6px 0; }
+.item__variants li.is-default { font-weight: 600; }
+
+.state--not-found, .state--empty { text-align: center; padding-top: 48px; }
