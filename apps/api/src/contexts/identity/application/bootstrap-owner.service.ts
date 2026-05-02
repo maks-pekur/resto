@@ -28,13 +28,19 @@ const EmailSchema = z.string().trim().toLowerCase().email();
 /**
  * Bootstraps the very first owner for a tenant via Better Auth's admin
  * API. Happy path only — idempotency probes (existing owner / existing
- * org / existing user) are added in Task 10.
+ * user) are added in Task 10.
  *
  * BA admin API surface used (verified against better-auth 1.3.34 .d.ts):
  *   - `auth.api.signUpEmail` — creates the user and credential
- *   - `auth.api.createOrganization` — creates the org row (BA's
- *     `organization` is mapped onto our `tenants` table — see ADR-0013)
  *   - `auth.api.addMember` — SERVER_ONLY; attaches the user with role=owner
+ *
+ * BA's `organization` is physically aliased onto our `tenants` table (see
+ * `packages/db/src/schema/auth.ts` + ADR-0013). The tenant row is created
+ * by the provisioning flow and IS the BA organization — so this service
+ * MUST NOT call `createOrganization` (it would either collide on the
+ * `slug` unique constraint or insert a duplicate tenants row with a
+ * different UUID, breaking the `organizationId === tenantId` invariant).
+ * The organization id is read from `TenantLookupPort` and reused here.
  *
  * The service must NOT touch infrastructure directly: it talks to BA via
  * the AUTH_TOKEN provider and to tenancy via TenantLookupPort.
@@ -60,8 +66,7 @@ export class BootstrapOwnerService {
     });
 
     const userId = await this.ensureUser(email, input.password, input.name);
-    const organizationId = await this.ensureOrganization(tenant.slug, tenant.displayName);
-    await this.addOwnerMember(userId, organizationId);
+    await this.addOwnerMember(userId, tenant.id);
 
     this.logger.log({
       event: 'identity.owner_bootstrap.done',
@@ -73,7 +78,7 @@ export class BootstrapOwnerService {
     return {
       tenantId: tenant.id,
       userId,
-      organizationId,
+      organizationId: tenant.id,
       email,
       requiresPasswordChange: true,
     };
@@ -93,28 +98,6 @@ export class BootstrapOwnerService {
       return user.id;
     } catch (err) {
       throw new BetterAuthBootstrapFailureError('signUpEmail', err);
-    }
-  }
-
-  private async ensureOrganization(slug: string, displayName: string): Promise<string> {
-    try {
-      const result = await orgApi(this.auth).createOrganization({
-        body: { name: displayName, slug },
-      });
-      // BA returns the freshly created org; the `organization` table is
-      // physically `tenants`, so this id matches the tenant id when no
-      // pre-existing row would conflict (idempotency in Task 10).
-      const orgId = result?.id;
-      if (!orgId) {
-        throw new Error('createOrganization returned no id');
-      }
-      this.logger.log({
-        event: 'identity.owner_bootstrap.org_created',
-        organizationId: orgId,
-      });
-      return orgId;
-    } catch (err) {
-      throw new BetterAuthBootstrapFailureError('createOrganization', err);
     }
   }
 
@@ -147,9 +130,6 @@ export class BootstrapOwnerService {
  * Kept module-scoped so the service body stays clean of `as` casts.
  */
 interface OrgPluginApi {
-  createOrganization: (args: {
-    body: { name: string; slug: string };
-  }) => Promise<{ id: string; slug: string; name: string } | null>;
   addMember: (args: {
     body: { userId: string; organizationId: string; role: string };
   }) => Promise<{ id: string; userId: string; role: string }>;

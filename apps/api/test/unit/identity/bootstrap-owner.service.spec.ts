@@ -11,24 +11,25 @@ const makeTenantLookup = (
 /**
  * Mocks only the BA admin API surface used by the happy path:
  *   - signUpEmail (top-level user creation)
- *   - createOrganization (organization plugin)
  *   - addMember (organization plugin, SERVER_ONLY)
  *
- * Idempotency probes (listOrganizations / listMembers / etc.) are added
- * in Task 10 — not here.
+ * `createOrganization` is intentionally NOT mocked: BA's `organization`
+ * is physically the `tenants` table, so the tenant row created by the
+ * provisioning flow already IS the BA organization. The service must
+ * never call `createOrganization` — it would collide on the slug unique
+ * or duplicate the tenant row.
+ *
+ * Idempotency probes (listMembers / etc.) are added in Task 10 — not here.
  */
 const makeAuth = () => ({
   api: {
     signUpEmail: vi.fn().mockResolvedValue({ user: { id: 'user-uuid', email: 'ops@demo.test' } }),
-    createOrganization: vi
-      .fn()
-      .mockResolvedValue({ id: 'tenant-uuid', slug: 'demo', name: 'Demo' }),
     addMember: vi.fn().mockResolvedValue({ id: 'member-uuid', userId: 'user-uuid', role: 'owner' }),
   },
 });
 
 describe('BootstrapOwnerService — happy path', () => {
-  it('creates user, org, and owner member when nothing exists yet', async () => {
+  it('creates user and owner member against the existing tenant org', async () => {
     const lookup = makeTenantLookup({
       id: 'tenant-uuid',
       slug: 'demo',
@@ -62,13 +63,8 @@ describe('BootstrapOwnerService — happy path', () => {
       },
     });
 
-    // Org is created with the tenant's slug + display name.
-    expect(auth.api.createOrganization).toHaveBeenCalledOnce();
-    expect(auth.api.createOrganization).toHaveBeenCalledWith({
-      body: { name: 'Demo', slug: 'demo' },
-    });
-
-    // Member is added with the owner role, scoped to the org returned by BA.
+    // Member is added with the owner role, scoped to the tenant id from
+    // the lookup (NOT from a BA call — BA's `organization` is `tenants`).
     expect(auth.api.addMember).toHaveBeenCalledOnce();
     expect(auth.api.addMember).toHaveBeenCalledWith({
       body: {
@@ -98,7 +94,6 @@ describe('BootstrapOwnerService — happy path', () => {
     });
 
     expect(auth.api.signUpEmail).not.toHaveBeenCalled();
-    expect(auth.api.createOrganization).not.toHaveBeenCalled();
     expect(auth.api.addMember).not.toHaveBeenCalled();
   });
 });
