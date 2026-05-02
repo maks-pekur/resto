@@ -9,7 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
 import { getTenantContext } from '@resto/db';
-import { AUTH_TOKEN } from '../../../identity.module';
+import { AUTH_TOKEN } from '../../../identity.tokens';
 import type { Auth } from '../../../infrastructure/better-auth/auth.config';
 import type { CustomerPrincipal, OperatorPrincipal, Principal } from '../../../domain/principal';
 

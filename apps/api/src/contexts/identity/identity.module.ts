@@ -10,9 +10,9 @@ import { PERMISSION_CHECKER } from './application/ports/permission-checker.port'
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
 import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
+import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
-export const AUTH_TOKEN = Symbol('Auth');
-export const AUTH_DRIZZLE_TOKEN = Symbol('AuthDrizzle');
+export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 

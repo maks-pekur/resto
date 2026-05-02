@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import type { Permission } from '@resto/domain';
 import type { OperatorPrincipal } from '../../domain/principal';
 import type { PermissionChecker } from '../../application/ports/permission-checker.port';
-import { AUTH_TOKEN } from '../../identity.module';
+import { AUTH_TOKEN } from '../../identity.tokens';
 import type { Auth } from './auth.config';
 
 /**
