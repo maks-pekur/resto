@@ -24,3 +24,5 @@ export {
   User,
   UserRole,
 } from './schema';
+
+export * from './rbac';
