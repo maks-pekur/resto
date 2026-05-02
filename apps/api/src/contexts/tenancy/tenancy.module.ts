@@ -20,6 +20,6 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     TenantResolverService,
     InternalTokenGuard,
   ],
-  exports: [TenantResolverService],
+  exports: [TenantResolverService, TenantQueriesService],
 })
 export class TenancyModule {}
