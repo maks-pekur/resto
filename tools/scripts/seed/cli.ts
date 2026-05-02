@@ -13,6 +13,8 @@ resto-seed — operator CLI for onboarding tenants
 Commands:
   provision-tenant   --slug <slug> --name <displayName>
                      [--currency USD] [--locations 1]
+                     [--owner-email <email>] [--owner-name "Owner Name"]
+                     [--password-stdin] [--owner-password ... (dev only)]
   seed-menu          --tenant <slug> --file <menu.yaml>
   bootstrap-owner    --tenant <slug> --email <email>
                      [--name "Owner Name"] [--password-stdin]
