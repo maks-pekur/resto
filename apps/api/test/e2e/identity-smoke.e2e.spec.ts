@@ -118,10 +118,12 @@ describe('Better Auth /api/auth/* smoke', () => {
     it('returns 401 without a session', async () => {
       const res = await app.inject({ method: 'GET', url: '/v1/me' });
       expect(res.statusCode).toBe(401);
-      // ProblemDetailsFilter serialises errors as RFC 7807 { type, title, status, instance }.
+      // ProblemDetailsFilter serialises errors as RFC 7807. AuthGuard's
+      // UnauthorizedException carries `code: 'auth.session_missing'` which
+      // the filter promotes into the stable `type` URI suffix.
       const body = res.json();
-      expect(body.title).toBeDefined();
       expect(body.status).toBe(401);
+      expect(body.type).toBe('https://resto.app/problems/auth.session_missing');
     });
 
     it('returns 200 with operator principal when session is valid', async () => {
