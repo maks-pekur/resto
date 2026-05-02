@@ -18,13 +18,11 @@ the starting point for a new ADR.
 | 0008 | OpenTelemetry + Grafana stack + Sentry for observability                      | accepted |
 | 0009 | Stripe Connect (Express) as the payments provider                             | accepted |
 | 0010 | MVP-1 scope — tenancy, identity, catalog, qr-menu (read-only)                 | accepted |
+| 0011 | Hosting on AWS (EKS + RDS + S3 + ElastiCache, eu-central-1)                   | accepted |
 
 ## Pending
 
-- **Hosting target** (Hetzner managed K8s / DigitalOcean / AWS / GCP).
-  Drives Terraform/Pulumi provider choice, Helm values, networking
-  primitives. Until decided, deployment artifacts are kept portable
-  (Docker images + plain Helm charts).
+_None right now — log new pending decisions here as they arise._
 
 ## Conventions
 
