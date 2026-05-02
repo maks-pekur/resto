@@ -113,4 +113,48 @@ describe('Better Auth /api/auth/* smoke', () => {
     expect(session.statusCode).toBe(200);
     expect(session.json().user?.email).toBe('smoke2@example.com');
   });
+
+  describe('GET /v1/me', () => {
+    it('returns 401 without a session', async () => {
+      const res = await app.inject({ method: 'GET', url: '/v1/me' });
+      expect(res.statusCode).toBe(401);
+      // ProblemDetailsFilter serialises errors as RFC 7807. AuthGuard's
+      // UnauthorizedException carries `code: 'auth.session_missing'` which
+      // the filter promotes into the stable `type` URI suffix.
+      const body = res.json();
+      expect(body.status).toBe(401);
+      expect(body.type).toBe('https://resto.app/problems/auth.session_missing');
+    });
+
+    it('returns 200 with operator principal when session is valid', async () => {
+      const signUp = await app.inject({
+        method: 'POST',
+        url: '/api/auth/sign-up/email',
+        headers: { 'content-type': 'application/json' },
+        payload: {
+          email: 'me@example.com',
+          password: 'correct-horse-battery-staple-3',
+          name: 'Me Test',
+        },
+      });
+      const setCookie = signUp.headers['set-cookie'];
+      const cookieHeader = Array.isArray(setCookie) ? setCookie.join('; ') : (setCookie ?? '');
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/me',
+        headers: { cookie: cookieHeader },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = res.json();
+      expect(body).toMatchObject({ kind: 'operator', email: 'me@example.com' });
+    });
+
+    it('placeholder for tenant-mismatch coverage (filled in Phase C)', () => {
+      // Phase B has no API to create tenants + members yet — that's Phase C's
+      // /internal/v1/tenants/:id/owner endpoint. Real tenant-mismatch
+      // coverage requires that path. For now this test documents the gap.
+      expect(true).toBe(true);
+    });
+  });
 });

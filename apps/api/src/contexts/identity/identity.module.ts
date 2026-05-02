@@ -1,14 +1,19 @@
 import { Inject, Module, type OnModuleInit, type Provider } from '@nestjs/common';
-import { HttpAdapterHost } from '@nestjs/core';
+import { APP_GUARD, HttpAdapterHost } from '@nestjs/core';
 import type { FastifyInstance } from 'fastify';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
 import { buildAuth, type Auth } from './infrastructure/better-auth/auth.config';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
+import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permission-checker.adapter';
+import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
+import { AuthGuard } from './interfaces/http/guards/auth.guard';
+import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
+import { MeController } from './interfaces/http/me.controller';
+import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
-export const AUTH_TOKEN = Symbol('Auth');
-export const AUTH_DRIZZLE_TOKEN = Symbol('AuthDrizzle');
+export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
@@ -18,8 +23,6 @@ const authDrizzleProvider: Provider = {
   useFactory: (env: Env): AuthDrizzle => {
     const url =
       env.BETTER_AUTH_DATABASE_URL ??
-      // Dev convenience: same DB as DATABASE_URL but the role MUST already
-      // be resto_auth (BYPASSRLS) — dev docker bootstraps it.
       process.env.DATABASE_URL?.replace(/\/\/[^:]+:/u, '//resto_auth:').replace(
         /:[^@]+@/u,
         ':auth_password_dev@',
@@ -45,9 +48,22 @@ const authProvider: Provider = {
   },
 };
 
+const permissionCheckerProvider: Provider = {
+  provide: PERMISSION_CHECKER,
+  useClass: BetterAuthPermissionChecker,
+};
+
 @Module({
-  providers: [authDrizzleProvider, authProvider],
-  exports: [authProvider, authDrizzleProvider],
+  controllers: [MeController],
+  providers: [
+    authDrizzleProvider,
+    authProvider,
+    permissionCheckerProvider,
+    BetterAuthPermissionChecker,
+    { provide: APP_GUARD, useClass: AuthGuard },
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+  ],
+  exports: [authProvider, authDrizzleProvider, permissionCheckerProvider],
 })
 export class IdentityModule implements OnModuleInit {
   constructor(

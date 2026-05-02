@@ -12,6 +12,7 @@ import { sql } from 'drizzle-orm';
 import { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { EVENT_PUBLISHER } from '../infrastructure/nats.module';
+import { Public } from '../contexts/identity/interfaces/http/decorators/public.decorator';
 
 interface CheckResult {
   readonly name: string;
@@ -20,6 +21,7 @@ interface CheckResult {
 }
 
 @ApiTags('health')
+@Public()
 @Controller()
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);

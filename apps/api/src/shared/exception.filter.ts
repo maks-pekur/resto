@@ -45,17 +45,23 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let title = 'Internal Server Error';
     let detail: string | undefined;
+    let code: string | undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
       title = exception.message;
       const body = exception.getResponse();
-      if (typeof body === 'object' && 'message' in body) {
-        const messageField: unknown = body.message;
-        if (typeof messageField === 'string') {
-          detail = messageField;
-        } else if (Array.isArray(messageField)) {
-          detail = messageField.join('; ');
+      if (typeof body === 'object') {
+        if ('message' in body) {
+          const messageField: unknown = body.message;
+          if (typeof messageField === 'string') {
+            detail = messageField;
+          } else if (Array.isArray(messageField)) {
+            detail = messageField.join('; ');
+          }
+        }
+        if ('code' in body && typeof body.code === 'string') {
+          code = body.code;
         }
       }
     } else if (exception instanceof Error) {
@@ -63,8 +69,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     }
 
     const traceId = trace.getActiveSpan()?.spanContext().traceId;
+    // Stable `type` URI: prefer the explicit error code (e.g.
+    // `auth.tenant_mismatch`) when callers provide it; fall back to the
+    // slugified title for legacy and stdlib exceptions. Clients branch
+    // on the URI suffix.
     const problem: ProblemDetails = {
-      type: `https://resto.app/problems/${slugify(title)}`,
+      type: `https://resto.app/problems/${code ?? slugify(title)}`,
       title,
       status,
       instance: req.url,

@@ -20,6 +20,7 @@ import type { TenantDomain } from '../../domain/tenant-domain';
 import { ZodValidationPipe } from './zod-validation.pipe';
 import { InternalTokenGuard } from './internal-token.guard';
 import { mapDomainError } from './error-mapping';
+import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
 
 interface TenantResponse {
   id: string;
@@ -58,6 +59,7 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
 };
 
 @ApiTags('tenancy')
+@Public()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/tenants')
 export class TenantsController {
