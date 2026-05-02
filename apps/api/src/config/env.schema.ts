@@ -12,47 +12,98 @@ import { z } from 'zod';
  * input, which is what we want: an api with a missing DATABASE_URL
  * cannot serve traffic, no matter what guarantees the deploy claims.
  */
-export const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
-  DEPLOYMENT_ENVIRONMENT: z.string().default('development'),
-  LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-  API_PORT: z.coerce.number().int().positive().default(3000),
+export const envSchema = z
+  .object({
+    NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
+    DEPLOYMENT_ENVIRONMENT: z.string().default('development'),
+    LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
+    API_PORT: z.coerce.number().int().positive().default(3000),
 
-  /** Runtime-role URL — non-superuser, NOBYPASSRLS (RES-83). */
-  DATABASE_URL: z.string().url(),
-  /** Schema-owner URL — used by migrations only, never by the runtime app. */
-  DATABASE_ADMIN_URL: z.string().url().optional(),
+    /** Runtime-role URL — non-superuser, NOBYPASSRLS (RES-83). */
+    DATABASE_URL: z.string().url(),
+    /** Schema-owner URL — used by migrations only, never by the runtime app. */
+    DATABASE_ADMIN_URL: z.string().url().optional(),
 
-  REDIS_URL: z.string().url().optional(),
-  NATS_URL: z.string().url(),
-  /** JetStream stream the app's events flow through. */
-  NATS_STREAM: z.string().default('RESTO_EVENTS'),
+    REDIS_URL: z.string().url().optional(),
+    NATS_URL: z.string().url(),
+    /** JetStream stream the app's events flow through. */
+    NATS_STREAM: z.string().default('RESTO_EVENTS'),
 
-  /**
-   * Shared secret for `/internal/v1/*` routes — the only auth in MVP-1
-   * (ADR-0012 deferred per-user IAM to MVP-2). Required outside dev;
-   * `InternalTokenGuard` allows unauthenticated requests in development
-   * for tooling ergonomics.
-   */
-  INTERNAL_API_TOKEN: z.string().min(16).optional(),
+    /**
+     * Shared secret for `/internal/v1/*` routes — the only auth in MVP-1
+     * (ADR-0012 deferred per-user IAM to MVP-2). Required outside dev;
+     * `InternalTokenGuard` allows unauthenticated requests in development
+     * for tooling ergonomics.
+     */
+    INTERNAL_API_TOKEN: z.string().min(16).optional(),
 
-  /** S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev). */
-  S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
-  S3_REGION: z.string().default('us-east-1'),
-  S3_BUCKET: z.string().default('resto-dev'),
-  S3_ACCESS_KEY: z.string().default('minio'),
-  S3_SECRET_KEY: z.string().default('minio_dev_password'),
+    /**
+     * 32+ char secret signing BA cookies and tokens. Required outside dev
+     * (enforced by superRefine below). Rotated per environment via Vault.
+     */
+    BETTER_AUTH_SECRET: z.string().min(32).optional(),
 
-  OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
-  OTEL_SERVICE_NAME: z.string().default('resto-api'),
+    /**
+     * Public base URL of the api (used by BA for cookie scope and email
+     * link generation). Required outside dev. e.g. https://api.resto.app
+     */
+    BETTER_AUTH_BASE_URL: z.string().url().optional(),
 
-  /**
-   * Dev-only escape hatch. When set, requests on the api root domain
-   * (no tenant subdomain) are pinned to this slug instead of running
-   * tenant-less. Refused outside `NODE_ENV=development`.
-   */
-  TENANT_DEV_FALLBACK_SLUG: z.string().optional(),
-});
+    /**
+     * Postgres connection string for BA's drizzle client. Connects under
+     * `resto_auth` (BYPASSRLS). Distinct from DATABASE_URL (which is
+     * `resto_app` NOBYPASSRLS). Required outside dev.
+     */
+    BETTER_AUTH_DATABASE_URL: z.string().url().optional(),
+
+    /**
+     * Public URL of the admin web app — used as link target in invitation
+     * and password-reset emails. Required outside dev.
+     */
+    ADMIN_WEB_URL: z.string().url().optional(),
+
+    /**
+     * Cookie domain for BA sessions. Set to `.resto.app` in production for
+     * cross-subdomain session sharing (admin.resto.app ↔ api.resto.app).
+     * Leave unset in dev/test so cookies bind to host-only.
+     */
+    AUTH_COOKIE_DOMAIN: z.string().optional(),
+
+    /** S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev). */
+    S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
+    S3_REGION: z.string().default('us-east-1'),
+    S3_BUCKET: z.string().default('resto-dev'),
+    S3_ACCESS_KEY: z.string().default('minio'),
+    S3_SECRET_KEY: z.string().default('minio_dev_password'),
+
+    OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
+    OTEL_SERVICE_NAME: z.string().default('resto-api'),
+
+    /**
+     * Dev-only escape hatch. When set, requests on the api root domain
+     * (no tenant subdomain) are pinned to this slug instead of running
+     * tenant-less. Refused outside `NODE_ENV=development`.
+     */
+    TENANT_DEV_FALLBACK_SLUG: z.string().optional(),
+  })
+  .superRefine((env, ctx) => {
+    if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {
+      for (const key of [
+        'BETTER_AUTH_SECRET',
+        'BETTER_AUTH_BASE_URL',
+        'BETTER_AUTH_DATABASE_URL',
+        'ADMIN_WEB_URL',
+      ] as const) {
+        if (!env[key]) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} is required when NODE_ENV is ${env.NODE_ENV}`,
+          });
+        }
+      }
+    }
+  });
 export type Env = z.infer<typeof envSchema>;
 
 export class EnvValidationError extends Error {

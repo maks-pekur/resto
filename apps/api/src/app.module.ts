@@ -6,12 +6,21 @@ import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
+import { IdentityModule } from './contexts/identity/identity.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
 
 @Module({
-  imports: [ConfigModule, DatabaseModule, NatsModule, HealthModule, TenancyModule, CatalogModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    NatsModule,
+    HealthModule,
+    TenancyModule,
+    IdentityModule,
+    CatalogModule,
+  ],
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     CorrelationMiddleware,
