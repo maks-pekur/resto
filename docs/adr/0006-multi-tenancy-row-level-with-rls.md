@@ -2,6 +2,7 @@
 
 - **Status:** accepted
 - **Date:** 2026-04-30
+- **Revised by:** [ADR 0013](./0013-better-auth-for-mvp2-identity.md) — adds a third Postgres role `resto_auth` (BYPASSRLS) for Better Auth's drizzle adapter; the two-role contract below now reads "three roles" in practice.
 - **Deciders:** Resto core team
 
 ## Context
@@ -77,12 +78,19 @@ to its own database is a configuration change, not a code change.
   authorization and is logged.
 - Tenant resolver lives in `apps/api/src/contexts/tenancy/`; it maps
   subdomain or custom domain → tenant id → connection pool.
-- **Two-role connection model.** Postgres superusers and `BYPASSRLS`
-  roles ignore RLS regardless of `FORCE`. The application connects as
-  `resto_app` (NOSUPERUSER, NOBYPASSRLS); migrations connect as
-  `resto_admin`. App startup runs `assertNoRlsBypass()` so a
-  misconfiguration fails fast in logs rather than silently leaking
-  data. Provisioning, rotation, and provider notes live in
-  `docs/runbooks/database-roles.md`.
+- **Connection roles.** Postgres superusers and `BYPASSRLS` roles
+  ignore RLS regardless of `FORCE`. Three roles are in play (the third
+  added by ADR-0013):
+  - `resto_app` (NOSUPERUSER, NOBYPASSRLS) — the runtime app connects
+    as this role; RLS enforces tenant isolation.
+  - `resto_admin` — schema owner, used by migrations only.
+  - `resto_auth` (BYPASSRLS) — Better Auth's drizzle adapter (added by
+    ADR-0013). BA's organization plugin legitimately needs
+    cross-tenant reads on its own tables; isolation for those tables
+    is enforced via BA's session model, not RLS.
+    App startup runs `assertNoRlsBypass()` against the `resto_app`
+    connection so a misconfiguration fails fast in logs rather than
+    silently leaking data. Provisioning, rotation, and provider notes
+    live in `docs/runbooks/database-roles.md`.
 - Dedicated-DB graduation runbook: `docs/runbooks/graduate-tenant-to-dedicated-db.md`
   (to be written before the first enterprise tenant is provisioned).
