@@ -19,7 +19,10 @@ the starting point for a new ADR.
 | 0009 | Stripe Connect (Express) as the payments provider                             | accepted           |
 | 0010 | MVP-1 scope — tenancy, identity, catalog, qr-menu (read-only)                 | accepted           |
 | 0011 | Hosting on AWS (EKS + RDS + S3 + ElastiCache, eu-central-1)                   | accepted           |
-| 0012 | Defer the identity provider to MVP-2                                          | accepted           |
+| 0012 | Defer the identity provider to MVP-2                                          | superseded by 0013 |
+| 0013 | Better Auth for MVP-2 identity                                                | accepted           |
+| 0014 | Vitest as the test runner across the workspace                                | accepted           |
+| 0015 | esbuild for `apps/api` production bundling                                    | accepted           |
 
 ## Pending
 
