@@ -36,7 +36,10 @@ $$;
 
 GRANT USAGE ON SCHEMA public TO resto_app;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO resto_app;
+-- DELETE intentionally omitted: domain rules forbid hard deletes (use
+-- soft-delete via `archived_at`). Future GC jobs run under their own
+-- privileged role rather than reusing the runtime grant.
+GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO resto_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO resto_app;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO resto_app;
 
@@ -44,7 +47,7 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO resto_app;
 -- the same grants automatically — operators do not need to remember to
 -- re-grant after every migration.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
-  GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO resto_app;
+  GRANT SELECT, INSERT, UPDATE ON TABLES TO resto_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO resto_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
