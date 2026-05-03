@@ -8,7 +8,6 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { sql } from 'drizzle-orm';
 import { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { EVENT_PUBLISHER } from '../infrastructure/nats.module';
@@ -27,7 +26,7 @@ export class HealthController {
   private readonly logger = new Logger(HealthController.name);
 
   constructor(
-    private readonly db: TenantAwareDb,
+    @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null,
   ) {}
 
@@ -61,7 +60,7 @@ export class HealthController {
 
   private async checkDatabase(): Promise<CheckResult> {
     try {
-      await this.db.connection.db.execute(sql`SELECT 1`);
+      await this.db.ping();
       return { name: 'database', ok: true };
     } catch (err) {
       return {

@@ -25,3 +25,17 @@ export class TenantAlreadyArchivedError extends Error {
     this.name = 'TenantAlreadyArchivedError';
   }
 }
+
+/**
+ * Thrown when `provisionTenant` is called for a slug that already maps to
+ * an archived tenant. Re-provisioning is policy-deferred — operators must
+ * pick a different slug or run an explicit reactivation flow (future).
+ */
+export class TenantSlugArchivedError extends Error {
+  constructor(public readonly slug: string) {
+    super(
+      `Tenant slug "${slug}" is archived. Choose a different slug or reactivate the existing tenant.`,
+    );
+    this.name = 'TenantSlugArchivedError';
+  }
+}

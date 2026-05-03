@@ -45,10 +45,16 @@ export class TenantContextMiddleware implements NestMiddleware {
   }
 
   private async resolveTenantId(req: FastifyRequest['raw']): Promise<string | undefined> {
-    const headerOverride = req.headers[HEADER_OVERRIDE];
-    if (typeof headerOverride === 'string' && headerOverride.length > 0) {
-      const fromHeader = await this.resolver.resolveBySlug(headerOverride);
-      if (fromHeader) return fromHeader.id;
+    // The `x-tenant-slug` header is a dev/test escape hatch — production
+    // and staging use host-based routing only. Honouring the header in
+    // prod would let any client on a `@Public` route (e.g. the customer
+    // QR-menu) read another tenant by sending a different slug.
+    if (this.env.NODE_ENV === 'development' || this.env.NODE_ENV === 'test') {
+      const headerOverride = req.headers[HEADER_OVERRIDE];
+      if (typeof headerOverride === 'string' && headerOverride.length > 0) {
+        const fromHeader = await this.resolver.resolveBySlug(headerOverride);
+        if (fromHeader) return fromHeader.id;
+      }
     }
 
     const fromHost = await this.resolver.resolveByHost(req.headers.host);

@@ -10,12 +10,23 @@ export class TenantQueriesService {
   constructor(@Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository) {}
 
   async getBySlug(rawSlug: string): Promise<TenantSnapshot> {
-    const slug = TenantSlug.parse(rawSlug);
-    const tenant = await this.repo.findBySlug(slug);
+    const tenant = await this.findBySlug(rawSlug);
     if (!tenant) {
       throw new TenantNotFoundError(rawSlug);
     }
-    return tenant.toSnapshot();
+    return tenant;
+  }
+
+  /**
+   * Nullable counterpart to `getBySlug`. Used by callers outside the
+   * tenancy bounded context (e.g. the identity bootstrap adapter) so they
+   * do not have to catch — and therefore do not have to import — a
+   * tenancy-domain error to express "not found".
+   */
+  async findBySlug(rawSlug: string): Promise<TenantSnapshot | null> {
+    const slug = TenantSlug.parse(rawSlug);
+    const tenant = await this.repo.findBySlug(slug);
+    return tenant ? tenant.toSnapshot() : null;
   }
 
   async getById(rawId: string): Promise<TenantSnapshot> {

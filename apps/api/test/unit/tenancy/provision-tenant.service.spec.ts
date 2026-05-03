@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Currency, TenantSlug } from '@resto/domain';
 import { ProvisionTenantService } from '../../../src/contexts/tenancy/application/provision-tenant.service';
+import { TenantSlugArchivedError } from '../../../src/contexts/tenancy/domain/errors';
 import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
 
@@ -74,7 +75,7 @@ describe('ProvisionTenantService', () => {
     existing.archive();
     repo.findBySlug = vi.fn().mockResolvedValue(existing);
 
-    await expect(service.execute(baseInput)).rejects.toThrow(/archived/);
+    await expect(service.execute(baseInput)).rejects.toBeInstanceOf(TenantSlugArchivedError);
     expect(repo.save).not.toHaveBeenCalled();
   });
 

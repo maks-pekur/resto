@@ -6,6 +6,7 @@ import {
   type StripeConnectPort,
   type TenantRepository,
 } from '../domain/ports';
+import { TenantSlugArchivedError } from '../domain/errors';
 import type { ProvisionTenantInput } from './dto';
 
 const PRIMARY_DOMAIN_SUFFIX = 'menu.resto.app';
@@ -39,9 +40,7 @@ export class ProvisionTenantService {
         // Re-provisioning an archived slug is policy-deferred: surface a
         // domain error rather than silently reactivate. Caller picks a
         // new slug or runs an explicit "reactivate" flow (future ticket).
-        throw new Error(
-          `Tenant slug "${input.slug}" is archived. Choose a different slug or reactivate.`,
-        );
+        throw new TenantSlugArchivedError(input.slug);
       }
       this.logger.log(
         { slug: input.slug, tenantId: snapshot.id },
