@@ -1,1 +1,7 @@
 pnpm lint-staged
+
+# Affected typecheck — keeps type regressions from sliding past local
+# commits. `--uncommitted` compares the working tree (staged + unstaged)
+# against HEAD, so we only typecheck projects whose source actually
+# changed. Fast on small commits, no false positives on rebases.
+pnpm exec nx affected -t typecheck --uncommitted --parallel=3

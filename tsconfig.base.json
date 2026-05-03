@@ -36,13 +36,7 @@
       "@resto/db": ["packages/db/src/index.ts"],
       "@resto/db/*": ["packages/db/src/*"],
       "@resto/events": ["packages/events/src/index.ts"],
-      "@resto/events/*": ["packages/events/src/*"],
-      "@resto/ui": ["packages/ui/src/index.ts"],
-      "@resto/ui/*": ["packages/ui/src/*"],
-      "@resto/api-client": ["packages/api-client/src/index.ts"],
-      "@resto/api-client/*": ["packages/api-client/src/*"],
-      "@resto/feature-flags": ["packages/feature-flags/src/index.ts"],
-      "@resto/feature-flags/*": ["packages/feature-flags/src/*"]
+      "@resto/events/*": ["packages/events/src/*"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist", "build"]
