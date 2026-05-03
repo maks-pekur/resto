@@ -8,8 +8,7 @@
   "exports": {
     "./base": "./base.mjs",
     "./node": "./node.mjs",
-    "./react": "./react.mjs",
-    "./nextjs": "./nextjs.mjs"
+    "./react": "./react.mjs"
   },
   "files": [
     "*.mjs"
