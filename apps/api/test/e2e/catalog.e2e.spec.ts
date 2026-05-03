@@ -1,99 +1,21 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { Test } from '@nestjs/testing';
-import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { provisionAppRole, RESTO_APP_ROLE } from '@resto/db';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import postgres from 'postgres';
-import { resolve } from 'node:path';
-import { execSync } from 'node:child_process';
-import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { AppModule } from '../../src/app.module';
+import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { IMAGE_URL_PORT } from '../../src/contexts/catalog/domain/ports';
+import {
+  isDockerAvailable,
+  startRealStack,
+  stopRealStack,
+  type RealStack,
+} from './with-real-stack.setup';
 
-const dockerOk = ((): boolean => {
-  try {
-    execSync('docker info', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-})();
+const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 
-const DB_MIGRATIONS_FOLDER = resolve(
-  import.meta.dirname,
-  '..',
-  '..',
-  '..',
-  '..',
-  'packages',
-  'db',
-  'migrations',
-);
-const APP_ROLE_PASSWORD = 'resto_app';
-const INTERNAL_TOKEN = 'integration-test-token-1234567890';
-
-interface Stack {
-  pg: StartedPostgreSqlContainer;
-  nats: StartedTestContainer;
-  app: NestFastifyApplication;
+if (!dockerOk) {
+  console.warn('[catalog.e2e] Docker not available — skipping integration tests.');
 }
 
-const startStack = async (): Promise<Stack> => {
-  const pg = await new PostgreSqlContainer('postgres:16-alpine')
-    .withDatabase('resto_e2e')
-    .withUsername('resto_admin')
-    .withPassword('resto_admin')
-    .start();
-  const adminUrl = pg.getConnectionUri();
-  const adminClient = postgres(adminUrl, { max: 1, prepare: false });
-  try {
-    await migrate(drizzle(adminClient), { migrationsFolder: DB_MIGRATIONS_FOLDER });
-    await provisionAppRole(adminClient, { appPassword: APP_ROLE_PASSWORD });
-  } finally {
-    await adminClient.end({ timeout: 5 });
-  }
-  const url = new URL(adminUrl);
-  url.username = RESTO_APP_ROLE;
-  url.password = APP_ROLE_PASSWORD;
-
-  const nats = await new GenericContainer('nats:2.10-alpine')
-    .withCommand(['--jetstream'])
-    .withExposedPorts(4222)
-    .withWaitStrategy(Wait.forLogMessage(/Server is ready/))
-    .start();
-
-  process.env.NODE_ENV = 'test';
-  process.env.OTEL_DISABLED = 'true';
-  process.env.NATS_DISABLED = 'true';
-  process.env.DATABASE_URL = url.toString();
-  process.env.NATS_URL = `nats://${nats.getHost()}:${nats.getMappedPort(4222).toString()}`;
-  process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
-  delete process.env.REDIS_URL;
-
-  const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
-    // Don't reach for MinIO in tests — produce a deterministic signed URL
-    // shape so the assertion stays focused on "raw key never leaks".
-    .overrideProvider(IMAGE_URL_PORT)
-    .useValue({
-      presignGet: (key: string, ttl: number): Promise<string> =>
-        Promise.resolve(`https://signed.test/${key}?expires=${ttl.toString()}`),
-    })
-    .compile();
-  const app = moduleRef.createNestApplication<NestFastifyApplication>(
-    new FastifyAdapter({ logger: false }),
-  );
-  await app.init();
-  await app.getHttpAdapter().getInstance().ready();
-  return { pg, nats, app };
-};
-
-const stopStack = async (stack: Stack): Promise<void> => {
-  await stack.app.close();
-  await Promise.all([stack.pg.stop({ timeout: 5_000 }), stack.nats.stop({ timeout: 5_000 })]);
-};
+const INTERNAL_TOKEN = 'integration-test-token-1234567890';
 
 const provisionTenant = async (
   app: NestFastifyApplication,
@@ -112,17 +34,34 @@ const provisionTenant = async (
 };
 
 suite('Catalog — internal write → public read → cross-tenant isolation', () => {
-  let stack: Stack;
+  let stack: RealStack;
 
   beforeAll(async () => {
-    stack = await startStack();
+    stack = await startRealStack({
+      // Catalog tests don't exercise the event publish path; the broker
+      // container is still started by the harness, but the api skips
+      // wiring its NATS publisher.
+      natsEnabledInApp: false,
+      overrideProviders: [
+        {
+          provide: IMAGE_URL_PORT,
+          // Don't reach for MinIO in tests — produce a deterministic
+          // signed URL so the assertion stays focused on "raw key
+          // never leaks".
+          useValue: {
+            presignGet: (key: string, ttl: number): Promise<string> =>
+              Promise.resolve(`https://signed.test/${key}?expires=${ttl.toString()}`),
+          },
+        },
+      ],
+    });
     await provisionTenant(stack.app, { slug: 'cafe-a', displayName: 'Cafe A' });
     // Tenant B exists so the cross-tenant test has a host to send requests against.
     await provisionTenant(stack.app, { slug: 'cafe-b', displayName: 'Cafe B' });
   }, 180_000);
 
   afterAll(async () => {
-    await stopStack(stack);
+    await stopRealStack(stack);
   });
 
   it('operator with internal token can upsert + publish, and the public menu surfaces the item', async () => {
