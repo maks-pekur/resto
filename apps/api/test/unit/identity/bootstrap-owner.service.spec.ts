@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { member as memberTable, user as userTable } from '@resto/db/schema';
 import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
@@ -13,8 +14,10 @@ const makeTenantLookup = (
  * Mocks the BA admin API surface used by the service:
  *   - signUpEmail (top-level user creation)
  *   - addMember (organization plugin, SERVER_ONLY)
- *   - listMembers (organization plugin) — idempotency probe; defaults to
- *     "no members" so the happy-path test remains untouched.
+ *
+ * `listMembers` is intentionally NOT mocked: the service uses direct
+ * Drizzle queries (via AUTH_DRIZZLE_TOKEN) for idempotency probes instead
+ * of the BA session-gated listMembers endpoint.
  *
  * `createOrganization` is intentionally NOT mocked: BA's `organization`
  * is physically the `tenants` table, so the tenant row created by the
@@ -26,28 +29,46 @@ const makeAuth = () => ({
   api: {
     signUpEmail: vi.fn().mockResolvedValue({ user: { id: 'user-uuid', email: 'ops@demo.test' } }),
     addMember: vi.fn().mockResolvedValue({ id: 'member-uuid', userId: 'user-uuid', role: 'owner' }),
-    listMembers: vi.fn().mockResolvedValue({ members: [], total: 0 }),
   },
 });
 
 /**
- * Stub for the AuthDrizzle pool. The service only ever calls the chain
- * `db.select(...).from(...).where(...).limit(...)` from `findUserByEmail`,
- * so we satisfy that exact shape and ignore the rest of Drizzle's surface.
+ * Stub for the AuthDrizzle pool. The service calls two distinct query chains:
+ *
+ *   1. `findExistingOwner`: `.select().from(memberTable).innerJoin(userTable, ...).where(...).limit(...)`
+ *      Returns `existingOwner` — the user record for the current tenant owner (if any).
+ *
+ *   2. `findUserByEmail`: `.select().from(userTable).where(...).limit(...)`
+ *      Returns `existingUser` — a BA user record matching the email (if any).
+ *
+ * The `from()` mock dispatches to the correct chain by table reference identity.
  */
-const makeAuthDb = (user: { id: string; email: string } | null = null): AuthDrizzle =>
-  ({
+const makeAuthDb = (
+  existingOwner: { id: string; email: string } | null = null,
+  existingUser: { id: string; email: string } | null = null,
+): AuthDrizzle => {
+  const memberChain = {
+    innerJoin: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(existingOwner ? [existingOwner] : []),
+  };
+  const userChain = {
+    where: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(existingUser ? [existingUser] : []),
+  };
+  return {
     db: {
       select: () => ({
-        from: () => ({
-          where: () => ({
-            limit: () => Promise.resolve(user ? [user] : []),
-          }),
-        }),
+        from: (table: unknown) => {
+          if (table === memberTable) return memberChain;
+          if (table === userTable) return userChain;
+          throw new Error(`Unexpected from() table: ${String(table)}`);
+        },
       }),
     },
     client: {} as never,
-  }) as unknown as AuthDrizzle;
+  } as unknown as AuthDrizzle;
+};
 
 describe('BootstrapOwnerService — happy path', () => {
   it('creates user and owner member against the existing tenant org', async () => {
@@ -57,7 +78,8 @@ describe('BootstrapOwnerService — happy path', () => {
       displayName: 'Demo',
     });
     const auth = makeAuth();
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb());
+    // No existing owner, no existing user → full signup + addMember path.
+    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb(null, null));
 
     const result = await svc.execute({
       tenantSlug: 'demo',
@@ -72,12 +94,6 @@ describe('BootstrapOwnerService — happy path', () => {
       organizationId: 'tenant-uuid',
       email: 'ops@demo.test',
       requiresPasswordChange: true,
-    });
-
-    // Idempotency probe ran first, scoped to the tenant id.
-    expect(auth.api.listMembers).toHaveBeenCalledOnce();
-    expect(auth.api.listMembers).toHaveBeenCalledWith({
-      query: { organizationId: 'tenant-uuid' },
     });
 
     // Email is normalised before being passed to BA.
@@ -105,7 +121,7 @@ describe('BootstrapOwnerService — happy path', () => {
   it('throws TenantNotFoundForBootstrapError when slug does not exist', async () => {
     const lookup = makeTenantLookup(null);
     const auth = makeAuth();
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb());
+    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb(null, null));
 
     await expect(
       svc.execute({
@@ -120,7 +136,6 @@ describe('BootstrapOwnerService — happy path', () => {
       tenantSlug: 'ghost',
     });
 
-    expect(auth.api.listMembers).not.toHaveBeenCalled();
     expect(auth.api.signUpEmail).not.toHaveBeenCalled();
     expect(auth.api.addMember).not.toHaveBeenCalled();
   });
@@ -134,17 +149,9 @@ describe('BootstrapOwnerService — idempotency', () => {
       displayName: 'Demo',
     });
     const auth = makeAuth();
-    auth.api.listMembers = vi.fn().mockResolvedValue({
-      members: [
-        {
-          id: 'm1',
-          role: 'owner',
-          user: { id: 'user-uuid', email: 'ops@demo.test' },
-        },
-      ],
-      total: 1,
-    });
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb());
+    // existingOwner matches the requested email → pure no-op.
+    const authDb = makeAuthDb({ id: 'user-uuid', email: 'ops@demo.test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
 
     const result = await svc.execute({
       tenantSlug: 'demo',
@@ -171,17 +178,9 @@ describe('BootstrapOwnerService — idempotency', () => {
       displayName: 'Demo',
     });
     const auth = makeAuth();
-    auth.api.listMembers = vi.fn().mockResolvedValue({
-      members: [
-        {
-          id: 'm1',
-          role: 'owner',
-          user: { id: 'someone-else', email: 'other@demo.test' },
-        },
-      ],
-      total: 1,
-    });
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb());
+    // existingOwner has a different email → conflict.
+    const authDb = makeAuthDb({ id: 'someone-else', email: 'other@demo.test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
 
     await expect(
       svc.execute({
@@ -208,7 +207,8 @@ describe('BootstrapOwnerService — idempotency', () => {
       displayName: 'Demo',
     });
     const auth = makeAuth();
-    const authDb = makeAuthDb({ id: 'existing-user', email: 'ops@demo.test' });
+    // No existing owner member, but the BA user row already exists.
+    const authDb = makeAuthDb(null, { id: 'existing-user', email: 'ops@demo.test' });
     const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
 
     const result = await svc.execute({
