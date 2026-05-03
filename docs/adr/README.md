@@ -23,6 +23,7 @@ the starting point for a new ADR.
 | 0013 | Better Auth for MVP-2 identity                                                | accepted           |
 | 0014 | Vitest as the test runner across the workspace                                | accepted           |
 | 0015 | esbuild for `apps/api` production bundling                                    | accepted           |
+| 0016 | Admin app stack — Next.js 15 + shadcn/ui + Tailwind 4                         | accepted           |
 
 ## Pending
 
