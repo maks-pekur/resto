@@ -42,6 +42,27 @@ describe('TenantQueriesService.getBySlug', () => {
   });
 });
 
+describe('TenantQueriesService.findBySlug', () => {
+  let repo: TenantRepository;
+  let service: TenantQueriesService;
+
+  beforeEach(() => {
+    repo = buildRepo();
+    service = new TenantQueriesService(repo);
+  });
+
+  it('returns the snapshot when the slug exists', async () => {
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
+    const snapshot = await service.findBySlug('cafe-roma');
+    expect(snapshot?.slug).toBe('cafe-roma');
+  });
+
+  it('returns null when the slug is unknown (does not throw)', async () => {
+    repo.findBySlug = vi.fn().mockResolvedValue(null);
+    await expect(service.findBySlug('cafe-roma')).resolves.toBeNull();
+  });
+});
+
 describe('TenantQueriesService.getById', () => {
   let repo: TenantRepository;
   let service: TenantQueriesService;

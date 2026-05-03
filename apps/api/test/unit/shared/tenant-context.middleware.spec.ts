@@ -42,14 +42,7 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn(),
 });
 
-interface Setup {
-  middleware: TenantContextMiddleware;
-  resolver: TenantResolverService;
-  resolveBySlug: ReturnType<typeof vi.spyOn>;
-  resolveByHost: ReturnType<typeof vi.spyOn>;
-}
-
-const setup = (env: Env, repoOverride?: TenantRepository): Setup => {
+const setup = (env: Env, repoOverride?: TenantRepository) => {
   const repo = repoOverride ?? buildRepo();
   const resolver = new TenantResolverService(repo);
   const resolveBySlug = vi.spyOn(resolver, 'resolveBySlug');
