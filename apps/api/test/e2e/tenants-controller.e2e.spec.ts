@@ -100,6 +100,45 @@ describe('TenantsController E2E', () => {
       expect(body.id).toBe(tenant.id);
       expect(body.slug).toBe(slug);
     });
+
+    it('does not let operator A read tenant B (cross-tenant isolation)', async () => {
+      // Provision two tenants and bootstrap an owner for each.
+      const slugA = `iso-a-${randomUUID().slice(0, 8)}`;
+      const slugB = `iso-b-${randomUUID().slice(0, 8)}`;
+      const passwordA = 'correct-horse-battery-staple-iso-A';
+      const passwordB = 'correct-horse-battery-staple-iso-B';
+      const emailA = `owner-${slugA}@example.com`;
+      const emailB = `owner-${slugB}@example.com`;
+
+      const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+      const tenantB = await provisionTenant(app, slugB, INTERNAL_TOKEN);
+      await runBootstrap({ tenantSlug: slugA, email: emailA, password: passwordA, name: 'A' });
+      await runBootstrap({ tenantSlug: slugB, email: emailB, password: passwordB, name: 'B' });
+
+      // Operator A's session: must always see tenant A's snapshot, never B's.
+      const cookieA = await signInAsOperator(app, emailA, passwordA, tenantA.id);
+      const seenByA = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie: cookieA },
+      });
+      expect(seenByA.statusCode).toBe(200);
+      const bodyA = seenByA.json<{ id: string; slug: string }>();
+      expect(bodyA.id).toBe(tenantA.id);
+      expect(bodyA.slug).toBe(slugA);
+      expect(bodyA.id).not.toBe(tenantB.id);
+      expect(bodyA.slug).not.toBe(slugB);
+
+      // Operator A trying to switch to tenant B's organization id must fail
+      // — they are not a member of B.
+      const switchAttempt = await app.inject({
+        method: 'POST',
+        url: '/api/auth/organization/set-active',
+        headers: { 'content-type': 'application/json', cookie: cookieA },
+        payload: { organizationId: tenantB.id },
+      });
+      expect(switchAttempt.statusCode).toBeGreaterThanOrEqual(400);
+    });
   });
 
   // ---------------------------------------------------------------------------
