@@ -1,0 +1,32 @@
+# CODEOWNERS — review routing.
+#
+# Order matters: the LAST matching pattern wins. Keep general patterns
+# at the top and specific overrides below.
+
+# Default owner — every PR needs at least one approval.
+*                                       @maks-pekur
+
+# Architecture decisions and runbooks need explicit ADR review.
+/docs/adr/                              @maks-pekur
+/docs/runbooks/                         @maks-pekur
+
+# Database schema, migrations, RLS policies, and role grants are
+# load-bearing — any change here gets a focused review.
+/packages/db/                           @maks-pekur
+/packages/db/migrations/                @maks-pekur
+/packages/db/sql/                       @maks-pekur
+
+# Identity / auth wiring — anything in better-auth or the auth guard.
+/apps/api/src/contexts/identity/        @maks-pekur
+
+# Infrastructure-as-code and CI workflows.
+/infra/                                 @maks-pekur
+/.github/                               @maks-pekur
+
+# Top-level configuration files that affect every project.
+/tsconfig.base.json                     @maks-pekur
+/nx.json                                @maks-pekur
+/package.json                           @maks-pekur
+/pnpm-workspace.yaml                    @maks-pekur
+/eslint.config.mjs                      @maks-pekur
+/commitlint.config.cjs                  @maks-pekur
