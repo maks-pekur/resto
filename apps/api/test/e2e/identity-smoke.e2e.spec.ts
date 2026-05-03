@@ -150,11 +150,10 @@ describe('Better Auth /api/auth/* smoke', () => {
       expect(body).toMatchObject({ kind: 'operator', email: 'me@example.com' });
     });
 
-    it('placeholder for tenant-mismatch coverage (filled in Phase C)', () => {
-      // Phase B has no API to create tenants + members yet — that's Phase C's
-      // /internal/v1/tenants/:id/owner endpoint. Real tenant-mismatch
-      // coverage requires that path. For now this test documents the gap.
-      expect(true).toBe(true);
-    });
+    // Phase B has no API to create tenants + members yet — that lands with
+    // the `/internal/v1/tenants/:id/owner` endpoint in Phase C. Real
+    // tenant-mismatch coverage requires that path; until then this is a
+    // visible TODO in test reporters rather than a green "placeholder".
+    it.todo('rejects requests where the operator session is bound to a different tenant');
   });
 });
