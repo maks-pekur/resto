@@ -51,7 +51,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: nrwl/nx-set-shas@v4
+      - uses: nrwl/nx-set-shas@v5
       - name: Run nx affected ${{ matrix.target }}
         run: pnpm exec nx affected -t ${{ matrix.target }} --parallel=3
 
