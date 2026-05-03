@@ -1,5 +1,5 @@
-import { createAccessControl } from 'better-auth/plugins/access';
 import { PERMISSIONS_STATEMENT, SYSTEM_ROLES } from '@resto/domain';
+import { createAccessControl } from 'better-auth/plugins/access';
 
 /**
  * Better Auth access control. The statement matches `PERMISSIONS_STATEMENT`

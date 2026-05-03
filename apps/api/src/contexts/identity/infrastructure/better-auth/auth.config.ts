@@ -59,6 +59,16 @@ export const buildAuth = (opts: BuildOpts) =>
       twoFactor(),
       bearer(),
     ],
+    user: {
+      additionalFields: {
+        requiresPasswordChange: {
+          type: 'boolean',
+          defaultValue: false,
+          input: false, // not settable through public sign-up; set server-side
+          returned: true, // surfaced on session.user so the admin UI can read it
+        },
+      },
+    },
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling

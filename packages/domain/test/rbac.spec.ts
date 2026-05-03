@@ -17,17 +17,18 @@ describe('RBAC permission catalogue', () => {
     }
   });
 
-  it('admin lacks billing and tenant permissions', () => {
+  it('admin lacks billing but reads its own tenant', () => {
     expect(SYSTEM_ROLES.admin).not.toHaveProperty('billing');
-    expect(SYSTEM_ROLES.admin).not.toHaveProperty('tenant');
+    expect(SYSTEM_ROLES.admin.tenant).toEqual(['read']);
   });
 
   it('admin has menu update', () => {
     expect(SYSTEM_ROLES.admin.menu).toContain('update');
   });
 
-  it('staff has no permissions by default', () => {
-    expect(Object.keys(SYSTEM_ROLES.staff)).toHaveLength(0);
+  it('staff can only read its own tenant', () => {
+    expect(Object.keys(SYSTEM_ROLES.staff)).toEqual(['tenant']);
+    expect(SYSTEM_ROLES.staff.tenant).toEqual(['read']);
   });
 
   it('Permission type is well-typed', () => {

@@ -18,6 +18,15 @@ export class TenantQueriesService {
     return tenant.toSnapshot();
   }
 
+  async getById(rawId: string): Promise<TenantSnapshot> {
+    const id = TenantId.parse(rawId);
+    const tenant = await this.repo.findById(id);
+    if (!tenant) {
+      throw new TenantNotFoundError(rawId);
+    }
+    return tenant.toSnapshot();
+  }
+
   async listDomains(rawId: string): Promise<TenantDomain[]> {
     const id = TenantId.parse(rawId);
     const tenant = await this.repo.findById(id);

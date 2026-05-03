@@ -28,4 +28,11 @@ describe('Better Auth access control', () => {
     expect(staffRole.authorize({ menu: ['read'] }).success).toBe(false);
     expect(staffRole.authorize({ order: ['read'] }).success).toBe(false);
   });
+
+  it('grants tenant.read to owner, admin, and staff', () => {
+    for (const role of [ownerRole, adminRole, staffRole]) {
+      const result = role.authorize({ tenant: ['read'] });
+      expect(result.success).toBe(true);
+    }
+  });
 });

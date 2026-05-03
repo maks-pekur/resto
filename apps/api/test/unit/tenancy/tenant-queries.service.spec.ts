@@ -42,6 +42,30 @@ describe('TenantQueriesService.getBySlug', () => {
   });
 });
 
+describe('TenantQueriesService.getById', () => {
+  let repo: TenantRepository;
+  let service: TenantQueriesService;
+
+  beforeEach(() => {
+    repo = buildRepo();
+    service = new TenantQueriesService(repo);
+  });
+
+  it('returns the snapshot for an existing id', async () => {
+    const tenant = tenantFor('demo');
+    repo.findById = vi.fn().mockResolvedValue(tenant);
+    const snap = await service.getById(tenant.toSnapshot().id);
+    expect(snap.slug).toBe('demo');
+  });
+
+  it('throws TenantNotFoundError for unknown id', async () => {
+    repo.findById = vi.fn().mockResolvedValue(null);
+    await expect(service.getById('00000000-0000-0000-0000-000000000000')).rejects.toBeInstanceOf(
+      TenantNotFoundError,
+    );
+  });
+});
+
 describe('TenantQueriesService.listDomains', () => {
   let repo: TenantRepository;
   let service: TenantQueriesService;

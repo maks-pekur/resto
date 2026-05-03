@@ -36,12 +36,16 @@ export class BetterAuthPermissionChecker implements PermissionChecker {
       const api = this.auth.api as unknown as {
         hasPermission: (opts: {
           headers: Headers;
-          body: { permissions: Record<string, string[]> };
+          // BA 1.3.x uses Zod v4 which requires the unused union discriminant
+          // to be explicitly `undefined`, not merely absent. Include both
+          // fields in the type so we can pass `permission: undefined` alongside
+          // `permissions` to satisfy the second union branch.
+          body: { permissions: Record<string, string[]>; permission: undefined };
         }) => Promise<{ success: boolean }>;
       };
       const result = await api.hasPermission({
         headers,
-        body: { permissions: required as Record<string, string[]> },
+        body: { permissions: required as Record<string, string[]>, permission: undefined },
       });
       return result.success;
     } catch {

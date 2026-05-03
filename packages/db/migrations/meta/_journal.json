@@ -43,6 +43,13 @@
       "when": 1777830000000,
       "tag": "0005_identity_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1777759821176,
+      "tag": "0006_ba_user_requires_password_change",
+      "breakpoints": true
     }
   ]
 }

@@ -6,7 +6,7 @@ import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
-import { IdentityModule } from './contexts/identity/identity.module';
+import { IdentityHttpModule } from './contexts/identity/identity-http.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
@@ -18,7 +18,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     NatsModule,
     HealthModule,
     TenancyModule,
-    IdentityModule,
+    IdentityHttpModule,
     CatalogModule,
   ],
   providers: [

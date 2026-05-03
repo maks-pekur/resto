@@ -15,7 +15,7 @@ export const SYSTEM_ROLES = {
     reports: ['read'],
     settings: ['update'],
     billing: ['read', 'update'],
-    tenant: ['delete', 'transfer'],
+    tenant: ['read', 'delete', 'transfer'],
   },
   admin: {
     menu: ['read', 'create', 'update', 'delete'],
@@ -23,8 +23,11 @@ export const SYSTEM_ROLES = {
     staff: ['invite', 'remove', 'role:create', 'role:update'],
     reports: ['read'],
     settings: ['update'],
+    tenant: ['read'],
   },
-  staff: {},
+  staff: {
+    tenant: ['read'],
+  },
 } as const satisfies Record<'owner' | 'admin' | 'staff', Permission>;
 
 export type SystemRoleSlug = keyof typeof SYSTEM_ROLES;

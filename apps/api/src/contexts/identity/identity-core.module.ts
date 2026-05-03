@@ -1,19 +1,11 @@
-import { Inject, Module, type OnModuleInit, type Provider } from '@nestjs/common';
-import { APP_GUARD, HttpAdapterHost } from '@nestjs/core';
-import type { FastifyInstance } from 'fastify';
+import { Module, type Provider } from '@nestjs/common';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
 import { buildAuth, type Auth } from './infrastructure/better-auth/auth.config';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permission-checker.adapter';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
-import { AuthGuard } from './interfaces/http/guards/auth.guard';
-import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
-import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
-import { MeController } from './interfaces/http/me.controller';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
-
-export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
@@ -54,25 +46,14 @@ const permissionCheckerProvider: Provider = {
 };
 
 @Module({
-  controllers: [MeController],
   providers: [
     authDrizzleProvider,
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
-    { provide: APP_GUARD, useClass: AuthGuard },
-    { provide: APP_GUARD, useClass: PermissionsGuard },
   ],
   exports: [authProvider, authDrizzleProvider, permissionCheckerProvider],
 })
-export class IdentityModule implements OnModuleInit {
-  constructor(
-    @Inject(HttpAdapterHost) private readonly httpHost: HttpAdapterHost,
-    @Inject(AUTH_TOKEN) private readonly auth: Auth,
-  ) {}
+export class IdentityCoreModule {}
 
-  onModuleInit(): void {
-    const fastify: FastifyInstance = this.httpHost.httpAdapter.getInstance();
-    registerBetterAuthHandler(fastify, this.auth);
-  }
-}
+export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
