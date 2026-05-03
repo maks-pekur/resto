@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { user as userTable } from '@resto/db/schema';
+import { user as userTable, member as memberTable } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
@@ -35,12 +35,16 @@ const EmailSchema = z.string().trim().toLowerCase().email();
  * no-op; re-running with a different email when an owner already exists
  * fails with `OwnerAlreadyExistsError`.
  *
- * BA admin API surface used (verified against better-auth 1.3.34 .d.ts):
- *   - `auth.api.listMembers` — GET, query=`{ organizationId }`, returns
- *     `{ members: [{ user: { id, email, ... }, role, ... }], total }`.
- *     Used as the existing-owner probe.
+ * BA API surface used:
  *   - `auth.api.signUpEmail` — creates the user and credential.
  *   - `auth.api.addMember` — SERVER_ONLY; attaches the user with role=owner.
+ *
+ * Probes that use direct Drizzle queries (via AUTH_DRIZZLE_TOKEN, BYPASSRLS):
+ *   - Existing-owner probe: queries `member` JOIN `user` — avoids BA's
+ *     `listMembers` endpoint which requires an active session and cannot be
+ *     called from an unauthenticated server context.
+ *   - Existing-user probe: queries `user` by email — BA admin plugin not
+ *     loaded, so no dedicated server-side API for getUserByEmail.
  *
  * BA's `organization` is physically aliased onto our `tenants` table (see
  * `packages/db/src/schema/auth.ts` + ADR-0013). The tenant row is created
@@ -49,11 +53,6 @@ const EmailSchema = z.string().trim().toLowerCase().email();
  * `slug` unique constraint or insert a duplicate tenants row with a
  * different UUID, breaking the `organizationId === tenantId` invariant).
  * The organization id is read from `TenantLookupPort` and reused here.
- *
- * Existing-user probe is a direct Drizzle query against the BA `user`
- * table because BA core does not expose a `getUserByEmail` API (the
- * `admin` plugin offers one but we don't load it). The query runs through
- * `AUTH_DRIZZLE_TOKEN` (BYPASSRLS, BA-only), not the tenant-aware pool.
  *
  * The service must NOT touch infrastructure directly: it talks to BA via
  * the AUTH_TOKEN provider, to tenancy via TenantLookupPort, and to the BA
@@ -134,16 +133,16 @@ export class BootstrapOwnerService {
   private async findExistingOwner(
     organizationId: string,
   ): Promise<{ id: string; email: string } | null> {
-    let result;
-    try {
-      result = await orgApi(this.auth).listMembers({
-        query: { organizationId },
-      });
-    } catch (err) {
-      throw new BetterAuthBootstrapFailureError('listMembers', err);
-    }
-    const owner = result.members.find((m) => m.role === 'owner');
-    return owner ? { id: owner.user.id, email: owner.user.email } : null;
+    // Direct Drizzle query via the BYPASSRLS auth client — avoids the BA
+    // organization.listMembers endpoint which requires an active session
+    // (session middleware rejects unauthenticated internal callers).
+    const rows = await this.authDb.db
+      .select({ id: userTable.id, email: userTable.email })
+      .from(memberTable)
+      .innerJoin(userTable, eq(memberTable.userId, userTable.id))
+      .where(and(eq(memberTable.organizationId, organizationId), eq(memberTable.role, 'owner')))
+      .limit(1);
+    return rows[0] ?? null;
   }
 
   private async findUserByEmail(email: string): Promise<{ id: string; email: string } | null> {
@@ -199,19 +198,16 @@ export class BootstrapOwnerService {
  * we just need a typed handle to call them.
  *
  * Kept module-scoped so the service body stays clean of `as` casts.
+ *
+ * Note: listMembers is intentionally absent here — that endpoint requires
+ * an active session (orgSessionMiddleware) and cannot be called from an
+ * unauthenticated server context. The existing-owner probe uses a direct
+ * Drizzle query via AUTH_DRIZZLE_TOKEN instead.
  */
 interface OrgPluginApi {
   addMember: (args: {
     body: { userId: string; organizationId: string; role: string };
   }) => Promise<{ id: string; userId: string; role: string }>;
-  listMembers: (args: { query: { organizationId: string } }) => Promise<{
-    members: readonly {
-      id: string;
-      role: string;
-      user: { id: string; email: string };
-    }[];
-    total: number;
-  }>;
 }
 
 const orgApi = (auth: Auth): OrgPluginApi => auth.api as unknown as OrgPluginApi;
