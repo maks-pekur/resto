@@ -8,15 +8,18 @@ customer-facing mobile app, all driven by a shared backend platform.
 
 - **Backend:** NestJS (modular monolith with DDD bounded contexts) + Drizzle
   ORM + PostgreSQL 16 with Row-Level Security + Redis + NATS JetStream
-- **Identity:** Deferred to MVP-2 (see [ADR-0012](./docs/adr/0012-defer-identity-to-mvp-2.md));
-  MVP-1 internal endpoints use a shared `INTERNAL_API_TOKEN`, customer reads are public
+- **Identity:** Better Auth (in-process, see
+  [ADR-0013](./docs/adr/0013-better-auth-for-mvp2-identity.md)) lands with
+  MVP-2; MVP-1 internal endpoints use a shared `INTERNAL_API_TOKEN` and
+  customer reads are public
 - **Frontend:** Next.js 15 (App Router, RSC) for admin & tenant websites,
   Vite + React for the QR-menu, React Native (Expo) for mobile
 - **Monorepo:** Nx + pnpm workspaces
 - **Observability:** OpenTelemetry into the Grafana stack (Tempo, Loki,
   Prometheus) plus Sentry for errors
-- **Infrastructure:** Docker Compose (dev), Kubernetes + Terraform/Pulumi
-  (staging/prod)
+- **Infrastructure:** Docker Compose (dev), AWS EKS + RDS + S3 +
+  ElastiCache via Terraform (staging/prod, see
+  [ADR-0011](./docs/adr/0011-hosting-on-aws.md))
 
 See [`docs/adr/`](./docs/adr/) for the rationale behind each major decision.
 

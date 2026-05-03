@@ -3,7 +3,7 @@
 - **Status:** accepted
 - **Date:** 2026-05-02
 - **Supersedes:** [ADR 0012](./0012-defer-identity-to-mvp-2.md)
-- **Revises:** [ADR 0005](./0005-keycloak-self-hosted-identity.md)
+- **Revises:** [ADR 0005](./0005-keycloak-self-hosted-identity.md), [ADR 0006](./0006-multi-tenancy-row-level-with-rls.md) (adds `resto_auth` role)
 - **Deciders:** Resto core team
 
 ## Context

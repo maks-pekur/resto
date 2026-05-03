@@ -5,6 +5,7 @@
 - **Deciders:** Resto core team
 - **Supersedes:** —
 - **Superseded by:** —
+- **Revised by:** [ADR 0013](./0013-better-auth-for-mvp2-identity.md) — Keycloak references below are obsolete: identity runs in-process inside `apps/api` (Better Auth), not as a separate self-hosted service.
 
 ## Context
 
@@ -49,7 +50,7 @@ managed services:
 | Object storage       | **S3** (already aligned via `@aws-sdk`)                                                                                                  |
 | Cache                | **ElastiCache Redis**                                                                                                                    |
 | Event bus (broker)   | **NATS JetStream** self-hosted on EKS                                                                                                    |
-| Identity provider    | **Keycloak** self-hosted on EKS                                                                                                          |
+| Identity provider    | ~~Keycloak self-hosted on EKS~~ — **in-process** inside `apps/api` (see ADR-0013)                                                        |
 | Secrets              | **AWS Secrets Manager** via IRSA                                                                                                         |
 | Container registry   | **ECR**                                                                                                                                  |
 | Edge / DNS           | **CloudFront + Route 53**                                                                                                                |
@@ -143,15 +144,17 @@ qr-menu p95 outside EU becomes a real complaint.
 - **Operational surface.** EKS is more complex than App Platform.
   Mitigated by leaning on AWS-managed everything for stateful tiers
   (RDS, ElastiCache) so the cluster only runs stateless workloads
-  - NATS + Keycloak.
+  plus NATS. (Original draft listed Keycloak here too; superseded by
+  ADR-0013 — identity is in-process now.)
 
 ### Neutral
 
 - **Single region day 0.** Multi-region is a future ADR; eu-central-1
   is the first region.
-- **NATS and Keycloak self-hosted on EKS.** Per ADR-0004 and ADR-0005
-  the broker and IdP were always going to be self-hosted; AWS does
-  not change that.
+- **NATS self-hosted on EKS.** Per ADR-0004 the broker was always
+  going to be self-hosted; AWS does not change that. (ADR-0011's
+  original draft also listed Keycloak here — see ADR-0013, which moved
+  identity in-process.)
 - **Container builds in CI push to ECR.** The image-build pipeline is
   the same shape for any cloud; only the registry credentials differ.
 
