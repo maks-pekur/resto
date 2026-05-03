@@ -188,6 +188,45 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(res.statusCode).toBe(401);
   });
 
+  it('operator with internal token can upsert a modifier (RES-109)', async () => {
+    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/modifiers',
+      headers: internalAuth,
+      payload: {
+        name: { en: 'Spice level' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const id = res.json<{ id: string }>().id;
+    expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  });
+
+  it('rejects modifier upsert without the internal token', async () => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/modifiers',
+      headers: { 'x-tenant-slug': 'cafe-a' },
+      payload: { name: { en: 'No auth' }, minSelectable: 0, maxSelectable: 1 },
+    });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('rejects an invalid modifier (maxSelectable < minSelectable) at the DTO boundary', async () => {
+    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/modifiers',
+      headers: internalAuth,
+      payload: { name: { en: 'Bad' }, minSelectable: 3, maxSelectable: 1 },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
   it("tenant B sniffing tenant A's item id gets 404 (RLS-backed)", async () => {
     const internalAuthA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
     const categoryRes = await stack.app.inject({
@@ -211,6 +250,25 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       },
     });
     const tenantAItemId = itemRes.json<{ id: string }>().id;
+
+    // Publish so the item is reachable on the public read path.
+    const publishRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/publish',
+      headers: internalAuthA,
+    });
+    expect(publishRes.statusCode).toBe(200);
+
+    // Positive control: tenant A reads its own item — proves the route is
+    // mounted and the id is real (RES-109). Without this, the 404 below
+    // could be a route-not-found bug rather than RLS doing its job.
+    const ownerView = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/menu/items/${tenantAItemId}`,
+      headers: { 'x-tenant-slug': 'cafe-a' },
+    });
+    expect(ownerView.statusCode).toBe(200);
+    expect(ownerView.json<{ id: string; slug: string }>().slug).toBe('cola');
 
     // Now request the same id from tenant B's host. RLS should return 404.
     const sniff = await stack.app.inject({
