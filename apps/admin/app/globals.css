@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+/*
+ * Theme tokens. Real values land when shadcn init runs against this
+ * file — the CLI rewrites the @theme block with the chosen baseColor
+ * (neutral) palette and component CSS variables. Keep the import
+ * above so Tailwind v4 picks up the layer at build time.
+ */
