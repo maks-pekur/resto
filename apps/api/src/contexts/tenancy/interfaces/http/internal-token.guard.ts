@@ -27,7 +27,7 @@ export class InternalTokenGuard implements CanActivate {
 
   canActivate(context: ExecutionContext): boolean {
     const req = context.switchToHttp().getRequest<FastifyRequest>();
-    const expected = process.env.INTERNAL_API_TOKEN;
+    const expected = this.env.INTERNAL_API_TOKEN;
     if (!expected) {
       if (this.env.NODE_ENV === 'development') return true;
       throw new UnauthorizedException('Server is misconfigured: INTERNAL_API_TOKEN is not set.');
