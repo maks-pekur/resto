@@ -2,6 +2,7 @@ import { ConflictException, NotFoundException, type HttpException } from '@nestj
 import {
   TenantAlreadyArchivedError,
   TenantNotFoundError,
+  TenantSlugArchivedError,
   TenantSlugTakenError,
 } from '../../domain/errors';
 
@@ -16,6 +17,9 @@ export const mapDomainError = (err: unknown): unknown => {
     return new NotFoundException(err.message);
   }
   if (err instanceof TenantSlugTakenError) {
+    return new ConflictException(err.message);
+  }
+  if (err instanceof TenantSlugArchivedError) {
     return new ConflictException(err.message);
   }
   if (err instanceof TenantAlreadyArchivedError) {

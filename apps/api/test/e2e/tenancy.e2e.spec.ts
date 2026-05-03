@@ -120,6 +120,39 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     expect(outboxRows).toHaveLength(1);
   });
 
+  it('returns 409 with a problem-details body when re-provisioning an archived slug', async () => {
+    // Provision a fresh tenant, archive it, then attempt to re-provision
+    // under the same slug. Mapping the typed `TenantSlugArchivedError` to
+    // a `ConflictException` is what makes this 409 (not 500).
+    const slug = `archived-replay-${Date.now().toString()}`;
+    const headers = { 'x-internal-token': 'integration-test-token-1234567890' };
+
+    const provRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/tenants',
+      headers,
+      payload: { slug, displayName: 'Archived Replay', defaultCurrency: 'USD', locale: 'en' },
+    });
+    expect(provRes.statusCode).toBe(201);
+    const { id } = provRes.json<{ id: string }>();
+
+    const archiveRes = await stack.app.inject({
+      method: 'POST',
+      url: `/internal/v1/tenants/${id}/archive`,
+      headers,
+    });
+    expect(archiveRes.statusCode).toBe(204);
+
+    const replayRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/tenants',
+      headers,
+      payload: { slug, displayName: 'Archived Replay', defaultCurrency: 'USD', locale: 'en' },
+    });
+    expect(replayRes.statusCode).toBe(409);
+    expect(replayRes.json<{ detail: string }>().detail).toMatch(/archived/i);
+  });
+
   describe('POST /internal/v1/tenants/:id/archive', () => {
     it('returns 401 without the internal token', async () => {
       const res = await stack.app.inject({
