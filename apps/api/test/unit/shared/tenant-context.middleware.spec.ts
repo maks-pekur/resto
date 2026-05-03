@@ -15,24 +15,23 @@ const tenantFor = (slug: string) =>
     primaryDomainHostname: `${slug}.menu.resto.app`,
   });
 
-const baseEnv = (overrides: Partial<Env> = {}): Env =>
-  ({
-    NODE_ENV: 'production',
-    DEPLOYMENT_ENVIRONMENT: 'production',
-    LOG_LEVEL: 'info',
-    API_PORT: 3000,
-    DATABASE_URL: 'postgres://app@localhost/db',
-    NATS_URL: 'nats://localhost:4222',
-    NATS_STREAM: 'RESTO_EVENTS',
-    S3_ENDPOINT: 'http://localhost:9000',
-    S3_REGION: 'us-east-1',
-    S3_BUCKET: 'resto',
-    S3_ACCESS_KEY: 'minio',
-    S3_SECRET_KEY: 'minio',
-    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
-    OTEL_SERVICE_NAME: 'resto-api',
-    ...overrides,
-  }) as Env;
+const baseEnv = (overrides: Partial<Env> = {}): Env => ({
+  NODE_ENV: 'production',
+  DEPLOYMENT_ENVIRONMENT: 'production',
+  LOG_LEVEL: 'info',
+  API_PORT: 3000,
+  DATABASE_URL: 'postgres://app@localhost/db',
+  NATS_URL: 'nats://localhost:4222',
+  NATS_STREAM: 'RESTO_EVENTS',
+  S3_ENDPOINT: 'http://localhost:9000',
+  S3_REGION: 'us-east-1',
+  S3_BUCKET: 'resto',
+  S3_ACCESS_KEY: 'minio',
+  S3_SECRET_KEY: 'minio',
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
+  OTEL_SERVICE_NAME: 'resto-api',
+  ...overrides,
+});
 
 const buildRepo = (): TenantRepository => ({
   findById: vi.fn(),

@@ -1,32 +1,30 @@
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
-import type { FastifyRequest } from 'fastify';
 import type { Env } from '../../../src/config/env.schema';
 import { InternalTokenGuard } from '../../../src/contexts/tenancy/interfaces/http/internal-token.guard';
 
-const baseEnv = (overrides: Partial<Env> = {}): Env =>
-  ({
-    NODE_ENV: 'production',
-    DEPLOYMENT_ENVIRONMENT: 'production',
-    LOG_LEVEL: 'info',
-    API_PORT: 3000,
-    DATABASE_URL: 'postgres://app@localhost/db',
-    NATS_URL: 'nats://localhost:4222',
-    NATS_STREAM: 'RESTO_EVENTS',
-    S3_ENDPOINT: 'http://localhost:9000',
-    S3_REGION: 'us-east-1',
-    S3_BUCKET: 'resto',
-    S3_ACCESS_KEY: 'minio',
-    S3_SECRET_KEY: 'minio',
-    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
-    OTEL_SERVICE_NAME: 'resto-api',
-    ...overrides,
-  }) as Env;
+const baseEnv = (overrides: Partial<Env> = {}): Env => ({
+  NODE_ENV: 'production',
+  DEPLOYMENT_ENVIRONMENT: 'production',
+  LOG_LEVEL: 'info',
+  API_PORT: 3000,
+  DATABASE_URL: 'postgres://app@localhost/db',
+  NATS_URL: 'nats://localhost:4222',
+  NATS_STREAM: 'RESTO_EVENTS',
+  S3_ENDPOINT: 'http://localhost:9000',
+  S3_REGION: 'us-east-1',
+  S3_BUCKET: 'resto',
+  S3_ACCESS_KEY: 'minio',
+  S3_SECRET_KEY: 'minio',
+  OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
+  OTEL_SERVICE_NAME: 'resto-api',
+  ...overrides,
+});
 
 const ctxWith = (headers: Record<string, string | undefined>): ExecutionContext =>
   ({
     switchToHttp: () => ({
-      getRequest: <T = FastifyRequest>(): T => ({ headers }) as unknown as T,
+      getRequest: () => ({ headers }),
     }),
   }) as unknown as ExecutionContext;
 
