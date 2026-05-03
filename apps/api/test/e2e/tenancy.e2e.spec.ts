@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
@@ -22,11 +23,22 @@ if (!dockerOk) {
   console.warn('[tenancy.e2e] Docker not available — skipping integration tests.');
 }
 
-const PROVISION_BODY = {
-  slug: 'cafe-roma',
-  displayName: 'Cafe Roma',
-  defaultCurrency: 'USD',
-  locale: 'en',
+/**
+ * Each `it` block builds its own slug from a UUID prefix so tests pass
+ * alone, in suite order, and on re-run against the same DB. (Earlier
+ * versions used a shared `cafe-roma` fixture across `it` blocks — see
+ * the testing review under RES-109 for context.)
+ */
+const buildBody = (slug: string) => ({
+  slug,
+  displayName: `Cafe ${slug}`,
+  defaultCurrency: 'USD' as const,
+  locale: 'en' as const,
+});
+
+const freshSlug = (prefix: string): string => {
+  const suffix = randomUUID().slice(0, 8);
+  return `${prefix}-${suffix}`;
 };
 
 suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
@@ -60,22 +72,23 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     const res = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/tenants',
-      payload: PROVISION_BODY,
+      payload: buildBody(freshSlug('roma')),
     });
     expect(res.statusCode).toBe(401);
   });
 
   it('provisions a tenant: returns 201, persists rows, and publishes the event', async () => {
+    const slug = freshSlug('roma');
     const res = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/tenants',
       headers: { 'x-internal-token': 'integration-test-token-1234567890' },
-      payload: PROVISION_BODY,
+      payload: buildBody(slug),
     });
     expect(res.statusCode).toBe(201);
     const body = res.json<{ id: string; slug: string; primaryDomain: string }>();
-    expect(body.slug).toBe('cafe-roma');
-    expect(body.primaryDomain).toBe('cafe-roma.menu.resto.app');
+    expect(body.slug).toBe(slug);
+    expect(body.primaryDomain).toBe(`${slug}.menu.resto.app`);
 
     const db = stack.app.get(TenantAwareDb);
     const tenants = await db.withoutTenant('inspect tenants', (tx) =>
@@ -101,22 +114,33 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     expect(outboxRows[0]?.type).toBe(TenantProvisionedV1.type);
   }, 60_000);
 
-  it('returns the existing tenant on idempotent re-provision', async () => {
-    const res = await stack.app.inject({
+  it('returns the existing tenant on idempotent re-provision (self-contained)', async () => {
+    const slug = freshSlug('idempotent');
+    const headers = { 'x-internal-token': 'integration-test-token-1234567890' };
+
+    const first = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/tenants',
-      headers: { 'x-internal-token': 'integration-test-token-1234567890' },
-      payload: PROVISION_BODY,
+      headers,
+      payload: buildBody(slug),
     });
-    expect(res.statusCode).toBe(201);
+    expect(first.statusCode).toBe(201);
+    const firstBody = first.json<{ id: string }>();
+
+    const second = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/tenants',
+      headers,
+      payload: buildBody(slug),
+    });
+    expect(second.statusCode).toBe(201);
+    expect(second.json<{ id: string }>().id).toBe(firstBody.id);
+
     const db = stack.app.get(TenantAwareDb);
     const outboxRows = await db.withoutTenant('inspect outbox after re-provision', (tx) =>
-      tx
-        .select()
-        .from(schema.outboxEvents)
-        .where(eq(schema.outboxEvents.type, TenantProvisionedV1.type)),
+      tx.select().from(schema.outboxEvents).where(eq(schema.outboxEvents.tenantId, firstBody.id)),
     );
-    // Idempotent: still exactly one outbox row.
+    // Idempotent: only the first call writes an outbox event.
     expect(outboxRows).toHaveLength(1);
   });
 

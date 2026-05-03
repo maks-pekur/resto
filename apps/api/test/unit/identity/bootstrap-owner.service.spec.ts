@@ -171,6 +171,30 @@ describe('BootstrapOwnerService — idempotency', () => {
     expect(auth.api.addMember).not.toHaveBeenCalled();
   });
 
+  it('compares emails case-insensitively even when the stored value is mixed-case', async () => {
+    const lookup = makeTenantLookup({
+      id: 'tenant-uuid',
+      slug: 'demo',
+      displayName: 'Demo',
+    });
+    const auth = makeAuth();
+    // Both stored and input are non-canonical to prove BOTH sides are
+    // normalized before comparison (RES-109 testing review §14).
+    const authDb = makeAuthDb({ id: 'user-uuid', email: 'Ops@Demo.Test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
+
+    const result = await svc.execute({
+      tenantSlug: 'demo',
+      email: 'OPS@DEMO.TEST',
+      password: 'pw-12345678901234567890',
+      name: 'Demo Owner',
+    });
+
+    expect(result.email).toBe('ops@demo.test');
+    expect(auth.api.signUpEmail).not.toHaveBeenCalled();
+    expect(auth.api.addMember).not.toHaveBeenCalled();
+  });
+
   it('throws OwnerAlreadyExistsError when a different email is the owner', async () => {
     const lookup = makeTenantLookup({
       id: 'tenant-uuid',
