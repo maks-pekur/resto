@@ -4,9 +4,9 @@ import type { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { HealthController } from '../../src/health/health.controller';
 
-const dbWithExecute = (executeImpl: () => Promise<unknown>): TenantAwareDb =>
+const dbWithPing = (pingImpl: () => Promise<void>): TenantAwareDb =>
   ({
-    connection: { db: { execute: executeImpl } },
+    ping: pingImpl,
   }) as unknown as TenantAwareDb;
 
 const okPublisher = (): EventPublisher => ({
@@ -17,7 +17,7 @@ const okPublisher = (): EventPublisher => ({
 describe('HealthController.liveness', () => {
   it('returns ok unconditionally', () => {
     const ctrl = new HealthController(
-      dbWithExecute(() => Promise.resolve([])),
+      dbWithPing(() => Promise.resolve()),
       okPublisher(),
     );
     expect(ctrl.liveness()).toEqual({ status: 'ok' });
@@ -27,7 +27,7 @@ describe('HealthController.liveness', () => {
 describe('HealthController.readiness', () => {
   it('returns ok when DB and broker are healthy', async () => {
     const ctrl = new HealthController(
-      dbWithExecute(() => Promise.resolve([])),
+      dbWithPing(() => Promise.resolve()),
       okPublisher(),
     );
     const result = await ctrl.readiness();
@@ -37,7 +37,7 @@ describe('HealthController.readiness', () => {
 
   it('throws ServiceUnavailableException when the DB check fails', async () => {
     const ctrl = new HealthController(
-      dbWithExecute(() => Promise.reject(new Error('connection lost'))),
+      dbWithPing(() => Promise.reject(new Error('connection lost'))),
       okPublisher(),
     );
     await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
@@ -45,7 +45,7 @@ describe('HealthController.readiness', () => {
 
   it('throws ServiceUnavailableException when the broker is not connected', async () => {
     const ctrl = new HealthController(
-      dbWithExecute(() => Promise.resolve([])),
+      dbWithPing(() => Promise.resolve()),
       null,
     );
     await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);

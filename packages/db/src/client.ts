@@ -95,6 +95,16 @@ export class TenantAwareDb {
     });
   }
 
+  /**
+   * Connectivity probe used by the health endpoint. Issues a trivial
+   * `SELECT 1` outside any tenant context. Lives here so callers do not
+   * need to import `sql` from `drizzle-orm` — that template tag is the
+   * privileged escape hatch for raw SQL and must stay inside `packages/db`.
+   */
+  async ping(): Promise<void> {
+    await this.#raw`SELECT 1`;
+  }
+
   /** Close the connection pool. Used by tests and graceful shutdown. */
   async close(): Promise<void> {
     await this.#raw.end({ timeout: 5 });
