@@ -119,4 +119,47 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     // Idempotent: still exactly one outbox row.
     expect(outboxRows).toHaveLength(1);
   });
+
+  describe('POST /internal/v1/tenants/:id/archive', () => {
+    it('returns 401 without the internal token', async () => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants/00000000-0000-0000-0000-000000000000/archive',
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('archives a tenant and returns 204 with a valid token', async () => {
+      // Provision a fresh tenant so we don't interfere with the shared
+      // cafe-roma fixture used by the other tests.
+      const provRes = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants',
+        headers: { 'x-internal-token': 'integration-test-token-1234567890' },
+        payload: {
+          slug: 'archive-target',
+          displayName: 'Archive Target',
+          defaultCurrency: 'USD',
+          locale: 'en',
+        },
+      });
+      expect(provRes.statusCode).toBe(201);
+      const { id } = provRes.json<{ id: string }>();
+
+      const archiveRes = await stack.app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${id}/archive`,
+        headers: { 'x-internal-token': 'integration-test-token-1234567890' },
+      });
+      expect(archiveRes.statusCode).toBe(204);
+
+      // Verify the tenant is actually archived in the DB.
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withoutTenant('inspect archived tenant', (tx) =>
+        tx.select().from(schema.tenants).where(eq(schema.tenants.id, id)),
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.archivedAt).not.toBeNull();
+    });
+  });
 });
