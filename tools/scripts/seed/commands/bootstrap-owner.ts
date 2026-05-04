@@ -1,8 +1,6 @@
 import { z } from 'zod';
-import { NestFactory } from '@nestjs/core';
 import { TenantSlug } from '@resto/domain';
-import { BootstrapModule } from '@resto/api/contexts/identity/bootstrap.module';
-import { BootstrapOwnerService } from '@resto/api/contexts/identity/application/bootstrap-owner.service';
+import { ApiClient } from '../lib/api-client';
 import { log } from '../lib/logger';
 import { parseFlags, requireFlag, type RuntimeOptions } from '../lib/options';
 import {
@@ -17,6 +15,32 @@ const Input = z.object({
   email: z.string().trim().toLowerCase().email(),
   name: z.string().min(1).max(120).default('Owner'),
 });
+
+interface ProvisionLookup {
+  readonly id: string;
+  readonly slug: string;
+}
+
+interface BootstrapOwnerResult {
+  readonly tenantId: string;
+  readonly userId: string;
+  readonly email: string;
+  readonly requiresPasswordChange: boolean;
+}
+
+/**
+ * Resolve a tenant id from its slug by re-issuing the (idempotent)
+ * provision call — the api returns the existing tenant when the slug
+ * matches an active row. Cheaper than introducing a dedicated
+ * `GET /internal/v1/tenants/by-slug` just for this CLI.
+ */
+const resolveTenantId = async (api: ApiClient, slug: string): Promise<ProvisionLookup> =>
+  api.post<ProvisionLookup>('/internal/v1/tenants', {
+    slug,
+    displayName: slug,
+    defaultCurrency: 'USD',
+    locale: 'en',
+  });
 
 export const runBootstrapOwner = async (
   argv: readonly string[],
@@ -49,28 +73,22 @@ export const runBootstrapOwner = async (
     return;
   }
 
-  const app = await NestFactory.createApplicationContext(BootstrapModule, {
-    logger: ['warn', 'error'],
+  const api = new ApiClient({ apiUrl: options.apiUrl, internalToken: options.internalToken });
+
+  const tenant = await resolveTenantId(api, parsed.tenant);
+  const result = await api.post<BootstrapOwnerResult>(`/internal/v1/tenants/${tenant.id}/owner`, {
+    email: parsed.email,
+    password,
+    name: parsed.name,
   });
-  try {
-    const svc = app.get(BootstrapOwnerService);
-    const result = await svc.execute({
-      tenantSlug: parsed.tenant,
-      email: parsed.email,
-      password,
-      name: parsed.name,
-    });
 
-    log('bootstrap-owner.done', {
-      tenantId: result.tenantId,
-      userId: result.userId,
-      email: result.email,
-    });
+  log('bootstrap-owner.done', {
+    tenantId: result.tenantId,
+    userId: result.userId,
+    email: result.email,
+  });
 
-    if (generated) {
-      printCredentialsBlock(parsed.tenant, parsed.email, password);
-    }
-  } finally {
-    await app.close();
+  if (generated) {
+    printCredentialsBlock(parsed.tenant, parsed.email, password);
   }
 };

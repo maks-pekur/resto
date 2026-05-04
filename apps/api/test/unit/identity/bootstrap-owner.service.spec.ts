@@ -8,6 +8,7 @@ const makeTenantLookup = (
   result: { id: string; slug: string; displayName: string } | null,
 ): TenantLookupPort => ({
   findBySlug: vi.fn().mockResolvedValue(result),
+  findById: vi.fn().mockResolvedValue(result),
 });
 
 /**

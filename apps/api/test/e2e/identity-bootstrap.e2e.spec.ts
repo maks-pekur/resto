@@ -164,4 +164,111 @@ describe('identity bootstrap E2E', () => {
       runBootstrap({ tenantSlug: slug, email: emailB, password, name: 'Owner B' }),
     ).rejects.toMatchObject({ code: 'owner_already_exists' });
   });
+
+  // ---------------------------------------------------------------------------
+  // POST /internal/v1/tenants/:id/owner — HTTP surface (RES-113)
+  // ---------------------------------------------------------------------------
+  describe('POST /internal/v1/tenants/:id/owner', () => {
+    it('creates the owner and grants membership', async () => {
+      const slug = `bs-http-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-http-1';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/owner`,
+        headers: { 'x-internal-token': INTERNAL_TOKEN },
+        payload: { email, password, name: 'HTTP Owner' },
+      });
+      expect(res.statusCode).toBe(201);
+      const body = res.json<{ tenantId: string; userId: string; organizationId: string }>();
+      expect(body.tenantId).toBe(tenant.id);
+      expect(body.organizationId).toBe(tenant.id);
+      expect(body.userId).toBeTruthy();
+
+      // Operator can sign in + set-active using the bootstrapped credentials.
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+      const meRes = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie },
+      });
+      expect(meRes.statusCode).toBe(200);
+      expect(meRes.json<{ slug: string }>().slug).toBe(slug);
+    });
+
+    it('rejects without the internal token (401)', async () => {
+      const tenant = await provisionTenant(
+        app,
+        `bs-http-${randomUUID().slice(0, 8)}`,
+        INTERNAL_TOKEN,
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/owner`,
+        payload: {
+          email: 'noauth@example.com',
+          password: 'correct-horse-battery-staple-no-auth',
+          name: 'No Auth',
+        },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('returns 404 for an unknown tenant id', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants/00000000-0000-4000-8000-000000000000/owner',
+        headers: { 'x-internal-token': INTERNAL_TOKEN },
+        payload: {
+          email: 'ghost@example.com',
+          password: 'correct-horse-battery-staple-ghost',
+          name: 'Ghost',
+        },
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.json<{ type: string }>().type).toContain('bootstrap.tenant_not_found');
+    });
+
+    it('returns 409 when a different email is already the owner', async () => {
+      const slug = `bs-http-${randomUUID().slice(0, 8)}`;
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      const headers = { 'x-internal-token': INTERNAL_TOKEN };
+      const password = 'correct-horse-battery-staple-conflict';
+
+      const first = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/owner`,
+        headers,
+        payload: { email: `a-${slug}@example.com`, password, name: 'A' },
+      });
+      expect(first.statusCode).toBe(201);
+
+      const second = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/owner`,
+        headers,
+        payload: { email: `b-${slug}@example.com`, password, name: 'B' },
+      });
+      expect(second.statusCode).toBe(409);
+      expect(second.json<{ type: string }>().type).toContain('bootstrap.owner_already_exists');
+    });
+
+    it('rejects a weak password at the body schema (400)', async () => {
+      const tenant = await provisionTenant(
+        app,
+        `bs-http-${randomUUID().slice(0, 8)}`,
+        INTERNAL_TOKEN,
+      );
+      const res = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/owner`,
+        headers: { 'x-internal-token': INTERNAL_TOKEN },
+        payload: { email: 'weak@example.com', password: 'short', name: 'Weak' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+  });
 });

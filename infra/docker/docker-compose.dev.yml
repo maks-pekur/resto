@@ -82,7 +82,7 @@ services:
       - "${MAILHOG_UI_PORT:-8025}:8025"
 
   jaeger:
-    image: jaegertracing/all-in-one:1.62
+    image: jaegertracing/all-in-one:1.62.0
     container_name: resto-jaeger
     restart: unless-stopped
     environment:
