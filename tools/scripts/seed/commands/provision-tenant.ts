@@ -1,8 +1,5 @@
 import { z } from 'zod';
-import { NestFactory } from '@nestjs/core';
 import { Currency, TenantSlug } from '@resto/domain';
-import { BootstrapModule } from '@resto/api/contexts/identity/bootstrap.module';
-import { BootstrapOwnerService } from '@resto/api/contexts/identity/application/bootstrap-owner.service';
 import { ApiClient } from '../lib/api-client';
 import { log, logWarn } from '../lib/logger';
 import { parseFlags, requireFlag, type RuntimeOptions } from '../lib/options';
@@ -26,6 +23,13 @@ interface ProvisionTenantResponse {
   readonly id: string;
   readonly slug: string;
   readonly primaryDomain: string;
+}
+
+interface BootstrapOwnerResult {
+  readonly tenantId: string;
+  readonly userId: string;
+  readonly email: string;
+  readonly requiresPasswordChange: boolean;
 }
 
 interface OwnerCredentials {
@@ -76,10 +80,7 @@ export const runProvisionTenant = async (
     return;
   }
 
-  const api = new ApiClient({
-    apiUrl: options.apiUrl,
-    internalToken: options.internalToken,
-  });
+  const api = new ApiClient({ apiUrl: options.apiUrl, internalToken: options.internalToken });
 
   const tenant = await api.post<ProvisionTenantResponse>('/internal/v1/tenants', {
     slug: parsed.slug,
@@ -104,30 +105,25 @@ export const runProvisionTenant = async (
     return;
   }
 
-  // Bootstrap the first owner in-process.
+  // Bootstrap the first owner via the same internal HTTP surface
+  // (RES-113). The CLI no longer instantiates a Nest application
+  // context — that path was incompatible with tsx + esbuild in
+  // this monorepo setup, and an HTTP endpoint is the right
+  // long-term shape regardless.
   const ownerEmail = parsed.ownerEmail;
-  const app = await NestFactory.createApplicationContext(BootstrapModule, {
-    logger: ['warn', 'error'],
+  const owner = await api.post<BootstrapOwnerResult>(`/internal/v1/tenants/${tenant.id}/owner`, {
+    email: ownerEmail,
+    password: credentials.password,
+    name: ownerName,
   });
-  try {
-    const svc = app.get(BootstrapOwnerService);
-    const result = await svc.execute({
-      tenantSlug: parsed.slug,
-      email: ownerEmail,
-      password: credentials.password,
-      name: ownerName,
-    });
 
-    log('provision-tenant.bootstrap.done', {
-      tenantId: result.tenantId,
-      userId: result.userId,
-      email: result.email,
-    });
+  log('provision-tenant.bootstrap.done', {
+    tenantId: owner.tenantId,
+    userId: owner.userId,
+    email: owner.email,
+  });
 
-    if (credentials.generated) {
-      printCredentialsBlock(parsed.slug, ownerEmail, credentials.password);
-    }
-  } finally {
-    await app.close();
+  if (credentials.generated) {
+    printCredentialsBlock(parsed.slug, ownerEmail, credentials.password);
   }
 };

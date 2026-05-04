@@ -2,13 +2,7 @@
   "extends": "@resto/config-typescript/node.json",
   "compilerOptions": {
     "noEmit": true,
-    "baseUrl": ".",
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
-    "useDefineForClassFields": false,
-    "paths": {
-      "@resto/api/*": ["../../apps/api/src/*"]
-    }
+    "baseUrl": "."
   },
   "include": ["seed/**/*.ts", "test/**/*.ts", "vitest.config.ts", "eslint.config.mjs"],
   "exclude": ["node_modules", "dist"]
