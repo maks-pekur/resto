@@ -7,7 +7,15 @@
     "paths": {
       "@/*": ["./*"]
     },
-    "types": ["node"]
+    "types": ["node"],
+    /*
+     * shadcn/ui-generated code (Radix-based primitives) uses
+     * `prop: undefined` patterns that `exactOptionalPropertyTypes`
+     * forbids. Re-running `shadcn add` would re-introduce the
+     * incompatibilities, so we relax the flag for this app. The rest
+     * of `strict: true` + `noUncheckedIndexedAccess` etc. remain on.
+     */
+    "exactOptionalPropertyTypes": false
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules", ".next", "dist"]
