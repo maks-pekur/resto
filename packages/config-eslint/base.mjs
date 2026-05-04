@@ -26,10 +26,11 @@ const moduleBoundariesRule = [
       { sourceTag: 'type:cli', onlyDependOnLibsWithTags: ['type:lib'] },
       // Libs may depend only on other libs (never on apps).
       { sourceTag: 'type:lib', onlyDependOnLibsWithTags: ['type:lib'] },
-      // App-scoped projects (api / qr-menu / future admin / website / …)
+      // App-scoped projects (api / qr-menu / admin / future website / …)
       // consume only the shared scope.
       { sourceTag: 'scope:api', onlyDependOnLibsWithTags: ['scope:shared'] },
       { sourceTag: 'scope:qr-menu', onlyDependOnLibsWithTags: ['scope:shared'] },
+      { sourceTag: 'scope:admin', onlyDependOnLibsWithTags: ['scope:shared'] },
       // Tooling (seed CLI etc.) consumes shared libs.
       { sourceTag: 'scope:tools', onlyDependOnLibsWithTags: ['scope:shared'] },
       // Shared libs depend only on each other.
