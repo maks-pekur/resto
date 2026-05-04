@@ -30,12 +30,22 @@ export class TenantQueriesService {
   }
 
   async getById(rawId: string): Promise<TenantSnapshot> {
-    const id = TenantId.parse(rawId);
-    const tenant = await this.repo.findById(id);
+    const tenant = await this.findById(rawId);
     if (!tenant) {
       throw new TenantNotFoundError(rawId);
     }
-    return tenant.toSnapshot();
+    return tenant;
+  }
+
+  /**
+   * Nullable counterpart to `getById`. Same rationale as `findBySlug` —
+   * cross-context callers (identity bootstrap, future invitation flows)
+   * read this so they never have to catch a tenancy-domain error.
+   */
+  async findById(rawId: string): Promise<TenantSnapshot | null> {
+    const id = TenantId.parse(rawId);
+    const tenant = await this.repo.findById(id);
+    return tenant ? tenant.toSnapshot() : null;
   }
 
   async listDomains(rawId: string): Promise<TenantDomain[]> {
