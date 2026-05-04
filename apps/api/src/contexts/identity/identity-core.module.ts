@@ -31,10 +31,16 @@ const authProvider: Provider = {
   inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN],
   useFactory: (authDb: AuthDrizzle, env: Env): Auth => {
     const cookieDomain = env.AUTH_COOKIE_DOMAIN;
+    // Admin (and other browser callers) hit BA from a different origin
+    // than the api's `baseURL`; BA enforces an Origin allowlist on
+    // mutating requests. Add `ADMIN_WEB_URL` when configured.
+    const trustedOrigins: string[] = [];
+    if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
     return buildAuth({
       authDb,
       secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
       baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
+      trustedOrigins,
       ...(cookieDomain ? { cookieDomain } : {}),
     });
   },
