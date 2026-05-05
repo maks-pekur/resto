@@ -15,8 +15,10 @@ import {
 import { TenantAwareDb } from '@resto/db';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
+import { EVENT_PUBLISHER } from './event-publisher.token';
+import { OutboxDispatcherService } from './outbox-dispatcher.service';
 
-export const EVENT_PUBLISHER = Symbol('EVENT_PUBLISHER');
+export { EVENT_PUBLISHER } from './event-publisher.token';
 export const INBOX_TRACKER = Symbol('INBOX_TRACKER');
 
 const STREAM_SUBJECTS = ['tenancy.>', 'catalog.>', 'ordering.>', 'billing.>'];
@@ -67,6 +69,7 @@ class NatsShutdownHook implements OnApplicationShutdown {
       useFactory: (db: TenantAwareDb): InboxTracker => new DrizzleInboxTracker(db),
       inject: [TenantAwareDb],
     },
+    OutboxDispatcherService,
   ],
   exports: [EVENT_PUBLISHER, INBOX_TRACKER],
 })

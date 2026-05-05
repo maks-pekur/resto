@@ -121,6 +121,7 @@ export const startRealStack = async (options: StartRealStackOptions = {}): Promi
     new FastifyAdapter({ logger: false }),
   );
   await registerSecurity(app, loadEnv());
+  app.enableShutdownHooks();
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 
