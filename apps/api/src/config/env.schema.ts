@@ -85,6 +85,27 @@ export const envSchema = z
      * tenant-less. Refused outside `NODE_ENV=development`.
      */
     TENANT_DEV_FALLBACK_SLUG: z.string().optional(),
+
+    /**
+     * CORS allowlist (RES-99). Comma-separated patterns; each entry is
+     * either an exact origin (`https://admin.resto.app`) or a pattern
+     * with `*` as a single subdomain segment (`https://*.menu.resto.app`).
+     * Empty list disables cross-origin requests entirely.
+     */
+    CORS_ALLOWED_ORIGINS: z
+      .string()
+      .default('http://localhost:3001,http://localhost:3003')
+      .transform((raw) =>
+        raw
+          .split(',')
+          .map((entry) => entry.trim())
+          .filter((entry) => entry.length > 0),
+      ),
+
+    /** Per-IP rate limit (req/min) for public/auth routes. */
+    RATE_LIMIT_PUBLIC_PER_MIN: z.coerce.number().int().positive().default(60),
+    /** Per-IP rate limit (req/min) for `/internal/v1/*`. */
+    RATE_LIMIT_INTERNAL_PER_MIN: z.coerce.number().int().positive().default(10),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {

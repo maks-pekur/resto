@@ -10,6 +10,8 @@ import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { provisionAppRole, RESTO_APP_ROLE } from '@resto/db';
 import { AppModule } from '../../src/app.module';
+import { loadEnv } from '../../src/config/env.schema';
+import { registerSecurity } from '../../src/shared/security';
 
 const DB_MIGRATIONS_FOLDER = resolve(
   import.meta.dirname,
@@ -103,6 +105,12 @@ export const startRealStack = async (options: StartRealStackOptions = {}): Promi
   process.env.NATS_URL = natsUrl;
   process.env.NATS_STREAM = 'RESTO_EVENTS_E2E';
   process.env.INTERNAL_API_TOKEN = 'integration-test-token-1234567890';
+  // Security middleware (RES-99): keep limits relaxed by default so the
+  // shared harness doesn't throttle suites that issue many requests.
+  // Specs that exercise rate-limit set their own values before calling
+  // startRealStack.
+  process.env.RATE_LIMIT_PUBLIC_PER_MIN ??= '10000';
+  process.env.RATE_LIMIT_INTERNAL_PER_MIN ??= '10000';
 
   let builder: TestingModuleBuilder = Test.createTestingModule({ imports: [AppModule] });
   for (const override of options.overrideProviders ?? []) {
@@ -112,6 +120,7 @@ export const startRealStack = async (options: StartRealStackOptions = {}): Promi
   const app = moduleRef.createNestApplication<NestFastifyApplication>(
     new FastifyAdapter({ logger: false }),
   );
+  await registerSecurity(app, loadEnv());
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 

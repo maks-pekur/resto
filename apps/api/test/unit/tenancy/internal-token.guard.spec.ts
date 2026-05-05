@@ -18,6 +18,9 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   S3_SECRET_KEY: 'minio',
   OTEL_EXPORTER_OTLP_ENDPOINT: 'http://localhost:4318',
   OTEL_SERVICE_NAME: 'resto-api',
+  CORS_ALLOWED_ORIGINS: [],
+  RATE_LIMIT_PUBLIC_PER_MIN: 60,
+  RATE_LIMIT_INTERNAL_PER_MIN: 10,
   ...overrides,
 });
 
