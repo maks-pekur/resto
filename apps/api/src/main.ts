@@ -17,6 +17,7 @@ import { AppModule } from './app.module';
 import { ENV_TOKEN } from './config/config.module';
 import type { Env } from './config/env.schema';
 import { applyOpenApi } from './openapi';
+import { registerSecurity } from './shared/security';
 
 const bootstrap = async (): Promise<void> => {
   const logger = new Logger('bootstrap');
@@ -34,6 +35,7 @@ const bootstrap = async (): Promise<void> => {
   // another tenant's data (RES-83).
   await assertNoRlsBypass(env.DATABASE_URL);
 
+  await registerSecurity(app, env);
   applyOpenApi(app);
   app.enableShutdownHooks();
 
