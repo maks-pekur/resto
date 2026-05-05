@@ -9,6 +9,7 @@ export * from './tenants';
 export * from './menu';
 export * from './audit';
 export * from './outbox';
+export * from './inbox';
 export * from './auth';
 export * from './customer-profiles';
 

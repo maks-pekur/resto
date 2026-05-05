@@ -22,10 +22,17 @@ describe('InMemoryInboxTracker', () => {
 
   it('records seen events per (consumer, eventId)', async () => {
     const tracker = new InMemoryInboxTracker();
-    await tracker.markSeen('consumer-a', 'evt-1');
+    await tracker.markProcessed('consumer-a', 'evt-1', null);
     expect(await tracker.hasSeen('consumer-a', 'evt-1')).toBe(true);
     expect(await tracker.hasSeen('consumer-b', 'evt-1')).toBe(false);
     expect(await tracker.hasSeen('consumer-a', 'evt-2')).toBe(false);
+  });
+
+  it('returns true on first markProcessed and false on subsequent calls', async () => {
+    const tracker = new InMemoryInboxTracker();
+    expect(await tracker.markProcessed('consumer-a', 'evt-1', null)).toBe(true);
+    expect(await tracker.markProcessed('consumer-a', 'evt-1', null)).toBe(false);
+    expect(await tracker.markProcessed('consumer-a', 'evt-2', null)).toBe(true);
   });
 });
 
@@ -46,7 +53,7 @@ describe('withInboxDedup', () => {
     expect(calls).toBe(1);
   });
 
-  it('does not mark seen if the inner handler throws', async () => {
+  it('does not mark processed if the inner handler throws — next call retries', async () => {
     const tracker = new InMemoryInboxTracker();
     let calls = 0;
     const handler = withInboxDedup(tracker, 'consumer-a', () => {

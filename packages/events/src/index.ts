@@ -36,6 +36,7 @@ export {
 export { OutboxDispatcher, type DispatcherOptions, type TickResult } from './outbox/dispatcher';
 
 export { InMemoryInboxTracker, withInboxDedup, type InboxTracker } from './inbox/tracker';
+export { DrizzleInboxTracker } from './inbox/drizzle-tracker';
 
 export { NatsJetStreamPublisher, type NatsPublisherOptions } from './infrastructure/nats-publisher';
 export {
