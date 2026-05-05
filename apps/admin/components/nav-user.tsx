@@ -1,9 +1,8 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react';
 
-import { authClient } from '@/lib/auth-client';
+import { signOutAction } from '@/lib/actions/sign-out';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -31,14 +30,6 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
-
-  const handleSignOut = (): void => {
-    void (async () => {
-      await authClient.signOut();
-      router.replace('/login');
-    })();
-  };
 
   return (
     <SidebarMenu>
@@ -101,9 +92,13 @@ export function NavUser({
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={handleSignOut}>
-              <LogOut />
-              Log out
+            <DropdownMenuItem asChild>
+              <form action={signOutAction}>
+                <button type="submit" className="flex w-full items-center gap-2">
+                  <LogOut className="size-4" />
+                  Log out
+                </button>
+              </form>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

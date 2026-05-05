@@ -13,6 +13,13 @@ interface BuildOpts {
   baseUrl: string;
   cookieDomain?: string;
   /**
+   * Cross-origin browser callers BA must accept (CSRF / Origin check).
+   * Admin runs on a different port in dev (`:3001`) and a different
+   * subdomain in prod (`admin.resto.app`); `baseUrl` only covers the
+   * api itself. Pass them all here.
+   */
+  trustedOrigins?: readonly string[];
+  /**
    * Phase F supplies the email adapter. Phase A leaves it as a no-op so
    * forget-password and invitation flows do not crash, but no email is
    * actually sent.
@@ -42,6 +49,7 @@ export const buildAuth = (opts: BuildOpts) =>
     database: buildBetterAuthDrizzleAdapter(opts.authDb),
     secret: opts.secret,
     baseURL: opts.baseUrl,
+    trustedOrigins: [...(opts.trustedOrigins ?? [])],
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // Phase F flips this once email adapter lands
