@@ -27,9 +27,10 @@ const fetchSingleOrgId = async (): Promise<string | null> => {
   const res = await apiFetch<readonly OrgSummary[]>('/api/auth/organization/list', {
     method: 'GET',
   });
-  if (!res.ok || !Array.isArray(res.data)) return null;
+  if (!res.ok || res.data === null) return null;
   if (res.data.length !== 1) return null;
-  return res.data[0]?.id ?? null;
+  const first = res.data[0];
+  return first ? first.id : null;
 };
 
 export async function signInAction(
