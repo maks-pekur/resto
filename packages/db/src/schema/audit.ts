@@ -29,7 +29,7 @@ export const auditLog = pgTable(
     id: pkUuid(),
     tenantId: uuid('tenant_id'),
     actorKind: text('actor_kind').notNull(),
-    /** Keycloak `sub` claim, the literal `system`, or a service id. */
+    /** BA `user.id`, the literal `system`, or a service id. */
     actorSubject: text('actor_subject').notNull(),
     action: text('action').notNull(),
     targetType: text('target_type'),

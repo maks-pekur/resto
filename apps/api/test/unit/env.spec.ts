@@ -47,6 +47,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
       TENANT_DEV_FALLBACK_SLUG: 'demo',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/development/);
@@ -59,5 +60,41 @@ describe('loadEnv', () => {
 
   it('rejects a malformed DATABASE_URL', () => {
     expect(() => loadEnv({ ...baseEnv, DATABASE_URL: 'not-a-url' })).toThrow(/DATABASE_URL/);
+  });
+
+  it('rejects production boot when AUTH_COOKIE_DOMAIN is missing', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(EnvValidationError);
+    expect(() => loadEnv(productionEnv)).toThrow(/AUTH_COOKIE_DOMAIN/);
+  });
+
+  it('accepts a production environment with a properly-shaped AUTH_COOKIE_DOMAIN', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+    };
+    const env = loadEnv(productionEnv);
+    expect(env.AUTH_COOKIE_DOMAIN).toBe('.resto.app');
+  });
+
+  it('rejects an AUTH_COOKIE_DOMAIN without the leading dot', () => {
+    expect(() =>
+      loadEnv({
+        ...baseEnv,
+        AUTH_COOKIE_DOMAIN: 'resto.app',
+      }),
+    ).toThrow(/AUTH_COOKIE_DOMAIN/);
   });
 });

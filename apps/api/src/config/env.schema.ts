@@ -114,6 +114,7 @@ export const envSchema = z
         'BETTER_AUTH_BASE_URL',
         'BETTER_AUTH_DATABASE_URL',
         'ADMIN_WEB_URL',
+        'AUTH_COOKIE_DOMAIN',
       ] as const) {
         if (!env[key]) {
           ctx.addIssue({
@@ -123,6 +124,15 @@ export const envSchema = z
           });
         }
       }
+    }
+
+    if (env.AUTH_COOKIE_DOMAIN && !env.AUTH_COOKIE_DOMAIN.startsWith('.')) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['AUTH_COOKIE_DOMAIN'],
+        message:
+          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".resto.app").',
+      });
     }
   });
 export type Env = z.infer<typeof envSchema>;
