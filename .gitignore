@@ -49,6 +49,8 @@ Thumbs.db
 *.generated.ts
 generated/
 .openapi/
+!packages/api-client/src/generated/
+!packages/api-client/src/generated/**
 
 # Claude session settings and local CLAUDE.md instructions
 .claude/

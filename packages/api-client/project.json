@@ -1,0 +1,32 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "api-client",
+  "projectType": "library",
+  "sourceRoot": "packages/api-client/src",
+  "tags": ["scope:shared", "type:lib", "layer:application"],
+  "targets": {
+    "lint": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "eslint .",
+        "cwd": "packages/api-client"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.json --noEmit",
+        "cwd": "packages/api-client"
+      }
+    },
+    "gen": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "pnpm gen",
+        "cwd": "packages/api-client"
+      },
+      "inputs": ["{workspaceRoot}/docs/api/openapi.yaml"],
+      "outputs": ["{projectRoot}/src/generated/api.ts"]
+    }
+  }
+}
