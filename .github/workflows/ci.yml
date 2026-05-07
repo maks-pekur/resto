@@ -126,10 +126,6 @@ jobs:
     name: OpenAPI drift check
     runs-on: ubuntu-latest
     needs: install
-    # AppModule init does not open the DB pool eagerly — Drizzle/pg.Pool is
-    # lazy and the @nestjs/swagger document generator never queries — so a
-    # syntactically-valid DATABASE_URL is enough. NATS_DISABLED skips the
-    # broker connection; OTEL_DISABLED skips the otlp exporter handshake.
     env:
       DATABASE_URL: postgres://x@localhost:5432/x
       NATS_URL: nats://localhost:4222

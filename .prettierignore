@@ -12,8 +12,4 @@ pnpm-lock.yaml
 *.generated.ts
 generated
 .env*
-
-# Emitted by `pnpm exec nx run api:openapi:emit`. Round-tripping through
-# prettier rewrites anchors/spacing so the CI drift check would fail on
-# every push (RES-87).
 docs/api/openapi.yaml
