@@ -52,7 +52,14 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       title = exception.message;
       const body = exception.getResponse();
       if (typeof body === 'object') {
-        if ('message' in body) {
+        if ('detail' in body && typeof body.detail === 'string') {
+          // Explicit RFC 7807 `detail` wins — lets callers separate the
+          // human-readable description from the exception's `.message`
+          // (which becomes `title`). Used by the rate-limit guard to
+          // surface "retry in N seconds" without overwriting the
+          // status-name title.
+          detail = body.detail;
+        } else if ('message' in body) {
           const messageField: unknown = body.message;
           if (typeof messageField === 'string') {
             detail = messageField;

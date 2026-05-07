@@ -2,11 +2,10 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
 import { type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { trace } from '@opentelemetry/api';
-import { getCorrelationId } from '@resto/events';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { Env } from '../config/env.schema';
+import { RateLimitGuard, type RateLimitHandler } from './rate-limit.guard';
 
 const escapeRegex = (input: string): string => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -80,37 +79,45 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   });
 
   await fastify.register(rateLimit, {
-    // Disable per-route auto-attach. NestJS's route-registration path
-    // doesn't reliably trigger the plugin's `onRoute` callback, so we
-    // apply the limiter via a single global `preHandler` hook below.
-    // `preHandler` runs after route matching so the limiter has the
-    // route config it needs; 404 paths are intentionally skipped (their
-    // protection is covered by upstream ALB/WAF in prod per ADR-0011).
+    // Disable per-route auto-attach. NestJS's `FastifyAdapter`
+    // route-registration path bypasses the plugin's `onRoute` callback
+    // and the equivalent global `preHandler` hook surfaces the limit
+    // exception outside Nest's exception pipeline (RES-120). The
+    // `RateLimitGuard` below invokes the limiter from inside the Nest
+    // pipeline so the standard `ProblemDetailsFilter` formats the 429.
     global: false,
     timeWindow: '1 minute',
     max: (req: FastifyRequest): number =>
       isInternalRoute(req.url) ? env.RATE_LIMIT_INTERNAL_PER_MIN : env.RATE_LIMIT_PUBLIC_PER_MIN,
     allowList: (req: FastifyRequest): boolean => req.url === '/healthz',
-    errorResponseBuilder: (req: FastifyRequest, context: RateLimitContext): unknown => {
-      const traceId = trace.getActiveSpan()?.spanContext().traceId;
-      const correlationId = getCorrelationId();
-      const problem: Record<string, unknown> = {
-        type: 'https://resto.app/problems/rate-limit-exceeded',
-        title: 'Too Many Requests',
-        status: 429,
-        detail: `Rate limit exceeded, retry in ${Math.ceil(context.ttl / 1000).toString()} seconds`,
-        instance: req.url,
-      };
-      if (correlationId !== undefined) problem.correlationId = correlationId;
-      if (traceId !== undefined) problem.traceId = traceId;
-      return problem;
-    },
+    errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
+      // Shape matches NestJS HttpException response convention
+      // (`message`, `code`) so `ProblemDetailsFilter` derives title/type
+      // automatically. The limiter throws this object as the error
+      // body; the guard catches and rewraps as a Nest 429.
+      message: 'Too Many Requests',
+      code: 'rate-limit-exceeded',
+      detail: `Rate limit exceeded, retry in ${Math.ceil(context.ttl / 1000).toString()} seconds`,
+    }),
   });
 
-  fastify.addHook('preHandler', fastify.rateLimit());
+  const rateLimitHandler = fastify.rateLimit() as RateLimitHandler;
 
-  // @fastify/rate-limit serializes its body as plain JSON; rewrite the
-  // content-type so 429s match the rest of the api's RFC 7807 surface.
+  // BA's `/api/auth/*` endpoints are mounted directly on Fastify (see
+  // identity-http.module → better-auth.handler) so the NestJS Guard does
+  // not see them. Path-scope the Fastify-level limiter to that prefix to
+  // avoid double-counting requests that already pass through the Guard.
+  fastify.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
+    if (req.url.startsWith('/api/auth/')) {
+      await rateLimitHandler(req, reply);
+    }
+  });
+
+  // The limiter throws a Fastify HTTP error whose body is the
+  // problem-shaped object built above; Fastify serialises it as plain
+  // JSON. Rewrite the content-type for 429s so /api/auth/* matches the
+  // rest of the api's RFC 7807 surface (NestJS-routed 429s already get
+  // problem+json from `ProblemDetailsFilter`).
   fastify.addHook(
     'onSend',
     async (_req: FastifyRequest, reply: FastifyReply, payload: unknown): Promise<unknown> => {
@@ -120,5 +127,7 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
       return payload;
     },
   );
+
+  app.useGlobalGuards(new RateLimitGuard(rateLimitHandler));
   /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
 };

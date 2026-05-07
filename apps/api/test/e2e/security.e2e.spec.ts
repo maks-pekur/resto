@@ -145,57 +145,57 @@ describe('Security middleware (RES-99)', () => {
 
   describe('rate limit', () => {
     let app: NestFastifyApplication;
-    const probePath = '/__probe-rl__';
 
     beforeAll(async () => {
       baseTestEnv();
       delete process.env.CORS_ALLOWED_ORIGINS;
       process.env.RATE_LIMIT_PUBLIC_PER_MIN = '3';
-      process.env.RATE_LIMIT_INTERNAL_PER_MIN = '3';
-
-      const moduleRef: TestingModule = await Test.createTestingModule({ imports: [AppModule] })
-        .overrideProvider(TenantAwareDb)
-        .useValue(buildDbStub())
-        .compile();
-      app = moduleRef.createNestApplication<NestFastifyApplication>(
-        new FastifyAdapter({ logger: false }),
-      );
-      await registerSecurity(app, loadEnv());
-      // Register a probe route directly on the Fastify instance. NestJS's
-      // route-registration path doesn't reliably trigger the rate-limit
-      // plugin's onRoute callback, so this exercises the limiter on a
-      // route we control — the security pipeline (helmet, CORS, rate
-      // limit, problem+json error shape) is what's under test here.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fastify: any = app.getHttpAdapter().getInstance();
-      fastify.get(probePath, (_req: unknown, reply: { send: (b: unknown) => void }) =>
-        reply.send({ ok: true }),
-      );
-      await app.init();
-      await app.getHttpAdapter().getInstance().ready();
+      process.env.RATE_LIMIT_INTERNAL_PER_MIN = '1';
+      app = await createApp();
     });
 
     afterAll(async () => {
       await app.close();
     });
 
-    it('returns 429 with application/problem+json after the per-minute limit', async () => {
-      const remoteAddress = '10.20.30.40';
+    it('rate-limits /readyz (Nest controller) with problem+json after the limit', async () => {
+      const remoteAddress = '10.20.30.41';
       for (let i = 0; i < 3; i += 1) {
-        const ok = await app.inject({ method: 'GET', url: probePath, remoteAddress });
-        expect(ok.statusCode).toBe(200);
+        const res = await app.inject({ method: 'GET', url: '/readyz', remoteAddress });
+        expect(res.statusCode).not.toBe(429);
       }
-      const limited = await app.inject({ method: 'GET', url: probePath, remoteAddress });
+      const limited = await app.inject({ method: 'GET', url: '/readyz', remoteAddress });
       expect(limited.statusCode).toBe(429);
       expect(limited.headers['content-type']).toContain('application/problem+json');
       const body: Record<string, unknown> = limited.json();
       expect(body.type).toBe('https://resto.app/problems/rate-limit-exceeded');
       expect(body.status).toBe(429);
       expect(body.title).toBe('Too Many Requests');
-      expect(body.instance).toBe(probePath);
+      expect(body.instance).toBe('/readyz');
     });
 
-    it('does not throttle the /healthz liveness probe', async () => {
+    it('honours the stricter limit on /internal/v1/* routes', async () => {
+      const remoteAddress = '10.20.30.42';
+      // RATE_LIMIT_INTERNAL_PER_MIN=1 → first request consumes the budget,
+      // the second is rejected at the limiter regardless of the body shape.
+      const first = await app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants',
+        remoteAddress,
+        payload: {},
+      });
+      expect(first.statusCode).not.toBe(429);
+      const limited = await app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants',
+        remoteAddress,
+        payload: {},
+      });
+      expect(limited.statusCode).toBe(429);
+      expect(limited.headers['content-type']).toContain('application/problem+json');
+    });
+
+    it('keeps /healthz exempted via allowList', async () => {
       for (let i = 0; i < 10; i += 1) {
         const res = await app.inject({ method: 'GET', url: '/healthz' });
         expect(res.statusCode).toBe(200);
