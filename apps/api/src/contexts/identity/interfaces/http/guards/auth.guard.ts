@@ -12,6 +12,10 @@ import { getTenantContext } from '@resto/db';
 import { AUTH_TOKEN } from '../../../identity.tokens';
 import type { Auth } from '../../../infrastructure/better-auth/auth.config';
 import type { CustomerPrincipal, OperatorPrincipal, Principal } from '../../../domain/principal';
+import {
+  TENANT_LOOKUP_PORT,
+  type TenantLookupPort,
+} from '../../../application/ports/tenant-lookup.port';
 
 export const IS_PUBLIC_KEY = 'identity:public';
 
@@ -35,9 +39,21 @@ export class AuthGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
+    @Inject(TENANT_LOOKUP_PORT) private readonly tenantLookup: TenantLookupPort,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const alsTenantId = getTenantContext()?.tenantId;
+    if (alsTenantId) {
+      const tenant = await this.tenantLookup.findById(alsTenantId);
+      if (tenant?.archivedAt) {
+        throw new ForbiddenException({
+          code: 'tenant.archived',
+          message: 'Tenant has been archived.',
+        });
+      }
+    }
+
     const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC_KEY, [
       ctx.getHandler(),
       ctx.getClass(),
@@ -54,9 +70,6 @@ export class AuthGuard implements CanActivate {
         message: 'Authentication required.',
       });
     }
-
-    // Read tenant from ALS — bound by TenantContextMiddleware before this guard runs.
-    const alsTenantId = getTenantContext()?.tenantId;
 
     // BA infers getSession() from the base session type; the organization
     // plugin augments the session object with activeOrganizationId at runtime

@@ -44,4 +44,9 @@ export {
   type NatsSubscriberOptions,
 } from './infrastructure/nats-subscriber';
 
-export { TenantProvisionedV1, TenantProvisionedV1Payload } from './contracts/tenancy';
+export {
+  TenantProvisionedV1,
+  TenantProvisionedV1Payload,
+  TenantArchivedV1,
+  TenantArchivedV1Payload,
+} from './contracts/tenancy';

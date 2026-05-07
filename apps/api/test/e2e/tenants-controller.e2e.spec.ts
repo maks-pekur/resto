@@ -195,6 +195,48 @@ describe('TenantsController E2E', () => {
     });
   });
 
+  describe('AuthGuard tenant-archive pre-check (RES-127)', () => {
+    it('rejects every request bound to an archived tenant with tenant.archived', async () => {
+      const slug = `archive-${randomUUID().slice(0, 8)}`;
+      const password = 'correct-horse-battery-staple-archive-1';
+      const email = `owner-${slug}@example.com`;
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      await runBootstrap({
+        tenantSlug: slug,
+        email,
+        password,
+        name: 'Archive Owner',
+      });
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+      const okBefore = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie, 'x-tenant-slug': slug },
+      });
+      expect(okBefore.statusCode).toBe(200);
+
+      const archiveRes = await app.inject({
+        method: 'POST',
+        url: `/internal/v1/tenants/${tenant.id}/archive`,
+        headers: { 'x-internal-token': INTERNAL_TOKEN },
+      });
+      expect(archiveRes.statusCode).toBe(204);
+
+      const denied = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie, 'x-tenant-slug': slug },
+      });
+      expect(denied.statusCode).toBe(403);
+      expect(denied.headers['content-type']).toContain('application/problem+json');
+      const body = denied.json<{ type: string; status: number }>();
+      expect(body.status).toBe(403);
+      expect(body.type).toBe('https://resto.app/problems/tenant.archived');
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // GET /v1/tenants/me/domains
   // ---------------------------------------------------------------------------
