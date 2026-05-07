@@ -141,6 +141,60 @@ describe('TenantsController E2E', () => {
     });
   });
 
+  describe('AuthGuard cross-tenant principal isolation (RES-126)', () => {
+    it('rejects a session bound to tenant A when the request resolves tenant B', async () => {
+      const slugA = `xtenant-a-${randomUUID().slice(0, 8)}`;
+      const slugB = `xtenant-b-${randomUUID().slice(0, 8)}`;
+      const passwordA = 'correct-horse-battery-staple-xtenant-A';
+      const emailA = `owner-${slugA}@example.com`;
+
+      const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+      await provisionTenant(app, slugB, INTERNAL_TOKEN);
+      await runBootstrap({
+        tenantSlug: slugA,
+        email: emailA,
+        password: passwordA,
+        name: 'Cross-Tenant Owner A',
+      });
+      const cookieA = await signInAsOperator(app, emailA, passwordA, tenantA.id);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie: cookieA, 'x-tenant-slug': slugB },
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+      const body = res.json<{ type: string; status: number; title: string }>();
+      expect(body.status).toBe(403);
+      expect(body.type).toBe('https://resto.app/problems/auth.tenant_mismatch');
+    });
+
+    it('accepts the same session when the request resolves the matching tenant (negative control)', async () => {
+      const slugA = `xtenant-c-${randomUUID().slice(0, 8)}`;
+      const passwordA = 'correct-horse-battery-staple-xtenant-C';
+      const emailA = `owner-${slugA}@example.com`;
+
+      const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+      await runBootstrap({
+        tenantSlug: slugA,
+        email: emailA,
+        password: passwordA,
+        name: 'Cross-Tenant Owner C',
+      });
+      const cookieA = await signInAsOperator(app, emailA, passwordA, tenantA.id);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie: cookieA, 'x-tenant-slug': slugA },
+      });
+
+      expect(res.statusCode).toBe(200);
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // GET /v1/tenants/me/domains
   // ---------------------------------------------------------------------------
