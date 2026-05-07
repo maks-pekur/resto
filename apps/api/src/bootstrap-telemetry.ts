@@ -22,24 +22,33 @@ const serviceName = process.env.OTEL_SERVICE_NAME ?? 'resto-api';
 const serviceVersion = process.env.npm_package_version ?? '0.0.0';
 const environment = process.env.DEPLOYMENT_ENVIRONMENT ?? process.env.NODE_ENV ?? 'development';
 
-const sdk = new NodeSDK({
-  resource: new Resource({
-    'service.name': serviceName,
-    'service.version': serviceVersion,
-    'deployment.environment': environment,
-  }),
-  traceExporter: new OTLPTraceExporter({ url: `${endpoint}/v1/traces` }),
-  instrumentations: [
-    getNodeAutoInstrumentations({
-      // Filesystem spans are noise; turn them off by default. Re-enable
-      // per-environment if a specific investigation needs them.
-      '@opentelemetry/instrumentation-fs': { enabled: false },
-    }),
-  ],
-});
+const disabled = process.env.OTEL_DISABLED === 'true';
 
-if (process.env.OTEL_DISABLED !== 'true') {
+const log = (msg: string): void => {
+  process.stdout.write(`${msg}\n`);
+};
+
+if (disabled) {
+  log('[telemetry] disabled (OTEL_DISABLED=true)');
+} else {
+  const sdk = new NodeSDK({
+    resource: new Resource({
+      'service.name': serviceName,
+      'service.version': serviceVersion,
+      'deployment.environment': environment,
+    }),
+    traceExporter: new OTLPTraceExporter({ url: `${endpoint}/v1/traces` }),
+    instrumentations: [
+      getNodeAutoInstrumentations({
+        // Filesystem spans are noise; turn them off by default. Re-enable
+        // per-environment if a specific investigation needs them.
+        '@opentelemetry/instrumentation-fs': { enabled: false },
+      }),
+    ],
+  });
+
   sdk.start();
+  log(`[telemetry] enabled, exporting to ${endpoint}`);
 
   process.on('SIGTERM', () => {
     void sdk.shutdown();
