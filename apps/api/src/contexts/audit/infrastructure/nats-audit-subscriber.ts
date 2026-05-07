@@ -49,9 +49,13 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
   }
 
   async onApplicationShutdown(): Promise<void> {
-    if (this.subscription) {
-      await this.subscription.stop();
-      this.subscription = null;
+    const sub = this.subscription;
+    this.subscription = null;
+    if (!sub) return;
+    try {
+      await sub.stop();
+    } catch (err) {
+      this.logger.warn({ err }, 'Audit subscription was already stopped');
     }
   }
 }
