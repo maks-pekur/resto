@@ -133,5 +133,3 @@ components:
       bearerFormat: JWT
       type: http
   schemas: {}
-
-# drift
