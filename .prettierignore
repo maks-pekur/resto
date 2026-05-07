@@ -13,3 +13,4 @@ pnpm-lock.yaml
 generated
 .env*
 docs/api/openapi.yaml
+packages/api-client/src/generated/

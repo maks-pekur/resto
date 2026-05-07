@@ -146,11 +146,13 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - name: Regenerate docs/api/openapi.yaml
         run: pnpm exec nx run api:openapi:emit
-      - name: Fail if the committed spec is stale
+      - name: Regenerate packages/api-client types
+        run: pnpm exec nx run api-client:gen
+      - name: Fail if the committed artefacts are stale
         run: |
-          if ! git diff --quiet -- docs/api/openapi.yaml; then
-            echo "::error::docs/api/openapi.yaml is stale. Run 'pnpm exec nx run api:openapi:emit' locally and commit the result."
-            git --no-pager diff -- docs/api/openapi.yaml
+          if ! git diff --quiet -- docs/api/openapi.yaml packages/api-client/src/generated/; then
+            echo "::error::OpenAPI spec or api-client types are stale. Run 'pnpm exec nx run api:openapi:emit && pnpm exec nx run api-client:gen' locally and commit the result."
+            git --no-pager diff -- docs/api/openapi.yaml packages/api-client/src/generated/
             exit 1
           fi
 
