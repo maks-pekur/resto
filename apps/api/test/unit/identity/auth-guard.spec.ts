@@ -151,6 +151,8 @@ describe('AuthGuard', () => {
     };
     const guard = new AuthGuard(reflector, auth as never, lookup);
     const ctx = buildContext({ headers: {}, url: '/v1/me' });
-    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({
+      response: { code: 'tenant.archived' },
+    });
   });
 });
