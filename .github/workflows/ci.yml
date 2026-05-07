@@ -122,6 +122,42 @@ jobs:
       - name: pnpm audit (production deps, fail on high severity)
         run: pnpm audit --prod --audit-level=high
 
+  openapi-drift:
+    name: OpenAPI drift check
+    runs-on: ubuntu-latest
+    needs: install
+    # AppModule init does not open the DB pool eagerly — Drizzle/pg.Pool is
+    # lazy and the @nestjs/swagger document generator never queries — so a
+    # syntactically-valid DATABASE_URL is enough. NATS_DISABLED skips the
+    # broker connection; OTEL_DISABLED skips the otlp exporter handshake.
+    env:
+      DATABASE_URL: postgres://x@localhost:5432/x
+      NATS_URL: nats://localhost:4222
+      NATS_DISABLED: "true"
+      OTEL_DISABLED: "true"
+      NODE_ENV: development
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Regenerate docs/api/openapi.yaml
+        run: pnpm exec nx run api:openapi:emit
+      - name: Fail if the committed spec is stale
+        run: |
+          if ! git diff --quiet -- docs/api/openapi.yaml; then
+            echo "::error::docs/api/openapi.yaml is stale. Run 'pnpm exec nx run api:openapi:emit' locally and commit the result."
+            git --no-pager diff -- docs/api/openapi.yaml
+            exit 1
+          fi
+
   docker-api:
     name: Docker build (apps/api)
     runs-on: ubuntu-latest

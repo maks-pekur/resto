@@ -1,0 +1,137 @@
+openapi: 3.0.0
+paths:
+  /healthz:
+    get:
+      operationId: HealthController_liveness
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: &a1
+        - health
+  /readyz:
+    get:
+      operationId: HealthController_readiness
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a1
+  /internal/v1/tenants:
+    post:
+      operationId: InternalTenantsController_provision
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags: &a2
+        - tenancy
+  /internal/v1/tenants/{id}/archive:
+    post:
+      operationId: InternalTenantsController_archive
+      parameters: []
+      responses:
+        "204":
+          description: ""
+      tags: *a2
+  /v1/tenants/me:
+    get:
+      operationId: TenantsController_getMe
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: &a3
+        - tenancy
+  /v1/tenants/me/domains:
+    get:
+      operationId: TenantsController_getMeDomains
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a3
+  /v1/me:
+    get:
+      operationId: MeController_me
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - Me
+  /internal/v1/tenants/{id}/owner:
+    post:
+      operationId: InternalBootstrapController_createOwner
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags:
+        - identity
+  /v1/menu:
+    get:
+      operationId: PublicMenuController_menu
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: &a4
+        - catalog
+  /v1/menu/items/{id}:
+    get:
+      operationId: PublicMenuController_item
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a4
+  /internal/v1/catalog/categories:
+    post:
+      operationId: InternalCatalogController_category
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: &a5
+        - catalog/internal
+  /internal/v1/catalog/items:
+    post:
+      operationId: InternalCatalogController_item
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a5
+  /internal/v1/catalog/modifiers:
+    post:
+      operationId: InternalCatalogController_modifier
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a5
+  /internal/v1/catalog/publish:
+    post:
+      operationId: InternalCatalogController_publishMenu
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a5
+info:
+  title: Resto API
+  description: Resto multi-tenant SaaS backend.
+  version: 0.0.0
+  contact: {}
+tags: []
+servers: []
+components:
+  securitySchemes:
+    bearer:
+      scheme: bearer
+      bearerFormat: JWT
+      type: http
+  schemas: {}
+
+# drift
