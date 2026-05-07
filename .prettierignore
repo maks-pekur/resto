@@ -12,3 +12,4 @@ pnpm-lock.yaml
 *.generated.ts
 generated
 .env*
+docs/api/openapi.yaml
