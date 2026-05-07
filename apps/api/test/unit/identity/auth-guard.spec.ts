@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { type ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../../src/contexts/identity/interfaces/http/guards/auth.guard';
+import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
 
 // Mock @resto/db so we can control getTenantContext() per-test.
 // The guard calls getTenantContext() from ALS — no req field is used.
@@ -26,13 +27,24 @@ const buildAuthStub = (
   api: { getSession: vi.fn().mockResolvedValue(sessionResult) },
 });
 
+const buildLookupStub = (archivedAt: Date | null = null): TenantLookupPort => ({
+  findBySlug: vi.fn().mockResolvedValue(null),
+  findById: vi.fn().mockResolvedValue({
+    id: 'tenant-1',
+    slug: 'tenant-1',
+    displayName: 'Tenant 1',
+    archivedAt,
+  }),
+});
+
 describe('AuthGuard', () => {
   it('skips when @Public metadata is set', async () => {
     mockGetTenantContext.mockReturnValue(undefined);
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(true);
     const auth = buildAuthStub(null);
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const ctx = buildContext({});
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(auth.api.getSession).not.toHaveBeenCalled();
@@ -43,7 +55,8 @@ describe('AuthGuard', () => {
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
     const auth = buildAuthStub(null);
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const ctx = buildContext({ headers: {}, url: '/v1/me' });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
   });
@@ -56,7 +69,8 @@ describe('AuthGuard', () => {
       user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
       session: { activeOrganizationId: 't-1' },
     });
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -76,7 +90,8 @@ describe('AuthGuard', () => {
       user: { id: 'u2', email: 'op2@example.com', phoneNumber: null },
       session: { activeOrganizationId: null },
     });
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -85,7 +100,6 @@ describe('AuthGuard', () => {
   });
 
   it('attaches CustomerPrincipal when BA user has phoneNumber', async () => {
-    // ALS has tenant 't-host' bound (set by TenantContextMiddleware upstream)
     mockGetTenantContext.mockReturnValue({ tenantId: 't-host' });
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
@@ -93,7 +107,8 @@ describe('AuthGuard', () => {
       user: { id: 'u3', email: 'fake@phone.local', phoneNumber: '+380000000000' },
       session: { activeOrganizationId: null },
     });
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -106,7 +121,6 @@ describe('AuthGuard', () => {
   });
 
   it('throws Forbidden when principal.tenantId mismatches ALS tenantId', async () => {
-    // Operator session says tenantId is 't-1', but ALS has 't-OTHER'
     mockGetTenantContext.mockReturnValue({ tenantId: 't-OTHER' });
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
@@ -114,9 +128,31 @@ describe('AuthGuard', () => {
       user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
       session: { activeOrganizationId: 't-1' },
     });
-    const guard = new AuthGuard(reflector, auth as never);
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('rejects every request when the resolved tenant is archived (RES-127)', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 'tenant-archived-uuid' });
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const auth = buildAuthStub(null);
+    const lookup: TenantLookupPort = {
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findById: vi.fn().mockResolvedValue({
+        id: 'tenant-archived-uuid',
+        slug: 'tenant-archived',
+        displayName: 'Tenant Archived',
+        archivedAt: new Date('2026-05-07T00:00:00Z'),
+      }),
+    };
+    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const ctx = buildContext({ headers: {}, url: '/v1/me' });
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({
+      response: { code: 'tenant.archived' },
+    });
   });
 });

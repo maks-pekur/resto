@@ -4,6 +4,7 @@ export interface TenantSummary {
   readonly id: string;
   readonly slug: string;
   readonly displayName: string;
+  readonly archivedAt: Date | null;
 }
 
 export interface TenantLookupPort {

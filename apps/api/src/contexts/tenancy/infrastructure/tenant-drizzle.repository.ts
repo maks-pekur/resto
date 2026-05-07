@@ -2,7 +2,12 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { Currency, TenantId, TenantSlug } from '@resto/domain';
-import { appendToOutbox, TenantProvisionedV1, type EventEnvelope } from '@resto/events';
+import {
+  appendToOutbox,
+  TenantArchivedV1,
+  TenantProvisionedV1,
+  type EventEnvelope,
+} from '@resto/events';
 import { eq } from 'drizzle-orm';
 import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
 import type { TenantDomainEvent } from '../domain/events';
@@ -199,13 +204,10 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         },
       };
     case 'TenantArchived':
-      // No published v1 contract for archive yet — the outbox row is
-      // still useful for ops, but the broker subject is the local form
-      // until we publish a contract for it.
       return {
         id: randomUUID(),
-        type: 'tenancy.tenant_archived.v1',
-        version: 1,
+        type: TenantArchivedV1.type,
+        version: TenantArchivedV1.version,
         tenantId: event.tenantId,
         correlationId: randomUUID(),
         causationId: null,

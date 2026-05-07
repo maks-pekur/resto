@@ -9,12 +9,22 @@ export class TenantLookupAdapter implements TenantLookupPort {
   async findBySlug(slug: string): Promise<TenantSummary | null> {
     const snapshot = await this.queries.findBySlug(slug);
     if (!snapshot) return null;
-    return { id: snapshot.id, slug: snapshot.slug, displayName: snapshot.displayName };
+    return {
+      id: snapshot.id,
+      slug: snapshot.slug,
+      displayName: snapshot.displayName,
+      archivedAt: snapshot.archivedAt,
+    };
   }
 
   async findById(id: string): Promise<TenantSummary | null> {
     const snapshot = await this.queries.findById(id);
     if (!snapshot) return null;
-    return { id: snapshot.id, slug: snapshot.slug, displayName: snapshot.displayName };
+    return {
+      id: snapshot.id,
+      slug: snapshot.slug,
+      displayName: snapshot.displayName,
+      archivedAt: snapshot.archivedAt,
+    };
   }
 }
