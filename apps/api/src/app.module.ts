@@ -4,6 +4,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
+import { AuditModule } from './contexts/audit/audit.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
 import { IdentityHttpModule } from './contexts/identity/identity-http.module';
@@ -20,6 +21,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     TenancyModule,
     IdentityHttpModule,
     CatalogModule,
+    AuditModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
