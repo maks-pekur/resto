@@ -15,3 +15,16 @@ export const IdentitySignedInV1 = defineEventContract({
   type: 'identity.signed_in.v1',
   payload: IdentitySignedInV1Payload,
 });
+
+export const IdentitySignedOutV1Payload = z.object({
+  userId: z.string().uuid(),
+  tenantId: TenantId,
+  actorSubject: z.string().optional(),
+  sessionId: z.string().optional(),
+});
+export type IdentitySignedOutV1Payload = z.infer<typeof IdentitySignedOutV1Payload>;
+
+export const IdentitySignedOutV1 = defineEventContract({
+  type: 'identity.signed_out.v1',
+  payload: IdentitySignedOutV1Payload,
+});

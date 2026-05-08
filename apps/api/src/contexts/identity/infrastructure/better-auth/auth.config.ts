@@ -1,4 +1,5 @@
 import { betterAuth, type BetterAuthPlugin } from 'better-auth';
+import { createAuthMiddleware } from 'better-auth/api';
 import { organization, twoFactor, bearer } from 'better-auth/plugins';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { Logger } from '@nestjs/common';
@@ -41,6 +42,19 @@ interface BuildOpts {
     session: { userId: string; activeOrganizationId?: string | null },
     ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
   ) => Promise<void>;
+  /**
+   * Invoked from the BA `hooks.after` middleware on a successful
+   * `POST /api/auth/sign-out`. Receives the userId / tenantId / sessionId
+   * captured in the matching `hooks.before` (the session row no longer
+   * exists by the time `after` runs). Failures are logged at error level
+   * and swallowed — audit is eventually-consistent observability; we
+   * never block sign-out on an audit-write failure.
+   */
+  onSignedOut?: (snapshot: {
+    userId: string;
+    tenantId: string;
+    sessionId: string;
+  }) => Promise<void>;
 }
 
 /**
@@ -129,6 +143,50 @@ export const buildAuth = (opts: BuildOpts) =>
           },
         },
       },
+    },
+    hooks: {
+      before: createAuthMiddleware(async (ctx) => {
+        if (!opts.onSignedOut) return;
+        if (!ctx.path.endsWith('/sign-out')) return;
+        const token = await ctx.getSignedCookie(
+          ctx.context.authCookies.sessionToken.name,
+          ctx.context.secret,
+        );
+        if (!token) return;
+        const found = await ctx.context.internalAdapter.findSession(token);
+        if (!found) return;
+        const activeOrgId = (found.session as { activeOrganizationId?: string | null })
+          .activeOrganizationId;
+        if (typeof activeOrgId !== 'string' || !activeOrgId) return;
+        (
+          ctx.context as {
+            __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+          }
+        ).__restoSignOut = {
+          userId: found.user.id,
+          tenantId: activeOrgId,
+          sessionId: found.session.id,
+        };
+      }),
+      after: createAuthMiddleware(async (ctx) => {
+        if (!opts.onSignedOut) return;
+        if (!ctx.path.endsWith('/sign-out')) return;
+        const stash = (
+          ctx.context as {
+            __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+          }
+        ).__restoSignOut;
+        if (!stash) return;
+        if (ctx.context.returned instanceof Error) return;
+        try {
+          await opts.onSignedOut(stash);
+        } catch (err) {
+          new Logger('IdentityEventHook').error(
+            { err, type: 'identity.signed_out.v1', userId: stash.userId, tenantId: stash.tenantId },
+            'Failed to emit identity.signed_out.v1',
+          );
+        }
+      }),
     },
     // Spread so the key is absent entirely when unset —
     // exactOptionalPropertyTypes rejects `advanced: undefined`.
