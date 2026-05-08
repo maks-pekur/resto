@@ -8,7 +8,7 @@ import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permis
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 import { TenantId } from '@resto/domain';
-import { IdentitySignedInV1 } from '@resto/events';
+import { IdentitySignedInV1, IdentitySignedOutV1 } from '@resto/events';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
@@ -63,6 +63,24 @@ const authProvider: Provider = {
       baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
       trustedOrigins,
       ...(cookieDomain ? { cookieDomain } : {}),
+      onSignedOut: async (snapshot) => {
+        const tenantId = TenantId.parse(snapshot.tenantId);
+        await emitter.emit({
+          id: randomUUID(),
+          type: IdentitySignedOutV1.type,
+          version: IdentitySignedOutV1.version,
+          tenantId,
+          correlationId: randomUUID(),
+          causationId: null,
+          occurredAt: new Date(),
+          payload: {
+            userId: snapshot.userId,
+            actorSubject: snapshot.userId,
+            tenantId,
+            sessionId: snapshot.sessionId,
+          },
+        });
+      },
       onActiveOrganizationSet: async (session, ctx) => {
         if (!session.activeOrganizationId) return;
         const xff = readHeader(ctx.headers, 'x-forwarded-for');

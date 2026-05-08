@@ -8,6 +8,7 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   'tenancy.tenant_provisioned': 'tenant',
   'tenancy.tenant_archived': 'tenant',
   'identity.signed_in': 'user',
+  'identity.signed_out': 'user',
 };
 
 const targetKindFor = (action: string): string | null => {

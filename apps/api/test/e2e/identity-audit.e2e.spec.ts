@@ -118,4 +118,57 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     expect(myRows).toHaveLength(2);
     expect(myRows.every((r) => r.actorSubject === owner.userId)).toBe(true);
   }, 60_000);
+
+  it('records identity.signed_out.v1 and invalidates the session on POST /api/auth/sign-out', async () => {
+    const slug = `signout-${randomUUID().slice(0, 8)}`;
+    const password = 'correct-horse-battery-staple-signout';
+    const email = `owner-${slug}@example.com`;
+
+    const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
+    const owner = await runBootstrap({ tenantSlug: slug, email, password, name: 'Sign-Out Owner' });
+    const cookie = await signInAsOperator(stack.app, email, password, tenant.id);
+
+    const sanityBefore = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/tenants/me',
+      headers: { cookie },
+    });
+    expect(sanityBefore.statusCode).toBe(200);
+
+    const signOutRes = await stack.app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-out',
+      headers: { cookie, 'content-type': 'application/json' },
+      payload: {},
+    });
+    expect(signOutRes.statusCode).toBe(200);
+
+    const sanityAfter = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/tenants/me',
+      headers: { cookie },
+    });
+    expect(sanityAfter.statusCode).toBe(401);
+
+    const db = stack.app.get(TenantAwareDb);
+    const deadline = Date.now() + 20_000;
+    let signOutRows: { action: string; tenantId: string | null; actorSubject: string }[] = [];
+    while (Date.now() < deadline) {
+      signOutRows = await db.withoutTenant('identity-audit e2e: poll signed_out', (tx) =>
+        tx
+          .select({
+            action: schema.auditLog.action,
+            tenantId: schema.auditLog.tenantId,
+            actorSubject: schema.auditLog.actorSubject,
+          })
+          .from(schema.auditLog)
+          .where(eq(schema.auditLog.action, 'identity.signed_out.v1')),
+      );
+      if (signOutRows.some((r) => r.tenantId === tenant.id)) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    const myRow = signOutRows.find((r) => r.tenantId === tenant.id);
+    expect(myRow).toBeDefined();
+    expect(myRow?.actorSubject).toBe(owner.userId);
+  }, 30_000);
 });

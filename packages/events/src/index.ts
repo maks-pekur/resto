@@ -51,4 +51,9 @@ export {
   TenantArchivedV1Payload,
 } from './contracts/tenancy';
 
-export { IdentitySignedInV1, IdentitySignedInV1Payload } from './contracts/identity';
+export {
+  IdentitySignedInV1,
+  IdentitySignedInV1Payload,
+  IdentitySignedOutV1,
+  IdentitySignedOutV1Payload,
+} from './contracts/identity';
