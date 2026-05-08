@@ -28,3 +28,18 @@ export const IdentitySignedOutV1 = defineEventContract({
   type: 'identity.signed_out.v1',
   payload: IdentitySignedOutV1Payload,
 });
+
+export const IdentityPasswordResetCompletedV1Payload = z.object({
+  userId: z.string().uuid(),
+  tenantId: TenantId.optional(),
+  actorSubject: z.string().optional(),
+  sessionRevokedCount: z.number().int().nonnegative(),
+});
+export type IdentityPasswordResetCompletedV1Payload = z.infer<
+  typeof IdentityPasswordResetCompletedV1Payload
+>;
+
+export const IdentityPasswordResetCompletedV1 = defineEventContract({
+  type: 'identity.password_reset_completed.v1',
+  payload: IdentityPasswordResetCompletedV1Payload,
+});

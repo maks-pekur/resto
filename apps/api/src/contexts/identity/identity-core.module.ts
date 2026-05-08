@@ -8,7 +8,11 @@ import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permis
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 import { TenantId } from '@resto/domain';
-import { IdentitySignedInV1, IdentitySignedOutV1 } from '@resto/events';
+import {
+  IdentityPasswordResetCompletedV1,
+  IdentitySignedInV1,
+  IdentitySignedOutV1,
+} from '@resto/events';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
@@ -78,6 +82,23 @@ const authProvider: Provider = {
             actorSubject: snapshot.userId,
             tenantId,
             sessionId: snapshot.sessionId,
+          },
+        });
+      },
+      onPasswordResetCompleted: async (snapshot) => {
+        await emitter.emit({
+          id: randomUUID(),
+          type: IdentityPasswordResetCompletedV1.type,
+          version: IdentityPasswordResetCompletedV1.version,
+          tenantId: snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null,
+          correlationId: randomUUID(),
+          causationId: null,
+          occurredAt: new Date(),
+          payload: {
+            userId: snapshot.userId,
+            actorSubject: snapshot.userId,
+            ...(snapshot.tenantId ? { tenantId: TenantId.parse(snapshot.tenantId) } : {}),
+            sessionRevokedCount: snapshot.sessionRevokedCount,
           },
         });
       },

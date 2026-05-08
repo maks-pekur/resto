@@ -52,6 +52,8 @@ export {
 } from './contracts/tenancy';
 
 export {
+  IdentityPasswordResetCompletedV1,
+  IdentityPasswordResetCompletedV1Payload,
   IdentitySignedInV1,
   IdentitySignedInV1Payload,
   IdentitySignedOutV1,
