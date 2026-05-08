@@ -9,7 +9,9 @@ import {
 import {
   DrizzleInboxTracker,
   NatsJetStreamPublisher,
+  NatsJetStreamSubscriber,
   type EventPublisher,
+  type EventSubscriber,
   type InboxTracker,
 } from '@resto/events';
 import { TenantAwareDb } from '@resto/db';
@@ -20,6 +22,7 @@ import { OutboxDispatcherService } from './outbox-dispatcher.service';
 
 export { EVENT_PUBLISHER } from './event-publisher.token';
 export const INBOX_TRACKER = Symbol('INBOX_TRACKER');
+export const EVENT_SUBSCRIBER = Symbol('EVENT_SUBSCRIBER');
 
 const STREAM_SUBJECTS = ['tenancy.>', 'catalog.>', 'ordering.>', 'billing.>'];
 
@@ -27,11 +30,17 @@ const moduleLogger = new Logger('NatsModule');
 
 @Injectable()
 class NatsShutdownHook implements OnApplicationShutdown {
-  constructor(@Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null) {}
+  constructor(
+    @Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null,
+    @Inject(EVENT_SUBSCRIBER) private readonly subscriber: EventSubscriber | null,
+  ) {}
 
   async onApplicationShutdown(): Promise<void> {
     if (this.publisher && typeof this.publisher.close === 'function') {
       await this.publisher.close();
+    }
+    if (this.subscriber && typeof this.subscriber.close === 'function') {
+      await this.subscriber.close();
     }
   }
 }
@@ -63,6 +72,27 @@ class NatsShutdownHook implements OnApplicationShutdown {
       },
       inject: [ENV_TOKEN],
     },
+    {
+      provide: EVENT_SUBSCRIBER,
+      useFactory: async (env: Env): Promise<EventSubscriber | null> => {
+        if (process.env.NATS_DISABLED === 'true') {
+          return null;
+        }
+        try {
+          return await NatsJetStreamSubscriber.connect({
+            servers: env.NATS_URL,
+            stream: env.NATS_STREAM,
+          });
+        } catch (err) {
+          moduleLogger.warn(
+            { err },
+            'Failed to connect NATS subscriber at boot — subscriber disabled.',
+          );
+          return null;
+        }
+      },
+      inject: [ENV_TOKEN],
+    },
     NatsShutdownHook,
     {
       provide: INBOX_TRACKER,
@@ -71,6 +101,6 @@ class NatsShutdownHook implements OnApplicationShutdown {
     },
     OutboxDispatcherService,
   ],
-  exports: [EVENT_PUBLISHER, INBOX_TRACKER],
+  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER, INBOX_TRACKER],
 })
 export class NatsModule {}
