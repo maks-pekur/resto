@@ -152,7 +152,13 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
 
     const db = stack.app.get(TenantAwareDb);
     const deadline = Date.now() + 20_000;
-    let signOutRows: { action: string; tenantId: string | null; actorSubject: string }[] = [];
+    let signOutRows: {
+      action: string;
+      tenantId: string | null;
+      actorSubject: string;
+      targetType: string | null;
+      targetId: string | null;
+    }[] = [];
     while (Date.now() < deadline) {
       signOutRows = await db.withoutTenant('identity-audit e2e: poll signed_out', (tx) =>
         tx
@@ -160,6 +166,8 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
             action: schema.auditLog.action,
             tenantId: schema.auditLog.tenantId,
             actorSubject: schema.auditLog.actorSubject,
+            targetType: schema.auditLog.targetType,
+            targetId: schema.auditLog.targetId,
           })
           .from(schema.auditLog)
           .where(eq(schema.auditLog.action, 'identity.signed_out.v1')),
@@ -170,5 +178,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const myRow = signOutRows.find((r) => r.tenantId === tenant.id);
     expect(myRow).toBeDefined();
     expect(myRow?.actorSubject).toBe(owner.userId);
+    expect(myRow?.targetType).toBe('user');
+    expect(myRow?.targetId).toBe(owner.userId);
   }, 30_000);
 });
