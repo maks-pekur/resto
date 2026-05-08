@@ -1,6 +1,7 @@
 import { betterAuth, type BetterAuthPlugin } from 'better-auth';
 import { organization, twoFactor, bearer } from 'better-auth/plugins';
 import type { OrganizationOptions } from 'better-auth/plugins';
+import { Logger } from '@nestjs/common';
 import { ac, ownerRole, adminRole, staffRole } from './access-control';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
 import type { AuthDrizzle } from './auth-db';
@@ -29,14 +30,14 @@ interface BuildOpts {
    */
   sendInvitationEmail?: SendInvitationEmail;
   /**
-   * Invoked from the BA `databaseHooks.session.update.after` hook when a
-   * session is updated with an `activeOrganizationId` (i.e. after the operator
-   * calls `setActive`). The callback runs in a separate transaction from BA's
-   * session update; failure is logged and swallowed (audit is
-   * eventually-consistent — losing one audit row is preferable to
-   * blocking the sign-in flow).
+   * Invoked when an operator sets the active organization on their session
+   * (i.e. after `POST /api/auth/organization/set-active` completes). This is
+   * the canonical "operator signed in" moment. The callback runs in a
+   * separate transaction from BA's session update; failures are logged at
+   * error level and swallowed — audit pipeline is eventually-consistent
+   * observability; we never block sign-in on an audit-write failure.
    */
-  onSessionCreated?: (
+  onActiveOrganizationSet?: (
     session: { userId: string; activeOrganizationId?: string | null },
     ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
   ) => Promise<void>;
@@ -97,15 +98,15 @@ export const buildAuth = (opts: BuildOpts) =>
       session: {
         update: {
           after: async (session, ctx) => {
-            if (!opts.onSessionCreated) return;
+            if (!opts.onActiveOrganizationSet) return;
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
-            const requestUrl = rawRequest?.url ?? '';
-            if (!requestUrl.includes('set-active')) return;
+            const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
+            if (!path.endsWith('/api/auth/organization/set-active')) return;
             try {
               const reqHeaders = rawRequest?.headers;
-              await opts.onSessionCreated(
+              await opts.onActiveOrganizationSet(
                 {
                   userId: session.userId,
                   activeOrganizationId: session.activeOrganizationId,
@@ -114,8 +115,16 @@ export const buildAuth = (opts: BuildOpts) =>
                   ...(reqHeaders ? { headers: reqHeaders } : {}),
                 },
               );
-            } catch {
-              // BA's hook signature is fire-and-forget for our purposes — never block sign-in.
+            } catch (err) {
+              new Logger('IdentityEventHook').error(
+                {
+                  err,
+                  type: 'identity.signed_in.v1',
+                  userId: session.userId,
+                  tenantId: session.activeOrganizationId,
+                },
+                'Failed to emit identity event — audit row may be missing',
+              );
             }
           },
         },

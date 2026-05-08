@@ -63,22 +63,28 @@ const authProvider: Provider = {
       baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
       trustedOrigins,
       ...(cookieDomain ? { cookieDomain } : {}),
-      onSessionCreated: async (session, ctx) => {
+      onActiveOrganizationSet: async (session, ctx) => {
         if (!session.activeOrganizationId) return;
+        const xff = readHeader(ctx.headers, 'x-forwarded-for');
+        const xffFirst = xff?.split(',')[0]?.trim();
         const ipAddress =
-          readHeader(ctx.headers, 'x-forwarded-for') ?? readHeader(ctx.headers, 'x-real-ip');
+          xffFirst !== '' && xffFirst !== undefined
+            ? xffFirst
+            : readHeader(ctx.headers, 'x-real-ip');
         const userAgent = readHeader(ctx.headers, 'user-agent');
+        const tenantId = TenantId.parse(session.activeOrganizationId);
         await emitter.emit({
           id: randomUUID(),
           type: IdentitySignedInV1.type,
           version: IdentitySignedInV1.version,
-          tenantId: TenantId.parse(session.activeOrganizationId),
+          tenantId,
           correlationId: randomUUID(),
           causationId: null,
           occurredAt: new Date(),
           payload: {
             userId: session.userId,
-            tenantId: TenantId.parse(session.activeOrganizationId),
+            actorSubject: session.userId,
+            tenantId,
             ...(ipAddress ? { ipAddress } : {}),
             ...(userAgent ? { userAgent } : {}),
           },

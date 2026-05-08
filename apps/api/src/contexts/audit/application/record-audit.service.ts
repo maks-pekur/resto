@@ -3,6 +3,7 @@ import { schema, TenantAwareDb } from '@resto/db';
 import { type EventEnvelope } from '@resto/events';
 import { AuditRecord } from '../domain/audit-record';
 
+// TODO(RES-future): move targetKind onto defineEventContract once the map crosses 5 entries.
 const ACTION_TARGET_KIND: Record<string, string> = {
   'tenancy.tenant_provisioned': 'tenant',
   'tenancy.tenant_archived': 'tenant',

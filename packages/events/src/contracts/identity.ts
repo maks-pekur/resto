@@ -4,6 +4,7 @@ import { defineEventContract } from '../envelope';
 
 export const IdentitySignedInV1Payload = z.object({
   userId: z.string().uuid(),
+  actorSubject: z.string().optional(),
   tenantId: TenantId,
   ipAddress: z.string().optional(),
   userAgent: z.string().optional(),
