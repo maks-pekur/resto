@@ -8,7 +8,7 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import { Test, type TestingModuleBuilder } from '@nestjs/testing';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { provisionAppRole, RESTO_APP_ROLE } from '@resto/db';
+import { provisionAppRole, provisionAuthRole, RESTO_APP_ROLE } from '@resto/db';
 import { AppModule } from '../../src/app.module';
 import { loadEnv } from '../../src/config/env.schema';
 import { registerSecurity } from '../../src/shared/security';
@@ -24,6 +24,7 @@ const DB_MIGRATIONS_FOLDER = resolve(
   'migrations',
 );
 const APP_ROLE_PASSWORD = 'resto_app';
+const AUTH_ROLE_PASSWORD = 'resto_auth_e2e';
 
 export interface RealStack {
   readonly pg: StartedPostgreSqlContainer;
@@ -36,6 +37,7 @@ export interface RealStack {
 const startPostgres = async (): Promise<{
   container: StartedPostgreSqlContainer;
   appUrl: string;
+  authUrl: string;
 }> => {
   const container = await new PostgreSqlContainer('postgres:16-alpine')
     .withDatabase('resto_e2e')
@@ -48,14 +50,20 @@ const startPostgres = async (): Promise<{
   try {
     await migrate(drizzle(client), { migrationsFolder: DB_MIGRATIONS_FOLDER });
     await provisionAppRole(client, { appPassword: APP_ROLE_PASSWORD });
+    await provisionAuthRole(client, { authPassword: AUTH_ROLE_PASSWORD });
   } finally {
     await client.end({ timeout: 5 });
   }
 
-  const url = new URL(adminUrl);
-  url.username = RESTO_APP_ROLE;
-  url.password = APP_ROLE_PASSWORD;
-  return { container, appUrl: url.toString() };
+  const appUrlParsed = new URL(adminUrl);
+  appUrlParsed.username = RESTO_APP_ROLE;
+  appUrlParsed.password = APP_ROLE_PASSWORD;
+
+  const authUrlParsed = new URL(adminUrl);
+  authUrlParsed.username = 'resto_auth';
+  authUrlParsed.password = AUTH_ROLE_PASSWORD;
+
+  return { container, appUrl: appUrlParsed.toString(), authUrl: authUrlParsed.toString() };
 };
 
 const startNats = async (): Promise<{ container: StartedTestContainer; url: string }> => {
@@ -93,15 +101,15 @@ export interface StartRealStackOptions {
 }
 
 export const startRealStack = async (options: StartRealStackOptions = {}): Promise<RealStack> => {
-  const [{ container: pg, appUrl }, { container: nats, url: natsUrl }] = await Promise.all([
-    startPostgres(),
-    startNats(),
-  ]);
+  const [{ container: pg, appUrl, authUrl }, { container: nats, url: natsUrl }] = await Promise.all(
+    [startPostgres(), startNats()],
+  );
 
   process.env.NODE_ENV = 'test';
   process.env.OTEL_DISABLED = 'true';
   process.env.NATS_DISABLED = options.natsEnabledInApp === false ? 'true' : 'false';
   process.env.DATABASE_URL = appUrl;
+  process.env.BETTER_AUTH_DATABASE_URL = authUrl;
   process.env.NATS_URL = natsUrl;
   process.env.NATS_STREAM = 'RESTO_EVENTS_E2E';
   process.env.INTERNAL_API_TOKEN = 'integration-test-token-1234567890';

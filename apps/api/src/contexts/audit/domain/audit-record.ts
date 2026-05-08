@@ -11,6 +11,8 @@ export const AuditRecord = z.object({
   targetType: z.string().nullable(),
   targetId: z.string().nullable(),
   payload: z.record(z.unknown()).nullable(),
+  ipAddress: z.string().nullable(),
+  userAgent: z.string().nullable(),
   correlationId: z.string().uuid().nullable(),
   occurredAt: z.date(),
 });

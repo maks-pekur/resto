@@ -1,6 +1,7 @@
 import { betterAuth, type BetterAuthPlugin } from 'better-auth';
 import { organization, twoFactor, bearer } from 'better-auth/plugins';
 import type { OrganizationOptions } from 'better-auth/plugins';
+import { Logger } from '@nestjs/common';
 import { ac, ownerRole, adminRole, staffRole } from './access-control';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
 import type { AuthDrizzle } from './auth-db';
@@ -28,6 +29,18 @@ interface BuildOpts {
    * typed via OrganizationOptions so any BA upgrade will surface here.
    */
   sendInvitationEmail?: SendInvitationEmail;
+  /**
+   * Invoked when an operator sets the active organization on their session
+   * (i.e. after `POST /api/auth/organization/set-active` completes). This is
+   * the canonical "operator signed in" moment. The callback runs in a
+   * separate transaction from BA's session update; failures are logged at
+   * error level and swallowed — audit pipeline is eventually-consistent
+   * observability; we never block sign-in on an audit-write failure.
+   */
+  onActiveOrganizationSet?: (
+    session: { userId: string; activeOrganizationId?: string | null },
+    ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
+  ) => Promise<void>;
 }
 
 /**
@@ -80,6 +93,42 @@ export const buildAuth = (opts: BuildOpts) =>
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling
+    },
+    databaseHooks: {
+      session: {
+        update: {
+          after: async (session, ctx) => {
+            if (!opts.onActiveOrganizationSet) return;
+            if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
+              return;
+            const rawRequest = (ctx as { request?: Request } | undefined)?.request;
+            const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
+            if (!path.endsWith('/api/auth/organization/set-active')) return;
+            try {
+              const reqHeaders = rawRequest?.headers;
+              await opts.onActiveOrganizationSet(
+                {
+                  userId: session.userId,
+                  activeOrganizationId: session.activeOrganizationId,
+                },
+                {
+                  ...(reqHeaders ? { headers: reqHeaders } : {}),
+                },
+              );
+            } catch (err) {
+              new Logger('IdentityEventHook').error(
+                {
+                  err,
+                  type: 'identity.signed_in.v1',
+                  userId: session.userId,
+                  tenantId: session.activeOrganizationId,
+                },
+                'Failed to emit identity event — audit row may be missing',
+              );
+            }
+          },
+        },
+      },
     },
     // Spread so the key is absent entirely when unset —
     // exactOptionalPropertyTypes rejects `advanced: undefined`.

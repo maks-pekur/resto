@@ -24,7 +24,7 @@ export { EVENT_PUBLISHER } from './event-publisher.token';
 export const INBOX_TRACKER = Symbol('INBOX_TRACKER');
 export const EVENT_SUBSCRIBER = Symbol('EVENT_SUBSCRIBER');
 
-const STREAM_SUBJECTS = ['tenancy.>', 'catalog.>', 'ordering.>', 'billing.>'];
+const STREAM_SUBJECTS = ['tenancy.>', 'identity.>', 'catalog.>', 'ordering.>', 'billing.>'];
 
 const moduleLogger = new Logger('NatsModule');
 
