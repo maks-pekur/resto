@@ -28,6 +28,18 @@ interface BuildOpts {
    * typed via OrganizationOptions so any BA upgrade will surface here.
    */
   sendInvitationEmail?: SendInvitationEmail;
+  /**
+   * Invoked from the BA `databaseHooks.session.update.after` hook when a
+   * session is updated with an `activeOrganizationId` (i.e. after the operator
+   * calls `setActive`). The callback runs in a separate transaction from BA's
+   * session update; failure is logged and swallowed (audit is
+   * eventually-consistent — losing one audit row is preferable to
+   * blocking the sign-in flow).
+   */
+  onSessionCreated?: (
+    session: { userId: string; activeOrganizationId?: string | null },
+    ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
+  ) => Promise<void>;
 }
 
 /**
@@ -80,6 +92,34 @@ export const buildAuth = (opts: BuildOpts) =>
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling
+    },
+    databaseHooks: {
+      session: {
+        update: {
+          after: async (session, ctx) => {
+            if (!opts.onSessionCreated) return;
+            if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
+              return;
+            const rawRequest = (ctx as { request?: Request } | undefined)?.request;
+            const requestUrl = rawRequest?.url ?? '';
+            if (!requestUrl.includes('set-active')) return;
+            try {
+              const reqHeaders = rawRequest?.headers;
+              await opts.onSessionCreated(
+                {
+                  userId: session.userId,
+                  activeOrganizationId: session.activeOrganizationId,
+                },
+                {
+                  ...(reqHeaders ? { headers: reqHeaders } : {}),
+                },
+              );
+            } catch {
+              // BA's hook signature is fire-and-forget for our purposes — never block sign-in.
+            }
+          },
+        },
+      },
     },
     // Spread so the key is absent entirely when unset —
     // exactOptionalPropertyTypes rejects `advanced: undefined`.

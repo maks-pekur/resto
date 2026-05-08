@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { Module, type Provider } from '@nestjs/common';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
@@ -6,8 +7,28 @@ import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth
 import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permission-checker.adapter';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
+import { TenantId } from '@resto/domain';
+import { IdentitySignedInV1 } from '@resto/events';
+import {
+  IDENTITY_EVENT_EMITTER,
+  type IdentityEventEmitterPort,
+} from './application/ports/identity-event-emitter.port';
+import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
+
+const readHeader = (
+  headers: Record<string, string | string[] | undefined> | Headers | undefined,
+  name: string,
+): string | undefined => {
+  if (!headers) return undefined;
+  if (typeof (headers as Headers).get === 'function') {
+    return (headers as Headers).get(name) ?? undefined;
+  }
+  const raw = (headers as Record<string, string | string[] | undefined>)[name];
+  if (Array.isArray(raw)) return raw[0];
+  return raw;
+};
 
 const authDrizzleProvider: Provider = {
   provide: AUTH_DRIZZLE_TOKEN,
@@ -28,8 +49,8 @@ const authDrizzleProvider: Provider = {
 
 const authProvider: Provider = {
   provide: AUTH_TOKEN,
-  inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN],
-  useFactory: (authDb: AuthDrizzle, env: Env): Auth => {
+  inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN, IDENTITY_EVENT_EMITTER],
+  useFactory: (authDb: AuthDrizzle, env: Env, emitter: IdentityEventEmitterPort): Auth => {
     const cookieDomain = env.AUTH_COOKIE_DOMAIN;
     // Admin (and other browser callers) hit BA from a different origin
     // than the api's `baseURL`; BA enforces an Origin allowlist on
@@ -42,6 +63,27 @@ const authProvider: Provider = {
       baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
       trustedOrigins,
       ...(cookieDomain ? { cookieDomain } : {}),
+      onSessionCreated: async (session, ctx) => {
+        if (!session.activeOrganizationId) return;
+        const ipAddress =
+          readHeader(ctx.headers, 'x-forwarded-for') ?? readHeader(ctx.headers, 'x-real-ip');
+        const userAgent = readHeader(ctx.headers, 'user-agent');
+        await emitter.emit({
+          id: randomUUID(),
+          type: IdentitySignedInV1.type,
+          version: IdentitySignedInV1.version,
+          tenantId: TenantId.parse(session.activeOrganizationId),
+          correlationId: randomUUID(),
+          causationId: null,
+          occurredAt: new Date(),
+          payload: {
+            userId: session.userId,
+            tenantId: TenantId.parse(session.activeOrganizationId),
+            ...(ipAddress ? { ipAddress } : {}),
+            ...(userAgent ? { userAgent } : {}),
+          },
+        });
+      },
     });
   },
 };
@@ -57,8 +99,13 @@ const permissionCheckerProvider: Provider = {
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
+    {
+      provide: IDENTITY_EVENT_EMITTER,
+      useClass: IdentityEventEmitterAdapter,
+    },
+    IdentityEventEmitterAdapter,
   ],
-  exports: [authProvider, authDrizzleProvider, permissionCheckerProvider],
+  exports: [authProvider, authDrizzleProvider, permissionCheckerProvider, IDENTITY_EVENT_EMITTER],
 })
 export class IdentityCoreModule {}
 

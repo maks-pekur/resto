@@ -52,7 +52,7 @@ describe('RecordAuditService', () => {
     expect(inserted.action).toBe('tenancy.tenant_provisioned.v1');
     expect(inserted.actorKind).toBe('system');
     expect(inserted.actorSubject).toBe('system');
-    expect(inserted.targetType).toBe('tenant_provisioned');
+    expect(inserted.targetType).toBe('tenant');
     expect(inserted.targetId).toBe(envelope.tenantId);
     expect(inserted.correlationId).toBe(envelope.correlationId);
     expect(inserted.occurredAt).toEqual(envelope.occurredAt);
@@ -79,7 +79,7 @@ describe('RecordAuditService', () => {
 
     const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(inserted.actorSubject).toBe('00000000-0000-4000-8000-0000000000aa');
-    expect(inserted.targetType).toBe('signed_in');
+    expect(inserted.targetType).toBe('user');
     expect(inserted.targetId).toBe('00000000-0000-4000-8000-0000000000aa');
   });
 
@@ -97,5 +97,32 @@ describe('RecordAuditService', () => {
 
     const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(inserted.tenantId).toBeNull();
+  });
+
+  it('threads ipAddress and userAgent from payload into the row', async () => {
+    const insert = vi.fn();
+    const db = {
+      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
+        return fn({ insert: () => ({ values: insert }) });
+      }),
+    } as unknown as TenantAwareDb;
+
+    const service = new RecordAuditService(db);
+    const envelope = buildEnvelope({
+      type: 'identity.signed_in.v1',
+      payload: {
+        userId: '00000000-0000-4000-8000-0000000000aa',
+        tenantId: '00000000-0000-4000-8000-000000000010',
+        ipAddress: '203.0.113.7',
+        userAgent: 'Mozilla/5.0 (Test)',
+      },
+    });
+    await service.fromEnvelope(envelope);
+
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.ipAddress).toBe('203.0.113.7');
+    expect(inserted.userAgent).toBe('Mozilla/5.0 (Test)');
+    expect(inserted.targetType).toBe('user');
+    expect(inserted.targetId).toBe('00000000-0000-4000-8000-0000000000aa');
   });
 });

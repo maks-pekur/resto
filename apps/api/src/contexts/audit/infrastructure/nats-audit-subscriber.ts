@@ -17,10 +17,13 @@ import { RecordAuditService } from '../application/record-audit.service';
 const TENANCY_CONSUMER_NAME = 'audit-recorder-tenancy';
 const TENANCY_SUBJECT = 'tenancy.>';
 
+const IDENTITY_CONSUMER_NAME = 'audit-recorder-identity';
+const IDENTITY_SUBJECT = 'identity.>';
+
 @Injectable()
 export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicationShutdown {
   private readonly logger = new Logger(NatsAuditSubscriber.name);
-  private subscription: EventSubscription | null = null;
+  private subscriptions: EventSubscription[] = [];
 
   constructor(
     @Inject(EVENT_SUBSCRIBER) private readonly subscriber: EventSubscriber | null,
@@ -33,29 +36,36 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
       this.logger.warn('NATS subscriber unavailable — audit pipeline disabled');
       return;
     }
-    const handler = withInboxDedup(this.tracker, TENANCY_CONSUMER_NAME, (envelope) =>
-      this.recorder.fromEnvelope(envelope),
-    );
-    this.subscription = await this.subscriber.subscribe({
-      subject: TENANCY_SUBJECT,
-      durableName: TENANCY_CONSUMER_NAME,
-      maxInFlight: 1,
-      handler,
-    });
-    this.logger.log(
+    for (const cfg of [
       { subject: TENANCY_SUBJECT, durableName: TENANCY_CONSUMER_NAME },
-      'Audit subscription started',
-    );
+      { subject: IDENTITY_SUBJECT, durableName: IDENTITY_CONSUMER_NAME },
+    ]) {
+      const handler = withInboxDedup(this.tracker, cfg.durableName, (envelope) =>
+        this.recorder.fromEnvelope(envelope),
+      );
+      const subscription = await this.subscriber.subscribe({
+        subject: cfg.subject,
+        durableName: cfg.durableName,
+        maxInFlight: 1,
+        handler,
+      });
+      this.subscriptions.push(subscription);
+      this.logger.log(
+        { subject: cfg.subject, durableName: cfg.durableName },
+        'Audit subscription started',
+      );
+    }
   }
 
   async onApplicationShutdown(): Promise<void> {
-    const sub = this.subscription;
-    this.subscription = null;
-    if (!sub) return;
-    try {
-      await sub.stop();
-    } catch (err) {
-      this.logger.warn({ err }, 'Audit subscription was already stopped');
+    const subs = this.subscriptions;
+    this.subscriptions = [];
+    for (const sub of subs) {
+      try {
+        await sub.stop();
+      } catch (err) {
+        this.logger.warn({ err }, 'Audit subscription was already stopped');
+      }
     }
   }
 }

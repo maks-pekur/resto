@@ -3,6 +3,17 @@ import { schema, TenantAwareDb } from '@resto/db';
 import { type EventEnvelope } from '@resto/events';
 import { AuditRecord } from '../domain/audit-record';
 
+const ACTION_TARGET_KIND: Record<string, string> = {
+  'tenancy.tenant_provisioned': 'tenant',
+  'tenancy.tenant_archived': 'tenant',
+  'identity.signed_in': 'user',
+};
+
+const targetKindFor = (action: string): string | null => {
+  const prefix = action.replace(/\.v\d+$/, '');
+  return ACTION_TARGET_KIND[prefix] ?? null;
+};
+
 @Injectable()
 export class RecordAuditService {
   private readonly logger = new Logger(RecordAuditService.name);
@@ -20,6 +31,8 @@ export class RecordAuditService {
         targetType: record.targetType,
         targetId: record.targetId,
         payload: record.payload,
+        ipAddress: record.ipAddress,
+        userAgent: record.userAgent,
         correlationId: record.correlationId,
         occurredAt: record.occurredAt,
       });
@@ -29,10 +42,12 @@ export class RecordAuditService {
 
   private project(envelope: EventEnvelope): AuditRecord {
     const payload = envelope.payload as Record<string, unknown>;
-    const targetType = envelope.type.split('.')[1] ?? null;
+    const ipAddress = typeof payload.ipAddress === 'string' ? payload.ipAddress : null;
+    const userAgent = typeof payload.userAgent === 'string' ? payload.userAgent : null;
+    const targetType = targetKindFor(envelope.type);
     const targetId =
-      (typeof payload.tenantId === 'string' && payload.tenantId) ||
       (typeof payload.userId === 'string' && payload.userId) ||
+      (typeof payload.tenantId === 'string' && payload.tenantId) ||
       null;
     return {
       tenantId: envelope.tenantId,
@@ -40,11 +55,15 @@ export class RecordAuditService {
       actorSubject:
         typeof payload.actorSubject === 'string' && payload.actorSubject.length > 0
           ? payload.actorSubject
-          : 'system',
+          : typeof payload.userId === 'string' && payload.userId.length > 0
+            ? payload.userId
+            : 'system',
       action: envelope.type,
       targetType,
       targetId,
       payload,
+      ipAddress,
+      userAgent,
       correlationId: envelope.correlationId,
       occurredAt: envelope.occurredAt,
     };
