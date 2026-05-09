@@ -1,23 +1,12 @@
 'use client';
 
 import * as React from 'react';
-import {
-  AudioWaveform,
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  GalleryVerticalEnd,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from 'lucide-react';
+import { BookOpen, Bot, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react';
 
 import { NavMain } from '@/components/nav-main';
 import { NavProjects } from '@/components/nav-projects';
 import { NavUser } from '@/components/nav-user';
-import { TeamSwitcher } from '@/components/team-switcher';
+import { TenantBrand } from '@/components/tenant-brand';
 import {
   Sidebar,
   SidebarContent,
@@ -26,130 +15,74 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 
-// This is sample data.
-const data = {
-  user: {
-    name: 'shadcn',
-    email: 'm@example.com',
-    avatar: '/avatars/shadcn.jpg',
+const navMain = [
+  {
+    title: 'Playground',
+    url: '#',
+    icon: SquareTerminal,
+    isActive: true,
+    items: [
+      { title: 'History', url: '#' },
+      { title: 'Starred', url: '#' },
+      { title: 'Settings', url: '#' },
+    ],
   },
-  teams: [
-    {
-      name: 'Acme Inc',
-      logo: GalleryVerticalEnd,
-      plan: 'Enterprise',
-    },
-    {
-      name: 'Acme Corp.',
-      logo: AudioWaveform,
-      plan: 'Startup',
-    },
-    {
-      name: 'Evil Corp.',
-      logo: Command,
-      plan: 'Free',
-    },
-  ],
-  navMain: [
-    {
-      title: 'Playground',
-      url: '#',
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: 'History',
-          url: '#',
-        },
-        {
-          title: 'Starred',
-          url: '#',
-        },
-        {
-          title: 'Settings',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Models',
-      url: '#',
-      icon: Bot,
-      items: [
-        {
-          title: 'Genesis',
-          url: '#',
-        },
-        {
-          title: 'Explorer',
-          url: '#',
-        },
-        {
-          title: 'Quantum',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Documentation',
-      url: '#',
-      icon: BookOpen,
-      items: [
-        {
-          title: 'Introduction',
-          url: '#',
-        },
-        {
-          title: 'Get Started',
-          url: '#',
-        },
-        {
-          title: 'Tutorials',
-          url: '#',
-        },
-        {
-          title: 'Changelog',
-          url: '#',
-        },
-      ],
-    },
-    {
-      title: 'Settings',
-      url: '/dashboard/settings',
-      icon: Settings2,
-    },
-  ],
-  projects: [
-    {
-      name: 'Design Engineering',
-      url: '#',
-      icon: Frame,
-    },
-    {
-      name: 'Sales & Marketing',
-      url: '#',
-      icon: PieChart,
-    },
-    {
-      name: 'Travel',
-      url: '#',
-      icon: Map,
-    },
-  ],
+  {
+    title: 'Models',
+    url: '#',
+    icon: Bot,
+    items: [
+      { title: 'Genesis', url: '#' },
+      { title: 'Explorer', url: '#' },
+      { title: 'Quantum', url: '#' },
+    ],
+  },
+  {
+    title: 'Documentation',
+    url: '#',
+    icon: BookOpen,
+    items: [
+      { title: 'Introduction', url: '#' },
+      { title: 'Get Started', url: '#' },
+      { title: 'Tutorials', url: '#' },
+      { title: 'Changelog', url: '#' },
+    ],
+  },
+  {
+    title: 'Settings',
+    url: '/dashboard/settings',
+    icon: Settings2,
+  },
+];
+
+const projects = [
+  { name: 'Design Engineering', url: '#', icon: Frame },
+  { name: 'Sales & Marketing', url: '#', icon: PieChart },
+  { name: 'Travel', url: '#', icon: Map },
+];
+
+const placeholderUser = {
+  name: 'Operator',
+  email: 'operator@example.com',
+  avatar: '/avatars/shadcn.jpg',
 };
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  readonly tenant: { readonly id: string; readonly slug: string; readonly displayName: string };
+}
+
+export function AppSidebar({ tenant, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TenantBrand tenant={tenant} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
+        <NavMain items={navMain} />
+        <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={placeholderUser} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
