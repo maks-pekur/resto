@@ -5,11 +5,15 @@ import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import {
   appendToOutbox,
   TenantArchivedV1,
+  TenantErasureCompletedV1,
+  TenantOffboardingCancelledV1,
+  TenantOffboardingScheduledV1,
   TenantProvisionedV1,
   type EventEnvelope,
 } from '@resto/events';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
+import { TenantNotFoundError } from '../domain/errors';
 import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
@@ -131,6 +135,125 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
+  listScheduledForErasure(): Promise<readonly TenantSnapshot[]> {
+    return this.db.withoutTenant('tenancy.listScheduledForErasure', async (tx) => {
+      const rows = await tx
+        .select({ id: schema.tenants.id })
+        .from(schema.tenants)
+        .where(
+          sql`${schema.tenants.status} = 'pending_offboarding'
+              AND ${schema.tenants.offboardingExecutedAt} IS NULL
+              AND ${schema.tenants.offboardingScheduledAt} + INTERVAL '30 days' < NOW()`,
+        );
+      const tenants: TenantSnapshot[] = [];
+      for (const row of rows) {
+        const tenant = await this.loadByIdWithTx(tx, TenantId.parse(row.id));
+        if (tenant) tenants.push(tenant.toSnapshot());
+      }
+      return tenants;
+    });
+  }
+
+  async eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot> {
+    return this.db.withoutTenant(`tenant erasure: ${id}`, async (tx) => {
+      const tenant = await this.loadByIdWithTx(tx, id);
+      if (!tenant) {
+        throw new TenantNotFoundError(id);
+      }
+      const currentSnapshot = tenant.toSnapshot();
+      if (currentSnapshot.status === 'erased') {
+        return currentSnapshot;
+      }
+
+      const memberRows = await tx
+        .select({ userId: schema.member.userId })
+        .from(schema.member)
+        .where(eq(schema.member.organizationId, id));
+      const orphanCandidates = memberRows.map((row) => row.userId);
+
+      await tx.delete(schema.outboxEvents).where(eq(schema.outboxEvents.tenantId, id));
+      await tx.delete(schema.inboxProcessed).where(eq(schema.inboxProcessed.tenantId, id));
+      await tx.delete(schema.menuItems).where(eq(schema.menuItems.tenantId, id));
+      await tx.delete(schema.menuModifiers).where(eq(schema.menuModifiers.tenantId, id));
+      await tx.delete(schema.menuCategories).where(eq(schema.menuCategories.tenantId, id));
+      await tx.delete(schema.customerProfiles).where(eq(schema.customerProfiles.tenantId, id));
+      await tx.delete(schema.invitation).where(eq(schema.invitation.organizationId, id));
+      await tx
+        .delete(schema.organizationRole)
+        .where(eq(schema.organizationRole.organizationId, id));
+      await tx.delete(schema.member).where(eq(schema.member.organizationId, id));
+      await tx.delete(schema.tenantDomains).where(eq(schema.tenantDomains.tenantId, id));
+
+      await tx.execute(sql`
+        UPDATE audit_log
+        SET
+          actor_subject = 'erased:' || encode(digest(${auditSalt} || actor_subject, 'sha256'), 'hex'),
+          payload = (
+            CASE
+              WHEN payload IS NULL THEN NULL
+              ELSE jsonb_set_lax(
+                     jsonb_set_lax(
+                       jsonb_set_lax(
+                         CASE
+                           WHEN payload ? 'userId' AND jsonb_typeof(payload->'userId') = 'string'
+                           THEN jsonb_set(
+                                  payload,
+                                  '{userId}',
+                                  to_jsonb('erased:' || encode(digest(${auditSalt} || (payload->>'userId'), 'sha256'), 'hex'))
+                                )
+                           ELSE payload
+                         END,
+                         '{ipAddress}',
+                         NULL,
+                         false,
+                         'use_json_null'
+                       ),
+                       '{userAgent}',
+                       NULL,
+                       false,
+                       'use_json_null'
+                     ),
+                     '{email}',
+                     NULL,
+                     false,
+                     'use_json_null'
+                   )
+            END
+          )
+        WHERE tenant_id = ${id}
+      `);
+
+      if (orphanCandidates.length > 0) {
+        await tx.execute(sql`
+          DELETE FROM "user"
+          WHERE id = ANY(${orphanCandidates}::text[])
+          AND NOT EXISTS (SELECT 1 FROM member WHERE member.user_id = "user".id)
+        `);
+      }
+
+      tenant.executeErasure(new Date());
+      const erasedSnapshot = tenant.toSnapshot();
+      await tx
+        .update(schema.tenants)
+        .set({
+          status: erasedSnapshot.status,
+          slug: erasedSnapshot.slug,
+          displayName: erasedSnapshot.displayName,
+          stripeAccountId: erasedSnapshot.stripeAccountId,
+          offboardingExecutedAt: erasedSnapshot.offboardingExecutedAt,
+          updatedAt: erasedSnapshot.updatedAt,
+        })
+        .where(eq(schema.tenants.id, id));
+
+      for (const event of tenant.pullEvents()) {
+        const envelope = domainEventToEnvelope(event);
+        await appendToOutbox(tx, { envelope, aggregateId: id });
+      }
+
+      return erasedSnapshot;
+    });
+  }
+
   private loadById(id: TenantId): Promise<Tenant | null> {
     return this.db.withoutTenant('tenancy.findById', (tx) => this.loadByIdWithTx(tx, id));
   }
@@ -231,16 +354,47 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         payload: { tenantId: event.tenantId },
       };
     case 'TenantOffboardingScheduled':
-      throw new Error(
-        'Outbox envelope for "TenantOffboardingScheduled" is not yet wired (RES-138 Task 5 — add contract in @resto/events).',
-      );
+      return {
+        id: randomUUID(),
+        type: TenantOffboardingScheduledV1.type,
+        version: TenantOffboardingScheduledV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          requestedBy: event.requestedBy,
+          scheduledAt: event.scheduledAt,
+        },
+      };
     case 'TenantOffboardingCancelled':
-      throw new Error(
-        'Outbox envelope for "TenantOffboardingCancelled" is not yet wired (RES-138 Task 5 — add contract in @resto/events).',
-      );
+      return {
+        id: randomUUID(),
+        type: TenantOffboardingCancelledV1.type,
+        version: TenantOffboardingCancelledV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          cancelledAt: event.cancelledAt,
+        },
+      };
     case 'TenantErasureCompleted':
-      throw new Error(
-        'Outbox envelope for "TenantErasureCompleted" is not yet wired (RES-138 Task 6 — add contract in @resto/events).',
-      );
+      return {
+        id: randomUUID(),
+        type: TenantErasureCompletedV1.type,
+        version: TenantErasureCompletedV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          executedAt: event.executedAt,
+        },
+      };
   }
 };

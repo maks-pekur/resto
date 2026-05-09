@@ -11,6 +11,8 @@ const buildRepo = (): TenantRepository => ({
   findByDomainHost: vi.fn(),
   save: vi.fn(),
   listDomains: vi.fn().mockResolvedValue([]),
+  eraseTenant: vi.fn(),
+  listScheduledForErasure: vi.fn().mockResolvedValue([]),
 });
 
 const tenantFor = (slug: string): Tenant =>

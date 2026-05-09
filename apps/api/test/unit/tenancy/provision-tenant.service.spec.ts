@@ -13,6 +13,8 @@ const buildRepo = (): TenantRepository => ({
   findByDomainHost: vi.fn(),
   save: vi.fn().mockResolvedValue(undefined),
   listDomains: vi.fn(),
+  eraseTenant: vi.fn(),
+  listScheduledForErasure: vi.fn().mockResolvedValue([]),
 });
 
 const stripeNoop = { ensureExpressAccount: vi.fn().mockResolvedValue(null) };

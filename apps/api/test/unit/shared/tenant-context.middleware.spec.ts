@@ -47,6 +47,8 @@ const buildRepo = (): TenantRepository => ({
   findByDomainHost: vi.fn().mockResolvedValue(null),
   save: vi.fn(),
   listDomains: vi.fn(),
+  eraseTenant: vi.fn(),
+  listScheduledForErasure: vi.fn().mockResolvedValue([]),
 });
 
 const setup = (env: Env, repoOverride?: TenantRepository) => {

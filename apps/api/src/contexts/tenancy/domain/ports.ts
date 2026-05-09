@@ -1,5 +1,5 @@
 import type { TenantId, TenantSlug } from '@resto/domain';
-import type { Tenant } from './tenant.aggregate';
+import type { Tenant, TenantSnapshot } from './tenant.aggregate';
 import type { TenantDomain } from './tenant-domain';
 
 /**
@@ -19,6 +19,8 @@ export interface TenantRepository {
    */
   save(tenant: Tenant): Promise<void>;
   listDomains(id: TenantId): Promise<TenantDomain[]>;
+  eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot>;
+  listScheduledForErasure(): Promise<readonly TenantSnapshot[]>;
 }
 
 export const TENANT_REPOSITORY = Symbol('TENANT_REPOSITORY');
