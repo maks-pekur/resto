@@ -189,9 +189,9 @@ suite('Tenancy — GDPR erasure end-to-end', () => {
       expect(row.ipAddress).toBeNull();
       expect(row.userAgent).toBeNull();
       if (row.payload && typeof row.payload === 'object') {
-        const payload = row.payload as Record<string, unknown>;
+        const payload = row.payload;
         if (typeof payload.userId === 'string') {
-          expect((payload.userId as string).startsWith('erased:')).toBe(true);
+          expect(payload.userId.startsWith('erased:')).toBe(true);
         }
         if ('ipAddress' in payload) {
           expect(payload.ipAddress).toBeNull();

@@ -12,6 +12,9 @@ export interface TenantResponse {
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
+  offboardingScheduledAt: string | null;
+  offboardingExecutedAt: string | null;
+  offboardingRequestedBy: string | null;
 }
 
 export const toResponse = (s: TenantSnapshot): TenantResponse => ({
@@ -26,4 +29,7 @@ export const toResponse = (s: TenantSnapshot): TenantResponse => ({
   createdAt: s.createdAt.toISOString(),
   updatedAt: s.updatedAt.toISOString(),
   archivedAt: s.archivedAt?.toISOString() ?? null,
+  offboardingScheduledAt: s.offboardingScheduledAt?.toISOString() ?? null,
+  offboardingExecutedAt: s.offboardingExecutedAt?.toISOString() ?? null,
+  offboardingRequestedBy: s.offboardingRequestedBy,
 });
