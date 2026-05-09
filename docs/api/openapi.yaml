@@ -34,6 +34,29 @@ paths:
         "204":
           description: ""
       tags: *a2
+  /internal/v1/tenants/scheduled-offboarding:
+    get:
+      operationId: InternalTenantsController_listScheduledOffboarding
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a2
+  /internal/v1/tenants/{id}/offboard:
+    post:
+      operationId: InternalTenantsController_scheduleOffboarding
+      parameters: []
+      responses:
+        "202":
+          description: ""
+      tags: *a2
+    delete:
+      operationId: InternalTenantsController_cancelOffboarding
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags: *a2
   /v1/tenants/me:
     get:
       operationId: TenantsController_getMe
@@ -63,6 +86,15 @@ paths:
   /internal/v1/tenants/{id}/owner:
     post:
       operationId: InternalBootstrapController_createOwner
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags:
+        - identity
+  /v1/signup:
+    post:
+      operationId: SignUpController_create
       parameters: []
       responses:
         "201":
