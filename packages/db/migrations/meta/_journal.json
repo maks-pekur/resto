@@ -85,6 +85,20 @@
       "when": 1778322700000,
       "tag": "0011_tenancy_erase_function",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778358693383,
+      "tag": "0012_high_senator_kelly",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1778358754259,
+      "tag": "0013_brands_rls",
+      "breakpoints": true
     }
   ]
 }
