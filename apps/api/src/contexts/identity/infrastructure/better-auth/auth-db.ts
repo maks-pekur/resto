@@ -1,6 +1,6 @@
-import postgres from 'postgres';
-import { drizzle } from 'drizzle-orm/postgres-js';
 import * as authSchema from '@resto/db/schema';
+import { drizzle } from 'drizzle-orm/postgres-js';
+import postgres from 'postgres';
 
 /**
  * Construct the BA-only drizzle client. Connects under resto_auth

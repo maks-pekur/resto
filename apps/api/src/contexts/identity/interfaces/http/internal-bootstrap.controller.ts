@@ -10,6 +10,8 @@ import {
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
+import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
+import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
 import {
   BootstrapOwnerService,
   type BootstrapOwnerResult,
@@ -19,10 +21,8 @@ import {
   type TenantLookupPort,
 } from '../../application/ports/tenant-lookup.port';
 import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
-import { mapIdentityError } from './error-mapping';
 import { Public } from './decorators/public.decorator';
-import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
-import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
+import { mapIdentityError } from './error-mapping';
 
 export const BootstrapOwnerInput = z.object({
   email: z.string().trim().toLowerCase().email(),

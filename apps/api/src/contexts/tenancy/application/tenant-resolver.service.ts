@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TenantSlug } from '@resto/domain';
-import type { TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
+import type { TenantSnapshot } from '../domain/tenant.aggregate';
 
 const RESERVED_HOSTS = new Set(['api', 'www']);
 

@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { TenantAwareDb } from '@resto/db';
 import { appendToOutbox, type EventEnvelope } from '@resto/events';
+import { randomUUID } from 'node:crypto';
 import type { IdentityEventEmitterPort } from '../application/ports/identity-event-emitter.port';
 
 @Injectable()

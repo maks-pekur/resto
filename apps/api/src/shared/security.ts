@@ -87,8 +87,18 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     // pipeline so the standard `ProblemDetailsFilter` formats the 429.
     global: false,
     timeWindow: '1 minute',
-    max: (req: FastifyRequest): number =>
-      isInternalRoute(req.url) ? env.RATE_LIMIT_INTERNAL_PER_MIN : env.RATE_LIMIT_PUBLIC_PER_MIN,
+    // Single per-IP store across all routes — same IP hitting different
+    // route groups shares the counter. Per-endpoint max overrides at
+    // request time but the counter is shared. Acceptable for MVP-1; a
+    // future ticket can per-bucket via `keyGenerator` if cross-traffic
+    // pollution becomes visible.
+    max: (req: FastifyRequest): number => {
+      if (isInternalRoute(req.url)) return env.RATE_LIMIT_INTERNAL_PER_MIN;
+      if (req.url.startsWith('/api/auth/sign-up')) return env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN;
+      if (req.url.startsWith('/api/auth/forget-password')) return env.RATE_LIMIT_AUTH_RESET_PER_MIN;
+      if (req.url.startsWith('/api/auth/sign-in/email')) return env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN;
+      return env.RATE_LIMIT_PUBLIC_PER_MIN;
+    },
     allowList: (req: FastifyRequest): boolean => req.url === '/healthz',
     errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
       // Shape matches NestJS HttpException response convention
@@ -105,11 +115,21 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
 
   // BA's `/api/auth/*` endpoints are mounted directly on Fastify (see
   // identity-http.module → better-auth.handler) so the NestJS Guard does
-  // not see them. Path-scope the Fastify-level limiter to that prefix to
-  // avoid double-counting requests that already pass through the Guard.
+  // not see them. The preHandler hook intercepts every BA request before
+  // routing so the same per-endpoint `max` logic (sign-up, reset,
+  // sign-in/email) applies without any module-scope coupling.
+  // The limiter throws a Fastify HTTP error when the limit is exceeded;
+  // we catch it here and call reply.send() so Fastify's onSend chain still
+  // fires (including the content-type rewrite below). Rethrowing would
+  // bypass onSend and land in NestJS's global exception filter → 500.
   fastify.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
     if (req.url.startsWith('/api/auth/')) {
-      await rateLimitHandler(req, reply);
+      try {
+        await rateLimitHandler(req, reply);
+      } catch (err) {
+        const body = err as { statusCode?: number };
+        reply.status(body.statusCode ?? 429).send(err);
+      }
     }
   });
 

@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TenantId, TenantSlug } from '@resto/domain';
-import type { TenantSnapshot } from '../domain/tenant.aggregate';
-import type { TenantDomain } from '../domain/tenant-domain';
-import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantNotFoundError } from '../domain/errors';
+import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
+import type { TenantDomain } from '../domain/tenant-domain';
+import type { TenantSnapshot } from '../domain/tenant.aggregate';
 
 @Injectable()
 export class TenantQueriesService {

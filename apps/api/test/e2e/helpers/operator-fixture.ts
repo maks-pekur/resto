@@ -90,12 +90,14 @@ export const signIn = async (
   app: NestFastifyApplication,
   email: string,
   password: string,
+  remoteAddress?: string,
 ): Promise<string> => {
   const res = await app.inject({
     method: 'POST',
     url: '/api/auth/sign-in/email',
     headers: { 'content-type': 'application/json' },
     payload: { email, password },
+    ...(remoteAddress !== undefined ? { remoteAddress } : {}),
   });
   expect(res.statusCode).toBe(200);
   return extractCookies(res.headers['set-cookie']);
@@ -111,14 +113,16 @@ export const signInAsOperator = async (
   email: string,
   password: string,
   tenantId: string,
+  remoteAddress?: string,
 ): Promise<string> => {
-  const cookie = await signIn(app, email, password);
+  const cookie = await signIn(app, email, password, remoteAddress);
 
   const setActiveRes = await app.inject({
     method: 'POST',
     url: '/api/auth/organization/set-active',
     headers: { 'content-type': 'application/json', cookie },
     payload: { organizationId: tenantId },
+    ...(remoteAddress !== undefined ? { remoteAddress } : {}),
   });
   expect(setActiveRes.statusCode).toBe(200);
 

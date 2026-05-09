@@ -13,6 +13,10 @@ import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/opera
 import { AUTH_DRIZZLE_TOKEN } from '../../src/contexts/identity/identity.tokens';
 import type { AuthDrizzle } from '../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
+const generateIp = (testNumber: number): string => {
+  return `10.100.${testNumber}.${randomUUID().slice(0, 2)}`;
+};
+
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 
@@ -34,13 +38,14 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const slug = `signin-${randomUUID().slice(0, 8)}`;
     const password = 'correct-horse-battery-staple-signin';
     const email = `owner-${slug}@example.com`;
+    const remoteAddress = generateIp(1);
 
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
     const owner = await runBootstrap({ tenantSlug: slug, email, password, name: 'Sign-In Owner' });
 
     // signInAsOperator = sign-in + set-active. The set-active call triggers
     // session.update.after → outbox row → NATS → audit subscriber → audit_log.
-    await signInAsOperator(stack.app, email, password, tenant.id);
+    await signInAsOperator(stack.app, email, password, tenant.id, remoteAddress);
 
     const db = stack.app.get(TenantAwareDb);
 
@@ -88,13 +93,14 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const slug = `signin-dedup-${randomUUID().slice(0, 8)}`;
     const password = 'correct-horse-battery-staple-dedup';
     const email = `owner-${slug}@example.com`;
+    const remoteAddress = generateIp(2);
 
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
     const owner = await runBootstrap({ tenantSlug: slug, email, password, name: 'Dedup Owner' });
 
     // Sign in twice through the full set-active path.
-    await signInAsOperator(stack.app, email, password, tenant.id);
-    await signInAsOperator(stack.app, email, password, tenant.id);
+    await signInAsOperator(stack.app, email, password, tenant.id, remoteAddress);
+    await signInAsOperator(stack.app, email, password, tenant.id, remoteAddress);
 
     const db = stack.app.get(TenantAwareDb);
 
@@ -125,10 +131,11 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const slug = `signout-${randomUUID().slice(0, 8)}`;
     const password = 'correct-horse-battery-staple-signout';
     const email = `owner-${slug}@example.com`;
+    const remoteAddress = generateIp(3);
 
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
     const owner = await runBootstrap({ tenantSlug: slug, email, password, name: 'Sign-Out Owner' });
-    const cookie = await signInAsOperator(stack.app, email, password, tenant.id);
+    const cookie = await signInAsOperator(stack.app, email, password, tenant.id, remoteAddress);
 
     const sanityBefore = await stack.app.inject({
       method: 'GET',
@@ -189,6 +196,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const oldPassword = 'correct-horse-battery-staple-old';
     const newPassword = 'correct-horse-battery-staple-new';
     const email = `owner-${slug}@example.com`;
+    const remoteAddress = generateIp(4);
 
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
     const owner = await runBootstrap({
@@ -197,7 +205,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
       password: oldPassword,
       name: 'Reset Owner',
     });
-    const cookie = await signInAsOperator(stack.app, email, oldPassword, tenant.id);
+    const cookie = await signInAsOperator(stack.app, email, oldPassword, tenant.id, remoteAddress);
 
     const sanityBefore = await stack.app.inject({
       method: 'GET',
@@ -211,6 +219,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
       url: '/api/auth/forget-password',
       headers: { 'content-type': 'application/json' },
       payload: { email },
+      remoteAddress,
     });
     expect(forgetRes.statusCode).toBe(200);
 
@@ -233,6 +242,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
       url: '/api/auth/reset-password',
       headers: { 'content-type': 'application/json' },
       payload: { newPassword, token },
+      remoteAddress,
     });
     expect(resetRes.statusCode).toBe(200);
 
@@ -243,7 +253,13 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     });
     expect(sanityAfter.statusCode).toBe(401);
 
-    const newCookie = await signInAsOperator(stack.app, email, newPassword, tenant.id);
+    const newCookie = await signInAsOperator(
+      stack.app,
+      email,
+      newPassword,
+      tenant.id,
+      remoteAddress,
+    );
     const sanityNew = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',

@@ -66,6 +66,8 @@ const authProvider: Provider = {
       secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
       baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
       trustedOrigins,
+      minPasswordLength: env.PASSWORD_MIN_LENGTH,
+      maxPasswordLength: env.PASSWORD_MAX_LENGTH,
       ...(cookieDomain ? { cookieDomain } : {}),
       onSignedOut: async (snapshot) => {
         const tenantId = TenantId.parse(snapshot.tenantId);
