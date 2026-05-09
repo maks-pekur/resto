@@ -1,5 +1,16 @@
 import { sql } from 'drizzle-orm';
-import { check, foreignKey, index, jsonb, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  foreignKey,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from 'drizzle-orm/pg-core';
 import { citext } from './_types';
 import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
 import { tenants } from './tenants';
@@ -47,5 +58,37 @@ export const brands = pgTable(
       'brands_locale_format_chk',
       sql`${table.locale} IS NULL OR ${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`,
     ),
+  ],
+);
+
+export const brandDomains = pgTable(
+  'brand_domains',
+  {
+    id: pkUuid(),
+    brandId: uuid('brand_id').notNull(),
+    tenantId: tenantIdColumn(),
+    domain: citext('domain').notNull(),
+    kind: text('kind').notNull(),
+    isPrimary: boolean('is_primary').notNull().default(false),
+    verifiedAt: timestamp('verified_at', { withTimezone: true, mode: 'date' }),
+    ...timestampsColumns(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'brand_domains_brand_fk',
+      columns: [table.brandId],
+      foreignColumns: [brands.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'brand_domains_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    uniqueIndex('brand_domains_domain_uq').on(table.domain),
+    index('brand_domains_brand_kind_idx').on(table.brandId, table.kind),
+    uniqueIndex('brand_domains_one_primary_per_brand_uq')
+      .on(table.brandId)
+      .where(sql`${table.isPrimary} = true`),
+    check('brand_domains_kind_chk', sql`${table.kind} IN ('subdomain', 'custom')`),
   ],
 );

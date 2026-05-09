@@ -153,3 +153,120 @@ suite('brands — RLS + constraints', () => {
     expect(((error as Error).cause as Error | undefined)?.message).toMatch(/check|chk/i);
   });
 });
+
+suite('brand_domains — RLS + constraints', () => {
+  let pg: TestPg;
+  let tenantA: string;
+  let tenantB: string;
+  let brandA: string;
+
+  beforeAll(async () => {
+    pg = await startPostgres();
+    await pg.db.withoutTenant('seed for brand_domains', async (tx) => {
+      const [a] = await tx
+        .insert(schema.tenants)
+        .values({ slug: 'doms-a', displayName: 'Doms A' })
+        .returning({ id: schema.tenants.id });
+      const [b] = await tx
+        .insert(schema.tenants)
+        .values({ slug: 'doms-b', displayName: 'Doms B' })
+        .returning({ id: schema.tenants.id });
+      if (!a || !b) throw new Error('seed failed');
+      tenantA = a.id;
+      tenantB = b.id;
+
+      const [brand] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'doms-brand-a', displayName: 'Doms Brand A' })
+        .returning({ id: schema.brands.id });
+      if (!brand) throw new Error('seed brand failed');
+      brandA = brand.id;
+    });
+  }, 90_000);
+
+  afterAll(async () => {
+    if (pg) await stopPostgres(pg);
+  });
+
+  it('inserts a brand_domain row scoped to its tenant', async () => {
+    await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        const [row] = await tx
+          .insert(schema.brandDomains)
+          .values({
+            brandId: brandA,
+            tenantId: tenantA,
+            domain: 'doms-brand-a.menu.resto.app',
+            kind: 'subdomain',
+            isPrimary: true,
+          })
+          .returning({ id: schema.brandDomains.id });
+        expect(row?.id).toBeDefined();
+      }),
+    );
+  });
+
+  it('a tenant context cannot read another tenants domain rows', async () => {
+    const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+      pg.db.withTenant(async (tx) => tx.select().from(schema.brandDomains)),
+    );
+    expect(fromB).toEqual([]);
+  });
+
+  it('rejects duplicate domain across tenants (global UQ)', async () => {
+    const error = await pg.db
+      .withoutTenant('insert duplicate domain', async (tx) => {
+        await tx.insert(schema.brandDomains).values({
+          brandId: brandA,
+          tenantId: tenantA,
+          domain: 'doms-brand-a.menu.resto.app',
+          kind: 'subdomain',
+          isPrimary: false,
+        });
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error | undefined)?.message).toMatch(/unique|duplicate/i);
+  });
+
+  it('rejects more than one primary per brand', async () => {
+    const error = await pg.db
+      .withoutTenant('insert second primary', async (tx) => {
+        await tx.insert(schema.brandDomains).values({
+          brandId: brandA,
+          tenantId: tenantA,
+          domain: 'second-primary.menu.resto.app',
+          kind: 'subdomain',
+          isPrimary: true,
+        });
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error | undefined)?.message).toMatch(/unique|duplicate/i);
+  });
+
+  it('rejects unknown kind values', async () => {
+    const error = await pg.db
+      .withoutTenant('insert bad kind', async (tx) => {
+        await tx.insert(schema.brandDomains).values({
+          brandId: brandA,
+          tenantId: tenantA,
+          domain: 'kind-test.menu.resto.app',
+          kind: 'bogus',
+          isPrimary: false,
+        });
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error | undefined)?.message).toMatch(/check|chk/i);
+  });
+});
