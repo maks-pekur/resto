@@ -6,6 +6,7 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { Env } from '../config/env.schema';
 import { RateLimitGuard, type RateLimitHandler } from './rate-limit.guard';
+import { setRateLimitHandler } from '../contexts/identity/interfaces/http/better-auth.handler';
 
 const escapeRegex = (input: string): string => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -52,7 +53,7 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   // (e.g. `rateLimit`). Untyping at the seam is the conventional
   // NestJS+Fastify-plugin interop fix — runtime is fine, only the type
   // alignment needs help. Inline callbacks below carry their own types.
-  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
+  /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment */
   const fastify: any = app.getHttpAdapter().getInstance();
 
   await fastify.register(helmet, {
@@ -87,8 +88,13 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     // pipeline so the standard `ProblemDetailsFilter` formats the 429.
     global: false,
     timeWindow: '1 minute',
-    max: (req: FastifyRequest): number =>
-      isInternalRoute(req.url) ? env.RATE_LIMIT_INTERNAL_PER_MIN : env.RATE_LIMIT_PUBLIC_PER_MIN,
+    max: (req: FastifyRequest): number => {
+      if (isInternalRoute(req.url)) return env.RATE_LIMIT_INTERNAL_PER_MIN;
+      if (req.url.startsWith('/api/auth/sign-up')) return env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN;
+      if (req.url.startsWith('/api/auth/forget-password')) return env.RATE_LIMIT_AUTH_RESET_PER_MIN;
+      if (req.url.startsWith('/api/auth/sign-in/email')) return env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN;
+      return env.RATE_LIMIT_PUBLIC_PER_MIN;
+    },
     allowList: (req: FastifyRequest): boolean => req.url === '/healthz',
     errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
       // Shape matches NestJS HttpException response convention
@@ -105,13 +111,12 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
 
   // BA's `/api/auth/*` endpoints are mounted directly on Fastify (see
   // identity-http.module → better-auth.handler) so the NestJS Guard does
-  // not see them. Path-scope the Fastify-level limiter to that prefix to
-  // avoid double-counting requests that already pass through the Guard.
-  fastify.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    if (req.url.startsWith('/api/auth/')) {
-      await rateLimitHandler(req, reply);
-    }
-  });
+  // not see them. Make the rate limiter available to the BA handler so it
+  // can apply limits before processing requests. The `max` function in the
+  // plugin registration above already routes to per-endpoint limits for
+  // high-risk surfaces (sign-up, reset, sign-in/email); everything else
+  // uses the general public limiter.
+  setRateLimitHandler(rateLimitHandler);
 
   // The limiter throws a Fastify HTTP error whose body is the
   // problem-shaped object built above; Fastify serialises it as plain

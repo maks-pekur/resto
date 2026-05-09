@@ -5,6 +5,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
+    "ignoreDeprecations": "5.0",
     "rootDir": ".",
     "baseUrl": "."
   },

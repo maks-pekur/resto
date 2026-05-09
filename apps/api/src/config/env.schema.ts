@@ -106,6 +106,16 @@ export const envSchema = z
     RATE_LIMIT_PUBLIC_PER_MIN: z.coerce.number().int().positive().default(60),
     /** Per-IP rate limit (req/min) for `/internal/v1/*`. */
     RATE_LIMIT_INTERNAL_PER_MIN: z.coerce.number().int().positive().default(10),
+    /** Per-IP rate limit (req/min) for `POST /api/auth/sign-up/email` (brute-force resistance, RES-137). */
+    RATE_LIMIT_AUTH_SIGNUP_PER_MIN: z.coerce.number().int().positive().default(5),
+    /** Per-IP rate limit (req/min) for `POST /api/auth/forget-password` (brute-force resistance, RES-137). */
+    RATE_LIMIT_AUTH_RESET_PER_MIN: z.coerce.number().int().positive().default(5),
+    /** Per-IP rate limit (req/min) for `POST /api/auth/sign-in/email` (brute-force resistance, RES-137). */
+    RATE_LIMIT_AUTH_SIGNIN_PER_MIN: z.coerce.number().int().positive().default(10),
+    /** Minimum password length enforced by BA's emailAndPassword config (RES-137; NIST-aligned). */
+    PASSWORD_MIN_LENGTH: z.coerce.number().int().min(8).default(12),
+    /** Maximum password length enforced by BA's emailAndPassword config (RES-137). */
+    PASSWORD_MAX_LENGTH: z.coerce.number().int().min(64).default(128),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {

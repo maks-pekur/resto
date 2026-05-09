@@ -1,11 +1,11 @@
+import { Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
 import { createAuthMiddleware } from 'better-auth/api';
-import { organization, twoFactor, bearer } from 'better-auth/plugins';
 import type { OrganizationOptions } from 'better-auth/plugins';
-import { Logger } from '@nestjs/common';
-import { ac, ownerRole, adminRole, staffRole } from './access-control';
-import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
+import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
+import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
 
 type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
 type SendResetPassword = NonNullable<
@@ -38,6 +38,10 @@ interface BuildOpts {
    * forget-password flows do not crash, but no email is actually sent.
    */
   sendResetPassword?: SendResetPassword;
+  /** From env — see config/env.schema.ts. Default 12 (NIST-aligned). */
+  minPasswordLength?: number;
+  /** From env — see config/env.schema.ts. Default 128. */
+  maxPasswordLength?: number;
   /**
    * Invoked when an operator sets the active organization on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
@@ -122,6 +126,8 @@ export const buildAuth = (opts: BuildOpts) =>
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // Phase F flips this once email adapter lands
+      minPasswordLength: opts.minPasswordLength ?? 12,
+      maxPasswordLength: opts.maxPasswordLength ?? 128,
       sendResetPassword: opts.sendResetPassword ?? (() => Promise.resolve()),
     },
     plugins: [

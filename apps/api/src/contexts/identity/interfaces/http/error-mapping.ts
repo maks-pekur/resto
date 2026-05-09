@@ -6,16 +6,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import {
-  NoActiveTenantError,
-  PrincipalKindMismatchError,
-  TenantMismatchError,
-} from '../../domain/errors';
-import {
   BetterAuthBootstrapFailureError,
   OwnerAlreadyExistsError,
   TenantNotFoundForBootstrapError,
   WeakPasswordError,
 } from '../../domain/bootstrap-errors';
+import {
+  NoActiveTenantError,
+  PrincipalKindMismatchError,
+  TenantMismatchError,
+} from '../../domain/errors';
 
 /**
  * Identity → HTTP error mapping.
