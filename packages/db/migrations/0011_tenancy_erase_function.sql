@@ -29,7 +29,7 @@ BEGIN
 
   SELECT array_agg(user_id) INTO orphan_users
   FROM member
-  WHERE organization_id = p_tenant_id::text;
+  WHERE organization_id = p_tenant_id;
 
   DELETE FROM outbox_events WHERE tenant_id = p_tenant_id;
   DELETE FROM inbox_processed WHERE tenant_id = p_tenant_id;
@@ -37,9 +37,9 @@ BEGIN
   DELETE FROM menu_modifiers WHERE tenant_id = p_tenant_id;
   DELETE FROM menu_categories WHERE tenant_id = p_tenant_id;
   DELETE FROM customer_profiles WHERE tenant_id = p_tenant_id;
-  DELETE FROM invitation WHERE organization_id = p_tenant_id::text;
-  DELETE FROM organization_role WHERE organization_id = p_tenant_id::text;
-  DELETE FROM member WHERE organization_id = p_tenant_id::text;
+  DELETE FROM invitation WHERE organization_id = p_tenant_id;
+  DELETE FROM organization_role WHERE organization_id = p_tenant_id;
+  DELETE FROM member WHERE organization_id = p_tenant_id;
   DELETE FROM tenant_domains WHERE tenant_id = p_tenant_id;
 
   UPDATE audit_log

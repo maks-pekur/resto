@@ -165,10 +165,10 @@ export class TenantDrizzleRepository implements TenantRepository {
         return currentSnapshot;
       }
 
-      await tx.execute(sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text)`);
-
       tenant.executeErasure(new Date());
       const erasedSnapshot = tenant.toSnapshot();
+
+      await tx.execute(sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text)`);
       await tx
         .update(schema.tenants)
         .set({
