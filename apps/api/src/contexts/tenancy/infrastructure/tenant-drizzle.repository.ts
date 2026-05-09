@@ -85,10 +85,14 @@ export class TenantDrizzleRepository implements TenantRepository {
           createdAt: snapshot.createdAt,
           updatedAt: snapshot.updatedAt,
           archivedAt: snapshot.archivedAt,
+          offboardingScheduledAt: snapshot.offboardingScheduledAt,
+          offboardingExecutedAt: snapshot.offboardingExecutedAt,
+          offboardingRequestedBy: snapshot.offboardingRequestedBy,
         })
         .onConflictDoUpdate({
           target: schema.tenants.id,
           set: {
+            slug: snapshot.slug,
             displayName: snapshot.displayName,
             status: snapshot.status,
             locale: snapshot.locale,
@@ -96,6 +100,9 @@ export class TenantDrizzleRepository implements TenantRepository {
             stripeAccountId: snapshot.stripeAccountId,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,
+            offboardingScheduledAt: snapshot.offboardingScheduledAt,
+            offboardingExecutedAt: snapshot.offboardingExecutedAt,
+            offboardingRequestedBy: snapshot.offboardingRequestedBy,
           },
         });
 
@@ -224,10 +231,16 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         payload: { tenantId: event.tenantId },
       };
     case 'TenantOffboardingScheduled':
+      throw new Error(
+        'Outbox envelope for "TenantOffboardingScheduled" is not yet wired (RES-138 Task 5 — add contract in @resto/events).',
+      );
     case 'TenantOffboardingCancelled':
+      throw new Error(
+        'Outbox envelope for "TenantOffboardingCancelled" is not yet wired (RES-138 Task 5 — add contract in @resto/events).',
+      );
     case 'TenantErasureCompleted':
       throw new Error(
-        `Outbox envelope for "${event.kind}" is not yet wired; add its contract in @resto/events.`,
+        'Outbox envelope for "TenantErasureCompleted" is not yet wired (RES-138 Task 6 — add contract in @resto/events).',
       );
   }
 };
