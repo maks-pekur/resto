@@ -57,14 +57,16 @@ Until phase 3 ships the scheduler, run the manual CLI on the api host:
 pnpm resto:erase-tenant <slug>
 ```
 
-The CLI prompts for confirmation (type the slug to confirm). It then:
+The CLI prompts for confirmation (type the slug to confirm). It then calls the SECURITY DEFINER function `tenancy_erase_tenant(uuid, text)` (migration `0011`), which performs:
 
-1. Captures member-user ids for the orphan-user check.
-2. Cascade-deletes `outbox_events`, `inbox_processed`, all menu tables, `customer_profiles`, `invitation`, `organization_role`, `member`, `tenant_domains` for the tenant.
-3. Anonymises `audit_log` rows: `actor_subject` -> `erased:<sha256>`, `payload.userId` -> same form, `payload.ipAddress` / `payload.userAgent` / `payload.email` -> JSON `null`.
-4. Hard-deletes `user` rows for users who had zero remaining memberships after step 2 (cascades via FK to `session`, `account`, `verification`, `two_factor`).
-5. Tombstones the `tenants` row: `displayName='[erased]'`, `slug='erased-<...>'`, `stripe_account_id=null`, `status='erased'`.
-6. Emits `TenantErasureCompletedV1` to outbox -> audit consumer (RES-130) records the completion event.
+1. Cascade-deletes (in dependency order): `outbox_events`, `inbox_processed`, all menu tables (`menu_items`, `menu_modifiers`, `menu_categories`), `customer_profiles`, `invitation`, `organization_role`, `member`, `tenant_domains` for the tenant.
+2. Anonymises `audit_log` rows scoped to the tenant. Top-level columns: `actor_subject` and `target_id` -> `erased:<sha256>` (one-way); `ip_address` and `user_agent` -> `NULL`. Inside `payload`: `userId` -> same hash form; `ipAddress` / `userAgent` / `email` -> JSON `null`.
+3. Hard-deletes `user` rows for users who had zero remaining memberships (cascades via FK to `session`, `account`, `verification`, `two_factor`).
+
+After the function returns, the repo:
+
+4. Tombstones the `tenants` row via UPDATE: `displayName='[erased]'`, `slug='erased-<...>'`, `stripe_account_id=null`, `status='erased'`.
+5. Emits `TenantErasureCompletedV1` to outbox -> audit consumer (RES-130) records the completion event.
 
 Verification queries:
 
@@ -81,9 +83,9 @@ SELECT
   (SELECT count(*) FROM outbox_events WHERE tenant_id = '<tenant-id>') AS outbox;
 
 -- Audit anonymised
-SELECT actor_subject, payload->>'userId', payload->>'ipAddress'
+SELECT actor_subject, target_id, ip_address, user_agent, payload->>'userId'
 FROM audit_log WHERE tenant_id = '<tenant-id>' LIMIT 5;
--- Expect: actor_subject starts with 'erased:'; payload->>'userId' same form; payload->>'ipAddress' is NULL
+-- Expect: actor_subject + target_id start with 'erased:'; ip_address + user_agent are NULL; payload->>'userId' same hash form
 ```
 
 ## What is NOT erased

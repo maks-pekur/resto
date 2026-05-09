@@ -165,71 +165,7 @@ export class TenantDrizzleRepository implements TenantRepository {
         return currentSnapshot;
       }
 
-      const memberRows = await tx
-        .select({ userId: schema.member.userId })
-        .from(schema.member)
-        .where(eq(schema.member.organizationId, id));
-      const orphanCandidates = memberRows.map((row) => row.userId);
-
-      await tx.delete(schema.outboxEvents).where(eq(schema.outboxEvents.tenantId, id));
-      await tx.delete(schema.inboxProcessed).where(eq(schema.inboxProcessed.tenantId, id));
-      await tx.delete(schema.menuItems).where(eq(schema.menuItems.tenantId, id));
-      await tx.delete(schema.menuModifiers).where(eq(schema.menuModifiers.tenantId, id));
-      await tx.delete(schema.menuCategories).where(eq(schema.menuCategories.tenantId, id));
-      await tx.delete(schema.customerProfiles).where(eq(schema.customerProfiles.tenantId, id));
-      await tx.delete(schema.invitation).where(eq(schema.invitation.organizationId, id));
-      await tx
-        .delete(schema.organizationRole)
-        .where(eq(schema.organizationRole.organizationId, id));
-      await tx.delete(schema.member).where(eq(schema.member.organizationId, id));
-      await tx.delete(schema.tenantDomains).where(eq(schema.tenantDomains.tenantId, id));
-
-      await tx.execute(sql`
-        UPDATE audit_log
-        SET
-          actor_subject = 'erased:' || encode(digest(${auditSalt} || actor_subject, 'sha256'), 'hex'),
-          payload = (
-            CASE
-              WHEN payload IS NULL THEN NULL
-              ELSE jsonb_set_lax(
-                     jsonb_set_lax(
-                       jsonb_set_lax(
-                         CASE
-                           WHEN payload ? 'userId' AND jsonb_typeof(payload->'userId') = 'string'
-                           THEN jsonb_set(
-                                  payload,
-                                  '{userId}',
-                                  to_jsonb('erased:' || encode(digest(${auditSalt} || (payload->>'userId'), 'sha256'), 'hex'))
-                                )
-                           ELSE payload
-                         END,
-                         '{ipAddress}',
-                         NULL,
-                         false,
-                         'use_json_null'
-                       ),
-                       '{userAgent}',
-                       NULL,
-                       false,
-                       'use_json_null'
-                     ),
-                     '{email}',
-                     NULL,
-                     false,
-                     'use_json_null'
-                   )
-            END
-          )
-        WHERE tenant_id = ${id}
-      `);
-
-      if (orphanCandidates.length > 0) {
-        await tx.execute(sql`
-          DELETE FROM "user"
-          WHERE id = ANY(${orphanCandidates}::text[])
-          AND NOT EXISTS (SELECT 1 FROM member WHERE member.user_id = "user".id)
-        `);
-      }
+      await tx.execute(sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text)`);
 
       tenant.executeErasure(new Date());
       const erasedSnapshot = tenant.toSnapshot();

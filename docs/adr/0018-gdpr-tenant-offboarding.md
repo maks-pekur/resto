@@ -26,7 +26,11 @@ Tenant offboarding flow:
 
 ### Anonymised (kept for audit)
 
-`audit_log` rows scoped to the tenant. `actor_subject` becomes `'erased:' || sha256(salt || actor_subject)`; `payload.userId` becomes the same hash form; `payload.ipAddress`/`payload.userAgent`/`payload.email` become JSON `null`. Salt comes from env `AUDIT_ERASURE_SALT` (>=32 chars, immutable post-deploy -- rotation would invalidate cross-row correlation).
+`audit_log` rows scoped to the tenant. Top-level columns: `actor_subject` and `target_id` become `'erased:' || sha256(salt || value)` (one-way); `ip_address` and `user_agent` become `NULL`. Inside `payload`: `userId` becomes the same hash form; `ipAddress` / `userAgent` / `email` become JSON `null`. Salt comes from env `AUDIT_ERASURE_SALT` (>=32 chars, immutable post-deploy -- rotation would invalidate cross-row correlation).
+
+### Pending outbox events
+
+All `outbox_events` rows scoped to the tenant are deleted as part of the cascade -- including any not-yet-dispatched `TenantProvisioned`/`TenantArchived`/`TenantOffboardingScheduled`/`TenantOffboardingCancelled` rows. Only `TenantErasureCompletedV1` is appended (post-erasure) and dispatched to the audit consumer.
 
 ### Tombstoned (anonymised stub kept)
 
@@ -64,7 +68,9 @@ The `tenants` row itself. `displayName='[erased]'`, `slug='erased-<id-prefix>-<t
 
 ## Implementation notes
 
-Phase 1 (RES-138 / RES-103/A): migration `0010_tenant_offboarding.sql` extends `tenants` with three nullable timestamp/text columns + status enum values; aggregate methods + repo `eraseTenant`; `OffboardTenantService`; manual CLI; runbook. No HTTP endpoint.
+The cascade DELETE chain runs through a `SECURITY DEFINER` function `tenancy_erase_tenant(uuid, text)` (migration `0011_tenancy_erase_function.sql`). Migration `0008` revoked DELETE from the runtime `resto_app` role; rather than re-grant DELETE broadly, the function exposes exactly the erasure cascade and nothing else. Owned by `resto_admin`, EXECUTE granted only to `resto_app`. The function asserts `app.is_system = true` (set by `db.withoutTenant`) and rejects salts under 32 chars at the SQL boundary.
+
+Phase 1 (RES-138 / RES-103/A): migrations `0010_tenant_offboarding.sql` (schema) + `0011_tenancy_erase_function.sql` (SECURITY DEFINER function); aggregate methods + repo `eraseTenant`; `OffboardTenantService`; manual CLI; runbook. No HTTP endpoint.
 
 Phase 2 (RES-103/B): `POST /internal/v1/tenants/:id/offboard`, `DELETE` cancellation, `GET /scheduled`. e2e covers cool-off + erasure execution.
 
