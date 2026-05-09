@@ -23,4 +23,31 @@ export interface TenantArchivedDomainEvent {
   readonly occurredAt: Date;
 }
 
-export type TenantDomainEvent = TenantProvisionedDomainEvent | TenantArchivedDomainEvent;
+export interface TenantOffboardingScheduledDomainEvent {
+  readonly kind: 'TenantOffboardingScheduled';
+  readonly tenantId: TenantId;
+  readonly requestedBy: string;
+  readonly scheduledAt: Date;
+  readonly occurredAt: Date;
+}
+
+export interface TenantOffboardingCancelledDomainEvent {
+  readonly kind: 'TenantOffboardingCancelled';
+  readonly tenantId: TenantId;
+  readonly cancelledAt: Date;
+  readonly occurredAt: Date;
+}
+
+export interface TenantErasureCompletedDomainEvent {
+  readonly kind: 'TenantErasureCompleted';
+  readonly tenantId: TenantId;
+  readonly executedAt: Date;
+  readonly occurredAt: Date;
+}
+
+export type TenantDomainEvent =
+  | TenantProvisionedDomainEvent
+  | TenantArchivedDomainEvent
+  | TenantOffboardingScheduledDomainEvent
+  | TenantOffboardingCancelledDomainEvent
+  | TenantErasureCompletedDomainEvent;

@@ -26,6 +26,7 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   RATE_LIMIT_AUTH_SIGNIN_PER_MIN: 10,
   PASSWORD_MIN_LENGTH: 12,
   PASSWORD_MAX_LENGTH: 128,
+  AUDIT_ERASURE_SALT: undefined,
   ...overrides,
 });
 

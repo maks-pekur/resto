@@ -11,10 +11,16 @@ export default [
     },
   },
   {
-    files: ['seed/cli.ts', 'seed/commands/**/*.ts'],
+    files: ['seed/cli.ts', 'seed/commands/**/*.ts', 'erase-tenant/cli.ts'],
     rules: {
-      // The CLI legitimately exits with non-zero on user error.
       'no-process-exit': 'off',
+    },
+  },
+  {
+    files: ['erase-tenant/cli.ts'],
+    rules: {
+      'no-console': 'off',
+      '@nx/enforce-module-boundaries': 'off',
     },
   },
   {

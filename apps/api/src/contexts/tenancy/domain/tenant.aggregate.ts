@@ -1,10 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { TenantId, type Currency, type TenantSlug } from '@resto/domain';
+import { TenantId, TenantSlug, type Currency } from '@resto/domain';
 import type { TenantDomain } from './tenant-domain';
 import type { TenantDomainEvent } from './events';
-import { TenantAlreadyArchivedError } from './errors';
+import {
+  TenantAlreadyArchivedError,
+  TenantErasureTooEarlyError,
+  TenantOffboardingCoolOffExpiredError,
+  TenantOffboardingNotAllowedError,
+} from './errors';
 
-export type TenantStatus = 'active' | 'suspended' | 'archived';
+const COOL_OFF_DAYS = 30;
+const COOL_OFF_MS = COOL_OFF_DAYS * 24 * 60 * 60 * 1000;
+
+export type TenantStatus = 'active' | 'suspended' | 'archived' | 'pending_offboarding' | 'erased';
 
 export interface TenantSnapshot {
   readonly id: TenantId;
@@ -19,6 +27,9 @@ export interface TenantSnapshot {
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly archivedAt: Date | null;
+  readonly offboardingScheduledAt: Date | null;
+  readonly offboardingExecutedAt: Date | null;
+  readonly offboardingRequestedBy: string | null;
 }
 
 export interface ProvisionInput {
@@ -73,6 +84,9 @@ export class Tenant {
       createdAt: now,
       updatedAt: now,
       archivedAt: null,
+      offboardingScheduledAt: null,
+      offboardingExecutedAt: null,
+      offboardingRequestedBy: null,
     };
     const tenant = new Tenant(snapshot);
     tenant.#events.push({
@@ -99,6 +113,80 @@ export class Tenant {
     this.#events.push({
       kind: 'TenantArchived',
       tenantId: this.snapshot.id,
+      occurredAt: now,
+    });
+  }
+
+  scheduleOffboarding(requestedBy: string, now: Date = new Date()): void {
+    const status = this.snapshot.status;
+    if (status !== 'active' && status !== 'archived') {
+      throw new TenantOffboardingNotAllowedError(this.snapshot.id, status);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'pending_offboarding',
+      archivedAt: this.snapshot.archivedAt ?? now,
+      offboardingScheduledAt: now,
+      offboardingRequestedBy: requestedBy,
+      updatedAt: now,
+    };
+    this.#events.push({
+      kind: 'TenantOffboardingScheduled',
+      tenantId: this.snapshot.id,
+      requestedBy,
+      scheduledAt: now,
+      occurredAt: now,
+    });
+  }
+
+  cancelOffboarding(now: Date = new Date()): void {
+    if (this.snapshot.status !== 'pending_offboarding') {
+      throw new TenantOffboardingNotAllowedError(this.snapshot.id, this.snapshot.status);
+    }
+    const scheduledAt = this.snapshot.offboardingScheduledAt;
+    if (scheduledAt === null || now.getTime() >= scheduledAt.getTime() + COOL_OFF_MS) {
+      throw new TenantOffboardingCoolOffExpiredError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'active',
+      archivedAt: null,
+      offboardingScheduledAt: null,
+      offboardingRequestedBy: null,
+      updatedAt: now,
+    };
+    this.#events.push({
+      kind: 'TenantOffboardingCancelled',
+      tenantId: this.snapshot.id,
+      cancelledAt: now,
+      occurredAt: now,
+    });
+  }
+
+  executeErasure(now: Date = new Date()): void {
+    if (this.snapshot.status === 'erased') {
+      return;
+    }
+    if (this.snapshot.status !== 'pending_offboarding') {
+      throw new TenantOffboardingNotAllowedError(this.snapshot.id, this.snapshot.status);
+    }
+    const scheduledAt = this.snapshot.offboardingScheduledAt;
+    if (scheduledAt === null || now.getTime() < scheduledAt.getTime() + COOL_OFF_MS) {
+      throw new TenantErasureTooEarlyError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'erased',
+      displayName: '[erased]',
+      slug: TenantSlug.parse(`erased-${this.snapshot.id.slice(0, 8)}-${Date.now().toString(36)}`),
+      stripeAccountId: null,
+      offboardingExecutedAt: now,
+      updatedAt: now,
+    };
+    this.#events.push({
+      kind: 'TenantErasureCompleted',
+      tenantId: this.snapshot.id,
+      executedAt: now,
       occurredAt: now,
     });
   }

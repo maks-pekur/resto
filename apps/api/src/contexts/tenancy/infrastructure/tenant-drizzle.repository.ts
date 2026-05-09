@@ -5,16 +5,26 @@ import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import {
   appendToOutbox,
   TenantArchivedV1,
+  TenantErasureCompletedV1,
+  TenantOffboardingCancelledV1,
+  TenantOffboardingScheduledV1,
   TenantProvisionedV1,
   type EventEnvelope,
 } from '@resto/events';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
+import { TenantNotFoundError } from '../domain/errors';
 import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
 
-const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set(['active', 'suspended', 'archived']);
+const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
+  'active',
+  'suspended',
+  'archived',
+  'pending_offboarding',
+  'erased',
+]);
 const ALLOWED_DOMAIN_KINDS: ReadonlySet<TenantDomainKind> = new Set(['subdomain', 'custom']);
 
 @Injectable()
@@ -79,10 +89,14 @@ export class TenantDrizzleRepository implements TenantRepository {
           createdAt: snapshot.createdAt,
           updatedAt: snapshot.updatedAt,
           archivedAt: snapshot.archivedAt,
+          offboardingScheduledAt: snapshot.offboardingScheduledAt,
+          offboardingExecutedAt: snapshot.offboardingExecutedAt,
+          offboardingRequestedBy: snapshot.offboardingRequestedBy,
         })
         .onConflictDoUpdate({
           target: schema.tenants.id,
           set: {
+            slug: snapshot.slug,
             displayName: snapshot.displayName,
             status: snapshot.status,
             locale: snapshot.locale,
@@ -90,6 +104,9 @@ export class TenantDrizzleRepository implements TenantRepository {
             stripeAccountId: snapshot.stripeAccountId,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,
+            offboardingScheduledAt: snapshot.offboardingScheduledAt,
+            offboardingExecutedAt: snapshot.offboardingExecutedAt,
+            offboardingRequestedBy: snapshot.offboardingRequestedBy,
           },
         });
 
@@ -115,6 +132,61 @@ export class TenantDrizzleRepository implements TenantRepository {
         const envelope = domainEventToEnvelope(event);
         await appendToOutbox(tx, { envelope, aggregateId: snapshot.id });
       }
+    });
+  }
+
+  listScheduledForErasure(): Promise<readonly TenantSnapshot[]> {
+    return this.db.withoutTenant('tenancy.listScheduledForErasure', async (tx) => {
+      const rows = await tx
+        .select({ id: schema.tenants.id })
+        .from(schema.tenants)
+        .where(
+          sql`${schema.tenants.status} = 'pending_offboarding'
+              AND ${schema.tenants.offboardingExecutedAt} IS NULL
+              AND ${schema.tenants.offboardingScheduledAt} + INTERVAL '30 days' < NOW()`,
+        );
+      const tenants: TenantSnapshot[] = [];
+      for (const row of rows) {
+        const tenant = await this.loadByIdWithTx(tx, TenantId.parse(row.id));
+        if (tenant) tenants.push(tenant.toSnapshot());
+      }
+      return tenants;
+    });
+  }
+
+  async eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot> {
+    return this.db.withoutTenant('tenancy.eraseTenant', async (tx) => {
+      const tenant = await this.loadByIdWithTx(tx, id);
+      if (!tenant) {
+        throw new TenantNotFoundError(id);
+      }
+      const currentSnapshot = tenant.toSnapshot();
+      if (currentSnapshot.status === 'erased') {
+        return currentSnapshot;
+      }
+
+      await tx.execute(sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text)`);
+
+      tenant.executeErasure(new Date());
+      const erasedSnapshot = tenant.toSnapshot();
+      await tx
+        .update(schema.tenants)
+        .set({
+          status: erasedSnapshot.status,
+          slug: erasedSnapshot.slug,
+          displayName: erasedSnapshot.displayName,
+          stripeAccountId: erasedSnapshot.stripeAccountId,
+          offboardingExecutedAt: erasedSnapshot.offboardingExecutedAt,
+          updatedAt: erasedSnapshot.updatedAt,
+        })
+        .where(eq(schema.tenants.id, id));
+
+      for (const event of tenant.pullEvents()) {
+        const envelope = domainEventToEnvelope(event);
+        await appendToOutbox(tx, { envelope, aggregateId: id });
+      }
+
+      return erasedSnapshot;
     });
   }
 
@@ -156,6 +228,9 @@ export class TenantDrizzleRepository implements TenantRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       archivedAt: row.archivedAt,
+      offboardingScheduledAt: row.offboardingScheduledAt,
+      offboardingExecutedAt: row.offboardingExecutedAt,
+      offboardingRequestedBy: row.offboardingRequestedBy,
     };
     return Tenant.fromSnapshot(snapshot);
   }
@@ -213,6 +288,49 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         causationId: null,
         occurredAt: event.occurredAt,
         payload: { tenantId: event.tenantId },
+      };
+    case 'TenantOffboardingScheduled':
+      return {
+        id: randomUUID(),
+        type: TenantOffboardingScheduledV1.type,
+        version: TenantOffboardingScheduledV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          requestedBy: event.requestedBy,
+          scheduledAt: event.scheduledAt,
+        },
+      };
+    case 'TenantOffboardingCancelled':
+      return {
+        id: randomUUID(),
+        type: TenantOffboardingCancelledV1.type,
+        version: TenantOffboardingCancelledV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          cancelledAt: event.cancelledAt,
+        },
+      };
+    case 'TenantErasureCompleted':
+      return {
+        id: randomUUID(),
+        type: TenantErasureCompletedV1.type,
+        version: TenantErasureCompletedV1.version,
+        tenantId: event.tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: event.occurredAt,
+        payload: {
+          tenantId: event.tenantId,
+          executedAt: event.executedAt,
+        },
       };
   }
 };

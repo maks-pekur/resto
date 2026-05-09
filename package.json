@@ -23,6 +23,7 @@
     "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",
     "dev:reset": "docker compose -f infra/docker/docker-compose.dev.yml down -v",
     "resto:seed": "tsx tools/scripts/seed/cli.ts",
+    "resto:erase-tenant": "tsx --tsconfig apps/api/tsconfig.json tools/scripts/erase-tenant/cli.ts",
     "prepare": "husky"
   },
   "devDependencies": {

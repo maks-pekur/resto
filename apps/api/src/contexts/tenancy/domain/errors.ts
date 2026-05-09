@@ -39,3 +39,29 @@ export class TenantSlugArchivedError extends Error {
     this.name = 'TenantSlugArchivedError';
   }
 }
+
+export class TenantOffboardingNotAllowedError extends Error {
+  constructor(
+    public readonly tenantId: string,
+    public readonly currentStatus: string,
+  ) {
+    super(`Tenant "${tenantId}" cannot be offboarded from status "${currentStatus}".`);
+    this.name = 'TenantOffboardingNotAllowedError';
+  }
+}
+
+export class TenantOffboardingCoolOffExpiredError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(
+      `Cool-off window has expired for tenant "${tenantId}"; cancellation is no longer possible.`,
+    );
+    this.name = 'TenantOffboardingCoolOffExpiredError';
+  }
+}
+
+export class TenantErasureTooEarlyError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" cool-off has not yet expired; erasure cannot be executed.`);
+    this.name = 'TenantErasureTooEarlyError';
+  }
+}

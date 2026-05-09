@@ -2,8 +2,16 @@
   "extends": "@resto/config-typescript/node.json",
   "compilerOptions": {
     "noEmit": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
   },
-  "include": ["seed/**/*.ts", "test/**/*.ts", "vitest.config.ts", "eslint.config.mjs"],
+  "include": [
+    "seed/**/*.ts",
+    "erase-tenant/**/*.ts",
+    "test/**/*.ts",
+    "vitest.config.ts",
+    "eslint.config.mjs"
+  ],
   "exclude": ["node_modules", "dist"]
 }

@@ -21,11 +21,23 @@ export const tenants = pgTable(
     defaultCurrency: text('default_currency').notNull().default('USD'),
     /** Stripe Connect (Express) account id — populated when payments are wired in MVP-2. */
     stripeAccountId: text('stripe_account_id'),
+    offboardingScheduledAt: timestamp('offboarding_scheduled_at', {
+      withTimezone: true,
+      mode: 'date',
+    }),
+    offboardingExecutedAt: timestamp('offboarding_executed_at', {
+      withTimezone: true,
+      mode: 'date',
+    }),
+    offboardingRequestedBy: text('offboarding_requested_by'),
     ...timestampsColumns(),
   },
   (table) => [
     uniqueIndex('tenants_slug_uq').on(table.slug),
-    check('tenants_status_chk', sql`${table.status} IN ('active', 'suspended', 'archived')`),
+    check(
+      'tenants_status_chk',
+      sql`${table.status} IN ('active', 'suspended', 'archived', 'pending_offboarding', 'erased')`,
+    ),
     check('tenants_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$'`),
     check('tenants_currency_format_chk', sql`${table.defaultCurrency} ~ '^[A-Z]{3}$'`),
     check('tenants_locale_format_chk', sql`${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`),

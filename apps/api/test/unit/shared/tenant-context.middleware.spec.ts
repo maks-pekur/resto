@@ -38,6 +38,7 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   RATE_LIMIT_AUTH_SIGNIN_PER_MIN: 10,
   PASSWORD_MIN_LENGTH: 12,
   PASSWORD_MAX_LENGTH: 128,
+  AUDIT_ERASURE_SALT: undefined,
   ...overrides,
 });
 
@@ -47,6 +48,8 @@ const buildRepo = (): TenantRepository => ({
   findByDomainHost: vi.fn().mockResolvedValue(null),
   save: vi.fn(),
   listDomains: vi.fn(),
+  eraseTenant: vi.fn(),
+  listScheduledForErasure: vi.fn().mockResolvedValue([]),
 });
 
 const setup = (env: Env, repoOverride?: TenantRepository) => {
