@@ -223,8 +223,19 @@ export const buildAuth = (opts: BuildOpts) =>
           if (!verification?.value) return;
           const userId = verification.value;
           if (typeof userId !== 'string' || userId.length === 0) return;
-          (ctx.context as { __restoPasswordReset?: { userId: string } }).__restoPasswordReset = {
+          let sessionCount = 0;
+          try {
+            const sessions = await ctx.context.internalAdapter.listSessions(userId);
+            sessionCount = Array.isArray(sessions) ? sessions.length : 0;
+          } catch {
+            // listSessions failure is non-fatal — proceed with count = 0; the
+            // load-bearing deleteSessions call in `after` does not depend on this.
+          }
+          (
+            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
+          ).__restoPasswordReset = {
             userId,
+            sessionCount,
           };
         }
       }),
@@ -255,20 +266,19 @@ export const buildAuth = (opts: BuildOpts) =>
           return;
         }
         if (path.endsWith('/reset-password')) {
-          const stash = (ctx.context as { __restoPasswordReset?: { userId: string } })
-            .__restoPasswordReset;
+          const stash = (
+            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
+          ).__restoPasswordReset;
           if (!stash) return;
           if (ctx.context.returned instanceof Error) return;
           if (!opts.onPasswordResetCompleted) return;
           try {
-            const sessions = await ctx.context.internalAdapter.listSessions(stash.userId);
-            const sessionRevokedCount = Array.isArray(sessions) ? sessions.length : 0;
             await ctx.context.internalAdapter.deleteSessions(stash.userId);
             const tenantId = await resolvePrimaryTenantId(ctx.context.adapter, stash.userId);
             await opts.onPasswordResetCompleted({
               userId: stash.userId,
               tenantId,
-              sessionRevokedCount,
+              sessionRevokedCount: stash.sessionCount,
             });
           } catch (err) {
             new Logger('IdentityEventHook').error(
