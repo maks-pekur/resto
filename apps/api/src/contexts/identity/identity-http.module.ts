@@ -13,6 +13,8 @@ import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
 import { MeController } from './interfaces/http/me.controller';
 import { InternalBootstrapController } from './interfaces/http/internal-bootstrap.controller';
+import { SignUpController } from './interfaces/http/signup.controller';
+import { SignUpService } from './application/signup.service';
 
 /**
  * HTTP-side composition for the identity context. Imports
@@ -22,9 +24,10 @@ import { InternalBootstrapController } from './interfaces/http/internal-bootstra
  */
 @Module({
   imports: [IdentityCoreModule, TenancyModule],
-  controllers: [MeController, InternalBootstrapController],
+  controllers: [MeController, InternalBootstrapController, SignUpController],
   providers: [
     BootstrapOwnerService,
+    SignUpService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
     { provide: APP_GUARD, useClass: AuthGuard },

@@ -8,9 +8,12 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { FastifyRequest } from 'fastify';
+import { and, eq } from 'drizzle-orm';
 import { getTenantContext } from '@resto/db';
-import { AUTH_TOKEN } from '../../../identity.tokens';
+import { member as memberTable } from '@resto/db/schema';
+import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../../../identity.tokens';
 import type { Auth } from '../../../infrastructure/better-auth/auth.config';
+import type { AuthDrizzle } from '../../../infrastructure/better-auth/auth-db';
 import type { CustomerPrincipal, OperatorPrincipal, Principal } from '../../../domain/principal';
 import {
   TENANT_LOOKUP_PORT,
@@ -40,6 +43,7 @@ export class AuthGuard implements CanActivate {
     @Inject(Reflector) private readonly reflector: Reflector,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
     @Inject(TENANT_LOOKUP_PORT) private readonly tenantLookup: TenantLookupPort,
+    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -96,8 +100,27 @@ export class AuthGuard implements CanActivate {
       });
     }
 
+    if (principal.kind === 'operator' && principal.tenantId) {
+      const role = await this.lookupBaseRole(principal.userId, principal.tenantId);
+      if (role) principal.baseRole = role;
+    }
+
     req.principal = principal;
     return true;
+  }
+
+  private async lookupBaseRole(
+    userId: string,
+    organizationId: string,
+  ): Promise<'owner' | 'admin' | 'staff' | undefined> {
+    const rows = await this.authDb.db
+      .select({ role: memberTable.role })
+      .from(memberTable)
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
+      .limit(1);
+    const role = rows[0]?.role;
+    if (role === 'owner' || role === 'admin' || role === 'staff') return role;
+    return undefined;
   }
 }
 
