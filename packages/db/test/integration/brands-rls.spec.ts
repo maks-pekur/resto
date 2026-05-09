@@ -1,3 +1,4 @@
+import postgres from 'postgres';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { isDockerAvailable, startPostgres, stopPostgres, type TestPg } from '../setup';
 import { runInTenantContext, schema } from '../../src/index';
@@ -268,5 +269,116 @@ suite('brand_domains — RLS + constraints', () => {
       );
     expect(error).toBeInstanceOf(Error);
     expect(((error as Error).cause as Error | undefined)?.message).toMatch(/check|chk/i);
+  });
+});
+
+suite('member_brand_scope — RLS + constraints', () => {
+  let pg: TestPg;
+  let tenantA: string;
+  let tenantB: string;
+  let brandA: string;
+  let memberId: string;
+
+  beforeAll(async () => {
+    pg = await startPostgres();
+    await pg.db.withoutTenant('seed for member_brand_scope', async (tx) => {
+      const [a] = await tx
+        .insert(schema.tenants)
+        .values({ slug: 'mbs-a', displayName: 'MBS A' })
+        .returning({ id: schema.tenants.id });
+      const [b] = await tx
+        .insert(schema.tenants)
+        .values({ slug: 'mbs-b', displayName: 'MBS B' })
+        .returning({ id: schema.tenants.id });
+      if (!a || !b) throw new Error('tenant seed failed');
+      tenantA = a.id;
+      tenantB = b.id;
+
+      const [brand] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'mbs-brand', displayName: 'MBS Brand' })
+        .returning({ id: schema.brands.id });
+      if (!brand) throw new Error('brand seed failed');
+      brandA = brand.id;
+
+      const userId = 'user-test-mbs';
+      await tx.insert(schema.user).values({
+        id: userId,
+        email: 'mbs@test',
+        emailVerified: true,
+        name: 'MBS test',
+      });
+
+      memberId = 'member-test-mbs';
+      await tx.insert(schema.member).values({
+        id: memberId,
+        userId,
+        organizationId: tenantA,
+        role: 'admin',
+        createdAt: new Date(),
+      });
+    });
+  }, 90_000);
+
+  afterAll(async () => {
+    if (pg) await stopPostgres(pg);
+  });
+
+  it('inserts a scope row binding the member to a brand', async () => {
+    await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.insert(schema.memberBrandScope).values({
+          memberId,
+          brandId: brandA,
+          tenantId: tenantA,
+        });
+      }),
+    );
+
+    const rows = await pg.db.withoutTenant('read scope rows', async (tx) =>
+      tx.select().from(schema.memberBrandScope),
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0]?.memberId).toBe(memberId);
+    expect(rows[0]?.brandId).toBe(brandA);
+  });
+
+  it('rejects duplicate (member_id, brand_id) pair via PK', async () => {
+    const error = await pg.db
+      .withoutTenant('insert duplicate scope', async (tx) => {
+        await tx.insert(schema.memberBrandScope).values({
+          memberId,
+          brandId: brandA,
+          tenantId: tenantA,
+        });
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error | undefined)?.message).toMatch(
+      /unique|duplicate|primary/i,
+    );
+  });
+
+  it('a tenant B context cannot read tenant A scope rows', async () => {
+    const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+      pg.db.withTenant(async (tx) => tx.select().from(schema.memberBrandScope)),
+    );
+    expect(fromB).toEqual([]);
+  });
+
+  it('cascade-deletes scope rows when the brand is dropped', async () => {
+    const admin = postgres(pg.adminUrl, { max: 1, prepare: false });
+    try {
+      await admin`delete from brands where id = ${brandA}`;
+    } finally {
+      await admin.end({ timeout: 5 });
+    }
+    const rows = await pg.db.withoutTenant('post-cascade scope read', async (tx) =>
+      tx.select().from(schema.memberBrandScope),
+    );
+    expect(rows).toEqual([]);
   });
 });

@@ -6,6 +6,7 @@ import {
   index,
   jsonb,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
@@ -14,6 +15,7 @@ import {
 import { citext } from './_types';
 import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
 import { tenants } from './tenants';
+import { member } from './auth';
 
 export const brands = pgTable(
   'brands',
@@ -90,5 +92,39 @@ export const brandDomains = pgTable(
       .on(table.brandId)
       .where(sql`${table.isPrimary} = true`),
     check('brand_domains_kind_chk', sql`${table.kind} IN ('subdomain', 'custom')`),
+  ],
+);
+
+export const memberBrandScope = pgTable(
+  'member_brand_scope',
+  {
+    memberId: text('member_id').notNull(),
+    brandId: uuid('brand_id').notNull(),
+    tenantId: tenantIdColumn(),
+    role: text('role'),
+    ...timestampsColumns(),
+  },
+  (table) => [
+    primaryKey({
+      name: 'member_brand_scope_pk',
+      columns: [table.memberId, table.brandId],
+    }),
+    foreignKey({
+      name: 'member_brand_scope_member_fk',
+      columns: [table.memberId],
+      foreignColumns: [member.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'member_brand_scope_brand_fk',
+      columns: [table.brandId],
+      foreignColumns: [brands.id],
+    }).onDelete('cascade'),
+    foreignKey({
+      name: 'member_brand_scope_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    index('member_brand_scope_brand_idx').on(table.brandId),
+    index('member_brand_scope_tenant_idx').on(table.tenantId),
   ],
 );

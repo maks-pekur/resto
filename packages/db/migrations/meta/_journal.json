@@ -113,6 +113,20 @@
       "when": 1778359399923,
       "tag": "0015_brand_domains_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1778359978901,
+      "tag": "0016_far_pretty_boy",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1778359995163,
+      "tag": "0017_member_brand_scope_rls",
+      "breakpoints": true
     }
   ]
 }
