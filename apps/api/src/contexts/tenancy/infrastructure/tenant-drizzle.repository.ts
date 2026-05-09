@@ -14,7 +14,13 @@ import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
 
-const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set(['active', 'suspended', 'archived']);
+const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
+  'active',
+  'suspended',
+  'archived',
+  'pending_offboarding',
+  'erased',
+]);
 const ALLOWED_DOMAIN_KINDS: ReadonlySet<TenantDomainKind> = new Set(['subdomain', 'custom']);
 
 @Injectable()
@@ -156,6 +162,9 @@ export class TenantDrizzleRepository implements TenantRepository {
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       archivedAt: row.archivedAt,
+      offboardingScheduledAt: row.offboardingScheduledAt,
+      offboardingExecutedAt: row.offboardingExecutedAt,
+      offboardingRequestedBy: row.offboardingRequestedBy,
     };
     return Tenant.fromSnapshot(snapshot);
   }
@@ -214,5 +223,11 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         occurredAt: event.occurredAt,
         payload: { tenantId: event.tenantId },
       };
+    case 'TenantOffboardingScheduled':
+    case 'TenantOffboardingCancelled':
+    case 'TenantErasureCompleted':
+      throw new Error(
+        `Outbox envelope for "${event.kind}" is not yet wired; add its contract in @resto/events.`,
+      );
   }
 };
