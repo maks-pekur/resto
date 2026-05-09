@@ -83,14 +83,7 @@ export class SignUpService {
       throw err;
     }
 
-    const session = await this.signInAndCaptureCookies(input.email, input.password);
-    if (session.tenantId !== tenant.id) {
-      this.logger.warn(
-        { tenantId: tenant.id, sessionTenantId: session.tenantId, email: input.email },
-        'Signup completed but BA session did not auto-bind to the new tenant.',
-      );
-    }
-
+    const session = await this.signInAndActivate(input.email, input.password, tenant.id);
     return { tenant, userId: session.userId, setCookie: session.setCookie };
   }
 
@@ -103,26 +96,54 @@ export class SignUpService {
     throw new SlugUnavailableError(base);
   }
 
-  private async signInAndCaptureCookies(
+  private async signInAndActivate(
     email: string,
     password: string,
-  ): Promise<{ userId: string; tenantId: string | null; setCookie: readonly string[] }> {
+    tenantId: string,
+  ): Promise<{ userId: string; setCookie: readonly string[] }> {
+    let signInHeaders: Headers;
+    let userId: string;
     try {
       const result = await this.auth.api.signInEmail({
         body: { email, password },
         returnHeaders: true,
       });
-      const headers = (result as { headers?: Headers }).headers;
-      const cookies = headers ? this.collectSetCookies(headers) : [];
+      signInHeaders = (result as { headers: Headers }).headers;
       const r = result as {
-        response?: { user?: { id: string; activeOrganizationId?: string } };
+        response?: { user?: { id: string } };
         user?: { id: string };
       };
-      const userId = r.response?.user?.id ?? r.user?.id ?? '';
-      const tenantId = r.response?.user?.activeOrganizationId ?? null;
-      return { userId, tenantId, setCookie: cookies };
+      userId = r.response?.user?.id ?? r.user?.id ?? '';
     } catch (err) {
       throw new SignupBetterAuthFailureError('signInEmail', err);
+    }
+
+    const cookieHeader = this.cookieHeaderFromSetCookie(this.collectSetCookies(signInHeaders));
+
+    try {
+      const result = await (
+        this.auth.api as unknown as {
+          setActiveOrganization: (args: {
+            body: { organizationId: string };
+            headers: Record<string, string>;
+            returnHeaders: true;
+          }) => Promise<{ headers: Headers }>;
+        }
+      ).setActiveOrganization({
+        body: { organizationId: tenantId },
+        headers: { cookie: cookieHeader },
+        returnHeaders: true,
+      });
+      const setActiveCookies = this.collectSetCookies(result.headers);
+      const merged =
+        setActiveCookies.length > 0 ? setActiveCookies : this.collectSetCookies(signInHeaders);
+      return { userId, setCookie: merged };
+    } catch (err) {
+      this.logger.warn(
+        { tenantId, email, err: err instanceof Error ? err.message : String(err) },
+        'set-active-organization failed; falling back to sign-in cookies (user will need to set-active manually).',
+      );
+      return { userId, setCookie: this.collectSetCookies(signInHeaders) };
     }
   }
 
@@ -131,5 +152,12 @@ export class SignUpService {
     if (typeof getter === 'function') return getter.call(headers);
     const single = headers.get('set-cookie');
     return single ? [single] : [];
+  }
+
+  private cookieHeaderFromSetCookie(setCookies: readonly string[]): string {
+    return setCookies
+      .map((sc) => sc.split(';')[0] ?? '')
+      .filter((s) => s.length > 0)
+      .join('; ');
   }
 }
