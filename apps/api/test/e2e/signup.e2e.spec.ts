@@ -72,7 +72,7 @@ suite('Identity — public signup', () => {
     expect(members[0]?.userId).toBe(json.userId);
   }, 60_000);
 
-  it('reuses existing BA user on duplicate email signup', async () => {
+  it('rejects duplicate email with 409', async () => {
     const body = buildSignupBody();
     const first = await stack.app.inject({
       method: 'POST',
@@ -81,7 +81,6 @@ suite('Identity — public signup', () => {
       payload: body,
     });
     expect(first.statusCode).toBe(201);
-    const firstJson = first.json<SignUpResponse>();
 
     const dup = await stack.app.inject({
       method: 'POST',
@@ -89,10 +88,7 @@ suite('Identity — public signup', () => {
       headers: { 'content-type': 'application/json' },
       payload: { ...body, displayName: `Different ${randomUUID().slice(0, 6)}` },
     });
-    expect(dup.statusCode).toBe(201);
-    const dupJson = dup.json<SignUpResponse>();
-    expect(dupJson.userId).toBe(firstJson.userId);
-    expect(dupJson.tenant.id).not.toBe(firstJson.tenant.id);
+    expect(dup.statusCode).toBe(409);
   }, 60_000);
 
   it('auto-bumps slug suffix on displayName collision', async () => {
@@ -152,9 +148,15 @@ suite('Identity — public signup', () => {
       headers: { cookie: cookieHeader },
     });
     expect(meRes.statusCode).toBe(200);
-    const me = meRes.json<{ kind: string; tenantId?: string; userId?: string }>();
+    const me = meRes.json<{
+      kind: string;
+      tenantId?: string;
+      userId?: string;
+      baseRole?: string;
+    }>();
     expect(me.kind).toBe('operator');
     expect(me.tenantId).toBe(json.tenant.id);
     expect(me.userId).toBe(json.userId);
+    expect(me.baseRole).toBe('owner');
   }, 60_000);
 });

@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { eq } from 'drizzle-orm';
+import { user as userTable } from '@resto/db/schema';
 import { ProvisionTenantService } from '../../tenancy/application/provision-tenant.service';
 import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
 import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
 import { TenantSlug } from '@resto/domain';
-import { AUTH_TOKEN } from '../identity.tokens';
+import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
+import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { BootstrapOwnerService } from './bootstrap-owner.service';
 import {
   OwnerAlreadyExistsError,
@@ -46,9 +49,13 @@ export class SignUpService {
     @Inject(BootstrapOwnerService) private readonly bootstrap: BootstrapOwnerService,
     @Inject(TENANT_REPOSITORY) private readonly tenants: TenantRepository,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
+    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
   ) {}
 
   async execute(input: SignUpInput): Promise<SignUpResult> {
+    if (await this.userExistsByEmail(input.email)) {
+      throw new SignupEmailAlreadyExistsError(input.email);
+    }
     const base = slugify(input.displayName);
     const slug = await this.findFreeSlug(base);
 
@@ -75,7 +82,7 @@ export class SignUpService {
         if (/email/i.test(message) && /already/i.test(message)) {
           throw new SignupEmailAlreadyExistsError(input.email);
         }
-        const stage: 'signUpEmail' | 'addMember' = /addMember/.test(message)
+        const stage: 'signUpEmail' | 'addMember' = message.includes('addMember')
           ? 'addMember'
           : 'signUpEmail';
         throw new SignupBetterAuthFailureError(stage, err);
@@ -85,6 +92,15 @@ export class SignUpService {
 
     const session = await this.signInAndActivate(input.email, input.password, tenant.id);
     return { tenant, userId: session.userId, setCookie: session.setCookie };
+  }
+
+  private async userExistsByEmail(email: string): Promise<boolean> {
+    const rows = await this.authDb.db
+      .select({ id: userTable.id })
+      .from(userTable)
+      .where(eq(userTable.email, email))
+      .limit(1);
+    return rows.length > 0;
   }
 
   private async findFreeSlug(base: string): Promise<string> {

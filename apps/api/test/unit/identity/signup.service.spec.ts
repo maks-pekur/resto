@@ -40,11 +40,29 @@ const buildAuthMock = () => ({
   },
 });
 
+interface AuthDbMock {
+  db: {
+    select: ReturnType<typeof vi.fn>;
+    from: ReturnType<typeof vi.fn>;
+    where: ReturnType<typeof vi.fn>;
+    limit: ReturnType<typeof vi.fn>;
+  };
+}
+
+const buildAuthDbMock = (existingRows: readonly { id: string }[] = []): AuthDbMock => {
+  const limit = vi.fn().mockResolvedValue(existingRows);
+  const where = vi.fn().mockReturnValue({ limit });
+  const from = vi.fn().mockReturnValue({ where, limit });
+  const select = vi.fn().mockReturnValue({ from, where, limit });
+  return { db: { select, from, where, limit } };
+};
+
 describe('SignUpService', () => {
   let provisionMock: { execute: ReturnType<typeof vi.fn> };
   let bootstrapMock: { execute: ReturnType<typeof vi.fn> };
   let tenantsMock: { findBySlug: ReturnType<typeof vi.fn> };
   let authMock: ReturnType<typeof buildAuthMock>;
+  let authDbMock: AuthDbMock;
 
   const buildService = (): SignUpService =>
     new SignUpService(
@@ -52,6 +70,7 @@ describe('SignUpService', () => {
       bootstrapMock as never,
       tenantsMock as never,
       authMock as never,
+      authDbMock as never,
     );
 
   const baseInput = {
@@ -67,6 +86,7 @@ describe('SignUpService', () => {
     bootstrapMock = { execute: vi.fn() };
     tenantsMock = { findBySlug: vi.fn() };
     authMock = buildAuthMock();
+    authDbMock = buildAuthDbMock();
   });
 
   it('uses base slug when free', async () => {
@@ -90,6 +110,13 @@ describe('SignUpService', () => {
     bootstrapMock.execute.mockResolvedValue({});
     const result = await buildService().execute(baseInput);
     expect(result.setCookie[0]).toMatch(/abc-active/);
+  });
+
+  it('rejects duplicate email pre-flight (no provision call)', async () => {
+    authDbMock = buildAuthDbMock([{ id: 'existing-user' }]);
+    await expect(buildService().execute(baseInput)).rejects.toThrow(SignupEmailAlreadyExistsError);
+    expect(provisionMock.execute).not.toHaveBeenCalled();
+    expect(tenantsMock.findBySlug).not.toHaveBeenCalled();
   });
 
   it('falls back to sign-in cookies if set-active throws', async () => {

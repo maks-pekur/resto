@@ -37,6 +37,18 @@ const buildLookupStub = (archivedAt: Date | null = null): TenantLookupPort => ({
   }),
 });
 
+const authDb = {
+  db: {
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          limit: vi.fn().mockResolvedValue([{ role: 'owner' }]),
+        }),
+      }),
+    }),
+  },
+};
+
 describe('AuthGuard', () => {
   it('skips when @Public metadata is set', async () => {
     mockGetTenantContext.mockReturnValue(undefined);
@@ -44,7 +56,7 @@ describe('AuthGuard', () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(true);
     const auth = buildAuthStub(null);
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const ctx = buildContext({});
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
     expect(auth.api.getSession).not.toHaveBeenCalled();
@@ -56,7 +68,7 @@ describe('AuthGuard', () => {
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
     const auth = buildAuthStub(null);
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const ctx = buildContext({ headers: {}, url: '/v1/me' });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(UnauthorizedException);
   });
@@ -70,7 +82,7 @@ describe('AuthGuard', () => {
       session: { activeOrganizationId: 't-1' },
     });
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -91,7 +103,7 @@ describe('AuthGuard', () => {
       session: { activeOrganizationId: null },
     });
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -108,7 +120,7 @@ describe('AuthGuard', () => {
       session: { activeOrganizationId: null },
     });
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -129,7 +141,7 @@ describe('AuthGuard', () => {
       session: { activeOrganizationId: 't-1' },
     });
     const lookup = buildLookupStub();
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
     const ctx = buildContext(req);
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
@@ -149,7 +161,7 @@ describe('AuthGuard', () => {
         archivedAt: new Date('2026-05-07T00:00:00Z'),
       }),
     };
-    const guard = new AuthGuard(reflector, auth as never, lookup);
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const ctx = buildContext({ headers: {}, url: '/v1/me' });
     await expect(guard.canActivate(ctx)).rejects.toMatchObject({
       response: { code: 'tenant.archived' },
