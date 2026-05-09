@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react';
 import { useFormStatus } from 'react-dom';
+import Link from 'next/link';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +52,12 @@ export function LoginForm({ next }: { readonly next: string }) {
         </p>
       ) : null}
       <SubmitButton />
+      <p className="text-muted-foreground text-center text-sm">
+        No account yet?{' '}
+        <Link className="underline" href="/signup">
+          Sign up
+        </Link>
+      </p>
     </form>
   );
 }
