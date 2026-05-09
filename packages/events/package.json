@@ -22,7 +22,7 @@
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
     "@types/node": "^22.10.5",
-    "eslint": "^9.17.0",
+    "eslint": "^10.3.0",
     "postgres": "^3.4.5",
     "testcontainers": "^10.16.0",
     "typescript": "^5.7.2",
