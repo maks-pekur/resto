@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -10,6 +10,8 @@ import {
   type RealStack,
 } from './with-real-stack.setup';
 import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
+import { AUTH_DRIZZLE_TOKEN } from '../../src/contexts/identity/identity.tokens';
+import type { AuthDrizzle } from '../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -181,4 +183,98 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     expect(myRow?.targetType).toBe('user');
     expect(myRow?.targetId).toBe(owner.userId);
   }, 30_000);
+
+  it('revokes all user sessions and emits password_reset_completed.v1 on reset', async () => {
+    const slug = `reset-${randomUUID().slice(0, 8)}`;
+    const oldPassword = 'correct-horse-battery-staple-old';
+    const newPassword = 'correct-horse-battery-staple-new';
+    const email = `owner-${slug}@example.com`;
+
+    const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
+    const owner = await runBootstrap({
+      tenantSlug: slug,
+      email,
+      password: oldPassword,
+      name: 'Reset Owner',
+    });
+    const cookie = await signInAsOperator(stack.app, email, oldPassword, tenant.id);
+
+    const sanityBefore = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/tenants/me',
+      headers: { cookie },
+    });
+    expect(sanityBefore.statusCode).toBe(200);
+
+    const forgetRes = await stack.app.inject({
+      method: 'POST',
+      url: '/api/auth/forget-password',
+      headers: { 'content-type': 'application/json' },
+      payload: { email },
+    });
+    expect(forgetRes.statusCode).toBe(200);
+
+    const authDb = stack.app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+    const verificationRows = await authDb.db
+      .select()
+      .from(schema.verification)
+      .where(
+        and(
+          eq(schema.verification.value, owner.userId),
+          like(schema.verification.identifier, 'reset-password:%'),
+        ),
+      );
+    const identifierRow = verificationRows[0];
+    expect(identifierRow).toBeDefined();
+    const token = identifierRow?.identifier.replace('reset-password:', '') ?? '';
+
+    const resetRes = await stack.app.inject({
+      method: 'POST',
+      url: '/api/auth/reset-password',
+      headers: { 'content-type': 'application/json' },
+      payload: { newPassword, token },
+    });
+    expect(resetRes.statusCode).toBe(200);
+
+    const sanityAfter = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/tenants/me',
+      headers: { cookie },
+    });
+    expect(sanityAfter.statusCode).toBe(401);
+
+    const newCookie = await signInAsOperator(stack.app, email, newPassword, tenant.id);
+    const sanityNew = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/tenants/me',
+      headers: { cookie: newCookie },
+    });
+    expect(sanityNew.statusCode).toBe(200);
+
+    const db = stack.app.get(TenantAwareDb);
+    const deadline = Date.now() + 20_000;
+    let resetRows: { actorSubject: string; targetType: string | null; targetId: string | null }[] =
+      [];
+    while (Date.now() < deadline) {
+      resetRows = await db.withoutTenant(
+        'identity-audit e2e: poll password_reset_completed',
+        (tx) =>
+          tx
+            .select({
+              actorSubject: schema.auditLog.actorSubject,
+              targetType: schema.auditLog.targetType,
+              targetId: schema.auditLog.targetId,
+            })
+            .from(schema.auditLog)
+            .where(eq(schema.auditLog.action, 'identity.password_reset_completed.v1')),
+      );
+      if (resetRows.length > 0) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    const myRow = resetRows[0];
+    expect(myRow).toBeDefined();
+    expect(myRow?.actorSubject).toBe(owner.userId);
+    expect(myRow?.targetType).toBe('user');
+    expect(myRow?.targetId).toBe(owner.userId);
+  }, 60_000);
 });

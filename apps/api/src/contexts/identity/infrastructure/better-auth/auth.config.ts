@@ -1,4 +1,4 @@
-import { betterAuth, type BetterAuthPlugin } from 'better-auth';
+import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import { organization, twoFactor, bearer } from 'better-auth/plugins';
 import type { OrganizationOptions } from 'better-auth/plugins';
@@ -8,6 +8,9 @@ import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
 import type { AuthDrizzle } from './auth-db';
 
 type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
+type SendResetPassword = NonNullable<
+  NonNullable<BetterAuthOptions['emailAndPassword']>['sendResetPassword']
+>;
 
 interface BuildOpts {
   authDb: AuthDrizzle;
@@ -30,6 +33,11 @@ interface BuildOpts {
    * typed via OrganizationOptions so any BA upgrade will surface here.
    */
   sendInvitationEmail?: SendInvitationEmail;
+  /**
+   * Phase F supplies the email adapter. Phase A leaves it as a no-op so
+   * forget-password flows do not crash, but no email is actually sent.
+   */
+  sendResetPassword?: SendResetPassword;
   /**
    * Invoked when an operator sets the active organization on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
@@ -55,7 +63,41 @@ interface BuildOpts {
     tenantId: string;
     sessionId: string;
   }) => Promise<void>;
+  /**
+   * Invoked from the BA `hooks.after` middleware on a successful
+   * `POST /api/auth/reset-password`. Receives the userId, the user's
+   * primary tenant id (if known — derived from the user's organizations),
+   * and the count of sessions deleted. Failures are logged at error level
+   * and swallowed — audit is eventually-consistent observability; we never
+   * block the reset on an audit-write failure. Revocation itself happens
+   * before this callback is invoked, so a logger failure does not leave
+   * sessions alive.
+   */
+  onPasswordResetCompleted?: (snapshot: {
+    userId: string;
+    tenantId: string | null;
+    sessionRevokedCount: number;
+  }) => Promise<void>;
 }
+
+const resolvePrimaryTenantId = async (
+  adapter: {
+    findMany: (data: { model: string; where?: Where[]; limit?: number }) => Promise<unknown[]>;
+  },
+  userId: string,
+): Promise<string | null> => {
+  try {
+    const rows = await adapter.findMany({
+      model: 'member',
+      where: [{ field: 'userId', operator: 'eq', value: userId }],
+      limit: 1,
+    });
+    const first = rows[0] as { organizationId?: string } | undefined;
+    return first?.organizationId ?? null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * Composition root for Better Auth.
@@ -80,6 +122,7 @@ export const buildAuth = (opts: BuildOpts) =>
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false, // Phase F flips this once email adapter lands
+      sendResetPassword: opts.sendResetPassword ?? (() => Promise.resolve()),
     },
     plugins: [
       // Cast needed: organization()'s concrete endpoint overloads don't
@@ -146,45 +189,103 @@ export const buildAuth = (opts: BuildOpts) =>
     },
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
-        if (!opts.onSignedOut) return;
-        if (!ctx.path.endsWith('/sign-out')) return;
-        const token = await ctx.getSignedCookie(
-          ctx.context.authCookies.sessionToken.name,
-          ctx.context.secret,
-        );
-        if (!token) return;
-        const found = await ctx.context.internalAdapter.findSession(token);
-        if (!found) return;
-        const activeOrgId = (found.session as { activeOrganizationId?: string | null })
-          .activeOrganizationId;
-        if (typeof activeOrgId !== 'string' || !activeOrgId) return;
-        (
-          ctx.context as {
-            __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+        const path = ctx.path;
+        if (path.endsWith('/sign-out')) {
+          if (!opts.onSignedOut) return;
+          const token = await ctx.getSignedCookie(
+            ctx.context.authCookies.sessionToken.name,
+            ctx.context.secret,
+          );
+          if (!token) return;
+          const found = await ctx.context.internalAdapter.findSession(token);
+          if (!found) return;
+          const activeOrgId = (found.session as { activeOrganizationId?: string | null })
+            .activeOrganizationId;
+          if (typeof activeOrgId !== 'string' || !activeOrgId) return;
+          (
+            ctx.context as {
+              __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+            }
+          ).__restoSignOut = {
+            userId: found.user.id,
+            tenantId: activeOrgId,
+            sessionId: found.session.id,
+          };
+          return;
+        }
+        if (path.endsWith('/reset-password')) {
+          if (!opts.onPasswordResetCompleted) return;
+          const body = (ctx.body ?? {}) as { token?: string };
+          if (typeof body.token !== 'string' || body.token.length === 0) return;
+          const verification = await ctx.context.internalAdapter.findVerificationValue(
+            `reset-password:${body.token}`,
+          );
+          if (!verification?.value) return;
+          const userId = verification.value;
+          if (typeof userId !== 'string' || userId.length === 0) return;
+          let sessionCount = 0;
+          try {
+            const sessions = await ctx.context.internalAdapter.listSessions(userId);
+            sessionCount = Array.isArray(sessions) ? sessions.length : 0;
+          } catch {
+            // listSessions failure is non-fatal — proceed with count = 0; the
+            // load-bearing deleteSessions call in `after` does not depend on this.
           }
-        ).__restoSignOut = {
-          userId: found.user.id,
-          tenantId: activeOrgId,
-          sessionId: found.session.id,
-        };
+          (
+            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
+          ).__restoPasswordReset = {
+            userId,
+            sessionCount,
+          };
+        }
       }),
       after: createAuthMiddleware(async (ctx) => {
-        if (!opts.onSignedOut) return;
-        if (!ctx.path.endsWith('/sign-out')) return;
-        const stash = (
-          ctx.context as {
-            __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+        const path = ctx.path;
+        if (path.endsWith('/sign-out')) {
+          if (!opts.onSignedOut) return;
+          const stash = (
+            ctx.context as {
+              __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
+            }
+          ).__restoSignOut;
+          if (!stash) return;
+          if (ctx.context.returned instanceof Error) return;
+          try {
+            await opts.onSignedOut(stash);
+          } catch (err) {
+            new Logger('IdentityEventHook').error(
+              {
+                err,
+                type: 'identity.signed_out.v1',
+                userId: stash.userId,
+                tenantId: stash.tenantId,
+              },
+              'Failed to emit identity.signed_out.v1',
+            );
           }
-        ).__restoSignOut;
-        if (!stash) return;
-        if (ctx.context.returned instanceof Error) return;
-        try {
-          await opts.onSignedOut(stash);
-        } catch (err) {
-          new Logger('IdentityEventHook').error(
-            { err, type: 'identity.signed_out.v1', userId: stash.userId, tenantId: stash.tenantId },
-            'Failed to emit identity.signed_out.v1',
-          );
+          return;
+        }
+        if (path.endsWith('/reset-password')) {
+          const stash = (
+            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
+          ).__restoPasswordReset;
+          if (!stash) return;
+          if (ctx.context.returned instanceof Error) return;
+          if (!opts.onPasswordResetCompleted) return;
+          try {
+            await ctx.context.internalAdapter.deleteSessions(stash.userId);
+            const tenantId = await resolvePrimaryTenantId(ctx.context.adapter, stash.userId);
+            await opts.onPasswordResetCompleted({
+              userId: stash.userId,
+              tenantId,
+              sessionRevokedCount: stash.sessionCount,
+            });
+          } catch (err) {
+            new Logger('IdentityEventHook').error(
+              { err, type: 'identity.password_reset_completed.v1', userId: stash.userId },
+              'Failed during password-reset cascade',
+            );
+          }
         }
       }),
     },
