@@ -216,7 +216,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
 
     const forgetRes = await stack.app.inject({
       method: 'POST',
-      url: '/api/auth/forget-password',
+      url: '/api/auth/request-password-reset',
       headers: { 'content-type': 'application/json' },
       payload: { email },
       remoteAddress,

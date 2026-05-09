@@ -95,7 +95,8 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     max: (req: FastifyRequest): number => {
       if (isInternalRoute(req.url)) return env.RATE_LIMIT_INTERNAL_PER_MIN;
       if (req.url.startsWith('/api/auth/sign-up')) return env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN;
-      if (req.url.startsWith('/api/auth/forget-password')) return env.RATE_LIMIT_AUTH_RESET_PER_MIN;
+      if (req.url.startsWith('/api/auth/request-password-reset'))
+        return env.RATE_LIMIT_AUTH_RESET_PER_MIN;
       if (req.url.startsWith('/api/auth/sign-in/email')) return env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN;
       return env.RATE_LIMIT_PUBLIC_PER_MIN;
     },

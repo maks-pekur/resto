@@ -40,19 +40,27 @@ suite('Role grants — resto_app cannot DELETE', () => {
 
   it('rejects DELETE under tenant context', async () => {
     await runInTenantContext({ tenantId: TENANT_ID }, async () => {
-      await expect(
-        stack.db.withTenant((tx) =>
-          tx.delete(schema.tenants).where(eq(schema.tenants.id, TENANT_ID)),
-        ),
-      ).rejects.toThrow(/permission denied/i);
+      const error = await stack.db
+        .withTenant((tx) => tx.delete(schema.tenants).where(eq(schema.tenants.id, TENANT_ID)))
+        .then(
+          () => null,
+          (e: unknown) => e,
+        );
+      expect(error).toBeInstanceOf(Error);
+      expect(((error as Error).cause as Error | undefined)?.message).toMatch(/permission denied/i);
     });
   });
 
   it('rejects DELETE under system context (withoutTenant is a GUC bypass, not a role switch)', async () => {
-    await expect(
-      stack.db.withoutTenant('attempt delete', (tx) =>
+    const error = await stack.db
+      .withoutTenant('attempt delete', (tx) =>
         tx.delete(schema.tenants).where(eq(schema.tenants.id, TENANT_ID)),
-      ),
-    ).rejects.toThrow(/permission denied/i);
+      )
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect(((error as Error).cause as Error | undefined)?.message).toMatch(/permission denied/i);
   });
 });

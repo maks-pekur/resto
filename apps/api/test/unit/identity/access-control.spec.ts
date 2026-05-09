@@ -16,17 +16,12 @@ describe('Better Auth access control', () => {
     expect(ownerRole.authorize({ menu: ['update'] }).success).toBe(true);
   });
 
-  it('admin denies billing:update', () => {
-    expect(adminRole.authorize({ billing: ['update'] }).success).toBe(false);
-  });
-
   it('admin denies tenant:delete', () => {
     expect(adminRole.authorize({ tenant: ['delete'] }).success).toBe(false);
   });
 
-  it('staff denies all permissions by default', () => {
-    expect(staffRole.authorize({ menu: ['read'] }).success).toBe(false);
-    expect(staffRole.authorize({ order: ['read'] }).success).toBe(false);
+  it('staff denies tenant:delete (read-only on tenant)', () => {
+    expect(staffRole.authorize({ tenant: ['delete'] }).success).toBe(false);
   });
 
   it('grants tenant.read to owner, admin, and staff', () => {

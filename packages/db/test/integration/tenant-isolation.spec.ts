@@ -64,16 +64,21 @@ suite('Row-Level Security — tenant isolation', () => {
   });
 
   it('inserting a row with the wrong tenant_id fails the WITH CHECK clause', async () => {
-    await expect(
-      runInTenantContext({ tenantId: tenantA }, () =>
-        pg.db.withTenant(async (tx) =>
-          tx
-            .insert(schema.menuCategories)
-            .values({ tenantId: tenantB, slug: 'sneaky', name: { en: 'Sneaky' } })
-            .returning(),
-        ),
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) =>
+        tx
+          .insert(schema.menuCategories)
+          .values({ tenantId: tenantB, slug: 'sneaky', name: { en: 'Sneaky' } })
+          .returning(),
       ),
-    ).rejects.toThrow(/row-level security|policy/i);
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause;
+    expect(cause).toBeInstanceOf(Error);
+    expect((cause as Error).message).toMatch(/row-level security|policy/i);
   });
 
   it('withoutTenant() sees rows across all tenants', async () => {

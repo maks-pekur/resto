@@ -27,7 +27,7 @@ COPY tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
 
-RUN pnpm --filter @resto/api exec tsc -p tsconfig.build.json
+RUN pnpm --filter @resto/api exec node build.mjs
 
 FROM node:22-alpine AS runtime
 WORKDIR /app
@@ -45,4 +45,4 @@ USER node
 EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --quiet --spider http://localhost:3000/healthz || exit 1
-CMD ["node", "apps/api/dist/main.js"]
+CMD ["node", "apps/api/dist/main.cjs"]

@@ -104,12 +104,12 @@ describe('Auth brute-force throttle (RES-137)', () => {
     expect(limited.headers['content-type']).toContain('application/problem+json');
   });
 
-  it('returns 429 on the 4th forget-password request from the same IP within a minute', async () => {
+  it('returns 429 on the 4th request-password-reset request from the same IP within a minute', async () => {
     const remoteAddress = `10.21.${randomUUID().slice(0, 2)}.${randomUUID().slice(2, 4)}`;
     for (let i = 0; i < 3; i += 1) {
       const res = await app.inject({
         method: 'POST',
-        url: '/api/auth/forget-password',
+        url: '/api/auth/request-password-reset',
         remoteAddress,
         headers: { 'content-type': 'application/json' },
         payload: { email: `bf-reset-${randomUUID().slice(0, 8)}@example.test` },
@@ -118,7 +118,7 @@ describe('Auth brute-force throttle (RES-137)', () => {
     }
     const limited = await app.inject({
       method: 'POST',
-      url: '/api/auth/forget-password',
+      url: '/api/auth/request-password-reset',
       remoteAddress,
       headers: { 'content-type': 'application/json' },
       payload: { email: `bf-reset-${randomUUID().slice(0, 8)}@example.test` },
