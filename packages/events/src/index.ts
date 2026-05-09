@@ -45,10 +45,16 @@ export {
 } from './infrastructure/nats-subscriber';
 
 export {
-  TenantProvisionedV1,
-  TenantProvisionedV1Payload,
   TenantArchivedV1,
   TenantArchivedV1Payload,
+  TenantErasureCompletedV1,
+  TenantErasureCompletedV1Payload,
+  TenantOffboardingCancelledV1,
+  TenantOffboardingCancelledV1Payload,
+  TenantOffboardingScheduledV1,
+  TenantOffboardingScheduledV1Payload,
+  TenantProvisionedV1,
+  TenantProvisionedV1Payload,
 } from './contracts/tenancy';
 
 export {
