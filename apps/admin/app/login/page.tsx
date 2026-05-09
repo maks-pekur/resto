@@ -1,3 +1,4 @@
+import { ThemeToggle } from '@/components/theme-toggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LoginForm } from './login-form-client';
 
@@ -19,6 +20,9 @@ export default async function LoginPage({ searchParams }: PageProps) {
 
   return (
     <div className="bg-muted/30 flex min-h-svh items-center justify-center p-6">
+      <div className="fixed top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in to Resto</CardTitle>

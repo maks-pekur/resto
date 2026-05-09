@@ -1,6 +1,17 @@
 'use client';
 
-import { BadgeCheck, Bell, ChevronsUpDown, CreditCard, LogOut, Sparkles } from 'lucide-react';
+import {
+  BadgeCheck,
+  Bell,
+  ChevronsUpDown,
+  CreditCard,
+  LogOut,
+  Monitor,
+  Moon,
+  Sparkles,
+  Sun,
+} from 'lucide-react';
+import { useTheme } from 'next-themes';
 
 import { signOutAction } from '@/lib/actions/sign-out';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -30,6 +41,7 @@ export function NavUser({
   };
 }) {
   const { isMobile } = useSidebar();
+  const { setTheme } = useTheme();
 
   return (
     <SidebarMenu>
@@ -89,6 +101,36 @@ export function NavUser({
               <DropdownMenuItem>
                 <Bell />
                 Notifications
+              </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+              Theme
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuItem
+                onClick={() => {
+                  setTheme('light');
+                }}
+              >
+                <Sun />
+                Light
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setTheme('dark');
+                }}
+              >
+                <Moon />
+                Dark
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => {
+                  setTheme('system');
+                }}
+              >
+                <Monitor />
+                System
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
