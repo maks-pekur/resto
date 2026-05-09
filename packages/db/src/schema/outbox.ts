@@ -36,6 +36,7 @@ export const outboxEvents = pgTable(
     id: pkUuid(),
     /** Tenant the event belongs to; null for platform-level events. */
     tenantId: uuid('tenant_id'),
+    brandId: uuid('brand_id'),
     /** Aggregate id that produced the event (optional convenience for ops). */
     aggregateId: uuid('aggregate_id'),
     /** Event type, `<context>.<event>.v<n>`. Doubles as the broker subject. */

@@ -164,4 +164,36 @@ suite('Row-Level Security — tenant isolation', () => {
 
     expect(explanation).toMatch(/Index/);
   });
+
+  it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
+    const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
+      tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'col-smoke', displayName: 'ColSmoke' })
+        .returning({ id: schema.brands.id }),
+    );
+    if (!brand) throw new Error('seed failed');
+
+    await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.insert(schema.menuCategories).values({
+          tenantId: tenantA,
+          slug: 'col-smoke-cat',
+          name: { en: 'ColSmoke' },
+          brandId: brand.id,
+        });
+      }),
+    );
+
+    await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.insert(schema.menuCategories).values({
+          tenantId: tenantA,
+          slug: 'col-smoke-cat-2',
+          name: { en: 'ColSmoke2' },
+          brandId: null,
+        });
+      }),
+    );
+  });
 });
