@@ -19,6 +19,7 @@ export class MeController {
         userId: actor.userId,
         email: actor.email,
         ...(actor.tenantId ? { tenantId: actor.tenantId } : {}),
+        ...(actor.baseRole ? { baseRole: actor.baseRole } : {}),
       };
     }
     if (actor.kind === 'customer') {
