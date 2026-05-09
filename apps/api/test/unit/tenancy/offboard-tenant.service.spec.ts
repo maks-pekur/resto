@@ -37,7 +37,7 @@ describe('OffboardTenantService', () => {
   it('schedule loads, mutates, and saves the aggregate', async () => {
     const tenant = Tenant.provision(baseProvisionInput());
     const repo = buildRepoMock();
-    repo.findById = vi.fn(async () => tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant);
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.schedule({
       tenantId: tenant.toSnapshot().id,
@@ -49,7 +49,7 @@ describe('OffboardTenantService', () => {
 
   it('schedule throws TenantNotFoundError when tenant missing', async () => {
     const repo = buildRepoMock();
-    repo.findById = vi.fn(async () => null);
+    repo.findById = vi.fn().mockResolvedValue(null);
     const service = new OffboardTenantService(repo, baseEnv());
     await expect(service.schedule({ tenantId: fakeId, requestedBy: 'user-abc' })).rejects.toThrow(
       TenantNotFoundError,
@@ -61,7 +61,7 @@ describe('OffboardTenantService', () => {
     tenant.scheduleOffboarding('user-abc');
     tenant.pullEvents();
     const repo = buildRepoMock();
-    repo.findById = vi.fn(async () => tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant);
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.cancel({ tenantId: tenant.toSnapshot().id });
     expect(result.status).toBe('active');
@@ -74,7 +74,7 @@ describe('OffboardTenantService', () => {
     tenant.executeErasure(new Date('2026-07-02T10:00:00Z'));
     const erasedSnapshot = tenant.toSnapshot();
     const repo = buildRepoMock();
-    repo.eraseTenant = vi.fn(async () => erasedSnapshot);
+    repo.eraseTenant = vi.fn().mockResolvedValue(erasedSnapshot);
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.executeErasure({ tenantId: erasedSnapshot.id });
     expect(result.status).toBe('erased');
@@ -86,7 +86,7 @@ describe('OffboardTenantService', () => {
 
   it('listScheduled delegates to repo', async () => {
     const repo = buildRepoMock();
-    repo.listScheduledForErasure = vi.fn(async () => []);
+    repo.listScheduledForErasure = vi.fn().mockResolvedValue([]);
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.listScheduled();
     expect(result).toEqual([]);
