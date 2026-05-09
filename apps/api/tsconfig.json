@@ -5,9 +5,7 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "useDefineForClassFields": false,
-    "ignoreDeprecations": "5.0",
-    "rootDir": ".",
-    "baseUrl": "."
+    "rootDir": "."
   },
   "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts", "eslint.config.mjs"],
   "exclude": ["node_modules", "dist"]
