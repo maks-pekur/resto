@@ -155,7 +155,7 @@ export class TenantDrizzleRepository implements TenantRepository {
   }
 
   async eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot> {
-    return this.db.withoutTenant(`tenant erasure: ${id}`, async (tx) => {
+    return this.db.withoutTenant('tenancy.eraseTenant', async (tx) => {
       const tenant = await this.loadByIdWithTx(tx, id);
       if (!tenant) {
         throw new TenantNotFoundError(id);
