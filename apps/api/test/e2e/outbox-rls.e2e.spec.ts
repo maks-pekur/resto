@@ -56,27 +56,37 @@ suite('Outbox RLS — INSERT policy enforcement', () => {
 
   it('rejects platform-event spoofing (tenant_id = NULL from tenant context)', async () => {
     await runInTenantContext({ tenantId: TENANT_A_ID }, async () => {
-      await expect(
-        stack.db.withTenant((tx) =>
+      const error = await stack.db
+        .withTenant((tx) =>
           tx.insert(schema.outboxEvents).values({
             tenantId: null,
             ...baseEvent,
           }),
-        ),
-      ).rejects.toThrow(/row-level security/i);
+        )
+        .then(
+          () => null,
+          (e: unknown) => e,
+        );
+      expect(error).toBeInstanceOf(Error);
+      expect(((error as Error).cause as Error | undefined)?.message).toMatch(/row-level security/i);
     });
   });
 
   it('rejects cross-tenant inserts (tenant_id = B from tenant A)', async () => {
     await runInTenantContext({ tenantId: TENANT_A_ID }, async () => {
-      await expect(
-        stack.db.withTenant((tx) =>
+      const error = await stack.db
+        .withTenant((tx) =>
           tx.insert(schema.outboxEvents).values({
             tenantId: TENANT_B_ID,
             ...baseEvent,
           }),
-        ),
-      ).rejects.toThrow(/row-level security/i);
+        )
+        .then(
+          () => null,
+          (e: unknown) => e,
+        );
+      expect(error).toBeInstanceOf(Error);
+      expect(((error as Error).cause as Error | undefined)?.message).toMatch(/row-level security/i);
     });
   });
 

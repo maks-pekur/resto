@@ -5,13 +5,13 @@
   "description": "Resto backend monolith — NestJS + Fastify, modular DDD bounded contexts.",
   "license": "UNLICENSED",
   "type": "module",
-  "main": "./dist/main.js",
+  "main": "./dist/main.cjs",
   "scripts": {
     "openapi:emit": "tsx src/openapi.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.717.0",
-    "@aws-sdk/s3-request-presigner": "^3.717.0",
+    "@aws-sdk/client-s3": "^3.1045.0",
+    "@aws-sdk/s3-request-presigner": "^3.1045.0",
     "@fastify/cors": "^9.0.1",
     "@fastify/helmet": "^11.1.1",
     "@fastify/rate-limit": "^9.1.0",
@@ -29,8 +29,8 @@
     "@resto/db": "workspace:*",
     "@resto/domain": "workspace:*",
     "@resto/events": "workspace:*",
-    "better-auth": "~1.3.10",
-    "drizzle-orm": "^0.36.4",
+    "better-auth": "~1.4.22",
+    "drizzle-orm": "^0.45.2",
     "fastify": "4.28.1",
     "ioredis": "^5.4.2",
     "pino": "^9.5.0",
@@ -40,7 +40,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@better-auth/cli": "~1.3.10",
+    "@better-auth/cli": "~1.4.22",
     "@nestjs/testing": "^10.4.15",
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
