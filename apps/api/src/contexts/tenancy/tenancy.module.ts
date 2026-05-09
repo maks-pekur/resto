@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProvisionTenantService } from './application/provision-tenant.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
+import { OffboardTenantService } from './application/offboard-tenant.service';
 import { TenantQueriesService } from './application/tenant-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
 import { STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
@@ -17,10 +18,11 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     { provide: STRIPE_CONNECT_PORT, useClass: NoopStripeConnectAdapter },
     ProvisionTenantService,
     ArchiveTenantService,
+    OffboardTenantService,
     TenantQueriesService,
     TenantResolverService,
     InternalTokenGuard,
   ],
-  exports: [TenantResolverService, TenantQueriesService],
+  exports: [TenantResolverService, TenantQueriesService, OffboardTenantService],
 })
 export class TenancyModule {}

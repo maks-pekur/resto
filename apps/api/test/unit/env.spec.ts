@@ -48,6 +48,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TENANT_DEV_FALLBACK_SLUG: 'demo',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/development/);
@@ -84,6 +85,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
     };
     const env = loadEnv(productionEnv);
     expect(env.AUTH_COOKIE_DOMAIN).toBe('.resto.app');

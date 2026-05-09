@@ -69,6 +69,14 @@ export const envSchema = z
      */
     AUTH_COOKIE_DOMAIN: z.string().optional(),
 
+    /**
+     * Salt used by the audit_log PII anonymisation step on tenant erasure
+     * (RES-138). Required outside dev/test (enforced by superRefine);
+     * minimum 32 chars and immutable post-deploy — rotating it severs the
+     * link between historic anonymised IDs and any future anonymised IDs.
+     */
+    AUDIT_ERASURE_SALT: z.string().min(32).optional(),
+
     /** S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev). */
     S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
     S3_REGION: z.string().default('us-east-1'),
@@ -125,6 +133,7 @@ export const envSchema = z
         'BETTER_AUTH_DATABASE_URL',
         'ADMIN_WEB_URL',
         'AUTH_COOKIE_DOMAIN',
+        'AUDIT_ERASURE_SALT',
       ] as const) {
         if (!env[key]) {
           ctx.addIssue({
