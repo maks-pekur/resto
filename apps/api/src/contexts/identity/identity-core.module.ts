@@ -21,6 +21,20 @@ import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emi
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
+export const assertEmailAdapterWired = (
+  nodeEnv: Env['NODE_ENV'],
+  callbacks: { sendResetPassword?: unknown; sendInvitationEmail?: unknown },
+): void => {
+  if (nodeEnv !== 'staging' && nodeEnv !== 'production') return;
+  const missing: string[] = [];
+  if (!callbacks.sendResetPassword) missing.push('sendResetPassword');
+  if (!callbacks.sendInvitationEmail) missing.push('sendInvitationEmail');
+  if (missing.length === 0) return;
+  throw new Error(
+    `Email adapter not wired: missing ${missing.join(', ')}. NODE_ENV=${nodeEnv} requires an email adapter — see RES-12 (Resend SMTP).`,
+  );
+};
+
 const readHeader = (
   headers: Record<string, string | string[] | undefined> | Headers | undefined,
   name: string,
@@ -61,6 +75,10 @@ const authProvider: Provider = {
     // mutating requests. Add `ADMIN_WEB_URL` when configured.
     const trustedOrigins: string[] = [];
     if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
+    assertEmailAdapterWired(env.NODE_ENV, {
+      sendResetPassword: undefined,
+      sendInvitationEmail: undefined,
+    });
     return buildAuth({
       authDb,
       secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
