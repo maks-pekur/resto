@@ -1,14 +1,6 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { Auth } from '../../infrastructure/better-auth/auth.config';
 
-export type RateLimitHandler = (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
-
-let rateLimitHandler: RateLimitHandler | undefined;
-
-export const setRateLimitHandler = (handler: RateLimitHandler): void => {
-  rateLimitHandler = handler;
-};
-
 /**
  * Mounts BA's web-standard handler at /api/auth/* via Fastify.
  *
@@ -19,27 +11,6 @@ export const setRateLimitHandler = (handler: RateLimitHandler): void => {
  */
 export const registerBetterAuthHandler = (fastify: FastifyInstance, auth: Auth): void => {
   fastify.all('/api/auth/*', async (req: FastifyRequest, reply: FastifyReply) => {
-    // Apply rate limiting if handler has been set. This is set by registerSecurity
-    // after the rate limiter plugin is registered.
-    if (rateLimitHandler) {
-      try {
-        await rateLimitHandler(req, reply);
-      } catch (err: unknown) {
-        // Rate limiter throws when limit is exceeded. The error object contains
-        // the response body. We need to manually send a 429 response.
-        const error = err as { statusCode?: number; message?: string };
-        // If this is a rate-limit error, send a 429 response
-        if (error.statusCode === 429 || error.message === 'Too Many Requests') {
-          reply.status(429);
-          reply.header('content-type', 'application/problem+json');
-          // The error object itself is the response body
-          reply.send(err);
-          return;
-        }
-        // For any other error, re-throw
-        throw err;
-      }
-    }
     const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
