@@ -19,8 +19,6 @@ NOT for support-mediated tenant pause or temporary suspension -- those are separ
 
 ## Step 1 -- Schedule the offboarding
 
-Until the HTTP endpoint ships (RES-103/B), use a direct SQL update against the dev stack OR wait for phase 2. Once phase 2 is live:
-
 ```bash
 curl -X POST "https://api.resto.app/internal/v1/tenants/$TENANT_ID/offboard" \
   -H "Content-Type: application/json" \
@@ -28,7 +26,9 @@ curl -X POST "https://api.resto.app/internal/v1/tenants/$TENANT_ID/offboard" \
   -d '{"requestedBy": "<your-ba-user-id>"}'
 ```
 
-Expected: `202 Accepted` with the post-state snapshot showing `status='pending_offboarding'` and `offboarding_scheduled_at`. The tenant is immediately blocked from API traffic via `AuthGuard`'s archive pre-check (RES-127).
+Expected: `202 Accepted` with the post-state snapshot showing `status='pending_offboarding'` and `offboardingScheduledAt` populated. The tenant is immediately blocked from API traffic via `AuthGuard`'s archive pre-check (RES-127).
+
+Errors: `404 tenant.not_found` (unknown id); `409 tenant.offboarding_not_allowed` (already pending or in `erased`/`suspended`); `400` (missing or empty `requestedBy`).
 
 ## Step 2 -- 30-day cool-off
 
@@ -42,12 +42,12 @@ The tenant has 30 calendar days to request cancellation. During this window:
 
 ```bash
 curl -X DELETE "https://api.resto.app/internal/v1/tenants/$TENANT_ID/offboard" \
-  -H "Content-Type: application/json" \
-  -H "x-internal-token: $INTERNAL_API_TOKEN" \
-  -d '{"cancelledBy": "<your-ba-user-id>"}'
+  -H "x-internal-token: $INTERNAL_API_TOKEN"
 ```
 
-After day 30 cancellation returns `409 tenant.offboarding_cool_off_expired` and is irreversible -- the next step is execution.
+Expected: `200 OK` with the restored snapshot showing `status='active'` and the offboarding columns nulled.
+
+Errors: `404` (unknown id); `409 tenant.offboarding_cool_off_expired` (>30 days since schedule -- erasure path is the only option); `409 tenant.offboarding_not_allowed` (tenant not in `pending_offboarding`).
 
 ## Step 4 -- Erasure execution
 
@@ -87,6 +87,17 @@ SELECT actor_subject, target_id, ip_address, user_agent, payload->>'userId'
 FROM audit_log WHERE tenant_id = '<tenant-id>' LIMIT 5;
 -- Expect: actor_subject + target_id start with 'erased:'; ip_address + user_agent are NULL; payload->>'userId' same hash form
 ```
+
+## Monitoring -- list tenants ready for erasure
+
+```bash
+curl "https://api.resto.app/internal/v1/tenants/scheduled-offboarding" \
+  -H "x-internal-token: $INTERNAL_API_TOKEN"
+```
+
+Returns an array of tenants whose `offboardingScheduledAt + 30d` has elapsed and whose `offboardingExecutedAt` is still NULL. Empty array means the erasure backlog is drained.
+
+The phase 3 scheduler (RES-103/C, MVP-2) will consume this same query via `OffboardTenantService.listScheduled()` and execute erasure under a leader lock; today the operator drives this loop manually via the CLI.
 
 ## What is NOT erased
 

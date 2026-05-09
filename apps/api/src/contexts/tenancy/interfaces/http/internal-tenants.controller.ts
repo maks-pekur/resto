@@ -64,10 +64,9 @@ export class InternalTenantsController {
 
   @Post(':id/offboard')
   @HttpCode(HttpStatus.ACCEPTED)
-  @UsePipes(new ZodValidationPipe(ScheduleOffboardingInput))
   async scheduleOffboarding(
     @Param('id') id: string,
-    @Body() input: ScheduleOffboardingInput,
+    @Body(new ZodValidationPipe(ScheduleOffboardingInput)) input: ScheduleOffboardingInput,
   ): Promise<TenantResponse> {
     const snapshot = await wrap(() =>
       this.offboarding.schedule({ tenantId: id, requestedBy: input.requestedBy }),
