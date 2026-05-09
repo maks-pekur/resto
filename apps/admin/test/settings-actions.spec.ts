@@ -83,7 +83,7 @@ describe('settings actions', () => {
       ok: false,
       status: 409,
       data: {
-        detail: 'cool-off window has expired for tenant "t-1"; cancellation is no longer possible.',
+        detail: 'Cool-off window has expired for tenant "t-1"; cancellation is no longer possible.',
       },
     });
     const result = await cancelOffboardingAction();

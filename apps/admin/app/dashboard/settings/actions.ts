@@ -36,9 +36,10 @@ const friendlyError = (status: number, body: ProblemDetails | null): string => {
   if (status === 404) return 'Tenant not found.';
   if (status === 401) return 'Not authorized.';
   if (status === 409) {
-    if (body?.detail?.includes('cool-off'))
+    const detail = body?.detail?.toLowerCase() ?? '';
+    if (detail.includes('cool-off'))
       return 'Cool-off has expired; cancellation is no longer possible.';
-    if (body?.detail?.includes('cannot be offboarded'))
+    if (detail.includes('cannot be offboarded'))
       return 'Tenant is not in a state that allows this action.';
     return body?.detail ?? 'Conflict.';
   }
