@@ -1,6 +1,8 @@
 import {
   Body,
   Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -10,9 +12,10 @@ import {
   UsePipes,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { ProvisionTenantInput } from '../../application/dto';
+import { ProvisionTenantInput, ScheduleOffboardingInput } from '../../application/dto';
 import { ProvisionTenantService } from '../../application/provision-tenant.service';
 import { ArchiveTenantService } from '../../application/archive-tenant.service';
+import { OffboardTenantService } from '../../application/offboard-tenant.service';
 import { ZodValidationPipe } from './zod-validation.pipe';
 import { InternalTokenGuard } from './internal-token.guard';
 import { mapDomainError } from './error-mapping';
@@ -35,6 +38,7 @@ export class InternalTenantsController {
   constructor(
     @Inject(ProvisionTenantService) private readonly provisioning: ProvisionTenantService,
     @Inject(ArchiveTenantService) private readonly archiving: ArchiveTenantService,
+    @Inject(OffboardTenantService) private readonly offboarding: OffboardTenantService,
   ) {}
 
   @Post()
@@ -49,5 +53,32 @@ export class InternalTenantsController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async archive(@Param('id') id: string): Promise<void> {
     await wrap(() => this.archiving.execute(id));
+  }
+
+  @Get('scheduled-offboarding')
+  @HttpCode(HttpStatus.OK)
+  async listScheduledOffboarding(): Promise<TenantResponse[]> {
+    const snapshots = await wrap(() => this.offboarding.listScheduled());
+    return snapshots.map(toResponse);
+  }
+
+  @Post(':id/offboard')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @UsePipes(new ZodValidationPipe(ScheduleOffboardingInput))
+  async scheduleOffboarding(
+    @Param('id') id: string,
+    @Body() input: ScheduleOffboardingInput,
+  ): Promise<TenantResponse> {
+    const snapshot = await wrap(() =>
+      this.offboarding.schedule({ tenantId: id, requestedBy: input.requestedBy }),
+    );
+    return toResponse(snapshot);
+  }
+
+  @Delete(':id/offboard')
+  @HttpCode(HttpStatus.OK)
+  async cancelOffboarding(@Param('id') id: string): Promise<TenantResponse> {
+    const snapshot = await wrap(() => this.offboarding.cancel({ tenantId: id }));
+    return toResponse(snapshot);
   }
 }
