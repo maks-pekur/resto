@@ -53,8 +53,14 @@ export class TenantAndBrandResolverService {
   async resolveBrandBySlug(tenantId: TenantId, rawSlug: string): Promise<ResolvedBrand | null> {
     const parsed = BrandSlug.safeParse(rawSlug);
     if (!parsed.success) return null;
-    const brand = await this.brands.findByTenantAndSlug(tenantId, parsed.data);
+    // Runs from TenantContextMiddleware BEFORE the ALS context is bound,
+    // so it cannot use a `withTenant` path. `findBySlug` is the global
+    // (system-context) lookup; we re-check tenant ownership in code so
+    // an operator sending an X-Brand-Slug for another tenant resolves
+    // to null (RES-173).
+    const brand = await this.brands.findBySlug(parsed.data);
     if (!brand || brand.status === 'erased') return null;
+    if (brand.tenantId !== tenantId) return null;
     return { id: brand.id, slug: brand.slug };
   }
 }

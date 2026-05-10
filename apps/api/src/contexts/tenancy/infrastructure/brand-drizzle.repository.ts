@@ -26,21 +26,33 @@ export class BrandDrizzleRepository implements BrandRepository {
   constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
   findByDomainHost(host: string): Promise<BrandSnapshot | null> {
+    // Host resolution runs BEFORE tenant context is bound (middleware
+    // uses this to derive the tenant from the host) — must stay
+    // `withoutTenant`. Inlines the brand row fetch so it does not call
+    // out to `findById` (which is `withTenant`).
     return this.db.withoutTenant('tenancy.brands.findByDomainHost', async (tx) => {
       const rows = await tx
         .select({
-          id: schema.brandDomains.brandId,
+          id: schema.brands.id,
+          tenantId: schema.brands.tenantId,
+          slug: schema.brands.slug,
+          displayName: schema.brands.displayName,
+          status: schema.brands.status,
+          theme: schema.brands.theme,
         })
         .from(schema.brandDomains)
+        .innerJoin(schema.brands, eq(schema.brands.id, schema.brandDomains.brandId))
         .where(eq(schema.brandDomains.domain, host.toLowerCase()))
         .limit(1);
-      const brandId = rows[0]?.id;
-      if (!brandId) return null;
-      return this.findById(BrandId.parse(brandId));
+      const row = rows[0];
+      return row ? ROW_TO_SNAPSHOT(row) : null;
     });
   }
 
   findBySlug(slug: BrandSlug): Promise<BrandSnapshot | null> {
+    // Slug-only lookups also run pre-tenant (middleware fallback path
+    // when a brand subdomain identifies the brand without a tenant
+    // header). `withoutTenant` is correct here.
     return this.db.withoutTenant('tenancy.brands.findBySlug', async (tx) => {
       const rows = await tx
         .select({
@@ -60,7 +72,10 @@ export class BrandDrizzleRepository implements BrandRepository {
   }
 
   findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null> {
-    return this.db.withoutTenant('tenancy.brands.findByTenantAndSlug', async (tx) => {
+    // Called only after a tenant context is bound (operator flows).
+    // Defense-in-depth: rely on RLS to scope the read to the active
+    // tenant (RES-173).
+    return this.db.withTenant(async (tx) => {
       const rows = await tx
         .select({
           id: schema.brands.id,
@@ -79,7 +94,10 @@ export class BrandDrizzleRepository implements BrandRepository {
   }
 
   findById(id: BrandId): Promise<BrandSnapshot | null> {
-    return this.db.withoutTenant('tenancy.brands.findById', async (tx) => {
+    // Operator-facing lookup. RLS scopes the row to the active tenant —
+    // a forged brand-id from another tenant resolves to `null` even if
+    // the request happens to know a real id (RES-173).
+    return this.db.withTenant(async (tx) => {
       const rows = await tx
         .select({
           id: schema.brands.id,
