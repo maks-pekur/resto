@@ -1,6 +1,5 @@
 'use server';
 
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { apiFetch } from '@/lib/api-server';
@@ -27,7 +26,6 @@ interface ProblemDetails {
 
 interface SignUpSuccess {
   readonly tenant: { id: string; slug: string };
-  readonly brand: { id: string; slug: string };
   readonly userId: string;
 }
 
@@ -74,16 +72,6 @@ export async function signUpAction(
   if (!res.ok) {
     const errorBody = (res.data as ProblemDetails | null) ?? null;
     return { error: friendly(res.status, errorBody) };
-  }
-
-  const success = res.data as SignUpSuccess | null;
-  if (success?.brand.slug) {
-    const cookieStore = await cookies();
-    cookieStore.set('resto.active_brand', success.brand.slug, {
-      httpOnly: true,
-      sameSite: 'lax',
-      path: '/',
-    });
   }
 
   redirect('/dashboard');
