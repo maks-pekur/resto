@@ -47,6 +47,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@resto/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
