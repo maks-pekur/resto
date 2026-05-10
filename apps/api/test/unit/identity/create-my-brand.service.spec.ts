@@ -23,17 +23,17 @@ const buildProvision = (
   impl: () => Promise<BrandSnapshot> = () => Promise.resolve(buildSnapshot()),
 ): ProvisionBrandService => ({ execute: vi.fn(impl) }) as unknown as ProvisionBrandService;
 
+const runExecute = async (provision: ProvisionBrandService) =>
+  new CreateMyBrandService(provision).execute({
+    tenantId: TENANT_ID,
+    slug: BrandSlug.parse('z-burger'),
+    displayName: 'Z Burger',
+  });
+
 describe('CreateMyBrandService', () => {
   it('delegates to ProvisionBrandService and returns the snapshot', async () => {
     const provision = buildProvision();
-    const service = new CreateMyBrandService(provision);
-
-    const result = await service.execute({
-      tenantId: TENANT_ID,
-      slug: BrandSlug.parse('z-burger'),
-      displayName: 'Z Burger',
-    });
-
+    const result = await runExecute(provision);
     expect(result.id).toBe(BRAND_ID);
     expect(provision.execute).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
@@ -42,46 +42,62 @@ describe('CreateMyBrandService', () => {
     });
   });
 
-  it('maps Postgres unique-violation 23505 into BrandSlugConflictError', async () => {
-    const dbErr = Object.assign(new Error('unique_violation'), { code: '23505' });
-    const provision = buildProvision(() => Promise.reject(dbErr));
-    const service = new CreateMyBrandService(provision);
-
-    await expect(
-      service.execute({
-        tenantId: TENANT_ID,
-        slug: BrandSlug.parse('z-burger'),
-        displayName: 'Z Burger',
-      }),
-    ).rejects.toBeInstanceOf(BrandSlugConflictError);
+  it('maps 23505 with brands_slug_active_uq constraint into BrandSlugConflictError', async () => {
+    const dbErr = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint_name: 'brands_slug_active_uq',
+    });
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBeInstanceOf(
+      BrandSlugConflictError,
+    );
   });
 
-  it('maps DrizzleQueryError wrapping 23505 into BrandSlugConflictError', async () => {
-    const cause = Object.assign(new Error('unique_violation'), { code: '23505' });
-    const wrappedErr = Object.assign(new Error('Failed query: insert...'), { cause });
-    const provision = buildProvision(() => Promise.reject(wrappedErr));
-    const service = new CreateMyBrandService(provision);
+  it('maps 23505 with brands_tenant_slug_uq constraint into BrandSlugConflictError', async () => {
+    const dbErr = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint_name: 'brands_tenant_slug_uq',
+    });
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBeInstanceOf(
+      BrandSlugConflictError,
+    );
+  });
 
-    await expect(
-      service.execute({
-        tenantId: TENANT_ID,
-        slug: BrandSlug.parse('z-burger'),
-        displayName: 'Z Burger',
-      }),
-    ).rejects.toBeInstanceOf(BrandSlugConflictError);
+  it('also recognises the legacy `constraint` field name (older drivers)', async () => {
+    const dbErr = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint: 'brands_slug_active_uq',
+    });
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBeInstanceOf(
+      BrandSlugConflictError,
+    );
+  });
+
+  it('unwraps DrizzleQueryError to find a brand-slug 23505 on .cause', async () => {
+    const cause = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint_name: 'brands_slug_active_uq',
+    });
+    const wrapped = Object.assign(new Error('Failed query: insert...'), { cause });
+    await expect(runExecute(buildProvision(() => Promise.reject(wrapped)))).rejects.toBeInstanceOf(
+      BrandSlugConflictError,
+    );
+  });
+
+  it('does NOT map a 23505 from an unrelated unique constraint', async () => {
+    const dbErr = Object.assign(new Error('unique_violation'), {
+      code: '23505',
+      constraint_name: 'brand_default_settings_brand_uq',
+    });
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBe(dbErr);
+  });
+
+  it('does NOT map a 23505 with no constraint name', async () => {
+    const dbErr = Object.assign(new Error('unique_violation'), { code: '23505' });
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBe(dbErr);
   });
 
   it('passes through non-conflict errors unchanged', async () => {
     const dbErr = new Error('connection refused');
-    const provision = buildProvision(() => Promise.reject(dbErr));
-    const service = new CreateMyBrandService(provision);
-
-    await expect(
-      service.execute({
-        tenantId: TENANT_ID,
-        slug: BrandSlug.parse('z-burger'),
-        displayName: 'Z Burger',
-      }),
-    ).rejects.toBe(dbErr);
+    await expect(runExecute(buildProvision(() => Promise.reject(dbErr)))).rejects.toBe(dbErr);
   });
 });
