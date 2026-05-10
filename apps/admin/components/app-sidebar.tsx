@@ -1,7 +1,16 @@
 'use client';
 
 import * as React from 'react';
-import { BookOpen, Bot, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react';
+import {
+  BookOpen,
+  Bot,
+  Frame,
+  LayoutDashboard,
+  Map,
+  PieChart,
+  Settings2,
+  SquareTerminal,
+} from 'lucide-react';
 
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { BrandTabSync } from '@/components/brand-tab-sync';
@@ -17,6 +26,12 @@ import {
 } from '@/components/ui/sidebar';
 
 const navMain: NavMainItem[] = [
+  {
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: LayoutDashboard,
+    scope: 'any',
+  },
   {
     title: 'Playground',
     url: '#',
