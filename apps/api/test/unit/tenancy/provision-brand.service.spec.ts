@@ -25,6 +25,7 @@ const buildRepo = (): BrandRepository => ({
   findById: vi.fn().mockResolvedValue(null),
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
+  findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
 });
 
 describe('ProvisionBrandService', () => {

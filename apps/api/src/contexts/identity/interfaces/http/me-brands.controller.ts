@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   ConflictException,
   Controller,
@@ -8,6 +9,7 @@ import {
   HttpStatus,
   Inject,
   Post,
+  Query,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -15,6 +17,7 @@ import {
   ApiCreatedResponse,
   ApiForbiddenResponse,
   ApiOkResponse,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import { BrandSlug, TenantId } from '@resto/domain';
@@ -22,6 +25,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
+import { CheckBrandSlugAvailabilityService } from '../../application/check-brand-slug-availability.service';
 import { CreateMyBrandService } from '../../application/create-my-brand.service';
 import { ListMyBrandsService } from '../../application/list-my-brands.service';
 import { BrandSlugConflictError } from '../../domain/brand-errors';
@@ -51,16 +55,24 @@ const CreateBrandInputSchema = z.object({
 
 class CreateBrandInputDto extends createZodDto(CreateBrandInputSchema) {}
 
+const SlugAvailabilityResponseSchema = z.object({
+  available: z.boolean(),
+  suggestion: z.string().nullable(),
+});
+class SlugAvailabilityResponseDto extends createZodDto(SlugAvailabilityResponseSchema) {}
+
 @ApiTags('identity')
 @Controller('v1/me')
-@RequiresTenantContext()
 export class MeBrandsController {
   constructor(
     @Inject(ListMyBrandsService) private readonly list: ListMyBrandsService,
     @Inject(CreateMyBrandService) private readonly create: CreateMyBrandService,
+    @Inject(CheckBrandSlugAvailabilityService)
+    private readonly checkSlug: CheckBrandSlugAvailabilityService,
   ) {}
 
   @Get('brands')
+  @RequiresTenantContext()
   @Permissions({ tenant: ['read'] })
   @ApiOkResponse({ type: MeBrandsResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -79,6 +91,7 @@ export class MeBrandsController {
   }
 
   @Post('brands')
+  @RequiresTenantContext()
   @HttpCode(HttpStatus.CREATED)
   @Permissions({ brand: ['create'] })
   @ApiBody({ type: CreateBrandInputDto })
@@ -105,5 +118,30 @@ export class MeBrandsController {
       }
       throw err;
     }
+  }
+
+  /**
+   * Live slug-availability check for the admin brand-creation form
+   * (RES-180). Operator session required (default-deny AuthGuard);
+   * intentionally NOT `@RequiresTenantContext` because slug uniqueness
+   * is platform-wide and the lookup must see brands across all tenants.
+   * `@Permissions({ brand: ['create'] })` keeps the route gated to
+   * users who could actually use the answer.
+   */
+  @Get('brands/slug-availability')
+  @Permissions({ brand: ['create'] })
+  @ApiQuery({ name: 'slug', type: String, required: true })
+  @ApiOkResponse({ type: SlugAvailabilityResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  async slugAvailability(@Query('slug') slug: string): Promise<SlugAvailabilityResponseDto> {
+    const parsed = BrandSlug.safeParse(slug);
+    if (!parsed.success) {
+      throw new BadRequestException({
+        code: 'brand.slug_invalid',
+        message: parsed.error.issues[0]?.message ?? 'Invalid brand slug.',
+      });
+    }
+    const result = await this.checkSlug.execute(parsed.data);
+    return { available: result.available, suggestion: result.suggestion };
   }
 }

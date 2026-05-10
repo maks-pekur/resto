@@ -62,6 +62,7 @@ const buildBrandRepo = (): BrandRepository => ({
   findById: vi.fn().mockResolvedValue(null),
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn(),
+  findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
 });
 
 const setup = (env: Env, repoOverride?: TenantRepository) => {

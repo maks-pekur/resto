@@ -22,6 +22,7 @@ const buildPort = (
 ): BrandProvisioningPort => ({
   listForTenant: vi.fn(),
   provision: vi.fn(impl),
+  findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
 });
 
 describe('CreateMyBrandService', () => {

@@ -26,6 +26,7 @@ const buildScopeReader = (rows: readonly string[] | null): MemberBrandScopeReade
 const buildBrands = (rows: readonly IdentityBrandView[]): BrandProvisioningPort => ({
   listForTenant: vi.fn().mockResolvedValue(rows),
   provision: vi.fn(),
+  findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
 });
 
 describe('ListMyBrandsService', () => {
