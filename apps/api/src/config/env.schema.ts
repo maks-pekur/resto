@@ -110,6 +110,22 @@ export const envSchema = z
           .filter((entry) => entry.length > 0),
       ),
 
+    /**
+     * Fastify trust-proxy setting (RES-165). Controls whether
+     * `X-Forwarded-*` headers are honored to derive `req.ip`/`req.hostname`.
+     * Untrusted XFF lets a client rotate IPs to bypass per-IP rate-limit
+     * buckets, so the default is `false` (do not trust the headers).
+     *
+     * Accepted values:
+     *   - unset / empty / 'false' → false (safe default)
+     *   - 'N' (positive integer)  → trust this many proxy hops
+     *   - 'a.b.c.d/n,e.f.g.h/n'    → trust only these CIDRs
+     *   - 'true'                   → trust all (DEV ONLY — refused outside dev/test)
+     *
+     * Required outside dev/test (deploys are always behind an ingress).
+     */
+    TRUST_PROXY: z.string().optional(),
+
     /** Per-IP rate limit (req/min) for public/auth routes. */
     RATE_LIMIT_PUBLIC_PER_MIN: z.coerce.number().int().positive().default(60),
     /** Per-IP rate limit (req/min) for `/internal/v1/*`. */
@@ -134,6 +150,7 @@ export const envSchema = z
         'ADMIN_WEB_URL',
         'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
+        'TRUST_PROXY',
       ] as const) {
         if (!env[key]) {
           ctx.addIssue({
@@ -142,6 +159,14 @@ export const envSchema = z
             message: `${key} is required when NODE_ENV is ${env.NODE_ENV}`,
           });
         }
+      }
+      if (env.TRUST_PROXY === 'true') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['TRUST_PROXY'],
+          message:
+            'TRUST_PROXY=true is unsafe outside dev/test; specify a CIDR list (e.g. "10.0.0.0/8") or hop count instead',
+        });
       }
     }
 

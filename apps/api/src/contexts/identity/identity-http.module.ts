@@ -1,6 +1,8 @@
 import { Inject, Module, type OnModuleInit } from '@nestjs/common';
 import { APP_GUARD, HttpAdapterHost } from '@nestjs/core';
 import type { FastifyInstance } from 'fastify';
+import { ENV_TOKEN } from '../../config/config.module';
+import type { Env } from '../../config/env.schema';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { IdentityCoreModule } from './identity-core.module';
 import { AUTH_TOKEN } from './identity.tokens';
@@ -49,10 +51,15 @@ export class IdentityHttpModule implements OnModuleInit {
   constructor(
     @Inject(HttpAdapterHost) private readonly httpHost: HttpAdapterHost,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   onModuleInit(): void {
     const fastify: FastifyInstance = this.httpHost.httpAdapter.getInstance();
-    registerBetterAuthHandler(fastify, this.auth);
+    registerBetterAuthHandler(
+      fastify,
+      this.auth,
+      this.env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
+    );
   }
 }
