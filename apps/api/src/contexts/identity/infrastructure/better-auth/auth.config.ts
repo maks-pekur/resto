@@ -11,6 +11,9 @@ type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail'
 type SendResetPassword = NonNullable<
   NonNullable<BetterAuthOptions['emailAndPassword']>['sendResetPassword']
 >;
+type SendVerificationEmail = NonNullable<
+  NonNullable<BetterAuthOptions['emailVerification']>['sendVerificationEmail']
+>;
 
 interface BuildOpts {
   authDb: AuthDrizzle;
@@ -38,6 +41,9 @@ interface BuildOpts {
    * forget-password flows do not crash, but no email is actually sent.
    */
   sendResetPassword?: SendResetPassword;
+  sendVerificationEmail?: SendVerificationEmail;
+  /** Default false to preserve back-compat; enable per environment. */
+  requireEmailVerification?: boolean;
   /** From env — see config/env.schema.ts. Default 12 (NIST-aligned). */
   minPasswordLength?: number;
   /** From env — see config/env.schema.ts. Default 128. */
@@ -125,10 +131,15 @@ export const buildAuth = (opts: BuildOpts) =>
     trustedOrigins: [...(opts.trustedOrigins ?? [])],
     emailAndPassword: {
       enabled: true,
-      requireEmailVerification: false, // Phase F flips this once email adapter lands
+      requireEmailVerification: opts.requireEmailVerification ?? false,
       minPasswordLength: opts.minPasswordLength ?? 12,
       maxPasswordLength: opts.maxPasswordLength ?? 128,
       sendResetPassword: opts.sendResetPassword ?? (() => Promise.resolve()),
+    },
+    emailVerification: {
+      sendOnSignUp: true,
+      autoSignInAfterVerification: true,
+      sendVerificationEmail: opts.sendVerificationEmail ?? (() => Promise.resolve()),
     },
     plugins: [
       // Cast needed: organization()'s concrete endpoint overloads don't

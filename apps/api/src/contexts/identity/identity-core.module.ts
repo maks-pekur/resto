@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { Module, type Provider } from '@nestjs/common';
+import { Logger, Module, type Provider } from '@nestjs/common';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
 import { buildAuth, type Auth } from './infrastructure/better-auth/auth.config';
@@ -23,12 +23,17 @@ const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
 export const assertEmailAdapterWired = (
   nodeEnv: Env['NODE_ENV'],
-  callbacks: { sendResetPassword?: unknown; sendInvitationEmail?: unknown },
+  callbacks: {
+    sendResetPassword?: unknown;
+    sendInvitationEmail?: unknown;
+    sendVerificationEmail?: unknown;
+  },
 ): void => {
   if (nodeEnv !== 'staging' && nodeEnv !== 'production') return;
   const missing: string[] = [];
   if (!callbacks.sendResetPassword) missing.push('sendResetPassword');
   if (!callbacks.sendInvitationEmail) missing.push('sendInvitationEmail');
+  if (!callbacks.sendVerificationEmail) missing.push('sendVerificationEmail');
   if (missing.length === 0) return;
   throw new Error(
     `Email adapter not wired: missing ${missing.join(', ')}. NODE_ENV=${nodeEnv} requires an email adapter — see RES-12 (Resend SMTP).`,
@@ -78,7 +83,9 @@ const authProvider: Provider = {
     assertEmailAdapterWired(env.NODE_ENV, {
       sendResetPassword: undefined,
       sendInvitationEmail: undefined,
+      sendVerificationEmail: undefined,
     });
+    const verificationLogger = new Logger('IdentityEmailVerification');
     return buildAuth({
       authDb,
       secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
@@ -86,6 +93,11 @@ const authProvider: Provider = {
       trustedOrigins,
       minPasswordLength: env.PASSWORD_MIN_LENGTH,
       maxPasswordLength: env.PASSWORD_MAX_LENGTH,
+      requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
+      sendVerificationEmail: ({ user, url }) => {
+        verificationLogger.log({ userId: user.id, url }, 'verification email');
+        return Promise.resolve();
+      },
       ...(cookieDomain ? { cookieDomain } : {}),
       onSignedOut: async (snapshot) => {
         const tenantId = TenantId.parse(snapshot.tenantId);
