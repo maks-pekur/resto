@@ -63,7 +63,7 @@ export const outboxEvents = pgTable(
       name: 'outbox_events_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
-    }).onDelete('set null'),
+    }).onDelete('restrict'),
     /** Working index for the dispatcher: undelivered rows in arrival order. */
     index('outbox_events_undelivered_idx')
       .on(table.occurredAt)
