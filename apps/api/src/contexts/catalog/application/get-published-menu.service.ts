@@ -1,4 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
+import { getBrandId } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import {
   CATALOG_CACHE_PORT,
@@ -31,7 +32,8 @@ export class GetPublishedMenuService {
       return cached;
     }
 
-    const menu = await this.repo.loadPublishedMenu(tenantId, version);
+    const brandId = getBrandId() ?? null;
+    const menu = await this.repo.loadPublishedMenu(tenantId, version, brandId);
     // Fire-and-forget cache write — a failed write must not delay the
     // response; the next request will retry.
     void this.cache.set(menu, CACHE_TTL_SECONDS).catch((err: unknown) => {
