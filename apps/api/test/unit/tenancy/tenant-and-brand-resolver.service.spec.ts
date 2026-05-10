@@ -74,17 +74,23 @@ describe('TenantAndBrandResolverService', () => {
   describe('resolveBrandBySlug', () => {
     it('returns null when slug is malformed', async () => {
       expect(await service.resolveBrandBySlug(tenantId, 'BAD!')).toBeNull();
-      expect(repo.findByTenantAndSlug).not.toHaveBeenCalled();
+      expect(repo.findBySlug).not.toHaveBeenCalled();
     });
 
     it('returns the brand when tenant + slug match', async () => {
-      vi.mocked(repo.findByTenantAndSlug).mockResolvedValueOnce(buildBrand());
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand());
       const result = await service.resolveBrandBySlug(tenantId, 'z-burger');
       expect(result).toEqual({ id: brandId, slug: 'z-burger' });
     });
 
     it('returns null when brand is erased', async () => {
-      vi.mocked(repo.findByTenantAndSlug).mockResolvedValueOnce(buildBrand({ status: 'erased' }));
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand({ status: 'erased' }));
+      expect(await service.resolveBrandBySlug(tenantId, 'z-burger')).toBeNull();
+    });
+
+    it('returns null when slug resolves to a brand owned by another tenant', async () => {
+      const otherTenant = TenantId.parse('33333333-3333-3333-3333-333333333333');
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand({ tenantId: otherTenant }));
       expect(await service.resolveBrandBySlug(tenantId, 'z-burger')).toBeNull();
     });
   });
