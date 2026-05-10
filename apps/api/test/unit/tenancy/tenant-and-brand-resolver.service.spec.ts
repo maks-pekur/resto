@@ -27,6 +27,7 @@ describe('TenantAndBrandResolverService', () => {
       findBySlug: vi.fn(),
       findByTenantAndSlug: vi.fn(),
       findById: vi.fn(),
+      listForTenant: vi.fn().mockResolvedValue([]),
       save: vi.fn(),
     };
     service = new TenantAndBrandResolverService(repo);

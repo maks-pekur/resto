@@ -45,6 +45,20 @@ export interface BrandRepository {
   findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null>;
   findById(id: BrandId): Promise<BrandSnapshot | null>;
   /**
+   * List brands belonging to a tenant. When `brandIds` is provided, the
+   * result is filtered to that subset (used by the operator's "brands I
+   * can see" path — the scope-reader returns either null = all, or a
+   * non-empty allow-list). When `brandIds` is undefined, returns every
+   * non-erased brand.
+   *
+   * Implementations MUST run inside the request's tenant context so RLS
+   * scopes the read to the active tenant.
+   */
+  listForTenant(
+    tenantId: TenantId,
+    brandIds?: readonly string[],
+  ): Promise<readonly BrandSnapshot[]>;
+  /**
    * Persist a brand and its primary subdomain in one transaction.
    *
    * Idempotent — re-running with the same (tenantId, slug) is a no-op.
