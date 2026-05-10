@@ -15,6 +15,7 @@ export const PERMISSIONS_STATEMENT = {
   settings: ['update'],
   billing: ['read', 'update'],
   tenant: ['read', 'delete', 'transfer'],
+  brand: ['read', 'create', 'update', 'delete'],
 } as const;
 
 export type PermissionResource = keyof typeof PERMISSIONS_STATEMENT;
