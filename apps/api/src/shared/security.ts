@@ -32,6 +32,19 @@ export const buildOriginMatcher = (patterns: readonly string[]): ((origin: strin
 
 const isInternalRoute = (url: string): boolean => url.startsWith('/internal/v1/');
 
+/**
+ * Best-effort email extraction from a parsed BA request body. BA's
+ * sign-in/reset endpoints accept JSON or `application/x-www-form-urlencoded`;
+ * Fastify pre-parses both into `req.body`. Returns `undefined` if the
+ * email is missing or non-string — the caller falls back to the per-IP
+ * bucket only.
+ */
+const readEmailFromBody = (body: unknown): string | undefined => {
+  if (typeof body !== 'object' || body === null) return undefined;
+  const value = (body as Record<string, unknown>).email;
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+};
+
 interface RateLimitContext {
   readonly after: string;
   readonly max: number;
@@ -114,6 +127,34 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
 
   const rateLimitHandler = fastify.rateLimit() as RateLimitHandler;
 
+  // Identity-aware bucket (RES-169): runs in addition to the per-IP
+  // limit on `/api/auth/sign-in/email` and `/api/auth/request-password-reset`.
+  // Keyed by `email[:ip]` so an attacker rotating IPs against one
+  // account stays throttled (per-IP alone would let them sidestep
+  // the auth-specific cap from a CGNAT pool or proxy chain).
+  const identityRateLimitHandler = fastify.rateLimit({
+    timeWindow: '1 minute',
+    max: (req: FastifyRequest): number =>
+      req.url.startsWith('/api/auth/sign-in/email')
+        ? env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN
+        : env.RATE_LIMIT_AUTH_RESET_PER_EMAIL_PER_MIN,
+    keyGenerator: (req: FastifyRequest): string => {
+      const email = readEmailFromBody(req.body);
+      // Fall back to a unique key per request so the limiter is a no-op
+      // when no email is present (we can't bucket what we can't read);
+      // the per-IP global limiter still gates these paths.
+      if (!email) return `noop:${req.ip}:${Date.now().toString()}:${Math.random().toString()}`;
+      return req.url.startsWith('/api/auth/sign-in/email')
+        ? `auth:signin:${email.toLowerCase()}:${req.ip}`
+        : `auth:reset:${email.toLowerCase()}`;
+    },
+    errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
+      message: 'Too Many Requests',
+      code: 'rate-limit-exceeded',
+      detail: `Rate limit exceeded, retry in ${Math.ceil(context.ttl / 1000).toString()} seconds`,
+    }),
+  }) as RateLimitHandler;
+
   // BA's `/api/auth/*` endpoints are mounted directly on Fastify (see
   // identity-http.module → better-auth.handler) so the NestJS Guard does
   // not see them. The preHandler hook intercepts every BA request before
@@ -124,13 +165,18 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   // fires (including the content-type rewrite below). Rethrowing would
   // bypass onSend and land in NestJS's global exception filter → 500.
   fastify.addHook('preHandler', async (req: FastifyRequest, reply: FastifyReply): Promise<void> => {
-    if (req.url.startsWith('/api/auth/')) {
-      try {
-        await rateLimitHandler(req, reply);
-      } catch (err) {
-        const body = err as { statusCode?: number };
-        reply.status(body.statusCode ?? 429).send(err);
+    if (!req.url.startsWith('/api/auth/')) return;
+    try {
+      await rateLimitHandler(req, reply);
+      if (
+        req.url.startsWith('/api/auth/sign-in/email') ||
+        req.url.startsWith('/api/auth/request-password-reset')
+      ) {
+        await identityRateLimitHandler(req, reply);
       }
+    } catch (err) {
+      const body = err as { statusCode?: number };
+      reply.status(body.statusCode ?? 429).send(err);
     }
   });
 
