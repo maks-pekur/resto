@@ -28,6 +28,13 @@ const STREAM_SUBJECTS = ['tenancy.>', 'identity.>', 'catalog.>', 'ordering.>', '
 
 const moduleLogger = new Logger('NatsModule');
 
+const buildNatsAuthOptions = (env: Env): { user: string; pass: string } | undefined => {
+  if (env.NATS_USERNAME && env.NATS_PASSWORD) {
+    return { user: env.NATS_USERNAME, pass: env.NATS_PASSWORD };
+  }
+  return undefined;
+};
+
 @Injectable()
 class NatsShutdownHook implements OnApplicationShutdown {
   constructor(
@@ -57,10 +64,12 @@ class NatsShutdownHook implements OnApplicationShutdown {
           return null;
         }
         try {
+          const auth = buildNatsAuthOptions(env);
           return await NatsJetStreamPublisher.connect({
             servers: env.NATS_URL,
             stream: env.NATS_STREAM,
             subjects: STREAM_SUBJECTS,
+            ...(auth ? { connectionOptions: auth } : {}),
           });
         } catch (err) {
           // Soft-fail at boot so the api comes up for health checks even
@@ -79,9 +88,11 @@ class NatsShutdownHook implements OnApplicationShutdown {
           return null;
         }
         try {
+          const auth = buildNatsAuthOptions(env);
           return await NatsJetStreamSubscriber.connect({
             servers: env.NATS_URL,
             stream: env.NATS_STREAM,
+            ...(auth ? { connectionOptions: auth } : {}),
           });
         } catch (err) {
           moduleLogger.warn(

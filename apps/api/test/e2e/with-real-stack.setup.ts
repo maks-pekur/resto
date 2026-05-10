@@ -1,5 +1,4 @@
 import 'reflect-metadata';
-import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { GenericContainer, type StartedTestContainer, Wait } from 'testcontainers';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
@@ -141,11 +140,4 @@ export const stopRealStack = async (stack: RealStack): Promise<void> => {
   await Promise.all([stack.pg.stop({ timeout: 5_000 }), stack.nats.stop({ timeout: 5_000 })]);
 };
 
-export const isDockerAvailable = (): boolean => {
-  try {
-    execSync('docker info', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-};
+export { isDockerAvailable } from './helpers/docker-availability';

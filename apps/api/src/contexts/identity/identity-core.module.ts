@@ -173,5 +173,3 @@ const permissionCheckerProvider: Provider = {
   exports: [authProvider, authDrizzleProvider, permissionCheckerProvider, IDENTITY_EVENT_EMITTER],
 })
 export class IdentityCoreModule {}
-
-export { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
