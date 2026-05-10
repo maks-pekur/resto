@@ -140,6 +140,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         tenantId,
         version,
         currency,
+        brand: null,
         categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
         items: items.sort((a, b) => a.sortOrder - b.sortOrder),
         modifiers,
