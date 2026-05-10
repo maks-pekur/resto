@@ -83,6 +83,15 @@ paths:
           description: ""
       tags:
         - Me
+  /v1/me/brands:
+    get:
+      operationId: MeBrandsController_getBrands
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
   /internal/v1/tenants/{id}/owner:
     post:
       operationId: InternalBootstrapController_createOwner
