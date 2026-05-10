@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { getTenantContext, requireTenantContext, runInTenantContext } from '../../src/context';
+import {
+  getBrandId,
+  getTenantContext,
+  requireTenantContext,
+  runInTenantContext,
+  withBrand,
+} from '../../src/context';
 
 const TENANT_A = '00000000-0000-4000-8000-00000000000a';
 
@@ -37,5 +43,40 @@ describe('TenantContext', () => {
       }),
     ]);
     expect(seen).toEqual([TENANT_A, undefined]);
+  });
+
+  it('runInTenantContext carries brandId when provided', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    const brandId = '22222222-2222-2222-2222-222222222222';
+    await runInTenantContext({ tenantId, brandId }, async () => {
+      expect(getBrandId()).toBe(brandId);
+    });
+  });
+
+  it('getBrandId returns undefined when no brand is bound', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    await runInTenantContext({ tenantId }, async () => {
+      expect(getBrandId()).toBeUndefined();
+    });
+  });
+
+  it('withBrand overrides the brand for nested calls', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    const brandA = '22222222-2222-2222-2222-222222222222';
+    const brandB = '33333333-3333-3333-3333-333333333333';
+    await runInTenantContext({ tenantId, brandId: brandA }, async () => {
+      expect(getBrandId()).toBe(brandA);
+      await withBrand(brandB, async () => {
+        expect(getBrandId()).toBe(brandB);
+      });
+      expect(getBrandId()).toBe(brandA);
+    });
+  });
+
+  it('rejects an invalid brandId', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    await expect(
+      runInTenantContext({ tenantId, brandId: 'not-a-uuid' }, async () => undefined),
+    ).rejects.toThrow(/brand id/i);
   });
 });
