@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
-import { middleware } from '@/middleware';
+import { proxy } from '@/proxy';
 
 const SESSION_COOKIE = 'better-auth.session_token';
 
@@ -14,9 +14,9 @@ const makeReq = (path: string, cookies: Record<string, string> = {}): NextReques
   });
 };
 
-describe('admin middleware', () => {
+describe('admin proxy', () => {
   it('redirects unauthenticated /dashboard requests to /login with `next` set', () => {
-    const res = middleware(makeReq('/dashboard?tab=settings'));
+    const res = proxy(makeReq('/dashboard?tab=settings'));
     expect(res.status).toBe(307);
     const location = res.headers.get('location');
     expect(location).toContain('/login');
@@ -25,14 +25,13 @@ describe('admin middleware', () => {
   });
 
   it('passes /dashboard through when the BA session cookie is present', () => {
-    const res = middleware(makeReq('/dashboard', { [SESSION_COOKIE]: 'fake-but-present' }));
-    // NextResponse.next() returns 200 with a custom internal header.
+    const res = proxy(makeReq('/dashboard', { [SESSION_COOKIE]: 'fake-but-present' }));
     expect(res.status).toBe(200);
     expect(res.headers.get('location')).toBeNull();
   });
 
   it('also accepts the `__Secure-` prefixed cookie name (production)', () => {
-    const res = middleware(
+    const res = proxy(
       makeReq('/dashboard', { [`__Secure-${SESSION_COOKIE}`]: 'fake-but-present' }),
     );
     expect(res.status).toBe(200);
