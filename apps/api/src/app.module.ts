@@ -8,6 +8,7 @@ import { AuditModule } from './contexts/audit/audit.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
 import { IdentityHttpModule } from './contexts/identity/identity-http.module';
+import { SharedApiModule } from './shared/api/shared-api.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
@@ -15,6 +16,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
 @Module({
   imports: [
     ConfigModule,
+    SharedApiModule,
     DatabaseModule,
     NatsModule,
     HealthModule,

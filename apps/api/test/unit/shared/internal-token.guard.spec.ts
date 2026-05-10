@@ -1,7 +1,7 @@
 import { UnauthorizedException, type ExecutionContext } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import type { Env } from '../../../src/config/env.schema';
-import { InternalTokenGuard } from '../../../src/contexts/tenancy/interfaces/http/internal-token.guard';
+import { InternalTokenGuard } from '../../../src/shared/api/internal-token.guard';
 
 const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   NODE_ENV: 'production',

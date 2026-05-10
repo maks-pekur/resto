@@ -11,7 +11,6 @@ import { BRAND_REPOSITORY, STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './doma
 import { NoopStripeConnectAdapter } from './infrastructure/stripe-connect.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
 import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repository';
-import { InternalTokenGuard } from './interfaces/http/internal-token.guard';
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 
@@ -29,7 +28,6 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     BrandQueriesService,
     TenantResolverService,
     TenantAndBrandResolverService,
-    InternalTokenGuard,
   ],
   // Public surface for cross-context callers. Repository tokens
   // (BRAND_REPOSITORY, TENANT_REPOSITORY) intentionally NOT exported —

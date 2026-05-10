@@ -4,7 +4,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
+import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import {
   UpsertCategoryInputDto,
   UpsertItemInputDto,
@@ -14,7 +14,7 @@ import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
-import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
+import { Public } from '../../../identity/interfaces/http';
 import { mapCatalogError } from './error-mapping';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {

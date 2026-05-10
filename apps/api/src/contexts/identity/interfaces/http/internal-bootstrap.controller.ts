@@ -20,7 +20,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
+import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import { BootstrapOwnerService } from '../../application/bootstrap-owner.service';
 import {
   TENANT_LOOKUP_PORT,
