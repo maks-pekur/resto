@@ -10,22 +10,12 @@ import { OwnerAlreadyExistsError } from '../../../src/contexts/identity/domain/b
 const TENANT_ID_DEFAULT = '11111111-1111-4111-8111-111111111111';
 const TENANT_ID_ALT = '22222222-2222-4222-8222-222222222222';
 
-const tenantSnapshot = (overrides: Partial<Record<string, unknown>> = {}) => ({
+const tenantView = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: TENANT_ID_DEFAULT,
   slug: 'cafe-roma',
   displayName: 'Cafe Roma',
   status: 'active',
-  locale: 'en',
-  defaultCurrency: 'USD',
-  primaryDomain: { id: 'd-1', domain: 'cafe-roma.menu.resto.app', isPrimary: true },
-  stripeAccountId: null,
-  archivedAt: null,
-  offboardingScheduledAt: null,
-  offboardingExecutedAt: null,
-  offboardingRequestedBy: null,
-  customDomains: [],
-  createdAt: new Date(),
-  updatedAt: new Date(),
+  primaryDomainHostname: 'cafe-roma.menu.resto.app',
   ...overrides,
 });
 
@@ -61,17 +51,20 @@ const buildAuthDbMock = (existingRows: readonly { id: string }[] = []): AuthDbMo
 };
 
 describe('SignUpService', () => {
-  let provisionMock: { execute: ReturnType<typeof vi.fn> };
+  let tenantProvisioningMock: { provision: ReturnType<typeof vi.fn> };
   let bootstrapMock: { execute: ReturnType<typeof vi.fn> };
-  let tenantsMock: { findBySlug: ReturnType<typeof vi.fn> };
+  let tenantLookupMock: {
+    findBySlug: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+  };
   let authMock: ReturnType<typeof buildAuthMock>;
   let authDbMock: AuthDbMock;
 
   const buildService = (): SignUpService =>
     new SignUpService(
-      provisionMock as never,
+      tenantProvisioningMock,
       bootstrapMock as never,
-      tenantsMock as never,
+      tenantLookupMock,
       authMock as never,
       authDbMock as never,
     );
@@ -85,22 +78,22 @@ describe('SignUpService', () => {
   };
 
   beforeEach(() => {
-    provisionMock = { execute: vi.fn() };
+    tenantProvisioningMock = { provision: vi.fn() };
     bootstrapMock = { execute: vi.fn() };
-    tenantsMock = { findBySlug: vi.fn() };
+    tenantLookupMock = { findBySlug: vi.fn(), findById: vi.fn() };
     authMock = buildAuthMock();
     authDbMock = buildAuthDbMock();
   });
 
   it('uses base slug when free', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot());
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
 
     const result = await buildService().execute(baseInput);
 
-    expect(tenantsMock.findBySlug).toHaveBeenCalledTimes(1);
-    expect(provisionMock.execute).toHaveBeenCalledWith(
+    expect(tenantLookupMock.findBySlug).toHaveBeenCalledTimes(1);
+    expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'cafe-roma' }),
     );
     expect(result.userId).toBe('u-1');
@@ -108,8 +101,8 @@ describe('SignUpService', () => {
   });
 
   it('uses set-active cookies when set-active succeeds', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot());
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
     const result = await buildService().execute(baseInput);
     expect(result.setCookie[0]).toMatch(/abc-active/);
@@ -118,13 +111,13 @@ describe('SignUpService', () => {
   it('rejects duplicate email pre-flight (no provision call)', async () => {
     authDbMock = buildAuthDbMock([{ id: 'existing-user' }]);
     await expect(buildService().execute(baseInput)).rejects.toThrow(SignupEmailAlreadyExistsError);
-    expect(provisionMock.execute).not.toHaveBeenCalled();
-    expect(tenantsMock.findBySlug).not.toHaveBeenCalled();
+    expect(tenantProvisioningMock.provision).not.toHaveBeenCalled();
+    expect(tenantLookupMock.findBySlug).not.toHaveBeenCalled();
   });
 
   it('falls back to sign-in cookies if set-active throws', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot());
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
     authMock.api.setActiveOrganization.mockRejectedValueOnce(new Error('no-org-membership'));
     const result = await buildService().execute(baseInput);
@@ -132,31 +125,31 @@ describe('SignUpService', () => {
   });
 
   it('appends -2, -3 suffix on slug collision', async () => {
-    tenantsMock.findBySlug
+    tenantLookupMock.findBySlug
       .mockResolvedValueOnce({ id: 't-existing-1' })
       .mockResolvedValueOnce({ id: 't-existing-2' })
       .mockResolvedValueOnce(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot({ slug: 'cafe-roma-3' }));
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView({ slug: 'cafe-roma-3' }));
     bootstrapMock.execute.mockResolvedValue({});
 
     const result = await buildService().execute(baseInput);
 
-    expect(tenantsMock.findBySlug).toHaveBeenCalledTimes(3);
-    expect(provisionMock.execute).toHaveBeenCalledWith(
+    expect(tenantLookupMock.findBySlug).toHaveBeenCalledTimes(3);
+    expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
       expect.objectContaining({ slug: 'cafe-roma-3' }),
     );
     expect(result.tenant.slug).toBe('cafe-roma-3');
   });
 
   it('throws SlugUnavailableError after 100 attempts', async () => {
-    tenantsMock.findBySlug.mockResolvedValue({ id: 't-x' });
+    tenantLookupMock.findBySlug.mockResolvedValue({ id: 't-x' });
     await expect(buildService().execute(baseInput)).rejects.toThrow(SlugUnavailableError);
-    expect(provisionMock.execute).not.toHaveBeenCalled();
+    expect(tenantProvisioningMock.provision).not.toHaveBeenCalled();
   });
 
   it('maps OwnerAlreadyExistsError to SignupEmailAlreadyExistsError', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot());
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockRejectedValue(
       new OwnerAlreadyExistsError(TENANT_ID_DEFAULT, 'someone-else@example.com'),
     );
@@ -164,18 +157,18 @@ describe('SignUpService', () => {
   });
 
   it('slugifies non-ASCII displayName', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot());
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
     await buildService().execute({ ...baseInput, displayName: 'Café Mañana' });
-    expect(provisionMock.execute).toHaveBeenCalledWith(
+    expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
       expect.objectContaining({ slug: expect.stringMatching(/^cafe-/) }),
     );
   });
 
   it('passes tenantId to setActiveOrganization', async () => {
-    tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot({ id: TENANT_ID_ALT }));
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView({ id: TENANT_ID_ALT }));
     bootstrapMock.execute.mockResolvedValue({});
     await buildService().execute(baseInput);
     expect(authMock.api.setActiveOrganization).toHaveBeenCalledWith(

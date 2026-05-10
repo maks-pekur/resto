@@ -4,6 +4,7 @@ import { ProvisionBrandService } from './application/provision-brand.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
 import { OffboardTenantService } from './application/offboard-tenant.service';
 import { TenantQueriesService } from './application/tenant-queries.service';
+import { BrandQueriesService } from './application/brand-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
 import { TenantAndBrandResolverService } from './application/tenant-and-brand-resolver.service';
 import { BRAND_REPOSITORY, STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
@@ -25,19 +26,23 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     ArchiveTenantService,
     OffboardTenantService,
     TenantQueriesService,
+    BrandQueriesService,
     TenantResolverService,
     TenantAndBrandResolverService,
     InternalTokenGuard,
   ],
+  // Public surface for cross-context callers. Repository tokens
+  // (BRAND_REPOSITORY, TENANT_REPOSITORY) intentionally NOT exported —
+  // other contexts depend on application services only and project
+  // tenancy's domain types into their own port shapes (RES-166).
   exports: [
     TenantResolverService,
     TenantAndBrandResolverService,
     TenantQueriesService,
+    BrandQueriesService,
     OffboardTenantService,
     ProvisionTenantService,
     ProvisionBrandService,
-    TENANT_REPOSITORY,
-    BRAND_REPOSITORY,
   ],
 })
 export class TenancyModule {}
