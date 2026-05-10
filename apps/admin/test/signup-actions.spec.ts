@@ -1,7 +1,11 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
 const apiFetchMock = vi.fn();
+const cookiesSetMock = vi.fn();
 vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
+vi.mock('next/headers', () => ({
+  cookies: vi.fn(() => Promise.resolve({ set: cookiesSetMock })),
+}));
 vi.mock('next/navigation', () => ({
   redirect: vi.fn(() => {
     throw new Error('REDIRECT');
@@ -31,13 +35,27 @@ describe('signUpAction', () => {
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
-  it('forwards request and redirects on 201', async () => {
-    apiFetchMock.mockResolvedValue({ ok: true, status: 201, data: {}, raw: new Response() });
+  it('forwards request, sets active-brand cookie, and redirects on 201', async () => {
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 201,
+      data: {
+        tenant: { id: 'tenant-uuid', slug: 'cafe-roma' },
+        brand: { id: 'brand-uuid', slug: 'cafe-roma' },
+        userId: 'user-uuid',
+      },
+      raw: new Response(),
+    });
     await expect(signUpAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
     expect(apiFetchMock).toHaveBeenCalledWith(
       '/v1/signup',
       expect.objectContaining({ method: 'POST', forwardSetCookie: true }),
     );
+    expect(cookiesSetMock).toHaveBeenCalledWith('resto.active_brand', 'cafe-roma', {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    });
   });
 
   it('surfaces email-taken friendly message', async () => {
@@ -49,6 +67,7 @@ describe('signUpAction', () => {
     });
     const result = await signUpAction({ error: null }, buildForm());
     expect(result.error).toMatch(/already exists/);
+    expect(cookiesSetMock).not.toHaveBeenCalled();
   });
 
   it('surfaces 500 with generic message', async () => {
@@ -60,5 +79,6 @@ describe('signUpAction', () => {
     });
     const result = await signUpAction({ error: null }, buildForm());
     expect(result.error).toMatch(/Something went wrong/);
+    expect(cookiesSetMock).not.toHaveBeenCalled();
   });
 });
