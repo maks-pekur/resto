@@ -28,7 +28,7 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { CheckBrandSlugAvailabilityService } from '../../application/check-brand-slug-availability.service';
 import { CreateMyBrandService } from '../../application/create-my-brand.service';
 import { ListMyBrandsService } from '../../application/list-my-brands.service';
-import { BrandSlugConflictError } from '../../domain/brand-errors';
+import { BrandDisplayNameTakenError, BrandSlugConflictError } from '../../domain/brand-errors';
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { Permissions } from './decorators/permissions.decorator';
@@ -115,6 +115,9 @@ export class MeBrandsController {
     } catch (err) {
       if (err instanceof BrandSlugConflictError) {
         throw new ConflictException({ code: 'brand.slug_taken', message: err.message });
+      }
+      if (err instanceof BrandDisplayNameTakenError) {
+        throw new ConflictException({ code: 'brand.display_name_taken', message: err.message });
       }
       throw err;
     }

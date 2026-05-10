@@ -45,6 +45,11 @@ export const brands = pgTable(
     uniqueIndex('brands_slug_active_uq')
       .on(table.slug)
       .where(sql`${table.status} != 'erased'`),
+    // RES-182: per-tenant case-insensitive unique on display_name —
+    // active rows only (an erased brand frees the name).
+    uniqueIndex('brands_tenant_display_name_active_uq')
+      .on(table.tenantId, sql`lower(${table.displayName})`)
+      .where(sql`${table.status} != 'erased'`),
     index('brands_tenant_status_idx').on(table.tenantId, table.status),
     check('brands_status_chk', sql`${table.status} IN ('active','suspended','archived','erased')`),
     check(

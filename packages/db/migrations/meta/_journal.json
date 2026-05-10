@@ -141,6 +141,13 @@
       "when": 1778360600000,
       "tag": "0019_erase_includes_brands",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1778446800000,
+      "tag": "0020_brand_display_name_active_uq",
+      "breakpoints": true
     }
   ]
 }
