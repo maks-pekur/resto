@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { user as userTable } from '@resto/db/schema';
-import { ProvisionTenantService } from '../../tenancy/application/provision-tenant.service';
-import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
-import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
 import { TenantSlug } from '@resto/domain';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
@@ -19,12 +16,18 @@ import {
   SignupBetterAuthFailureError,
 } from '../domain/signup-errors';
 import type { SignUpInput } from './dto';
+import { TENANT_LOOKUP_PORT, type TenantLookupPort } from './ports/tenant-lookup.port';
+import {
+  TENANT_PROVISIONING_PORT,
+  type IdentityTenantView,
+  type TenantProvisioningPort,
+} from './ports/tenant-provisioning.port';
 
 const MAX_SLUG_SUFFIX = 99;
 const SLUG_MAX_LEN = 30;
 
 export interface SignUpResult {
-  readonly tenant: TenantSnapshot;
+  readonly tenant: IdentityTenantView;
   readonly userId: string;
   readonly setCookie: readonly string[];
 }
@@ -45,9 +48,9 @@ export class SignUpService {
   private readonly logger = new Logger(SignUpService.name);
 
   constructor(
-    @Inject(ProvisionTenantService) private readonly provision: ProvisionTenantService,
+    @Inject(TENANT_PROVISIONING_PORT) private readonly tenantProvisioning: TenantProvisioningPort,
     @Inject(BootstrapOwnerService) private readonly bootstrap: BootstrapOwnerService,
-    @Inject(TENANT_REPOSITORY) private readonly tenants: TenantRepository,
+    @Inject(TENANT_LOOKUP_PORT) private readonly tenantLookup: TenantLookupPort,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
     @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
   ) {}
@@ -59,7 +62,7 @@ export class SignUpService {
     const base = slugify(input.displayName);
     const slug = await this.findFreeSlug(base);
 
-    const tenant = await this.provision.execute({
+    const tenant = await this.tenantProvisioning.provision({
       slug: TenantSlug.parse(slug),
       displayName: input.displayName,
       locale: input.locale,
@@ -106,7 +109,7 @@ export class SignUpService {
   private async findFreeSlug(base: string): Promise<string> {
     for (let suffix = 0; suffix <= MAX_SLUG_SUFFIX; suffix++) {
       const candidate = suffix === 0 ? base : `${base}-${(suffix + 1).toString()}`;
-      const existing = await this.tenants.findBySlug(TenantSlug.parse(candidate));
+      const existing = await this.tenantLookup.findBySlug(candidate);
       if (!existing) return candidate;
     }
     throw new SlugUnavailableError(base);

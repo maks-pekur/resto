@@ -70,7 +70,7 @@ export class SignUpController {
           slug: result.tenant.slug,
           displayName: result.tenant.displayName,
           status: result.tenant.status,
-          primaryDomain: result.tenant.primaryDomain.domain,
+          primaryDomain: result.tenant.primaryDomainHostname,
         },
         userId: result.userId,
       };

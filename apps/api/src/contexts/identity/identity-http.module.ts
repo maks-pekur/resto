@@ -23,6 +23,10 @@ import { MeBrandsController } from './interfaces/http/me-brands.controller';
 import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
 import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
 import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
+import { TENANT_PROVISIONING_PORT } from './application/ports/tenant-provisioning.port';
+import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.adapter';
+import { BRAND_PROVISIONING_PORT } from './application/ports/brand-provisioning.port';
+import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.adapter';
 
 /**
  * HTTP-side composition for the identity context. Imports
@@ -45,6 +49,10 @@ import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-sco
     { provide: APP_GUARD, useClass: BrandScopeGuard },
     { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
     MemberBrandScopeDrizzleReader,
+    { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },
+    TenantProvisioningAdapter,
+    { provide: BRAND_PROVISIONING_PORT, useClass: BrandProvisioningAdapter },
+    BrandProvisioningAdapter,
   ],
 })
 export class IdentityHttpModule implements OnModuleInit {
