@@ -71,11 +71,17 @@ export class TenantContextMiddleware implements NestMiddleware {
   }
 
   private async resolveTenantOnly(req: FastifyRequest['raw']): Promise<string | undefined> {
-    if (this.env.NODE_ENV === 'development' || this.env.NODE_ENV === 'test') {
-      // The `x-tenant-slug` header is a dev/test escape hatch — production
-      // and staging use host-based routing only. Honouring the header in
-      // prod would let any client on a `@Public` route (e.g. the customer
-      // QR-menu) read another tenant by sending a different slug.
+    // The `x-tenant-slug` header is an escape hatch:
+    //   - dev/test: always honored for tooling ergonomics.
+    //   - prod/staging on `/internal/v1/*`: honored ONLY when the
+    //     `x-internal-token` matches `INTERNAL_API_TOKEN` (RES-176).
+    //     The seed CLI hits the bare api host with the token, so it
+    //     needs this path to bind a tenant context. The check duplicates
+    //     `InternalTokenGuard` (which runs after this middleware), and
+    //     that's intentional — middleware must not bind a tenant based
+    //     on an unauthenticated client's header.
+    //   - prod/staging everywhere else: ignored. Host-based routing only.
+    if (this.shouldAcceptTenantSlugHeader(req)) {
       const headerOverride = req.headers[HEADER_TENANT];
       if (typeof headerOverride === 'string' && headerOverride.length > 0) {
         const fromHeader = await this.tenants.resolveBySlug(headerOverride);
@@ -92,4 +98,24 @@ export class TenantContextMiddleware implements NestMiddleware {
     }
     return undefined;
   }
+
+  private shouldAcceptTenantSlugHeader(req: FastifyRequest['raw']): boolean {
+    if (this.env.NODE_ENV === 'development' || this.env.NODE_ENV === 'test') return true;
+    const url = req.url ?? '';
+    if (!url.startsWith('/internal/v1/')) return false;
+    const expected = this.env.INTERNAL_API_TOKEN;
+    if (!expected) return false;
+    const presented = req.headers['x-internal-token'];
+    if (typeof presented !== 'string') return false;
+    return timingSafeEqualString(presented, expected);
+  }
 }
+
+const timingSafeEqualString = (a: string, b: string): boolean => {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+};
