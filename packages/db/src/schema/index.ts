@@ -6,6 +6,7 @@
  * `_*.ts` files and are not re-exported.
  */
 export * from './tenants';
+export * from './brands';
 export * from './menu';
 export * from './audit';
 export * from './outbox';
