@@ -1,10 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
+import { runInTenantContext } from '@resto/db';
 import { user as userTable } from '@resto/db/schema';
 import { ProvisionTenantService } from '../../tenancy/application/provision-tenant.service';
+import { ProvisionBrandService } from '../../tenancy/application/provision-brand.service';
 import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
 import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
-import { TenantSlug } from '@resto/domain';
+import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
+import { BrandSlug, TenantId, TenantSlug } from '@resto/domain';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
@@ -25,6 +28,7 @@ const SLUG_MAX_LEN = 30;
 
 export interface SignUpResult {
   readonly tenant: TenantSnapshot;
+  readonly brand: BrandSnapshot;
   readonly userId: string;
   readonly setCookie: readonly string[];
 }
@@ -46,6 +50,7 @@ export class SignUpService {
 
   constructor(
     @Inject(ProvisionTenantService) private readonly provision: ProvisionTenantService,
+    @Inject(ProvisionBrandService) private readonly provisionBrand: ProvisionBrandService,
     @Inject(BootstrapOwnerService) private readonly bootstrap: BootstrapOwnerService,
     @Inject(TENANT_REPOSITORY) private readonly tenants: TenantRepository,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
@@ -65,6 +70,14 @@ export class SignUpService {
       locale: input.locale,
       defaultCurrency: input.defaultCurrency,
     });
+
+    const brand = await runInTenantContext({ tenantId: tenant.id }, () =>
+      this.provisionBrand.execute({
+        tenantId: TenantId.parse(tenant.id),
+        slug: BrandSlug.parse(tenant.slug),
+        displayName: tenant.displayName,
+      }),
+    );
 
     try {
       await this.bootstrap.execute({
@@ -91,7 +104,7 @@ export class SignUpService {
     }
 
     const session = await this.signInAndActivate(input.email, input.password, tenant.id);
-    return { tenant, userId: session.userId, setCookie: session.setCookie };
+    return { tenant, brand, userId: session.userId, setCookie: session.setCookie };
   }
 
   private async userExistsByEmail(email: string): Promise<boolean> {
