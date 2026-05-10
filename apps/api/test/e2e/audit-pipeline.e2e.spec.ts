@@ -64,6 +64,48 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
     expect(rows[0]?.tenantId).toBe(tenant.id);
   }, 30_000);
 
+  it('records an audit_log row when a tenant is archived (RES-89)', async () => {
+    const slug = `audit-archive-${randomUUID().slice(0, 8)}`;
+
+    const provRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/tenants',
+      headers: { 'x-internal-token': INTERNAL_TOKEN },
+      payload: {
+        slug,
+        displayName: `Audit Archive ${slug}`,
+        defaultCurrency: 'USD',
+        locale: 'en',
+      },
+    });
+    expect(provRes.statusCode).toBe(201);
+    const tenant = provRes.json<{ id: string }>();
+
+    const archiveRes = await stack.app.inject({
+      method: 'POST',
+      url: `/internal/v1/tenants/${tenant.id}/archive`,
+      headers: { 'x-internal-token': INTERNAL_TOKEN },
+    });
+    expect(archiveRes.statusCode).toBe(204);
+
+    const db = stack.app.get(TenantAwareDb);
+    const deadline = Date.now() + 10_000;
+    let actions: string[] = [];
+    while (Date.now() < deadline) {
+      const rows = await db.withoutTenant('audit-pipeline e2e: poll archive', (tx) =>
+        tx
+          .select({ action: schema.auditLog.action })
+          .from(schema.auditLog)
+          .where(eq(schema.auditLog.tenantId, tenant.id)),
+      );
+      actions = rows.map((r) => r.action);
+      if (actions.includes('tenancy.tenant_archived.v1')) break;
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+    expect(actions).toContain('tenancy.tenant_provisioned.v1');
+    expect(actions).toContain('tenancy.tenant_archived.v1');
+  }, 30_000);
+
   it('records exactly one row per event under at-least-once delivery', async () => {
     const slug = `audit-dedup-${randomUUID().slice(0, 8)}`;
 
