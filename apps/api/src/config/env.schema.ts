@@ -120,6 +120,15 @@ export const envSchema = z
     RATE_LIMIT_AUTH_RESET_PER_MIN: z.coerce.number().int().positive().default(5),
     /** Per-IP rate limit (req/min) for `POST /api/auth/sign-in/email` (brute-force resistance, RES-137). */
     RATE_LIMIT_AUTH_SIGNIN_PER_MIN: z.coerce.number().int().positive().default(10),
+    /**
+     * Per-email rate limit (req/min) for `POST /api/auth/sign-in/email`
+     * (brute-force resistance, RES-169). Applied IN ADDITION to the
+     * per-IP cap so an attacker rotating IPs against one account is
+     * still throttled on this bucket.
+     */
+    RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN: z.coerce.number().int().positive().default(10),
+    /** Per-email rate limit (req/min) for `POST /api/auth/request-password-reset` (RES-169). */
+    RATE_LIMIT_AUTH_RESET_PER_EMAIL_PER_MIN: z.coerce.number().int().positive().default(5),
     /** Minimum password length enforced by BA's emailAndPassword config (RES-137; NIST-aligned). */
     PASSWORD_MIN_LENGTH: z.coerce.number().int().min(8).default(12),
     /** Maximum password length enforced by BA's emailAndPassword config (RES-137). */
