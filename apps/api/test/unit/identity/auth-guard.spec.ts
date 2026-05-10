@@ -147,6 +147,25 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(ForbiddenException);
   });
 
+  it('rejects with auth.tenant_context_missing when @RequiresTenantContext route has no ALS tenant (RES-172)', async () => {
+    mockGetTenantContext.mockReturnValue(undefined);
+    const reflector = new Reflector();
+    // First lookup → IS_PUBLIC_KEY (false), second → REQUIRES_TENANT_CONTEXT_KEY (true)
+    vi.spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValueOnce(undefined)
+      .mockReturnValueOnce(true);
+    const auth = buildAuthStub({
+      user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
+      session: { activeOrganizationId: null },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const ctx = buildContext({ headers: {}, url: '/v1/me/brands' });
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({
+      response: { code: 'auth.tenant_context_missing' },
+    });
+  });
+
   it('rejects every request when the resolved tenant is archived (RES-127)', async () => {
     mockGetTenantContext.mockReturnValue({ tenantId: 'tenant-archived-uuid' });
     const reflector = new Reflector();
