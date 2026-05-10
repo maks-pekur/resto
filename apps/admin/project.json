@@ -29,7 +29,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "next build",
+        "command": "NODE_ENV=production next build",
         "cwd": "apps/admin"
       },
       "outputs": ["{projectRoot}/.next"]

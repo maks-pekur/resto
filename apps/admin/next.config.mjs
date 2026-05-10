@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  typedRoutes: true,
   // Hand the api the operator session via cookie when admin runs on the
   // same parent domain. In dev the api lives on :3000; we proxy
   // `/api/*` through Next so the BA cookie flow stays same-origin and
