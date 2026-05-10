@@ -34,6 +34,7 @@ export class ProvisionBrandService {
       slug: input.slug,
       displayName: input.displayName,
       status: 'active',
+      theme: null,
     };
 
     const primaryDomainHostname = `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`;

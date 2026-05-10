@@ -13,6 +13,7 @@ const buildBrand = (over: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
   slug: 'z-burger',
   displayName: 'Z Burger',
   status: 'active',
+  theme: null,
   ...over,
 });
 
