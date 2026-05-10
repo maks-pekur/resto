@@ -11,10 +11,8 @@ import type { Auth } from './auth.config';
  * spec, then calls auth.api.hasPermission. BA evaluates against the
  * member's system role + any tenant-defined custom role permissions.
  *
- * The port `PermissionChecker` declares only (principal, required); the
- * adapter widens with an optional `headers` parameter — caller (the
- * guard) passes Web Headers built from Fastify's req.headers. Without
- * headers BA cannot resolve a session, so we return `false` (deny).
+ * Without `headers` BA cannot resolve a session, so we return `false`
+ * (deny — fail closed).
  */
 @Injectable()
 export class BetterAuthPermissionChecker implements PermissionChecker {
