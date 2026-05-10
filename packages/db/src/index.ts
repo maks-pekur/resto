@@ -17,6 +17,8 @@ export {
   runInTenantContext,
   getTenantContext,
   requireTenantContext,
+  getBrandId,
+  withBrand,
   type TenantContext,
 } from './context';
 export { assertNoRlsBypass, RlsBypassError } from './preflight';

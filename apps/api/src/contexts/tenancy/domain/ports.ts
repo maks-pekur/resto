@@ -1,4 +1,5 @@
-import type { TenantId, TenantSlug } from '@resto/domain';
+import type { BrandId, BrandSlug, TenantId, TenantSlug } from '@resto/domain';
+import type { BrandSnapshot } from './brand.aggregate';
 import type { Tenant, TenantSnapshot } from './tenant.aggregate';
 import type { TenantDomain } from './tenant-domain';
 
@@ -37,3 +38,12 @@ export interface StripeConnectPort {
 }
 
 export const STRIPE_CONNECT_PORT = Symbol('STRIPE_CONNECT_PORT');
+
+export interface BrandRepository {
+  findByDomainHost(host: string): Promise<BrandSnapshot | null>;
+  findBySlug(slug: BrandSlug): Promise<BrandSnapshot | null>;
+  findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null>;
+  findById(id: BrandId): Promise<BrandSnapshot | null>;
+}
+
+export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');
