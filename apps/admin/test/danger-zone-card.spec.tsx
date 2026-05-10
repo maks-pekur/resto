@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 import { DangerZoneCard } from '../components/danger-zone-card';
 
 vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock('@/app/dashboard/settings/actions', () => ({
+vi.mock('@/app/dashboard/(workspace)/settings/actions', () => ({
   scheduleOffboardingAction: vi.fn(),
   cancelOffboardingAction: vi.fn(),
 }));

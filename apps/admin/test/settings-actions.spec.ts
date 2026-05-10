@@ -9,7 +9,7 @@ vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 vi.mock('@/lib/api-server-internal', () => ({ apiFetchInternal: apiFetchInternalMock }));
 
 const { scheduleOffboardingAction, cancelOffboardingAction } =
-  await import('../app/dashboard/settings/actions');
+  await import('../app/dashboard/(workspace)/settings/actions');
 
 describe('settings actions', () => {
   beforeEach(() => {
