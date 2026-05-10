@@ -17,17 +17,18 @@ import {
   ApiOkResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { BrandSlug, TenantId } from '@resto/domain';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { BrandSlug, TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { CreateMyBrandService } from '../../application/create-my-brand.service';
 import { ListMyBrandsService } from '../../application/list-my-brands.service';
 import { BrandSlugConflictError } from '../../domain/brand-errors';
+import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { Permissions } from './decorators/permissions.decorator';
-import type { OperatorPrincipal } from '../../domain/principal';
+import { RequiresTenantContext } from './decorators/requires-tenant-context.decorator';
 
 const MeBrandSchema = z.object({
   id: z.string().uuid(),
@@ -52,6 +53,7 @@ class CreateBrandInputDto extends createZodDto(CreateBrandInputSchema) {}
 
 @ApiTags('identity')
 @Controller('v1/me')
+@RequiresTenantContext()
 export class MeBrandsController {
   constructor(
     @Inject(ListMyBrandsService) private readonly list: ListMyBrandsService,

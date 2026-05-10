@@ -19,6 +19,7 @@ import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
 } from '../../../application/ports/tenant-lookup.port';
+import { REQUIRES_TENANT_CONTEXT_KEY } from '../decorators/requires-tenant-context.decorator';
 
 export const IS_PUBLIC_KEY = 'identity:public';
 
@@ -87,6 +88,10 @@ export class AuthGuard implements CanActivate {
       alsTenantId,
     );
 
+    // Existing cross-check: when BOTH the principal and the request
+    // resolved a tenant, they MUST match — otherwise an operator with
+    // session active-org=A could hit a tenant-B host (operator session
+    // injection).
     if (
       principal.kind !== 'anonymous' &&
       'tenantId' in principal &&
@@ -97,6 +102,23 @@ export class AuthGuard implements CanActivate {
       throw new ForbiddenException({
         code: 'auth.tenant_mismatch',
         message: 'Principal tenant does not match request tenant.',
+      });
+    }
+
+    // Opt-in symmetric guard (RES-172): routes that read tenant-scoped
+    // data via the principal MUST mark themselves with
+    // `@RequiresTenantContext()`; the guard then enforces that ALS is
+    // bound by the middleware. This closes the asymmetry where, on
+    // routes WITHOUT ALS, an operator's `principal.tenantId` would be
+    // implicitly trusted by a forgetful service (RLS bypass risk).
+    const requiresTenantContext = this.reflector.getAllAndOverride<boolean | undefined>(
+      REQUIRES_TENANT_CONTEXT_KEY,
+      [ctx.getHandler(), ctx.getClass()],
+    );
+    if (requiresTenantContext && !alsTenantId) {
+      throw new ForbiddenException({
+        code: 'auth.tenant_context_missing',
+        message: 'Tenant context required for this route.',
       });
     }
 
