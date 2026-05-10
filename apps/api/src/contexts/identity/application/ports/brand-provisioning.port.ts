@@ -33,4 +33,12 @@ export interface BrandProvisioningPort {
     brandIds?: readonly string[],
   ): Promise<readonly IdentityBrandView[]>;
   provision(input: ProvisionIdentityBrandInput): Promise<IdentityBrandView>;
+  /**
+   * Cross-tenant slug lookup used by the live availability check
+   * (RES-180). Returns the slugs of every active brand whose slug is
+   * exactly `prefix` or starts with `prefix-`. Identity passes the
+   * result to its suggestion service; the adapter never decides what
+   * "available" means.
+   */
+  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]>;
 }

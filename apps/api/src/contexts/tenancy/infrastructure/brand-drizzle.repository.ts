@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import { BrandId, BrandSlug, BrandTheme, TenantId } from '@resto/domain';
-import { and, eq, inArray, ne } from 'drizzle-orm';
+import { and, eq, inArray, like, ne, or } from 'drizzle-orm';
 import type { BrandSnapshot } from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
 
@@ -141,6 +141,29 @@ export class BrandDrizzleRepository implements BrandRepository {
         .where(and(...whereClauses))
         .orderBy(schema.brands.displayName);
       return rows.map(ROW_TO_SNAPSHOT);
+    });
+  }
+
+  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]> {
+    // Global slug lookup (RES-180): slug uniqueness is platform-wide
+    // (`brands_slug_active_uq`). Runs `withoutTenant` because the
+    // suggestion logic must see slugs across ALL tenants — RLS-scoped
+    // read would only show the current tenant's brands and miss
+    // collisions in others. The `LIKE` pattern escape covers `_` and
+    // `%` so slugs with those characters never match unintendedly,
+    // even though the `BrandSlug` regex forbids them today.
+    const escaped = prefix.replace(/[\\%_]/g, (m) => `\\${m}`);
+    return this.db.withoutTenant('tenancy.brands.findActiveSlugsByPrefix', async (tx) => {
+      const rows = await tx
+        .select({ slug: schema.brands.slug })
+        .from(schema.brands)
+        .where(
+          and(
+            ne(schema.brands.status, 'erased'),
+            or(eq(schema.brands.slug, prefix), like(schema.brands.slug, `${escaped}-%`)),
+          ),
+        );
+      return rows.map((r) => r.slug);
     });
   }
 

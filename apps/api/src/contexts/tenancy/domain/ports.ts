@@ -66,6 +66,17 @@ export interface BrandRepository {
    * after partial failure do not throw on the second attempt.
    */
   save(snapshot: BrandSnapshot, primaryDomainHostname: string): Promise<void>;
+  /**
+   * Return the slugs of every active (non-erased) brand whose slug is
+   * either exactly `prefix` or starts with `prefix-` (RES-180). Used by
+   * the slug-availability check to compute a free `prefix-N` suggestion
+   * across ALL tenants — slug uniqueness is platform-wide
+   * (`brands_slug_active_uq`).
+   *
+   * Runs system-context (`withoutTenant`); the lookup is global by
+   * design.
+   */
+  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]>;
 }
 
 export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');

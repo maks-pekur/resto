@@ -19,4 +19,14 @@ export class BrandQueriesService {
   ): Promise<readonly BrandSnapshot[]> {
     return this.repo.listForTenant(tenantId, brandIds);
   }
+
+  /**
+   * Slugs of every active brand whose slug is `prefix` or starts with
+   * `prefix-` (RES-180). Cross-tenant on purpose — `brands_slug_active_uq`
+   * is a global constraint and the slug-availability check must
+   * surface collisions outside the caller's tenant.
+   */
+  async findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]> {
+    return this.repo.findActiveSlugsByPrefix(prefix);
+  }
 }
