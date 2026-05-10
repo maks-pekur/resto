@@ -1,6 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
+  BrandId,
+  BrandTheme,
   Currency,
   MenuCategoryId,
   MenuItemId,
@@ -21,6 +23,7 @@ import {
 } from '../domain/ports';
 import type {
   PublishedMenu,
+  PublishedMenuBrand,
   PublishedMenuCategory,
   PublishedMenuItem,
   PublishedMenuModifier,
@@ -54,11 +57,25 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         ? and(eq(schema.menuItems.status, 'published'), eq(schema.menuItems.brandId, brandId))
         : eq(schema.menuItems.status, 'published');
 
-      const [categoriesRows, itemsRows] = await Promise.all([
+      const brandRowPromise = brandId
+        ? tx
+            .select({
+              id: schema.brands.id,
+              slug: schema.brands.slug,
+              displayName: schema.brands.displayName,
+              theme: schema.brands.theme,
+            })
+            .from(schema.brands)
+            .where(eq(schema.brands.id, brandId))
+            .limit(1)
+        : Promise.resolve([] as const);
+
+      const [categoriesRows, itemsRows, brandRows] = await Promise.all([
         brandId
           ? categoriesQuery.where(eq(schema.menuCategories.brandId, brandId))
           : categoriesQuery,
         tx.select().from(schema.menuItems).where(itemsBaseConditions),
+        brandRowPromise,
       ]);
 
       const [variantsRows, itemModifierRows, modifiersRows] = await Promise.all([
@@ -134,13 +151,23 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         })),
       }));
 
-      const currency = items[0]?.currency ?? Currency.parse('USD'); // tenant-default fallback
+      const currency = items[0]?.currency ?? Currency.parse('USD');
+
+      const brandRow = brandRows[0];
+      const brand: PublishedMenuBrand | null = brandRow
+        ? {
+            id: BrandId.parse(brandRow.id),
+            slug: brandRow.slug,
+            displayName: brandRow.displayName,
+            theme: brandRow.theme === null ? null : BrandTheme.parse(brandRow.theme),
+          }
+        : null;
 
       return {
         tenantId,
         version,
         currency,
-        brand: null,
+        brand,
         categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
         items: items.sort((a, b) => a.sortOrder - b.sortOrder),
         modifiers,
