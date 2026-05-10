@@ -62,6 +62,21 @@ describe('ProblemDetailsFilter', () => {
     expect(captured.statusCode).toBe(500);
   });
 
+  it('redacts the detail field on 5xx so DB error messages do not leak (RES-175)', () => {
+    const { problem } = runFilter(
+      new Error(
+        'duplicate key value violates unique constraint "tenants_slug_uq" Key (slug)=(acme)',
+      ),
+    );
+    expect(problem.detail).toBe('Internal server error — see correlationId in logs.');
+    expect(JSON.stringify(problem)).not.toContain('tenants_slug_uq');
+  });
+
+  it('preserves the detail field on 4xx', () => {
+    const { problem } = runFilter(new BadRequestException('field x is required'));
+    expect(problem.detail).toBe('field x is required');
+  });
+
   it('uses an explicit `code` from the body for the type URI', () => {
     const { problem } = runFilter(
       new BadRequestException({

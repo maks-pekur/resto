@@ -86,13 +86,24 @@ export class ProblemDetailsFilter implements ExceptionFilter {
       status,
       instance: req.url,
     };
-    if (detail !== undefined) problem.detail = detail;
+
+    // Redact `detail` for 5xx (RES-175). Drizzle/Postgres errors include
+    // constraint names, table names, and sometimes parameter values —
+    // shipping that to the client leaks schema details and PII. The
+    // original detail still lands in the log line below, correlated by
+    // `correlationId` and `traceId` so on-call can pivot.
+    const isServerError = status >= HttpStatus.INTERNAL_SERVER_ERROR;
+    if (detail !== undefined) {
+      problem.detail = isServerError
+        ? 'Internal server error — see correlationId in logs.'
+        : detail;
+    }
     const correlationId = getCorrelationId();
     if (correlationId !== undefined) problem.correlationId = correlationId;
     if (traceId !== undefined) problem.traceId = traceId;
 
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error({ err: exception, problem }, 'Request failed');
+    if (isServerError) {
+      this.logger.error({ err: exception, problem, originalDetail: detail }, 'Request failed');
     } else {
       this.logger.warn({ problem }, 'Request rejected');
     }
