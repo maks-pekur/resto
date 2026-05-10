@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { INestApplication } from '@nestjs/common';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
+import type { OpenAPIObject } from '@nestjs/swagger';
 import { stringify } from 'yaml';
 
 const buildDocumentConfig = (): ReturnType<DocumentBuilder['build']> =>
@@ -14,11 +15,31 @@ const buildDocumentConfig = (): ReturnType<DocumentBuilder['build']> =>
     .build();
 
 /**
- * Mount Swagger UI at `/docs` and JSON at `/docs-json`. The same
- * document is what `openapi:emit` writes to `docs/api/openapi.yaml`.
+ * Strip every path under `/internal/v1/*` from the public OpenAPI doc
+ * (RES-175). Mounting Swagger UI at `/docs` without auth would otherwise
+ * leak the existence and shape of every internal/admin endpoint.
+ * Admin tooling reads the internal surface from the emitted YAML
+ * artifact (`docs/api/openapi.yaml` — see `emitOpenApi` below) instead.
+ */
+const stripInternalPaths = (doc: OpenAPIObject): OpenAPIObject => {
+  const filtered: typeof doc.paths = {};
+  for (const [path, def] of Object.entries(doc.paths)) {
+    if (path.startsWith('/internal/')) continue;
+    filtered[path] = def;
+  }
+  return { ...doc, paths: filtered };
+};
+
+/**
+ * Mount Swagger UI at `/docs` and JSON at `/docs-json`. The
+ * publicly-served document hides `/internal/v1/*` (RES-175); the
+ * artifact written by `emitOpenApi` keeps the full surface so admin
+ * tooling can codegen against it.
  */
 export const applyOpenApi = (app: INestApplication): void => {
-  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, buildDocumentConfig()));
+  const document = stripInternalPaths(
+    cleanupOpenApiDoc(SwaggerModule.createDocument(app, buildDocumentConfig())),
+  );
   SwaggerModule.setup('docs', app, document);
 };
 
