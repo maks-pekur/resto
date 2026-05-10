@@ -4,9 +4,11 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { TenantQueriesService } from '../../application/tenant-queries.service';
-import { CurrentOperator } from '../../../identity/interfaces/http/decorators/current-principal.decorator';
-import { Permissions } from '../../../identity/interfaces/http/decorators/permissions.decorator';
-import type { OperatorPrincipal } from '../../../identity/domain/principal';
+import {
+  CurrentOperator,
+  Permissions,
+  type OperatorPrincipal,
+} from '../../../identity/interfaces/http';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 

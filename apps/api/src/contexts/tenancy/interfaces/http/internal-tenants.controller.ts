@@ -27,9 +27,9 @@ import { ArchiveTenantService } from '../../application/archive-tenant.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { InternalTokenGuard } from './internal-token.guard';
+import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import { mapDomainError } from './error-mapping';
-import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
+import { Public } from '../../../identity/interfaces/http';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
