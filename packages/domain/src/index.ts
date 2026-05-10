@@ -21,6 +21,7 @@ export { LocalizedText } from './localized-text';
 export { Slug } from './slug';
 export { TENANT_RESERVED_SLUGS, TenantSlug } from './tenant-slug';
 export { BrandSlug } from './brand-slug';
+export { BrandTheme } from './brand-theme';
 
 export {
   MenuCategory,
