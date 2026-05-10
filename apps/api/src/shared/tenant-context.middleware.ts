@@ -8,6 +8,7 @@ import { TenantAndBrandResolverService } from '../contexts/tenancy/application/t
 import { TenantResolverService } from '../contexts/tenancy/application/tenant-resolver.service';
 
 const HEADER_TENANT = 'x-tenant-slug';
+const HEADER_TENANT_ID = 'x-tenant-id';
 const HEADER_BRAND = 'x-brand-slug';
 
 /**
@@ -82,6 +83,17 @@ export class TenantContextMiddleware implements NestMiddleware {
     //     on an unauthenticated client's header.
     //   - prod/staging everywhere else: ignored. Host-based routing only.
     if (this.shouldAcceptTenantSlugHeader(req)) {
+      // Admin (RES-181) sends `x-tenant-id` from BA's
+      // `activeOrganizationId` (UUID); the seed CLI uses the
+      // human-readable `x-tenant-slug`. Both honored under the same
+      // gate; both pass through `AuthGuard.tenant_mismatch` cross-check
+      // (RES-172) so a forged header still cannot read another tenant's
+      // data.
+      const idHeader = req.headers[HEADER_TENANT_ID];
+      if (typeof idHeader === 'string' && idHeader.length > 0) {
+        const fromId = await this.tenants.resolveById(idHeader);
+        if (fromId) return fromId.id;
+      }
       const headerOverride = req.headers[HEADER_TENANT];
       if (typeof headerOverride === 'string' && headerOverride.length > 0) {
         const fromHeader = await this.tenants.resolveBySlug(headerOverride);

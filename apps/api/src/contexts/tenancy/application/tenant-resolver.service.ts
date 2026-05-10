@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { TenantSlug } from '@resto/domain';
+import { TenantId, TenantSlug } from '@resto/domain';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import type { TenantSnapshot } from '../domain/tenant.aggregate';
 
@@ -43,6 +43,19 @@ export class TenantResolverService {
     const parsed = TenantSlug.safeParse(slug.toLowerCase());
     if (!parsed.success) return null;
     const tenant = await this.repo.findBySlug(parsed.data);
+    return tenant?.toSnapshot() ?? null;
+  }
+
+  /**
+   * Look up a tenant by its UUID id (RES-181). Used by the
+   * `TenantContextMiddleware` `x-tenant-id` path so the admin can bind
+   * ALS from the operator's BA `activeOrganizationId` (a UUID, not a
+   * slug).
+   */
+  async resolveById(rawId: string): Promise<TenantSnapshot | null> {
+    const parsed = TenantId.safeParse(rawId);
+    if (!parsed.success) return null;
+    const tenant = await this.repo.findById(parsed.data);
     return tenant?.toSnapshot() ?? null;
   }
 }

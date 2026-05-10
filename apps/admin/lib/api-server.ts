@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 
 /**
@@ -100,12 +101,19 @@ export const apiFetch = async <T>(
     .map((c) => `${c.name}=${c.value}`)
     .join('; ');
   const activeBrand = cookieStore.get('resto.active_brand')?.value;
+  // Resolve BA's active organization id (= tenant id) once per request
+  // and forward as `x-tenant-id` so the api's `TenantContextMiddleware`
+  // binds ALS for `@RequiresTenantContext` operator routes (RES-181).
+  // Skipped when the call is itself BA's session lookup — would loop.
+  const activeTenantId =
+    path === '/api/auth/get-session' ? null : await getActiveTenantId(cookieHeader);
 
   const url = `${apiOrigin()}${path.startsWith('/') ? '' : '/'}${path}`;
   const headers: Record<string, string> = {
     accept: 'application/json',
     origin: adminOrigin(),
     ...(cookieHeader ? { cookie: cookieHeader } : {}),
+    ...(activeTenantId ? { 'x-tenant-id': activeTenantId } : {}),
     ...(activeBrand ? { 'x-brand-slug': activeBrand } : {}),
     ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
     ...options.headers,
@@ -137,3 +145,32 @@ export const apiFetch = async <T>(
   }
   return { status: res.status, ok: res.ok, data, raw: res };
 };
+
+/**
+ * Read BA's `activeOrganizationId` from the current operator session
+ * (RES-181). Memoized via React `cache()` so each render / server
+ * action makes at most one BA round-trip even when multiple `apiFetch`
+ * calls fire. Returns `null` for unauthenticated requests, sign-in /
+ * signup paths, or when the session is loaded but no active org is
+ * set — the api will surface the appropriate 401/403 from the route.
+ */
+const getActiveTenantId = cache(async (cookieHeader: string): Promise<string | null> => {
+  if (!cookieHeader) return null;
+  try {
+    const res = await fetch(`${apiOrigin()}/api/auth/get-session`, {
+      headers: { accept: 'application/json', cookie: cookieHeader, origin: adminOrigin() },
+      cache: 'no-store',
+      redirect: 'manual',
+    });
+    if (!res.ok) return null;
+    const ct = res.headers.get('content-type') ?? '';
+    if (!ct.includes('application/json')) return null;
+    const body = (await res.json()) as {
+      session?: { activeOrganizationId?: string | null };
+    } | null;
+    const id = body?.session?.activeOrganizationId;
+    return typeof id === 'string' && id.length > 0 ? id : null;
+  } catch {
+    return null;
+  }
+});
