@@ -48,15 +48,17 @@ describe('TenantContext', () => {
   it('runInTenantContext carries brandId when provided', async () => {
     const tenantId = '11111111-1111-1111-1111-111111111111';
     const brandId = '22222222-2222-2222-2222-222222222222';
-    await runInTenantContext({ tenantId, brandId }, async () => {
+    await runInTenantContext({ tenantId, brandId }, () => {
       expect(getBrandId()).toBe(brandId);
+      return Promise.resolve();
     });
   });
 
   it('getBrandId returns undefined when no brand is bound', async () => {
     const tenantId = '11111111-1111-1111-1111-111111111111';
-    await runInTenantContext({ tenantId }, async () => {
+    await runInTenantContext({ tenantId }, () => {
       expect(getBrandId()).toBeUndefined();
+      return Promise.resolve();
     });
   });
 
@@ -66,8 +68,9 @@ describe('TenantContext', () => {
     const brandB = '33333333-3333-3333-3333-333333333333';
     await runInTenantContext({ tenantId, brandId: brandA }, async () => {
       expect(getBrandId()).toBe(brandA);
-      await withBrand(brandB, async () => {
+      await withBrand(brandB, () => {
         expect(getBrandId()).toBe(brandB);
+        return Promise.resolve();
       });
       expect(getBrandId()).toBe(brandA);
     });
@@ -76,7 +79,7 @@ describe('TenantContext', () => {
   it('rejects an invalid brandId', async () => {
     const tenantId = '11111111-1111-1111-1111-111111111111';
     await expect(
-      runInTenantContext({ tenantId, brandId: 'not-a-uuid' }, async () => undefined),
+      runInTenantContext({ tenantId, brandId: 'not-a-uuid' }, () => Promise.resolve()),
     ).rejects.toThrow(/brand id/i);
   });
 });
