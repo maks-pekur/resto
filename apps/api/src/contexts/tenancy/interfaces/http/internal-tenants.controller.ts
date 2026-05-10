@@ -9,18 +9,28 @@ import {
   Param,
   Post,
   UseGuards,
-  UsePipes,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { ProvisionTenantInput, ScheduleOffboardingInput } from '../../application/dto';
+import {
+  ApiAcceptedResponse,
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNoContentResponse,
+  ApiNotFoundResponse,
+  ApiOkResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { ProvisionTenantInputDto, ScheduleOffboardingInputDto } from '../../application/dto';
 import { ProvisionTenantService } from '../../application/provision-tenant.service';
 import { ArchiveTenantService } from '../../application/archive-tenant.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
-import { ZodValidationPipe } from './zod-validation.pipe';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from './internal-token.guard';
 import { mapDomainError } from './error-mapping';
 import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
-import { type TenantResponse, toResponse } from './tenant-response';
+import { TenantResponseDto, toResponse } from './tenant-response';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
@@ -43,31 +53,46 @@ export class InternalTenantsController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(ProvisionTenantInput))
-  async provision(@Body() input: ProvisionTenantInput): Promise<TenantResponse> {
+  @ApiBody({ type: ProvisionTenantInputDto })
+  @ApiCreatedResponse({ type: TenantResponseDto })
+  @ApiConflictResponse({ type: ProblemDetailsDto, description: 'slug already taken' })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  async provision(
+    @Body(new RestoZodValidationPipe(ProvisionTenantInputDto)) input: ProvisionTenantInputDto,
+  ): Promise<TenantResponseDto> {
     const snapshot = await wrap(() => this.provisioning.execute(input));
     return toResponse(snapshot);
   }
 
   @Post(':id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse()
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async archive(@Param('id') id: string): Promise<void> {
     await wrap(() => this.archiving.execute(id));
   }
 
   @Get('scheduled-offboarding')
   @HttpCode(HttpStatus.OK)
-  async listScheduledOffboarding(): Promise<TenantResponse[]> {
+  @ApiOkResponse({ type: TenantResponseDto, isArray: true })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  async listScheduledOffboarding(): Promise<TenantResponseDto[]> {
     const snapshots = await wrap(() => this.offboarding.listScheduled());
     return snapshots.map(toResponse);
   }
 
   @Post(':id/offboard')
   @HttpCode(HttpStatus.ACCEPTED)
+  @ApiBody({ type: ScheduleOffboardingInputDto })
+  @ApiAcceptedResponse({ type: TenantResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async scheduleOffboarding(
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(ScheduleOffboardingInput)) input: ScheduleOffboardingInput,
-  ): Promise<TenantResponse> {
+    @Body(new RestoZodValidationPipe(ScheduleOffboardingInputDto))
+    input: ScheduleOffboardingInputDto,
+  ): Promise<TenantResponseDto> {
     const snapshot = await wrap(() =>
       this.offboarding.schedule({ tenantId: id, requestedBy: input.requestedBy }),
     );
@@ -76,7 +101,10 @@ export class InternalTenantsController {
 
   @Delete(':id/offboard')
   @HttpCode(HttpStatus.OK)
-  async cancelOffboarding(@Param('id') id: string): Promise<TenantResponse> {
+  @ApiOkResponse({ type: TenantResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  async cancelOffboarding(@Param('id') id: string): Promise<TenantResponseDto> {
     const snapshot = await wrap(() => this.offboarding.cancel({ tenantId: id }));
     return toResponse(snapshot);
   }

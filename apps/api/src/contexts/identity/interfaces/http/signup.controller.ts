@@ -19,6 +19,8 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import type { FastifyReply } from 'fastify';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { SignUpInputDto } from '../../application/dto';
 import { SignUpService } from '../../application/signup.service';
 import {
@@ -41,18 +43,6 @@ const SignUpResponseSchema = z.object({
 
 class SignUpResponseDto extends createZodDto(SignUpResponseSchema) {}
 
-const ProblemDetailsSchema = z.object({
-  type: z.string().url(),
-  title: z.string(),
-  status: z.number(),
-  detail: z.string().optional(),
-  instance: z.string(),
-  correlationId: z.string().optional(),
-  traceId: z.string().optional(),
-});
-
-class ProblemDetailsDto extends createZodDto(ProblemDetailsSchema) {}
-
 @ApiTags('identity')
 @Controller('v1/signup')
 export class SignUpController {
@@ -66,7 +56,7 @@ export class SignUpController {
   @ApiConflictResponse({ type: ProblemDetailsDto, description: 'email or slug already taken' })
   @ApiInternalServerErrorResponse({ type: ProblemDetailsDto })
   async create(
-    @Body() input: SignUpInputDto,
+    @Body(new RestoZodValidationPipe(SignUpInputDto)) input: SignUpInputDto,
     @Res({ passthrough: true }) reply: FastifyReply,
   ): Promise<SignUpResponseDto> {
     try {

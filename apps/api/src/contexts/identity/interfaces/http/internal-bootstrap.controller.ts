@@ -8,14 +8,20 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
-import { z } from 'zod';
-import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
-import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
 import {
-  BootstrapOwnerService,
-  type BootstrapOwnerResult,
-} from '../../application/bootstrap-owner.service';
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
+import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
+import { BootstrapOwnerService } from '../../application/bootstrap-owner.service';
 import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
@@ -24,12 +30,23 @@ import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
 import { Public } from './decorators/public.decorator';
 import { mapIdentityError } from './error-mapping';
 
-export const BootstrapOwnerInput = z.object({
+const BootstrapOwnerInputSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(12).max(128),
   name: z.string().trim().min(1).max(120),
 });
-export type BootstrapOwnerInput = z.infer<typeof BootstrapOwnerInput>;
+
+class BootstrapOwnerInputDto extends createZodDto(BootstrapOwnerInputSchema) {}
+
+const BootstrapOwnerResponseSchema = z.object({
+  tenantId: z.string().uuid(),
+  userId: z.string(),
+  organizationId: z.string().uuid(),
+  email: z.string().email(),
+  requiresPasswordChange: z.boolean(),
+});
+
+class BootstrapOwnerResponseDto extends createZodDto(BootstrapOwnerResponseSchema) {}
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
   try {
@@ -65,16 +82,21 @@ export class InternalBootstrapController {
 
   @Post(':id/owner')
   @HttpCode(HttpStatus.CREATED)
+  @ApiBody({ type: BootstrapOwnerInputDto })
+  @ApiCreatedResponse({ type: BootstrapOwnerResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'tenant not found' })
+  @ApiConflictResponse({ type: ProblemDetailsDto, description: 'owner already exists' })
+  @ApiUnauthorizedResponse({
+    type: ProblemDetailsDto,
+    description: 'missing or invalid internal token',
+  })
   async createOwner(
     @Param('id') tenantId: string,
-    @Body(new ZodValidationPipe(BootstrapOwnerInput))
-    input: BootstrapOwnerInput,
-  ): Promise<BootstrapOwnerResult> {
+    @Body(new RestoZodValidationPipe(BootstrapOwnerInputDto)) input: BootstrapOwnerInputDto,
+  ): Promise<BootstrapOwnerResponseDto> {
     return wrap(async () => {
       const tenant = await this.tenants.findById(tenantId);
       if (!tenant) {
-        // Re-throw as the bootstrap-flow error so error-mapping resolves
-        // a stable `bootstrap.tenant_not_found` code on the response.
         throw new TenantNotFoundForBootstrapError(tenantId);
       }
       return this.bootstrap.execute({
