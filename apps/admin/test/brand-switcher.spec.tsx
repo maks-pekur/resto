@@ -68,7 +68,9 @@ describe('BrandSwitcher', () => {
   });
 
   it('hides the All brands menu entry when canViewAllBrands is false', async () => {
-    const { user } = renderSwitcher({ canViewAllBrands: false, brands: [brands[0]!] });
+    const [first] = brands;
+    if (!first) throw new Error('brands fixture missing');
+    const { user } = renderSwitcher({ canViewAllBrands: false, brands: [first] });
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     await screen.findByRole('menuitem', { name: /Add brand/u });
     expect(screen.queryByRole('menuitem', { name: /All brands/u })).toBeNull();

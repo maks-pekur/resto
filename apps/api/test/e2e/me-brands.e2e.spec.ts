@@ -102,7 +102,7 @@ describe('GET /v1/me/brands E2E', () => {
     }>();
     expect(body.canViewAllBrands).toBe(true);
     const slugs = body.brands.map((b) => b.slug).sort();
-    expect(slugs).toEqual([`${slug}`, `${slug}-extra-a`, `${slug}-extra-b`].sort());
+    expect(slugs).toEqual([slug, `${slug}-extra-a`, `${slug}-extra-b`].sort());
   }, 60_000);
 
   it('returns only the scoped subset and canViewAllBrands=false when member_brand_scope is set', async () => {

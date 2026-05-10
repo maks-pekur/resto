@@ -12,7 +12,7 @@ vi.mock('next/headers', () => ({
 }));
 vi.mock('server-only', () => ({}));
 
-const fetchMock = vi.fn();
+const fetchMock = vi.fn<typeof fetch>();
 const originalFetch = globalThis.fetch;
 
 const { apiFetch } = await import('../lib/api-server');
@@ -27,7 +27,7 @@ describe('apiFetch — X-Brand-Slug header', () => {
         headers: { 'content-type': 'application/json' },
       }),
     );
-    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    globalThis.fetch = fetchMock;
   });
 
   afterEach(() => {
@@ -37,13 +37,15 @@ describe('apiFetch — X-Brand-Slug header', () => {
   it('forwards resto.active_brand cookie as X-Brand-Slug header', async () => {
     cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma' });
     await apiFetch('/v1/menu');
-    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const init = fetchMock.mock.calls[0]?.[1];
+    const headers = (init?.headers ?? {}) as Record<string, string>;
     expect(headers['x-brand-slug']).toBe('cafe-roma');
   });
 
   it('omits X-Brand-Slug when resto.active_brand cookie is absent', async () => {
     await apiFetch('/v1/menu');
-    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const init = fetchMock.mock.calls[0]?.[1];
+    const headers = (init?.headers ?? {}) as Record<string, string>;
     expect(headers['x-brand-slug']).toBeUndefined();
   });
 
@@ -51,7 +53,8 @@ describe('apiFetch — X-Brand-Slug header', () => {
     cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma' });
     cookieEntries.push({ name: 'better-auth.session_token', value: 'abc' });
     await apiFetch('/v1/menu');
-    const headers = fetchMock.mock.calls[0]?.[1]?.headers as Record<string, string>;
+    const init = fetchMock.mock.calls[0]?.[1];
+    const headers = (init?.headers ?? {}) as Record<string, string>;
     expect(headers.cookie).toContain('resto.active_brand=cafe-roma');
     expect(headers.cookie).toContain('better-auth.session_token=abc');
     expect(headers['x-brand-slug']).toBe('cafe-roma');

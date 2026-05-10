@@ -101,7 +101,7 @@ export class BrandDrizzleRepository implements BrandRepository {
     tenantId: TenantId,
     brandIds?: readonly string[],
   ): Promise<readonly BrandSnapshot[]> {
-    if (brandIds !== undefined && brandIds.length === 0) return [];
+    if (brandIds?.length === 0) return [];
     return this.db.withTenant(async (tx) => {
       const whereClauses = [
         eq(schema.brands.tenantId, tenantId),

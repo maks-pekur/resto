@@ -32,10 +32,7 @@ export class ListMyBrandsService {
         tenantId: input.tenantId,
       });
       const canViewAllBrands = scopeRows === null;
-      const brands = await this.brands.listForTenant(
-        input.tenantId,
-        scopeRows === null ? undefined : scopeRows,
-      );
+      const brands = await this.brands.listForTenant(input.tenantId, scopeRows ?? undefined);
       return { brands, canViewAllBrands };
     });
   }
