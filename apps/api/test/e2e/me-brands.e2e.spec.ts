@@ -247,4 +247,71 @@ describe('GET + POST /v1/me/brands', () => {
     expect(body.status).toBe(409);
     expect(body.type).toBe('https://resto.app/problems/brand.slug_taken');
   }, 60_000);
+
+  it('GET /v1/me/brands never lists brands belonging to another tenant (RES-177)', async () => {
+    const slugA = `mb-${randomUUID().slice(0, 8)}`;
+    const slugB = `mb-${randomUUID().slice(0, 8)}`;
+    const passwordA = 'correct-horse-battery-staple-iso-a';
+    const passwordB = 'correct-horse-battery-staple-iso-b';
+
+    const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+    await runBootstrap({
+      tenantSlug: slugA,
+      email: `owner-${slugA}@example.com`,
+      password: passwordA,
+      name: 'Iso Owner A',
+    });
+    const tenantB = await provisionTenant(app, slugB, INTERNAL_TOKEN);
+    await runBootstrap({
+      tenantSlug: slugB,
+      email: `owner-${slugB}@example.com`,
+      password: passwordB,
+      name: 'Iso Owner B',
+    });
+
+    const cookieA = await signInAsOperator(
+      app,
+      `owner-${slugA}@example.com`,
+      passwordA,
+      tenantA.id,
+    );
+
+    // Seed extra brands for both tenants. The `withoutTenant` helper bypasses
+    // RLS so we can write into B's space without authenticating as B.
+    const db = app.get(TenantAwareDb);
+    const brandAExtra = randomUUID();
+    const brandBExtra = randomUUID();
+    await db.withoutTenant('seed cross-tenant isolation fixture', async (tx) => {
+      await tx.insert(schema.brands).values([
+        {
+          id: brandAExtra,
+          tenantId: tenantA.id,
+          slug: `${slugA}-extra`,
+          displayName: 'A Extra',
+        },
+        {
+          id: brandBExtra,
+          tenantId: tenantB.id,
+          slug: `${slugB}-extra`,
+          displayName: 'B Extra',
+        },
+      ]);
+    });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/v1/me/brands',
+      headers: { cookie: cookieA },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json<{
+      brands: { id: string; slug: string }[];
+      canViewAllBrands: boolean;
+    }>();
+    expect(body.canViewAllBrands).toBe(true);
+    const brandIds = new Set(body.brands.map((b) => b.id));
+    const brandSlugs = body.brands.map((b) => b.slug);
+    expect(brandIds.has(brandBExtra)).toBe(false);
+    expect(brandSlugs.every((s) => !s.startsWith(slugB))).toBe(true);
+  }, 60_000);
 });

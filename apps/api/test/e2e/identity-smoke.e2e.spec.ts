@@ -150,10 +150,9 @@ describe('Better Auth /api/auth/* smoke', () => {
       expect(body).toMatchObject({ kind: 'operator', email: 'me@example.com' });
     });
 
-    // Phase B has no API to create tenants + members yet — that lands with
-    // the `/internal/v1/tenants/:id/owner` endpoint in Phase C. Real
-    // tenant-mismatch coverage requires that path; until then this is a
-    // visible TODO in test reporters rather than a green "placeholder".
-    it.todo('rejects requests where the operator session is bound to a different tenant');
+    // Cross-tenant rejection (operator session bound to tenant A hitting a
+    // request resolved to tenant B) is exercised by `tenants-controller.e2e.spec.ts`
+    // (RES-126) — kept there because it needs the full provision + bootstrap
+    // chain that this smoke spec deliberately avoids.
   });
 });
