@@ -6,12 +6,21 @@
  * not part of the contract and may move without notice.
  */
 
-export { TenantId, UserId, MenuCategoryId, MenuItemId, MenuModifierId, MenuVariantId } from './ids';
+export {
+  TenantId,
+  BrandId,
+  UserId,
+  MenuCategoryId,
+  MenuItemId,
+  MenuModifierId,
+  MenuVariantId,
+} from './ids';
 
 export { Currency, Money, MoneyAmount, PriceDelta } from './money';
 export { LocalizedText } from './localized-text';
 export { Slug } from './slug';
 export { TENANT_RESERVED_SLUGS, TenantSlug } from './tenant-slug';
+export { BrandSlug } from './brand-slug';
 
 export {
   MenuCategory,
