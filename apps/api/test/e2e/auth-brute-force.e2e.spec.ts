@@ -155,4 +155,41 @@ describe('Auth brute-force throttle (RES-137)', () => {
     expect(limited.statusCode).toBe(429);
     expect(limited.headers['content-type']).toContain('application/problem+json');
   });
+
+  it('does not honor a forged X-Forwarded-For when TRUST_PROXY is unset (RES-185)', async () => {
+    const realIp = `10.23.${randomUUID().slice(0, 2)}.${randomUUID().slice(2, 4)}`;
+    for (let i = 0; i < 3; i += 1) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/sign-up/email',
+        remoteAddress: realIp,
+        headers: {
+          'content-type': 'application/json',
+          'x-forwarded-for': `10.99.99.${i.toString()}`,
+        },
+        payload: {
+          email: `bf-xff-${randomUUID().slice(0, 8)}@example.test`,
+          password: 'correct-horse-battery-staple-12',
+          name: 'XFF Test',
+        },
+      });
+      expect(res.statusCode).not.toBe(429);
+    }
+
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-up/email',
+      remoteAddress: realIp,
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': `10.88.88.88`,
+      },
+      payload: {
+        email: `bf-xff-${randomUUID().slice(0, 8)}@example.test`,
+        password: 'correct-horse-battery-staple-12',
+        name: 'XFF Test',
+      },
+    });
+    expect(limited.statusCode).toBe(429);
+  });
 });
