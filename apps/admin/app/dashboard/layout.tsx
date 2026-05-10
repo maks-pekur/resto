@@ -31,7 +31,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <SidebarProvider>
       <AppSidebar
-        tenant={tenantRes.data}
         brands={brands}
         activeBrandSlug={activeBrandSlug}
         canViewAllBrands={canViewAllBrands}
