@@ -3,9 +3,10 @@ import type { FastifyRequest } from 'fastify';
 import { Currency, TenantSlug } from '@resto/domain';
 import type { Env } from '../../../src/config/env.schema';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
+import { TenantAndBrandResolverService } from '../../../src/contexts/tenancy/application/tenant-and-brand-resolver.service';
 import { TenantResolverService } from '../../../src/contexts/tenancy/application/tenant-resolver.service';
 import { TenantContextMiddleware } from '../../../src/shared/tenant-context.middleware';
-import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
+import type { BrandRepository, TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 
 const tenantFor = (slug: string) =>
   Tenant.provision({
@@ -52,12 +53,20 @@ const buildRepo = (): TenantRepository => ({
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
 });
 
+const buildBrandRepo = (): BrandRepository => ({
+  findByDomainHost: vi.fn().mockResolvedValue(null),
+  findBySlug: vi.fn().mockResolvedValue(null),
+  findByTenantAndSlug: vi.fn().mockResolvedValue(null),
+  findById: vi.fn().mockResolvedValue(null),
+});
+
 const setup = (env: Env, repoOverride?: TenantRepository) => {
   const repo = repoOverride ?? buildRepo();
   const resolver = new TenantResolverService(repo);
+  const brandResolver = new TenantAndBrandResolverService(buildBrandRepo());
   const resolveBySlug = vi.spyOn(resolver, 'resolveBySlug');
   const resolveByHost = vi.spyOn(resolver, 'resolveByHost');
-  const middleware = new TenantContextMiddleware(env, resolver);
+  const middleware = new TenantContextMiddleware(env, resolver, brandResolver);
   return { middleware, resolver, resolveBySlug, resolveByHost };
 };
 
