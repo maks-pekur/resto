@@ -1,5 +1,6 @@
 'use server';
 
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { apiFetch } from '@/lib/api-server';
@@ -22,6 +23,12 @@ interface ProblemDetails {
   detail?: string;
   message?: string;
   code?: string;
+}
+
+interface SignUpSuccess {
+  readonly tenant: { id: string; slug: string };
+  readonly brand: { id: string; slug: string };
+  readonly userId: string;
 }
 
 const friendly = (status: number, body: ProblemDetails | null): string => {
@@ -50,14 +57,33 @@ export async function signUpAction(
     return { error: parsed.error.issues[0]?.message ?? 'Invalid input.' };
   }
 
-  const res = await apiFetch<ProblemDetails>('/v1/signup', {
+  const { email, password, displayName, defaultCurrency } = parsed.data;
+
+  const res = await apiFetch<SignUpSuccess | ProblemDetails>('/v1/signup', {
     method: 'POST',
-    body: { ...parsed.data, locale: 'en' },
     forwardSetCookie: true,
+    body: {
+      email,
+      password,
+      displayName,
+      defaultCurrency,
+      locale: 'en',
+    },
   });
 
   if (!res.ok) {
-    return { error: friendly(res.status, res.data ?? null) };
+    const errorBody = (res.data as ProblemDetails | null) ?? null;
+    return { error: friendly(res.status, errorBody) };
+  }
+
+  const success = res.data as SignUpSuccess | null;
+  if (success?.brand.slug) {
+    const cookieStore = await cookies();
+    cookieStore.set('resto.active_brand', success.brand.slug, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+    });
   }
 
   redirect('/dashboard');

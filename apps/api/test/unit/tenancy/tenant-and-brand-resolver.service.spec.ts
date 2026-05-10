@@ -26,6 +26,7 @@ describe('TenantAndBrandResolverService', () => {
       findBySlug: vi.fn(),
       findByTenantAndSlug: vi.fn(),
       findById: vi.fn(),
+      save: vi.fn(),
     };
     service = new TenantAndBrandResolverService(repo);
   });

@@ -44,6 +44,14 @@ export interface BrandRepository {
   findBySlug(slug: BrandSlug): Promise<BrandSnapshot | null>;
   findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null>;
   findById(id: BrandId): Promise<BrandSnapshot | null>;
+  /**
+   * Persist a brand and its primary subdomain in one transaction.
+   *
+   * Idempotent — re-running with the same (tenantId, slug) is a no-op.
+   * Implementations MUST insert with ON CONFLICT DO NOTHING so retries
+   * after partial failure do not throw on the second attempt.
+   */
+  save(snapshot: BrandSnapshot, primaryDomainHostname: string): Promise<void>;
 }
 
 export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');

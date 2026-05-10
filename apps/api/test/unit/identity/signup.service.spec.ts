@@ -1,14 +1,18 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Currency } from '@resto/domain';
 import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
+import type { ProvisionBrandService } from '../../../src/contexts/tenancy/application/provision-brand.service';
 import {
   SlugUnavailableError,
   SignupEmailAlreadyExistsError,
 } from '../../../src/contexts/identity/domain/signup-errors';
 import { OwnerAlreadyExistsError } from '../../../src/contexts/identity/domain/bootstrap-errors';
 
+const TENANT_ID_DEFAULT = '11111111-1111-4111-8111-111111111111';
+const TENANT_ID_ALT = '22222222-2222-4222-8222-222222222222';
+
 const tenantSnapshot = (overrides: Partial<Record<string, unknown>> = {}) => ({
-  id: 't-1',
+  id: TENANT_ID_DEFAULT,
   slug: 'cafe-roma',
   displayName: 'Cafe Roma',
   status: 'active',
@@ -59,6 +63,7 @@ const buildAuthDbMock = (existingRows: readonly { id: string }[] = []): AuthDbMo
 
 describe('SignUpService', () => {
   let provisionMock: { execute: ReturnType<typeof vi.fn> };
+  let provisionBrandMock: { execute: ReturnType<typeof vi.fn> };
   let bootstrapMock: { execute: ReturnType<typeof vi.fn> };
   let tenantsMock: { findBySlug: ReturnType<typeof vi.fn> };
   let authMock: ReturnType<typeof buildAuthMock>;
@@ -67,6 +72,7 @@ describe('SignUpService', () => {
   const buildService = (): SignUpService =>
     new SignUpService(
       provisionMock as never,
+      provisionBrandMock as unknown as ProvisionBrandService,
       bootstrapMock as never,
       tenantsMock as never,
       authMock as never,
@@ -83,6 +89,15 @@ describe('SignUpService', () => {
 
   beforeEach(() => {
     provisionMock = { execute: vi.fn() };
+    provisionBrandMock = {
+      execute: vi.fn().mockResolvedValue({
+        id: '33333333-3333-4333-8333-333333333333',
+        tenantId: TENANT_ID_DEFAULT,
+        slug: 'cafe-roma',
+        displayName: 'Cafe Roma',
+        status: 'active',
+      }),
+    };
     bootstrapMock = { execute: vi.fn() };
     tenantsMock = { findBySlug: vi.fn() };
     authMock = buildAuthMock();
@@ -155,7 +170,7 @@ describe('SignUpService', () => {
     tenantsMock.findBySlug.mockResolvedValue(null);
     provisionMock.execute.mockResolvedValue(tenantSnapshot());
     bootstrapMock.execute.mockRejectedValue(
-      new OwnerAlreadyExistsError('t-1', 'someone-else@example.com'),
+      new OwnerAlreadyExistsError(TENANT_ID_DEFAULT, 'someone-else@example.com'),
     );
     await expect(buildService().execute(baseInput)).rejects.toThrow(SignupEmailAlreadyExistsError);
   });
@@ -172,12 +187,12 @@ describe('SignUpService', () => {
 
   it('passes tenantId to setActiveOrganization', async () => {
     tenantsMock.findBySlug.mockResolvedValue(null);
-    provisionMock.execute.mockResolvedValue(tenantSnapshot({ id: 't-99' }));
+    provisionMock.execute.mockResolvedValue(tenantSnapshot({ id: TENANT_ID_ALT }));
     bootstrapMock.execute.mockResolvedValue({});
     await buildService().execute(baseInput);
     expect(authMock.api.setActiveOrganization).toHaveBeenCalledWith(
       expect.objectContaining({
-        body: { organizationId: 't-99' },
+        body: { organizationId: TENANT_ID_ALT },
         returnHeaders: true,
       }),
     );
