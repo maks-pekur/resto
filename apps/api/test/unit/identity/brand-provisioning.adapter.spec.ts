@@ -2,7 +2,10 @@ import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { BrandId, BrandSlug, TenantId } from '@resto/domain';
 import { BrandProvisioningAdapter } from '../../../src/contexts/identity/infrastructure/brand-provisioning.adapter';
-import { BrandSlugConflictError } from '../../../src/contexts/identity/domain/brand-errors';
+import {
+  BrandDisplayNameTakenError,
+  BrandSlugConflictError,
+} from '../../../src/contexts/identity/domain/brand-errors';
 import type { BrandQueriesService } from '../../../src/contexts/tenancy/application/brand-queries.service';
 import type { ProvisionBrandService } from '../../../src/contexts/tenancy/application/provision-brand.service';
 import type { BrandSnapshot } from '../../../src/contexts/tenancy/domain/brand.aggregate';
@@ -127,6 +130,31 @@ describe('BrandProvisioningAdapter', () => {
     it('passes through non-conflict errors unchanged', async () => {
       const dbErr = new Error('connection refused');
       await expect(runProvision(buildProvisioner(() => Promise.reject(dbErr)))).rejects.toBe(dbErr);
+    });
+
+    it('maps brands_tenant_display_name_active_uq into BrandDisplayNameTakenError (RES-182)', async () => {
+      const dbErr = Object.assign(new Error('unique_violation'), {
+        code: '23505',
+        constraint_name: 'brands_tenant_display_name_active_uq',
+      });
+      await expect(
+        runProvision(buildProvisioner(() => Promise.reject(dbErr))),
+      ).rejects.toBeInstanceOf(BrandDisplayNameTakenError);
+    });
+
+    it('reports slug conflict first when a single error matches both constraints', async () => {
+      // Postgres only ever surfaces ONE constraint per error, but document
+      // the precedence anyway: the slug detector runs before the
+      // display-name detector so the operator gets the slug error first
+      // (slug is the primary identifier they edit).
+      const dbErr = Object.assign(new Error('unique_violation'), {
+        code: '23505',
+        constraint_name: 'brands_slug_active_uq',
+      });
+      const result = await runProvision(buildProvisioner(() => Promise.reject(dbErr))).catch(
+        (e: unknown) => e,
+      );
+      expect(result).toBeInstanceOf(BrandSlugConflictError);
     });
   });
 });

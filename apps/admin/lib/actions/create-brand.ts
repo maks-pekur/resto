@@ -34,6 +34,9 @@ const friendly = (status: number, body: ProblemDetails | null): string => {
   if (status === 409 && body?.code === 'brand.slug_taken') {
     return 'That brand slug is already taken; pick another.';
   }
+  if (status === 409 && body?.code === 'brand.display_name_taken') {
+    return 'A brand with this name already exists in your account; pick another name.';
+  }
   if (status === 400) return body?.message ?? body?.detail ?? 'Please check your inputs.';
   if (status >= 500) return 'Something went wrong on our side. Please try again.';
   return body?.detail ?? `Request failed (${status.toString()}).`;
