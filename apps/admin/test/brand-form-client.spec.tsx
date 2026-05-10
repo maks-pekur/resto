@@ -27,8 +27,51 @@ describe('BrandForm', () => {
     render(<BrandForm />);
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/Brand name/i), 'Z Burger');
-    await user.type(screen.getByLabelText(/URL slug/i), 'z-burger');
     await user.click(screen.getByRole('button', { name: /Create brand/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/already taken/i);
+  });
+
+  it('auto-fills the slug from the brand name (RES-179)', async () => {
+    render(<BrandForm />);
+    const user = userEvent.setup();
+    const slug = screen.getByLabelText<HTMLInputElement>(/URL slug/i);
+    await user.type(screen.getByLabelText(/Brand name/i), 'Z Burger');
+    expect(slug.value).toBe('z-burger');
+  });
+
+  it('stops auto-filling once the slug is edited manually', async () => {
+    render(<BrandForm />);
+    const user = userEvent.setup();
+    const slug = screen.getByLabelText<HTMLInputElement>(/URL slug/i);
+    const name = screen.getByLabelText(/Brand name/i);
+
+    await user.type(name, 'Z Burger');
+    expect(slug.value).toBe('z-burger');
+
+    await user.clear(slug);
+    await user.type(slug, 'custom-slug');
+    expect(slug.value).toBe('custom-slug');
+
+    // Further name typing must NOT overwrite the manually-entered slug.
+    await user.type(name, ' East');
+    expect(slug.value).toBe('custom-slug');
+  });
+
+  it('resumes auto-fill when the slug is cleared back to empty', async () => {
+    render(<BrandForm />);
+    const user = userEvent.setup();
+    const slug = screen.getByLabelText<HTMLInputElement>(/URL slug/i);
+    const name = screen.getByLabelText(/Brand name/i);
+
+    await user.type(name, 'Z Burger');
+    await user.clear(slug);
+    await user.type(slug, 'custom');
+    expect(slug.value).toBe('custom');
+
+    // Wipe the slug — re-arms auto-fill on the next name keystroke.
+    await user.clear(slug);
+    await user.clear(name);
+    await user.type(name, 'B Burger');
+    expect(slug.value).toBe('b-burger');
   });
 });
