@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ProvisionTenantService } from './application/provision-tenant.service';
+import { ProvisionBrandService } from './application/provision-brand.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
 import { OffboardTenantService } from './application/offboard-tenant.service';
 import { TenantQueriesService } from './application/tenant-queries.service';
@@ -20,6 +21,7 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     { provide: BRAND_REPOSITORY, useClass: BrandDrizzleRepository },
     { provide: STRIPE_CONNECT_PORT, useClass: NoopStripeConnectAdapter },
     ProvisionTenantService,
+    ProvisionBrandService,
     ArchiveTenantService,
     OffboardTenantService,
     TenantQueriesService,
@@ -33,6 +35,7 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     TenantQueriesService,
     OffboardTenantService,
     ProvisionTenantService,
+    ProvisionBrandService,
     TENANT_REPOSITORY,
     BRAND_REPOSITORY,
   ],
