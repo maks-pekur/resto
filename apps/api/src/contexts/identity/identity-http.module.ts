@@ -15,6 +15,9 @@ import { MeController } from './interfaces/http/me.controller';
 import { InternalBootstrapController } from './interfaces/http/internal-bootstrap.controller';
 import { SignUpController } from './interfaces/http/signup.controller';
 import { SignUpService } from './application/signup.service';
+import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
+import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
+import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
 
 /**
  * HTTP-side composition for the identity context. Imports
@@ -32,6 +35,9 @@ import { SignUpService } from './application/signup.service';
     TenantLookupAdapter,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_GUARD, useClass: BrandScopeGuard },
+    { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
+    MemberBrandScopeDrizzleReader,
   ],
 })
 export class IdentityHttpModule implements OnModuleInit {
