@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
-import { BrandId, BrandSlug, TenantId } from '@resto/domain';
+import { BrandId, BrandSlug, BrandTheme, TenantId } from '@resto/domain';
 import { and, eq } from 'drizzle-orm';
 import type { BrandSnapshot } from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
@@ -11,12 +11,14 @@ const ROW_TO_SNAPSHOT = (row: {
   slug: string;
   displayName: string;
   status: string;
+  theme: unknown;
 }): BrandSnapshot => ({
   id: BrandId.parse(row.id),
   tenantId: TenantId.parse(row.tenantId),
   slug: row.slug,
   displayName: row.displayName,
   status: row.status as BrandSnapshot['status'],
+  theme: row.theme === null || row.theme === undefined ? null : BrandTheme.parse(row.theme),
 });
 
 @Injectable()
@@ -47,6 +49,7 @@ export class BrandDrizzleRepository implements BrandRepository {
           slug: schema.brands.slug,
           displayName: schema.brands.displayName,
           status: schema.brands.status,
+          theme: schema.brands.theme,
         })
         .from(schema.brands)
         .where(eq(schema.brands.slug, slug))
@@ -65,6 +68,7 @@ export class BrandDrizzleRepository implements BrandRepository {
           slug: schema.brands.slug,
           displayName: schema.brands.displayName,
           status: schema.brands.status,
+          theme: schema.brands.theme,
         })
         .from(schema.brands)
         .where(and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug)))
@@ -83,6 +87,7 @@ export class BrandDrizzleRepository implements BrandRepository {
           slug: schema.brands.slug,
           displayName: schema.brands.displayName,
           status: schema.brands.status,
+          theme: schema.brands.theme,
         })
         .from(schema.brands)
         .where(eq(schema.brands.id, id))

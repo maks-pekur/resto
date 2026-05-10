@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
-import { Currency, TenantId } from '@resto/domain';
+import { BrandId, BrandTheme, Currency, TenantId } from '@resto/domain';
 import { GetPublishedMenuService } from '../../../src/contexts/catalog/application/get-published-menu.service';
 import type {
   CatalogCachePort,
@@ -12,10 +12,11 @@ import type { PublishedMenu } from '../../../src/contexts/catalog/domain/publish
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 const TENANT = TenantId.parse(TENANT_ID);
 
-const buildMenu = (version: number): PublishedMenu => ({
+const buildMenu = (version: number, brand: PublishedMenu['brand'] = null): PublishedMenu => ({
   tenantId: TENANT,
   version,
   currency: Currency.parse('USD'),
+  brand,
   categories: [],
   items: [],
   modifiers: [],
@@ -98,5 +99,20 @@ describe('GetPublishedMenuService', () => {
       expect.any(Number),
       '33333333-3333-4333-8333-333333333333',
     );
+  });
+
+  it('passes the brand object through from the repo to the caller', async () => {
+    const brand = {
+      id: BrandId.parse('44444444-4444-4444-8444-444444444444'),
+      slug: 'z-burger',
+      displayName: 'Z Burger',
+      theme: BrandTheme.parse({ primaryColor: '#FF5733' }),
+    };
+    const fresh = buildMenu(11, brand);
+    repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
+
+    const result = await service.execute(TENANT);
+
+    expect(result.brand).toEqual(brand);
   });
 });

@@ -27,7 +27,7 @@ export const brands = pgTable(
     status: text('status').notNull().default('active'),
     locale: text('locale'),
     defaultCurrency: text('default_currency'),
-    theme: jsonb('theme').$type<Record<string, unknown>>(),
+    theme: jsonb('theme').$type<Record<string, unknown> | null>(),
     legalName: text('legal_name'),
     legalForm: text('legal_form'),
     taxId: text('tax_id'),

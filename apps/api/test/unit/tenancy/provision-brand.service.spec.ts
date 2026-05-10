@@ -14,6 +14,7 @@ const buildSnapshot = (over: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
   slug: 'cafe-roma',
   displayName: 'Cafe Roma',
   status: 'active',
+  theme: null,
   ...over,
 });
 

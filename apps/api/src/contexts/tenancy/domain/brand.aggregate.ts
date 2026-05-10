@@ -1,4 +1,4 @@
-import type { BrandId, TenantId } from '@resto/domain';
+import type { BrandId, BrandTheme, TenantId } from '@resto/domain';
 
 export interface BrandSnapshot {
   readonly id: BrandId;
@@ -6,4 +6,5 @@ export interface BrandSnapshot {
   readonly slug: string;
   readonly displayName: string;
   readonly status: 'active' | 'suspended' | 'archived' | 'erased';
+  readonly theme: BrandTheme | null;
 }
