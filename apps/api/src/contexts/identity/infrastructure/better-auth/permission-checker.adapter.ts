@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { Permission } from '@resto/domain';
 import type { PermissionChecker } from '../../application/ports/permission-checker.port';
 import type { OperatorPrincipal } from '../../domain/principal';
@@ -18,6 +18,8 @@ import type { Auth } from './auth.config';
  */
 @Injectable()
 export class BetterAuthPermissionChecker implements PermissionChecker {
+  private readonly logger = new Logger(BetterAuthPermissionChecker.name);
+
   constructor(@Inject(AUTH_TOKEN) private readonly auth: Auth) {}
 
   async hasPermission(
@@ -48,7 +50,11 @@ export class BetterAuthPermissionChecker implements PermissionChecker {
         body: { permissions: required as Record<string, string[]>, permission: undefined },
       });
       return result.success;
-    } catch {
+    } catch (err) {
+      // Fail closed — but surface the cause so a BA outage / schema drift
+      // shows up in on-call instead of looking like a permissions-config
+      // bug for hours (RES-174).
+      this.logger.error({ err }, 'permission-check failed; denying request');
       return false;
     }
   }

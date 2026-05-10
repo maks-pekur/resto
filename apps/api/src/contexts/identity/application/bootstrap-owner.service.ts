@@ -76,7 +76,6 @@ export class BootstrapOwnerService {
     this.logger.log({
       event: 'identity.owner_bootstrap.start',
       tenantId: tenant.id,
-      email,
     });
 
     // Idempotency probe #1: does this org already have an owner?
@@ -87,7 +86,6 @@ export class BootstrapOwnerService {
           event: 'identity.owner_bootstrap.noop',
           tenantId: tenant.id,
           userId: existingOwner.id,
-          email,
         });
         return {
           tenantId: tenant.id,
@@ -117,7 +115,6 @@ export class BootstrapOwnerService {
       event: 'identity.owner_bootstrap.done',
       tenantId: tenant.id,
       userId,
-      email,
       reusedUser: existingUser !== null,
     });
 
@@ -163,7 +160,6 @@ export class BootstrapOwnerService {
       this.logger.log({
         event: 'identity.owner_bootstrap.user_created',
         userId: user.id,
-        email,
       });
       return user.id;
     } catch (err) {
