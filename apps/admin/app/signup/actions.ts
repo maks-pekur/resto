@@ -77,7 +77,7 @@ export async function signUpAction(
   }
 
   const success = res.data as SignUpSuccess | null;
-  if (success?.brand?.slug) {
+  if (success?.brand.slug) {
     const cookieStore = await cookies();
     cookieStore.set('resto.active_brand', success.brand.slug, {
       httpOnly: true,

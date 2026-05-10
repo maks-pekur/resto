@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Currency } from '@resto/domain';
 import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
-import { ProvisionBrandService } from '../../../src/contexts/tenancy/application/provision-brand.service';
+import type { ProvisionBrandService } from '../../../src/contexts/tenancy/application/provision-brand.service';
 import {
   SlugUnavailableError,
   SignupEmailAlreadyExistsError,
