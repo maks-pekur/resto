@@ -7,7 +7,7 @@ vi.mock('@/lib/actions/create-brand', () => ({
   createBrandAction: createBrandMock,
 }));
 
-const { BrandForm } = await import('../app/dashboard/brands/new/brand-form-client');
+const { BrandForm } = await import('../app/(onboarding)/onboarding/brand/brand-form-client');
 
 describe('BrandForm', () => {
   afterEach(() => {
