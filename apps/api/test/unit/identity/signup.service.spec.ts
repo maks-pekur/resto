@@ -1,7 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Currency } from '@resto/domain';
 import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
-import type { ProvisionBrandService } from '../../../src/contexts/tenancy/application/provision-brand.service';
 import {
   SlugUnavailableError,
   SignupEmailAlreadyExistsError,
@@ -63,7 +62,6 @@ const buildAuthDbMock = (existingRows: readonly { id: string }[] = []): AuthDbMo
 
 describe('SignUpService', () => {
   let provisionMock: { execute: ReturnType<typeof vi.fn> };
-  let provisionBrandMock: { execute: ReturnType<typeof vi.fn> };
   let bootstrapMock: { execute: ReturnType<typeof vi.fn> };
   let tenantsMock: { findBySlug: ReturnType<typeof vi.fn> };
   let authMock: ReturnType<typeof buildAuthMock>;
@@ -72,7 +70,6 @@ describe('SignUpService', () => {
   const buildService = (): SignUpService =>
     new SignUpService(
       provisionMock as never,
-      provisionBrandMock as unknown as ProvisionBrandService,
       bootstrapMock as never,
       tenantsMock as never,
       authMock as never,
@@ -89,15 +86,6 @@ describe('SignUpService', () => {
 
   beforeEach(() => {
     provisionMock = { execute: vi.fn() };
-    provisionBrandMock = {
-      execute: vi.fn().mockResolvedValue({
-        id: '33333333-3333-4333-8333-333333333333',
-        tenantId: TENANT_ID_DEFAULT,
-        slug: 'cafe-roma',
-        displayName: 'Cafe Roma',
-        status: 'active',
-      }),
-    };
     bootstrapMock = { execute: vi.fn() };
     tenantsMock = { findBySlug: vi.fn() };
     authMock = buildAuthMock();
