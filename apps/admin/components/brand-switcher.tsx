@@ -101,7 +101,7 @@ export function BrandSwitcher({ brands, activeBrandSlug, canViewAllBrands }: Bra
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/brands/new">
+              <Link href="/onboarding/brand">
                 <Plus className="size-4" />
                 <span>Add brand</span>
               </Link>

@@ -76,13 +76,13 @@ describe('BrandSwitcher', () => {
     expect(screen.queryByRole('menuitem', { name: /All brands/u })).toBeNull();
   });
 
-  it('always shows the Add brand menu entry linking to /dashboard/brands/new', async () => {
+  it('always shows the Add brand menu entry linking to /onboarding/brand', async () => {
     const { user } = renderSwitcher();
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     const item = await screen.findByRole('menuitem', { name: /Add brand/u });
     expect(item).toBeInTheDocument();
     const link = item.tagName === 'A' ? item : item.querySelector('a');
-    expect(link?.getAttribute('href')).toBe('/dashboard/brands/new');
+    expect(link?.getAttribute('href')).toBe('/onboarding/brand');
   });
 
   it('calls setActiveBrandAction(slug) on brand click and signals other tabs via localStorage', async () => {
