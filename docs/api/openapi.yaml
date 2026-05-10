@@ -7,7 +7,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a1
+      tags:
         - health
   /readyz:
     get:
@@ -16,7 +16,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a1
+      tags:
+        - health
   /internal/v1/tenants:
     post:
       operationId: InternalTenantsController_provision
@@ -24,7 +25,7 @@ paths:
       responses:
         "201":
           description: ""
-      tags: &a2
+      tags:
         - tenancy
   /internal/v1/tenants/{id}/archive:
     post:
@@ -33,7 +34,8 @@ paths:
       responses:
         "204":
           description: ""
-      tags: *a2
+      tags:
+        - tenancy
   /internal/v1/tenants/scheduled-offboarding:
     get:
       operationId: InternalTenantsController_listScheduledOffboarding
@@ -41,7 +43,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a2
+      tags:
+        - tenancy
   /internal/v1/tenants/{id}/offboard:
     post:
       operationId: InternalTenantsController_scheduleOffboarding
@@ -49,14 +52,16 @@ paths:
       responses:
         "202":
           description: ""
-      tags: *a2
+      tags:
+        - tenancy
     delete:
       operationId: InternalTenantsController_cancelOffboarding
       parameters: []
       responses:
         "200":
           description: ""
-      tags: *a2
+      tags:
+        - tenancy
   /v1/tenants/me:
     get:
       operationId: TenantsController_getMe
@@ -64,7 +69,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a3
+      tags:
         - tenancy
   /v1/tenants/me/domains:
     get:
@@ -73,7 +78,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a3
+      tags:
+        - tenancy
   /v1/me:
     get:
       operationId: MeController_me
@@ -90,7 +96,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a4
+      tags:
         - identity
     post:
       operationId: MeBrandsController_createBrand
@@ -98,7 +104,8 @@ paths:
       responses:
         "201":
           description: ""
-      tags: *a4
+      tags:
+        - identity
   /internal/v1/tenants/{id}/owner:
     post:
       operationId: InternalBootstrapController_createOwner
@@ -112,9 +119,31 @@ paths:
     post:
       operationId: SignUpController_create
       parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignUpInputDto"
       responses:
         "201":
           description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SignUpResponseDto"
+        "409":
+          description: email or slug already taken
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "500":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - identity
   /v1/menu:
@@ -124,7 +153,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a5
+      tags:
         - catalog
   /v1/menu/items/{id}:
     get:
@@ -133,7 +162,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a5
+      tags:
+        - catalog
   /internal/v1/catalog/categories:
     post:
       operationId: InternalCatalogController_category
@@ -141,7 +171,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a6
+      tags:
         - catalog/internal
   /internal/v1/catalog/items:
     post:
@@ -150,7 +180,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a6
+      tags:
+        - catalog/internal
   /internal/v1/catalog/modifiers:
     post:
       operationId: InternalCatalogController_modifier
@@ -158,7 +189,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a6
+      tags:
+        - catalog/internal
   /internal/v1/catalog/publish:
     post:
       operationId: InternalCatalogController_publishMenu
@@ -166,7 +198,8 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a6
+      tags:
+        - catalog/internal
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.
@@ -180,4 +213,79 @@ components:
       scheme: bearer
       bearerFormat: JWT
       type: http
-  schemas: {}
+  schemas:
+    SignUpInputDto:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 12
+          maxLength: 128
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 120
+        defaultCurrency: {}
+        locale:
+          type: string
+          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
+          default: en
+      required:
+        - email
+        - password
+        - displayName
+        - defaultCurrency
+    SignUpResponseDto:
+      type: object
+      properties:
+        tenant:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            slug:
+              type: string
+            displayName:
+              type: string
+            status:
+              type: string
+            primaryDomain:
+              type: string
+          required:
+            - id
+            - slug
+            - displayName
+            - status
+            - primaryDomain
+        userId:
+          type: string
+      required:
+        - tenant
+        - userId
+    ProblemDetailsDto:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uri
+        title:
+          type: string
+        status:
+          type: number
+        detail:
+          type: string
+        instance:
+          type: string
+        correlationId:
+          type: string
+        traceId:
+          type: string
+      required:
+        - type
+        - title
+        - status
+        - instance

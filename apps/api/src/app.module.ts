@@ -1,5 +1,12 @@
-import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import {
+  BadRequestException,
+  MiddlewareConsumer,
+  Module,
+  RequestMethod,
+  type NestModule,
+} from '@nestjs/common';
+import { APP_FILTER, APP_PIPE } from '@nestjs/core';
+import { createZodValidationPipe } from 'nestjs-zod';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
@@ -11,6 +18,27 @@ import { IdentityHttpModule } from './contexts/identity/identity-http.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
+
+/**
+ * Global Zod validation pipe — runs on every `@Body()`/`@Query()`/`@Param()`
+ * typed with a `createZodDto(...)` class. Validation failures throw
+ * `BadRequestException({code:'validation.failed', ...})` so the global
+ * `ProblemDetailsFilter` renders them as RFC-7807 problem+json with a
+ * stable `type` URI of `https://resto.app/problems/validation.failed`.
+ */
+const RestoZodValidationPipe = createZodValidationPipe({
+  createValidationException: (zodError) => {
+    const issues =
+      zodError && typeof zodError === 'object' && 'issues' in zodError
+        ? (zodError as { issues: { path: (string | number)[]; message: string }[] }).issues
+        : [];
+    const detail = issues.map((i) => `${i.path.join('.') || '<root>'}: ${i.message}`).join('; ');
+    return new BadRequestException({
+      code: 'validation.failed',
+      message: detail || 'Validation failed.',
+    });
+  },
+});
 
 @Module({
   imports: [
@@ -24,6 +52,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     AuditModule,
   ],
   providers: [
+    { provide: APP_PIPE, useClass: RestoZodValidationPipe },
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
     CorrelationMiddleware,
     TenantContextMiddleware,
