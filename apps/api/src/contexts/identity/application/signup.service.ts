@@ -159,7 +159,7 @@ export class SignUpService {
       return { userId, setCookie: merged };
     } catch (err) {
       this.logger.warn(
-        { tenantId, email, err: err instanceof Error ? err.message : String(err) },
+        { tenantId, err: err instanceof Error ? err.message : String(err) },
         'set-active-organization failed; falling back to sign-in cookies (user will need to set-active manually).',
       );
       return { userId, setCookie: this.collectSetCookies(signInHeaders) };
