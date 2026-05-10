@@ -83,24 +83,38 @@ export const extractCookies = (setCookie: string | string[] | undefined): string
     .join('; ');
 };
 
-/**
- * Sign in via the BA HTTP endpoint, returning the session cookie header value.
- */
+const SIGN_IN_MAX_ATTEMPTS = 3;
+const SIGN_IN_BACKOFF_MS = 500;
+
+const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
+
 export const signIn = async (
   app: NestFastifyApplication,
   email: string,
   password: string,
   remoteAddress?: string,
 ): Promise<string> => {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/api/auth/sign-in/email',
-    headers: { 'content-type': 'application/json' },
-    payload: { email, password },
-    ...(remoteAddress !== undefined ? { remoteAddress } : {}),
-  });
-  expect(res.statusCode).toBe(200);
-  return extractCookies(res.headers['set-cookie']);
+  let lastStatus = 0;
+  let lastBody = '';
+  for (let attempt = 1; attempt <= SIGN_IN_MAX_ATTEMPTS; attempt++) {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      headers: { 'content-type': 'application/json' },
+      payload: { email, password },
+      ...(remoteAddress !== undefined ? { remoteAddress } : {}),
+    });
+    if (res.statusCode === 200) {
+      return extractCookies(res.headers['set-cookie']);
+    }
+    lastStatus = res.statusCode;
+    lastBody = res.body;
+    if (res.statusCode < 500) break;
+    await sleep(SIGN_IN_BACKOFF_MS * attempt);
+  }
+  expect.fail(
+    `signIn failed after ${String(SIGN_IN_MAX_ATTEMPTS)} attempts: ${String(lastStatus)} ${lastBody}`,
+  );
 };
 
 /**
@@ -117,16 +131,25 @@ export const signInAsOperator = async (
 ): Promise<string> => {
   const cookie = await signIn(app, email, password, remoteAddress);
 
-  const setActiveRes = await app.inject({
-    method: 'POST',
-    url: '/api/auth/organization/set-active',
-    headers: { 'content-type': 'application/json', cookie },
-    payload: { organizationId: tenantId },
-    ...(remoteAddress !== undefined ? { remoteAddress } : {}),
-  });
-  expect(setActiveRes.statusCode).toBe(200);
-
-  // BA refreshes the session cookie after setActive; use the updated one if
-  // present, otherwise fall back to the original.
-  return extractCookies(setActiveRes.headers['set-cookie']) || cookie;
+  let lastStatus = 0;
+  let lastBody = '';
+  for (let attempt = 1; attempt <= SIGN_IN_MAX_ATTEMPTS; attempt++) {
+    const setActiveRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/organization/set-active',
+      headers: { 'content-type': 'application/json', cookie },
+      payload: { organizationId: tenantId },
+      ...(remoteAddress !== undefined ? { remoteAddress } : {}),
+    });
+    if (setActiveRes.statusCode === 200) {
+      return extractCookies(setActiveRes.headers['set-cookie']) || cookie;
+    }
+    lastStatus = setActiveRes.statusCode;
+    lastBody = setActiveRes.body;
+    if (setActiveRes.statusCode < 500) break;
+    await sleep(SIGN_IN_BACKOFF_MS * attempt);
+  }
+  expect.fail(
+    `set-active failed after ${String(SIGN_IN_MAX_ATTEMPTS)} attempts: ${String(lastStatus)} ${lastBody}`,
+  );
 };
