@@ -45,13 +45,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const headers = toWebHeaders(req.headers);
-    // The adapter widens the port signature with an optional headers arg.
-    // We cast to accept the wider call without changing the port interface.
-    const allowed = await (
-      this.checker as unknown as {
-        hasPermission(p: typeof principal, r: Permission, h: Headers): Promise<boolean>;
-      }
-    ).hasPermission(principal, required, headers);
+    const allowed = await this.checker.hasPermission(principal, required, headers);
 
     if (!allowed) {
       throw new ForbiddenException({
