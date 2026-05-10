@@ -90,8 +90,15 @@ paths:
       responses:
         "200":
           description: ""
-      tags:
+      tags: &a4
         - identity
+    post:
+      operationId: MeBrandsController_createBrand
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags: *a4
   /internal/v1/tenants/{id}/owner:
     post:
       operationId: InternalBootstrapController_createOwner
@@ -117,7 +124,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a4
+      tags: &a5
         - catalog
   /v1/menu/items/{id}:
     get:
@@ -126,7 +133,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a4
+      tags: *a5
   /internal/v1/catalog/categories:
     post:
       operationId: InternalCatalogController_category
@@ -134,7 +141,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: &a5
+      tags: &a6
         - catalog/internal
   /internal/v1/catalog/items:
     post:
@@ -143,7 +150,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a5
+      tags: *a6
   /internal/v1/catalog/modifiers:
     post:
       operationId: InternalCatalogController_modifier
@@ -151,7 +158,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a5
+      tags: *a6
   /internal/v1/catalog/publish:
     post:
       operationId: InternalCatalogController_publishMenu
@@ -159,7 +166,7 @@ paths:
       responses:
         "200":
           description: ""
-      tags: *a5
+      tags: *a6
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.

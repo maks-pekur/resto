@@ -157,7 +157,7 @@ export interface paths {
         };
         get: operations["MeBrandsController_getBrands"];
         put?: never;
-        post?: never;
+        post: operations["MeBrandsController_createBrand"];
         delete?: never;
         options?: never;
         head?: never;
@@ -484,6 +484,23 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MeBrandsController_createBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
