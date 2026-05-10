@@ -4,9 +4,11 @@ import { ArchiveTenantService } from './application/archive-tenant.service';
 import { OffboardTenantService } from './application/offboard-tenant.service';
 import { TenantQueriesService } from './application/tenant-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
-import { STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
+import { TenantAndBrandResolverService } from './application/tenant-and-brand-resolver.service';
+import { BRAND_REPOSITORY, STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
 import { NoopStripeConnectAdapter } from './infrastructure/stripe-connect.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
+import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repository';
 import { InternalTokenGuard } from './interfaces/http/internal-token.guard';
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
@@ -15,20 +17,24 @@ import { TenantsController } from './interfaces/http/tenants.controller';
   controllers: [InternalTenantsController, TenantsController],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
+    { provide: BRAND_REPOSITORY, useClass: BrandDrizzleRepository },
     { provide: STRIPE_CONNECT_PORT, useClass: NoopStripeConnectAdapter },
     ProvisionTenantService,
     ArchiveTenantService,
     OffboardTenantService,
     TenantQueriesService,
     TenantResolverService,
+    TenantAndBrandResolverService,
     InternalTokenGuard,
   ],
   exports: [
     TenantResolverService,
+    TenantAndBrandResolverService,
     TenantQueriesService,
     OffboardTenantService,
     ProvisionTenantService,
     TENANT_REPOSITORY,
+    BRAND_REPOSITORY,
   ],
 })
 export class TenancyModule {}
