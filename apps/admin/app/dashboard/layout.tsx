@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { apiFetch } from '@/lib/api-server';
+import { getMyBrands } from '@/lib/me-brands';
 
 interface TenantSummary {
   readonly id: string;
@@ -10,15 +11,10 @@ interface TenantSummary {
   readonly displayName: string;
 }
 
-interface MeBrandsResponse {
-  readonly brands: readonly { id: string; slug: string; displayName: string }[];
-  readonly canViewAllBrands: boolean;
-}
-
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [tenantRes, brandsRes, cookieStore] = await Promise.all([
     apiFetch<TenantSummary>('/v1/tenants/me'),
-    apiFetch<MeBrandsResponse>('/v1/me/brands'),
+    getMyBrands(),
     cookies(),
   ]);
   if (!tenantRes.ok || !tenantRes.data) {

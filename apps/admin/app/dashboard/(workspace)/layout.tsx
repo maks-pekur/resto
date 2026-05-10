@@ -1,10 +1,5 @@
 import { redirect } from 'next/navigation';
-import { apiFetch } from '@/lib/api-server';
-
-interface MeBrandsResponse {
-  readonly brands: readonly { id: string; slug: string; displayName: string }[];
-  readonly canViewAllBrands: boolean;
-}
+import { getMyBrands } from '@/lib/me-brands';
 
 /**
  * Force first-brand creation: every workspace page (everything under the
@@ -12,9 +7,13 @@ interface MeBrandsResponse {
  * least one brand. When the list is empty, redirect to the onboarding
  * route at `/dashboard/brands/new`, which lives outside this group and
  * therefore bypasses this guard.
+ *
+ * Shares its `/v1/me/brands` fetch with the outer dashboard layout via
+ * React's `cache()` helper in `@/lib/me-brands` — exactly one HTTP
+ * call per request despite two layouts reading the result.
  */
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-  const res = await apiFetch<MeBrandsResponse>('/v1/me/brands');
+  const res = await getMyBrands();
   const brands = res.ok && res.data ? res.data.brands : [];
   if (brands.length === 0) {
     redirect('/dashboard/brands/new');
