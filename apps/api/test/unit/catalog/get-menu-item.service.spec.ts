@@ -45,14 +45,23 @@ describe('GetMenuItemService', () => {
   it('returns the item when the repository finds it', async () => {
     const item = buildItem();
     repo.findPublishedItem = vi.fn().mockResolvedValue(item);
-    const result = await service.execute(ITEM_ID);
+    const result = await runInTenantContext({ tenantId: TENANT_ID }, () =>
+      service.execute(ITEM_ID),
+    );
     expect(result).toBe(item);
     expect(repo.findPublishedItem).toHaveBeenCalledWith(ITEM_ID, null);
   });
 
   it('throws MenuItemNotFoundError when the item is missing or unpublished', async () => {
     repo.findPublishedItem = vi.fn().mockResolvedValue(null);
-    await expect(service.execute(ITEM_ID)).rejects.toBeInstanceOf(MenuItemNotFoundError);
+    await expect(
+      runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(ITEM_ID)),
+    ).rejects.toBeInstanceOf(MenuItemNotFoundError);
+  });
+
+  it('throws when called without a tenant context', async () => {
+    repo.findPublishedItem = vi.fn().mockResolvedValue(buildItem());
+    await expect(service.execute(ITEM_ID)).rejects.toThrow(/No tenant context bound/);
   });
 
   it('passes brandId from ALS to the repo findPublishedItem call', async () => {
