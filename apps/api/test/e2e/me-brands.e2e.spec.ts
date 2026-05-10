@@ -20,7 +20,7 @@ const APP_PASSWORD = 'app_password_me_brands_e2e';
 const AUTH_PASSWORD = 'auth_password_me_brands_e2e';
 const INTERNAL_TOKEN = 'me-brands-e2e-internal-token-1234567';
 
-describe('GET /v1/me/brands E2E', () => {
+describe('GET + POST /v1/me/brands', () => {
   let container: StartedPostgreSqlContainer;
   let app: NestFastifyApplication;
 
@@ -159,5 +159,92 @@ describe('GET /v1/me/brands E2E', () => {
     }>();
     expect(body.canViewAllBrands).toBe(false);
     expect(body.brands.map((b) => b.slug)).toEqual([`${slug}-extra-a`]);
+  }, 60_000);
+
+  it('POST /v1/me/brands creates a brand for the operator tenant', async () => {
+    const slug = `mb-${randomUUID().slice(0, 8)}`;
+    const email = `owner-${slug}@example.com`;
+    const password = 'correct-horse-battery-staple-mb-3';
+    const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slug, email, password, name: 'POST Owner' });
+    const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+    const newSlug = `${slug}-fresh`;
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie, 'content-type': 'application/json' },
+      payload: { slug: newSlug, displayName: 'Fresh Brand' },
+    });
+    expect(res.statusCode).toBe(201);
+    const body = res.json<{ id: string; slug: string; displayName: string }>();
+    expect(body.slug).toBe(newSlug);
+    expect(body.displayName).toBe('Fresh Brand');
+    expect(body.id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+  }, 60_000);
+
+  it('POST /v1/me/brands is idempotent on (tenantId, slug) — returns the existing brand', async () => {
+    const slug = `mb-${randomUUID().slice(0, 8)}`;
+    const email = `owner-${slug}@example.com`;
+    const password = 'correct-horse-battery-staple-mb-4';
+    const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slug, email, password, name: 'Idempotent Owner' });
+    const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+    const dupeSlug = `${slug}-dupe`;
+    const first = await app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie, 'content-type': 'application/json' },
+      payload: { slug: dupeSlug, displayName: 'Dupe Brand' },
+    });
+    expect(first.statusCode).toBe(201);
+    const firstBody = first.json<{ id: string }>();
+
+    const second = await app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie, 'content-type': 'application/json' },
+      payload: { slug: dupeSlug, displayName: 'Dupe Brand' },
+    });
+    expect(second.statusCode).toBe(201);
+    const secondBody = second.json<{ id: string }>();
+    expect(secondBody.id).toBe(firstBody.id);
+  }, 60_000);
+
+  it('POST /v1/me/brands returns 409 when slug is globally taken by another tenant', async () => {
+    const slugA = `mb-${randomUUID().slice(0, 8)}`;
+    const slugB = `mb-${randomUUID().slice(0, 8)}`;
+    const passwordA = 'correct-horse-battery-staple-mb-5a';
+    const passwordB = 'correct-horse-battery-staple-mb-5b';
+    const emailA = `owner-${slugA}@example.com`;
+    const emailB = `owner-${slugB}@example.com`;
+
+    const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+    const tenantB = await provisionTenant(app, slugB, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slugA, email: emailA, password: passwordA, name: 'A' });
+    await runBootstrap({ tenantSlug: slugB, email: emailB, password: passwordB, name: 'B' });
+
+    const sharedSlug = `mb-shared-${randomUUID().slice(0, 8)}`;
+    const cookieA = await signInAsOperator(app, emailA, passwordA, tenantA.id);
+    const okA = await app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie: cookieA, 'content-type': 'application/json' },
+      payload: { slug: sharedSlug, displayName: 'A Brand' },
+    });
+    expect(okA.statusCode).toBe(201);
+
+    const cookieB = await signInAsOperator(app, emailB, passwordB, tenantB.id);
+    const conflict = await app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie: cookieB, 'content-type': 'application/json' },
+      payload: { slug: sharedSlug, displayName: 'B Brand' },
+    });
+    expect(conflict.statusCode).toBe(409);
+    const body = conflict.json<{ type: string; status: number }>();
+    expect(body.status).toBe(409);
+    expect(body.type).toBe('https://resto.app/problems/brand.slug_taken');
   }, 60_000);
 });

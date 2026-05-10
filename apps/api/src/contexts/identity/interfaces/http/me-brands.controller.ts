@@ -8,7 +8,6 @@ import {
   HttpStatus,
   Inject,
   Post,
-  UsePipes,
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { z } from 'zod';
@@ -66,10 +65,9 @@ export class MeBrandsController {
   @Post('brands')
   @HttpCode(HttpStatus.CREATED)
   @Permissions({ settings: ['update'] })
-  @UsePipes(new ZodValidationPipe(CreateBrandInput))
   async createBrand(
     @CurrentOperator() operator: OperatorPrincipal,
-    @Body() input: CreateBrandInputT,
+    @Body(new ZodValidationPipe(CreateBrandInput)) input: CreateBrandInputT,
   ): Promise<MeBrandsResponseBrand> {
     if (!operator.tenantId) {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });

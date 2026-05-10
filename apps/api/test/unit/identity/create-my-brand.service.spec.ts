@@ -56,6 +56,21 @@ describe('CreateMyBrandService', () => {
     ).rejects.toBeInstanceOf(BrandSlugConflictError);
   });
 
+  it('maps DrizzleQueryError wrapping 23505 into BrandSlugConflictError', async () => {
+    const cause = Object.assign(new Error('unique_violation'), { code: '23505' });
+    const wrappedErr = Object.assign(new Error('Failed query: insert...'), { cause });
+    const provision = buildProvision(() => Promise.reject(wrappedErr));
+    const service = new CreateMyBrandService(provision);
+
+    await expect(
+      service.execute({
+        tenantId: TENANT_ID,
+        slug: BrandSlug.parse('z-burger'),
+        displayName: 'Z Burger',
+      }),
+    ).rejects.toBeInstanceOf(BrandSlugConflictError);
+  });
+
   it('passes through non-conflict errors unchanged', async () => {
     const dbErr = new Error('connection refused');
     const provision = buildProvision(() => Promise.reject(dbErr));

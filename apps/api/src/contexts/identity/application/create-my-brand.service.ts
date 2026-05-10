@@ -33,5 +33,9 @@ export class CreateMyBrandService {
   }
 }
 
-const isUniqueViolation = (err: unknown): boolean =>
-  typeof err === 'object' && err !== null && (err as { code?: string }).code === '23505';
+const isUniqueViolation = (err: unknown): boolean => {
+  if (typeof err !== 'object' || err === null) return false;
+  const e = err as { code?: string; cause?: unknown };
+  if (e.code === '23505') return true;
+  return isUniqueViolation(e.cause);
+};
