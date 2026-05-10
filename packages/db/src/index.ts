@@ -18,6 +18,7 @@ export {
   getTenantContext,
   requireTenantContext,
   getBrandId,
+  requireBrandContext,
   withBrand,
   type TenantContext,
 } from './context';

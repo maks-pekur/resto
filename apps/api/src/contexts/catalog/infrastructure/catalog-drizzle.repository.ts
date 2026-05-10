@@ -43,16 +43,29 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     return this.imageUrl.presignGet(s3Key, IMAGE_URL_TTL_SECONDS);
   }
 
-  async loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu> {
+  async loadPublishedMenu(
+    tenantId: TenantId,
+    version: number,
+    brandId?: string | null,
+  ): Promise<PublishedMenu> {
     return this.db.withTenant(async (tx) => {
-      const [categoriesRows, itemsRows, variantsRows, itemModifierRows, modifiersRows] =
-        await Promise.all([
-          tx.select().from(schema.menuCategories),
-          tx.select().from(schema.menuItems).where(eq(schema.menuItems.status, 'published')),
-          tx.select().from(schema.menuVariants),
-          tx.select().from(schema.menuItemModifiers),
-          tx.select().from(schema.menuModifiers),
-        ]);
+      const categoriesQuery = tx.select().from(schema.menuCategories);
+      const itemsBaseConditions = brandId
+        ? and(eq(schema.menuItems.status, 'published'), eq(schema.menuItems.brandId, brandId))
+        : eq(schema.menuItems.status, 'published');
+
+      const [categoriesRows, itemsRows] = await Promise.all([
+        brandId
+          ? categoriesQuery.where(eq(schema.menuCategories.brandId, brandId))
+          : categoriesQuery,
+        tx.select().from(schema.menuItems).where(itemsBaseConditions),
+      ]);
+
+      const [variantsRows, itemModifierRows, modifiersRows] = await Promise.all([
+        tx.select().from(schema.menuVariants),
+        tx.select().from(schema.menuItemModifiers),
+        tx.select().from(schema.menuModifiers),
+      ]);
 
       const itemIds = itemsRows.map((r) => r.id);
       const optionsRows =
@@ -134,13 +147,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async findPublishedItem(itemId: string): Promise<PublishedMenuItem | null> {
+  async findPublishedItem(
+    itemId: string,
+    brandId?: string | null,
+  ): Promise<PublishedMenuItem | null> {
     return this.db.withTenant(async (tx) => {
-      const items = await tx
-        .select()
-        .from(schema.menuItems)
-        .where(and(eq(schema.menuItems.id, itemId), eq(schema.menuItems.status, 'published')))
-        .limit(1);
+      const baseConditions = and(
+        eq(schema.menuItems.id, itemId),
+        eq(schema.menuItems.status, 'published'),
+      );
+      const where = brandId
+        ? and(baseConditions, eq(schema.menuItems.brandId, brandId))
+        : baseConditions;
+      const items = await tx.select().from(schema.menuItems).where(where).limit(1);
       const row = items[0];
       if (!row) return null;
       const [variants, links] = await Promise.all([
@@ -180,6 +199,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .values({
           ...(input.id ? { id: input.id } : {}),
           tenantId: input.tenantId,
+          brandId: input.brandId ?? null,
           slug: input.slug,
           name: input.name,
           description: input.description,
@@ -188,6 +208,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .onConflictDoUpdate({
           target: [schema.menuCategories.tenantId, schema.menuCategories.slug],
           set: {
+            brandId: input.brandId ?? null,
             name: input.name,
             description: input.description,
             sortOrder: input.sortOrder,
@@ -207,6 +228,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .values({
           ...(input.id ? { id: input.id } : {}),
           tenantId: input.tenantId,
+          brandId: input.brandId ?? null,
           categoryId: input.categoryId,
           slug: input.slug,
           name: input.name,
@@ -221,6 +243,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .onConflictDoUpdate({
           target: [schema.menuItems.tenantId, schema.menuItems.slug],
           set: {
+            brandId: input.brandId ?? null,
             categoryId: input.categoryId,
             name: input.name,
             description: input.description,
@@ -262,6 +285,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .insert(schema.menuModifiers)
         .values({
           tenantId: input.tenantId,
+          brandId: input.brandId ?? null,
           name: input.name,
           minSelectable: input.minSelectable,
           maxSelectable: input.maxSelectable,

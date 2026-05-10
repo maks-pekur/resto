@@ -84,3 +84,14 @@ export const withBrand = <T>(brandId: string, op: () => Promise<T>): Promise<T> 
   }
   return storage.run({ ...parent, brandId }, op);
 };
+
+export const requireBrandContext = (): string => {
+  const brandId = storage.getStore()?.brandId;
+  if (brandId === undefined) {
+    throw new Error(
+      'No brand context bound. Wrap the call in a request that resolves a brand ' +
+        '(via TenantContextMiddleware) or use withBrand(brandId, op) explicitly.',
+    );
+  }
+  return brandId;
+};

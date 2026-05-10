@@ -7,8 +7,12 @@ import type { PublishedMenu, PublishedMenuItem } from './published-menu';
  * does Zod validation); the repo is a thin Drizzle wrapper.
  */
 export interface CatalogRepository {
-  loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu>;
-  findPublishedItem(itemId: string): Promise<PublishedMenuItem | null>;
+  loadPublishedMenu(
+    tenantId: TenantId,
+    version: number,
+    brandId?: string | null,
+  ): Promise<PublishedMenu>;
+  findPublishedItem(itemId: string, brandId?: string | null): Promise<PublishedMenuItem | null>;
   upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }>;
   upsertItem(input: UpsertItemRow): Promise<{ id: string }>;
   upsertModifier(input: UpsertModifierRow): Promise<{ id: string }>;
@@ -34,8 +38,8 @@ export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
  * (Redis TTL eventually evicts them).
  */
 export interface CatalogCachePort {
-  get(tenantId: TenantId, version: number): Promise<PublishedMenu | null>;
-  set(menu: PublishedMenu, ttlSeconds: number): Promise<void>;
+  get(tenantId: TenantId, version: number, brandId?: string | null): Promise<PublishedMenu | null>;
+  set(menu: PublishedMenu, ttlSeconds: number, brandId?: string | null): Promise<void>;
 }
 
 export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
@@ -60,6 +64,7 @@ export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
 export interface UpsertCategoryRow {
   readonly id?: string;
   readonly tenantId: string;
+  readonly brandId?: string | null;
   readonly slug: string;
   readonly name: Record<string, string>;
   readonly description: Record<string, string> | null;
@@ -69,6 +74,7 @@ export interface UpsertCategoryRow {
 export interface UpsertItemRow {
   readonly id?: string;
   readonly tenantId: string;
+  readonly brandId?: string | null;
   readonly categoryId: string;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -84,6 +90,7 @@ export interface UpsertItemRow {
 export interface UpsertModifierRow {
   readonly id?: string;
   readonly tenantId: string;
+  readonly brandId?: string | null;
   readonly name: Record<string, string>;
   readonly minSelectable: number;
   readonly maxSelectable: number;

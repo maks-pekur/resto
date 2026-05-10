@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   getBrandId,
   getTenantContext,
+  requireBrandContext,
   requireTenantContext,
   runInTenantContext,
   withBrand,
@@ -81,5 +82,22 @@ describe('TenantContext', () => {
     await expect(
       runInTenantContext({ tenantId, brandId: 'not-a-uuid' }, () => Promise.resolve()),
     ).rejects.toThrow(/brand id/i);
+  });
+
+  it('requireBrandContext returns the bound brandId', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    const brandId = '22222222-2222-2222-2222-222222222222';
+    await runInTenantContext({ tenantId, brandId }, () => {
+      expect(requireBrandContext()).toBe(brandId);
+      return Promise.resolve();
+    });
+  });
+
+  it('requireBrandContext throws when no brand is bound', async () => {
+    const tenantId = '11111111-1111-1111-1111-111111111111';
+    await runInTenantContext({ tenantId }, () => {
+      expect(() => requireBrandContext()).toThrow(/No brand context bound/);
+      return Promise.resolve();
+    });
   });
 });
