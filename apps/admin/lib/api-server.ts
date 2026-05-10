@@ -99,12 +99,14 @@ export const apiFetch = async <T>(
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
     .join('; ');
+  const activeBrand = cookieStore.get('resto.active_brand')?.value;
 
   const url = `${apiOrigin()}${path.startsWith('/') ? '' : '/'}${path}`;
   const headers: Record<string, string> = {
     accept: 'application/json',
     origin: adminOrigin(),
     ...(cookieHeader ? { cookie: cookieHeader } : {}),
+    ...(activeBrand ? { 'x-brand-slug': activeBrand } : {}),
     ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
     ...options.headers,
   };

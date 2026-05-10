@@ -3,7 +3,9 @@
 import * as React from 'react';
 import { BookOpen, Bot, Frame, Map, PieChart, Settings2, SquareTerminal } from 'lucide-react';
 
-import { NavMain } from '@/components/nav-main';
+import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
+import { BrandTabSync } from '@/components/brand-tab-sync';
+import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavProjects } from '@/components/nav-projects';
 import { NavUser } from '@/components/nav-user';
 import { TenantBrand } from '@/components/tenant-brand';
@@ -13,14 +15,16 @@ import {
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 
-const navMain = [
+const navMain: NavMainItem[] = [
   {
     title: 'Playground',
     url: '#',
     icon: SquareTerminal,
     isActive: true,
+    scope: 'any',
     items: [
       { title: 'History', url: '#' },
       { title: 'Starred', url: '#' },
@@ -31,6 +35,7 @@ const navMain = [
     title: 'Models',
     url: '#',
     icon: Bot,
+    scope: 'any',
     items: [
       { title: 'Genesis', url: '#' },
       { title: 'Explorer', url: '#' },
@@ -41,6 +46,7 @@ const navMain = [
     title: 'Documentation',
     url: '#',
     icon: BookOpen,
+    scope: 'any',
     items: [
       { title: 'Introduction', url: '#' },
       { title: 'Get Started', url: '#' },
@@ -52,6 +58,7 @@ const navMain = [
     title: 'Settings',
     url: '/dashboard/settings',
     icon: Settings2,
+    scope: 'tenant',
   },
 ];
 
@@ -69,22 +76,38 @@ const placeholderUser = {
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   readonly tenant: { readonly id: string; readonly slug: string; readonly displayName: string };
+  readonly brands: readonly BrandOption[];
+  readonly activeBrandSlug: string | null;
+  readonly canViewAllBrands: boolean;
 }
 
-export function AppSidebar({ tenant, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  tenant,
+  brands,
+  activeBrandSlug,
+  canViewAllBrands,
+  ...props
+}: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
         <TenantBrand tenant={tenant} />
+        <SidebarSeparator />
+        <BrandSwitcher
+          brands={brands}
+          activeBrandSlug={activeBrandSlug}
+          canViewAllBrands={canViewAllBrands}
+        />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />
         <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={placeholderUser} />
       </SidebarFooter>
       <SidebarRail />
+      <BrandTabSync />
     </Sidebar>
   );
 }

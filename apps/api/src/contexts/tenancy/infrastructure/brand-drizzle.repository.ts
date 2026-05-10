@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import { BrandId, BrandSlug, BrandTheme, TenantId } from '@resto/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray, ne } from 'drizzle-orm';
 import type { BrandSnapshot } from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
 
@@ -94,6 +94,35 @@ export class BrandDrizzleRepository implements BrandRepository {
         .limit(1);
       const row = rows[0];
       return row ? ROW_TO_SNAPSHOT(row) : null;
+    });
+  }
+
+  async listForTenant(
+    tenantId: TenantId,
+    brandIds?: readonly string[],
+  ): Promise<readonly BrandSnapshot[]> {
+    if (brandIds?.length === 0) return [];
+    return this.db.withTenant(async (tx) => {
+      const whereClauses = [
+        eq(schema.brands.tenantId, tenantId),
+        ne(schema.brands.status, 'erased'),
+      ];
+      if (brandIds !== undefined) {
+        whereClauses.push(inArray(schema.brands.id, [...brandIds]));
+      }
+      const rows = await tx
+        .select({
+          id: schema.brands.id,
+          tenantId: schema.brands.tenantId,
+          slug: schema.brands.slug,
+          displayName: schema.brands.displayName,
+          status: schema.brands.status,
+          theme: schema.brands.theme,
+        })
+        .from(schema.brands)
+        .where(and(...whereClauses))
+        .orderBy(schema.brands.displayName);
+      return rows.map(ROW_TO_SNAPSHOT);
     });
   }
 

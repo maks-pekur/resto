@@ -14,25 +14,42 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 
+export type NavScope = 'any' | 'tenant' | 'brand';
+
+export interface NavMainSubItem {
+  title: string;
+  url: string;
+}
+
+export interface NavMainItem {
+  title: string;
+  url: string;
+  icon?: LucideIcon;
+  isActive?: boolean;
+  scope?: NavScope;
+  items?: NavMainSubItem[];
+}
+
+const isVisible = (item: NavMainItem, activeBrandSlug: string | null): boolean => {
+  const scope = item.scope ?? 'any';
+  if (scope === 'any') return true;
+  if (scope === 'tenant') return true;
+  return activeBrandSlug !== null;
+};
+
 export function NavMain({
   items,
+  activeBrandSlug,
 }: {
-  items: {
-    title: string;
-    url: string;
-    icon?: LucideIcon;
-    isActive?: boolean;
-    items?: {
-      title: string;
-      url: string;
-    }[];
-  }[];
+  items: NavMainItem[];
+  activeBrandSlug: string | null;
 }) {
+  const visible = items.filter((item) => isVisible(item, activeBrandSlug));
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        {items.map((item) => {
+        {visible.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
           if (!hasSubItems) {
             return (
