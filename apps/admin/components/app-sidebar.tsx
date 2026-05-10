@@ -8,14 +8,12 @@ import { BrandTabSync } from '@/components/brand-tab-sync';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavProjects } from '@/components/nav-projects';
 import { NavUser } from '@/components/nav-user';
-import { TenantBrand } from '@/components/tenant-brand';
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarHeader,
   SidebarRail,
-  SidebarSeparator,
 } from '@/components/ui/sidebar';
 
 const navMain: NavMainItem[] = [
@@ -75,14 +73,12 @@ const placeholderUser = {
 };
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  readonly tenant: { readonly id: string; readonly slug: string; readonly displayName: string };
   readonly brands: readonly BrandOption[];
   readonly activeBrandSlug: string | null;
   readonly canViewAllBrands: boolean;
 }
 
 export function AppSidebar({
-  tenant,
   brands,
   activeBrandSlug,
   canViewAllBrands,
@@ -91,8 +87,6 @@ export function AppSidebar({
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TenantBrand tenant={tenant} />
-        <SidebarSeparator />
         <BrandSwitcher
           brands={brands}
           activeBrandSlug={activeBrandSlug}

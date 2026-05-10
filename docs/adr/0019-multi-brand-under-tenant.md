@@ -83,7 +83,10 @@ A full design doc with migration plan and open questions lives in `.claude/super
   - Repository helpers brand-aware
   - `/v1/menu` response includes `brand` object
   - Admin brand-switcher UI + scope-aware nav
-  - Onboarding flow update (signup creates default brand)
+  - Onboarding flow update — signup creates **tenant + member only**;
+    the operator picks a slug + display name on `/dashboard/brands/new`
+    after first sign-in (RES-158, walks back the original "auto-default-
+    brand" plan).
   - Re-scope RES-91 (theme tokens at brand level)
   - Re-scope RES-29 (fiscalization at brand level)
   - Backfill CLI command

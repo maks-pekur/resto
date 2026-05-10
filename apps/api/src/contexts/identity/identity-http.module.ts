@@ -16,6 +16,7 @@ import { InternalBootstrapController } from './interfaces/http/internal-bootstra
 import { SignUpController } from './interfaces/http/signup.controller';
 import { SignUpService } from './application/signup.service';
 import { ListMyBrandsService } from './application/list-my-brands.service';
+import { CreateMyBrandService } from './application/create-my-brand.service';
 import { MeBrandsController } from './interfaces/http/me-brands.controller';
 import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
 import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
@@ -34,6 +35,7 @@ import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-sco
     BootstrapOwnerService,
     SignUpService,
     ListMyBrandsService,
+    CreateMyBrandService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
     { provide: APP_GUARD, useClass: AuthGuard },

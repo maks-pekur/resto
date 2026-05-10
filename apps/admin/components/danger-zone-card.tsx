@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import {
   scheduleOffboardingAction,
   cancelOffboardingAction,
-} from '@/app/dashboard/settings/actions';
+} from '@/app/dashboard/(workspace)/settings/actions';
 
 const COOL_OFF_DAYS = 30;
 

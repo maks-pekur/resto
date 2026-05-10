@@ -1,23 +1,21 @@
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
-import { Separator } from '@/components/ui/separator';
-import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BrandForm } from './brand-form-client';
 
 export default function NewBrandPage() {
   return (
-    <>
-      <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-        <div className="flex items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" />
-          <Separator orientation="vertical" className="mr-2 data-[orientation=vertical]:h-4" />
-          <TenantBreadcrumb trail="Brands / New" />
-        </div>
-      </header>
-      <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <h1 className="text-2xl font-semibold">Add a brand</h1>
-        <p className="text-muted-foreground text-sm">
-          Brand creation form ships in a follow-up ticket.
-        </p>
-      </div>
-    </>
+    <div className="bg-muted/30 flex min-h-svh items-center justify-center p-6">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Create your first brand</CardTitle>
+          <CardDescription>
+            Brands are the customer-facing identity inside your operator account. You can add more
+            later.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <BrandForm />
+        </CardContent>
+      </Card>
+    </div>
   );
 }
