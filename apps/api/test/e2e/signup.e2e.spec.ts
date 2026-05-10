@@ -27,7 +27,6 @@ const buildSignupBody = (overrides: Partial<Record<string, unknown>> = {}) => ({
 
 interface SignUpResponse {
   tenant: { id: string; slug: string };
-  brand: { id: string; slug: string };
   userId: string;
 }
 
@@ -71,25 +70,6 @@ suite('Identity — public signup', () => {
     expect(members).toHaveLength(1);
     expect(members[0]?.role).toBe('owner');
     expect(members[0]?.userId).toBe(json.userId);
-
-    expect(json.brand.id).toBeDefined();
-    expect(json.brand.slug).toBe(json.tenant.slug);
-
-    const brands = await db.withoutTenant('inspect signup brand', (tx) =>
-      tx.select().from(schema.brands).where(eq(schema.brands.id, json.brand.id)),
-    );
-    expect(brands).toHaveLength(1);
-    expect(brands[0]?.tenantId).toBe(json.tenant.id);
-    expect(brands[0]?.slug).toBe(json.tenant.slug);
-    expect(brands[0]?.status).toBe('active');
-
-    const brandDomains = await db.withoutTenant('inspect signup brand_domains', (tx) =>
-      tx.select().from(schema.brandDomains).where(eq(schema.brandDomains.brandId, json.brand.id)),
-    );
-    expect(brandDomains).toHaveLength(1);
-    expect(brandDomains[0]?.kind).toBe('subdomain');
-    expect(brandDomains[0]?.isPrimary).toBe(true);
-    expect(brandDomains[0]?.domain).toBe(`${json.tenant.slug}.menu.resto.app`);
   }, 60_000);
 
   it('rejects duplicate email with 409', async () => {
