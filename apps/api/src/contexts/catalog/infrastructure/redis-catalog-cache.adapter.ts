@@ -7,8 +7,8 @@ import type { CatalogCachePort, MenuVersionPort } from '../domain/ports';
 import type { PublishedMenu } from '../domain/published-menu';
 
 const VERSION_KEY = (tenantId: string): string => `catalog:menu:version:${tenantId}`;
-const MENU_KEY = (tenantId: string, version: number): string =>
-  `catalog:menu:${tenantId}:${version.toString()}`;
+const MENU_KEY = (tenantId: string, version: number, brandId: string | null): string =>
+  `catalog:menu:${tenantId}:${brandId ?? 'no-brand'}:${version.toString()}`;
 
 /**
  * Redis-backed cache for the public catalog read path.
@@ -72,10 +72,14 @@ export class RedisCatalogCacheAdapter
     }
   }
 
-  async get(tenantId: TenantId, version: number): Promise<PublishedMenu | null> {
+  async get(
+    tenantId: TenantId,
+    version: number,
+    brandId?: string | null,
+  ): Promise<PublishedMenu | null> {
     if (!this.client) return null;
     try {
-      const raw = await this.client.get(MENU_KEY(tenantId, version));
+      const raw = await this.client.get(MENU_KEY(tenantId, version, brandId ?? null));
       return raw ? (JSON.parse(raw) as PublishedMenu) : null;
     } catch (err) {
       this.logger.warn({ err }, 'Failed to read catalog cache.');
@@ -83,11 +87,11 @@ export class RedisCatalogCacheAdapter
     }
   }
 
-  async set(menu: PublishedMenu, ttlSeconds: number): Promise<void> {
+  async set(menu: PublishedMenu, ttlSeconds: number, brandId?: string | null): Promise<void> {
     if (!this.client) return;
     try {
       await this.client.set(
-        MENU_KEY(menu.tenantId, menu.version),
+        MENU_KEY(menu.tenantId, menu.version, brandId ?? null),
         JSON.stringify(menu),
         'EX',
         ttlSeconds,

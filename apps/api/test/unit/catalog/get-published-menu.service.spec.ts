@@ -70,7 +70,7 @@ describe('GetPublishedMenuService', () => {
     expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, null);
     // Cache write is fire-and-forget; await a tick before assertion.
     await new Promise((r) => setImmediate(r));
-    expect(cache.set).toHaveBeenCalledWith(fresh, expect.any(Number));
+    expect(cache.set).toHaveBeenCalledWith(fresh, expect.any(Number), null);
   });
 
   it('uses the current menu version from the version port', async () => {

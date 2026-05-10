@@ -38,8 +38,8 @@ export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
  * (Redis TTL eventually evicts them).
  */
 export interface CatalogCachePort {
-  get(tenantId: TenantId, version: number): Promise<PublishedMenu | null>;
-  set(menu: PublishedMenu, ttlSeconds: number): Promise<void>;
+  get(tenantId: TenantId, version: number, brandId?: string | null): Promise<PublishedMenu | null>;
+  set(menu: PublishedMenu, ttlSeconds: number, brandId?: string | null): Promise<void>;
 }
 
 export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
