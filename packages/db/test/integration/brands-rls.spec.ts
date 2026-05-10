@@ -186,7 +186,7 @@ suite('brand_domains — RLS + constraints', () => {
   }, 90_000);
 
   afterAll(async () => {
-    if (pg) await stopPostgres(pg);
+    await stopPostgres(pg);
   });
 
   it('inserts a brand_domain row scoped to its tenant', async () => {
@@ -321,7 +321,7 @@ suite('member_brand_scope — RLS + constraints', () => {
   }, 90_000);
 
   afterAll(async () => {
-    if (pg) await stopPostgres(pg);
+    await stopPostgres(pg);
   });
 
   it('inserts a scope row binding the member to a brand', async () => {

@@ -67,7 +67,7 @@ suite('tenancy_erase_tenant — wipes brand rows', () => {
   }, 90_000);
 
   afterAll(async () => {
-    if (pg) await stopPostgres(pg);
+    await stopPostgres(pg);
   });
 
   it('removes brand_domains, member_brand_scope, and brands rows for the erased tenant', async () => {
