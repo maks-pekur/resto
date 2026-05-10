@@ -28,6 +28,13 @@ export const envSchema = z
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */
     NATS_STREAM: z.string().default('RESTO_EVENTS'),
+    /**
+     * NATS username/password (RES-178). Optional in dev/test where the
+     * broker runs without auth; production deploys SHOULD set both via
+     * Vault and the connect call passes them through to `nats.connect`.
+     */
+    NATS_USERNAME: z.string().optional(),
+    NATS_PASSWORD: z.string().optional(),
 
     /**
      * Shared secret for `/internal/v1/*` routes — the only auth in MVP-1

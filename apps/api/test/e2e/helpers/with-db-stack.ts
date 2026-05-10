@@ -1,4 +1,3 @@
-import { execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
@@ -66,11 +65,4 @@ export const stopDbStack = async (stack: DbStack): Promise<void> => {
   await stack.pg.stop({ timeout: 5_000 });
 };
 
-export const isDockerAvailable = (): boolean => {
-  try {
-    execSync('docker info', { stdio: 'ignore' });
-    return true;
-  } catch {
-    return false;
-  }
-};
+export { isDockerAvailable } from './docker-availability';
