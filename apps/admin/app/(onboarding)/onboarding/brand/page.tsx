@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getMyBrands } from '@/lib/me-brands';
 import { BrandForm } from './brand-form-client';
@@ -16,20 +16,16 @@ export default async function NewBrandPage() {
     <div className="bg-muted/30 flex min-h-svh items-center justify-center p-6">
       <Card className="w-full max-w-md">
         <CardHeader>
-          {!isFirstBrand && (
-            <Link
-              href="/dashboard"
-              className="text-muted-foreground hover:text-foreground mb-2 inline-flex items-center gap-1 text-sm"
-            >
-              <ArrowLeft className="size-4" />
-              Back to dashboard
-            </Link>
-          )}
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
           <BrandForm />
+          {!isFirstBrand && (
+            <Button asChild variant="outline" className="w-full">
+              <Link href="/dashboard">Back to dashboard</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </div>
