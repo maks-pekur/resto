@@ -1,22 +1,29 @@
-import {
-  Body,
-  Controller,
-  HttpCode,
-  HttpStatus,
-  Inject,
-  Post,
-  UseGuards,
-  UsePipes,
-} from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post, UseGuards } from '@nestjs/common';
+import { ApiBody, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../tenancy/interfaces/http/internal-token.guard';
-import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
-import { UpsertCategoryInput, UpsertItemInput, UpsertModifierInput } from '../../application/dto';
+import {
+  UpsertCategoryInputDto,
+  UpsertItemInputDto,
+  UpsertModifierInputDto,
+} from '../../application/dto';
 import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
 import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
+
+const IdResponseSchema = z.object({ id: z.string().uuid() });
+class IdResponseDto extends createZodDto(IdResponseSchema) {}
+
+const PublishResponseSchema = z.object({
+  tenantId: z.string().uuid(),
+  version: z.number().int().nonnegative(),
+});
+class PublishResponseDto extends createZodDto(PublishResponseSchema) {}
 
 /**
  * Internal catalog write surface. Used by the seed CLI to provision the
@@ -42,28 +49,42 @@ export class InternalCatalogController {
 
   @Post('categories')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(UpsertCategoryInput))
-  category(@Body() input: UpsertCategoryInput): Promise<{ id: string }> {
+  @ApiBody({ type: UpsertCategoryInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  category(
+    @Body(new RestoZodValidationPipe(UpsertCategoryInputDto)) input: UpsertCategoryInputDto,
+  ): Promise<IdResponseDto> {
     return this.upsertCategory.execute(input);
   }
 
   @Post('items')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(UpsertItemInput))
-  item(@Body() input: UpsertItemInput): Promise<{ id: string }> {
+  @ApiBody({ type: UpsertItemInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  item(
+    @Body(new RestoZodValidationPipe(UpsertItemInputDto)) input: UpsertItemInputDto,
+  ): Promise<IdResponseDto> {
     return this.upsertItem.execute(input);
   }
 
   @Post('modifiers')
   @HttpCode(HttpStatus.OK)
-  @UsePipes(new ZodValidationPipe(UpsertModifierInput))
-  modifier(@Body() input: UpsertModifierInput): Promise<{ id: string }> {
+  @ApiBody({ type: UpsertModifierInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  modifier(
+    @Body(new RestoZodValidationPipe(UpsertModifierInputDto)) input: UpsertModifierInputDto,
+  ): Promise<IdResponseDto> {
     return this.upsertModifier.execute(input);
   }
 
   @Post('publish')
   @HttpCode(HttpStatus.OK)
-  publishMenu(): Promise<{ tenantId: string; version: number }> {
+  @ApiOkResponse({ type: PublishResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  publishMenu(): Promise<PublishResponseDto> {
     return this.publish.execute();
   }
 }

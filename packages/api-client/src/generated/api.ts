@@ -295,7 +295,279 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        ProvisionTenantInputDto: {
+            slug: string;
+            displayName: string;
+            /** @default en */
+            locale: string;
+            defaultCurrency: unknown;
+        };
+        TenantResponseDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            displayName: string;
+            status: string;
+            locale: string;
+            defaultCurrency: string;
+            primaryDomain: string;
+            stripeAccountId: string | null;
+            createdAt: string;
+            updatedAt: string;
+            archivedAt: string | null;
+            offboardingScheduledAt: string | null;
+            offboardingExecutedAt: string | null;
+            offboardingRequestedBy: string | null;
+        };
+        ProblemDetailsDto: {
+            /** Format: uri */
+            type: string;
+            title: string;
+            status: number;
+            detail?: string;
+            instance: string;
+            correlationId?: string;
+            traceId?: string;
+        };
+        ScheduleOffboardingInputDto: {
+            requestedBy: string;
+        };
+        TenantDomainDto: {
+            /** Format: uuid */
+            id: string;
+            domain: string;
+            kind: string;
+            isPrimary: boolean;
+            verifiedAt: string | null;
+        };
+        MeBrandsResponseDto: {
+            brands: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                displayName: string;
+            }[];
+            canViewAllBrands: boolean;
+        };
+        CreateBrandInputDto: {
+            slug: unknown;
+            displayName: string;
+        };
+        MeBrandDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            displayName: string;
+        };
+        BootstrapOwnerInputDto: {
+            /** Format: email */
+            email: string;
+            password: string;
+            name: string;
+        };
+        BootstrapOwnerResponseDto: {
+            /** Format: uuid */
+            tenantId: string;
+            userId: string;
+            /** Format: uuid */
+            organizationId: string;
+            /** Format: email */
+            email: string;
+            requiresPasswordChange: boolean;
+        };
+        SignUpInputDto: {
+            /** Format: email */
+            email: string;
+            password: string;
+            displayName: string;
+            defaultCurrency: unknown;
+            /** @default en */
+            locale: string;
+        };
+        SignUpResponseDto: {
+            tenant: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                displayName: string;
+                status: string;
+                primaryDomain: string;
+            };
+            userId: string;
+        };
+        PublishedMenuDto: {
+            /** Format: uuid */
+            tenantId: string;
+            version: number;
+            currency: string;
+            brand: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                displayName: string;
+                theme: {
+                    /** Format: uri */
+                    logoUrl: string | null;
+                    primaryColor: string | null;
+                    font: string | null;
+                } | null;
+            } | null;
+            categories: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: {
+                    [key: string]: string;
+                };
+                description: {
+                    [key: string]: string;
+                } | null;
+                sortOrder: number;
+            }[];
+            items: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                /** Format: uuid */
+                categoryId: string;
+                name: {
+                    [key: string]: string;
+                };
+                description: {
+                    [key: string]: string;
+                } | null;
+                basePrice: string;
+                currency: string;
+                /** Format: uri */
+                imageUrl: string | null;
+                allergens: string[];
+                sortOrder: number;
+                variants: {
+                    /** Format: uuid */
+                    id: string;
+                    name: {
+                        [key: string]: string;
+                    };
+                    priceDelta: string;
+                    isDefault: boolean;
+                    sortOrder: number;
+                }[];
+                modifierIds: string[];
+            }[];
+            modifiers: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                minSelectable: number;
+                maxSelectable: number;
+                isRequired: boolean;
+                options: {
+                    id: string;
+                    name: {
+                        [key: string]: string;
+                    };
+                    priceDelta: string;
+                    sortOrder: number;
+                }[];
+            }[];
+        };
+        PublishedMenuItemDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            /** Format: uuid */
+            categoryId: string;
+            name: {
+                [key: string]: string;
+            };
+            description: {
+                [key: string]: string;
+            } | null;
+            basePrice: string;
+            currency: string;
+            /** Format: uri */
+            imageUrl: string | null;
+            allergens: string[];
+            sortOrder: number;
+            variants: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                priceDelta: string;
+                isDefault: boolean;
+                sortOrder: number;
+            }[];
+            modifierIds: string[];
+        };
+        UpsertCategoryInputDto: {
+            /** Format: uuid */
+            id?: string;
+            slug: string;
+            name: {
+                [key: string]: string;
+            };
+            /** @default null */
+            description: {
+                [key: string]: string;
+            } | null;
+            /** @default 0 */
+            sortOrder: number;
+        };
+        IdResponseDto: {
+            /** Format: uuid */
+            id: string;
+        };
+        UpsertItemInputDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            categoryId: string;
+            slug: string;
+            name: {
+                [key: string]: string;
+            };
+            /** @default null */
+            description: {
+                [key: string]: string;
+            } | null;
+            basePrice: unknown;
+            currency: unknown;
+            /** @default null */
+            imageS3Key: string | null;
+            /** @default null */
+            allergens: string[] | null;
+            /**
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            /** @default 0 */
+            sortOrder: number;
+        };
+        UpsertModifierInputDto: {
+            /** Format: uuid */
+            id?: string;
+            name: {
+                [key: string]: string;
+            };
+            /** @default 0 */
+            minSelectable: number;
+            /** @default 1 */
+            maxSelectable: number;
+            /** @default false */
+            isRequired: boolean;
+        };
+        PublishResponseDto: {
+            /** Format: uuid */
+            tenantId: string;
+            version: number;
+        };
+    };
     responses: never;
     parameters: never;
     requestBodies: never;
@@ -345,13 +617,36 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionTenantInputDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description slug already taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -370,6 +665,22 @@ export interface operations {
                 };
                 content?: never;
             };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
         };
     };
     InternalTenantsController_listScheduledOffboarding: {
@@ -385,7 +696,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"][];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -396,13 +717,35 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleOffboardingInputDto"];
+            };
+        };
         responses: {
             202: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -419,7 +762,25 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -436,7 +797,25 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -453,7 +832,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["TenantDomainDto"][];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -487,7 +876,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MeBrandsResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -498,13 +897,36 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBrandInputDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["MeBrandDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description brand slug taken globally */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -515,13 +937,46 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BootstrapOwnerInputDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["BootstrapOwnerResponseDto"];
+                };
+            };
+            /** @description missing or invalid internal token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description tenant not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description owner already exists */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -532,13 +987,36 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SignUpInputDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SignUpResponseDto"];
+                };
+            };
+            /** @description email or slug already taken */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -555,7 +1033,18 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PublishedMenuDto"];
+                };
+            };
+            /** @description no tenant resolved for host */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -572,7 +1061,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PublishedMenuItemDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -583,13 +1082,27 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertCategoryInputDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -600,13 +1113,27 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertItemInputDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -617,13 +1144,27 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertModifierInputDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -640,7 +1181,17 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PublishResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };

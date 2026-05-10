@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { createZodDto } from 'nestjs-zod';
 import { Currency, TenantSlug } from '@resto/domain';
 
-export const ProvisionTenantInput = z.object({
+export const ProvisionTenantInputSchema = z.object({
   slug: TenantSlug,
   displayName: z.string().min(1).max(120),
   locale: z
@@ -10,14 +11,17 @@ export const ProvisionTenantInput = z.object({
     .default('en'),
   defaultCurrency: Currency,
 });
-export type ProvisionTenantInput = z.infer<typeof ProvisionTenantInput>;
+export type ProvisionTenantInput = z.infer<typeof ProvisionTenantInputSchema>;
+export class ProvisionTenantInputDto extends createZodDto(ProvisionTenantInputSchema) {}
 
-export const ScheduleOffboardingInput = z.object({
+export const ScheduleOffboardingInputSchema = z.object({
   requestedBy: z.string().min(1).max(120),
 });
-export type ScheduleOffboardingInput = z.infer<typeof ScheduleOffboardingInput>;
+export type ScheduleOffboardingInput = z.infer<typeof ScheduleOffboardingInputSchema>;
+export class ScheduleOffboardingInputDto extends createZodDto(ScheduleOffboardingInputSchema) {}
 
-export const CancelOffboardingInput = z.object({
+export const CancelOffboardingInputSchema = z.object({
   cancelledBy: z.string().min(1).max(120).optional(),
 });
-export type CancelOffboardingInput = z.infer<typeof CancelOffboardingInput>;
+export type CancelOffboardingInput = z.infer<typeof CancelOffboardingInputSchema>;
+export class CancelOffboardingInputDto extends createZodDto(CancelOffboardingInputSchema) {}

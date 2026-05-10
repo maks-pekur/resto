@@ -2,6 +2,7 @@ import { writeFileSync, mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { INestApplication } from '@nestjs/common';
+import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { stringify } from 'yaml';
 
 const buildDocumentConfig = (): ReturnType<DocumentBuilder['build']> =>
@@ -17,7 +18,7 @@ const buildDocumentConfig = (): ReturnType<DocumentBuilder['build']> =>
  * document is what `openapi:emit` writes to `docs/api/openapi.yaml`.
  */
 export const applyOpenApi = (app: INestApplication): void => {
-  const document = SwaggerModule.createDocument(app, buildDocumentConfig());
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, buildDocumentConfig()));
   SwaggerModule.setup('docs', app, document);
 };
 
@@ -36,7 +37,7 @@ export const emitOpenApi = async (outputPath: string): Promise<void> => {
     logger: false,
   });
   await app.init();
-  const document = SwaggerModule.createDocument(app, buildDocumentConfig());
+  const document = cleanupOpenApiDoc(SwaggerModule.createDocument(app, buildDocumentConfig()));
   mkdirSync(dirname(outputPath), { recursive: true });
   writeFileSync(outputPath, stringify(document));
   await app.close();

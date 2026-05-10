@@ -1,21 +1,26 @@
+import { z } from 'zod';
+import { createZodDto } from 'nestjs-zod';
 import type { TenantSnapshot } from '../../domain/tenant.aggregate';
 
-export interface TenantResponse {
-  id: string;
-  slug: string;
-  displayName: string;
-  status: string;
-  locale: string;
-  defaultCurrency: string;
-  primaryDomain: string;
-  stripeAccountId: string | null;
-  createdAt: string;
-  updatedAt: string;
-  archivedAt: string | null;
-  offboardingScheduledAt: string | null;
-  offboardingExecutedAt: string | null;
-  offboardingRequestedBy: string | null;
-}
+const TenantResponseSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  displayName: z.string(),
+  status: z.string(),
+  locale: z.string(),
+  defaultCurrency: z.string(),
+  primaryDomain: z.string(),
+  stripeAccountId: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  archivedAt: z.string().nullable(),
+  offboardingScheduledAt: z.string().nullable(),
+  offboardingExecutedAt: z.string().nullable(),
+  offboardingRequestedBy: z.string().nullable(),
+});
+
+export class TenantResponseDto extends createZodDto(TenantResponseSchema) {}
+export type TenantResponse = z.infer<typeof TenantResponseSchema>;
 
 export const toResponse = (s: TenantSnapshot): TenantResponse => ({
   id: s.id,

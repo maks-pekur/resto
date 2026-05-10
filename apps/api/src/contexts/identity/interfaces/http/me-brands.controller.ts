@@ -9,34 +9,46 @@ import {
   Inject,
   Post,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiForbiddenResponse,
+  ApiOkResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { BrandSlug, TenantId } from '@resto/domain';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { CreateMyBrandService } from '../../application/create-my-brand.service';
 import { ListMyBrandsService } from '../../application/list-my-brands.service';
 import { BrandSlugConflictError } from '../../domain/brand-errors';
-import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { Permissions } from './decorators/permissions.decorator';
 import type { OperatorPrincipal } from '../../domain/principal';
 
-interface MeBrandsResponseBrand {
-  readonly id: string;
-  readonly slug: string;
-  readonly displayName: string;
-}
+const MeBrandSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  displayName: z.string(),
+});
 
-export interface MeBrandsResponse {
-  readonly brands: readonly MeBrandsResponseBrand[];
-  readonly canViewAllBrands: boolean;
-}
+const MeBrandsResponseSchema = z.object({
+  brands: z.array(MeBrandSchema),
+  canViewAllBrands: z.boolean(),
+});
 
-const CreateBrandInput = z.object({
+class MeBrandDto extends createZodDto(MeBrandSchema) {}
+class MeBrandsResponseDto extends createZodDto(MeBrandsResponseSchema) {}
+
+const CreateBrandInputSchema = z.object({
   slug: BrandSlug,
   displayName: z.string().trim().min(1).max(120),
 });
 
-type CreateBrandInputT = z.infer<typeof CreateBrandInput>;
+class CreateBrandInputDto extends createZodDto(CreateBrandInputSchema) {}
 
 @ApiTags('identity')
 @Controller('v1/me')
@@ -48,7 +60,9 @@ export class MeBrandsController {
 
   @Get('brands')
   @Permissions({ tenant: ['read'] })
-  async getBrands(@CurrentOperator() operator: OperatorPrincipal): Promise<MeBrandsResponse> {
+  @ApiOkResponse({ type: MeBrandsResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  async getBrands(@CurrentOperator() operator: OperatorPrincipal): Promise<MeBrandsResponseDto> {
     if (!operator.tenantId) {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });
     }
@@ -65,10 +79,14 @@ export class MeBrandsController {
   @Post('brands')
   @HttpCode(HttpStatus.CREATED)
   @Permissions({ settings: ['update'] })
+  @ApiBody({ type: CreateBrandInputDto })
+  @ApiCreatedResponse({ type: MeBrandDto })
+  @ApiConflictResponse({ type: ProblemDetailsDto, description: 'brand slug taken globally' })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
   async createBrand(
     @CurrentOperator() operator: OperatorPrincipal,
-    @Body(new ZodValidationPipe(CreateBrandInput)) input: CreateBrandInputT,
-  ): Promise<MeBrandsResponseBrand> {
+    @Body(new RestoZodValidationPipe(CreateBrandInputDto)) input: CreateBrandInputDto,
+  ): Promise<MeBrandDto> {
     if (!operator.tenantId) {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });
     }

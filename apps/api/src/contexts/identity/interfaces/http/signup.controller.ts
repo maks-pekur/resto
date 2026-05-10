@@ -8,12 +8,20 @@ import {
   InternalServerErrorException,
   Post,
   Res,
-  UsePipes,
 } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiConflictResponse,
+  ApiCreatedResponse,
+  ApiInternalServerErrorResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 import type { FastifyReply } from 'fastify';
-import { ZodValidationPipe } from '../../../tenancy/interfaces/http/zod-validation.pipe';
-import { SignUpInput } from '../../application/dto';
+import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
+import { SignUpInputDto } from '../../application/dto';
 import { SignUpService } from '../../application/signup.service';
 import {
   SlugUnavailableError,
@@ -22,16 +30,18 @@ import {
 } from '../../domain/signup-errors';
 import { Public } from './decorators/public.decorator';
 
-interface SignUpResponseBody {
-  tenant: {
-    id: string;
-    slug: string;
-    displayName: string;
-    status: string;
-    primaryDomain: string;
-  };
-  userId: string;
-}
+const SignUpResponseSchema = z.object({
+  tenant: z.object({
+    id: z.string().uuid(),
+    slug: z.string(),
+    displayName: z.string(),
+    status: z.string(),
+    primaryDomain: z.string(),
+  }),
+  userId: z.string(),
+});
+
+class SignUpResponseDto extends createZodDto(SignUpResponseSchema) {}
 
 @ApiTags('identity')
 @Controller('v1/signup')
@@ -41,11 +51,14 @@ export class SignUpController {
   @Post()
   @Public()
   @HttpCode(HttpStatus.CREATED)
-  @UsePipes(new ZodValidationPipe(SignUpInput))
+  @ApiBody({ type: SignUpInputDto })
+  @ApiCreatedResponse({ type: SignUpResponseDto })
+  @ApiConflictResponse({ type: ProblemDetailsDto, description: 'email or slug already taken' })
+  @ApiInternalServerErrorResponse({ type: ProblemDetailsDto })
   async create(
-    @Body() input: SignUpInput,
+    @Body(new RestoZodValidationPipe(SignUpInputDto)) input: SignUpInputDto,
     @Res({ passthrough: true }) reply: FastifyReply,
-  ): Promise<SignUpResponseBody> {
+  ): Promise<SignUpResponseDto> {
     try {
       const result = await this.signup.execute(input);
       for (const cookie of result.setCookie) {
