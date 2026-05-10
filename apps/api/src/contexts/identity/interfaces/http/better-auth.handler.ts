@@ -4,14 +4,24 @@ import type { Auth } from '../../infrastructure/better-auth/auth.config';
 /**
  * Mounts BA's web-standard handler at /api/auth/* via Fastify.
  *
+ * URL host is pinned to `baseUrl` (RES-165). Reading
+ * `req.headers.host` here would let a client rewrite BA's URL via
+ * Host-header poisoning, which BA in turn uses for cookie scope and
+ * trustedOrigin checks. The base URL is the api's own configured
+ * BETTER_AUTH_BASE_URL, not request-controlled input.
+ *
  * Body handling: Fastify pre-parses JSON, urlencoded, and other
  * registered content types into `req.body`. To preserve fidelity for BA,
  * we re-encode `req.body` per content-type. We honor whichever the
  * client sent (JSON or form-encoded).
  */
-export const registerBetterAuthHandler = (fastify: FastifyInstance, auth: Auth): void => {
+export const registerBetterAuthHandler = (
+  fastify: FastifyInstance,
+  auth: Auth,
+  baseUrl: string,
+): void => {
   fastify.all('/api/auth/*', async (req: FastifyRequest, reply: FastifyReply) => {
-    const url = new URL(req.url, `http://${req.headers.host ?? 'localhost'}`);
+    const url = new URL(req.url, baseUrl);
     const headers = new Headers();
     for (const [k, v] of Object.entries(req.headers)) {
       if (Array.isArray(v)) {

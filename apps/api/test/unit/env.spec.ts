@@ -49,6 +49,7 @@ describe('loadEnv', () => {
       ADMIN_WEB_URL: 'https://admin.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
       TENANT_DEV_FALLBACK_SLUG: 'demo',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/development/);
@@ -86,9 +87,11 @@ describe('loadEnv', () => {
       ADMIN_WEB_URL: 'https://admin.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
     };
     const env = loadEnv(productionEnv);
     expect(env.AUTH_COOKIE_DOMAIN).toBe('.resto.app');
+    expect(env.TRUST_PROXY).toBe('10.0.0.0/8');
   });
 
   it('rejects an AUTH_COOKIE_DOMAIN without the leading dot', () => {
@@ -98,5 +101,39 @@ describe('loadEnv', () => {
         AUTH_COOKIE_DOMAIN: 'resto.app',
       }),
     ).toThrow(/AUTH_COOKIE_DOMAIN/);
+  });
+
+  it('rejects production boot when TRUST_PROXY is missing', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/TRUST_PROXY/);
+  });
+
+  it('rejects TRUST_PROXY=true outside dev/test', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: 'true',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/unsafe/);
+  });
+
+  it('accepts TRUST_PROXY=true in development', () => {
+    const env = loadEnv({ ...baseEnv, TRUST_PROXY: 'true' });
+    expect(env.TRUST_PROXY).toBe('true');
   });
 });

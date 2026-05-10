@@ -15,15 +15,20 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { assertNoRlsBypass } from '@resto/db';
 import { AppModule } from './app.module';
 import { ENV_TOKEN } from './config/config.module';
-import type { Env } from './config/env.schema';
+import { loadEnv, type Env } from './config/env.schema';
+import { parseTrustProxy } from './config/trust-proxy';
 import { applyOpenApi } from './openapi';
 import { registerSecurity } from './shared/security';
 
 const bootstrap = async (): Promise<void> => {
   const logger = new Logger('bootstrap');
+  // Load env early so the FastifyAdapter sees the validated TRUST_PROXY
+  // value (RES-165). The ConfigModule re-loads it inside the container —
+  // both calls are pure and produce the same result.
+  const bootEnv = loadEnv();
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
-    new FastifyAdapter({ trustProxy: true, logger: false }),
+    new FastifyAdapter({ trustProxy: parseTrustProxy(bootEnv.TRUST_PROXY), logger: false }),
     { abortOnError: true },
   );
 
