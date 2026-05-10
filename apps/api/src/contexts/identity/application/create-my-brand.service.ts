@@ -34,8 +34,13 @@ export class CreateMyBrandService {
 }
 
 const isUniqueViolation = (err: unknown): boolean => {
-  if (typeof err !== 'object' || err === null) return false;
-  const e = err as { code?: string; cause?: unknown };
-  if (e.code === '23505') return true;
-  return isUniqueViolation(e.cause);
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (typeof cur === 'object' && cur !== null && !seen.has(cur)) {
+    seen.add(cur);
+    const e = cur as { code?: string; cause?: unknown };
+    if (e.code === '23505') return true;
+    cur = e.cause;
+  }
+  return false;
 };
