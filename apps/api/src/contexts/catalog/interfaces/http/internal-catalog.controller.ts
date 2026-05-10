@@ -15,6 +15,15 @@ import { UpsertCategoryService } from '../../application/upsert-category.service
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
 import { Public } from '../../../identity/interfaces/http/decorators/public.decorator';
+import { mapCatalogError } from './error-mapping';
+
+const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
+  try {
+    return await fn();
+  } catch (err) {
+    throw mapCatalogError(err);
+  }
+};
 
 const IdResponseSchema = z.object({ id: z.string().uuid() });
 class IdResponseDto extends createZodDto(IdResponseSchema) {}
@@ -55,7 +64,7 @@ export class InternalCatalogController {
   category(
     @Body(new RestoZodValidationPipe(UpsertCategoryInputDto)) input: UpsertCategoryInputDto,
   ): Promise<IdResponseDto> {
-    return this.upsertCategory.execute(input);
+    return wrap(() => this.upsertCategory.execute(input));
   }
 
   @Post('items')
@@ -66,7 +75,7 @@ export class InternalCatalogController {
   item(
     @Body(new RestoZodValidationPipe(UpsertItemInputDto)) input: UpsertItemInputDto,
   ): Promise<IdResponseDto> {
-    return this.upsertItem.execute(input);
+    return wrap(() => this.upsertItem.execute(input));
   }
 
   @Post('modifiers')
@@ -77,7 +86,7 @@ export class InternalCatalogController {
   modifier(
     @Body(new RestoZodValidationPipe(UpsertModifierInputDto)) input: UpsertModifierInputDto,
   ): Promise<IdResponseDto> {
-    return this.upsertModifier.execute(input);
+    return wrap(() => this.upsertModifier.execute(input));
   }
 
   @Post('publish')
@@ -85,6 +94,6 @@ export class InternalCatalogController {
   @ApiOkResponse({ type: PublishResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   publishMenu(): Promise<PublishResponseDto> {
-    return this.publish.execute();
+    return wrap(() => this.publish.execute());
   }
 }
