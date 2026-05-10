@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireTenantContext } from '@resto/db';
+import { getBrandId, requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { UpsertItemInput } from './dto';
 
@@ -9,9 +9,11 @@ export class UpsertItemService {
 
   async execute(input: UpsertItemInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
+    const brandId = getBrandId() ?? null;
     return this.repo.upsertItem({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
+      brandId,
       categoryId: input.categoryId,
       slug: input.slug,
       name: input.name,
