@@ -78,7 +78,7 @@ export class MeBrandsController {
 
   @Post('brands')
   @HttpCode(HttpStatus.CREATED)
-  @Permissions({ settings: ['update'] })
+  @Permissions({ brand: ['create'] })
   @ApiBody({ type: CreateBrandInputDto })
   @ApiCreatedResponse({ type: MeBrandDto })
   @ApiConflictResponse({ type: ProblemDetailsDto, description: 'brand slug taken globally' })

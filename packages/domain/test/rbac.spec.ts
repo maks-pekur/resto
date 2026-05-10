@@ -4,7 +4,7 @@ import { PERMISSIONS_STATEMENT, SYSTEM_ROLES, type Permission } from '../src/rba
 describe('RBAC permission catalogue', () => {
   it('exposes the expected resources', () => {
     expect(Object.keys(PERMISSIONS_STATEMENT).sort()).toEqual(
-      ['billing', 'menu', 'order', 'reports', 'settings', 'staff', 'tenant'].sort(),
+      ['billing', 'brand', 'menu', 'order', 'reports', 'settings', 'staff', 'tenant'].sort(),
     );
   });
 
@@ -26,9 +26,14 @@ describe('RBAC permission catalogue', () => {
     expect(SYSTEM_ROLES.admin.menu).toContain('update');
   });
 
-  it('staff can only read its own tenant', () => {
-    expect(Object.keys(SYSTEM_ROLES.staff)).toEqual(['tenant']);
+  it('admin can create / update / delete brands', () => {
+    expect(SYSTEM_ROLES.admin.brand).toEqual(['read', 'create', 'update', 'delete']);
+  });
+
+  it('staff can only read tenant + brand', () => {
+    expect(Object.keys(SYSTEM_ROLES.staff).sort()).toEqual(['brand', 'tenant']);
     expect(SYSTEM_ROLES.staff.tenant).toEqual(['read']);
+    expect(SYSTEM_ROLES.staff.brand).toEqual(['read']);
   });
 
   it('Permission type is well-typed', () => {

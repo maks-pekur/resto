@@ -16,6 +16,7 @@ export const SYSTEM_ROLES = {
     settings: ['update'],
     billing: ['read', 'update'],
     tenant: ['read', 'delete', 'transfer'],
+    brand: ['read', 'create', 'update', 'delete'],
   },
   admin: {
     menu: ['read', 'create', 'update', 'delete'],
@@ -24,9 +25,11 @@ export const SYSTEM_ROLES = {
     reports: ['read'],
     settings: ['update'],
     tenant: ['read'],
+    brand: ['read', 'create', 'update', 'delete'],
   },
   staff: {
     tenant: ['read'],
+    brand: ['read'],
   },
 } as const satisfies Record<'owner' | 'admin' | 'staff', Permission>;
 
