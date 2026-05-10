@@ -91,4 +91,30 @@ export class BrandDrizzleRepository implements BrandRepository {
       return row ? ROW_TO_SNAPSHOT(row) : null;
     });
   }
+
+  async save(snapshot: BrandSnapshot, primaryDomainHostname: string): Promise<void> {
+    await this.db.withTenant(async (tx) => {
+      await tx
+        .insert(schema.brands)
+        .values({
+          id: snapshot.id,
+          tenantId: snapshot.tenantId,
+          slug: snapshot.slug,
+          displayName: snapshot.displayName,
+          status: snapshot.status,
+        })
+        .onConflictDoNothing({ target: [schema.brands.tenantId, schema.brands.slug] });
+
+      await tx
+        .insert(schema.brandDomains)
+        .values({
+          brandId: snapshot.id,
+          tenantId: snapshot.tenantId,
+          domain: primaryDomainHostname,
+          kind: 'subdomain',
+          isPrimary: true,
+        })
+        .onConflictDoNothing({ target: schema.brandDomains.domain });
+    });
+  }
 }
