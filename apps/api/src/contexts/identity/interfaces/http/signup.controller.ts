@@ -30,6 +30,10 @@ interface SignUpResponseBody {
     status: string;
     primaryDomain: string;
   };
+  brand: {
+    id: string;
+    slug: string;
+  };
   userId: string;
 }
 
@@ -58,6 +62,10 @@ export class SignUpController {
           displayName: result.tenant.displayName,
           status: result.tenant.status,
           primaryDomain: result.tenant.primaryDomain.domain,
+        },
+        brand: {
+          id: result.brand.id,
+          slug: result.brand.slug,
         },
         userId: result.userId,
       };
