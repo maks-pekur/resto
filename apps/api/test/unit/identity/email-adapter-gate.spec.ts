@@ -3,6 +3,7 @@ import { assertEmailAdapterWired } from '../../../src/contexts/identity/identity
 
 const noopReset = (): Promise<void> => Promise.resolve();
 const noopInvite = (): Promise<void> => Promise.resolve();
+const noopVerify = (): Promise<void> => Promise.resolve();
 
 describe('assertEmailAdapterWired', () => {
   it('passes in development with no callbacks', () => {
@@ -15,7 +16,7 @@ describe('assertEmailAdapterWired', () => {
 
   it('throws in production when both callbacks are missing', () => {
     expect(() => assertEmailAdapterWired('production', {})).toThrowError(
-      /sendResetPassword.*sendInvitationEmail/,
+      /sendResetPassword.*sendInvitationEmail.*sendVerificationEmail/,
     );
   });
 
@@ -23,19 +24,29 @@ describe('assertEmailAdapterWired', () => {
     expect(() => assertEmailAdapterWired('staging', {})).toThrowError(/NODE_ENV=staging/);
   });
 
-  it('throws in production naming only the missing callback', () => {
+  it('throws in production naming only the missing callbacks', () => {
     expect(() =>
       assertEmailAdapterWired('production', { sendResetPassword: noopReset }),
-    ).toThrowError(/missing sendInvitationEmail/);
+    ).toThrowError(/missing sendInvitationEmail, sendVerificationEmail/);
   });
 
-  it('passes in production when both callbacks are provided', () => {
+  it('passes in production when all three callbacks are provided', () => {
+    expect(() =>
+      assertEmailAdapterWired('production', {
+        sendResetPassword: noopReset,
+        sendInvitationEmail: noopInvite,
+        sendVerificationEmail: noopVerify,
+      }),
+    ).not.toThrow();
+  });
+
+  it('throws in production when sendVerificationEmail is missing (RES-184)', () => {
     expect(() =>
       assertEmailAdapterWired('production', {
         sendResetPassword: noopReset,
         sendInvitationEmail: noopInvite,
       }),
-    ).not.toThrow();
+    ).toThrowError(/missing sendVerificationEmail/);
   });
 
   it('throw message points to RES-12 for the email adapter ticket', () => {
