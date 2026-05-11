@@ -18,6 +18,7 @@ import {
   type IdentityEventEmitterPort,
 } from './application/ports/identity-event-emitter.port';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
+import { RevokeUserSessionsService } from './application/revoke-user-sessions.service';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
@@ -169,7 +170,14 @@ const permissionCheckerProvider: Provider = {
       useClass: IdentityEventEmitterAdapter,
     },
     IdentityEventEmitterAdapter,
+    RevokeUserSessionsService,
   ],
-  exports: [authProvider, authDrizzleProvider, permissionCheckerProvider, IDENTITY_EVENT_EMITTER],
+  exports: [
+    authProvider,
+    authDrizzleProvider,
+    permissionCheckerProvider,
+    IDENTITY_EVENT_EMITTER,
+    RevokeUserSessionsService,
+  ],
 })
 export class IdentityCoreModule {}
