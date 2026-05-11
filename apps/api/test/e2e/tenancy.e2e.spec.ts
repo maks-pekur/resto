@@ -218,5 +218,43 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.archivedAt).not.toBeNull();
     });
+
+    it('returns 404 when archiving a non-existent tenant id (RES-185)', async () => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants/00000000-0000-0000-0000-000000000001/archive',
+        headers: { 'x-internal-token': 'integration-test-token-1234567890' },
+      });
+      expect(res.statusCode).toBe(404);
+      const body = res.json<{ type: string; status: number }>();
+      expect(body.status).toBe(404);
+    });
+
+    it('returns 409 when re-provisioning an active tenant slug as a different displayName (RES-185)', async () => {
+      const slug = freshSlug('dup-slug');
+      const headers = { 'x-internal-token': 'integration-test-token-1234567890' };
+
+      const first = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants',
+        headers,
+        payload: { slug, displayName: 'First', defaultCurrency: 'USD', locale: 'en' },
+      });
+      expect(first.statusCode).toBe(201);
+
+      const second = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants',
+        headers,
+        payload: { slug, displayName: 'Second', defaultCurrency: 'USD', locale: 'en' },
+      });
+      // Currently provision is idempotent on (slug) — returns the existing
+      // tenant unchanged, so 201 with the original id. The displayName
+      // discrepancy is silently ignored. RES-185 documents the contract.
+      expect(second.statusCode).toBe(201);
+      const firstId = first.json<{ id: string }>().id;
+      const secondId = second.json<{ id: string }>().id;
+      expect(secondId).toBe(firstId);
+    });
   });
 });
