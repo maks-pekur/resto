@@ -148,6 +148,13 @@
       "when": 1778446800000,
       "tag": "0020_brand_display_name_active_uq",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1778450400000,
+      "tag": "0021_outbox_tenant_fk_restrict",
+      "breakpoints": true
     }
   ]
 }
