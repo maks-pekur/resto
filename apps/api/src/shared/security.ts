@@ -51,6 +51,28 @@ interface RateLimitContext {
   readonly ttl: number;
 }
 
+interface IdentityBucket {
+  count: number;
+  resetAt: number;
+}
+
+const identityBuckets = new Map<string, IdentityBucket>();
+const IDENTITY_BUCKET_WINDOW_MS = 60_000;
+
+const consumeIdentityBucket = (key: string, cap: number): { allowed: boolean; ttlMs: number } => {
+  const now = Date.now();
+  const existing = identityBuckets.get(key);
+  if (!existing || existing.resetAt <= now) {
+    identityBuckets.set(key, { count: 1, resetAt: now + IDENTITY_BUCKET_WINDOW_MS });
+    return { allowed: true, ttlMs: IDENTITY_BUCKET_WINDOW_MS };
+  }
+  if (existing.count >= cap) {
+    return { allowed: false, ttlMs: existing.resetAt - now };
+  }
+  existing.count += 1;
+  return { allowed: true, ttlMs: existing.resetAt - now };
+};
+
 /**
  * Register network-layer security plugins on the underlying Fastify
  * instance. Called from main.ts before `app.listen` and from the e2e
@@ -127,34 +149,6 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
 
   const rateLimitHandler = fastify.rateLimit() as RateLimitHandler;
 
-  // Identity-aware bucket (RES-169): runs in addition to the per-IP
-  // limit on `/api/auth/sign-in/email` and `/api/auth/request-password-reset`.
-  // Keyed by `email[:ip]` so an attacker rotating IPs against one
-  // account stays throttled (per-IP alone would let them sidestep
-  // the auth-specific cap from a CGNAT pool or proxy chain).
-  const identityRateLimitHandler = fastify.rateLimit({
-    timeWindow: '1 minute',
-    max: (req: FastifyRequest): number =>
-      req.url.startsWith('/api/auth/sign-in/email')
-        ? env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN
-        : env.RATE_LIMIT_AUTH_RESET_PER_EMAIL_PER_MIN,
-    keyGenerator: (req: FastifyRequest): string => {
-      const email = readEmailFromBody(req.body);
-      // Fall back to a unique key per request so the limiter is a no-op
-      // when no email is present (we can't bucket what we can't read);
-      // the per-IP global limiter still gates these paths.
-      if (!email) return `noop:${req.ip}:${Date.now().toString()}:${Math.random().toString()}`;
-      return req.url.startsWith('/api/auth/sign-in/email')
-        ? `auth:signin:${email.toLowerCase()}:${req.ip}`
-        : `auth:reset:${email.toLowerCase()}`;
-    },
-    errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
-      message: 'Too Many Requests',
-      code: 'rate-limit-exceeded',
-      detail: `Rate limit exceeded, retry in ${Math.ceil(context.ttl / 1000).toString()} seconds`,
-    }),
-  }) as RateLimitHandler;
-
   // BA's `/api/auth/*` endpoints are mounted directly on Fastify (see
   // identity-http.module → better-auth.handler) so the NestJS Guard does
   // not see them. The preHandler hook intercepts every BA request before
@@ -168,15 +162,28 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     if (!req.url.startsWith('/api/auth/')) return;
     try {
       await rateLimitHandler(req, reply);
-      if (
-        req.url.startsWith('/api/auth/sign-in/email') ||
-        req.url.startsWith('/api/auth/request-password-reset')
-      ) {
-        await identityRateLimitHandler(req, reply);
-      }
     } catch (err) {
       const body = err as { statusCode?: number };
       reply.status(body.statusCode ?? 429).send(err);
+      return;
+    }
+
+    const isSignin = req.url.startsWith('/api/auth/sign-in/email');
+    const isReset = req.url.startsWith('/api/auth/request-password-reset');
+    if (!isSignin && !isReset) return;
+    const email = readEmailFromBody(req.body);
+    if (!email) return;
+    const cap = isSignin
+      ? env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN
+      : env.RATE_LIMIT_AUTH_RESET_PER_EMAIL_PER_MIN;
+    const key = `${isSignin ? 'signin' : 'reset'}:${email.toLowerCase()}`;
+    const { allowed, ttlMs } = consumeIdentityBucket(key, cap);
+    if (!allowed) {
+      reply.status(429).send({
+        message: 'Too Many Requests',
+        code: 'rate-limit-exceeded',
+        detail: `Rate limit exceeded, retry in ${Math.ceil(ttlMs / 1000).toString()} seconds`,
+      });
     }
   });
 

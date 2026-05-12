@@ -52,6 +52,7 @@ describe('Auth brute-force throttle (RES-137)', () => {
     process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '3';
     process.env.RATE_LIMIT_AUTH_RESET_PER_MIN = '3';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '3';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '3';
     // Keep general public/internal high so they don't shadow our per-endpoint limits in the dispatcher.
     process.env.RATE_LIMIT_PUBLIC_PER_MIN = '10000';
     process.env.RATE_LIMIT_INTERNAL_PER_MIN = '10000';
@@ -151,6 +152,29 @@ describe('Auth brute-force throttle (RES-137)', () => {
         email: `bf-signin-${randomUUID().slice(0, 8)}@example.test`,
         password: 'wrong-password-12',
       },
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.headers['content-type']).toContain('application/problem+json');
+  });
+
+  it('returns 429 on the 4th sign-in/email for the same email regardless of source IP (RES-188)', async () => {
+    const email = `bf-per-email-${randomUUID().slice(0, 8)}@example.test`;
+    for (let i = 0; i < 3; i += 1) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/auth/sign-in/email',
+        remoteAddress: `10.24.${i.toString()}.${randomUUID().slice(0, 2)}`,
+        headers: { 'content-type': 'application/json' },
+        payload: { email, password: 'wrong-password-12' },
+      });
+      expect(res.statusCode).not.toBe(429);
+    }
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/api/auth/sign-in/email',
+      remoteAddress: `10.24.99.${randomUUID().slice(0, 2)}`,
+      headers: { 'content-type': 'application/json' },
+      payload: { email, password: 'wrong-password-12' },
     });
     expect(limited.statusCode).toBe(429);
     expect(limited.headers['content-type']).toContain('application/problem+json');
