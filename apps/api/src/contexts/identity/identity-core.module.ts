@@ -2,7 +2,11 @@ import { randomUUID } from 'node:crypto';
 import { Logger, Module, type Provider } from '@nestjs/common';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
-import { buildAuth, type Auth } from './infrastructure/better-auth/auth.config';
+import {
+  buildAuth,
+  type Auth,
+  type SendVerificationEmail,
+} from './infrastructure/better-auth/auth.config';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permission-checker.adapter';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
@@ -22,6 +26,8 @@ import { RevokeUserSessionsService } from './application/revoke-user-sessions.se
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
 
+const REQUIRED_EMAIL_CALLBACKS = ['sendVerificationEmail'] as const;
+
 export const assertEmailAdapterWired = (
   nodeEnv: Env['NODE_ENV'],
   callbacks: {
@@ -31,10 +37,7 @@ export const assertEmailAdapterWired = (
   },
 ): void => {
   if (nodeEnv !== 'staging' && nodeEnv !== 'production') return;
-  const missing: string[] = [];
-  if (!callbacks.sendResetPassword) missing.push('sendResetPassword');
-  if (!callbacks.sendInvitationEmail) missing.push('sendInvitationEmail');
-  if (!callbacks.sendVerificationEmail) missing.push('sendVerificationEmail');
+  const missing = REQUIRED_EMAIL_CALLBACKS.filter((k) => !callbacks[k]);
   if (missing.length === 0) return;
   throw new Error(
     `Email adapter not wired: missing ${missing.join(', ')}. NODE_ENV=${nodeEnv} requires an email adapter — see RES-12 (Resend SMTP).`,
@@ -71,99 +74,100 @@ const authDrizzleProvider: Provider = {
   },
 };
 
+export const buildAuthFromEnv = (
+  authDb: AuthDrizzle,
+  env: Env,
+  emitter: IdentityEventEmitterPort,
+): Auth => {
+  const cookieDomain = env.AUTH_COOKIE_DOMAIN;
+  // Admin (and other browser callers) hit BA from a different origin
+  // than the api's `baseURL`; BA enforces an Origin allowlist on
+  // mutating requests. Add `ADMIN_WEB_URL` when configured.
+  const trustedOrigins: string[] = [];
+  if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
+  const verificationLogger = new Logger('IdentityEmailVerification');
+  const sendVerificationEmail: SendVerificationEmail = ({ user, url }) => {
+    verificationLogger.log({ userId: user.id, url }, 'verification email');
+    return Promise.resolve();
+  };
+  assertEmailAdapterWired(env.NODE_ENV, { sendVerificationEmail });
+  return buildAuth({
+    authDb,
+    secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
+    baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
+    trustedOrigins,
+    minPasswordLength: env.PASSWORD_MIN_LENGTH,
+    maxPasswordLength: env.PASSWORD_MAX_LENGTH,
+    requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
+    sendVerificationEmail,
+    ...(cookieDomain ? { cookieDomain } : {}),
+    onSignedOut: async (snapshot) => {
+      const tenantId = TenantId.parse(snapshot.tenantId);
+      await emitter.emit({
+        id: randomUUID(),
+        type: IdentitySignedOutV1.type,
+        version: IdentitySignedOutV1.version,
+        tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: new Date(),
+        payload: {
+          userId: snapshot.userId,
+          actorSubject: snapshot.userId,
+          tenantId,
+          sessionId: snapshot.sessionId,
+        },
+      });
+    },
+    onPasswordResetCompleted: async (snapshot) => {
+      await emitter.emit({
+        id: randomUUID(),
+        type: IdentityPasswordResetCompletedV1.type,
+        version: IdentityPasswordResetCompletedV1.version,
+        tenantId: snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: new Date(),
+        payload: {
+          userId: snapshot.userId,
+          actorSubject: snapshot.userId,
+          ...(snapshot.tenantId ? { tenantId: TenantId.parse(snapshot.tenantId) } : {}),
+          sessionRevokedCount: snapshot.sessionRevokedCount,
+        },
+      });
+    },
+    onActiveOrganizationSet: async (session, ctx) => {
+      if (!session.activeOrganizationId) return;
+      const xff = readHeader(ctx.headers, 'x-forwarded-for');
+      const xffFirst = xff?.split(',')[0]?.trim();
+      const ipAddress =
+        xffFirst !== '' && xffFirst !== undefined ? xffFirst : readHeader(ctx.headers, 'x-real-ip');
+      const userAgent = readHeader(ctx.headers, 'user-agent');
+      const tenantId = TenantId.parse(session.activeOrganizationId);
+      await emitter.emit({
+        id: randomUUID(),
+        type: IdentitySignedInV1.type,
+        version: IdentitySignedInV1.version,
+        tenantId,
+        correlationId: randomUUID(),
+        causationId: null,
+        occurredAt: new Date(),
+        payload: {
+          userId: session.userId,
+          actorSubject: session.userId,
+          tenantId,
+          ...(ipAddress ? { ipAddress } : {}),
+          ...(userAgent ? { userAgent } : {}),
+        },
+      });
+    },
+  });
+};
+
 const authProvider: Provider = {
   provide: AUTH_TOKEN,
   inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN, IDENTITY_EVENT_EMITTER],
-  useFactory: (authDb: AuthDrizzle, env: Env, emitter: IdentityEventEmitterPort): Auth => {
-    const cookieDomain = env.AUTH_COOKIE_DOMAIN;
-    // Admin (and other browser callers) hit BA from a different origin
-    // than the api's `baseURL`; BA enforces an Origin allowlist on
-    // mutating requests. Add `ADMIN_WEB_URL` when configured.
-    const trustedOrigins: string[] = [];
-    if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
-    assertEmailAdapterWired(env.NODE_ENV, {
-      sendResetPassword: undefined,
-      sendInvitationEmail: undefined,
-      sendVerificationEmail: undefined,
-    });
-    const verificationLogger = new Logger('IdentityEmailVerification');
-    return buildAuth({
-      authDb,
-      secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
-      baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
-      trustedOrigins,
-      minPasswordLength: env.PASSWORD_MIN_LENGTH,
-      maxPasswordLength: env.PASSWORD_MAX_LENGTH,
-      requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
-      sendVerificationEmail: ({ user, url }) => {
-        verificationLogger.log({ userId: user.id, url }, 'verification email');
-        return Promise.resolve();
-      },
-      ...(cookieDomain ? { cookieDomain } : {}),
-      onSignedOut: async (snapshot) => {
-        const tenantId = TenantId.parse(snapshot.tenantId);
-        await emitter.emit({
-          id: randomUUID(),
-          type: IdentitySignedOutV1.type,
-          version: IdentitySignedOutV1.version,
-          tenantId,
-          correlationId: randomUUID(),
-          causationId: null,
-          occurredAt: new Date(),
-          payload: {
-            userId: snapshot.userId,
-            actorSubject: snapshot.userId,
-            tenantId,
-            sessionId: snapshot.sessionId,
-          },
-        });
-      },
-      onPasswordResetCompleted: async (snapshot) => {
-        await emitter.emit({
-          id: randomUUID(),
-          type: IdentityPasswordResetCompletedV1.type,
-          version: IdentityPasswordResetCompletedV1.version,
-          tenantId: snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null,
-          correlationId: randomUUID(),
-          causationId: null,
-          occurredAt: new Date(),
-          payload: {
-            userId: snapshot.userId,
-            actorSubject: snapshot.userId,
-            ...(snapshot.tenantId ? { tenantId: TenantId.parse(snapshot.tenantId) } : {}),
-            sessionRevokedCount: snapshot.sessionRevokedCount,
-          },
-        });
-      },
-      onActiveOrganizationSet: async (session, ctx) => {
-        if (!session.activeOrganizationId) return;
-        const xff = readHeader(ctx.headers, 'x-forwarded-for');
-        const xffFirst = xff?.split(',')[0]?.trim();
-        const ipAddress =
-          xffFirst !== '' && xffFirst !== undefined
-            ? xffFirst
-            : readHeader(ctx.headers, 'x-real-ip');
-        const userAgent = readHeader(ctx.headers, 'user-agent');
-        const tenantId = TenantId.parse(session.activeOrganizationId);
-        await emitter.emit({
-          id: randomUUID(),
-          type: IdentitySignedInV1.type,
-          version: IdentitySignedInV1.version,
-          tenantId,
-          correlationId: randomUUID(),
-          causationId: null,
-          occurredAt: new Date(),
-          payload: {
-            userId: session.userId,
-            actorSubject: session.userId,
-            tenantId,
-            ...(ipAddress ? { ipAddress } : {}),
-            ...(userAgent ? { userAgent } : {}),
-          },
-        });
-      },
-    });
-  },
+  useFactory: buildAuthFromEnv,
 };
 
 const permissionCheckerProvider: Provider = {

@@ -7,11 +7,11 @@ import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
 
-type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
-type SendResetPassword = NonNullable<
+export type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
+export type SendResetPassword = NonNullable<
   NonNullable<BetterAuthOptions['emailAndPassword']>['sendResetPassword']
 >;
-type SendVerificationEmail = NonNullable<
+export type SendVerificationEmail = NonNullable<
   NonNullable<BetterAuthOptions['emailVerification']>['sendVerificationEmail']
 >;
 
