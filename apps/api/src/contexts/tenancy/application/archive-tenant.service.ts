@@ -22,12 +22,19 @@ export class ArchiveTenantService {
     if (!tenant) {
       throw new TenantNotFoundError(rawId);
     }
-    const result = await this.revoker.revokeAllSessionsForTenant(id);
-    this.logger.log(
-      { tenantId: id, revokedSessionsCount: result.revokedSessionsCount },
-      'Revoked operator sessions ahead of tenant archive',
-    );
     tenant.archive();
     await this.repo.save(tenant);
+    try {
+      const result = await this.revoker.revokeAllSessionsForTenant(id);
+      this.logger.log(
+        { tenantId: id, revokedSessionsCount: result.revokedSessionsCount },
+        'Revoked operator sessions after tenant archive',
+      );
+    } catch (err) {
+      this.logger.error(
+        { tenantId: id, err },
+        'Session revocation failed after archive — sessions persist but AuthGuard blocks access to the archived tenant',
+      );
+    }
   }
 }
