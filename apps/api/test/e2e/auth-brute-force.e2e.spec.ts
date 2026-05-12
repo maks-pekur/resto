@@ -157,6 +157,29 @@ describe('Auth brute-force throttle (RES-137)', () => {
     expect(limited.headers['content-type']).toContain('application/problem+json');
   });
 
+  it('returns 429 on the 4th /v1/signup request from the same IP within a minute (RES-189)', async () => {
+    const remoteAddress = `10.25.${randomUUID().slice(0, 2)}.${randomUUID().slice(2, 4)}`;
+    for (let i = 0; i < 3; i += 1) {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/signup',
+        remoteAddress,
+        headers: { 'content-type': 'application/json' },
+        payload: { email: 'bad', password: 'x', displayName: 'X' },
+      });
+      expect(res.statusCode).not.toBe(429);
+    }
+    const limited = await app.inject({
+      method: 'POST',
+      url: '/v1/signup',
+      remoteAddress,
+      headers: { 'content-type': 'application/json' },
+      payload: { email: 'bad', password: 'x', displayName: 'X' },
+    });
+    expect(limited.statusCode).toBe(429);
+    expect(limited.headers['content-type']).toContain('application/problem+json');
+  });
+
   it('returns 429 on the 4th sign-in/email for the same email regardless of source IP (RES-188)', async () => {
     const email = `bf-per-email-${randomUUID().slice(0, 8)}@example.test`;
     for (let i = 0; i < 3; i += 1) {
