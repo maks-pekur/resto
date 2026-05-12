@@ -51,7 +51,7 @@ describe('ArchiveTenantService', () => {
     expect(repo.save).toHaveBeenCalledWith(tenant);
   });
 
-  it('revokes all member sessions before persisting the archive (RES-128)', async () => {
+  it('persists the archive before revoking sessions', async () => {
     const tenant = buildTenant();
     repo.findById = vi.fn().mockResolvedValue(tenant);
     revoker.revokeAllSessionsForTenant = vi.fn().mockResolvedValue({ revokedSessionsCount: 3 });
@@ -59,19 +59,28 @@ describe('ArchiveTenantService', () => {
     await service.execute(TENANT_UUID);
 
     expect(revoker.revokeAllSessionsForTenant).toHaveBeenCalledWith(TENANT_UUID);
-    expect(vi.mocked(revoker.revokeAllSessionsForTenant).mock.invocationCallOrder[0]).toBeLessThan(
-      vi.mocked(repo.save).mock.invocationCallOrder[0] ?? Infinity,
+    expect(vi.mocked(repo.save).mock.invocationCallOrder[0] ?? Infinity).toBeLessThan(
+      vi.mocked(revoker.revokeAllSessionsForTenant).mock.invocationCallOrder[0] ?? Infinity,
     );
   });
 
-  it('aborts the archive when revocation fails — tenant stays active', async () => {
+  it('skips revocation and keeps the tenant active when save fails', async () => {
+    const tenant = buildTenant();
+    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.save = vi.fn().mockRejectedValue(new Error('save failed'));
+
+    await expect(service.execute(TENANT_UUID)).rejects.toThrow(/save failed/);
+    expect(revoker.revokeAllSessionsForTenant).not.toHaveBeenCalled();
+  });
+
+  it('completes archive even when revocation fails — sessions are best-effort cleanup', async () => {
     const tenant = buildTenant();
     repo.findById = vi.fn().mockResolvedValue(tenant);
     revoker.revokeAllSessionsForTenant = vi.fn().mockRejectedValue(new Error('BA down'));
 
-    await expect(service.execute(TENANT_UUID)).rejects.toThrow(/BA down/);
-    expect(tenant.toSnapshot().status).toBe('active');
-    expect(repo.save).not.toHaveBeenCalled();
+    await expect(service.execute(TENANT_UUID)).resolves.toBeUndefined();
+    expect(repo.save).toHaveBeenCalledWith(tenant);
+    expect(tenant.toSnapshot().status).toBe('archived');
   });
 
   it('throws TenantNotFoundError when the tenant does not exist', async () => {
