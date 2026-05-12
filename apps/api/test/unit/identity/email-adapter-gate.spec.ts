@@ -14,23 +14,29 @@ describe('assertEmailAdapterWired', () => {
     expect(() => assertEmailAdapterWired('test', {})).not.toThrow();
   });
 
-  it('throws in production when both callbacks are missing', () => {
+  it('throws in production when sendVerificationEmail is missing', () => {
     expect(() => assertEmailAdapterWired('production', {})).toThrowError(
-      /sendResetPassword.*sendInvitationEmail.*sendVerificationEmail/,
+      /missing sendVerificationEmail/,
     );
   });
 
-  it('throws in staging when both callbacks are missing', () => {
+  it('throws in staging when sendVerificationEmail is missing', () => {
     expect(() => assertEmailAdapterWired('staging', {})).toThrowError(/NODE_ENV=staging/);
   });
 
-  it('throws in production naming only the missing callbacks', () => {
+  it('still throws in production when only sendResetPassword is wired', () => {
     expect(() =>
       assertEmailAdapterWired('production', { sendResetPassword: noopReset }),
-    ).toThrowError(/missing sendInvitationEmail, sendVerificationEmail/);
+    ).toThrowError(/missing sendVerificationEmail/);
   });
 
-  it('passes in production when all three callbacks are provided', () => {
+  it('passes in production when sendVerificationEmail is wired (RES-187)', () => {
+    expect(() =>
+      assertEmailAdapterWired('production', { sendVerificationEmail: noopVerify }),
+    ).not.toThrow();
+  });
+
+  it('passes in production when all three callbacks are wired', () => {
     expect(() =>
       assertEmailAdapterWired('production', {
         sendResetPassword: noopReset,
@@ -40,7 +46,7 @@ describe('assertEmailAdapterWired', () => {
     ).not.toThrow();
   });
 
-  it('throws in production when sendVerificationEmail is missing (RES-184)', () => {
+  it('throws in production when sendVerificationEmail is missing even if other callbacks are wired (RES-184)', () => {
     expect(() =>
       assertEmailAdapterWired('production', {
         sendResetPassword: noopReset,
