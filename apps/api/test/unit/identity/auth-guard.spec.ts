@@ -132,6 +132,22 @@ describe('AuthGuard', () => {
     });
   });
 
+  it('falls back to AnonymousPrincipal when customer session has no ALS tenant (RES-201)', async () => {
+    mockGetTenantContext.mockReturnValue(undefined);
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const auth = buildAuthStub({
+      user: { id: 'u4', email: 'fake@phone.local', phoneNumber: '+380111111111' },
+      session: { activeOrganizationId: null },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    const ctx = buildContext(req);
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(req.principal).toEqual({ kind: 'anonymous' });
+  });
+
   it('throws Forbidden when principal.tenantId mismatches ALS tenantId', async () => {
     mockGetTenantContext.mockReturnValue({ tenantId: 't-OTHER' });
     const reflector = new Reflector();

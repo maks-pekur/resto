@@ -14,7 +14,12 @@ import { member as memberTable } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../../../identity.tokens';
 import type { Auth } from '../../../infrastructure/better-auth/auth.config';
 import type { AuthDrizzle } from '../../../infrastructure/better-auth/auth-db';
-import type { CustomerPrincipal, OperatorPrincipal, Principal } from '../../../domain/principal';
+import type {
+  AnonymousPrincipal,
+  CustomerPrincipal,
+  OperatorPrincipal,
+  Principal,
+} from '../../../domain/principal';
 import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
@@ -166,11 +171,15 @@ const buildPrincipal = (
   alsTenantId: string | undefined,
 ): Principal => {
   if (session.user.phoneNumber) {
+    if (!alsTenantId) {
+      const anonymous: AnonymousPrincipal = { kind: 'anonymous' };
+      return anonymous;
+    }
     const customer: CustomerPrincipal = {
       kind: 'customer',
       userId: session.user.id,
       phone: session.user.phoneNumber,
-      tenantId: alsTenantId ?? '',
+      tenantId: alsTenantId,
     };
     return customer;
   }
