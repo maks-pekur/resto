@@ -34,11 +34,12 @@ export interface BrandProvisioningPort {
   ): Promise<readonly IdentityBrandView[]>;
   provision(input: ProvisionIdentityBrandInput): Promise<IdentityBrandView>;
   /**
-   * Cross-tenant slug lookup used by the live availability check
-   * (RES-180). Returns the slugs of every active brand whose slug is
-   * exactly `prefix` or starts with `prefix-`. Identity passes the
-   * result to its suggestion service; the adapter never decides what
-   * "available" means.
+   * Cross-tenant slug lookup used by the live availability check.
+   * Returns up to `limit` slugs of active brands whose slug is exactly
+   * `prefix` or starts with `prefix-`. Identity passes the result to
+   * its suggestion service; the adapter never decides what "available"
+   * means. The limit bounds the work the unindexed LIKE scan does on a
+   * pathological prefix.
    */
-  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]>;
+  findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]>;
 }

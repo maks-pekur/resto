@@ -10,6 +10,7 @@ import {
   Inject,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBody,
@@ -31,6 +32,7 @@ import { ListMyBrandsService } from '../../application/list-my-brands.service';
 import { BrandDisplayNameTakenError, BrandSlugConflictError } from '../../domain/brand-errors';
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
+import { BrandSlugRateLimitGuard } from './guards/brand-slug-rate-limit.guard';
 import { Permissions, RequiresTenantContext } from '../../../../shared/auth';
 
 const MeBrandSchema = z.object({
@@ -131,6 +133,7 @@ export class MeBrandsController {
    * users who could actually use the answer.
    */
   @Get('brands/slug-availability')
+  @UseGuards(BrandSlugRateLimitGuard)
   @Permissions({ brand: ['create'] })
   @ApiQuery({ name: 'slug', type: String, required: true })
   @ApiOkResponse({ type: SlugAvailabilityResponseDto })

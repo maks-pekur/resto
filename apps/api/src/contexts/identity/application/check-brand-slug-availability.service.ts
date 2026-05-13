@@ -10,6 +10,7 @@ export interface SlugAvailabilityResult {
 }
 
 const MAX_SUGGESTION_SUFFIX = 99;
+export const SLUG_LOOKUP_LIMIT = MAX_SUGGESTION_SUFFIX + 1;
 
 /**
  * Live slug-availability check used by the admin brand-creation form
@@ -27,7 +28,7 @@ export class CheckBrandSlugAvailabilityService {
   constructor(@Inject(BRAND_PROVISIONING_PORT) private readonly brands: BrandProvisioningPort) {}
 
   async execute(slug: string): Promise<SlugAvailabilityResult> {
-    const slugs = await this.brands.findActiveSlugsByPrefix(slug);
+    const slugs = await this.brands.findActiveSlugsByPrefix(slug, SLUG_LOOKUP_LIMIT);
     const taken = new Set<string>(slugs);
     if (!taken.has(slug)) {
       return { available: true, suggestion: null };

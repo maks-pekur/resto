@@ -76,7 +76,7 @@ export interface BrandRepository {
    * Runs system-context (`withoutTenant`); the lookup is global by
    * design.
    */
-  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]>;
+  findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]>;
 }
 
 export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');
