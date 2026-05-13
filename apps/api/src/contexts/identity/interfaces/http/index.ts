@@ -15,6 +15,7 @@ export {
 export { Permissions } from './decorators/permissions.decorator';
 export { Public } from './decorators/public.decorator';
 export { RequireBrand } from './decorators/require-brand.decorator';
+export { RequiresTenantContext } from './decorators/requires-tenant-context.decorator';
 export type {
   Principal,
   OperatorPrincipal,

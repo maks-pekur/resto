@@ -1,14 +1,11 @@
-import { Controller, ForbiddenException, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { requireTenantContext } from '@resto/db';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { TenantQueriesService } from '../../application/tenant-queries.service';
-import {
-  CurrentOperator,
-  Permissions,
-  type OperatorPrincipal,
-} from '../../../identity/interfaces/http';
+import { Permissions, RequiresTenantContext } from '../../../identity/interfaces/http';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
@@ -29,15 +26,14 @@ export class TenantsController {
 
   @Get('me')
   @Permissions({ tenant: ['read'] })
+  @RequiresTenantContext()
   @ApiOkResponse({ type: TenantResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
-  async getMe(@CurrentOperator() operator: OperatorPrincipal): Promise<TenantResponseDto> {
-    if (!operator.tenantId) {
-      throw new ForbiddenException({ code: 'auth.no_active_tenant' });
-    }
+  async getMe(): Promise<TenantResponseDto> {
+    const { tenantId } = requireTenantContext();
     try {
-      return toResponse(await this.queries.getById(operator.tenantId));
+      return toResponse(await this.queries.getById(tenantId));
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -45,14 +41,13 @@ export class TenantsController {
 
   @Get('me/domains')
   @Permissions({ tenant: ['read'] })
+  @RequiresTenantContext()
   @ApiOkResponse({ type: TenantDomainDto, isArray: true })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
-  async getMeDomains(@CurrentOperator() operator: OperatorPrincipal): Promise<TenantDomainDto[]> {
-    if (!operator.tenantId) {
-      throw new ForbiddenException({ code: 'auth.no_active_tenant' });
-    }
+  async getMeDomains(): Promise<TenantDomainDto[]> {
+    const { tenantId } = requireTenantContext();
     try {
-      const domains = await this.queries.listDomains(operator.tenantId);
+      const domains = await this.queries.listDomains(tenantId);
       return domains.map((d) => ({
         id: d.id,
         domain: d.domain,

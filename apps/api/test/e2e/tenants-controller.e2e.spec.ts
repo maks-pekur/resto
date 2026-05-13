@@ -92,13 +92,35 @@ describe('TenantsController E2E', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/v1/tenants/me',
-        headers: { cookie },
+        headers: { cookie, 'x-tenant-slug': slug },
       });
 
       expect(res.statusCode).toBe(200);
       const body = res.json<{ id: string; slug: string }>();
       expect(body.id).toBe(tenant.id);
       expect(body.slug).toBe(slug);
+    });
+
+    it('rejects an operator request that never resolved a tenant context (RES-191)', async () => {
+      const slug = `notenant-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-notenant-1';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      await runBootstrap({ tenantSlug: slug, email, password, name: 'No Tenant Owner' });
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+      const res = await app.inject({
+        method: 'GET',
+        url: '/v1/tenants/me',
+        headers: { cookie },
+      });
+
+      expect(res.statusCode).toBe(403);
+      expect(res.headers['content-type']).toContain('application/problem+json');
+      const body = res.json<{ type: string; status: number }>();
+      expect(body.status).toBe(403);
+      expect(body.type).toBe('https://resto.app/problems/auth.tenant_context_missing');
     });
 
     it('does not let operator A read tenant B (cross-tenant isolation)', async () => {
@@ -120,7 +142,7 @@ describe('TenantsController E2E', () => {
       const seenByA = await app.inject({
         method: 'GET',
         url: '/v1/tenants/me',
-        headers: { cookie: cookieA },
+        headers: { cookie: cookieA, 'x-tenant-slug': slugA },
       });
       expect(seenByA.statusCode).toBe(200);
       const bodyA = seenByA.json<{ id: string; slug: string }>();
@@ -259,7 +281,7 @@ describe('TenantsController E2E', () => {
       const res = await app.inject({
         method: 'GET',
         url: '/v1/tenants/me/domains',
-        headers: { cookie },
+        headers: { cookie, 'x-tenant-slug': slug },
       });
 
       expect(res.statusCode).toBe(200);
