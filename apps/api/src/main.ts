@@ -41,7 +41,7 @@ const bootstrap = async (): Promise<void> => {
   await assertNoRlsBypass(env.DATABASE_URL);
 
   await registerSecurity(app, env);
-  applyOpenApi(app);
+  applyOpenApi(app, env);
   app.enableShutdownHooks();
 
   await app.listen({ port: env.API_PORT, host: '0.0.0.0' });

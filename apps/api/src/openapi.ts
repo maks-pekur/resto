@@ -5,6 +5,7 @@ import type { INestApplication } from '@nestjs/common';
 import { cleanupOpenApiDoc } from 'nestjs-zod';
 import type { OpenAPIObject } from '@nestjs/swagger';
 import { stringify } from 'yaml';
+import type { Env } from './config/env.schema';
 
 const buildDocumentConfig = (): ReturnType<DocumentBuilder['build']> =>
   new DocumentBuilder()
@@ -31,12 +32,15 @@ const stripInternalPaths = (doc: OpenAPIObject): OpenAPIObject => {
 };
 
 /**
- * Mount Swagger UI at `/docs` and JSON at `/docs-json`. The
+ * Mount Swagger UI at `/docs` and JSON at `/docs-json`. Only mounted in
+ * dev/test — production deploys serve the doc out of band so the public
+ * surface is not indexed by competitors or automated abuse tooling. The
  * publicly-served document hides `/internal/v1/*` (RES-175); the
  * artifact written by `emitOpenApi` keeps the full surface so admin
  * tooling can codegen against it.
  */
-export const applyOpenApi = (app: INestApplication): void => {
+export const applyOpenApi = (app: INestApplication, env: Pick<Env, 'NODE_ENV'>): void => {
+  if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') return;
   const document = stripInternalPaths(
     cleanupOpenApiDoc(SwaggerModule.createDocument(app, buildDocumentConfig())),
   );
