@@ -2,10 +2,14 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { Currency } from '@resto/domain';
 import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
 import {
-  SlugUnavailableError,
+  SignupBetterAuthFailureError,
   SignupEmailAlreadyExistsError,
+  SlugUnavailableError,
 } from '../../../src/contexts/identity/domain/signup-errors';
-import { OwnerAlreadyExistsError } from '../../../src/contexts/identity/domain/bootstrap-errors';
+import {
+  BetterAuthBootstrapFailureError,
+  OwnerAlreadyExistsError,
+} from '../../../src/contexts/identity/domain/bootstrap-errors';
 
 const TENANT_ID_DEFAULT = '11111111-1111-4111-8111-111111111111';
 const TENANT_ID_ALT = '22222222-2222-4222-8222-222222222222';
@@ -164,6 +168,45 @@ describe('SignUpService', () => {
     expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
       expect.objectContaining({ slug: expect.stringMatching(/^cafe-/) }),
     );
+  });
+
+  it('wraps BA sign-up failure as SignupBetterAuthFailureError(signUpEmail)', async () => {
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
+    bootstrapMock.execute.mockRejectedValue(
+      new BetterAuthBootstrapFailureError('signUpEmail', new Error('boom')),
+    );
+    await expect(buildService().execute(baseInput)).rejects.toMatchObject({
+      name: 'SignupBetterAuthFailureError',
+      stage: 'signUpEmail',
+    });
+  });
+
+  it('wraps BA addMember failure as SignupBetterAuthFailureError(addMember)', async () => {
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
+    bootstrapMock.execute.mockRejectedValue(
+      new BetterAuthBootstrapFailureError('addMember', new Error('boom')),
+    );
+    await expect(buildService().execute(baseInput)).rejects.toMatchObject({
+      name: 'SignupBetterAuthFailureError',
+      stage: 'addMember',
+    });
+  });
+
+  it('wraps BA signInEmail failure as SignupBetterAuthFailureError(signInEmail)', async () => {
+    tenantLookupMock.findBySlug.mockResolvedValue(null);
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView());
+    bootstrapMock.execute.mockResolvedValue({});
+    authMock.api.signInEmail.mockRejectedValueOnce(new Error('email-not-verified'));
+    const err = await buildService()
+      .execute(baseInput)
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(err).toBeInstanceOf(SignupBetterAuthFailureError);
+    expect((err as SignupBetterAuthFailureError).stage).toBe('signInEmail');
   });
 
   it('passes tenantId to setActiveOrganization', async () => {
