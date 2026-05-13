@@ -11,7 +11,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { EVENT_PUBLISHER } from '../infrastructure/nats.module';
-import { Public } from '../contexts/identity/interfaces/http';
+import { Public } from '../shared/auth';
 
 interface CheckResult {
   readonly name: string;

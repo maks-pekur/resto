@@ -14,7 +14,7 @@ import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
-import { Public } from '../../../identity/interfaces/http';
+import { Public } from '../../../../shared/auth';
 import { mapCatalogError } from './error-mapping';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {

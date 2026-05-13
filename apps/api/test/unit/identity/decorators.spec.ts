@@ -2,10 +2,7 @@ import 'reflect-metadata';
 import { describe, expect, it } from 'vitest';
 import { ForbiddenException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
-import { Public } from '../../../src/contexts/identity/interfaces/http/decorators/public.decorator';
-import { IS_PUBLIC_KEY } from '../../../src/contexts/identity/interfaces/http/guards/auth.guard';
-import { Permissions } from '../../../src/contexts/identity/interfaces/http/decorators/permissions.decorator';
-import { PERMISSIONS_KEY } from '../../../src/contexts/identity/interfaces/http/guards/permissions.guard';
+import { IS_PUBLIC_KEY, PERMISSIONS_KEY, Permissions, Public } from '../../../src/shared/auth';
 import {
   extractCurrentOperator,
   extractCurrentCustomer,

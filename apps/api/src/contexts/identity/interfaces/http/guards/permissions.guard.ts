@@ -12,8 +12,7 @@ import {
   PERMISSION_CHECKER,
   type PermissionChecker,
 } from '../../../application/ports/permission-checker.port';
-
-export const PERMISSIONS_KEY = 'identity:permissions';
+import { PERMISSIONS_KEY } from '../../../../../shared/auth';
 
 /**
  * Reads @Permissions(spec) metadata and delegates to the
