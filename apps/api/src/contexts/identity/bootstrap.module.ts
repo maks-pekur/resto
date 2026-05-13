@@ -3,6 +3,7 @@ import { ConfigModule } from '../../config/config.module';
 import { DatabaseModule } from '../../infrastructure/database.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { IdentityCoreModule } from './identity-core.module';
+import { IdentitySessionsModule } from './identity-sessions.module';
 import { BootstrapOwnerService } from './application/bootstrap-owner.service';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
@@ -21,7 +22,13 @@ import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
  * it ourselves since there is no surrounding app context.
  */
 @Module({
-  imports: [ConfigModule, DatabaseModule, TenancyModule, IdentityCoreModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    IdentityCoreModule,
+    IdentitySessionsModule,
+    TenancyModule,
+  ],
   providers: [
     BootstrapOwnerService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },

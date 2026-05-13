@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TenantId } from '@resto/domain';
-import { RevokeUserSessionsService } from '../../identity/application/revoke-user-sessions.service';
-import type { IdentityRevocationPort } from '../application/ports/identity-revocation.port';
+import type { IdentityRevocationPort } from '../../tenancy/application/ports/identity-revocation.port';
+import { RevokeUserSessionsService } from '../application/revoke-user-sessions.service';
 
 @Injectable()
 export class IdentityRevocationAdapter implements IdentityRevocationPort {
