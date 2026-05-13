@@ -11,7 +11,10 @@ import {
 
 export const mapDomainError = (err: unknown): unknown => {
   if (err instanceof TenantNotFoundError) {
-    return new NotFoundException(err.message);
+    return new NotFoundException({
+      code: 'tenancy.tenant_not_found',
+      message: err.message,
+    });
   }
   if (err instanceof TenantSlugTakenError) {
     return new ConflictException(err.message);
