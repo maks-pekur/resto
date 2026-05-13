@@ -7,6 +7,7 @@ import { HealthModule } from './health/health.module';
 import { AuditModule } from './contexts/audit/audit.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
+import { IdentitySessionsModule } from './contexts/identity/identity-sessions.module';
 import { IdentityHttpModule } from './contexts/identity/identity-http.module';
 import { SharedApiModule } from './shared/api/shared-api.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
@@ -20,6 +21,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     DatabaseModule,
     NatsModule,
     HealthModule,
+    IdentitySessionsModule,
     TenancyModule,
     IdentityHttpModule,
     CatalogModule,
