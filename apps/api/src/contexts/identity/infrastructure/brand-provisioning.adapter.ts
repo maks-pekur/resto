@@ -51,8 +51,8 @@ export class BrandProvisioningAdapter implements BrandProvisioningPort {
     }));
   }
 
-  async findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]> {
-    return this.queries.findActiveSlugsByPrefix(prefix);
+  async findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]> {
+    return this.queries.findActiveSlugsByPrefix(prefix, limit);
   }
 
   async provision(input: ProvisionIdentityBrandInput): Promise<IdentityBrandView> {

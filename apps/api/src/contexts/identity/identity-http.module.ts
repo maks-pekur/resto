@@ -11,6 +11,7 @@ import { BootstrapOwnerService } from './application/bootstrap-owner.service';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
+import { BrandSlugRateLimitGuard } from './interfaces/http/guards/brand-slug-rate-limit.guard';
 import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
 import { MeController } from './interfaces/http/me.controller';
@@ -55,6 +56,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     TenantProvisioningAdapter,
     { provide: BRAND_PROVISIONING_PORT, useClass: BrandProvisioningAdapter },
     BrandProvisioningAdapter,
+    BrandSlugRateLimitGuard,
   ],
 })
 export class IdentityHttpModule implements OnModuleInit {

@@ -26,7 +26,7 @@ export class BrandQueriesService {
    * is a global constraint and the slug-availability check must
    * surface collisions outside the caller's tenant.
    */
-  async findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]> {
-    return this.repo.findActiveSlugsByPrefix(prefix);
+  async findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]> {
+    return this.repo.findActiveSlugsByPrefix(prefix, limit);
   }
 }

@@ -144,14 +144,16 @@ export class BrandDrizzleRepository implements BrandRepository {
     });
   }
 
-  findActiveSlugsByPrefix(prefix: string): Promise<readonly string[]> {
-    // Global slug lookup (RES-180): slug uniqueness is platform-wide
+  findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]> {
+    // Global slug lookup: slug uniqueness is platform-wide
     // (`brands_slug_active_uq`). Runs `withoutTenant` because the
     // suggestion logic must see slugs across ALL tenants — RLS-scoped
     // read would only show the current tenant's brands and miss
     // collisions in others. The `LIKE` pattern escape covers `_` and
     // `%` so slugs with those characters never match unintendedly,
-    // even though the `BrandSlug` regex forbids them today.
+    // even though the `BrandSlug` regex forbids them today. The
+    // `limit` bounds work on a pathological short prefix that would
+    // otherwise scan an arbitrary slice of the brands table.
     const escaped = prefix.replace(/[\\%_]/g, (m) => `\\${m}`);
     return this.db.withoutTenant('tenancy.brands.findActiveSlugsByPrefix', async (tx) => {
       const rows = await tx
@@ -162,7 +164,8 @@ export class BrandDrizzleRepository implements BrandRepository {
             ne(schema.brands.status, 'erased'),
             or(eq(schema.brands.slug, prefix), like(schema.brands.slug, `${escaped}-%`)),
           ),
-        );
+        )
+        .limit(limit);
       return rows.map((r) => r.slug);
     });
   }
