@@ -16,18 +16,19 @@ import {
   PrincipalKindMismatchError,
   TenantMismatchError,
 } from '../../domain/errors';
+import {
+  SignupBetterAuthFailureError,
+  SignupEmailAlreadyExistsError,
+  SlugUnavailableError,
+} from '../../domain/signup-errors';
 
-/**
- * Identity → HTTP error mapping.
- *
- * The body's `code` field gives clients a stable URI suffix
- * (`auth.tenant_mismatch`, `bootstrap.weak_password`, …) that the
- * `ProblemDetailsFilter` turns into the `type` URI. Every controller
- * in this context wraps its work in `wrap()` (defined per-controller)
- * so the rest of the surface keeps throwing plain domain errors.
- */
+const SIGNUP_FAILURE_CODE: Record<SignupBetterAuthFailureError['stage'], string> = {
+  signUpEmail: 'signup.signup_failed',
+  signInEmail: 'signup.signin_failed',
+  addMember: 'signup.add_member_failed',
+};
+
 export const mapIdentityError = (err: unknown): unknown => {
-  // Bootstrap-flow errors
   if (err instanceof TenantNotFoundForBootstrapError) {
     return new NotFoundException({ code: 'bootstrap.tenant_not_found', message: err.message });
   }
@@ -41,7 +42,19 @@ export const mapIdentityError = (err: unknown): unknown => {
     return new BadGatewayException({ code: 'bootstrap.failed', message: err.message });
   }
 
-  // Auth-context errors (re-mapped from the existing IdentityDomainError tree)
+  if (err instanceof SignupEmailAlreadyExistsError) {
+    return new ConflictException({ code: 'signup.email_taken', message: err.message });
+  }
+  if (err instanceof SlugUnavailableError) {
+    return new ConflictException({ code: 'signup.slug_unavailable', message: err.message });
+  }
+  if (err instanceof SignupBetterAuthFailureError) {
+    return new BadRequestException({
+      code: SIGNUP_FAILURE_CODE[err.stage],
+      message: 'Sign-up could not be completed; please try again or sign in.',
+    });
+  }
+
   if (err instanceof TenantMismatchError) {
     return new ForbiddenException({ code: err.code, message: err.message });
   }
