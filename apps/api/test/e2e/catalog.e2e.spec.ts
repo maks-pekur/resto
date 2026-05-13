@@ -217,4 +217,21 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
+
+  it('returns 404 with code on GET /v1/menu/items with a malformed (non-UUID) id', async () => {
+    await provisionTenant(stack.app, {
+      slug: 'cafe-malformed',
+      displayName: 'Cafe Malformed',
+    });
+
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu/items/not-a-uuid',
+      headers: { 'x-tenant-slug': 'cafe-malformed' },
+    });
+    expect(res.statusCode).toBe(404);
+    const body = res.json<{ type: string; status: number }>();
+    expect(body.status).toBe(404);
+    expect(body.type).toBe('https://resto.app/problems/catalog.menu_item_not_found');
+  }, 60_000);
 });

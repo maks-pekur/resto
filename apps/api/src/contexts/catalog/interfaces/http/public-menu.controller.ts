@@ -3,9 +3,11 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { requireTenantContext } from '@resto/db';
+import { MenuItemId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
+import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
 import { Public } from '../../../../shared/auth';
@@ -121,7 +123,11 @@ export class PublicMenuController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async item(@Param('id') id: string): Promise<PublishedMenuItem> {
     requireTenantOr404();
-    return wrap(() => this.getItem.execute(id));
+    return wrap(() => {
+      const parsed = MenuItemId.safeParse(id);
+      if (!parsed.success) throw new MenuItemNotFoundError(id);
+      return this.getItem.execute(parsed.data);
+    });
   }
 }
 

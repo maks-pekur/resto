@@ -21,10 +21,12 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { TenantId } from '@resto/domain';
 import { ProvisionTenantInputDto, ScheduleOffboardingInputDto } from '../../application/dto';
 import { ProvisionTenantService } from '../../application/provision-tenant.service';
 import { ArchiveTenantService } from '../../application/archive-tenant.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
+import { TenantNotFoundError } from '../../domain/errors';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
@@ -38,6 +40,12 @@ const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
   } catch (err) {
     throw mapDomainError(err);
   }
+};
+
+const parseTenantIdOr404 = (raw: string): TenantId => {
+  const parsed = TenantId.safeParse(raw);
+  if (!parsed.success) throw new TenantNotFoundError(raw);
+  return parsed.data;
 };
 
 @ApiTags('tenancy')
@@ -70,7 +78,7 @@ export class InternalTenantsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async archive(@Param('id') id: string): Promise<void> {
-    await wrap(() => this.archiving.execute(id));
+    await wrap(() => this.archiving.execute(parseTenantIdOr404(id)));
   }
 
   @Get('scheduled-offboarding')
@@ -94,7 +102,10 @@ export class InternalTenantsController {
     input: ScheduleOffboardingInputDto,
   ): Promise<TenantResponseDto> {
     const snapshot = await wrap(() =>
-      this.offboarding.schedule({ tenantId: id, requestedBy: input.requestedBy }),
+      this.offboarding.schedule({
+        tenantId: parseTenantIdOr404(id),
+        requestedBy: input.requestedBy,
+      }),
     );
     return toResponse(snapshot);
   }
@@ -105,7 +116,9 @@ export class InternalTenantsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async cancelOffboarding(@Param('id') id: string): Promise<TenantResponseDto> {
-    const snapshot = await wrap(() => this.offboarding.cancel({ tenantId: id }));
+    const snapshot = await wrap(() =>
+      this.offboarding.cancel({ tenantId: parseTenantIdOr404(id) }),
+    );
     return toResponse(snapshot);
   }
 }

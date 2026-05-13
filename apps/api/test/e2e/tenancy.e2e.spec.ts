@@ -230,6 +230,18 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
       expect(body.status).toBe(404);
     });
 
+    it('returns 404 with tenancy.tenant_not_found on archiving a malformed (non-UUID) id', async () => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/internal/v1/tenants/not-a-uuid/archive',
+        headers: { 'x-internal-token': 'integration-test-token-1234567890' },
+      });
+      expect(res.statusCode).toBe(404);
+      const body = res.json<{ type: string; status: number }>();
+      expect(body.status).toBe(404);
+      expect(body.type).toBe('https://resto.app/problems/tenancy.tenant_not_found');
+    });
+
     it('returns 409 when re-provisioning an active tenant slug as a different displayName (RES-185)', async () => {
       const slug = freshSlug('dup-slug');
       const headers = { 'x-internal-token': 'integration-test-token-1234567890' };
