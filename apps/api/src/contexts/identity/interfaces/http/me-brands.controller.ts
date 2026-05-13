@@ -31,8 +31,7 @@ import { ListMyBrandsService } from '../../application/list-my-brands.service';
 import { BrandDisplayNameTakenError, BrandSlugConflictError } from '../../domain/brand-errors';
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
-import { Permissions } from './decorators/permissions.decorator';
-import { RequiresTenantContext } from './decorators/requires-tenant-context.decorator';
+import { Permissions, RequiresTenantContext } from '../../../../shared/auth';
 
 const MeBrandSchema = z.object({
   id: z.string().uuid(),

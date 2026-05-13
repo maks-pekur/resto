@@ -19,9 +19,7 @@ import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
 } from '../../../application/ports/tenant-lookup.port';
-import { REQUIRES_TENANT_CONTEXT_KEY } from '../decorators/requires-tenant-context.decorator';
-
-export const IS_PUBLIC_KEY = 'identity:public';
+import { IS_PUBLIC_KEY, REQUIRES_TENANT_CONTEXT_KEY } from '../../../../../shared/auth';
 
 declare module 'fastify' {
   interface FastifyRequest {

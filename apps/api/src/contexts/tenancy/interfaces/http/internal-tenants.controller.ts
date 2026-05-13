@@ -29,7 +29,7 @@ import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import { mapDomainError } from './error-mapping';
-import { Public } from '../../../identity/interfaces/http';
+import { Public } from '../../../../shared/auth';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
 const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {

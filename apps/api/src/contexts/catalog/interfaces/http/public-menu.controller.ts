@@ -8,7 +8,7 @@ import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
-import { Public } from '../../../identity/interfaces/http';
+import { Public } from '../../../../shared/auth';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
 

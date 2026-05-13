@@ -27,7 +27,7 @@ import {
   type TenantLookupPort,
 } from '../../application/ports/tenant-lookup.port';
 import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
-import { Public } from './decorators/public.decorator';
+import { Public } from '../../../../shared/auth';
 import { mapIdentityError } from './error-mapping';
 
 const BootstrapOwnerInputSchema = z.object({

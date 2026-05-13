@@ -28,7 +28,7 @@ import {
   SignupEmailAlreadyExistsError,
   SignupBetterAuthFailureError,
 } from '../../domain/signup-errors';
-import { Public } from './decorators/public.decorator';
+import { Public } from '../../../../shared/auth';
 
 const SignUpResponseSchema = z.object({
   tenant: z.object({

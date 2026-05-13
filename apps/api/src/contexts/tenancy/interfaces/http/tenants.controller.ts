@@ -5,7 +5,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { TenantQueriesService } from '../../application/tenant-queries.service';
-import { Permissions, RequiresTenantContext } from '../../../identity/interfaces/http';
+import { Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
