@@ -15,6 +15,7 @@ import { SignUpInputDto } from '../../application/dto';
 import { SignUpService } from '../../application/signup.service';
 import { mapIdentityError } from './error-mapping';
 import { Public } from '../../../../shared/auth';
+import { wrapWith } from '../../../../shared/api/wrap';
 
 const SignUpResponseSchema = z.object({
   tenant: z.object({
@@ -29,13 +30,7 @@ const SignUpResponseSchema = z.object({
 
 class SignUpResponseDto extends createZodDto(SignUpResponseSchema) {}
 
-const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (err) {
-    throw mapIdentityError(err);
-  }
-};
+const wrap = wrapWith(mapIdentityError);
 
 @ApiTags('identity')
 @Controller('v1/signup')

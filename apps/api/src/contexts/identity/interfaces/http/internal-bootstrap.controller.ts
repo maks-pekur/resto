@@ -28,6 +28,7 @@ import {
 } from '../../application/ports/tenant-lookup.port';
 import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
 import { Public } from '../../../../shared/auth';
+import { wrapWith } from '../../../../shared/api/wrap';
 import { mapIdentityError } from './error-mapping';
 
 const BootstrapOwnerInputSchema = z.object({
@@ -48,13 +49,7 @@ const BootstrapOwnerResponseSchema = z.object({
 
 class BootstrapOwnerResponseDto extends createZodDto(BootstrapOwnerResponseSchema) {}
 
-const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (err) {
-    throw mapIdentityError(err);
-  }
-};
+const wrap = wrapWith(mapIdentityError);
 
 /**
  * Bootstrap the first owner for a tenant.

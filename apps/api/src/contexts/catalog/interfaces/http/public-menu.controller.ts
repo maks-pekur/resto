@@ -11,6 +11,7 @@ import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
 import { Public } from '../../../../shared/auth';
+import { wrapWith } from '../../../../shared/api/wrap';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
 
@@ -87,13 +88,7 @@ const PublishedMenuSchema = z.object({
 class PublishedMenuDto extends createZodDto(PublishedMenuSchema) {}
 class PublishedMenuItemDto extends createZodDto(PublishedMenuItemSchema) {}
 
-const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (err) {
-    throw mapCatalogError(err);
-  }
-};
+const wrap = wrapWith(mapCatalogError);
 
 /**
  * Customer-facing read path. Tenant is resolved by the global
