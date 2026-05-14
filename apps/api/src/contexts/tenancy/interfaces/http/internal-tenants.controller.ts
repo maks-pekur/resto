@@ -32,15 +32,10 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import { mapDomainError } from './error-mapping';
 import { Public } from '../../../../shared/auth';
+import { wrapWith } from '../../../../shared/api/wrap';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
-const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (err) {
-    throw mapDomainError(err);
-  }
-};
+const wrap = wrapWith(mapDomainError);
 
 const parseTenantIdOr404 = (raw: string): TenantId => {
   const parsed = TenantId.safeParse(raw);

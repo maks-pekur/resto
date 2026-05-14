@@ -15,15 +15,10 @@ import { UpsertCategoryService } from '../../application/upsert-category.service
 import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertModifierService } from '../../application/upsert-modifier.service';
 import { Public } from '../../../../shared/auth';
+import { wrapWith } from '../../../../shared/api/wrap';
 import { mapCatalogError } from './error-mapping';
 
-const wrap = async <T>(fn: () => Promise<T>): Promise<T> => {
-  try {
-    return await fn();
-  } catch (err) {
-    throw mapCatalogError(err);
-  }
-};
+const wrap = wrapWith(mapCatalogError);
 
 const IdResponseSchema = z.object({ id: z.string().uuid() });
 class IdResponseDto extends createZodDto(IdResponseSchema) {}
