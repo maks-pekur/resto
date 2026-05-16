@@ -3,17 +3,25 @@ import { z } from 'zod';
 /**
  * Decimal-safe money amount.
  *
- * Stored and exchanged as a *string* in canonical decimal form (`'0'`,
- * `'12.34'`, `'1234567890.99'`). Never `number` — IEEE-754 silently loses
- * precision on values that look harmless (e.g. `0.1 + 0.2 !== 0.3`).
+ * Stored and exchanged as a *string*. Never `number` — IEEE-754 silently
+ * loses precision on values that look harmless (e.g. `0.1 + 0.2 !== 0.3`).
  *
  * Mirrors the Postgres `numeric(12, 2)` column emitted by `@resto/db`'s
  * `money` custom type.
  *
- * Format rules:
+ * Accepted format:
  * - integer part: `0` or no leading zeros (`123`, not `0123`)
  * - optional fractional part with 1 or 2 digits (`12`, `12.3`, `12.34`)
- * - non-negative (a separate `PriceDelta` exists for signed deltas)
+ * - non-negative (`PriceDelta` exists for signed deltas)
+ *
+ * NON-CANONICAL: this schema accepts `'0'`, `'0.0'`, and `'0.00'` as
+ * separate-but-equal representations of zero, and `'10'` / `'10.0'` /
+ * `'10.00'` likewise. Two equal Money values can therefore have unequal
+ * string forms — callers comparing for equality must normalise first.
+ * Canonicalisation at parse-time is on the packages/domain backlog
+ * (packages/domain/CLAUDE.md WR on canonical form). Mismatch with the
+ * `numeric(12,2)` upper bound (no max length enforced here) is also
+ * tracked there.
  */
 const moneyAmountRegex = /^(?:0|[1-9]\d*)(?:\.\d{1,2})?$/;
 

@@ -47,15 +47,34 @@ export class InMemoryInboxTracker implements InboxTracker {
 }
 
 /**
- * Wrap a handler with dedup semantics: if the tracker has seen this
- * `(consumer, eventId)` pair, the inner handler is skipped and the
- * envelope is dropped silently. Subscribers should chain this onto every
- * registered handler.
+ * @deprecated Persistence-only dedup; does NOT prevent duplicate handler
+ * invocation. See ADR-0020 I-5 and packages/events/CLAUDE.md.
  *
- * Failure semantics: when the inner handler throws, the dedup record is
- * NOT persisted — the next delivery retries. Two replicas can race past
- * the `hasSeen` check, but the atomic `markProcessed` guarantees exactly
- * one persisted record per (consumer, eventId).
+ * Wraps a handler so that on a "seen" `(consumer, eventId)` the inner
+ * handler is skipped. The dedup check, the handler, and the
+ * `markProcessed` write happen in **three separate database
+ * transactions**. Two replicas (or one replica + one crash-recovery
+ * redelivery) can both observe `hasSeen === false`, both run the handler
+ * with full side effects (emails, payments, audit rows, downstream
+ * publishes), and only one of the `markProcessed` calls wins — the
+ * persisted record is unique, but the side effects are NOT.
+ *
+ * Use this only when the handler is genuinely idempotent by construction
+ * (idempotency key passed to the external system, or the handler's only
+ * side effect is an `ON CONFLICT DO NOTHING` insert it manages itself).
+ *
+ * The preferred wrapper is `runDeduped(envelope, async (tx) => …)`
+ * (planned, ADR-0020 I-5), which performs
+ * `INSERT INTO inbox_processed VALUES (…) ON CONFLICT DO NOTHING
+ * RETURNING 1` inside the SAME transaction as the handler's DB side
+ * effects and short-circuits when zero rows. That converts at-least-once
+ * delivery into at-most-once handler invocation for handlers whose side
+ * effects are confined to the database.
+ *
+ * Failure semantics today: when the inner handler throws, the dedup
+ * record is NOT persisted — the next delivery retries. The atomic
+ * `markProcessed` guarantees exactly one persisted record per
+ * (consumer, eventId), but says nothing about handler runs.
  */
 export const withInboxDedup = (
   tracker: InboxTracker,

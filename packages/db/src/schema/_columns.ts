@@ -12,12 +12,21 @@ export const pkUuid = () =>
     .default(sql`gen_random_uuid()`);
 
 /**
- * Tenant foreign key. Every domain table carries this column and every
+ * Tenant id column. Every domain table carries this column and every
  * index leads with it. RLS policies reference it via
  * `current_setting('app.current_tenant')::uuid`.
  *
- * `onDelete: 'restrict'` — we do not delete tenants in place; archiving
- * sets `archived_at` and preserves history.
+ * NOTE: this helper does NOT declare the FK — each table builds its own
+ * `tenants_tenant_fk` so the per-table `onDelete` is explicit at the
+ * call site. Current convention across the schema is `onDelete: 'cascade'`,
+ * which is consistent with the explicit `tenancy_erase_tenant` SQL
+ * function being the authorised path for tenant data removal (live
+ * deletes propagate; GDPR-class erasure is performed under
+ * `withoutTenant` by that function).
+ *
+ * Historical doc claimed `onDelete: 'restrict'` here — that was the
+ * stated intent but never the implementation. ADR-0020 tracks
+ * standardising the FK behaviour as tech debt.
  */
 export const tenantIdColumn = () => uuid('tenant_id').notNull();
 

@@ -40,7 +40,7 @@ export const TENANT_RESERVED_SLUGS: readonly string[] = [
   'www',
 ];
 
-const RESERVED_SET = new Set(TENANT_RESERVED_SLUGS);
+const RESERVED_SET = new Set(TENANT_RESERVED_SLUGS.map((s) => s.toLowerCase()));
 
 /**
  * Tenant slug. Stricter than the generic `Slug`:
@@ -59,5 +59,9 @@ const tenantSlugRegex = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
 export const TenantSlug = z
   .string()
   .regex(tenantSlugRegex, 'must be 3..64 lowercase alphanumeric/hyphen chars without edge hyphens')
-  .refine((v) => !RESERVED_SET.has(v), 'is a reserved platform slug');
+  // Reserved-list check is case-insensitive: the regex guarantees lowercase input
+  // in normal use, but a request that bypasses the regex (e.g. internal callers
+  // constructing a TenantSlug from a header) still gets rejected on `Admin` /
+  // `ADMIN` etc. Defence in depth, per packages/domain/CLAUDE.md.
+  .refine((v) => !RESERVED_SET.has(v.toLowerCase()), 'is a reserved platform slug');
 export type TenantSlug = z.infer<typeof TenantSlug>;

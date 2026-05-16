@@ -4,7 +4,8 @@
  * imported directly from outside the package.
  */
 export { Tenant, TenantStatus } from './tenant';
-export { User, UserRole } from './user';
+// `User` / `UserRole` were removed when identity moved to Better Auth
+// (ADR-0013). BA owns the user table; the domain does not project it.
 export { MenuCategory } from './menu-category';
 export { MenuItem, MenuItemStatus } from './menu-item';
 export { MenuVariant } from './menu-variant';

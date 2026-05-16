@@ -9,7 +9,6 @@
 export {
   TenantId,
   BrandId,
-  UserId,
   MenuCategoryId,
   MenuItemId,
   MenuModifierId,
@@ -31,8 +30,6 @@ export {
   MenuVariant,
   Tenant,
   TenantStatus,
-  User,
-  UserRole,
 } from './schema';
 
 export * from './rbac';

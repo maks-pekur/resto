@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MenuCategory, MenuItem, MenuModifier, MenuVariant, Tenant, User } from '../src';
+import { MenuCategory, MenuItem, MenuModifier, MenuVariant, Tenant } from '../src';
 
 const UUID_A = '00000000-0000-4000-8000-000000000001';
 const UUID_B = '00000000-0000-4000-8000-000000000002';
@@ -39,30 +39,6 @@ describe('Tenant', () => {
 
   it('rejects a non-uuid id', () => {
     expect(() => Tenant.parse({ ...valid, id: 'not-a-uuid' })).toThrow();
-  });
-});
-
-describe('User', () => {
-  const valid = {
-    id: UUID_B,
-    tenantId: UUID_A,
-    keycloakSubject: 'kc-sub-123',
-    email: 'manager@acme.test',
-    displayName: 'Acme Manager',
-    role: 'manager' as const,
-    ...baseTimestamps,
-  };
-
-  it('parses a valid user', () => {
-    expect(User.parse(valid)).toEqual(valid);
-  });
-
-  it('rejects an invalid email', () => {
-    expect(() => User.parse({ ...valid, email: 'not-an-email' })).toThrow();
-  });
-
-  it('rejects an unknown role', () => {
-    expect(() => User.parse({ ...valid, role: 'cashier' })).toThrow();
   });
 });
 

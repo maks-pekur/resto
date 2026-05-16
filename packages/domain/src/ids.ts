@@ -18,8 +18,10 @@ export type TenantId = z.infer<typeof TenantId>;
 export const BrandId = z.string().uuid().brand<'BrandId'>();
 export type BrandId = z.infer<typeof BrandId>;
 
-export const UserId = z.string().uuid().brand<'UserId'>();
-export type UserId = z.infer<typeof UserId>;
+// `UserId` was removed when identity moved to Better Auth (ADR-0013).
+// BA user ids are opaque `text` (not UUIDs); the domain no longer brands
+// them. If a typed user id surface is needed in the future, model it
+// after BA's shape (`text`, not `uuid`).
 
 export const MenuCategoryId = z.string().uuid().brand<'MenuCategoryId'>();
 export type MenuCategoryId = z.infer<typeof MenuCategoryId>;
