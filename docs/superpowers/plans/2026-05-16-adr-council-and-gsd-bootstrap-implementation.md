@@ -4,7 +4,7 @@
 
 **Goal:** Add a `/adr-council` advisory-council skill (5 personas) and bootstrap minimal GSD infrastructure (ROADMAP.md, ingested ADR decisions, ADR-governance rule), so future ADRs get structured cross-perspective review before transition to `accepted`.
 
-**Architecture:** Project-local skill in `.claude/skills/adr-council/SKILL.md` orchestrates 5 parallel persona subagents (cto, product-strategist, skeptic, investor, growth-marketer), aggregates findings into `docs/adr/NNNN-*-COUNCIL.md`. ROADMAP.md is derived manually from existing ADRs in GSD-native shape. One-time `gsd-ingest-docs` run populates `.planning/decisions/` cache. Council is **advisory only** — user is the final decision-maker.
+**Architecture:** Project-local skill in `.claude/skills/adr-council/SKILL.md` orchestrates 5 parallel persona subagents (cto, product-strategist, skeptic, investor, growth-marketer), aggregates findings into `docs/adr/NNNN-*-COUNCIL.md`. ROADMAP.md is derived manually from existing ADRs in GSD-native shape. One-time `gsd-ingest-docs` run populates `.planning/intel/` cache. Council is **advisory only** — user is the final decision-maker.
 
 **Tech Stack:** Markdown (skill body, ROADMAP, CLAUDE.md, COUNCIL.md), YAML frontmatter, project-local Claude Code skill format, `gsd-ingest-docs` skill (existing), `persona-*` subagents (existing).
 
@@ -20,13 +20,13 @@
 
 ## Files to be touched
 
-| File                                    | Action         | Committed?                       | Owner task        |
-| --------------------------------------- | -------------- | -------------------------------- | ----------------- |
-| `.claude/skills/adr-council/SKILL.md`   | create         | ✅ yes                           | Task 1            |
-| `ROADMAP.md` (root)                     | create         | ✅ yes                           | Task 2            |
-| `CLAUDE.md` (root)                      | modify         | ❌ no (gitignored per `e8b69ab`) | Task 3            |
-| `.planning/decisions/` (dir + contents) | tool-generated | ❌ no (gitignored)               | Task 4            |
-| `docs/adr/0020-*-COUNCIL.md`            | create         | ✅ yes                           | Task 5 (deferred) |
+| File                                  | Action         | Committed?                       | Owner task        |
+| ------------------------------------- | -------------- | -------------------------------- | ----------------- |
+| `.claude/skills/adr-council/SKILL.md` | create         | ✅ yes                           | Task 1            |
+| `ROADMAP.md` (root)                   | create         | ✅ yes                           | Task 2            |
+| `CLAUDE.md` (root)                    | modify         | ❌ no (gitignored per `e8b69ab`) | Task 3            |
+| `.planning/intel/` (dir + contents)   | tool-generated | ❌ no (gitignored)               | Task 4            |
+| `docs/adr/0020-*-COUNCIL.md`          | create         | ✅ yes                           | Task 5 (deferred) |
 
 ---
 
@@ -486,19 +486,19 @@ Expected: NO output (file is gitignored, modifications don't appear in status). 
 
 **Files:**
 
-- Tool-generated: `.planning/decisions/` directory and contents (gitignored — no commit).
+- Tool-generated: `.planning/intel/` directory and contents (gitignored — no commit).
 
 **Source of truth:** Spec section "`gsd-ingest-docs` bootstrap". Skill encapsulates its own contract; we invoke and accept the output without trying to predict its shape.
 
-- [ ] **Step 1: Confirm `.planning/decisions/` does not yet exist**
+- [ ] **Step 1: Confirm `.planning/intel/` does not yet exist**
 
 Run:
 
 ```bash
-test -d .planning/decisions && echo "EXISTS — gsd-ingest-docs has run before" || echo "ok, fresh"
+test -d .planning/intel && echo "EXISTS — gsd-ingest-docs has run before" || echo "ok, fresh"
 ```
 
-Expected: `ok, fresh`. If `EXISTS` — read the existing contents first (`ls .planning/decisions/`); rerunning gsd-ingest-docs is idempotent but may overwrite. Confirm with user before continuing.
+Expected: `ok, fresh`. If `EXISTS` — read the existing contents first (`ls .planning/intel/`); rerunning gsd-ingest-docs is idempotent but may overwrite. Confirm with user before continuing.
 
 - [ ] **Step 2: Invoke `gsd-ingest-docs` skill**
 
@@ -509,7 +509,7 @@ Use the `Skill` tool with `skill: "gsd-ingest-docs"`. No arguments needed — sk
 Run:
 
 ```bash
-ls -la .planning/decisions/
+ls -la .planning/intel/
 ```
 
 Expected: directory exists, contains synthesized files from the skill. Exact filenames depend on the skill — do not assume a specific layout.
@@ -517,7 +517,7 @@ Expected: directory exists, contains synthesized files from the skill. Exact fil
 Check for conflict report (skill convention; may not exist if no conflicts):
 
 ```bash
-test -f .planning/decisions/INGEST-CONFLICTS.md && cat .planning/decisions/INGEST-CONFLICTS.md || echo "no conflicts file"
+test -f .planning/intel/INGEST-CONFLICTS.md && cat .planning/intel/INGEST-CONFLICTS.md || echo "no conflicts file"
 ```
 
 If conflicts exist: read them, document the unresolved blockers (if any) in the conversation summary. They do NOT block this task — they inform future ADR work.
@@ -648,7 +648,7 @@ Verified end-to-end:
 1. `/adr-council 0020` runs end-to-end without errors and produces a valid `docs/adr/0020-*-COUNCIL.md` with all required frontmatter fields. (Task 5 Step 4.)
 2. `ROADMAP.md` is committed and all cross-references resolve. (Task 2 Step 6.)
 3. Root `CLAUDE.md` contains the "ADR governance" section locally (not committed). (Task 3 Step 3.)
-4. `.planning/decisions/` is populated, no unresolved conflicts. (Task 4 Step 3.)
+4. `.planning/intel/` is populated, no unresolved conflicts. (Task 4 Step 3.)
 5. `.claude/skills/adr-council/SKILL.md` is self-contained and a future reader can invoke without reading the spec. (Task 1 — verified by skill body content.)
 
 ---

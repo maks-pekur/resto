@@ -41,7 +41,7 @@ RestOS/
 ├── ROADMAP.md                           ★ NEW (committed; GSD-native shape)
 ├── .planning/
 │   ├── reviews/                         (existing, gitignored)
-│   └── decisions/                       ★ NEW dir (produced by gsd-ingest-docs)
+│   └── intel/                           ★ NEW dir (produced by gsd-ingest-docs)
 └── docs/
     ├── superpowers/
     │   └── specs/
@@ -53,7 +53,7 @@ RestOS/
 
 **Committed:** `ROADMAP.md`, `.claude/skills/adr-council/`, `docs/adr/0020-*-COUNCIL.md`, this spec file.
 
-**Gitignored** (per the project's existing `e8b69ab chore: keep CLAUDE.md and .claude private` policy): root `CLAUDE.md` changes live locally only. `.planning/decisions/` is also gitignored (ephemeral cache, same as the rest of `.planning/`).
+**Gitignored** (per the project's existing `e8b69ab chore: keep CLAUDE.md and .claude private` policy): root `CLAUDE.md` changes live locally only. `.planning/intel/` is also gitignored (ephemeral cache, same as the rest of `.planning/`).
 
 ### Data flow at `/adr-council 0020`
 
@@ -156,7 +156,7 @@ Body sections (in order):
 Run **once** as part of the bootstrap. The skill encapsulates its own contract:
 
 - **Input:** `docs/adr/*.md` (the 20 existing ADRs).
-- **Output:** `.planning/decisions/` directory (gitignored, ephemeral). Structure is determined by the skill — this spec does not predict it.
+- **Output:** `.planning/intel/` directory (gitignored, ephemeral). Structure is determined by the skill — this spec does not predict it.
 - **Behavior:** classifies each ADR (type, scope summary, cross-references), synthesizes consolidated context for downstream GSD agents, detects unresolved conflicts.
 - **Idempotent** — safe to re-run after new ADRs are added.
 
@@ -273,7 +273,7 @@ Bootstrap is successful if **all five** hold:
 1. `/adr-council 0020` runs end-to-end without errors and produces a valid `docs/adr/0020-*-COUNCIL.md` with the frontmatter shape specified above (`adr`, `personas`, `synthesis`, `unanimous-blockers`).
 2. `ROADMAP.md` is committed and all cross-references to `docs/adr/` resolve.
 3. Root `CLAUDE.md` contains the "ADR governance" section (locally — not committed).
-4. `.planning/decisions/` is populated by `gsd-ingest-docs` with no unresolved conflicts in its output.
+4. `.planning/intel/` is populated by `gsd-ingest-docs` with no unresolved conflicts in its output.
 5. The skill file `.claude/skills/adr-council/SKILL.md` is self-contained — a future reader can understand how to invoke and what to expect without reading this spec.
 
 ## Open questions deferred
