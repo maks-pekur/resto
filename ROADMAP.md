@@ -2,9 +2,9 @@
 
 ## Current state
 
-- **Active milestone:** MVP-2 (Phase D — customer phone+OTP mobile flow, not yet started)
+- **Active milestone:** MVP-2 — Phases A-C and E-F complete; Phase D (customer phone+OTP mobile) not yet started
 - **Last shipped:** MVP-1 (per [ADR-0010](./docs/adr/0010-mvp-1-scope.md))
-- **Open technical debt:** [.planning/reviews/2026-05-16-full-codebase/INDEX.md](./.planning/reviews/2026-05-16-full-codebase/INDEX.md) — 34 P0/P1 from the 2026-05-16 full-codebase review
+- **Open technical debt:** [.planning/reviews/2026-05-16-full-codebase/INDEX.md](./.planning/reviews/2026-05-16-full-codebase/INDEX.md) — 34 P0/P1 from the 2026-05-16 full-codebase review (local-only — regenerate via `gsd-code-review` or full-codebase review if absent)
 
 ## MVP-1 — done
 
