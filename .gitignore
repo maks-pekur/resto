@@ -53,6 +53,14 @@ generated/
 !packages/api-client/src/generated/**
 
 # Claude session settings and local CLAUDE.md instructions
-.claude/
+# Exception: .claude/skills/ is committed (project-local skill definitions)
+.claude/settings.local.json
+.claude/hooks/
+.claude/superpowers/
+.claude/PROJECT-MAP.md
 CLAUDE.md
 **/CLAUDE.md
+
+# GSD planning artifacts (ephemeral; learnings extracted to ADRs + memory)
+.planning/
+SPEC.md
