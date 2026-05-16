@@ -84,12 +84,17 @@ export const envSchema = z
      */
     AUDIT_ERASURE_SALT: z.string().min(32).optional(),
 
-    /** S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev). */
-    S3_ENDPOINT: z.string().url().default('http://localhost:9000'),
+    /**
+     * S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev).
+     * Endpoint and credentials are required in non-dev (enforced by
+     * superRefine below); dev/test pulls them from the root `.env`
+     * file alongside the docker-compose MinIO stack. ADR-0020 I-3.
+     */
+    S3_ENDPOINT: z.string().url().optional(),
     S3_REGION: z.string().default('us-east-1'),
     S3_BUCKET: z.string().default('resto-dev'),
-    S3_ACCESS_KEY: z.string().default('minio'),
-    S3_SECRET_KEY: z.string().default('minio_dev_password'),
+    S3_ACCESS_KEY: z.string().optional(),
+    S3_SECRET_KEY: z.string().optional(),
 
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
     OTEL_SERVICE_NAME: z.string().default('resto-api'),
@@ -173,6 +178,9 @@ export const envSchema = z
         'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
+        'S3_ENDPOINT',
+        'S3_ACCESS_KEY',
+        'S3_SECRET_KEY',
       ] as const) {
         if (!env[key]) {
           ctx.addIssue({

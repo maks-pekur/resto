@@ -26,13 +26,13 @@ export class S3SignedImageUrlAdapter implements ImageUrlPort {
     this.bucket = env.S3_BUCKET;
     this.client = new S3Client({
       region: env.S3_REGION,
-      endpoint: env.S3_ENDPOINT,
+      endpoint: env.S3_ENDPOINT!,
       // MinIO and most S3 emulators require path-style addressing —
       // virtual-hosted style assumes a wildcard DNS we do not run in dev.
       forcePathStyle: true,
       credentials: {
-        accessKeyId: env.S3_ACCESS_KEY,
-        secretAccessKey: env.S3_SECRET_KEY,
+        accessKeyId: env.S3_ACCESS_KEY!,
+        secretAccessKey: env.S3_SECRET_KEY!,
       },
     });
   }

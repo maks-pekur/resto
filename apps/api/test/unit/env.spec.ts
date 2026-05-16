@@ -50,6 +50,9 @@ describe('loadEnv', () => {
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
       TENANT_DEV_FALLBACK_SLUG: 'demo',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/development/);
@@ -88,6 +91,9 @@ describe('loadEnv', () => {
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
     };
     const env = loadEnv(productionEnv);
     expect(env.AUTH_COOKIE_DOMAIN).toBe('.resto.app');
@@ -113,6 +119,9 @@ describe('loadEnv', () => {
       ADMIN_WEB_URL: 'https://admin.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/TRUST_PROXY/);
   });
@@ -128,6 +137,9 @@ describe('loadEnv', () => {
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: 'true',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/unsafe/);
   });
@@ -135,5 +147,56 @@ describe('loadEnv', () => {
   it('accepts TRUST_PROXY=true in development', () => {
     const env = loadEnv({ ...baseEnv, TRUST_PROXY: 'true' });
     expect(env.TRUST_PROXY).toBe('true');
+  });
+
+  it('rejects production boot when S3_ENDPOINT is missing', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/S3_ENDPOINT/);
+  });
+
+  it('rejects production boot when S3_ACCESS_KEY is missing', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_SECRET_KEY: 'prod-secret-replace-me',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/S3_ACCESS_KEY/);
+  });
+
+  it('rejects production boot when S3_SECRET_KEY is missing', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/S3_SECRET_KEY/);
   });
 });
