@@ -39,12 +39,13 @@ describe('assertProdGuardrails', () => {
   });
 
   it('throws when S3_SECRET_KEY is the dev default in production', () => {
-    expect(() => assertProdGuardrails(buildEnv({ S3_SECRET_KEY: 'minio_dev_password' }))).toThrow(
-      ProdGuardrailsError,
-    );
-    expect(() => assertProdGuardrails(buildEnv({ S3_SECRET_KEY: 'minio_dev_password' }))).toThrow(
-      /S3_SECRET_KEY/,
-    );
+    try {
+      assertProdGuardrails(buildEnv({ S3_SECRET_KEY: 'minio_dev_password' }));
+      expect.fail('expected throw');
+    } catch (err) {
+      expect(err).toBeInstanceOf(ProdGuardrailsError);
+      expect((err as Error).message).toMatch(/S3_SECRET_KEY/);
+    }
   });
 
   it('throws when S3_ACCESS_KEY is the dev default', () => {
