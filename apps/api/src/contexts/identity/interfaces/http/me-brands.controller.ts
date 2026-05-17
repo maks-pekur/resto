@@ -21,7 +21,7 @@ import {
   ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
-import { BrandSlug, TenantId } from '@resto/domain';
+import { BrandSlug, BrandSlugValue, TenantId } from '@resto/domain';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
@@ -50,7 +50,7 @@ class MeBrandDto extends createZodDto(MeBrandSchema) {}
 class MeBrandsResponseDto extends createZodDto(MeBrandsResponseSchema) {}
 
 const CreateBrandInputSchema = z.object({
-  slug: BrandSlug,
+  slug: BrandSlugValue,
   displayName: z.string().trim().min(1).max(120),
 });
 
@@ -107,9 +107,13 @@ export class MeBrandsController {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });
     }
     try {
+      // RestoZodValidationPipe already validated the regex via BrandSlugValue
+      // (packages/domain/src/brand-slug.ts). Brand is purely TS; cast at the
+      // HTTP→service boundary per ADR-0020 I-7.
+      const slug = input.slug as BrandSlug;
       const snapshot = await this.create.execute({
         tenantId: TenantId.parse(operator.tenantId),
-        slug: input.slug,
+        slug,
         displayName: input.displayName,
       });
       return { id: snapshot.id, slug: snapshot.slug, displayName: snapshot.displayName };

@@ -15,11 +15,11 @@ export {
   MenuVariantId,
 } from './ids';
 
-export { Currency, Money, MoneyAmount, PriceDelta } from './money';
+export { Currency, CurrencyValue, Money, MoneyAmount, MoneyAmountValue, PriceDelta } from './money';
 export { LocalizedText } from './localized-text';
 export { Slug } from './slug';
 export { TENANT_RESERVED_SLUGS, TenantSlug } from './tenant-slug';
-export { BrandSlug } from './brand-slug';
+export { BrandSlug, BrandSlugValue } from './brand-slug';
 export { BrandTheme } from './brand-theme';
 
 export {

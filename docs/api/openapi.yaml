@@ -250,6 +250,30 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - identity
+  /v1/me/brands/slug-availability:
+    get:
+      operationId: MeBrandsController_slugAvailability
+      parameters:
+        - name: slug
+          required: true
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SlugAvailabilityResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - identity
   /internal/v1/tenants/{id}/owner:
     post:
       operationId: InternalBootstrapController_createOwner
@@ -304,14 +328,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SignUpResponseDto"
-        "409":
-          description: email or slug already taken
+        "400":
+          description: sign-up could not be completed
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetailsDto"
-        "500":
-          description: ""
+        "409":
+          description: email or slug already taken
           content:
             application/json:
               schema:
@@ -478,7 +502,9 @@ components:
           type: string
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
           default: en
-        defaultCurrency: {}
+        defaultCurrency:
+          type: string
+          pattern: ^[A-Z]{3}$
       required:
         - slug
         - displayName
@@ -615,7 +641,10 @@ components:
     CreateBrandInputDto:
       type: object
       properties:
-        slug: {}
+        slug:
+          type: string
+          minLength: 3
+          maxLength: 64
         displayName:
           type: string
           minLength: 1
@@ -637,6 +666,17 @@ components:
         - id
         - slug
         - displayName
+    SlugAvailabilityResponseDto:
+      type: object
+      properties:
+        available:
+          type: boolean
+        suggestion:
+          type: string
+          nullable: true
+      required:
+        - available
+        - suggestion
     BootstrapOwnerInputDto:
       type: object
       properties:
@@ -691,7 +731,9 @@ components:
           type: string
           minLength: 2
           maxLength: 120
-        defaultCurrency: {}
+        defaultCurrency:
+          type: string
+          pattern: ^[A-Z]{3}$
         locale:
           type: string
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
@@ -1094,8 +1136,12 @@ components:
             minLength: 1
           nullable: true
           default: null
-        basePrice: {}
-        currency: {}
+        basePrice:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
         imageS3Key:
           type: string
           minLength: 1

@@ -6,6 +6,7 @@ import {
   type StripeConnectPort,
   type TenantRepository,
 } from '../domain/ports';
+import { Currency } from '@resto/domain';
 import { TenantSlugArchivedError } from '../domain/errors';
 import type { ProvisionTenantInput } from './dto';
 
@@ -33,6 +34,10 @@ export class ProvisionTenantService {
   ) {}
 
   async execute(input: ProvisionTenantInput): Promise<TenantSnapshot> {
+    // RestoZodValidationPipe already validated the regex via CurrencyValue
+    // (packages/domain/src/money.ts). Brand is purely TS; cast at the
+    // HTTP→service boundary per ADR-0020 I-7.
+    const defaultCurrency = input.defaultCurrency as Currency;
     const existing = await this.repo.findBySlug(input.slug);
     if (existing) {
       const snapshot = existing.toSnapshot();
@@ -53,7 +58,7 @@ export class ProvisionTenantService {
       slug: input.slug,
       displayName: input.displayName,
       locale: input.locale,
-      defaultCurrency: input.defaultCurrency,
+      defaultCurrency: defaultCurrency,
       primaryDomainHostname: `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`,
     });
 
