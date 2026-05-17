@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import postgres, { type Sql } from 'postgres';
-import { requireTenantContext } from './context';
+import { getTenantContext, isUuid, requireTenantContext } from './context';
 import { logger } from './logger';
 import * as schema from './schema/index';
 
@@ -71,6 +71,35 @@ export class TenantAwareDb {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.current_tenant', ${ctx.tenantId}, true)`);
+      await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
+      return op(tx);
+    });
+  }
+
+  /**
+   * Run `op` inside a transaction with an EXPLICIT tenant id bound.
+   *
+   * Reserved for non-HTTP entry points where the caller has an
+   * authoritative tenant id but does not run inside
+   * `TenantContextMiddleware`:
+   *   - Better Auth hooks (`/sign-out`, `/reset-password`) — ADR-0020 I-6.
+   *   - NATS subscribers, outbox dispatcher, CLI, background jobs.
+   *
+   * HTTP code paths MUST use `withTenant(op)` (ALS-bound). To enforce
+   * the split, `withTenantId` throws when an ALS context is already
+   * bound — that path indicates a mis-routed caller.
+   */
+  async withTenantId<T>(tenantId: string, op: (tx: RestoTx) => Promise<T>): Promise<T> {
+    if (getTenantContext()) {
+      throw new Error(
+        'withTenantId must not be called inside an ALS-bound context — use withTenant() instead.',
+      );
+    }
+    if (!isUuid(tenantId)) {
+      throw new Error(`Invalid tenant id: expected a uuid, got ${JSON.stringify(tenantId)}.`);
+    }
+    return this.#db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantId}, true)`);
       await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
       return op(tx);
     });
