@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { Currency, LocalizedText, MoneyAmount, Slug } from '@resto/domain';
+import { CurrencyValue, LocalizedText, MoneyAmountValue, Slug } from '@resto/domain';
 
 const NonNegInt = z.number().int().nonnegative();
 
@@ -20,8 +20,8 @@ export const UpsertItemInputSchema = z.object({
   slug: Slug,
   name: LocalizedText,
   description: LocalizedText.nullable().default(null),
-  basePrice: MoneyAmount,
-  currency: Currency,
+  basePrice: MoneyAmountValue,
+  currency: CurrencyValue,
   imageS3Key: z.string().min(1).nullable().default(null),
   allergens: z.array(z.string().min(1)).nullable().default(null),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),

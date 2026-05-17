@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { Currency, TenantSlug } from '@resto/domain';
+import { CurrencyValue, TenantSlug } from '@resto/domain';
 
 export const ProvisionTenantInputSchema = z.object({
   slug: TenantSlug,
@@ -9,7 +9,7 @@ export const ProvisionTenantInputSchema = z.object({
     .string()
     .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
     .default('en'),
-  defaultCurrency: Currency,
+  defaultCurrency: CurrencyValue,
 });
 export type ProvisionTenantInput = z.infer<typeof ProvisionTenantInputSchema>;
 export class ProvisionTenantInputDto extends createZodDto(ProvisionTenantInputSchema) {}

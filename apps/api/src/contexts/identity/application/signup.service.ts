@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { user as userTable } from '@resto/db/schema';
-import { TenantSlug } from '@resto/domain';
+import { Currency, TenantSlug } from '@resto/domain';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
@@ -56,6 +56,10 @@ export class SignUpService {
   ) {}
 
   async execute(input: SignUpInput): Promise<SignUpResult> {
+    // RestoZodValidationPipe already validated the regex via CurrencyValue
+    // (packages/domain/src/money.ts). Brand is purely TS; cast at the
+    // HTTP→service boundary per ADR-0020 I-7.
+    const defaultCurrency = input.defaultCurrency as Currency;
     if (await this.userExistsByEmail(input.email)) {
       throw new SignupEmailAlreadyExistsError(input.email);
     }
@@ -66,7 +70,7 @@ export class SignUpService {
       slug: TenantSlug.parse(slug),
       displayName: input.displayName,
       locale: input.locale,
-      defaultCurrency: input.defaultCurrency,
+      defaultCurrency: defaultCurrency,
     });
 
     try {
