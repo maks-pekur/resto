@@ -17,6 +17,7 @@ const DEV_DEFAULTS = {
   S3_ACCESS_KEY: 'minio',
   S3_ENDPOINT: 'http://localhost:9000',
   AUDIT_ERASURE_SALT: 'dev-only-erasure-salt-32-chars-padding',
+  INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
