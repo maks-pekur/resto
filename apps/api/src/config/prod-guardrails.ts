@@ -24,7 +24,12 @@ type GuardedKey = keyof typeof DEV_DEFAULTS;
 
 export class ProdGuardrailsError extends Error {
   constructor(public readonly violations: readonly string[]) {
-    super(`prod-guardrails: refusing to start: ${violations.join('; ')}`);
+    super(
+      `prod-guardrails: refusing to start: ${violations.join('; ')}. ` +
+        'Set real values in your deployment secrets (Vault / 1Password ' +
+        'Connect / cloud secret manager) and redeploy. Do NOT bypass by ' +
+        'setting NODE_ENV=development.',
+    );
     this.name = 'ProdGuardrailsError';
   }
 }

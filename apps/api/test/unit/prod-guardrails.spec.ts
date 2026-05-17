@@ -90,6 +90,7 @@ describe('assertProdGuardrails', () => {
       expect(violations).toHaveLength(2);
       expect(violations.join(' ')).toMatch(/S3_SECRET_KEY/);
       expect(violations.join(' ')).toMatch(/AUDIT_ERASURE_SALT/);
+      expect((err as Error).message).toContain('deployment secrets');
     }
   });
 
