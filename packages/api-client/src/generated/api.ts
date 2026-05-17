@@ -164,6 +164,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/me/brands/slug-availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MeBrandsController_slugAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/v1/tenants/{id}/owner": {
         parameters: {
             query?: never;
@@ -301,7 +317,7 @@ export interface components {
             displayName: string;
             /** @default en */
             locale: string;
-            defaultCurrency: unknown;
+            defaultCurrency: string;
         };
         TenantResponseDto: {
             /** Format: uuid */
@@ -351,7 +367,7 @@ export interface components {
             canViewAllBrands: boolean;
         };
         CreateBrandInputDto: {
-            slug: unknown;
+            slug: string;
             displayName: string;
         };
         MeBrandDto: {
@@ -359,6 +375,10 @@ export interface components {
             id: string;
             slug: string;
             displayName: string;
+        };
+        SlugAvailabilityResponseDto: {
+            available: boolean;
+            suggestion: string | null;
         };
         BootstrapOwnerInputDto: {
             /** Format: email */
@@ -381,7 +401,7 @@ export interface components {
             email: string;
             password: string;
             displayName: string;
-            defaultCurrency: unknown;
+            defaultCurrency: string;
             /** @default en */
             locale: string;
         };
@@ -535,8 +555,8 @@ export interface components {
             description: {
                 [key: string]: string;
             } | null;
-            basePrice: unknown;
-            currency: unknown;
+            basePrice: string;
+            currency: string;
             /** @default null */
             imageS3Key: string | null;
             /** @default null */
@@ -930,6 +950,35 @@ export interface operations {
             };
         };
     };
+    MeBrandsController_slugAvailability: {
+        parameters: {
+            query: {
+                slug: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SlugAvailabilityResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     InternalBootstrapController_createOwner: {
         parameters: {
             query?: never;
@@ -1001,8 +1050,8 @@ export interface operations {
                     "application/json": components["schemas"]["SignUpResponseDto"];
                 };
             };
-            /** @description email or slug already taken */
-            409: {
+            /** @description sign-up could not be completed */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -1010,7 +1059,8 @@ export interface operations {
                     "application/json": components["schemas"]["ProblemDetailsDto"];
                 };
             };
-            500: {
+            /** @description email or slug already taken */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
