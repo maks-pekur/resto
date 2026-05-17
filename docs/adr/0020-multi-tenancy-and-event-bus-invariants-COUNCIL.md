@@ -321,7 +321,7 @@ The ADR treats I-5 as one bullet among seven. It should be flagged as **the sing
 
 **Severity:** critical
 
-**Body:** `S3_SECRET_KEY` default, `DEV_SALT_FALLBACK`, and `VITE_TENANT_SLUG` committed without NODE_ENV gating are not just hygiene — `VITE_TENANT_SLUG` in particular means a misconfigured qr-menu deployment can resolve to **the wrong tenant**, i.e. one restaurant's QR menu serving another restaurant's menu and prices. In a vertical where the product _is_ the menu, that is a brand-credibility incident, not a config bug.
+**Body:** `S3_SECRET_KEY` default, `DEV_SALT_FALLBACK`, and `VITE_TENANT_SLUG` committed without NODE*ENV gating are not just hygiene — `VITE_TENANT_SLUG` in particular means a misconfigured qr-menu deployment can resolve to **the wrong tenant**, i.e. one restaurant's QR menu serving another restaurant's menu and prices. In a vertical where the product \_is* the menu, that is a brand-credibility incident, not a config bug.
 
 MVP-1 is already in production (catalog + qr-menu + landing). The ADR sequences enforcement infra ahead of tech-debt fixes, which is correct, but it does not state **how long the current exposure remains live** nor whether any audit has been done to confirm no production tenant is currently running with these fallbacks active. From a product seat, that audit is one-day work and should precede every other invariant.
 

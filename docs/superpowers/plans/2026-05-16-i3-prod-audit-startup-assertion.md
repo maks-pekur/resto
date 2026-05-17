@@ -882,16 +882,16 @@ After Task 8, before opening a PR:
       Expected: clean.
 - [ ] Inspect the commit log:
       `bash
-    git log main..HEAD --oneline
-    `
+git log main..HEAD --oneline
+`
       Expected: 8 commits, each in the form
       `<type>(<scope>): <subject>` per Conventional Commits. No
       Co-Authored-By footer. No multi-paragraph bodies.
 - [ ] Confirm the qr-menu bundle is clean one more time:
       `bash
-    pnpm --filter @resto/qr-menu build
-    grep -c 'x-tenant-slug\|VITE_TENANT_SLUG' apps/qr-menu/dist/assets/*.js
-    `
+pnpm --filter @resto/qr-menu build
+grep -c 'x-tenant-slug\|VITE_TENANT_SLUG' apps/qr-menu/dist/assets/*.js
+`
       Expected: `0`.
 
 Ask the user before `git push` and before opening a PR.
