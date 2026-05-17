@@ -126,7 +126,6 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
     const db = stack.app.get(TenantAwareDb);
 
     const deadline = Date.now() + 10_000;
-    let count = 0;
     while (Date.now() < deadline) {
       const rows = await db.withoutTenant('audit-pipeline e2e: poll audit_log dedup', (tx) =>
         tx
@@ -134,8 +133,7 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
           .from(schema.auditLog)
           .where(eq(schema.auditLog.tenantId, tenant.id)),
       );
-      count = rows.length;
-      if (count > 0) break;
+      if (rows.length > 0) break;
       await new Promise((resolve) => setTimeout(resolve, 250));
     }
     await new Promise((resolve) => setTimeout(resolve, 750));
