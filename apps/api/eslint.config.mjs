@@ -50,6 +50,41 @@ export default [
     },
   },
   {
+    // ADR-0020 I-1: bypass-ScopedTx-by-default. Direct `tx.select/insert/
+    // update/delete` is permitted only in repository adapters (where the
+    // adapter takes responsibility for the tenant filter) and the audit
+    // consumer (system context via `withoutTenant`; auditLog table is not
+    // tenant-scoped). Everywhere else, route through ScopedTx.
+    files: ['src/**/*.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            "CallExpression[callee.object.name='tx'][callee.property.name=/^(select|insert|update|delete)$/]",
+          message:
+            'ADR-0020 I-1: direct tx.select/insert/update/delete bypasses ScopedTx auto-filter. Use scoped.selectFrom / insertInto / updateTable, or place this code in a *-drizzle.repository.ts where the rule is allow-listed (the adapter takes responsibility for the tenant filter).',
+        },
+      ],
+    },
+  },
+  {
+    // Sole legitimate callers of raw tx.* in api production code per
+    // ADR-0020 I-1. The brand repo still uses raw tx.* pending migration
+    // (future RES-235d); the catalog repo retains a single manual brands
+    // projection query that carries an explicit `eq(brands.tenantId, ...)`.
+    // record-audit.service.ts writes to the platform-wide auditLog table
+    // (no tenant_id column) inside withoutTenant.
+    files: [
+      'src/contexts/**/infrastructure/*-drizzle.repository.ts',
+      'src/contexts/**/infrastructure/*-drizzle.reader.ts',
+      'src/contexts/audit/application/record-audit.service.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
     // NestJS modules are class-based markers for the DI container; an
     // empty class is the idiomatic shape and not a code smell here.
     files: ['src/**/*.module.ts'],
@@ -79,8 +114,10 @@ export default [
       '@typescript-eslint/no-unsafe-member-access': 'off',
       '@typescript-eslint/no-unnecessary-condition': 'off',
       // Test files simulate HTTP middleware behavior to exercise
-      // tenant-aware paths — they may legitimately call runInTenantContext.
+      // tenant-aware paths — they may legitimately call runInTenantContext
+      // and seed via raw tx.* inside withoutTenant.
       'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
   {
