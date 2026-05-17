@@ -5,13 +5,14 @@ import {
   type OnApplicationBootstrap,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import { TenantAwareDb } from '@resto/db';
 import {
-  withInboxDedup,
+  runDeduped,
+  type EventEnvelope,
   type EventSubscriber,
   type EventSubscription,
-  type InboxTracker,
 } from '@resto/events';
-import { EVENT_SUBSCRIBER, INBOX_TRACKER } from '../../../infrastructure/nats.module';
+import { EVENT_SUBSCRIBER } from '../../../infrastructure/nats.module';
 import { RecordAuditService } from '../application/record-audit.service';
 
 const TENANCY_CONSUMER_NAME = 'audit-recorder-tenancy';
@@ -27,7 +28,7 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
 
   constructor(
     @Inject(EVENT_SUBSCRIBER) private readonly subscriber: EventSubscriber | null,
-    @Inject(INBOX_TRACKER) private readonly tracker: InboxTracker,
+    @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(RecordAuditService) private readonly recorder: RecordAuditService,
   ) {}
 
@@ -40,9 +41,11 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
       { subject: TENANCY_SUBJECT, durableName: TENANCY_CONSUMER_NAME },
       { subject: IDENTITY_SUBJECT, durableName: IDENTITY_CONSUMER_NAME },
     ]) {
-      const handler = withInboxDedup(this.tracker, cfg.durableName, (envelope) =>
-        this.recorder.fromEnvelope(envelope),
-      );
+      const handler = async (envelope: EventEnvelope): Promise<void> => {
+        await runDeduped(this.db, envelope, cfg.durableName, async (tx) => {
+          await this.recorder.fromEnvelopeWithTx(envelope, tx);
+        });
+      };
       const subscription = await this.subscriber.subscribe({
         subject: cfg.subject,
         durableName: cfg.durableName,
