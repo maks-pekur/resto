@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { schema, TenantAwareDb } from '@resto/db';
+import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { type EventEnvelope } from '@resto/events';
 import { AuditRecord } from '../domain/audit-record';
 
@@ -24,21 +24,25 @@ export class RecordAuditService {
   constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
   async fromEnvelope(envelope: EventEnvelope): Promise<void> {
+    await this.db.withoutTenant(`audit consumer: ${envelope.type}`, (tx) =>
+      this.fromEnvelopeWithTx(envelope, tx),
+    );
+  }
+
+  async fromEnvelopeWithTx(envelope: EventEnvelope, tx: RestoTx): Promise<void> {
     const record = this.project(envelope);
-    await this.db.withoutTenant(`audit consumer: ${envelope.type}`, async (tx) => {
-      await tx.insert(schema.auditLog).values({
-        tenantId: record.tenantId,
-        actorKind: record.actorKind,
-        actorSubject: record.actorSubject,
-        action: record.action,
-        targetType: record.targetType,
-        targetId: record.targetId,
-        payload: record.payload,
-        ipAddress: record.ipAddress,
-        userAgent: record.userAgent,
-        correlationId: record.correlationId,
-        occurredAt: record.occurredAt,
-      });
+    await tx.insert(schema.auditLog).values({
+      tenantId: record.tenantId,
+      actorKind: record.actorKind,
+      actorSubject: record.actorSubject,
+      action: record.action,
+      targetType: record.targetType,
+      targetId: record.targetId,
+      payload: record.payload,
+      ipAddress: record.ipAddress,
+      userAgent: record.userAgent,
+      correlationId: record.correlationId,
+      occurredAt: record.occurredAt,
     });
     this.logger.debug({ type: envelope.type, tenantId: envelope.tenantId }, 'Audit row recorded');
   }
