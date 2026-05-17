@@ -3,10 +3,9 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
-  InMemoryInboxTracker,
   NatsJetStreamSubscriber,
   TenantProvisionedV1,
-  withInboxDedup,
+  runDeduped,
   type EventEnvelope,
 } from '@resto/events';
 import {
@@ -52,14 +51,16 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
       servers: stack.natsUrl,
       stream: process.env.NATS_STREAM ?? 'RESTO_EVENTS_E2E',
     });
-    const tracker = new InMemoryInboxTracker();
     await subscriber.subscribe({
       subject: TenantProvisionedV1.type,
       durableName: 'tenancy-e2e',
-      handler: withInboxDedup(tracker, 'tenancy-e2e', (envelope) => {
-        received.push(envelope);
-        return Promise.resolve();
-      }),
+      handler: async (envelope) => {
+        const db = stack.app.get(TenantAwareDb);
+        // eslint-disable-next-line @typescript-eslint/require-await
+        await runDeduped(db, envelope, 'tenancy-e2e', async () => {
+          received.push(envelope);
+        });
+      },
     });
   }, 180_000);
 

@@ -7,21 +7,17 @@ import {
   type OnApplicationShutdown,
 } from '@nestjs/common';
 import {
-  DrizzleInboxTracker,
   NatsJetStreamPublisher,
   NatsJetStreamSubscriber,
   type EventPublisher,
   type EventSubscriber,
-  type InboxTracker,
 } from '@resto/events';
-import { TenantAwareDb } from '@resto/db';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
 import { EVENT_PUBLISHER } from './event-publisher.token';
 import { OutboxDispatcherService } from './outbox-dispatcher.service';
 
 export { EVENT_PUBLISHER } from './event-publisher.token';
-export const INBOX_TRACKER = Symbol('INBOX_TRACKER');
 export const EVENT_SUBSCRIBER = Symbol('EVENT_SUBSCRIBER');
 
 const STREAM_SUBJECTS = ['tenancy.>', 'identity.>', 'catalog.>', 'ordering.>', 'billing.>'];
@@ -105,13 +101,8 @@ class NatsShutdownHook implements OnApplicationShutdown {
       inject: [ENV_TOKEN],
     },
     NatsShutdownHook,
-    {
-      provide: INBOX_TRACKER,
-      useFactory: (db: TenantAwareDb): InboxTracker => new DrizzleInboxTracker(db),
-      inject: [TenantAwareDb],
-    },
     OutboxDispatcherService,
   ],
-  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER, INBOX_TRACKER],
+  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER],
 })
 export class NatsModule {}

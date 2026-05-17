@@ -4,10 +4,9 @@ import { schema } from '@resto/db';
 import { eq } from 'drizzle-orm';
 import {
   appendToOutbox,
-  InMemoryInboxTracker,
   OutboxDispatcher,
   TenantProvisionedV1,
-  withInboxDedup,
+  runDeduped,
   type TypedEnvelope,
   type TenantProvisionedV1Payload,
 } from '../../src/index';
@@ -71,15 +70,16 @@ suite('Outbox → NATS roundtrip', () => {
     await env.db.withoutTenant('append outbox for test', (tx) => appendToOutbox(tx, { envelope }));
 
     // Consumer side: subscribe with inbox dedup before the dispatcher runs.
-    const tracker = new InMemoryInboxTracker();
     const received: string[] = [];
     const sub = await env.subscriber.subscribe({
       subject: TenantProvisionedV1.type,
       durableName: 'test-consumer',
-      handler: withInboxDedup(tracker, 'test-consumer', (msg) => {
-        received.push(msg.id);
-        return Promise.resolve();
-      }),
+      handler: async (msg) => {
+        // eslint-disable-next-line @typescript-eslint/require-await
+        await runDeduped(env.db, msg, 'test-consumer', async () => {
+          received.push(msg.id);
+        });
+      },
     });
 
     const dispatcher = new OutboxDispatcher({ db: env.db, publisher: env.publisher });
