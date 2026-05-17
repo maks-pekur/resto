@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { schema } from '@resto/db';
 import { EventEnvelope, type EventEnvelope as EventEnvelopeType } from '../../src/envelope';
 import { runDeduped } from '../../src/inbox/run-deduped';
@@ -46,11 +46,10 @@ suite('runDeduped — atomic dedup + handler', () => {
     await stopTestEnv(env);
   });
 
-  beforeEach(async () => {
-    await env.db.withoutTenant('truncate inbox between cases', async (tx) => {
-      await tx.execute('TRUNCATE TABLE inbox_processed');
-    });
-  });
+  // No beforeEach cleanup: each test uses fresh randomUUID() envelope ids
+  // and unique consumer names, so the `(consumer, eventId)` keys never
+  // collide across cases. TRUNCATE would require owner privileges that
+  // the `resto_app` role doesn't have, and would be defensive overkill.
 
   it('happy path: first call executes handler, second call skips', async () => {
     const envelope = buildEnvelope();
