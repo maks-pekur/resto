@@ -234,4 +234,96 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(body.status).toBe(404);
     expect(body.type).toBe('https://resto.app/problems/catalog.menu_item_not_found');
   }, 60_000);
+
+  it("tenant A's published menu contains no rows from tenant B (RES-241 ScopedTx auto-filter)", async () => {
+    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
+    const authB = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-b' };
+
+    // Seed tenant A: category + published item with unique cross-tenant slugs.
+    const aCatRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/categories',
+      headers: authA,
+      payload: { slug: 'xt-a-cat', name: { en: 'XT A category' }, sortOrder: 0 },
+    });
+    expect(aCatRes.statusCode).toBe(200);
+    const aCategoryId = aCatRes.json<{ id: string }>().id;
+    const aItemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/items',
+      headers: authA,
+      payload: {
+        categoryId: aCategoryId,
+        slug: 'xt-a-item',
+        name: { en: 'XT A item' },
+        basePrice: '10.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    expect(aItemRes.statusCode).toBe(200);
+
+    // Seed tenant B: category + published item with B-specific slugs.
+    const bCatRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/categories',
+      headers: authB,
+      payload: { slug: 'xt-b-cat', name: { en: 'XT B category' }, sortOrder: 0 },
+    });
+    expect(bCatRes.statusCode).toBe(200);
+    const bCategoryId = bCatRes.json<{ id: string }>().id;
+    const bItemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/internal/v1/catalog/items',
+      headers: authB,
+      payload: {
+        categoryId: bCategoryId,
+        slug: 'xt-b-item',
+        name: { en: 'XT B item' },
+        basePrice: '20.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    expect(bItemRes.statusCode).toBe(200);
+
+    // Publish both tenants' menus.
+    expect(
+      (
+        await stack.app.inject({
+          method: 'POST',
+          url: '/internal/v1/catalog/publish',
+          headers: authA,
+        })
+      ).statusCode,
+    ).toBe(200);
+    expect(
+      (
+        await stack.app.inject({
+          method: 'POST',
+          url: '/internal/v1/catalog/publish',
+          headers: authB,
+        })
+      ).statusCode,
+    ).toBe(200);
+
+    // Tenant A reads its published menu. ScopedTx's auto-applied
+    // `eq(table.tenantId, ALS.tenantId)` (with RLS as the second line of
+    // defense) must keep tenant B's category and item out of the response.
+    const menuRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { 'x-tenant-slug': 'cafe-a' },
+    });
+    expect(menuRes.statusCode).toBe(200);
+    const menu = menuRes.json<{
+      categories: { slug: string }[];
+      items: { slug: string }[];
+    }>();
+
+    expect(menu.categories.map((c) => c.slug)).toContain('xt-a-cat');
+    expect(menu.items.map((i) => i.slug)).toContain('xt-a-item');
+    expect(menu.categories.map((c) => c.slug)).not.toContain('xt-b-cat');
+    expect(menu.items.map((i) => i.slug)).not.toContain('xt-b-item');
+  }, 60_000);
 });
