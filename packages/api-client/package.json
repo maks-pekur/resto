@@ -20,6 +20,6 @@
     "@resto/config-typescript": "workspace:*",
     "eslint": "^10.3.0",
     "openapi-typescript": "^7.13.0",
-    "typescript": "^5.7.2"
+    "typescript": "^6.0.3"
   }
 }
