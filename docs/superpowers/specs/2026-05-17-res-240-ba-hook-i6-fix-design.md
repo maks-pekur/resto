@@ -5,7 +5,6 @@ status: proposed
 date: 2026-05-17
 scope:
   - packages/db/src/client.ts (new TenantAwareDb.withTenantId)
-  - packages/db/src/index.ts (export RestoTx)
   - apps/api/src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts
   - packages/db/test/integration/with-tenant-id.spec.ts (new)
   - apps/api/test/e2e/identity-event-emitter.adapter.e2e.spec.ts (extend)
@@ -125,15 +124,14 @@ Import it from `client.ts` (no cycle — `client.ts` already imports
 Pick the lighter move during implementation; the chosen approach goes into
 the implementation plan.
 
-### 2. Export `RestoTx` from `@resto/db`
+### 2. `RestoTx` already exported (no change)
 
 **File:** `packages/db/src/index.ts`
 
-`RestoTx` is defined in `client.ts` but not currently exported. The adapter
-needs it to type the local `append` helper without resorting to
-`Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[0]`. Adding the
-export is a one-line change with no API surface risk — `RestoTx` is already
-the de-facto callback parameter type across the codebase.
+`RestoTx` is already re-exported from `@resto/db` (line 14 of `index.ts`).
+Earlier note in this spec was wrong — confirmed by grep during plan
+authoring. The adapter just imports it directly. No change required in
+this PR.
 
 ### 3. Adapter rewrite
 
