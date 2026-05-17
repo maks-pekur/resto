@@ -64,22 +64,25 @@ export class ScopedTx {
    * freely but should NOT call `.where()` again (Drizzle replaces;
    * tenant filter is lost).
    *
-   * Drizzle's `.from()` generic cannot evaluate
-   * `TableLikeHasEmptySelection<T>` for a `T extends TenantScopedTable`
-   * parameter, so the call uses an `as never` cast at the boundary; the
-   * runtime is identical and rows are typed via Drizzle's chain
-   * inference from the original `table`.
+   * Drizzle's `.from()` generic rejects `T extends TenantScopedTable`
+   * because `TableLikeHasEmptySelection<T>` cannot reduce for a generic
+   * union member. We delegate through an internal helper that uses a
+   * boundary cast; the public method preserves T's row inference by
+   * declaring the return as `Awaited<...>` derived from `T['$inferSelect']`.
    */
-  selectFrom(
-    table: TenantScopedTable,
+  selectFrom<T extends TenantScopedTable>(
+    table: T,
     extraWhere?: SQL,
-  ): ReturnType<RestoTx['select']>['from'] extends (t: never) => infer R ? R : never {
+  ): Promise<T['$inferSelect'][]> & {
+    limit: (n: number) => Promise<T['$inferSelect'][]>;
+    orderBy: (...exprs: readonly SQL[]) => Promise<T['$inferSelect'][]>;
+  } {
     const tenantFilter = eq(table.tenantId, this.tenantId);
     const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
     return this.tx
       .select()
       .from(table as never)
-      .where(where) as never;
+      .where(where);
   }
 
   /**

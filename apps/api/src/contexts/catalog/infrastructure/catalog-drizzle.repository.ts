@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { schema, TenantAwareDb } from '@resto/db';
+import { requireTenantContext, schema, TenantAwareDb } from '@resto/db';
 import {
   BrandId,
   BrandTheme,
@@ -51,8 +51,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     version: number,
     brandId?: string | null,
   ): Promise<PublishedMenu> {
-    return this.db.withTenant(async (tx) => {
-      const categoriesQuery = tx.select().from(schema.menuCategories);
+    return this.db.withTenant(async (tx, scoped) => {
       const itemsBaseConditions = brandId
         ? and(eq(schema.menuItems.status, 'published'), eq(schema.menuItems.brandId, brandId))
         : eq(schema.menuItems.status, 'published');
@@ -66,37 +65,43 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               theme: schema.brands.theme,
             })
             .from(schema.brands)
-            .where(eq(schema.brands.id, brandId))
+            .where(
+              // ScopedTx does not support column projection; explicit tenant
+              // filter upholds ADR-0020 I-1 at this single call site.
+              and(
+                eq(schema.brands.tenantId, requireTenantContext().tenantId),
+                eq(schema.brands.id, brandId),
+              ),
+            )
             .limit(1)
         : Promise.resolve([] as const);
 
       const [categoriesRows, itemsRows, brandRows] = await Promise.all([
-        brandId
-          ? categoriesQuery.where(eq(schema.menuCategories.brandId, brandId))
-          : categoriesQuery,
-        tx.select().from(schema.menuItems).where(itemsBaseConditions),
+        scoped.selectFrom(
+          schema.menuCategories,
+          brandId ? eq(schema.menuCategories.brandId, brandId) : undefined,
+        ),
+        scoped.selectFrom(schema.menuItems, itemsBaseConditions),
         brandRowPromise,
       ]);
 
       const [variantsRows, itemModifierRows, modifiersRows] = await Promise.all([
-        tx.select().from(schema.menuVariants),
-        tx.select().from(schema.menuItemModifiers),
-        tx.select().from(schema.menuModifiers),
+        scoped.selectFrom(schema.menuVariants),
+        scoped.selectFrom(schema.menuItemModifiers),
+        scoped.selectFrom(schema.menuModifiers),
       ]);
 
       const itemIds = itemsRows.map((r) => r.id);
       const optionsRows =
         modifiersRows.length === 0
           ? []
-          : await tx
-              .select()
-              .from(schema.menuModifierOptions)
-              .where(
-                inArray(
-                  schema.menuModifierOptions.modifierId,
-                  modifiersRows.map((m) => m.id),
-                ),
-              );
+          : await scoped.selectFrom(
+              schema.menuModifierOptions,
+              inArray(
+                schema.menuModifierOptions.modifierId,
+                modifiersRows.map((m) => m.id),
+              ),
+            );
 
       const variantsByItem = groupBy(variantsRows, (r) => r.menuItemId);
       const modifiersByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
@@ -179,7 +184,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     itemId: string,
     brandId?: string | null,
   ): Promise<PublishedMenuItem | null> {
-    return this.db.withTenant(async (tx) => {
+    return this.db.withTenant(async (_tx, scoped) => {
       const baseConditions = and(
         eq(schema.menuItems.id, itemId),
         eq(schema.menuItems.status, 'published'),
@@ -187,15 +192,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const where = brandId
         ? and(baseConditions, eq(schema.menuItems.brandId, brandId))
         : baseConditions;
-      const items = await tx.select().from(schema.menuItems).where(where).limit(1);
+      const items = await scoped.selectFrom(schema.menuItems, where).limit(1);
       const row = items[0];
       if (!row) return null;
       const [variants, links] = await Promise.all([
-        tx.select().from(schema.menuVariants).where(eq(schema.menuVariants.menuItemId, row.id)),
-        tx
-          .select()
-          .from(schema.menuItemModifiers)
-          .where(eq(schema.menuItemModifiers.menuItemId, row.id)),
+        scoped.selectFrom(schema.menuVariants, eq(schema.menuVariants.menuItemId, row.id)),
+        scoped.selectFrom(
+          schema.menuItemModifiers,
+          eq(schema.menuItemModifiers.menuItemId, row.id),
+        ),
       ]);
       return {
         id: MenuItemId.parse(row.id),
@@ -221,12 +226,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }> {
-    return this.db.withTenant(async (tx) => {
-      const [row] = await tx
-        .insert(schema.menuCategories)
-        .values({
+    return this.db.withTenant(async (_tx, scoped) => {
+      const [row] = await scoped
+        .insertInto(schema.menuCategories, {
           ...(input.id ? { id: input.id } : {}),
-          tenantId: input.tenantId,
           brandId: input.brandId ?? null,
           slug: input.slug,
           name: input.name,
@@ -250,12 +253,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async upsertItem(input: UpsertItemRow): Promise<{ id: string }> {
-    return this.db.withTenant(async (tx) => {
-      const [row] = await tx
-        .insert(schema.menuItems)
-        .values({
+    return this.db.withTenant(async (_tx, scoped) => {
+      const [row] = await scoped
+        .insertInto(schema.menuItems, {
           ...(input.id ? { id: input.id } : {}),
-          tenantId: input.tenantId,
           brandId: input.brandId ?? null,
           categoryId: input.categoryId,
           slug: input.slug,
@@ -291,28 +292,28 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async upsertModifier(input: UpsertModifierRow): Promise<{ id: string }> {
-    return this.db.withTenant(async (tx) => {
+    return this.db.withTenant(async (_tx, scoped) => {
       // No natural unique key besides id; if id is supplied we update,
       // otherwise we insert a fresh row.
       if (input.id) {
-        const [row] = await tx
-          .update(schema.menuModifiers)
-          .set({
-            name: input.name,
-            minSelectable: input.minSelectable,
-            maxSelectable: input.maxSelectable,
-            isRequired: input.isRequired,
-            updatedAt: new Date(),
-          })
-          .where(eq(schema.menuModifiers.id, input.id))
+        const [row] = await scoped
+          .updateTable(
+            schema.menuModifiers,
+            {
+              name: input.name,
+              minSelectable: input.minSelectable,
+              maxSelectable: input.maxSelectable,
+              isRequired: input.isRequired,
+              updatedAt: new Date(),
+            },
+            eq(schema.menuModifiers.id, input.id),
+          )
           .returning({ id: schema.menuModifiers.id });
         if (!row) throw new Error('upsertModifier: update returned no row');
         return { id: row.id };
       }
-      const [row] = await tx
-        .insert(schema.menuModifiers)
-        .values({
-          tenantId: input.tenantId,
+      const [row] = await scoped
+        .insertInto(schema.menuModifiers, {
           brandId: input.brandId ?? null,
           name: input.name,
           minSelectable: input.minSelectable,
