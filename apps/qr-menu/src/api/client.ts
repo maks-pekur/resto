@@ -1,8 +1,13 @@
 import type { MenuDto } from './types';
 
-const env = import.meta.env as Record<string, string | undefined>;
-const API_URL: string = env.VITE_API_URL ?? '';
-const TENANT_SLUG_OVERRIDE: string | undefined = env.VITE_TENANT_SLUG;
+const API_URL: string = (import.meta.env as Record<string, string | undefined>).VITE_API_URL ?? '';
+// `import.meta.env.DEV` is a static boolean Vite inlines at build time.
+// In a prod build this expression becomes `false ? ... : undefined`, so
+// the `import.meta.env.VITE_TENANT_SLUG` read and the downstream `x-tenant-slug`
+// header construction are dead-code-eliminated. ADR-0020 I-3.
+const TENANT_SLUG_OVERRIDE: string | undefined = import.meta.env.DEV
+  ? import.meta.env.VITE_TENANT_SLUG
+  : undefined;
 
 export class MenuNotFoundError extends Error {
   constructor() {
