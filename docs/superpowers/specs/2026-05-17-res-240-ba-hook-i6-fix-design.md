@@ -176,7 +176,7 @@ export class IdentityEventEmitterAdapter implements IdentityEventEmitterPort {
 **What changed:**
 
 - Removed import of `runInTenantContext`.
-- Added import of `RestoTx` (exported in change 2).
+- Added import of `RestoTx` (already exported from `@resto/db`).
 - Local `append` helper eliminates triple `appendToOutbox(tx, …)` duplication.
 - Three branches stay (null / ALS-bound / explicit), each commented with
   its real-world trigger.
