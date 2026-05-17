@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { getTenantContext, runInTenantContext, TenantAwareDb } from '@resto/db';
+import { getTenantContext, type RestoTx, TenantAwareDb } from '@resto/db';
 import { appendToOutbox, type EventEnvelope } from '@resto/events';
 import { randomUUID } from 'node:crypto';
 import type { IdentityEventEmitterPort } from '../application/ports/identity-event-emitter.port';
@@ -10,18 +10,23 @@ export class IdentityEventEmitterAdapter implements IdentityEventEmitterPort {
 
   async emit(envelope: EventEnvelope): Promise<void> {
     const aggregateId = envelope.tenantId ?? randomUUID();
+    const append = (tx: RestoTx): Promise<void> => appendToOutbox(tx, { envelope, aggregateId });
+
     if (!envelope.tenantId) {
-      await this.db.withoutTenant(`identity event: ${envelope.type}`, (tx) =>
-        appendToOutbox(tx, { envelope, aggregateId }),
-      );
+      await this.db.withoutTenant(`identity event: ${envelope.type}`, append);
       return;
     }
-    const run = (): Promise<void> =>
-      this.db.withTenant((tx) => appendToOutbox(tx, { envelope, aggregateId }));
     if (getTenantContext()) {
-      await run();
+      // HTTP path: ALS bound by TenantContextMiddleware. RLS WITH CHECK
+      // validates envelope.tenantId against the bound tenant — a forged
+      // envelope with a different tenantId is rejected at INSERT time.
+      await this.db.withTenant(append);
       return;
     }
-    await runInTenantContext({ tenantId: envelope.tenantId }, run);
+    // Non-HTTP path: Better Auth hook fired with no ALS (e.g. `/sign-out`
+    // arrived without `x-tenant-slug` and no host resolved). Authoritative
+    // tenantId comes from the BA session snapshot. ADR-0020 I-6 forbids
+    // seeding ALS here — bind explicitly via TenantAwareDb instead.
+    await this.db.withTenantId(envelope.tenantId, append);
   }
 }
