@@ -126,12 +126,21 @@ jobs:
     name: OpenAPI drift check
     runs-on: ubuntu-latest
     needs: install
+    # AppModule wiring requires DB/NATS/S3 env vars before NestFactory can
+    # render the OpenAPI document, even though no real services are
+    # contacted during emit. Placeholders below are non-functional and
+    # only satisfy env-schema + adapter-construction validation. The S3
+    # adapter throws on missing values regardless of NODE_ENV (see
+    # s3-signed-image-url.adapter.ts — schema regression noted there).
     env:
       DATABASE_URL: postgres://x@localhost:5432/x
       NATS_URL: nats://localhost:4222
       NATS_DISABLED: "true"
       OTEL_DISABLED: "true"
       NODE_ENV: development
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: x
+      S3_SECRET_KEY: x
     steps:
       - uses: actions/checkout@v6
         with:
