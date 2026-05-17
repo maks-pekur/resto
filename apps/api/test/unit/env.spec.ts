@@ -224,4 +224,23 @@ describe('loadEnv', () => {
     };
     expect(() => loadEnv(productionEnv)).toThrow(/INTERNAL_API_TOKEN/);
   });
+
+  it('rejects production boot when a required var is whitespace-only', () => {
+    const productionEnv: NodeJS.ProcessEnv = {
+      ...baseEnv,
+      NODE_ENV: 'production',
+      BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
+      BETTER_AUTH_BASE_URL: 'https://api.resto.app',
+      BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
+      ADMIN_WEB_URL: 'https://admin.resto.app',
+      AUTH_COOKIE_DOMAIN: '.resto.app',
+      AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+      TRUST_PROXY: '10.0.0.0/8',
+      S3_ENDPOINT: 'https://s3.amazonaws.com',
+      S3_ACCESS_KEY: 'prod-access',
+      S3_SECRET_KEY: '   ',
+      INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
+    };
+    expect(() => loadEnv(productionEnv)).toThrow(/S3_SECRET_KEY/);
+  });
 });
