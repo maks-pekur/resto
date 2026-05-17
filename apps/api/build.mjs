@@ -3,13 +3,23 @@ import { build } from 'esbuild';
 /**
  * Production bundle for `apps/api`.
  *
- * NestJS lazily `require`s many transport adapters (Express, Microservices,
- * WebSockets, gRPC, Kafka, MQTT, AMQP, Redis) at runtime — even when the
- * app does not use them. esbuild's bundler tries to resolve every import
- * statically and would fail on the optional ones; we mark the unused
- * adapters `external` so the bundle skips them. Anything in this list
- * MUST stay out of the runtime image's `node_modules` (otherwise it
- * implicitly enables the corresponding NestJS feature).
+ * Bundling strategy:
+ *   - Workspace packages (`@resto/*`) are bundled into `dist/main.cjs`.
+ *     They are TypeScript-only with `main: ./src/index.ts`, so Node
+ *     cannot require them at runtime — they must live inline.
+ *   - Every other bare import (npm packages, scoped or unscoped) is
+ *     marked external. The Dockerfile's runtime stage ships
+ *     `node_modules/`, so Node resolves them at startup. This keeps
+ *     the bundle small and avoids esbuild "Could not resolve <pkg>"
+ *     errors when the Docker deps stage has not populated every
+ *     transitive dep of every workspace package.
+ *   - NESTJS_OPTIONAL_PEERS stays in the explicit external list to
+ *     reinforce intent: NestJS lazily `require`s many transport adapters
+ *     (microservices, WebSockets, gRPC, Kafka, MQTT, AMQP, Mongo, etc.)
+ *     at runtime — even when the app does not use them. Marking them
+ *     external means the bundle skips them, AND the runtime image MUST
+ *     NOT install them (otherwise NestJS auto-detects and implicitly
+ *     enables the corresponding feature).
  */
 const NESTJS_OPTIONAL_PEERS = [
   '@nestjs/microservices',
@@ -47,4 +57,17 @@ await build({
   external: NESTJS_OPTIONAL_PEERS,
   logLevel: 'info',
   sourcemap: true,
+  plugins: [
+    {
+      // Externalize every npm package, but let esbuild bundle workspace
+      // packages (@resto/*) because they ship as TypeScript source.
+      name: 'externalize-non-workspace',
+      setup(build) {
+        build.onResolve({ filter: /^[^./]/ }, (args) => {
+          if (args.path.startsWith('@resto/')) return null;
+          return { path: args.path, external: true };
+        });
+      },
+    },
+  ],
 });
