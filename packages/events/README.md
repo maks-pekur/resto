@@ -17,7 +17,7 @@ src/
     repository.ts        appendToOutbox / claimOutboxBatch / mark delivered
     dispatcher.ts        OutboxDispatcher polling loop
   inbox/
-    tracker.ts           per-consumer dedup ledger (in-memory for now)
+    run-deduped.ts        atomic inbox-dedup + handler tx wrapper (ADR-0020 I-5)
   infrastructure/
     nats-publisher.ts    JetStream publisher (ONLY place that imports `nats`)
     nats-subscriber.ts   JetStream subscriber (ONLY place that imports `nats`)
@@ -51,20 +51,28 @@ Rules:
 
 ## Idempotency
 
-Delivery is **at-least-once.** Consumers MUST be idempotent. The package
-provides two layers of defence:
+Delivery is **at-least-once.** Consumers MUST be idempotent. The
+package provides two layers of defence:
 
 1. **Producer side:** every JetStream publish carries `msgID =
-envelope.id`. Within JetStream's dedup window, repeated publishes of
-   the same id are dropped at the broker.
-2. **Consumer side:** wrap your handler with `withInboxDedup(tracker,
-consumer, handler)`. The tracker records every successfully processed
-   `(consumer, eventId)`; redeliveries skip the handler entirely.
+envelope.id`. Within JetStream's dedup window, repeated publishes
+   of the same id are dropped at the broker.
+2. **Consumer side:** wrap your handler with
+   `runDeduped(db, envelope, consumer, async (tx) => …)`. The helper
+   inserts the inbox marker and runs the handler in a single Drizzle
+   transaction; the handler's DB side effects commit together with
+   the marker, or roll back together. At-least-once delivery becomes
+   at-most-once handler invocation for handlers whose side effects
+   are confined to the project database.
 
-Both layers are necessary: the broker dedup is bounded in time; consumer
-dedup persists across that window. The `InMemoryInboxTracker` is fine
-for tests and single-process apps; the first real production deployment
-will swap in a Postgres- or Redis-backed tracker.
+Handlers whose side effects fall outside the project database (HTTP,
+email, payment intent creation) MUST be idempotent by design — derive
+the idempotency key from `envelope.id` and pass it to the external
+system as that system's idempotency token (ADR-0020 § Invariant
+I-5b). `runDeduped` does NOT guard external side effects.
+
+Both layers are necessary: the broker dedup is bounded in time;
+consumer dedup persists across that window.
 
 ## Outbox flow
 

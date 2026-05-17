@@ -7,10 +7,11 @@ import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/p
  * duplicate deliveries are normal; this table makes handlers idempotent
  * across redeliveries and across replicas.
  *
- * Writes go through `DrizzleInboxTracker` (`@resto/events`) under
- * `withoutTenant(...)` system context — consumers run outside any tenant
- * scope. Reads are restricted to system context (RLS), so cross-tenant
- * inspection is impossible from regular code.
+ * Writes go through `runDeduped` (`@resto/events`) under
+ * `withoutTenant(...)` system context — the helper inserts the marker
+ * inside the same Drizzle transaction as the handler's DB side effects
+ * (ADR-0020 I-5). Reads are restricted to system context (RLS), so
+ * cross-tenant inspection is impossible from regular code.
  *
  * `tenant_id` is a convenience copy of the envelope's `tenantId` (null
  * for platform events) — useful for ops dashboards and per-tenant

@@ -125,4 +125,25 @@ describe('RecordAuditService', () => {
     expect(inserted.targetType).toBe('user');
     expect(inserted.targetId).toBe('00000000-0000-4000-8000-0000000000aa');
   });
+
+  it('fromEnvelopeWithTx writes via the passed tx (skips withoutTenant)', async () => {
+    const insert = vi.fn();
+    const db = {
+      // If fromEnvelopeWithTx accidentally calls withoutTenant, the test fails
+      // because this mock returns void instead of running the callback.
+      withoutTenant: vi.fn(),
+    } as unknown as TenantAwareDb;
+    const tx = { insert: () => ({ values: insert }) } as unknown as Parameters<
+      Parameters<TenantAwareDb['withoutTenant']>[1]
+    >[0];
+
+    const service = new RecordAuditService(db);
+    const envelope = buildEnvelope();
+    await service.fromEnvelopeWithTx(envelope, tx);
+
+    expect(db.withoutTenant).not.toHaveBeenCalled();
+    expect(insert).toHaveBeenCalledTimes(1);
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.action).toBe('tenancy.tenant_provisioned.v1');
+  });
 });
