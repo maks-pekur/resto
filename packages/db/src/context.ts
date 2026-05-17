@@ -22,7 +22,7 @@ const storage = new AsyncLocalStorage<TenantContext>();
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-const isUuid = (value: string): boolean => UUID_RE.test(value);
+export const isUuid = (value: string): boolean => UUID_RE.test(value);
 
 /**
  * Run `op` with the given tenant context bound. Nested calls replace

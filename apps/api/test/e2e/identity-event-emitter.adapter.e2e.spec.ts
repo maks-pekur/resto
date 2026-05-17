@@ -97,4 +97,19 @@ suite('IdentityEventEmitterAdapter — RLS WITH CHECK on tenant-bound emits', ()
     expect(rows).toHaveLength(1);
     expect(rows[0]?.tenantId).toBeNull();
   });
+
+  it('persists a tenant-bound event when ALS is empty (BA-hook path)', async () => {
+    const envelope = buildEnvelope(TENANT_A_ID);
+    // NOT wrapped in runInTenantContext — simulates a Better Auth hook
+    // firing outside TenantContextMiddleware (e.g. `/sign-out` request
+    // that did not carry `x-tenant-slug` or a tenant-bearing host).
+    // Authoritative tenantId comes from the BA session snapshot.
+    await adapter.emit(envelope);
+
+    const rows = await stack.db.withoutTenant('inspect emitted row', (tx) =>
+      tx.select().from(schema.outboxEvents).where(eq(schema.outboxEvents.id, envelope.id)),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.tenantId).toBe(TENANT_A_ID);
+  });
 });
