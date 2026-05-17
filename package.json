@@ -27,7 +27,7 @@
     "prepare": "husky"
   },
   "devDependencies": {
-    "@commitlint/cli": "^19.6.1",
+    "@commitlint/cli": "^21.0.1",
     "@commitlint/config-conventional": "^21.0.1",
     "@nx/eslint-plugin": "20.3.0",
     "@types/node": "^25.8.0",
