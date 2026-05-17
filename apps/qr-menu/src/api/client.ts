@@ -6,7 +6,7 @@ const API_URL: string = (import.meta.env as Record<string, string | undefined>).
 // the `import.meta.env.VITE_TENANT_SLUG` read and the downstream `x-tenant-slug`
 // header construction are dead-code-eliminated. ADR-0020 I-3.
 const TENANT_SLUG_OVERRIDE: string | undefined = import.meta.env.DEV
-  ? import.meta.env.VITE_TENANT_SLUG
+  ? (import.meta.env.VITE_TENANT_SLUG as string | undefined)
   : undefined;
 
 export class MenuNotFoundError extends Error {
