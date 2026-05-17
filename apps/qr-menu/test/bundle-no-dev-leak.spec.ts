@@ -32,4 +32,21 @@ describe('qr-menu prod bundle', () => {
       expect(bundle, `bundle must not contain "${needle}"`).not.toContain(needle);
     }
   }, 60_000);
+
+  it('tree-shakes VITE_TENANT_SLUG even when the env var has a real value', () => {
+    const SLUG_FIXTURE = 'leak-test-slug-do-not-ship';
+    execSync('pnpm --filter @resto/qr-menu build', {
+      cwd: resolve(projectRoot, '..', '..'),
+      stdio: 'inherit',
+      env: { ...process.env, VITE_TENANT_SLUG: SLUG_FIXTURE },
+    });
+    const bundle = readBundleJs();
+    // The fixture value itself MUST be tree-shaken — its presence in the
+    // bundle would indicate Vite inlined the env var despite the
+    // `import.meta.env.DEV` guard. Same `x-tenant-slug` literal still
+    // matters for the header construction.
+    for (const needle of ['VITE_TENANT_SLUG', 'x-tenant-slug', SLUG_FIXTURE]) {
+      expect(bundle, `bundle must not contain "${needle}"`).not.toContain(needle);
+    }
+  }, 60_000);
 });
