@@ -1,5 +1,6 @@
-import { sql } from 'drizzle-orm';
+import { and, eq, sql, type SQL } from 'drizzle-orm';
 import { drizzle, type PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import type { PgColumn } from 'drizzle-orm/pg-core';
 import postgres, { type Sql } from 'postgres';
 import { getTenantContext, isUuid, requireTenantContext } from './context';
 import { logger } from './logger';
@@ -12,6 +13,118 @@ export type RestoSchema = typeof schema;
  * operations receive one of these — never the unscoped `db` directly.
  */
 export type RestoTx = Parameters<Parameters<PostgresJsDatabase<RestoSchema>['transaction']>[0]>[0];
+
+/**
+ * Compile-time marker for tables carrying `tenant_id NOT NULL`. Derived
+ * as the union of every table in `@resto/db`'s schema that exposes a
+ * `tenantId` column. Drizzle's `.from()` / `.insert()` generics resolve
+ * cleanly against concrete tables in the union — far less friction than
+ * an abstract `PgTable` constraint, which forces Drizzle's internal
+ * `TableLikeHasEmptySelection<T>` check to fail evaluation.
+ *
+ * Adding a new tenant-scoped table to the schema (via `tenantIdColumn()`)
+ * extends this union automatically — no manual opt-in required. Tables
+ * without a `tenantId` column (e.g. the `tenants` table itself) are
+ * excluded by the conditional and rejected at `selectFrom()` compile time.
+ */
+export type TenantScopedTable = {
+  [K in keyof typeof schema]: (typeof schema)[K] extends { tenantId: PgColumn }
+    ? (typeof schema)[K]
+    : never;
+}[keyof typeof schema];
+
+/**
+ * Tenant-scoped query builder. Wraps a `RestoTx` with a pinned tenantId;
+ * every helper method auto-applies `eq(table.tenantId, this.tenantId)` on
+ * SELECT / UPDATE and auto-injects `tenantId` on INSERT.
+ *
+ * Obtained from `TenantAwareDb.withTenant(op)` / `withTenantId(id, op)`
+ * as the second callback argument. Not directly constructible by callers —
+ * the wiring guarantees a tenant context is bound.
+ *
+ * For queries that must escape (joins to non-tenant tables, raw SQL),
+ * use the unrestricted `tx` (first callback argument). The escape is
+ * audited by code review, not the type system.
+ *
+ * No `deleteFrom` — project policy forbids hard deletes (`resto_app`
+ * role lacks DELETE privilege; soft-delete via `archived_at` is the rule).
+ * See `packages/db/sql/roles.sql:39`.
+ */
+export class ScopedTx {
+  constructor(
+    private readonly tx: RestoTx,
+    private readonly tenantId: string,
+  ) {}
+
+  /**
+   * SELECT with auto-applied `eq(table.tenantId, this.tenantId)`. Pass
+   * any extra predicate as the second argument; it is composed with the
+   * tenant filter via `and()`. The returned Drizzle builder is
+   * post-`.where()` — caller chains `.limit/.orderBy/.innerJoin/...`
+   * freely but should NOT call `.where()` again (Drizzle replaces;
+   * tenant filter is lost).
+   *
+   * Drizzle's `.from()` generic cannot evaluate
+   * `TableLikeHasEmptySelection<T>` for a `T extends TenantScopedTable`
+   * parameter, so the call uses an `as never` cast at the boundary; the
+   * runtime is identical and rows are typed via Drizzle's chain
+   * inference from the original `table`.
+   */
+  selectFrom(
+    table: TenantScopedTable,
+    extraWhere?: SQL,
+  ): ReturnType<RestoTx['select']>['from'] extends (t: never) => infer R ? R : never {
+    const tenantFilter = eq(table.tenantId, this.tenantId);
+    const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
+    return this.tx
+      .select()
+      .from(table as never)
+      .where(where) as never;
+  }
+
+  /**
+   * INSERT with auto-injected tenantId. Caller-provided values MUST NOT
+   * include `tenantId` — the TypeScript signature forbids it, and a
+   * runtime guard throws if it leaks through (e.g. via `as unknown` cast).
+   * The runtime guard catches the cross-tenant insert primitive that
+   * would otherwise let a row from tenant A be re-inserted under
+   * tenant B's ALS context.
+   *
+   * Drizzle's `.values()` generic shape over `T['$inferInsert']` requires
+   * concrete column metadata; `as never` casts unblock the chained call.
+   */
+  insertInto<T extends TenantScopedTable>(
+    table: T,
+    values: Omit<T['$inferInsert'], 'tenantId'>,
+  ): ReturnType<RestoTx['insert']>['values'] extends (v: never) => infer R ? R : never {
+    if ('tenantId' in (values as object)) {
+      const offending = (values as unknown as { tenantId: unknown }).tenantId;
+      throw new Error(
+        `ScopedTx.insertInto: values must not include tenantId — it is injected from the bound tenant context. Got tenantId=${JSON.stringify(offending)}.`,
+      );
+    }
+    return this.tx.insert(table).values({ ...values, tenantId: this.tenantId } as never);
+  }
+
+  /**
+   * UPDATE with auto-applied `eq(table.tenantId, this.tenantId)`. Returns
+   * a builder ready for `.returning()` or `.execute()`. Extra where
+   * composes with the tenant filter via `and()` — same pattern as
+   * `selectFrom`.
+   */
+  updateTable<T extends TenantScopedTable>(
+    table: T,
+    set: Partial<T['$inferInsert']>,
+    extraWhere?: SQL,
+  ): ReturnType<RestoTx['update']>['set'] extends (s: never) => infer R ? R : never {
+    const tenantFilter = eq(table.tenantId, this.tenantId);
+    const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
+    return this.tx
+      .update(table)
+      .set(set as never)
+      .where(where) as never;
+  }
+}
 
 export interface ResolvedConnection {
   /**
@@ -67,12 +180,12 @@ export class TenantAwareDb {
    * Run `op` inside a transaction with the current tenant context bound.
    * RLS will reject any row whose `tenant_id` does not match.
    */
-  async withTenant<T>(op: (tx: RestoTx) => Promise<T>): Promise<T> {
+  async withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T> {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.current_tenant', ${ctx.tenantId}, true)`);
       await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
-      return op(tx);
+      return op(tx, new ScopedTx(tx, ctx.tenantId));
     });
   }
 
@@ -89,7 +202,10 @@ export class TenantAwareDb {
    * the split, `withTenantId` throws when an ALS context is already
    * bound — that path indicates a mis-routed caller.
    */
-  async withTenantId<T>(tenantId: string, op: (tx: RestoTx) => Promise<T>): Promise<T> {
+  async withTenantId<T>(
+    tenantId: string,
+    op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>,
+  ): Promise<T> {
     if (getTenantContext()) {
       throw new Error(
         'withTenantId must not be called inside an ALS-bound context — use withTenant() instead.',
@@ -101,7 +217,7 @@ export class TenantAwareDb {
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantId}, true)`);
       await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
-      return op(tx);
+      return op(tx, new ScopedTx(tx, tenantId));
     });
   }
 

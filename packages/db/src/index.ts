@@ -7,11 +7,13 @@
 export * as schema from './schema/index';
 export {
   createDb,
+  ScopedTx,
   TenantAwareDb,
   type CreateClientOptions,
   type ResolvedConnection,
   type RestoSchema,
   type RestoTx,
+  type TenantScopedTable,
 } from './client';
 export {
   runInTenantContext,
