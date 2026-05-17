@@ -92,4 +92,20 @@ describe('OffboardTenantService', () => {
     expect(result).toEqual([]);
     expect(repo.listScheduledForErasure).toHaveBeenCalledTimes(1);
   });
+
+  it('executeErasure throws when AUDIT_ERASURE_SALT is unset', async () => {
+    const tenant = Tenant.provision(baseProvisionInput());
+    tenant.scheduleOffboarding('user-abc', new Date('2026-06-01T10:00:00Z'));
+    tenant.executeErasure(new Date('2026-07-02T10:00:00Z'));
+    const repo = buildRepoMock();
+    repo.eraseTenant = vi.fn().mockResolvedValue(tenant.toSnapshot());
+    // baseEnv() sets AUDIT_ERASURE_SALT — override to undefined to simulate
+    // a schema regression where the env var is missing.
+    const envWithoutSalt = baseEnv({ AUDIT_ERASURE_SALT: undefined as unknown as string });
+    const service = new OffboardTenantService(repo, envWithoutSalt);
+    await expect(service.executeErasure({ tenantId: tenant.toSnapshot().id })).rejects.toThrow(
+      /AUDIT_ERASURE_SALT/,
+    );
+    expect(repo.eraseTenant).not.toHaveBeenCalled();
+  });
 });

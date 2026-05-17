@@ -16,6 +16,7 @@ import { assertNoRlsBypass } from '@resto/db';
 import { AppModule } from './app.module';
 import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
+import { assertProdGuardrails } from './config/prod-guardrails';
 import { parseTrustProxy } from './config/trust-proxy';
 import { applyOpenApi } from './openapi';
 import { registerSecurity } from './shared/security';
@@ -39,6 +40,10 @@ const bootstrap = async (): Promise<void> => {
   // very first log line rather than the day a tenant discovers
   // another tenant's data (RES-83).
   await assertNoRlsBypass(env.DATABASE_URL);
+
+  // ADR-0020 I-3 defense-in-depth: refuse to start if any tracked
+  // dev-fallback constant is still present in a non-dev NODE_ENV.
+  assertProdGuardrails(env);
 
   await registerSecurity(app, env);
   applyOpenApi(app, env);

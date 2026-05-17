@@ -6,8 +6,6 @@ import { type TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantNotFoundError } from '../domain/errors';
 
-const DEV_SALT_FALLBACK = 'dev-only-erasure-salt-32-chars-padding';
-
 @Injectable()
 export class OffboardTenantService {
   private readonly logger = new Logger(OffboardTenantService.name);
@@ -46,7 +44,14 @@ export class OffboardTenantService {
 
   async executeErasure(input: { tenantId: string }): Promise<TenantSnapshot> {
     const id = TenantId.parse(input.tenantId);
-    const salt = this.env.AUDIT_ERASURE_SALT ?? DEV_SALT_FALLBACK;
+    const salt = this.env.AUDIT_ERASURE_SALT;
+    if (!salt) {
+      throw new Error(
+        'AUDIT_ERASURE_SALT must be set — env.schema validation should ' +
+          'have caught this in any NODE_ENV; reaching this branch indicates ' +
+          'a schema regression (ADR-0020 I-3).',
+      );
+    }
     const snapshot = await this.repo.eraseTenant(id, salt);
     this.logger.warn({ tenantId: id }, 'Tenant erased (irreversible)');
     return snapshot;
