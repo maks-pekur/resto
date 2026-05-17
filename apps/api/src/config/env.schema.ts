@@ -181,8 +181,9 @@ export const envSchema = z
         'S3_ENDPOINT',
         'S3_ACCESS_KEY',
         'S3_SECRET_KEY',
+        'INTERNAL_API_TOKEN',
       ] as const) {
-        if (!env[key]) {
+        if (!env[key]?.trim()) {
           ctx.addIssue({
             code: z.ZodIssueCode.custom,
             path: [key],

@@ -7,6 +7,7 @@ const okProdValues = {
   S3_ACCESS_KEY: 'prod-access',
   S3_SECRET_KEY: 'prod-secret-replace-me',
   AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+  INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
 } as const;
 
 const buildEnv = (overrides: Partial<Env> = {}): Env =>
@@ -89,6 +90,7 @@ describe('assertProdGuardrails', () => {
       expect(violations).toHaveLength(2);
       expect(violations.join(' ')).toMatch(/S3_SECRET_KEY/);
       expect(violations.join(' ')).toMatch(/AUDIT_ERASURE_SALT/);
+      expect((err as Error).message).toContain('deployment secrets');
     }
   });
 
@@ -96,5 +98,11 @@ describe('assertProdGuardrails', () => {
     expect(() =>
       assertProdGuardrails(buildEnv({ NODE_ENV: 'staging', S3_SECRET_KEY: 'minio_dev_password' })),
     ).toThrow(/S3_SECRET_KEY/);
+  });
+
+  it('throws when INTERNAL_API_TOKEN is the dev placeholder', () => {
+    expect(() =>
+      assertProdGuardrails(buildEnv({ INTERNAL_API_TOKEN: 'internal_dev_token_change_me' })),
+    ).toThrow(/INTERNAL_API_TOKEN/);
   });
 });

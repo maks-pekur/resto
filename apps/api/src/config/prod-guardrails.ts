@@ -17,13 +17,19 @@ const DEV_DEFAULTS = {
   S3_ACCESS_KEY: 'minio',
   S3_ENDPOINT: 'http://localhost:9000',
   AUDIT_ERASURE_SALT: 'dev-only-erasure-salt-32-chars-padding',
+  INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
 
 export class ProdGuardrailsError extends Error {
   constructor(public readonly violations: readonly string[]) {
-    super(`prod-guardrails: refusing to start: ${violations.join('; ')}`);
+    super(
+      `prod-guardrails: refusing to start: ${violations.join('; ')}. ` +
+        'Set real values in your deployment secrets (Vault / 1Password ' +
+        'Connect / cloud secret manager) and redeploy. Do NOT bypass by ' +
+        'setting NODE_ENV=development.',
+    );
     this.name = 'ProdGuardrailsError';
   }
 }
