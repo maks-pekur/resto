@@ -153,20 +153,19 @@ export class ScopedTx {
     const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
     return this.tx.update(table).set(set).where(where);
   }
-
-  /**
-   * DELETE with auto-applied `eq(table.tenantId, this.tenantId)`.
-   */
-  deleteFrom<T extends TenantScopedTable>(table: T, extraWhere?: SQL) {
-    const tenantFilter = eq(table.tenantId, this.tenantId);
-    const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
-    return this.tx.delete(table).where(where);
-  }
 }
 ```
 
-**Size:** ~50 LOC of code + ~30 LOC docstrings ≈ 80 LOC. Matches the
-ticket's estimate.
+**Three methods, not four.** No `deleteFrom` — project policy forbids
+hard deletes (see `packages/db/sql/roles.sql:39`: `resto_app` role lacks
+`DELETE` privilege; domain rules require soft-delete via `archived_at`).
+A `deleteFrom` helper would compile but always fail at runtime with
+`permission denied for table …`. Future GC jobs that need hard delete
+run under their own privileged role and would NOT use `ScopedTx` —
+they'd use a separate helper or raw SQL.
+
+**Size:** ~40 LOC of code + ~25 LOC docstrings ≈ 65 LOC. Below the
+ticket's ~80 LOC estimate.
 
 ### 3. Wiring into `TenantAwareDb`
 
@@ -262,22 +261,23 @@ Pattern follows `with-tenant-id.spec.ts` and `tenant-isolation.spec.ts`:
 testcontainer Postgres via `startPostgres()` / `stopPostgres()`,
 skip-when-no-Docker via `isDockerAvailable()`.
 
-10 cases:
+**Test isolation:** `resto_app` lacks DELETE privilege (project policy in `packages/db/sql/roles.sql:39` — domain forbids hard deletes), so we cannot truncate between tests. Each case uses unique slug prefixes (`c1-…`, `c2-…`, …) and filters assertions via `eq(slug, '<unique>')` to its own seeded rows. No `beforeEach`. Acceptable because the container is fresh per test file.
 
-| #   | Case                                                  | Setup                                | Action                                                                                   | Expectation                                       |
-| --- | ----------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| 1   | selectFrom auto-applies tenant filter                 | seed A row + B row in menuCategories | ALS=A → `scoped.selectFrom(menuCategories)`                                              | returns only A row                                |
-| 2   | selectFrom composes extra where with AND              | A: pizza+burger, B: pizza            | ALS=A → `scoped.selectFrom(menuCategories, eq(slug, 'pizza'))`                           | returns 1 row (A pizza)                           |
-| 3   | selectFrom chains Drizzle ops (.limit)                | seed 3 rows tenant A                 | `scoped.selectFrom(menuCategories).limit(2)`                                             | returns 2 rows                                    |
-| 4   | insertInto auto-injects tenantId                      | empty                                | ALS=A → `scoped.insertInto(menuCategories, { slug:'x', name:{en:'X'} })`                 | row inserted with tenantId=A; SELECT confirms     |
-| 5   | insertInto throws if values include tenantId          | empty                                | ALS=A → `scoped.insertInto(menuCategories, { tenantId:'…', slug:'y', name:{…} } as any)` | throws with informative message; nothing inserted |
-| 6   | updateTable auto-filters by tenantId                  | A:pizza, B:pizza                     | ALS=A → `scoped.updateTable(menuCategories, { name:{en:'Updated'} })`                    | only A row updated; B unchanged                   |
-| 7   | deleteFrom auto-filters by tenantId                   | A:pizza, B:pizza                     | ALS=A → `scoped.deleteFrom(menuCategories)`                                              | A gone; B remains                                 |
-| 8   | withTenant callback receives ScopedTx                 | n/a                                  | `db.withTenant((tx, scoped) => scoped instanceof ScopedTx)`                              | true                                              |
-| 9   | withTenantId callback receives ScopedTx (no-ALS path) | n/a                                  | `db.withTenantId(A, (tx, scoped) => scoped.selectFrom(menuCategories))`                  | works without runInTenantContext wrapping         |
-| 10  | withoutTenant callback signature stays single-arg     | n/a (compile-time only)              | TS check: `db.withoutTenant('r', (tx) => ...)` accepts arrow with 1 param                | type-checks; no `scoped` available                |
+9 cases:
 
-Case 10 is a compile-time-only check — runs as part of `pnpm exec nx run db:typecheck`. Concretely: the test file includes a type-level assertion using `expectTypeOf` or a no-op arrow that the suite never actually invokes, just to pin the signature.
+| #   | Case                                                  | Setup                            | Action                                                                                                  | Expectation                                                     |
+| --- | ----------------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| 1   | selectFrom auto-applies tenant filter                 | A:c1-pizza, B:c1-pizza           | ALS=A → `scoped.selectFrom(menuCategories, eq(slug, 'c1-pizza'))`                                       | returns only A row                                              |
+| 2   | selectFrom composes extra where with AND              | A:c2-pizza+c2-burger, B:c2-pizza | ALS=A → `scoped.selectFrom(menuCategories, eq(slug, 'c2-pizza'))`                                       | returns 1 row (A pizza)                                         |
+| 3   | selectFrom chains Drizzle ops (.limit)                | A:c3-one+c3-two+c3-three         | `scoped.selectFrom(menuCategories, eq(slug, 'c3-one')).limit(1)`                                        | returns 1 row                                                   |
+| 4   | insertInto auto-injects tenantId                      | empty                            | ALS=A → `scoped.insertInto(menuCategories, { slug:'c4-pizza', name:{en:'C4 Pizza'} })`                  | row inserted with tenantId=A; SELECT by slug confirms           |
+| 5   | insertInto throws if values include tenantId          | empty                            | ALS=A → `scoped.insertInto(menuCategories, { tenantId:B, slug:'c5-sneaky', name:{…} } as unknown as …)` | throws with informative message; nothing inserted               |
+| 6   | updateTable auto-filters by tenantId                  | A:c6-pizza, B:c6-pizza           | ALS=A → `scoped.updateTable(menuCategories, { name:{en:'C6 Updated A'} }, eq(slug, 'c6-pizza'))`        | only A row updated; B unchanged                                 |
+| 7   | withTenant callback receives ScopedTx                 | n/a                              | `db.withTenant((tx, scoped) => scoped instanceof ScopedTx)`                                             | true                                                            |
+| 8   | withTenantId callback receives ScopedTx (no-ALS path) | A:c8-wtid                        | `db.withTenantId(A, (tx, scoped) => scoped.selectFrom(menuCategories, eq(slug, 'c8-wtid')))`            | works without runInTenantContext wrapping                       |
+| 9   | withoutTenant callback signature stays 1-arg          | n/a                              | `db.withoutTenant('reason', (tx) => tx.select().…)` — runs, type-checks                                 | callback executes with single `tx` param; no `scoped` available |
+
+(Originally the spec listed 10 cases including a `deleteFrom` test — dropped along with the `deleteFrom` method per project DELETE-grant policy. See §2.)
 
 ## Rollout
 
@@ -298,7 +298,7 @@ Case 10 is a compile-time-only check — runs as part of `pnpm exec nx run db:ty
 
 1. `pnpm exec nx run db:typecheck` → PASS. Generic `T extends TenantScopedTable` must correctly narrow at call sites.
 2. `pnpm exec nx run db:lint` → PASS.
-3. `pnpm exec nx test db` → 10 new cases + existing 44 = **54** total, all green.
+3. `pnpm exec nx test db` → 9 new cases + existing 44 = **53** total, all green.
 4. `pnpm exec nx run-many -t typecheck -p db,api` → PASS. Critical: extending `withTenant` callback signature must not break existing callers in `apps/api/**` that pass a 1-arg arrow.
 
 ### PR + Linear

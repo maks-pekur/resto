@@ -20,13 +20,20 @@
 | ------------------------------------------------ | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `packages/db/src/client.ts`                      | Modify | Add `TenantScopedTable` type alias; add `ScopedTx` class; extend `withTenant`/`withTenantId` callback signatures to pass `ScopedTx` as 2nd arg; construct it inside both methods. |
 | `packages/db/src/index.ts`                       | Modify | Export `ScopedTx` and `TenantScopedTable`.                                                                                                                                        |
-| `packages/db/test/integration/scoped-tx.spec.ts` | Create | 10 integration test cases covering selectFrom / insertInto / updateTable / deleteFrom + wiring.                                                                                   |
+| `packages/db/test/integration/scoped-tx.spec.ts` | Create | 9 integration test cases covering selectFrom / insertInto / updateTable + wiring. (Originally 10 — `deleteFrom` case dropped, see plan deviation note below.)                     |
 
 **Pre-existing infrastructure (no changes needed):**
 
 - `packages/db/test/setup.ts` provides `startPostgres()` / `stopPostgres()` / `isDockerAvailable()` — reused.
 - `packages/db/src/context.ts` exports `getTenantContext` / `isUuid` / `requireTenantContext` — already imported by `client.ts`.
 - `packages/db/src/schema/menu.ts` provides `menuCategories` (the canonical tenant-scoped table the tests use).
+
+**Mid-implementation deviation (2026-05-17):** Discovery during Task 2 exposed that `resto_app` role lacks DELETE privilege by project policy (`packages/db/sql/roles.sql:39` — domain forbids hard deletes, soft-delete via `archived_at` is the rule). Two changes from the original spec/plan, applied via a `docs(spec/plan)` commit before the feat commit:
+
+1. **`ScopedTx.deleteFrom` dropped.** The method would compile but always fail at runtime with `permission denied`. Spec §2 updated; plan Task 3 impl reduced from 4 methods to 3 (select/insert/update).
+2. **`beforeEach` cleanup replaced with unique slug prefixes per test.** Tests use `c1-…`, `c2-…`, etc. + `.where(eq(slug, '<unique>'))` to filter assertions to their own rows. No truncate.
+
+Case count: 10 → 9 (deleteFrom case removed). Verification expectations updated accordingly.
 
 ---
 
@@ -449,17 +456,10 @@ export class ScopedTx {
     const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
     return this.tx.update(table).set(set).where(where);
   }
-
-  /**
-   * DELETE with auto-applied `eq(table.tenantId, this.tenantId)`.
-   */
-  deleteFrom<T extends TenantScopedTable>(table: T, extraWhere?: SQL) {
-    const tenantFilter = eq(table.tenantId, this.tenantId);
-    const where = extraWhere ? and(tenantFilter, extraWhere) : tenantFilter;
-    return this.tx.delete(table).where(where);
-  }
 }
 ```
+
+**No `deleteFrom`** — the `resto_app` role lacks DELETE privilege by project policy (`packages/db/sql/roles.sql:39`). Including it would create a runtime-failing footgun. Future GC jobs that need hard delete will use a separate privileged role + helper.
 
 - [ ] **Step 4: Extend `withTenant` and `withTenantId` signatures**
 
@@ -583,7 +583,7 @@ cd /Users/mp_dev/projects/RestOS/packages/db
 pnpm exec vitest run test/integration/scoped-tx.spec.ts
 ```
 
-Expected: PASS — 10 cases green.
+Expected: PASS — 9 cases green.
 
 If a case fails, do not "fix" the spec — re-read the failing assertion against the spec (`docs/superpowers/specs/2026-05-17-res-235a-scoped-tx-design.md`) and adjust the implementation if it diverges from intent.
 
@@ -594,7 +594,7 @@ cd /Users/mp_dev/projects/RestOS
 pnpm exec nx test db
 ```
 
-Expected: 6 test files / **54 tests passed** (existing 44 + new 10).
+Expected: 6 test files / **53 tests passed** (existing 44 + new 9).
 
 - [ ] **Step 4: Cross-package typecheck — confirm existing api callers still compile**
 
