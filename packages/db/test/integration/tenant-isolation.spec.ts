@@ -105,6 +105,37 @@ suite('Row-Level Security — tenant isolation', () => {
     expect((error as Error).message).toMatch(/Tenant GUC drift detected/);
   });
 
+  it('RES-243: forge via RESET is caught by drift sentinel', async () => {
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`RESET app.current_tenant`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected/);
+  });
+
+  it('RES-243: binding a tenant inside withoutTenant is caught', async () => {
+    // Outer `withoutTenant` expects current_tenant=''. If a callback rebinds
+    // to a tenant uuid, the wrapper allows the transition (current was '')
+    // but the outer drift sentinel catches it on exit.
+    const error = await pg.db
+      .withoutTenant('test cross-context binding', async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantA}, false)`);
+        return tx.select().from(schema.tenants);
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected in withoutTenant/);
+  });
+
   it("attempting to UPDATE another tenant's row is blocked", async () => {
     const updated = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) =>
