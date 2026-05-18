@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { isDockerAvailable, startPostgres, stopPostgres, type TestPg } from '../setup';
-import { runInTenantContext, schema } from '../../src/index';
+import postgres from 'postgres';
+import {
+  assertSetConfigRevoked,
+  assertTenantLockInstalled,
+  runInTenantContext,
+  schema,
+  SetConfigNotRevokedError,
+  TenantLockNotInstalledError,
+} from '../../src/index';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -270,5 +278,62 @@ suite('Row-Level Security — tenant isolation', () => {
         });
       }),
     );
+  });
+
+  describe('preflight (RES-243)', () => {
+    it('assertTenantLockInstalled passes on a freshly-migrated DB', async () => {
+      await expect(assertTenantLockInstalled(pg.url)).resolves.toBeUndefined();
+    });
+
+    it('assertTenantLockInstalled throws when the wrapper is dropped', async () => {
+      const adminClient = postgres(pg.adminUrl, { max: 1, prepare: false });
+      try {
+        await adminClient`DROP FUNCTION IF EXISTS app_bind_tenant(text, boolean)`;
+        await expect(assertTenantLockInstalled(pg.url)).rejects.toBeInstanceOf(
+          TenantLockNotInstalledError,
+        );
+      } finally {
+        // Restore so subsequent tests aren't poisoned (singleFork: true).
+        await adminClient.unsafe(`
+          CREATE OR REPLACE FUNCTION app_bind_tenant(p_tenant TEXT, p_is_system BOOLEAN)
+          RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER
+          SET search_path = pg_catalog, public
+          AS $func$
+          DECLARE v_current TEXT := current_setting('app.current_tenant', true);
+          BEGIN
+            IF v_current IS NOT NULL AND v_current <> '' AND v_current <> p_tenant THEN
+              RAISE EXCEPTION
+                'app.current_tenant already bound to % — refusing to rebind to %',
+                v_current, p_tenant USING ERRCODE = 'insufficient_privilege';
+            END IF;
+            PERFORM set_config('app.current_tenant', p_tenant, true);
+            PERFORM set_config(
+              'app.is_system',
+              CASE WHEN p_is_system THEN 'true' ELSE 'false' END,
+              true
+            );
+          END $func$;
+        `);
+        await adminClient`GRANT EXECUTE ON FUNCTION app_bind_tenant(text, boolean) TO resto_app`;
+        await adminClient.end({ timeout: 5 });
+      }
+    });
+
+    it('assertSetConfigRevoked passes on a freshly-migrated DB', async () => {
+      await expect(assertSetConfigRevoked(pg.url)).resolves.toBeUndefined();
+    });
+
+    it('assertSetConfigRevoked throws when the PUBLIC grant is restored', async () => {
+      const adminClient = postgres(pg.adminUrl, { max: 1, prepare: false });
+      try {
+        await adminClient`GRANT EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO PUBLIC`;
+        await expect(assertSetConfigRevoked(pg.url)).rejects.toBeInstanceOf(
+          SetConfigNotRevokedError,
+        );
+      } finally {
+        await adminClient`REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM PUBLIC`;
+        await adminClient.end({ timeout: 5 });
+      }
+    });
   });
 });
