@@ -162,6 +162,13 @@
       "when": 1779063077747,
       "tag": "0022_tenant_guc_lock",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1779096848188,
+      "tag": "0023_revoke_set_config",
+      "breakpoints": true
     }
   ]
 }

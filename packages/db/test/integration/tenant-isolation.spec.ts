@@ -189,6 +189,26 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(explanation).toMatch(/Index/);
   });
 
+  it('RES-243: forge via set_config() is blocked at the role level', async () => {
+    // After migration 0023, `pg_catalog.set_config(text, text, boolean)` is
+    // REVOKED from PUBLIC. resto_app can no longer call set_config directly;
+    // attempting to do so inside a withTenant block fails immediately with
+    // SQLSTATE 42501 — the transaction rolls back before the drift sentinel
+    // would have had a chance to fire.
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantB}, true)`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause as { code?: string } | undefined;
+    expect(cause?.code).toBe('42501');
+  });
+
   it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
     const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
       tx
