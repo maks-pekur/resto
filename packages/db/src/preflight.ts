@@ -69,3 +69,91 @@ export const assertNoRlsBypass = async (url: string): Promise<void> => {
     await client.end({ timeout: 5 });
   }
 };
+
+/**
+ * Error raised when the RES-243 GUC lock is not installed on the
+ * connected database. Distinct subclass so the boot path can emit an
+ * actionable "run `pnpm db:migrate`" message instead of a generic
+ * undefined-function crash on the first request.
+ */
+export class TenantLockNotInstalledError extends Error {
+  constructor(public readonly detail: string) {
+    super(
+      `RES-243 tenant GUC lock is not installed on the database: ${detail}. ` +
+        'Run `pnpm db:migrate` (migrations 0022 + 0023) and verify ' +
+        '`roles.sql` has been re-applied for resto_app.',
+    );
+    this.name = 'TenantLockNotInstalledError';
+  }
+}
+
+/**
+ * Verify that the SECURITY DEFINER wrapper `app_bind_tenant(text,boolean)`
+ * exists and the current connection role has EXECUTE on it. Run at boot
+ * alongside `assertNoRlsBypass` — if missing, the API refuses to start.
+ */
+export const assertTenantLockInstalled = async (url: string): Promise<void> => {
+  const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
+  try {
+    const fnRows = await client<{ exists: boolean }[]>`
+      SELECT to_regprocedure('public.app_bind_tenant(text,boolean)') IS NOT NULL AS exists
+    `;
+    if (!fnRows[0]?.exists) {
+      throw new TenantLockNotInstalledError('app_bind_tenant(text,boolean) is missing');
+    }
+    const grantRows = await client<{ has_exec: boolean }[]>`
+      SELECT has_function_privilege(
+        current_user,
+        'public.app_bind_tenant(text,boolean)',
+        'EXECUTE'
+      ) AS has_exec
+    `;
+    if (!grantRows[0]?.has_exec) {
+      throw new TenantLockNotInstalledError(
+        'current_user lacks EXECUTE on app_bind_tenant(text,boolean)',
+      );
+    }
+    logger.info('Database preflight passed: app_bind_tenant wrapper installed and executable.');
+  } finally {
+    await client.end({ timeout: 5 });
+  }
+};
+
+/**
+ * Error raised when `pg_catalog.set_config(text,text,boolean)` is still
+ * executable by the connected role — RES-243 expects the PUBLIC grant
+ * to have been revoked.
+ */
+export class SetConfigNotRevokedError extends Error {
+  constructor() {
+    super(
+      'RES-243: pg_catalog.set_config(text,text,boolean) is still ' +
+        'executable by the application role. The structural lock against ' +
+        'GUC re-bind is bypassed. Re-run `pnpm db:migrate` (migration 0023).',
+    );
+    this.name = 'SetConfigNotRevokedError';
+  }
+}
+
+/**
+ * Verify that the application role does NOT have EXECUTE on the
+ * `set_config(text,text,boolean)` function. Defense A of RES-243.
+ */
+export const assertSetConfigRevoked = async (url: string): Promise<void> => {
+  const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
+  try {
+    const rows = await client<{ has_exec: boolean }[]>`
+      SELECT has_function_privilege(
+        current_user,
+        'pg_catalog.set_config(text,text,boolean)',
+        'EXECUTE'
+      ) AS has_exec
+    `;
+    if (rows[0]?.has_exec) {
+      throw new SetConfigNotRevokedError();
+    }
+    logger.info('Database preflight passed: set_config is not executable by application role.');
+  } finally {
+    await client.end({ timeout: 5 });
+  }
+};

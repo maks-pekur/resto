@@ -24,7 +24,14 @@ export {
   withBrand,
   type TenantContext,
 } from './context';
-export { assertNoRlsBypass, RlsBypassError } from './preflight';
+export {
+  assertNoRlsBypass,
+  assertSetConfigRevoked,
+  assertTenantLockInstalled,
+  RlsBypassError,
+  SetConfigNotRevokedError,
+  TenantLockNotInstalledError,
+} from './preflight';
 export { provisionAppRole, RESTO_APP_ROLE } from './roles';
 export { provisionAuthRole, RESTO_AUTH_ROLE } from './auth-role';
 export type { LocalizedText } from './schema/_types';
