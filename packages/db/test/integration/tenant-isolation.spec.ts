@@ -209,6 +209,37 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(cause?.code).toBe('42501');
   });
 
+  it('RES-243: rebind to a different tenant via app_bind_tenant raises', async () => {
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantB}, false)`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause as { code?: string; message?: string } | undefined;
+    expect(cause?.code).toBe('42501');
+    expect(cause?.message).toContain(tenantA);
+    expect(cause?.message).toContain(tenantB);
+  });
+
+  it('RES-243: rebind to the same tenant via app_bind_tenant is idempotent', async () => {
+    // Same-tenant rebind is a documented no-op of the wrapper contract;
+    // exists so nested `withTenant` calls compose cleanly even though
+    // current code has no such nesting.
+    const rows = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantA}, false)`);
+        return tx.select().from(schema.tenants);
+      }),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(tenantA);
+  });
+
   it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
     const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
       tx
