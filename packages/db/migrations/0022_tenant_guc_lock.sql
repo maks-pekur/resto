@@ -34,7 +34,7 @@ BEGIN
 END
 $$;
 --> statement-breakpoint
-REVOKE EXECUTE ON FUNCTION app_bind_tenant(TEXT, BOOLEAN) FROM PUBLIC;
+REVOKE EXECUTE ON FUNCTION app_bind_tenant(text, boolean) FROM PUBLIC;
 --> statement-breakpoint
 -- Conditional grant: in a fresh test container `resto_app` is provisioned
 -- after migrations run, so this DO block is a no-op there; `roles.sql`
@@ -42,7 +42,7 @@ REVOKE EXECUTE ON FUNCTION app_bind_tenant(TEXT, BOOLEAN) FROM PUBLIC;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_app') THEN
-    EXECUTE 'GRANT EXECUTE ON FUNCTION app_bind_tenant(TEXT, BOOLEAN) TO resto_app';
+    EXECUTE 'GRANT EXECUTE ON FUNCTION app_bind_tenant(text, boolean) TO resto_app';
   END IF;
 END
 $$;

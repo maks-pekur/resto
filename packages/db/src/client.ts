@@ -155,9 +155,19 @@ export interface CreateClientOptions {
  * bound to the current `TenantContext.tenantId`, so RLS policies enforce
  * isolation at the database layer regardless of application bugs.
  *
+ * Binding is funneled through the SECURITY DEFINER wrapper
+ * `app_bind_tenant(text, boolean)` (RES-243). `resto_app` cannot call
+ * `pg_catalog.set_config` directly — the PUBLIC grant is revoked. A
+ * mismatch between the GUC value at bind time and at end-of-callback is
+ * detected by `#assertGucUnchanged`, which throws and rolls back the
+ * transaction so wrong-tenant rows never reach the caller.
+ *
  * Use the `withoutTenant(reason, op)` escape hatch for system code that
  * legitimately needs to see across tenants (migrations, outbox dispatcher,
- * platform admin). Every bypass is logged with the reason.
+ * platform admin). Every bypass is logged with the reason; the same
+ * wrapper enforces "no rebind" while the GUC is empty.
+ *
+ * The formal contract for the three methods is in RES-238 (separate PR).
  */
 export class TenantAwareDb {
   readonly #db: PostgresJsDatabase<RestoSchema>;
@@ -188,6 +198,13 @@ export class TenantAwareDb {
    * callback before the result is returned, so a drift throws while
    * Drizzle still rolls the transaction back — the locally-computed
    * `result` is discarded and never reaches the caller.
+   *
+   * Note: the rollback covers the database transaction only. If the
+   * callback triggered out-of-band side effects (NATS publish, HTTP call,
+   * file write) before the drift was detected, those side effects are NOT
+   * undone. The RES-243 contract is about preventing wrong-tenant data
+   * from reaching the HTTP response — out-of-band leakage is a separate
+   * class of bug addressed by the I-1 mandatory tenant filter / ScopedTx.
    */
   async #assertGucUnchanged(tx: RestoTx, expected: string, scope: string): Promise<void> {
     const rows = await tx.execute<{ v: string | null }>(
