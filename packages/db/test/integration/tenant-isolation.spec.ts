@@ -1,7 +1,15 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { isDockerAvailable, startPostgres, stopPostgres, type TestPg } from '../setup';
-import { runInTenantContext, schema } from '../../src/index';
+import postgres from 'postgres';
+import {
+  assertSetConfigRevoked,
+  assertTenantLockInstalled,
+  runInTenantContext,
+  schema,
+  SetConfigNotRevokedError,
+  TenantLockNotInstalledError,
+} from '../../src/index';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -88,31 +96,52 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(all.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('forged current_setting flips RLS — application code MUST NOT call set_config (contract test)', async () => {
-    // CONTRACT: `set_config('app.current_tenant', …, true)` from inside `withTenant`
-    // is NOT prevented by Postgres. RLS policies read whatever the current setting
-    // says at query time, so any tenant-bound transaction whose body invokes
-    // `set_config` switches tenants for the remainder of the tx. FORCE ROW LEVEL
-    // SECURITY does not stop this — it only stops the *table owner* from bypassing
-    // policies; it does not freeze the policy's input.
-    //
-    // Defence: application code is forbidden from calling `set_config` outside
-    // `packages/db/src/client.ts`. The planned hardening (ADR-0020 follow-up) is
-    // to REVOKE the `set_config` function from the `resto_app` role so this test
-    // breaks with a permission error — at which point the rule becomes structural
-    // rather than convention. Until then, this test documents the leak primitive
-    // explicitly so future readers don't mistake current behaviour for safety.
-    const visible = await runInTenantContext({ tenantId: tenantA }, () =>
+  it('RES-243: forge via SET LOCAL is caught by drift sentinel', async () => {
+    // REVOKE EXECUTE on set_config does not block the top-level `SET LOCAL`
+    // SQL command — Postgres has no privilege mechanism for that on custom
+    // GUCs. The end-of-callback drift sentinel is the defense.
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) => {
-        // Pretend we are tenant B for the rest of the tx.
-        await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantB}, true)`);
+        await tx.execute(sql.raw(`SET LOCAL app.current_tenant = '${tenantB}'`));
         return tx.select().from(schema.tenants);
       }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
     );
-    // The forged setting flipped the policy: we now see tenant B's row, not A.
-    // The assertion documents the leak — it does NOT claim the leak is blocked.
-    expect(visible.every((row) => row.id !== tenantA)).toBe(true);
-    expect(visible.some((row) => row.id === tenantB)).toBe(true);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected/);
+  });
+
+  it('RES-243: forge via RESET is caught by drift sentinel', async () => {
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`RESET app.current_tenant`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected/);
+  });
+
+  it('RES-243: binding a tenant inside withoutTenant is caught', async () => {
+    // Outer `withoutTenant` expects current_tenant=''. If a callback rebinds
+    // to a tenant uuid, the wrapper allows the transition (current was '')
+    // but the outer drift sentinel catches it on exit.
+    const error = await pg.db
+      .withoutTenant('test cross-context binding', async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantA}, false)`);
+        return tx.select().from(schema.tenants);
+      })
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected in withoutTenant/);
   });
 
   it("attempting to UPDATE another tenant's row is blocked", async () => {
@@ -168,6 +197,57 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(explanation).toMatch(/Index/);
   });
 
+  it('RES-243: forge via set_config() is blocked at the role level', async () => {
+    // After migration 0023, `pg_catalog.set_config(text, text, boolean)` is
+    // REVOKED from PUBLIC. resto_app can no longer call set_config directly;
+    // attempting to do so inside a withTenant block fails immediately with
+    // SQLSTATE 42501 — the transaction rolls back before the drift sentinel
+    // would have had a chance to fire.
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantB}, true)`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause as { code?: string } | undefined;
+    expect(cause?.code).toBe('42501');
+  });
+
+  it('RES-243: rebind to a different tenant via app_bind_tenant raises', async () => {
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantB}, false)`);
+        return tx.select().from(schema.tenants);
+      }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
+    );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause as { code?: string; message?: string } | undefined;
+    expect(cause?.code).toBe('42501');
+    expect(cause?.message).toContain(tenantA);
+    expect(cause?.message).toContain(tenantB);
+  });
+
+  it('RES-243: rebind to the same tenant via app_bind_tenant is idempotent', async () => {
+    // Same-tenant rebind is a documented no-op of the wrapper contract;
+    // exists so nested `withTenant` calls compose cleanly even though
+    // current code has no such nesting.
+    const rows = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await tx.execute(sql`SELECT app_bind_tenant(${tenantA}, false)`);
+        return tx.select().from(schema.tenants);
+      }),
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]?.id).toBe(tenantA);
+  });
+
   it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
     const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
       tx
@@ -198,5 +278,62 @@ suite('Row-Level Security — tenant isolation', () => {
         });
       }),
     );
+  });
+
+  describe('preflight (RES-243)', () => {
+    it('assertTenantLockInstalled passes on a freshly-migrated DB', async () => {
+      await expect(assertTenantLockInstalled(pg.url)).resolves.toBeUndefined();
+    });
+
+    it('assertTenantLockInstalled throws when the wrapper is dropped', async () => {
+      const adminClient = postgres(pg.adminUrl, { max: 1, prepare: false });
+      try {
+        await adminClient`DROP FUNCTION IF EXISTS app_bind_tenant(text, boolean)`;
+        await expect(assertTenantLockInstalled(pg.url)).rejects.toBeInstanceOf(
+          TenantLockNotInstalledError,
+        );
+      } finally {
+        // Restore so subsequent tests aren't poisoned (singleFork: true).
+        await adminClient.unsafe(`
+          CREATE OR REPLACE FUNCTION app_bind_tenant(p_tenant TEXT, p_is_system BOOLEAN)
+          RETURNS VOID LANGUAGE plpgsql SECURITY DEFINER
+          SET search_path = pg_catalog, public
+          AS $func$
+          DECLARE v_current TEXT := current_setting('app.current_tenant', true);
+          BEGIN
+            IF v_current IS NOT NULL AND v_current <> '' AND v_current <> p_tenant THEN
+              RAISE EXCEPTION
+                'app.current_tenant already bound to % — refusing to rebind to %',
+                v_current, p_tenant USING ERRCODE = 'insufficient_privilege';
+            END IF;
+            PERFORM set_config('app.current_tenant', p_tenant, true);
+            PERFORM set_config(
+              'app.is_system',
+              CASE WHEN p_is_system THEN 'true' ELSE 'false' END,
+              true
+            );
+          END $func$;
+        `);
+        await adminClient`GRANT EXECUTE ON FUNCTION app_bind_tenant(text, boolean) TO resto_app`;
+        await adminClient.end({ timeout: 5 });
+      }
+    });
+
+    it('assertSetConfigRevoked passes on a freshly-migrated DB', async () => {
+      await expect(assertSetConfigRevoked(pg.url)).resolves.toBeUndefined();
+    });
+
+    it('assertSetConfigRevoked throws when the PUBLIC grant is restored', async () => {
+      const adminClient = postgres(pg.adminUrl, { max: 1, prepare: false });
+      try {
+        await adminClient`GRANT EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) TO PUBLIC`;
+        await expect(assertSetConfigRevoked(pg.url)).rejects.toBeInstanceOf(
+          SetConfigNotRevokedError,
+        );
+      } finally {
+        await adminClient`REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM PUBLIC`;
+        await adminClient.end({ timeout: 5 });
+      }
+    });
   });
 });

@@ -155,9 +155,19 @@ export interface CreateClientOptions {
  * bound to the current `TenantContext.tenantId`, so RLS policies enforce
  * isolation at the database layer regardless of application bugs.
  *
+ * Binding is funneled through the SECURITY DEFINER wrapper
+ * `app_bind_tenant(text, boolean)` (RES-243). `resto_app` cannot call
+ * `pg_catalog.set_config` directly — the PUBLIC grant is revoked. A
+ * mismatch between the GUC value at bind time and at end-of-callback is
+ * detected by `#assertGucUnchanged`, which throws and rolls back the
+ * transaction so wrong-tenant rows never reach the caller.
+ *
  * Use the `withoutTenant(reason, op)` escape hatch for system code that
  * legitimately needs to see across tenants (migrations, outbox dispatcher,
- * platform admin). Every bypass is logged with the reason.
+ * platform admin). Every bypass is logged with the reason; the same
+ * wrapper enforces "no rebind" while the GUC is empty.
+ *
+ * The formal contract for the three methods is in RES-238 (separate PR).
  */
 export class TenantAwareDb {
   readonly #db: PostgresJsDatabase<RestoSchema>;
@@ -180,15 +190,49 @@ export class TenantAwareDb {
   }
 
   /**
+   * RES-243 drift sentinel: assert `app.current_tenant` still matches the
+   * value bound at transaction start. Catches `SET LOCAL` / `RESET` forge
+   * forms that `REVOKE EXECUTE` on `set_config` cannot block.
+   *
+   * Called at end of every `withTenant` / `withTenantId` / `withoutTenant`
+   * callback before the result is returned, so a drift throws while
+   * Drizzle still rolls the transaction back — the locally-computed
+   * `result` is discarded and never reaches the caller.
+   *
+   * Note: the rollback covers the database transaction only. If the
+   * callback triggered out-of-band side effects (NATS publish, HTTP call,
+   * file write) before the drift was detected, those side effects are NOT
+   * undone. The RES-243 contract is about preventing wrong-tenant data
+   * from reaching the HTTP response — out-of-band leakage is a separate
+   * class of bug addressed by the I-1 mandatory tenant filter / ScopedTx.
+   */
+  async #assertGucUnchanged(tx: RestoTx, expected: string, scope: string): Promise<void> {
+    const rows = await tx.execute<{ v: string | null }>(
+      sql`SELECT current_setting('app.current_tenant', true) AS v`,
+    );
+    const actual = rows[0]?.v ?? '';
+    if (actual !== expected) {
+      throw new Error(
+        `Tenant GUC drift detected in ${scope}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. Transaction rolled back.`,
+      );
+    }
+  }
+
+  /**
    * Run `op` inside a transaction with the current tenant context bound.
    * RLS will reject any row whose `tenant_id` does not match.
+   *
+   * Binding goes through the `app_bind_tenant` SECURITY DEFINER wrapper
+   * (RES-243). The wrapper raises on rebind to a different tenant;
+   * same-tenant rebind is idempotent.
    */
   async withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T> {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.current_tenant', ${ctx.tenantId}, true)`);
-      await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
-      return op(tx, new ScopedTx(tx, ctx.tenantId));
+      await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
+      const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
+      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant');
+      return result;
     });
   }
 
@@ -218,9 +262,10 @@ export class TenantAwareDb {
       throw new Error(`Invalid tenant id: expected a uuid, got ${JSON.stringify(tenantId)}.`);
     }
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantId}, true)`);
-      await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
-      return op(tx, new ScopedTx(tx, tenantId));
+      await tx.execute(sql`SELECT app_bind_tenant(${tenantId}, false)`);
+      const result = await op(tx, new ScopedTx(tx, tenantId));
+      await this.#assertGucUnchanged(tx, tenantId, 'withTenantId');
+      return result;
     });
   }
 
@@ -237,9 +282,10 @@ export class TenantAwareDb {
     }
     logger.warn({ reason }, 'Running database operation without a tenant context (RLS bypass)');
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.is_system', 'true', true)`);
-      await tx.execute(sql`SELECT set_config('app.current_tenant', '', true)`);
-      return op(tx);
+      await tx.execute(sql`SELECT app_bind_tenant('', true)`);
+      const result = await op(tx);
+      await this.#assertGucUnchanged(tx, '', 'withoutTenant');
+      return result;
     });
   }
 

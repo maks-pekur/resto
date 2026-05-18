@@ -65,6 +65,21 @@ export default [
           message:
             'ADR-0020 I-1: direct tx.select/insert/update/delete bypasses ScopedTx auto-filter. Use scoped.selectFrom / insertInto / updateTable, or place this code in a *-drizzle.repository.ts where the rule is allow-listed (the adapter takes responsibility for the tenant filter).',
         },
+        {
+          selector: 'Literal[value=/^app\\.(current_tenant|is_system)$/]',
+          message:
+            'RES-243: literal string `app.current_tenant` / `app.is_system` is reserved for packages/db internals. Use db.withTenant / withTenantId / withoutTenant.',
+        },
+        {
+          selector: 'TemplateElement[value.raw=/\\bset_config\\b/]',
+          message:
+            'RES-243: `set_config` is reserved for packages/db/src/client.ts. Use db.withTenant / withTenantId / withoutTenant.',
+        },
+        {
+          selector: "Identifier[name='set_config']",
+          message:
+            'RES-243: `set_config` is reserved for packages/db/src/client.ts. Use db.withTenant / withTenantId / withoutTenant.',
+        },
       ],
     },
   },

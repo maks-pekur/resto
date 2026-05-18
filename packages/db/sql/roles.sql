@@ -43,6 +43,23 @@ GRANT SELECT, INSERT, UPDATE ON ALL TABLES IN SCHEMA public TO resto_app;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO resto_app;
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA public TO resto_app;
 
+-- RES-243: resto_app's only path to bind `app.current_tenant` is the
+-- SECURITY DEFINER wrapper `app_bind_tenant(text, boolean)`. Migration
+-- 0022 revokes the PUBLIC EXECUTE on the wrapper; this restores access
+-- for resto_app. The IF EXISTS guard keeps the file safe to run before
+-- migration 0022 has applied (no-op in that order).
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE p.proname = 'app_bind_tenant' AND n.nspname = 'public'
+  ) THEN
+    EXECUTE 'GRANT EXECUTE ON FUNCTION app_bind_tenant(text, boolean) TO resto_app';
+  END IF;
+END
+$$;
+
 -- Future tables / sequences / functions created by the admin role inherit
 -- the same grants automatically — operators do not need to remember to
 -- re-grant after every migration.
