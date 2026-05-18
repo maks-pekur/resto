@@ -182,12 +182,15 @@ export class TenantAwareDb {
   /**
    * Run `op` inside a transaction with the current tenant context bound.
    * RLS will reject any row whose `tenant_id` does not match.
+   *
+   * Binding goes through the `app_bind_tenant` SECURITY DEFINER wrapper
+   * (RES-243). The wrapper raises on rebind to a different tenant;
+   * same-tenant rebind is idempotent.
    */
   async withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T> {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.current_tenant', ${ctx.tenantId}, true)`);
-      await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
+      await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
       return op(tx, new ScopedTx(tx, ctx.tenantId));
     });
   }
@@ -218,8 +221,7 @@ export class TenantAwareDb {
       throw new Error(`Invalid tenant id: expected a uuid, got ${JSON.stringify(tenantId)}.`);
     }
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantId}, true)`);
-      await tx.execute(sql`SELECT set_config('app.is_system', 'false', true)`);
+      await tx.execute(sql`SELECT app_bind_tenant(${tenantId}, false)`);
       return op(tx, new ScopedTx(tx, tenantId));
     });
   }
@@ -237,8 +239,7 @@ export class TenantAwareDb {
     }
     logger.warn({ reason }, 'Running database operation without a tenant context (RLS bypass)');
     return this.#db.transaction(async (tx) => {
-      await tx.execute(sql`SELECT set_config('app.is_system', 'true', true)`);
-      await tx.execute(sql`SELECT set_config('app.current_tenant', '', true)`);
+      await tx.execute(sql`SELECT app_bind_tenant('', true)`);
       return op(tx);
     });
   }
