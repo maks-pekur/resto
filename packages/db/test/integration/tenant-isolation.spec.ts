@@ -88,31 +88,21 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(all.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('forged current_setting flips RLS — application code MUST NOT call set_config (contract test)', async () => {
-    // CONTRACT: `set_config('app.current_tenant', …, true)` from inside `withTenant`
-    // is NOT prevented by Postgres. RLS policies read whatever the current setting
-    // says at query time, so any tenant-bound transaction whose body invokes
-    // `set_config` switches tenants for the remainder of the tx. FORCE ROW LEVEL
-    // SECURITY does not stop this — it only stops the *table owner* from bypassing
-    // policies; it does not freeze the policy's input.
-    //
-    // Defence: application code is forbidden from calling `set_config` outside
-    // `packages/db/src/client.ts`. The planned hardening (ADR-0020 follow-up) is
-    // to REVOKE the `set_config` function from the `resto_app` role so this test
-    // breaks with a permission error — at which point the rule becomes structural
-    // rather than convention. Until then, this test documents the leak primitive
-    // explicitly so future readers don't mistake current behaviour for safety.
-    const visible = await runInTenantContext({ tenantId: tenantA }, () =>
+  it('RES-243: forge via SET LOCAL is caught by drift sentinel', async () => {
+    // REVOKE EXECUTE on set_config does not block the top-level `SET LOCAL`
+    // SQL command — Postgres has no privilege mechanism for that on custom
+    // GUCs. The end-of-callback drift sentinel is the defense.
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) => {
-        // Pretend we are tenant B for the rest of the tx.
-        await tx.execute(sql`SELECT set_config('app.current_tenant', ${tenantB}, true)`);
+        await tx.execute(sql.raw(`SET LOCAL app.current_tenant = '${tenantB}'`));
         return tx.select().from(schema.tenants);
       }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
     );
-    // The forged setting flipped the policy: we now see tenant B's row, not A.
-    // The assertion documents the leak — it does NOT claim the leak is blocked.
-    expect(visible.every((row) => row.id !== tenantA)).toBe(true);
-    expect(visible.some((row) => row.id === tenantB)).toBe(true);
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/Tenant GUC drift detected/);
   });
 
   it("attempting to UPDATE another tenant's row is blocked", async () => {

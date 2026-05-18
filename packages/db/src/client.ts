@@ -180,6 +180,28 @@ export class TenantAwareDb {
   }
 
   /**
+   * RES-243 drift sentinel: assert `app.current_tenant` still matches the
+   * value bound at transaction start. Catches `SET LOCAL` / `RESET` forge
+   * forms that `REVOKE EXECUTE` on `set_config` cannot block.
+   *
+   * Called at end of every `withTenant` / `withTenantId` / `withoutTenant`
+   * callback before the result is returned, so a drift throws while
+   * Drizzle still rolls the transaction back — the locally-computed
+   * `result` is discarded and never reaches the caller.
+   */
+  async #assertGucUnchanged(tx: RestoTx, expected: string, scope: string): Promise<void> {
+    const rows = await tx.execute<{ v: string | null }>(
+      sql`SELECT current_setting('app.current_tenant', true) AS v`,
+    );
+    const actual = rows[0]?.v ?? '';
+    if (actual !== expected) {
+      throw new Error(
+        `Tenant GUC drift detected in ${scope}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. Transaction rolled back.`,
+      );
+    }
+  }
+
+  /**
    * Run `op` inside a transaction with the current tenant context bound.
    * RLS will reject any row whose `tenant_id` does not match.
    *
@@ -191,7 +213,9 @@ export class TenantAwareDb {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
-      return op(tx, new ScopedTx(tx, ctx.tenantId));
+      const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
+      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant');
+      return result;
     });
   }
 
@@ -222,7 +246,9 @@ export class TenantAwareDb {
     }
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant(${tenantId}, false)`);
-      return op(tx, new ScopedTx(tx, tenantId));
+      const result = await op(tx, new ScopedTx(tx, tenantId));
+      await this.#assertGucUnchanged(tx, tenantId, 'withTenantId');
+      return result;
     });
   }
 
@@ -240,7 +266,9 @@ export class TenantAwareDb {
     logger.warn({ reason }, 'Running database operation without a tenant context (RLS bypass)');
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant('', true)`);
-      return op(tx);
+      const result = await op(tx);
+      await this.#assertGucUnchanged(tx, '', 'withoutTenant');
+      return result;
     });
   }
 
