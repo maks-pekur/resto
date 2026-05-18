@@ -12,7 +12,7 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { assertNoRlsBypass } from '@resto/db';
+import { assertNoRlsBypass, assertSetConfigRevoked, assertTenantLockInstalled } from '@resto/db';
 import { AppModule } from './app.module';
 import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
@@ -40,6 +40,12 @@ const bootstrap = async (): Promise<void> => {
   // very first log line rather than the day a tenant discovers
   // another tenant's data (RES-83).
   await assertNoRlsBypass(env.DATABASE_URL);
+
+  // RES-243: refuse to start if the GUC lock (app_bind_tenant wrapper +
+  // revoked set_config) is not installed. Catches mis-deploy where the
+  // new image rolls before `pnpm db:migrate` completes.
+  await assertTenantLockInstalled(env.DATABASE_URL);
+  await assertSetConfigRevoked(env.DATABASE_URL);
 
   // ADR-0020 I-3 defense-in-depth: refuse to start if any tracked
   // dev-fallback constant is still present in a non-dev NODE_ENV.
