@@ -31,6 +31,8 @@ const buildRepoMock = (): TenantRepository => ({
   save: vi.fn(),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn(),
+  findCurrentTenant: vi.fn(),
+  listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
 
 describe('OffboardTenantService', () => {

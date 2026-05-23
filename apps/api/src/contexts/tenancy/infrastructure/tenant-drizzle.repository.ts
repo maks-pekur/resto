@@ -71,6 +71,14 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
+  async findCurrentTenant(): Promise<Tenant | null> {
+    throw new Error('findCurrentTenant: not implemented (RES-242 Task 4)');
+  }
+
+  async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
+    throw new Error('listCurrentTenantDomains: not implemented (RES-242 Task 5)');
+  }
+
   async save(tenant: Tenant): Promise<void> {
     const snapshot = tenant.toSnapshot();
     const events = tenant.pullEvents();

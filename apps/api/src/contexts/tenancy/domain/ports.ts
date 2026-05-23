@@ -20,6 +20,19 @@ export interface TenantRepository {
    */
   save(tenant: Tenant): Promise<void>;
   listDomains(id: TenantId): Promise<TenantDomain[]>;
+  /**
+   * Tenant-scoped read of the active tenant's own row. Reads from ALS;
+   * implementations MUST use `db.withTenant` (not `withoutTenant`) so
+   * Postgres RLS enforces the second layer of isolation. Throws if no
+   * ALS tenant context is bound. Returns null if RLS filters the row
+   * out (should be unreachable for a legitimate operator).
+   */
+  findCurrentTenant(): Promise<Tenant | null>;
+  /**
+   * Tenant-scoped list of the active tenant's domains. Same contract
+   * as `findCurrentTenant`.
+   */
+  listCurrentTenantDomains(): Promise<readonly TenantDomain[]>;
   eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot>;
   listScheduledForErasure(): Promise<readonly TenantSnapshot[]>;
 }
