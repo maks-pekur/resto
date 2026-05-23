@@ -27,7 +27,7 @@
   "devDependencies": {
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
-    "@testcontainers/postgresql": "^10.16.0",
+    "@testcontainers/postgresql": "^12.0.0",
     "@types/node": "^25.8.0",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.4.0",
