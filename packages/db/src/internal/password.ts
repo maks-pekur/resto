@@ -18,11 +18,16 @@
 const ROLE_PASSWORD_RE = /^[A-Za-z0-9!@#$%^&*()_+\-=]{16,128}$/;
 
 /**
- * SQL comment sequences are character-pairs whose individual characters
- * (`-`, `*`, `/`) are otherwise allowed in passwords (hyphen and the
- * shell-glob set are common in operator-generated secrets). We reject
- * the *sequences* explicitly so a future caller who interpolates the
- * password into raw SQL cannot smuggle a comment.
+ * Defense-in-depth substring rejections.
+ *
+ * `--` is meaningful: `-` is whitelisted (matches `[!@#$%^&*()_+\-=]`), so
+ * `--ALTER` would pass the character-class regex. Reject the SQL line-comment
+ * sequence explicitly.
+ *
+ * `/*` is belt-and-suspenders: `/` is NOT whitelisted, so the regex already
+ * rejects any password containing `/`. The substring check stays so a future
+ * whitelist relaxation (e.g. someone adding `/` to the allowed set) does not
+ * silently re-open the block-comment injection vector.
  */
 const FORBIDDEN_SUBSTRINGS = ['--', '/*'] as const;
 

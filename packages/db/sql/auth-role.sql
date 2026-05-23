@@ -2,7 +2,10 @@
 -- Resto auth runtime role provisioning — GRANTS ONLY.
 --
 -- The `resto_auth` role itself is now CREATED/ALTERED by the Node helper
--- in `packages/db/src/auth-role.ts` via parameterized SQL (RES-245).
+-- in `packages/db/src/auth-role.ts` via whitelist-validated literal-quote
+-- in `client.unsafe()` — Postgres DDL does NOT accept bind parameters
+-- for `CREATE/ALTER ROLE PASSWORD`, so safety is provided by strict
+-- input validation. See RES-245 and `packages/db/src/internal/password.ts`.
 -- This file is the static-DDL grants block that follows role creation.
 --
 -- `resto_auth` has BYPASSRLS so BA admin/runtime calls (organization

@@ -2,10 +2,13 @@
 -- Resto runtime role provisioning — GRANTS ONLY.
 --
 -- The `resto_app` role itself is now CREATED/ALTERED by the Node helper
--- in `packages/db/src/roles.ts` via parameterized SQL (postgres-js
--- tagged template; eliminates the SQL-injection primitive from password
--- handling — RES-245). This file is the static-DDL grants block that
--- follows role creation.
+-- in `packages/db/src/roles.ts` via whitelist-validated literal-quote
+-- in `client.unsafe()` — Postgres DDL does NOT accept bind parameters
+-- for `CREATE/ALTER ROLE PASSWORD`, so safety is provided by strict
+-- input validation (no `'`, no `\`, no SQL comment sequences) before
+-- the password is wrapped in `'...'`. See RES-245 and
+-- `packages/db/src/internal/password.ts` for the security argument.
+-- This file is the static-DDL grants block that follows role creation.
 --
 -- Idempotent. Used by:
 --   • test container setup   (packages/db/src/roles.ts)
