@@ -62,6 +62,14 @@ export class TenantQueriesService {
     return tenant.toSnapshot();
   }
 
+  /**
+   * Domain rows for the active tenant — used by operator-facing
+   * `GET /v1/tenants/me/domains`. Runs `db.withTenant`; ADR-0020 I-1.
+   */
+  async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
+    return this.repo.listCurrentTenantDomains();
+  }
+
   async listDomains(rawId: string): Promise<TenantDomain[]> {
     const id = TenantId.parse(rawId);
     const tenant = await this.repo.findById(id);
