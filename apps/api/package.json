@@ -42,7 +42,7 @@
   },
   "devDependencies": {
     "@better-auth/cli": "~1.4.22",
-    "@nestjs/testing": "^10.4.15",
+    "@nestjs/testing": "^11.1.23",
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
