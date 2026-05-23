@@ -53,6 +53,13 @@ describe('TenantsController E2E', () => {
     process.env.ADMIN_WEB_URL = 'http://localhost:3000';
     process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
     // AUTH_COOKIE_DOMAIN intentionally unset — host-only cookies in tests.
+    // S3_* unblocks AppModule bootstrap; S3SignedImageUrlAdapter throws if
+    // any of these three is unset. env.schema only requires them in
+    // non-dev/test, but the adapter doesn't honor that gate. The values
+    // here are CI-style placeholders; no test in this file calls S3.
+    process.env.S3_ENDPOINT = 'http://localhost:9000';
+    process.env.S3_ACCESS_KEY = 'x';
+    process.env.S3_SECRET_KEY = 'x';
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
