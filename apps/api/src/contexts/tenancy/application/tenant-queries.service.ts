@@ -48,6 +48,28 @@ export class TenantQueriesService {
     return tenant ? tenant.toSnapshot() : null;
   }
 
+  /**
+   * "My tenant" read for operator-facing `GET /v1/tenants/me`. Runs
+   * under the active tenant context (`db.withTenant`), not the
+   * system-context `withoutTenant` path used by `getById` /
+   * `findById`. ADR-0020 I-1: RLS is the second layer underneath.
+   */
+  async getCurrentTenant(): Promise<TenantSnapshot> {
+    const tenant = await this.repo.findCurrentTenant();
+    if (!tenant) {
+      throw new TenantNotFoundError('current');
+    }
+    return tenant.toSnapshot();
+  }
+
+  /**
+   * Domain rows for the active tenant — used by operator-facing
+   * `GET /v1/tenants/me/domains`. Runs `db.withTenant`; ADR-0020 I-1.
+   */
+  async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
+    return this.repo.listCurrentTenantDomains();
+  }
+
   async listDomains(rawId: string): Promise<TenantDomain[]> {
     const id = TenantId.parse(rawId);
     const tenant = await this.repo.findById(id);

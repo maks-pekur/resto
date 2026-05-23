@@ -55,6 +55,8 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
+  findCurrentTenant: vi.fn(),
+  listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
 
 const buildBrandRepo = (): BrandRepository => ({

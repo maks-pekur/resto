@@ -1,6 +1,5 @@
 import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiForbiddenResponse, ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import { requireTenantContext } from '@resto/db';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
@@ -31,9 +30,8 @@ export class TenantsController {
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async getMe(): Promise<TenantResponseDto> {
-    const { tenantId } = requireTenantContext();
     try {
-      return toResponse(await this.queries.getById(tenantId));
+      return toResponse(await this.queries.getCurrentTenant());
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -45,9 +43,8 @@ export class TenantsController {
   @ApiOkResponse({ type: TenantDomainDto, isArray: true })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   async getMeDomains(): Promise<TenantDomainDto[]> {
-    const { tenantId } = requireTenantContext();
     try {
-      const domains = await this.queries.listDomains(tenantId);
+      const domains = await this.queries.listCurrentTenantDomains();
       return domains.map((d) => ({
         id: d.id,
         domain: d.domain,

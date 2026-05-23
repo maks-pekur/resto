@@ -13,6 +13,8 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn().mockResolvedValue([]),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
+  findCurrentTenant: vi.fn(),
+  listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
 
 const tenantFor = (slug: string): Tenant =>
@@ -110,5 +112,54 @@ describe('TenantQueriesService.listDomains', () => {
     repo.findById = vi.fn().mockResolvedValue(null);
     const id = TenantId.parse('22222222-2222-4222-8222-222222222222');
     await expect(service.listDomains(id)).rejects.toBeInstanceOf(TenantNotFoundError);
+  });
+});
+
+describe('TenantQueriesService.getCurrentTenant', () => {
+  let repo: TenantRepository;
+  let service: TenantQueriesService;
+
+  beforeEach(() => {
+    repo = buildRepo();
+    service = new TenantQueriesService(repo);
+  });
+
+  it('returns the snapshot read via repo.findCurrentTenant', async () => {
+    const tenant = tenantFor('cafe-current');
+    repo.findCurrentTenant = vi.fn().mockResolvedValue(tenant);
+    const snap = await service.getCurrentTenant();
+    expect(snap.slug).toBe('cafe-current');
+    expect(repo.findCurrentTenant).toHaveBeenCalledTimes(1);
+    expect(repo.findById).not.toHaveBeenCalled();
+  });
+
+  it('throws TenantNotFoundError when repo.findCurrentTenant returns null', async () => {
+    repo.findCurrentTenant = vi.fn().mockResolvedValue(null);
+    await expect(service.getCurrentTenant()).rejects.toBeInstanceOf(TenantNotFoundError);
+  });
+});
+
+describe('TenantQueriesService.listCurrentTenantDomains', () => {
+  let repo: TenantRepository;
+  let service: TenantQueriesService;
+
+  beforeEach(() => {
+    repo = buildRepo();
+    service = new TenantQueriesService(repo);
+  });
+
+  it('returns the domains read via repo.listCurrentTenantDomains', async () => {
+    const tenant = tenantFor('cafe-current-doms');
+    repo.listCurrentTenantDomains = vi.fn().mockResolvedValue([tenant.toSnapshot().primaryDomain]);
+    const domains = await service.listCurrentTenantDomains();
+    expect(domains).toHaveLength(1);
+    expect(repo.listCurrentTenantDomains).toHaveBeenCalledTimes(1);
+    expect(repo.findById).not.toHaveBeenCalled();
+    expect(repo.listDomains).not.toHaveBeenCalled();
+  });
+
+  it('returns an empty array when the active tenant has no domain rows', async () => {
+    repo.listCurrentTenantDomains = vi.fn().mockResolvedValue([]);
+    await expect(service.listCurrentTenantDomains()).resolves.toEqual([]);
   });
 });

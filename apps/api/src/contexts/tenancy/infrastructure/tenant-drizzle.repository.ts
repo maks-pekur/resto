@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
+import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import {
   appendToOutbox,
@@ -67,6 +67,28 @@ export class TenantDrizzleRepository implements TenantRepository {
         .select()
         .from(schema.tenantDomains)
         .where(eq(schema.tenantDomains.tenantId, id));
+      return rows.map(rowToTenantDomain);
+    });
+  }
+
+  async findCurrentTenant(): Promise<Tenant | null> {
+    // requireTenantContext() runs here AND inside db.withTenant. Calling
+    // explicitly first lets us hoist tenantId into the closure without
+    // re-reading ALS inside the transaction callback.
+    const { tenantId } = requireTenantContext();
+    // ADR-0020 I-1: tenants.id IS the tenant id (not a tenant_id FK), so
+    // the explicit filter is `eq(tenants.id, ctx.tenantId)` — provided by
+    // loadByIdWithTx — with RLS (tenants_self_iso) as the second layer.
+    return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, TenantId.parse(tenantId)));
+  }
+
+  async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
+    const { tenantId } = requireTenantContext();
+    return this.db.withTenant(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(schema.tenantDomains)
+        .where(eq(schema.tenantDomains.tenantId, TenantId.parse(tenantId)));
       return rows.map(rowToTenantDomain);
     });
   }
