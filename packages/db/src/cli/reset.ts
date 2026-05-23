@@ -1,26 +1,34 @@
 import postgres from 'postgres';
 import { logger } from '../logger';
+import {
+  assertConfirmationProvided,
+  assertHostAllowed,
+  assertNodeEnvAllowed,
+  ResetGuardError,
+} from './reset-guards';
+
+const CONFIRMATION_VAR = 'RESTO_CONFIRM_RESET';
 
 /**
- * Drop and recreate the public schema, then re-run migrations. Dev only.
+ * Drop and recreate the `public` schema, then re-run migrations. Dev only.
  *
- * Refuses to run when `NODE_ENV` is `production` or `staging`.
+ * Three layers of defense via `cli/reset-guards.ts` (testable without
+ * mocking `process.exit`):
+ *   1. `NODE_ENV` must be `development` or `test` (allowlist).
+ *   2. `RESTO_CONFIRM_RESET=yes-wipe-my-dev-db` literal value required.
+ *   3. `DATABASE_ADMIN_URL` host must be in {localhost, 127.0.0.1, postgres}.
+ *
+ * No fallback to `DATABASE_URL` — operators must explicitly point at the
+ * admin URL.
  */
 const main = async (): Promise<void> => {
-  const env = process.env.NODE_ENV ?? 'development';
-  if (env === 'production' || env === 'staging') {
-    logger.error({ env }, 'db:reset is forbidden outside development.');
-    process.exit(1);
-  }
+  assertNodeEnvAllowed(process.env.NODE_ENV);
+  assertConfirmationProvided(process.env[CONFIRMATION_VAR]);
 
-  const url = process.env.DATABASE_ADMIN_URL ?? process.env.DATABASE_URL;
-  if (!url) {
-    logger.error(
-      'DATABASE_ADMIN_URL (preferred) or DATABASE_URL is required to reset the dev database.',
-    );
-    process.exit(1);
-  }
-
+  const url = process.env.DATABASE_ADMIN_URL;
+  assertHostAllowed(url);
+  // After assertHostAllowed, `url` is narrowed to `string` via the
+  // function's `asserts url is string` signature — no cast needed.
   const client = postgres(url, { max: 1, prepare: false });
 
   try {
@@ -33,6 +41,12 @@ const main = async (): Promise<void> => {
 };
 
 main().catch((err: unknown) => {
-  logger.error({ err }, 'Reset failed.');
+  if (err instanceof ResetGuardError) {
+    // Guard failures get a clean one-line error; full stack trace would
+    // bury the actionable message.
+    logger.error(err.message);
+  } else {
+    logger.error({ err }, 'Reset failed.');
+  }
   process.exit(1);
 });
