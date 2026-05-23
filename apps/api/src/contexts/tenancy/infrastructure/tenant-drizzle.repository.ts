@@ -76,6 +76,9 @@ export class TenantDrizzleRepository implements TenantRepository {
     // explicitly first lets us hoist tenantId into the closure without
     // re-reading ALS inside the transaction callback.
     const { tenantId } = requireTenantContext();
+    // ADR-0020 I-1: tenants.id IS the tenant id (not a tenant_id FK), so
+    // the explicit filter is `eq(tenants.id, ctx.tenantId)` — provided by
+    // loadByIdWithTx — with RLS (tenants_self_iso) as the second layer.
     return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, TenantId.parse(tenantId)));
   }
 

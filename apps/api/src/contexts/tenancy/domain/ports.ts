@@ -23,9 +23,9 @@ export interface TenantRepository {
   /**
    * Tenant-scoped read of the active tenant's own row. Reads from ALS;
    * implementations MUST use `db.withTenant` (not `withoutTenant`) so
-   * Postgres RLS enforces the second layer of isolation. Throws if no
-   * ALS tenant context is bound. Returns null if RLS filters the row
-   * out (should be unreachable for a legitimate operator).
+   * Postgres RLS enforces the second layer of isolation (ADR-0020 I-1).
+   * Throws if no ALS tenant context is bound. Returns null if RLS
+   * filters the row out (should be unreachable for a legitimate operator).
    */
   findCurrentTenant(): Promise<Tenant | null>;
   /**
