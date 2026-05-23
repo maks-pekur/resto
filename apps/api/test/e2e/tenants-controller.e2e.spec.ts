@@ -341,5 +341,23 @@ describe('TenantsController E2E', () => {
     it('findCurrentTenant throws when called outside an ALS context', async () => {
       await expect(repo.findCurrentTenant()).rejects.toThrowError(/tenant context/i);
     });
+
+    it('listCurrentTenantDomains returns A domains only when ALS bound to A', async () => {
+      const domainsA = await runInTenantContext({ tenantId: tenantA.id }, () =>
+        repo.listCurrentTenantDomains(),
+      );
+      const domainsB = await runInTenantContext({ tenantId: tenantB.id }, () =>
+        repo.listCurrentTenantDomains(),
+      );
+      expect(domainsA.length).toBeGreaterThan(0);
+      expect(domainsA.every((d) => d.tenantId === tenantA.id)).toBe(true);
+      expect(domainsA.every((d) => d.tenantId !== tenantB.id)).toBe(true);
+      expect(domainsB.length).toBeGreaterThan(0);
+      expect(domainsB.every((d) => d.tenantId === tenantB.id)).toBe(true);
+    });
+
+    it('listCurrentTenantDomains throws when called outside an ALS context', async () => {
+      await expect(repo.listCurrentTenantDomains()).rejects.toThrowError(/tenant context/i);
+    });
   });
 });

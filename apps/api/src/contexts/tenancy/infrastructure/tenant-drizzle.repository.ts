@@ -79,8 +79,15 @@ export class TenantDrizzleRepository implements TenantRepository {
     return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, TenantId.parse(tenantId)));
   }
 
-  listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
-    return Promise.reject(new Error('listCurrentTenantDomains: not implemented (RES-242 Task 5)'));
+  async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
+    const { tenantId } = requireTenantContext();
+    return this.db.withTenant(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(schema.tenantDomains)
+        .where(eq(schema.tenantDomains.tenantId, TenantId.parse(tenantId)));
+      return rows.map(rowToTenantDomain);
+    });
   }
 
   async save(tenant: Tenant): Promise<void> {
