@@ -25,9 +25,10 @@ export class S3SignedImageUrlAdapter implements ImageUrlPort {
   constructor(@Inject(ENV_TOKEN) env: Env) {
     if (!env.S3_ENDPOINT || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY) {
       throw new Error(
-        'S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY must be set — env.schema ' +
-          'validation should have caught this in any NODE_ENV; reaching this ' +
-          'branch indicates a schema regression (ADR-0020 I-3).',
+        'S3_ENDPOINT, S3_ACCESS_KEY, S3_SECRET_KEY are missing. env.schema ' +
+          'now supplies dev defaults (matching `prod-guardrails.DEV_DEFAULTS`) ' +
+          'so this branch is structurally unreachable; reaching it indicates ' +
+          'the schema was rolled back. ADR-0020 I-3.',
       );
     }
 
