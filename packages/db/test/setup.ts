@@ -22,7 +22,7 @@ export interface TestPg {
 }
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, '..', 'migrations');
-const APP_ROLE_PASSWORD = 'resto_app';
+const APP_ROLE_PASSWORD = 'resto_app_test_password_local';
 
 /**
  * Start a fresh Postgres 16 container, apply all migrations, provision

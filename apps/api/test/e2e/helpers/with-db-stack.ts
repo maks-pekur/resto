@@ -16,7 +16,7 @@ const DB_MIGRATIONS_FOLDER = resolve(
   'db',
   'migrations',
 );
-const APP_ROLE_PASSWORD = 'resto_app';
+const APP_ROLE_PASSWORD = 'resto_app_db_stack_e2e_local';
 
 export interface DbStack {
   readonly pg: StartedPostgreSqlContainer;

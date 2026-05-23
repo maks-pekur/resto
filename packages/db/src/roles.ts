@@ -1,25 +1,10 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { Sql } from 'postgres';
+import { validateRolePassword } from './internal/password';
+import { assertRoleAttributes } from './preflight';
 
-const ROLES_SQL_PATH = resolve(import.meta.dirname, '..', 'sql', 'roles.sql');
-const PASSWORD_PLACEHOLDER = '__APP_PASSWORD__';
-
-/**
- * Postgres SQL identifiers/passwords cannot legally contain a single
- * quote in this provisioning script — the canonical roles.sql wraps the
- * password in `'...'`. Reject early with a clear error rather than
- * letting a malformed quote silently corrupt the SQL we send to the
- * server.
- */
-const validateAppPassword = (appPassword: string): void => {
-  if (appPassword.length === 0) {
-    throw new Error('provisionAppRole: appPassword must be non-empty.');
-  }
-  if (appPassword.includes("'")) {
-    throw new Error("provisionAppRole: appPassword must not contain a single quote (').");
-  }
-};
+const GRANTS_SQL_PATH = resolve(import.meta.dirname, '..', 'sql', 'roles.sql');
 
 /**
  * Provision the `resto_app` runtime role on the connected database.
@@ -28,25 +13,59 @@ const validateAppPassword = (appPassword: string): void => {
  * — typically the bootstrap superuser (dev) or `resto_admin` (production).
  * Idempotent: safe to re-run; password is updated to whatever is supplied.
  *
- * Used by the test container setup and by operator scripts. The dev docker
- * stack ships an equivalent `02-app-role.sql` so the role exists the
- * first time the postgres volume is created.
+ * Password handling (RES-245):
+ *   1. `validateRolePassword` enforces a strict whitelist
+ *      (`[A-Za-z0-9!@#$%^&*()_+\-=]{16,128}`, no `--` or `/*`). Single
+ *      quotes, backslashes, semicolons, whitespace, and control chars
+ *      are all rejected.
+ *   2. The validated password is then wrapped in a Postgres string
+ *      literal (`'...'`) inside the SQL we send. Postgres DDL
+ *      (`CREATE/ALTER ROLE`) does NOT accept bind parameters, so
+ *      parameterization via the wire protocol is structurally
+ *      impossible for this statement; the whitelist exists precisely so
+ *      that in-band literal quoting is provably safe (no quote, no
+ *      backslash, no escape sequence inside the literal).
+ *
+ * `assertRoleAttributes` verifies the resulting role has no
+ * SUPERUSER / BYPASSRLS / CREATEROLE / CREATEDB attributes.
  */
 export const provisionAppRole = async (
   client: Sql,
   options: { appPassword: string },
 ): Promise<void> => {
-  validateAppPassword(options.appPassword);
-  const sqlText = readFileSync(ROLES_SQL_PATH, 'utf8').replaceAll(
-    PASSWORD_PLACEHOLDER,
-    options.appPassword,
-  );
-  await client.unsafe(sqlText);
+  validateRolePassword('provisionAppRole', options.appPassword);
+
+  const rows = await client<{ exists: boolean }[]>`
+    SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = 'resto_app') AS exists
+  `;
+  // Safe because validateRolePassword guarantees the password contains
+  // no single quote, backslash, or other escape character — wrapping in
+  // single quotes cannot terminate the literal early or smuggle a
+  // statement. See RES-245 spec.
+  const pwdLiteral = `'${options.appPassword}'`;
+  if (rows[0]?.exists) {
+    await client.unsafe(
+      `ALTER ROLE resto_app WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD ${pwdLiteral}`,
+    );
+  } else {
+    await client.unsafe(
+      `CREATE ROLE resto_app WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD ${pwdLiteral}`,
+    );
+  }
+
+  await client.unsafe(readFileSync(GRANTS_SQL_PATH, 'utf8'));
+
+  await assertRoleAttributes(client, 'resto_app', {
+    rolsuper: false,
+    rolbypassrls: false,
+    rolcreaterole: false,
+    rolcreatedb: false,
+  });
 };
 
 /**
- * Resolved name of the runtime role provisioned by `roles.sql`. Exported
- * so callers (tests, runbook tooling) can build a connection URL without
- * hard-coding the literal in a second place.
+ * Resolved name of the runtime role provisioned by `provisionAppRole`.
+ * Exported so callers (tests, runbook tooling) can build a connection
+ * URL without hard-coding the literal in a second place.
  */
 export const RESTO_APP_ROLE = 'resto_app';

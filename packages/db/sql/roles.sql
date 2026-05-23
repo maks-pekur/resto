@@ -1,38 +1,16 @@
 -- =============================================================================
--- Resto runtime role provisioning.
+-- Resto runtime role provisioning — GRANTS ONLY.
 --
--- Two roles per Resto database:
+-- The `resto_app` role itself is now CREATED/ALTERED by the Node helper
+-- in `packages/db/src/roles.ts` via parameterized SQL (postgres-js
+-- tagged template; eliminates the SQL-injection primitive from password
+-- handling — RES-245). This file is the static-DDL grants block that
+-- follows role creation.
 --
---   resto_admin  — owns the schema, runs migrations. Effectively superuser
---                  within its database. Used by `db:migrate` only.
---   resto_app    — runtime role used by `apps/api` and any other long-lived
---                  service. LOGIN, NOSUPERUSER, NOBYPASSRLS. Granted just
---                  the privileges runtime needs.
---
--- This script provisions only `resto_app`. The admin role is whatever role
--- runs *this* script: in dev that is the docker-entrypoint bootstrap user
--- (`POSTGRES_USER=resto`); in production it is whichever superuser the
--- managed-Postgres provider hands you at provisioning time.
---
--- The script is idempotent — safe to re-run, and used by:
---   • dev docker init        (infra/docker/postgres/init/02-app-role.sql)
+-- Idempotent. Used by:
 --   • test container setup   (packages/db/src/roles.ts)
 --   • production runbook     (docs/runbooks/database-roles.md)
---
--- The literal `__APP_PASSWORD__` is a placeholder the caller must replace
--- with the desired runtime password before executing. The Node helper in
--- `packages/db/src/roles.ts` does this substitution for you.
 -- =============================================================================
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_app') THEN
-    ALTER ROLE resto_app WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD '__APP_PASSWORD__';
-  ELSE
-    CREATE ROLE resto_app WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD '__APP_PASSWORD__';
-  END IF;
-END
-$$;
 
 GRANT USAGE ON SCHEMA public TO resto_app;
 

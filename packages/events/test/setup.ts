@@ -9,7 +9,7 @@ import { createDb, provisionAppRole, RESTO_APP_ROLE, type TenantAwareDb } from '
 import { NatsJetStreamPublisher, NatsJetStreamSubscriber } from '../src/index';
 
 const DB_MIGRATIONS_FOLDER = resolve(import.meta.dirname, '..', '..', 'db', 'migrations');
-const APP_ROLE_PASSWORD = 'resto_app';
+const APP_ROLE_PASSWORD = 'resto_app_events_test_local';
 const NATS_STREAM = 'RESTO_EVENTS_TEST';
 
 export interface TestEnv {

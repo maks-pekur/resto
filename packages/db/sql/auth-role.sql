@@ -1,27 +1,17 @@
 -- =============================================================================
--- Resto auth runtime role provisioning.
+-- Resto auth runtime role provisioning — GRANTS ONLY.
 --
--- `resto_auth` is the role Better Auth's drizzle client connects under.
--- Has BYPASSRLS so BA admin/runtime calls (organization plugin's cross-
--- tenant member/invitation queries, dynamicAccessControl role admin) work
--- against the per-tenant RLS policies introduced in migration 0005.
+-- The `resto_auth` role itself is now CREATED/ALTERED by the Node helper
+-- in `packages/db/src/auth-role.ts` via parameterized SQL (RES-245).
+-- This file is the static-DDL grants block that follows role creation.
 --
--- The application's regular runtime role (`resto_app`) remains NOBYPASSRLS
--- so business queries are RLS-bound to current_tenant_id().
+-- `resto_auth` has BYPASSRLS so BA admin/runtime calls (organization
+-- plugin's cross-tenant member/invitation queries, dynamicAccessControl
+-- role admin) work against the per-tenant RLS policies in migration 0005.
 --
--- Idempotent. Replace `__AUTH_PASSWORD__` before executing — the helper
--- in `packages/db/src/auth-role.ts` does this.
+-- The application's regular runtime role (`resto_app`) remains
+-- NOBYPASSRLS so business queries are RLS-bound to current_tenant_id().
 -- =============================================================================
-
-DO $$
-BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_auth') THEN
-    ALTER ROLE resto_auth WITH LOGIN NOSUPERUSER BYPASSRLS PASSWORD '__AUTH_PASSWORD__';
-  ELSE
-    CREATE ROLE resto_auth WITH LOGIN NOSUPERUSER BYPASSRLS PASSWORD '__AUTH_PASSWORD__';
-  END IF;
-END
-$$;
 
 GRANT USAGE ON SCHEMA public TO resto_auth;
 

@@ -157,3 +157,57 @@ export const assertSetConfigRevoked = async (url: string): Promise<void> => {
     await client.end({ timeout: 5 });
   }
 };
+
+interface ExpectedRoleAttributes {
+  readonly rolsuper: boolean;
+  readonly rolbypassrls: boolean;
+  readonly rolcreaterole: boolean;
+  readonly rolcreatedb: boolean;
+}
+
+/**
+ * Thrown when a provisioned role does not have the expected attribute
+ * set. Defense-in-depth: catches anyone bypassing `provisionAppRole` /
+ * `provisionAuthRole` (hand-crafted SQL, an attacker who slipped a
+ * privilege escalation in, etc.).
+ */
+export class RoleAttributeMismatchError extends Error {
+  constructor(
+    public readonly role: string,
+    public readonly expected: ExpectedRoleAttributes,
+    public readonly actual: ExpectedRoleAttributes,
+  ) {
+    super(
+      `Role "${role}" has unexpected attributes. ` +
+        `Expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. ` +
+        `Provisioning was likely bypassed or tampered with — refuse to proceed.`,
+    );
+    this.name = 'RoleAttributeMismatchError';
+  }
+}
+
+/**
+ * Verify that a named role has the expected attributes. Called at the
+ * end of `provisionAppRole` / `provisionAuthRole` as defense-in-depth.
+ */
+export const assertRoleAttributes = async (
+  client: Sql,
+  roleName: string,
+  expected: ExpectedRoleAttributes,
+): Promise<void> => {
+  const rows = await client<(ExpectedRoleAttributes & { rolname: string })[]>`
+    SELECT rolname, rolsuper, rolbypassrls, rolcreaterole, rolcreatedb
+    FROM pg_roles
+    WHERE rolname = ${roleName}
+  `;
+  const row = rows[0];
+  if (!row) {
+    throw new Error(`assertRoleAttributes: role "${roleName}" does not exist.`);
+  }
+  const { rolname: _ignored, ...actual } = row;
+  for (const key of Object.keys(expected) as (keyof ExpectedRoleAttributes)[]) {
+    if (actual[key] !== expected[key]) {
+      throw new RoleAttributeMismatchError(roleName, expected, actual);
+    }
+  }
+};
