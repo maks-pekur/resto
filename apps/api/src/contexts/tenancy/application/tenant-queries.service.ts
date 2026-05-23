@@ -29,16 +29,8 @@ export class TenantQueriesService {
     return tenant ? tenant.toSnapshot() : null;
   }
 
-  async getById(rawId: string): Promise<TenantSnapshot> {
-    const tenant = await this.findById(rawId);
-    if (!tenant) {
-      throw new TenantNotFoundError(rawId);
-    }
-    return tenant;
-  }
-
   /**
-   * Nullable counterpart to `getById`. Same rationale as `findBySlug` —
+   * Nullable counterpart to `getBySlug`. Same rationale as `findBySlug` —
    * cross-context callers (identity bootstrap, future invitation flows)
    * read this so they never have to catch a tenancy-domain error.
    */
@@ -51,8 +43,8 @@ export class TenantQueriesService {
   /**
    * "My tenant" read for operator-facing `GET /v1/tenants/me`. Runs
    * under the active tenant context (`db.withTenant`), not the
-   * system-context `withoutTenant` path used by `getById` /
-   * `findById`. ADR-0020 I-1: RLS is the second layer underneath.
+   * system-context `withoutTenant` path used by `findById`.
+   * ADR-0020 I-1: RLS is the second layer underneath.
    */
   async getCurrentTenant(): Promise<TenantSnapshot> {
     const tenant = await this.repo.findCurrentTenant();
@@ -68,14 +60,5 @@ export class TenantQueriesService {
    */
   async listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
     return this.repo.listCurrentTenantDomains();
-  }
-
-  async listDomains(rawId: string): Promise<TenantDomain[]> {
-    const id = TenantId.parse(rawId);
-    const tenant = await this.repo.findById(id);
-    if (!tenant) {
-      throw new TenantNotFoundError(rawId);
-    }
-    return this.repo.listDomains(id);
   }
 }
