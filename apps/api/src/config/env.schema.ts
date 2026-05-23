@@ -86,15 +86,33 @@ export const envSchema = z
 
     /**
      * S3-compatible bucket for menu images (R2 / AWS S3 / MinIO in dev).
-     * Endpoint and credentials are required in non-dev (enforced by
-     * superRefine below); dev/test pulls them from the root `.env`
-     * file alongside the docker-compose MinIO stack. ADR-0020 I-3.
+     *
+     * Defaults match `prod-guardrails.DEV_DEFAULTS` so dev/test boot
+     * without env-seed. `assertProdGuardrails` (boot-time, non-dev/test)
+     * is the prod-rejection layer for these three keys — it throws
+     * `ProdGuardrailsError` if any of the values reaching the running
+     * process equals the dev default. ADR-0020 I-3.
+     *
+     * The `.refine` rejects whitespace-only values (e.g. `'   '`).
+     * `.default(...)` only applies when the input is `undefined`; a
+     * whitespace string is "set" from Zod's perspective, so without
+     * `.refine` it would bypass the default and reach the adapter.
      */
-    S3_ENDPOINT: z.string().url().optional(),
+    S3_ENDPOINT: z
+      .string()
+      .url()
+      .default('http://localhost:9000')
+      .refine((s) => s.trim().length > 0, 'S3_ENDPOINT must not be whitespace-only'),
     S3_REGION: z.string().default('us-east-1'),
     S3_BUCKET: z.string().default('resto-dev'),
-    S3_ACCESS_KEY: z.string().optional(),
-    S3_SECRET_KEY: z.string().optional(),
+    S3_ACCESS_KEY: z
+      .string()
+      .default('minio')
+      .refine((s) => s.trim().length > 0, 'S3_ACCESS_KEY must not be whitespace-only'),
+    S3_SECRET_KEY: z
+      .string()
+      .default('minio_dev_password')
+      .refine((s) => s.trim().length > 0, 'S3_SECRET_KEY must not be whitespace-only'),
 
     OTEL_EXPORTER_OTLP_ENDPOINT: z.string().url().default('http://localhost:4318'),
     OTEL_SERVICE_NAME: z.string().default('resto-api'),
@@ -170,6 +188,11 @@ export const envSchema = z
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {
+      // S3_ENDPOINT / S3_ACCESS_KEY / S3_SECRET_KEY are now always set
+      // via Zod `.default(...)` (matching `DEV_DEFAULTS`). Prod rejection
+      // for them moves to `assertProdGuardrails` (boot-time), which
+      // catches the dev-default values via the `=== devDefault` check.
+      // ADR-0020 I-3.
       for (const key of [
         'BETTER_AUTH_SECRET',
         'BETTER_AUTH_BASE_URL',
@@ -178,9 +201,6 @@ export const envSchema = z
         'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
-        'S3_ENDPOINT',
-        'S3_ACCESS_KEY',
-        'S3_SECRET_KEY',
         'INTERNAL_API_TOKEN',
       ] as const) {
         if (!env[key]?.trim()) {

@@ -70,9 +70,14 @@ describe('assertProdGuardrails', () => {
   });
 
   it('throws when a value is undefined in production', () => {
-    expect(() => assertProdGuardrails(buildEnv({ S3_SECRET_KEY: undefined }))).toThrow(
-      /S3_SECRET_KEY/,
-    );
+    // Defense-in-depth: the env.schema now applies a `.default(...)` for
+    // S3_SECRET_KEY (RES-246), so the inferred type narrows to `string`.
+    // assertProdGuardrails still defends against `undefined` for callers
+    // that bypass the schema (cast through `as Env`, future refactors
+    // that re-add optionality, etc.). The cast here is intentional.
+    expect(() =>
+      assertProdGuardrails(buildEnv({ S3_SECRET_KEY: undefined as unknown as string })),
+    ).toThrow(/S3_SECRET_KEY/);
   });
 
   it('reports every violation in a single error', () => {
