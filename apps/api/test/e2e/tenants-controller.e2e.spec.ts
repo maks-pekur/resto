@@ -8,8 +8,9 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import postgres from 'postgres';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { provisionAppRole, provisionAuthRole } from '@resto/db';
+import { provisionAppRole, provisionAuthRole, runInTenantContext } from '@resto/db';
 import { AppModule } from '../../src/app.module';
+import { TENANT_REPOSITORY, type TenantRepository } from '../../src/contexts/tenancy/domain/ports';
 import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
 
 const MIGRATIONS_DIR = fileURLToPath(
@@ -301,6 +302,44 @@ describe('TenantsController E2E', () => {
       const primary = body.find((d) => d.domain === expectedDomain);
       expect(primary).toBeDefined();
       expect(primary?.isPrimary).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // TenantDrizzleRepository — RLS enforcement (RES-242)
+  // ---------------------------------------------------------------------------
+  describe('TenantDrizzleRepository — RLS enforcement (RES-242)', () => {
+    let repo: TenantRepository;
+    let tenantA: { id: string; slug: string };
+    let tenantB: { id: string; slug: string };
+
+    beforeAll(async () => {
+      repo = app.get<TenantRepository>(TENANT_REPOSITORY);
+      const slugA = `repo-rls-a-${randomUUID().slice(0, 8)}`;
+      const slugB = `repo-rls-b-${randomUUID().slice(0, 8)}`;
+      tenantA = { ...(await provisionTenant(app, slugA, INTERNAL_TOKEN)), slug: slugA };
+      tenantB = { ...(await provisionTenant(app, slugB, INTERNAL_TOKEN)), slug: slugB };
+    });
+
+    it('findCurrentTenant returns A when ALS is bound to A', async () => {
+      const result = await runInTenantContext({ tenantId: tenantA.id }, () =>
+        repo.findCurrentTenant(),
+      );
+      expect(result).not.toBeNull();
+      expect(result?.toSnapshot().id).toBe(tenantA.id);
+      expect(result?.toSnapshot().slug).toBe(tenantA.slug);
+    });
+
+    it('findCurrentTenant returns B when ALS is bound to B (cross-tenant isolation)', async () => {
+      const result = await runInTenantContext({ tenantId: tenantB.id }, () =>
+        repo.findCurrentTenant(),
+      );
+      expect(result?.toSnapshot().id).toBe(tenantB.id);
+      expect(result?.toSnapshot().id).not.toBe(tenantA.id);
+    });
+
+    it('findCurrentTenant throws when called outside an ALS context', async () => {
+      await expect(repo.findCurrentTenant()).rejects.toThrowError(/tenant context/i);
     });
   });
 });

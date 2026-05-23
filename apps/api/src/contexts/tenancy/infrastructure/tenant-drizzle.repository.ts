@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
-import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
+import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import {
   appendToOutbox,
@@ -71,8 +71,12 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
-  findCurrentTenant(): Promise<Tenant | null> {
-    return Promise.reject(new Error('findCurrentTenant: not implemented (RES-242 Task 4)'));
+  async findCurrentTenant(): Promise<Tenant | null> {
+    // requireTenantContext() runs here AND inside db.withTenant. Calling
+    // explicitly first lets us hoist tenantId into the closure without
+    // re-reading ALS inside the transaction callback.
+    const { tenantId } = requireTenantContext();
+    return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, TenantId.parse(tenantId)));
   }
 
   listCurrentTenantDomains(): Promise<readonly TenantDomain[]> {
