@@ -114,3 +114,27 @@ describe('TenantQueriesService.listDomains', () => {
     await expect(service.listDomains(id)).rejects.toBeInstanceOf(TenantNotFoundError);
   });
 });
+
+describe('TenantQueriesService.getCurrentTenant', () => {
+  let repo: TenantRepository;
+  let service: TenantQueriesService;
+
+  beforeEach(() => {
+    repo = buildRepo();
+    service = new TenantQueriesService(repo);
+  });
+
+  it('returns the snapshot read via repo.findCurrentTenant', async () => {
+    const tenant = tenantFor('cafe-current');
+    repo.findCurrentTenant = vi.fn().mockResolvedValue(tenant);
+    const snap = await service.getCurrentTenant();
+    expect(snap.slug).toBe('cafe-current');
+    expect(repo.findCurrentTenant).toHaveBeenCalledTimes(1);
+    expect(repo.findById).not.toHaveBeenCalled();
+  });
+
+  it('throws TenantNotFoundError when repo.findCurrentTenant returns null', async () => {
+    repo.findCurrentTenant = vi.fn().mockResolvedValue(null);
+    await expect(service.getCurrentTenant()).rejects.toBeInstanceOf(TenantNotFoundError);
+  });
+});
