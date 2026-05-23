@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { EnvValidationError, loadEnv } from '../../src/config/env.schema';
+import { assertProdGuardrails, ProdGuardrailsError } from '../../src/config/prod-guardrails';
 
 const baseEnv: NodeJS.ProcessEnv = {
   DATABASE_URL: 'postgres://app@localhost:5432/resto',
@@ -153,7 +154,7 @@ describe('loadEnv', () => {
     expect(env.TRUST_PROXY).toBe('true');
   });
 
-  it('rejects production boot when S3_ENDPOINT is missing', () => {
+  it('applies S3_ENDPOINT default in production but assertProdGuardrails rejects it', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
@@ -168,10 +169,13 @@ describe('loadEnv', () => {
       S3_SECRET_KEY: 'prod-secret-replace-me',
       INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
     };
-    expect(() => loadEnv(productionEnv)).toThrow(/S3_ENDPOINT/);
+    const env = loadEnv(productionEnv);
+    expect(env.S3_ENDPOINT).toBe('http://localhost:9000');
+    expect(() => assertProdGuardrails(env)).toThrow(ProdGuardrailsError);
+    expect(() => assertProdGuardrails(env)).toThrow(/S3_ENDPOINT/);
   });
 
-  it('rejects production boot when S3_ACCESS_KEY is missing', () => {
+  it('applies S3_ACCESS_KEY default in production but assertProdGuardrails rejects it', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
@@ -186,10 +190,12 @@ describe('loadEnv', () => {
       S3_SECRET_KEY: 'prod-secret-replace-me',
       INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
     };
-    expect(() => loadEnv(productionEnv)).toThrow(/S3_ACCESS_KEY/);
+    const env = loadEnv(productionEnv);
+    expect(env.S3_ACCESS_KEY).toBe('minio');
+    expect(() => assertProdGuardrails(env)).toThrow(/S3_ACCESS_KEY/);
   });
 
-  it('rejects production boot when S3_SECRET_KEY is missing', () => {
+  it('applies S3_SECRET_KEY default in production but assertProdGuardrails rejects it', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
@@ -204,7 +210,9 @@ describe('loadEnv', () => {
       S3_ACCESS_KEY: 'prod-access',
       INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
     };
-    expect(() => loadEnv(productionEnv)).toThrow(/S3_SECRET_KEY/);
+    const env = loadEnv(productionEnv);
+    expect(env.S3_SECRET_KEY).toBe('minio_dev_password');
+    expect(() => assertProdGuardrails(env)).toThrow(/S3_SECRET_KEY/);
   });
 
   it('rejects production boot when INTERNAL_API_TOKEN is missing', () => {
@@ -242,5 +250,26 @@ describe('loadEnv', () => {
       INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
     };
     expect(() => loadEnv(productionEnv)).toThrow(/S3_SECRET_KEY/);
+  });
+
+  it('applies S3 dev defaults when S3_* envs are unset', () => {
+    const env = loadEnv(baseEnv);
+    expect(env.S3_ENDPOINT).toBe('http://localhost:9000');
+    expect(env.S3_ACCESS_KEY).toBe('minio');
+    expect(env.S3_SECRET_KEY).toBe('minio_dev_password');
+    expect(env.S3_REGION).toBe('us-east-1');
+    expect(env.S3_BUCKET).toBe('resto-dev');
+  });
+
+  it('accepts explicit S3 overrides when env vars are set', () => {
+    const env = loadEnv({
+      ...baseEnv,
+      S3_ENDPOINT: 'https://r2.example.com',
+      S3_ACCESS_KEY: 'real-key',
+      S3_SECRET_KEY: 'real-secret',
+    });
+    expect(env.S3_ENDPOINT).toBe('https://r2.example.com');
+    expect(env.S3_ACCESS_KEY).toBe('real-key');
+    expect(env.S3_SECRET_KEY).toBe('real-secret');
   });
 });
