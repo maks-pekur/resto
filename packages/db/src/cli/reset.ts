@@ -4,10 +4,9 @@ import {
   assertConfirmationProvided,
   assertHostAllowed,
   assertNodeEnvAllowed,
+  CONFIRMATION_VAR,
   ResetGuardError,
 } from './reset-guards';
-
-const CONFIRMATION_VAR = 'RESTO_CONFIRM_RESET';
 
 /**
  * Drop and recreate the `public` schema, then re-run migrations. Dev only.

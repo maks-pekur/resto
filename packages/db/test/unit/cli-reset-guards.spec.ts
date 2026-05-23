@@ -4,6 +4,7 @@ import {
   assertConfirmationProvided,
   assertHostAllowed,
   ResetGuardError,
+  CONFIRMATION_VALUE,
 } from '../../src/cli/reset-guards';
 
 describe('cli/reset-guards', () => {
@@ -41,7 +42,7 @@ describe('cli/reset-guards', () => {
   describe('assertConfirmationProvided', () => {
     it('accepts the literal sentence', () => {
       expect(() => {
-        assertConfirmationProvided('yes-wipe-my-dev-db');
+        assertConfirmationProvided(CONFIRMATION_VALUE);
       }).not.toThrow();
     });
     it('rejects empty / unset', () => {
@@ -94,6 +95,29 @@ describe('cli/reset-guards', () => {
       expect(() => {
         assertHostAllowed(undefined);
       }).toThrow(/DATABASE_ADMIN_URL is required/);
+    });
+    it('rejects empty string URL (env var exported as empty)', () => {
+      expect(() => {
+        assertHostAllowed('');
+      }).toThrow(/DATABASE_ADMIN_URL is required/);
+    });
+    it('accepts uppercase LOCALHOST (case-insensitive)', () => {
+      expect(() => {
+        assertHostAllowed('postgres://x@LOCALHOST:5432/y');
+      }).not.toThrow();
+    });
+  });
+
+  describe('ResetGuardError', () => {
+    it('is an instance of Error with name "ResetGuardError"', () => {
+      try {
+        assertNodeEnvAllowed('production');
+        expect.fail('expected throw');
+      } catch (e) {
+        expect(e).toBeInstanceOf(ResetGuardError);
+        expect(e).toBeInstanceOf(Error);
+        expect((e as Error).name).toBe('ResetGuardError');
+      }
     });
   });
 });

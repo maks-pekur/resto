@@ -1,6 +1,6 @@
 const ALLOWED_NODE_ENVS = ['development', 'test'] as const;
-const CONFIRMATION_VAR = 'RESTO_CONFIRM_RESET';
-const CONFIRMATION_VALUE = 'yes-wipe-my-dev-db';
+export const CONFIRMATION_VAR = 'RESTO_CONFIRM_RESET';
+export const CONFIRMATION_VALUE = 'yes-wipe-my-dev-db';
 const ALLOWED_HOSTS = new Set(['localhost', '127.0.0.1', 'postgres']);
 
 /**
@@ -62,7 +62,11 @@ export function assertHostAllowed(url: string | undefined): asserts url is strin
   }
   let host: string;
   try {
-    host = new URL(url).hostname;
+    // `postgres://` is not a WHATWG "special scheme" — Node's URL parser
+    // does NOT auto-lowercase its hostname. Normalise explicitly so a
+    // copy-pasted `LOCALHOST` doesn't false-positive against the (lower-
+    // case) allowlist.
+    host = new URL(url).hostname.toLowerCase();
   } catch {
     throw new ResetGuardError('db:reset refused: DATABASE_ADMIN_URL is not a valid URL.');
   }
