@@ -13,7 +13,13 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { citext } from './_types';
-import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
+import {
+  compositeTenantFk,
+  pkUuid,
+  tenantIdColumn,
+  tenantParentUniqueIndex,
+  timestampsColumns,
+} from './_columns';
 import { tenants } from './tenants';
 import { member } from './auth';
 
@@ -65,6 +71,7 @@ export const brands = pgTable(
       'brands_locale_format_chk',
       sql`${table.locale} IS NULL OR ${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`,
     ),
+    tenantParentUniqueIndex('brands', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
@@ -81,10 +88,10 @@ export const brandDomains = pgTable(
     ...timestampsColumns(),
   },
   (table) => [
-    foreignKey({
+    compositeTenantFk({
       name: 'brand_domains_brand_fk',
-      columns: [table.brandId],
-      foreignColumns: [brands.id],
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
     }).onDelete('cascade'),
     foreignKey({
       name: 'brand_domains_tenant_fk',
