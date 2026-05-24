@@ -1,0 +1,306 @@
+# Roadmap: RestOS
+
+## Overview
+
+RestOS is a brownfield multi-tenant restaurant SaaS with a mature platform foundation (4 bounded contexts, RLS double-enforcement, NATS JetStream, Better Auth) and a gap between infrastructure completeness and product completeness. This roadmap closes that gap across 16 phases ordered by the user's explicit depth-first strategy: harden the foundation before building on it, unlock operator tooling before customer surfaces, build the ordering engine before financial reporting flows from it. MVP-1 (Phases 1–16) is the bar for a first paying customer by Q1 2027.
+
+## Phases
+
+**Phase Numbering:**
+
+- Integer phases (1–16): MVP-1 planned work
+- Decimal phases (e.g. 3.1): Urgent insertions added post-planning via `/gsd:phase insert`
+
+- [ ] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built
+- [ ] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX
+- [ ] **Phase 3: Auth Completion** - Close production-readiness gaps in auth so real operators can be onboarded (email flows, invitations, RBAC presets)
+- [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
+- [ ] **Phase 5: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
+- [ ] **Phase 6: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes
+- [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
+- [ ] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF)
+- [ ] **Phase 9: Delivery Zones** - Polygon-based delivery zone editor, fee/threshold config, in-zone check at checkout with Redis geocode cache
+- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); requires zones to exist for delivery validation
+- [ ] **Phase 11: Promo & Discounts** - Single + bulk promo codes, automatic discounts, admin UX (pure discount engine already shipped in Phase 7)
+- [ ] **Phase 12: CRM** - Customer record, order history, GDPR delete-on-request
+- [ ] **Phase 13: Analytics** - Revenue / AOV / order count / conversion rate dashboard for operators
+- [ ] **Phase 14: Finance** - Order list with filters + export, refunds, VAT, RestOS commission line
+- [ ] **Phase 15: Content & SEO** - Tenant theming, content pages, per-city SEO landing pages, sitemap
+- [ ] **Phase 16: Self-serve Onboarding** - End-to-end signup-to-published-menu wizard threading all prior phases together
+
+## Phase Details
+
+### Phase 1: Tenancy Hardening
+
+**Goal**: Close every enterprise, GDPR, and security gap in the existing tenancy and identity platform before any net-new product surface is built on top of it
+**Depends on**: Nothing (brownfield — hardening existing contexts)
+**Requirements**: TEN-01, TEN-02, TEN-03, TEN-04, TEN-05, TEN-06, TEN-07, TEN-08, TEN-09, TEN-10, TEN-11, TEN-12, TEN-13, TEN-14, TEN-15, TEN-16, TEN-17, TEN-18
+**Success Criteria** (what must be TRUE):
+
+1. Operator can suspend a tenant and all customer-facing endpoints (menu, site, qr-menu) for that tenant return 403/410 immediately
+2. Daily cron runs automatically, picks up tenants past the 30-day erasure cool-off, and executes erasure; failures emit OTel error spans without destructive retry; both tenant-scoped and platform-level `inbox_processed` rows older than 30 days are swept
+3. `resto_app` role cannot read or write any Better Auth credential table; SQL preflight asserts this at every boot
+4. Any call to `withoutTenant()` from an unregistered call site throws at runtime, and the ESLint rule catches new violations in CI before they ship
+5. All `EventEnvelope` construction goes through `buildEnvelope`; the ESLint rule rejects direct `correlationId: randomUUID()` construction; `appendToOutbox` validates via `EventEnvelope.parse()` before insert; `OutboxDispatcher.stop()` is idempotent under concurrent callers; cross-tenant isolation tests pass under concurrent load with no ALS leak detected; Better Auth is pinned to `=1.4.22` exact
+   **Plans**: TBD
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+
+### Phase 2: Admin Shell
+
+**Goal**: Wire the existing Better Auth setup into a real operator sign-in flow and brand management UX so operators can authenticate and navigate before auth completion work begins
+**Depends on**: Phase 1
+**Requirements**: ADM-01, ADM-02, ADM-03, ADM-04, ADM-05, ADM-06, ADM-07, ADM-08
+**Success Criteria** (what must be TRUE):
+
+1. Operator signs in at `/sign-in` with email + password and lands on the dashboard; unauthenticated requests redirect to `/sign-in`
+2. Sidebar shows the operator's real tenants/brands from the `organization` plugin; `NavUser` shows the operator's real email and role, not a placeholder
+3. Operator creates a new brand and switches active brand; active-brand state persists across page navigations via signed cookie
+4. All admin API calls return 403 to unauthorized roles and the UI surfaces a user-friendly empty state rather than a stack trace
+5. `apps/admin` boot throws loudly if `NEXT_PUBLIC_API_ORIGIN`, `ADMIN_WEB_URL`, or `INTERNAL_API_TOKEN` are missing outside development
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+
+### Phase 3: Auth Completion
+
+**Goal**: Close production-readiness gaps in authentication so real operators can be onboarded via invitation, recover lost passwords, and have email verification enforced
+**Depends on**: Phase 2
+**Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11
+**Success Criteria** (what must be TRUE):
+
+1. Operator added to a tenant receives an invitation email and can complete signup via the single-use link at `/accept-invitation`
+2. Operator who forgot their password can request a reset email and set a new password via the single-use link at `/reset-password`; new signups receive email verification and unverified accounts are blocked from sensitive actions
+3. Operator can enable and use 2FA TOTP from account settings
+4. All cookies set by server actions carry `secure`, `httpOnly`, and `sameSite: 'lax'` flags; NATS consumers have `max_deliver` + DLQ configured so poison messages do not redeliver indefinitely
+5. System roles `owner`, `admin`, and `staff` are seeded with correct permission presets via an idempotent migration step
+   **Plans**: TBD
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-skeptic
+
+### Phase 4: Catalog Admin
+
+**Goal**: Give operators a full CRUD UX for menu management — categories, items, modifiers, variants, photos, stop-lists, and a publish flow — so the catalog is ready to be consumed by customer-facing surfaces
+**Depends on**: Phase 3
+**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-06, CAT-07, CAT-08, CAT-09, CAT-10
+**Success Criteria** (what must be TRUE):
+
+1. Operator creates, edits, and archives categories and items (with name, description, price, allergens, photo) with explicit ordering, and uploads photos via presigned S3 PUT with preview
+2. Operator creates and manages modifier groups with per-option price deltas and item variants with price overrides
+3. Operator triggers publish and the snapshot becomes the new published version with cache invalidation; operator can see a diff between draft and published before publishing; menu version counter uses Postgres `nextval` sequence as authoritative fallback when Redis is unavailable
+4. Operator manages a manual stop-list, marking items as 86'd so they appear disabled on customer surfaces
+5. All catalog free-text fields enforce Zod max-length constraints (`imageS3Key`, `allergens` array and element lengths)
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 5: QR-Menu Customer
+
+**Goal**: Deliver a real customer-facing ordering UX in `apps/qr-menu` — branded menu display, item detail with modifiers, cart, table binding — over the already-working `/v1/menu` API
+**Depends on**: Phase 4
+**Requirements**: QRM-01, QRM-02, QRM-03, QRM-04, QRM-05, QRM-06, QRM-07, QRM-08, QRM-09, QRM-10, QRM-11, QRM-12
+**Success Criteria** (what must be TRUE):
+
+1. Guest sees the restaurant's branded header, categories, items with photos and prices; stop-listed items appear visibly disabled
+2. Guest opens an item detail, selects modifiers with live price updates, adds the item to cart, adjusts quantity, and sees running subtotal
+3. Guest's table number is auto-bound from the `?table=` QR param or can be entered manually
+4. Multi-language switcher works (locale from URL > cookie > Accept-Language)
+5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 6: Customer Site
+
+**Goal**: Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button is disabled until Phase 8 completes
+**Depends on**: Phase 4
+**Requirements**: SITE-01, SITE-02, SITE-03, SITE-04, SITE-05, SITE-06, SITE-07, SITE-09, SITE-10
+**Success Criteria** (what must be TRUE):
+
+1. `apps/website` builds and serves the published menu for the resolved tenant via subdomain routing (`<slug>.resto.app`); custom domain resolution via `tenant_domains` table works
+2. Guest selects delivery or pickup, enters a delivery address and sees inline zone validity feedback (stub — real zone check wires in at Phase 9), and can choose ASAP or scheduled order time
+3. Guest sees cart with promo code field (non-functional placeholder until Phase 11) and a total breakdown showing subtotal; delivery fee, modifiers, and discounts wire in via Phase 7/8/11
+4. Guest provides contact info and the checkout button is visible but disabled with a "coming soon" state until Phase 8 completes; no real payment flow is initiated in this phase
+5. Operator-editable content pages (About, Delivery, Contact, FAQ) are accessible from the site
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 7: Ordering
+
+**Goal**: Build the new `ordering` bounded context — Order aggregate with full state machine, idempotent creation, immutable item snapshot, totals calculation, event contracts, DB tables, NATS subject, audit wiring, outbox claim-token race fix, and the pure domain discount engine
+**Depends on**: Phase 6
+**Requirements**: ORD-01, ORD-02, ORD-03, ORD-04, ORD-05, ORD-06, ORD-07, ORD-08, ORD-09, ORD-10, ORD-11, ORD-12, PROMO-06
+**Success Criteria** (what must be TRUE):
+
+1. The `ordering` context exists at `apps/api/src/contexts/ordering/` with the full 4-layer DDD structure matching the project's hexagonal pattern
+2. An Order aggregate transitions through the full state machine (`created → paid → accepted → preparing → ready → completed`, plus `canceled`, `refunded`, `failed`) with domain events emitted at each transition; `orders` table includes `scheduled_for TIMESTAMPTZ NULL` with operating-hours validation
+3. Cart-to-order conversion is anonymous (no auth required); order records an immutable snapshot of items, modifiers, and prices at creation time
+4. Order total calculation (`subtotal + modifiers + delivery + service_fee − discount = total`) lives entirely in the domain layer with correct rounding; idempotent order creation rejects duplicate client keys; pure discount engine (no DB calls at calculation time) is available for Phase 8 checkout
+5. `ordering.>` events (`order_created`, `order_paid`, `order_canceled`, `order_refunded`, `order_status_changed`) are consumed by the `audit` context and produce audit rows; `outbox_events` table has `claim_token UUID` column and `releaseOutboxClaim`/`markOutboxDelivered` are scoped to the claiming replica's token
+   **Plans**: TBD
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+
+### Phase 8: Payments (Stripe Connect)
+
+**Goal**: Replace `NoopStripeConnectAdapter` with a real Stripe Connect Express implementation — account onboarding, payment intent routing, webhook handling, refund flow, pending-KYC UX state, outbox leader health probe, order confirmation page, and guest notification emails
+**Depends on**: Phase 7
+**Requirements**: PAY-01, PAY-02, PAY-03, PAY-04, PAY-05, PAY-06, PAY-07, PAY-08, PAY-09, PAY-10, PAY-11, PAY-12, PAY-13, SITE-08, GNOTIF-01, GNOTIF-02, GNOTIF-03, GNOTIF-04
+**Success Criteria** (what must be TRUE):
+
+1. Operator initiates Stripe Connect onboarding from admin and is redirected to Stripe's hosted onboarding flow; `account.updated` webhook updates the tenant's `stripe_account_id` and onboarding status; tenant can use catalog, CRM, and admin fully while KYC is in progress — only the "Accept payments" live switch is gated
+2. At checkout, a `PaymentIntent` is created routed to the tenant's Stripe account with a RestOS application fee; `payment_intent.succeeded` transitions the order to `paid`; guest is redirected to the order confirmation page (SITE-08) with the order number
+3. `payment_intent.payment_failed` surfaces a failure message to the guest with a retry CTA; operator-initiated refund creates a Stripe refund and transitions the order to `refunded` (full or partial)
+4. Guest receives an order confirmation email immediately after payment succeeds; guest receives status emails on `accepted` and `ready/on-its-way` transitions; guest receives a refund confirmation email when a refund is initiated; email templates respect tenant brand theme (logo, accent color)
+5. Stripe webhook handler is idempotent using the inbox dedup pattern with Stripe event ID; webhook endpoint rejects invalid signatures with 400; `stripeAccountId` Zod schema has `.max(255)`; `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0) and `/health/readiness` marks pod NOT ready when leader hasn't dispatched in >30s
+   **Plans**: TBD
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+
+### Phase 9: Delivery Zones
+
+**Goal**: Give operators a polygon-based delivery zone editor with per-zone fee and threshold configuration, enforce in-zone checks at site checkout via geocoding, and add a Redis geocode cache to survive Nominatim rate limits
+**Depends on**: Phase 6, Phase 7, Phase 8
+**Requirements**: DELV-01, DELV-02, DELV-03, DELV-04, DELV-05, DELV-06, DELV-07, DELV-08
+**Success Criteria** (what must be TRUE):
+
+1. Operator draws a delivery polygon on a Leaflet + OpenStreetMap map (no Google Maps dependency), sets minimum order value, free-delivery threshold, and fixed delivery fee per zone
+2. Operator can temporarily disable or re-enable a zone without deleting it
+3. At site checkout, the guest's address is geocoded via OSM/Nominatim and checked against active zones; an out-of-zone address is blocked with a human-readable explanation
+4. Geocode results are cached in Redis keyed on normalized address string with a 24h TTL; concurrent checkouts do not trip Nominatim's 1 req/sec public API limit under normal load
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+
+### Phase 10: Admin Order Intake
+
+**Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
+**Depends on**: Phase 7, Phase 8, Phase 9
+**Requirements**: ORDINT-01, ORDINT-02, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-09, ORDINT-10
+**Success Criteria** (what must be TRUE):
+
+1. New orders appear in the admin feed in real time via Server-Sent Events without a page refresh; incoming orders are visually flagged; delivery zone validation is enforced for all delivery orders (zones exist from Phase 9)
+2. Operator accepts or rejects an incoming order; rejection auto-triggers a refund via Stripe
+3. Operator transitions an accepted order through `accepted → preparing → ready → completed`
+4. Operator cancels an order with a reason; if the order was paid, auto-refund is triggered; operator can filter orders by status, date, and channel; operator sees full order details (items, modifiers, customer info, delivery address, total breakdown)
+5. Graceful shutdown closes all active SSE connections with a `retry:` event so clients auto-reconnect; public `GET /v1/orders/:id/status` endpoint returns current order state for guest-facing confirmation page polling
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 11: Promo & Discounts
+
+**Goal**: Give operators single-use and bulk promo code management and automatic discounts in the admin UX; the pure domain discount engine is already live from Phase 7
+**Depends on**: Phase 7
+**Requirements**: PROMO-01, PROMO-02, PROMO-03, PROMO-04, PROMO-05
+**Success Criteria** (what must be TRUE):
+
+1. Operator creates a promo code (percent or fixed, scoped to item/category/cart, with validity dates and max uses) and bulk-imports codes from CSV
+2. Guest enters a promo code at checkout and sees the discount applied or a specific error (expired, invalid, max-uses reached); a single-use code rejects any second use
+3. Operator creates an automatic discount (no code required) that applies when a cart condition is met (e.g. `cart_total > X`)
+4. Promo code field on the customer site (stubbed in Phase 6) is now fully functional; discount is reflected in the order total at checkout
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 12: CRM
+
+**Goal**: Build the customer record layer — automatic creation on first order, order history view for operators, and GDPR delete-on-request with irreversible anonymization and audit trail
+**Depends on**: Phase 7
+**Requirements**: CRM-01, CRM-02, CRM-03, CRM-04, CRM-05
+**Success Criteria** (what must be TRUE):
+
+1. A customer record is created automatically on first order using phone + email as natural keys; no manual step required
+2. Operator sees the customer list with filters (date range, AOV, order count) and can click any customer to see their full order history
+3. GDPR delete-on-request anonymizes all PII using `AUDIT_ERASURE_SALT` hashing while keeping aggregate stats intact; the deletion writes an audit row with a hashed identifier
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 13: Analytics
+
+**Goal**: Give operators a revenue / AOV / order count / order conversion rate dashboard powered by real ordering and payment data from the `orders` table
+**Depends on**: Phase 7, Phase 8
+**Requirements**: ANL-01, ANL-02, ANL-03, ANL-04, ANL-05
+**Success Criteria** (what must be TRUE):
+
+1. Operator sees today / 7-day / 30-day revenue with prior-period comparison on the dashboard
+2. Operator sees order count and AOV for the same time windows
+3. Operator sees order conversion rate (`paid_orders / checkout_initiations`) for the selected period, computed server-side from the `orders` table — no client-side event instrumentation required
+4. Operator sees top items by revenue and by order count
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 14: Finance
+
+**Goal**: Give operators an order list with advanced filtering, CSV export, refund initiation, VAT rate configuration per category, and a RestOS SaaS billing line for the period
+**Depends on**: Phase 7, Phase 8
+**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06
+**Success Criteria** (what must be TRUE):
+
+1. Operator filters orders by status, date, payment status, channel, and brand; exported CSV contains all matching rows
+2. Operator initiates a full or partial refund from the order detail view; the refund is reflected in both Stripe and the order state
+3. Operator sets a VAT rate per category; order detail shows a VAT breakdown
+4. Operator sees the RestOS SaaS billing line for the current period alongside Stripe processing fees
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 15: Content & SEO
+
+**Goal**: Give operators brand theme controls, WYSIWYG content page editing, per-city SEO landing page generation, editable meta tags, and tenant sitemap/robots.txt — with security constraints on all URL and font fields
+**Depends on**: Phase 6
+**Requirements**: CONT-01, CONT-02, CONT-03, CONT-04, CONT-05, CONT-06, CONT-07
+**Success Criteria** (what must be TRUE):
+
+1. Operator sets brand theme (light/dark toggle, accent color, logo, favicon) and changes are reflected on customer-facing surfaces
+2. Operator edits content pages (About, Delivery, Contact, FAQ) via a simple WYSIWYG editor (Tiptap or similar)
+3. Per-city SEO landing pages are auto-generated from a single template per zone; each page has an editable meta title, description, and og:image
+4. Per-tenant `sitemap.xml` and `robots.txt` are generated and served correctly
+5. `BrandTheme.logoUrl` rejects non-http(s) URLs; `BrandTheme.font` is restricted to an allowlist regex; both enforced at the Zod schema layer
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 16: Self-serve Onboarding
+
+**Goal**: Thread all prior phases into a guided signup-to-published-menu wizard so a new restaurant can go from zero to first menu live in under one hour without operator help
+**Depends on**: Phases 1–15
+**Requirements**: ONB-01, ONB-02, ONB-03, ONB-04, ONB-05
+**Success Criteria** (what must be TRUE):
+
+1. New user signs up at the landing CTA and creates their first tenant in the same flow — no separate "create org" step required
+2. Onboarding wizard guides the operator through brand setup → first location → upload menu → preview → publish in a single coherent sequence
+3. Time from signup to first menu live is measurable and the p50 target of 1 hour without support assistance is met (dev-mode skip-to-paid-flow toggle available for testing)
+4. Stripe Connect onboarding is offered as a separate, skippable wizard step that can be resumed later
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
+
+## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16
+
+Note: Phase 9 (Delivery Zones) now precedes Phase 10 (Admin Order Intake) so zone validation exists before live delivery orders are accepted through the operator intake feed.
+
+| Phase                        | Plans Complete | Status      | Completed |
+| ---------------------------- | -------------- | ----------- | --------- |
+| 1. Tenancy Hardening         | 0/?            | Not started | -         |
+| 2. Admin Shell               | 0/?            | Not started | -         |
+| 3. Auth Completion           | 0/?            | Not started | -         |
+| 4. Catalog Admin             | 0/?            | Not started | -         |
+| 5. QR-Menu Customer          | 0/?            | Not started | -         |
+| 6. Customer Site             | 0/?            | Not started | -         |
+| 7. Ordering                  | 0/?            | Not started | -         |
+| 8. Payments (Stripe Connect) | 0/?            | Not started | -         |
+| 9. Delivery Zones            | 0/?            | Not started | -         |
+| 10. Admin Order Intake       | 0/?            | Not started | -         |
+| 11. Promo & Discounts        | 0/?            | Not started | -         |
+| 12. CRM                      | 0/?            | Not started | -         |
+| 13. Analytics                | 0/?            | Not started | -         |
+| 14. Finance                  | 0/?            | Not started | -         |
+| 15. Content & SEO            | 0/?            | Not started | -         |
+| 16. Self-serve Onboarding    | 0/?            | Not started | -         |

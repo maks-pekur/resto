@@ -23,9 +23,12 @@
 - [ ] **TEN-10**: Per-tenant OTel metrics exposed (outbox lag, HTTP request rate, error rate) with `tenant_id` label
 - [ ] **TEN-11**: `db.withoutTenant(reason, fn)` runtime assertion validates the call site against an allowlist; unregistered sites throw
 - [ ] **TEN-12**: ESLint rule rejects `withoutTenant(` call sites not present in the allowlist
-- [ ] **TEN-13**: Daily scheduled job deletes `inbox_processed` rows older than 30 days
+- [ ] **TEN-13**: Daily scheduled job deletes `inbox_processed` rows older than 30 days (both tenant-scoped and platform-level rows)
 - [ ] **TEN-14**: `buildEnvelope(contract, payload, opts)` helper in `@resto/events` reads `correlationId` from active OTel span via ALS; all `EventEnvelope` construction goes through it
 - [ ] **TEN-15**: ESLint rule rejects direct `EventEnvelope` literal construction with `correlationId: randomUUID()`
+- [ ] **TEN-16**: `OutboxDispatcher.stop()` is idempotent — concurrent callers receive the cached stop-promise; no deadlock on re-entrant lifecycle hooks (`packages/events/src/outbox/dispatcher.ts:118-124`)
+- [ ] **TEN-17**: `appendToOutbox` validates the envelope via `EventEnvelope.parse()` before insert; malformed envelopes throw at insert-time, not broker-side (`packages/events/src/outbox/repository.ts:23`)
+- [ ] **TEN-18**: Better Auth pinned to `=1.4.22` exact (tilde removed from package.json); deliberate upgrade decisions become phase deliverables, not auto-resolved by the package manager
 
 ### Admin Shell (`ADM`)
 
@@ -69,6 +72,7 @@
 - [ ] **CAT-07**: Operator manages manual stop-list (add/remove items as 86'd)
 - [ ] **CAT-08**: Operator sees diff between draft and currently-published menu before publishing
 - [ ] **CAT-09**: Catalog DTO/Zod max-length constraints applied on all free-text fields (`imageS3Key.max(1024)`, `allergens` array `.max(50)`, etc.)
+- [ ] **CAT-10**: Redis menu-version counter uses Postgres `nextval('menu_versions_seq')` sequence as authoritative fallback when Redis is unavailable; resolves cache-key collision on concurrent publish during Redis outage
 
 ### QR-menu Customer (`QRM`)
 
@@ -89,16 +93,16 @@
 
 ### Customer Site (`SITE`)
 
-> `apps/website` from `.gitkeep` to working multi-tenant restaurant site (delivery / pickup orders).
+> `apps/website` from `.gitkeep` to working multi-tenant restaurant site (delivery / pickup orders). Phase 6 delivers the scaffold through cart entry; checkout cutover happens in Phase 8.
 
 - [ ] **SITE-01**: `apps/website` scaffolded (Next.js 15 App Router with RSC, matches `apps/admin` stack)
 - [ ] **SITE-02**: Site renders the published menu for the resolved tenant (subdomain → tenant resolution)
 - [ ] **SITE-03**: Guest chooses delivery or pickup mode
 - [ ] **SITE-04**: For delivery, guest enters address (geocoded), sees zone validity check inline
-- [ ] **SITE-05**: Guest sees cart, can apply promo code, sees final total breakdown (items / modifiers / delivery / fees / discount)
+- [ ] **SITE-05**: Guest sees cart, promo code field renders (non-functional until Phase 11), total breakdown (subtotal + delivery; modifiers and discounts wire in via Phase 7/8/11)
 - [ ] **SITE-06**: Guest provides contact info (name, phone) with optional account creation
 - [ ] **SITE-07**: Guest chooses order time (ASAP / scheduled interval)
-- [ ] **SITE-08**: Guest sees order confirmation page with order number after payment success
+- [ ] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
 - [ ] **SITE-09**: Site supports per-tenant subdomain (`<slug>.resto.app`) and custom domain (`tenant_domains` table)
 - [ ] **SITE-10**: Operator-editable content pages (About / Delivery / Contact / FAQ)
 
@@ -116,10 +120,12 @@
 - [ ] **ORD-08**: NATS subject `ordering.>` added to `STREAM_SUBJECTS` in `nats.module.ts`
 - [ ] **ORD-09**: Order events subscribed by `audit` context (existing pattern)
 - [ ] **ORD-10**: Idempotent order creation (client-provided idempotency key)
+- [ ] **ORD-11**: `outbox_events` table gets `claim_token UUID` column; `releaseOutboxClaim` and `markOutboxDelivered` scope to claim token to prevent multi-replica double-delivery race
+- [ ] **ORD-12**: `orders` table includes `scheduled_for TIMESTAMPTZ NULL` column with operating-hours validation; supports SITE-07 scheduled order time
 
 ### Payments — Stripe Connect (`PAY`)
 
-> Replace `NoopStripeConnectAdapter` with real implementation.
+> Replace `NoopStripeConnectAdapter` with real implementation. Includes post-payment guest communications.
 
 - [ ] **PAY-01**: Stripe SDK installed; `StripeConnectAdapter` implements `StripeConnectPort`
 - [ ] **PAY-02**: Operator can initiate Stripe Connect onboarding from admin (`POST /v1/tenancy/stripe-onboarding`)
@@ -132,10 +138,21 @@
 - [ ] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
 - [ ] **PAY-10**: Stripe webhook handler idempotent (uses inbox dedup pattern with Stripe event id)
 - [ ] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
+- [ ] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
+- [ ] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
+
+### Guest Notifications (`GNOTIF`)
+
+> Post-payment and post-status guest communications via Resend adapter (wired in AUTH-01). Folded into Phase 8.
+
+- [ ] **GNOTIF-01**: Guest receives order confirmation email immediately after `payment_intent.succeeded` (order #, items, total, ETA)
+- [ ] **GNOTIF-02**: Guest receives status emails when order transitions to `accepted` and to `ready` / `on-its-way` (uses Resend adapter from AUTH-01)
+- [ ] **GNOTIF-03**: Guest receives refund confirmation email when refund is initiated (full or partial)
+- [ ] **GNOTIF-04**: Email templates respect tenant brand theme (logo, accent color); per-locale templates
 
 ### Admin Order Intake (`ORDINT`)
 
-> Where orders land (no Staff app in MVP-1).
+> Where orders land (no Staff app in MVP-1). Now Phase 10 — executes after Delivery Zones (Phase 9).
 
 - [ ] **ORDINT-01**: Operator sees incoming-orders feed in admin; new orders visually flagged
 - [ ] **ORDINT-02**: Real-time updates (Server-Sent Events stream from api on `ordering.>` events) push new orders without refresh
@@ -145,10 +162,12 @@
 - [ ] **ORDINT-06**: Operator initiates partial refund (specific items)
 - [ ] **ORDINT-07**: Operator sees order details (items, modifiers, customer info, delivery address, total breakdown)
 - [ ] **ORDINT-08**: Operator filters orders by status / date / channel (qr-menu vs site)
+- [ ] **ORDINT-09**: Graceful shutdown closes all active SSE connections with a `retry:` event; clients auto-reconnect after rolling deploy
+- [ ] **ORDINT-10**: Public `GET /v1/orders/:id/status` endpoint (or SSE stream) returns current order state (`accepted / preparing / ready / on its way`); used by guest-facing confirmation page for live status polling
 
 ### Delivery Zones — basic (`DELV`)
 
-> Polygons + minimums + in-zone check at checkout. Per SPEC section 3.1.
+> Polygons + minimums + in-zone check at checkout. Now Phase 9 — executes before Admin Order Intake. Per SPEC section 3.1.
 
 - [ ] **DELV-01**: Operator draws delivery polygon on map (Leaflet + OpenStreetMap tiles, no Google Maps dependency)
 - [ ] **DELV-02**: Operator sets minimum order value (global default + per-zone override)
@@ -157,17 +176,18 @@
 - [ ] **DELV-05**: At site checkout, address geocoded (OSM/Nominatim) → point-in-polygon check against active zones
 - [ ] **DELV-06**: Out-of-zone address blocked with explanation ("вне зоны доставки — попробуйте самовывоз")
 - [ ] **DELV-07**: Operator can temporarily disable / re-enable a zone
+- [ ] **DELV-08**: Redis-backed Nominatim geocode cache with normalized-address key + 24h TTL; rate-limit-resilient against public Nominatim 1 req/sec ToS
 
 ### Promo & Discounts — basic (`PROMO`)
 
-> Single + bulk codes; cart/category/item discount; per SPEC section 3.1.
+> Single + bulk codes; cart/category/item discount; per SPEC section 3.1. PROMO-06 (pure discount engine) assigned to Phase 7 in traceability — must exist before Phase 8 processes real payments.
 
 - [ ] **PROMO-01**: Operator creates promo code (code, type=`percent|fixed`, value, scope=`item|category|cart`, validity dates, max uses)
 - [ ] **PROMO-02**: Operator bulk-imports promo codes from CSV (one-time-use list)
 - [ ] **PROMO-03**: Guest enters promo code at checkout, sees discount applied or specific error (expired / invalid / max-uses)
 - [ ] **PROMO-04**: Single-use code rejects second use
 - [ ] **PROMO-05**: Operator creates automatic discount (no code, applies on condition like `cart_total > X`)
-- [ ] **PROMO-06**: Discount calculation pure (no DB calls); domain layer
+- [ ] **PROMO-06**: Discount calculation pure (no DB calls); domain layer — assigned to Phase 7 (ordering context) so it exists before Phase 8 processes real payments
 
 ### CRM — basic (`CRM`)
 
@@ -186,7 +206,7 @@
 - [ ] **ANL-01**: Dashboard shows revenue (today / 7d / 30d) with prior-period comparison
 - [ ] **ANL-02**: Dashboard shows order count (today / 7d / 30d)
 - [ ] **ANL-03**: Dashboard shows average order value (AOV)
-- [ ] **ANL-04**: Dashboard shows funnel: menu view → add-to-cart → checkout → paid (per-step conversion)
+- [ ] **ANL-04**: Dashboard shows order conversion rate = `paid_orders / checkout_initiations` for selected period; server-side aggregation from `orders` table (full menu→cart→checkout→paid funnel with client-side instrumentation is deferred to v2 as MKT-06)
 - [ ] **ANL-05**: Dashboard shows top items by revenue and by order count
 
 ### Finance — basic (`FIN`)
@@ -241,6 +261,7 @@
 - **MKT-03**: Stories on site and mobile
 - **MKT-04**: Banners (homepage, category pages)
 - **MKT-05**: Cart upsell ("frequently bought with")
+- **MKT-06**: Client-side event tracking (page view, add-to-cart, checkout initiation) for full conversion funnel — requires event collection infra (PostHog or custom schema); deferred from ANL-04 redefinition
 
 ### Advanced Delivery (`DELVADV`)
 
@@ -344,19 +365,168 @@
 
 ## Traceability
 
-> Empty until `ROADMAP.md` is generated. Populated by `gsd-roadmapper`.
+> Updated 2026-05-24 — revised after persona reviews. 150 v1 requirements total.
 
-| Requirement                  | Phase | Status |
-| ---------------------------- | ----- | ------ |
-| (filled by roadmap creation) |       |        |
+| Requirement | Phase    | Status  |
+| ----------- | -------- | ------- |
+| TEN-01      | Phase 1  | Pending |
+| TEN-02      | Phase 1  | Pending |
+| TEN-03      | Phase 1  | Pending |
+| TEN-04      | Phase 1  | Pending |
+| TEN-05      | Phase 1  | Pending |
+| TEN-06      | Phase 1  | Pending |
+| TEN-07      | Phase 1  | Pending |
+| TEN-08      | Phase 1  | Pending |
+| TEN-09      | Phase 1  | Pending |
+| TEN-10      | Phase 1  | Pending |
+| TEN-11      | Phase 1  | Pending |
+| TEN-12      | Phase 1  | Pending |
+| TEN-13      | Phase 1  | Pending |
+| TEN-14      | Phase 1  | Pending |
+| TEN-15      | Phase 1  | Pending |
+| TEN-16      | Phase 1  | Pending |
+| TEN-17      | Phase 1  | Pending |
+| TEN-18      | Phase 1  | Pending |
+| ADM-01      | Phase 2  | Pending |
+| ADM-02      | Phase 2  | Pending |
+| ADM-03      | Phase 2  | Pending |
+| ADM-04      | Phase 2  | Pending |
+| ADM-05      | Phase 2  | Pending |
+| ADM-06      | Phase 2  | Pending |
+| ADM-07      | Phase 2  | Pending |
+| ADM-08      | Phase 2  | Pending |
+| AUTH-01     | Phase 3  | Pending |
+| AUTH-02     | Phase 3  | Pending |
+| AUTH-03     | Phase 3  | Pending |
+| AUTH-04     | Phase 3  | Pending |
+| AUTH-05     | Phase 3  | Pending |
+| AUTH-06     | Phase 3  | Pending |
+| AUTH-07     | Phase 3  | Pending |
+| AUTH-08     | Phase 3  | Pending |
+| AUTH-09     | Phase 3  | Pending |
+| AUTH-10     | Phase 3  | Pending |
+| AUTH-11     | Phase 3  | Pending |
+| CAT-01      | Phase 4  | Pending |
+| CAT-02      | Phase 4  | Pending |
+| CAT-03      | Phase 4  | Pending |
+| CAT-04      | Phase 4  | Pending |
+| CAT-05      | Phase 4  | Pending |
+| CAT-06      | Phase 4  | Pending |
+| CAT-07      | Phase 4  | Pending |
+| CAT-08      | Phase 4  | Pending |
+| CAT-09      | Phase 4  | Pending |
+| CAT-10      | Phase 4  | Pending |
+| QRM-01      | Phase 5  | Pending |
+| QRM-02      | Phase 5  | Pending |
+| QRM-03      | Phase 5  | Pending |
+| QRM-04      | Phase 5  | Pending |
+| QRM-05      | Phase 5  | Pending |
+| QRM-06      | Phase 5  | Pending |
+| QRM-07      | Phase 5  | Pending |
+| QRM-08      | Phase 5  | Pending |
+| QRM-09      | Phase 5  | Pending |
+| QRM-10      | Phase 5  | Pending |
+| QRM-11      | Phase 5  | Pending |
+| QRM-12      | Phase 5  | Pending |
+| SITE-01     | Phase 6  | Pending |
+| SITE-02     | Phase 6  | Pending |
+| SITE-03     | Phase 6  | Pending |
+| SITE-04     | Phase 6  | Pending |
+| SITE-05     | Phase 6  | Pending |
+| SITE-06     | Phase 6  | Pending |
+| SITE-07     | Phase 6  | Pending |
+| SITE-09     | Phase 6  | Pending |
+| SITE-10     | Phase 6  | Pending |
+| ORD-01      | Phase 7  | Pending |
+| ORD-02      | Phase 7  | Pending |
+| ORD-03      | Phase 7  | Pending |
+| ORD-04      | Phase 7  | Pending |
+| ORD-05      | Phase 7  | Pending |
+| ORD-06      | Phase 7  | Pending |
+| ORD-07      | Phase 7  | Pending |
+| ORD-08      | Phase 7  | Pending |
+| ORD-09      | Phase 7  | Pending |
+| ORD-10      | Phase 7  | Pending |
+| ORD-11      | Phase 7  | Pending |
+| ORD-12      | Phase 7  | Pending |
+| PROMO-06    | Phase 7  | Pending |
+| PAY-01      | Phase 8  | Pending |
+| PAY-02      | Phase 8  | Pending |
+| PAY-03      | Phase 8  | Pending |
+| PAY-04      | Phase 8  | Pending |
+| PAY-05      | Phase 8  | Pending |
+| PAY-06      | Phase 8  | Pending |
+| PAY-07      | Phase 8  | Pending |
+| PAY-08      | Phase 8  | Pending |
+| PAY-09      | Phase 8  | Pending |
+| PAY-10      | Phase 8  | Pending |
+| PAY-11      | Phase 8  | Pending |
+| PAY-12      | Phase 8  | Pending |
+| PAY-13      | Phase 8  | Pending |
+| SITE-08     | Phase 8  | Pending |
+| GNOTIF-01   | Phase 8  | Pending |
+| GNOTIF-02   | Phase 8  | Pending |
+| GNOTIF-03   | Phase 8  | Pending |
+| GNOTIF-04   | Phase 8  | Pending |
+| DELV-01     | Phase 9  | Pending |
+| DELV-02     | Phase 9  | Pending |
+| DELV-03     | Phase 9  | Pending |
+| DELV-04     | Phase 9  | Pending |
+| DELV-05     | Phase 9  | Pending |
+| DELV-06     | Phase 9  | Pending |
+| DELV-07     | Phase 9  | Pending |
+| DELV-08     | Phase 9  | Pending |
+| ORDINT-01   | Phase 10 | Pending |
+| ORDINT-02   | Phase 10 | Pending |
+| ORDINT-03   | Phase 10 | Pending |
+| ORDINT-04   | Phase 10 | Pending |
+| ORDINT-05   | Phase 10 | Pending |
+| ORDINT-06   | Phase 10 | Pending |
+| ORDINT-07   | Phase 10 | Pending |
+| ORDINT-08   | Phase 10 | Pending |
+| ORDINT-09   | Phase 10 | Pending |
+| ORDINT-10   | Phase 10 | Pending |
+| PROMO-01    | Phase 11 | Pending |
+| PROMO-02    | Phase 11 | Pending |
+| PROMO-03    | Phase 11 | Pending |
+| PROMO-04    | Phase 11 | Pending |
+| PROMO-05    | Phase 11 | Pending |
+| CRM-01      | Phase 12 | Pending |
+| CRM-02      | Phase 12 | Pending |
+| CRM-03      | Phase 12 | Pending |
+| CRM-04      | Phase 12 | Pending |
+| CRM-05      | Phase 12 | Pending |
+| ANL-01      | Phase 13 | Pending |
+| ANL-02      | Phase 13 | Pending |
+| ANL-03      | Phase 13 | Pending |
+| ANL-04      | Phase 13 | Pending |
+| ANL-05      | Phase 13 | Pending |
+| FIN-01      | Phase 14 | Pending |
+| FIN-02      | Phase 14 | Pending |
+| FIN-03      | Phase 14 | Pending |
+| FIN-04      | Phase 14 | Pending |
+| FIN-05      | Phase 14 | Pending |
+| FIN-06      | Phase 14 | Pending |
+| CONT-01     | Phase 15 | Pending |
+| CONT-02     | Phase 15 | Pending |
+| CONT-03     | Phase 15 | Pending |
+| CONT-04     | Phase 15 | Pending |
+| CONT-05     | Phase 15 | Pending |
+| CONT-06     | Phase 15 | Pending |
+| CONT-07     | Phase 15 | Pending |
+| ONB-01      | Phase 16 | Pending |
+| ONB-02      | Phase 16 | Pending |
+| ONB-03      | Phase 16 | Pending |
+| ONB-04      | Phase 16 | Pending |
+| ONB-05      | Phase 16 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 119 total
-- Mapped to phases: 0
-- Unmapped: 119 ⚠️ (resolves on roadmap creation)
+- v1 requirements: 150 total
+- Mapped to phases: 150
+- Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-05-24_
-_Last updated: 2026-05-24 after initial definition_
+_Last updated: 2026-05-24 — revised after persona reviews (persona-cto, persona-skeptic); 13 new requirements added, PROMO-06 reassigned to Phase 7, SITE-08 reassigned to Phase 8, Phases 9/10 swapped, GNOTIF category added_
