@@ -61,6 +61,5 @@ generated/
 CLAUDE.md
 **/CLAUDE.md
 
-# GSD planning artifacts (ephemeral; learnings extracted to ADRs + memory)
-.planning/
+# GSD planning artifacts — committed as source of truth (reset 2026-05-24)
 SPEC.md
