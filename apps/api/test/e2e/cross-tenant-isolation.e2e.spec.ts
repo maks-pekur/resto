@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
-import { runInTenantContext, schema, TenantAwareDb } from '@resto/db';
+import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
   startRealStack,
@@ -204,13 +204,11 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
     it('withTenant(A) reads only tenant A audit rows; NULL-tenant rows invisible', async () => {
       const db = stack.app.get(TenantAwareDb);
 
-      const rowsUnderA = await runInTenantContext({ tenantId: fixture.tenantA.id }, () =>
-        db.withTenant(async (tx) =>
-          tx
-            .select()
-            .from(schema.auditLog)
-            .where(sql`${schema.auditLog.actorSubject} = 'i1-probe'`),
-        ),
+      const rowsUnderA = await db.withTenantId(fixture.tenantA.id, async (tx) =>
+        tx
+          .select()
+          .from(schema.auditLog)
+          .where(sql`${schema.auditLog.actorSubject} = 'i1-probe'`),
       );
 
       const allRows = await db.withoutTenant('audit cross-tenant visibility probe', async (tx) =>
