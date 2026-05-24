@@ -126,10 +126,10 @@ export const memberBrandScope = pgTable(
       columns: [table.memberId],
       foreignColumns: [member.id],
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'member_brand_scope_brand_fk',
-      columns: [table.brandId],
-      foreignColumns: [brands.id],
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
     }).onDelete('cascade'),
     foreignKey({
       name: 'member_brand_scope_tenant_fk',

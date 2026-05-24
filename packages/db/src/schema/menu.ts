@@ -13,7 +13,13 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { money, type LocalizedText } from './_types';
-import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
+import {
+  compositeTenantFk,
+  pkUuid,
+  tenantIdColumn,
+  tenantParentUniqueIndex,
+  timestampsColumns,
+} from './_columns';
 import { tenants } from './tenants';
 
 /**
@@ -43,6 +49,7 @@ export const menuCategories = pgTable(
     uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    tenantParentUniqueIndex('menu_categories', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
@@ -76,10 +83,10 @@ export const menuItems = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'menu_items_category_fk',
-      columns: [table.categoryId],
-      foreignColumns: [menuCategories.id],
+      child: { id: table.categoryId, tenantId: table.tenantId },
+      parent: { id: menuCategories.id, tenantId: menuCategories.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('menu_items_tenant_slug_uq').on(table.tenantId, table.slug),
     index('menu_items_tenant_category_status_idx').on(
@@ -92,6 +99,7 @@ export const menuItems = pgTable(
     check('menu_items_currency_format_chk', sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check('menu_items_base_price_nonneg_chk', sql`${table.basePrice}::numeric >= 0`),
     check('menu_items_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    tenantParentUniqueIndex('menu_items', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
@@ -121,10 +129,10 @@ export const menuVariants = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'menu_variants_item_fk',
-      columns: [table.menuItemId],
-      foreignColumns: [menuItems.id],
+      child: { id: table.menuItemId, tenantId: table.tenantId },
+      parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
     index('menu_variants_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
     uniqueIndex('menu_variants_one_default_per_item_uq')
@@ -160,6 +168,7 @@ export const menuModifiers = pgTable(
       'menu_modifiers_selectable_range_chk',
       sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
     ),
+    tenantParentUniqueIndex('menu_modifiers', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
@@ -185,10 +194,10 @@ export const menuModifierOptions = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'menu_modifier_options_modifier_fk',
-      columns: [table.modifierId],
-      foreignColumns: [menuModifiers.id],
+      child: { id: table.modifierId, tenantId: table.tenantId },
+      parent: { id: menuModifiers.id, tenantId: menuModifiers.tenantId },
     }).onDelete('cascade'),
     index('menu_modifier_options_tenant_modifier_idx').on(
       table.tenantId,
@@ -221,15 +230,15 @@ export const menuItemModifiers = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'menu_item_modifiers_item_fk',
-      columns: [table.menuItemId],
-      foreignColumns: [menuItems.id],
+      child: { id: table.menuItemId, tenantId: table.tenantId },
+      parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
-    foreignKey({
+    compositeTenantFk({
       name: 'menu_item_modifiers_modifier_fk',
-      columns: [table.modifierId],
-      foreignColumns: [menuModifiers.id],
+      child: { id: table.modifierId, tenantId: table.tenantId },
+      parent: { id: menuModifiers.id, tenantId: menuModifiers.tenantId },
     }).onDelete('cascade'),
     index('menu_item_modifiers_tenant_item_idx').on(table.tenantId, table.menuItemId),
   ],
