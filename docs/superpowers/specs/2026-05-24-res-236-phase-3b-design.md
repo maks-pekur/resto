@@ -40,9 +40,11 @@ Parent tables that need a `(id, tenant_id)` unique index (3, since `brands` got 
 - **`outbox_events` / `inbox_processed`** — no parent `*_id` columns to migrate.
 - **`db:audit-fks` script (RES-255)** — separate ticket. Its priority rises after Phase 3b ships (will become the safety net for new tables).
 
-### 2.3 Known minor inconsistency carried from Phase 3a
+### 2.3 Phase 3a regressions repaired in this PR
 
-`0024_brand_domains_composite_fk.sql` used `ALTER TABLE brands ADD CONSTRAINT brands_id_tenant_uq UNIQUE (id, tenant_id)`, but the schema helper `tenantParentUniqueIndex` emits `CREATE UNIQUE INDEX`. Both are valid FK targets in Postgres, but they differ in how `drizzle-kit` introspects them (`pg_constraint` vs `pg_indexes`). Phase 3b **uses `CREATE UNIQUE INDEX` to match the helper output**, so the 3 new parent unique indexes are consistent with their schema source. The Phase 3a discrepancy on `brands_id_tenant_uq` remains cosmetic — not addressed here.
+**Critical:** Phase 3a (commit `b834444`) added `0024_brand_domains_composite_fk.sql` but did NOT update `packages/db/migrations/meta/_journal.json`. The `migrate()` runner from `drizzle-orm/postgres-js/migrator` reads only the journal — unregistered SQL files are silently ignored. Consequence: the `brand_domains` composite FK does not exist anywhere — dev, test, or future production. Phase 3b MUST add journal entries for BOTH `0024` and `0025` so both migrations actually apply. Without registering `0024` first, `0025`'s `member_brand_scope_brand_fk` step fails on the missing `brands_id_tenant_uq` index.
+
+**Cosmetic:** `0024_brand_domains_composite_fk.sql` used `ALTER TABLE brands ADD CONSTRAINT brands_id_tenant_uq UNIQUE (id, tenant_id)`, but the schema helper `tenantParentUniqueIndex` emits `CREATE UNIQUE INDEX`. Both are valid FK targets in Postgres, but they differ in how `drizzle-kit` introspects them (`pg_constraint` vs `pg_indexes`). Phase 3b **uses `CREATE UNIQUE INDEX` to match the helper output**, so the 3 new parent unique indexes are consistent with their schema source. The Phase 3a discrepancy on `brands_id_tenant_uq` remains cosmetic — not addressed here.
 
 ## 3. Architecture
 
@@ -51,6 +53,7 @@ No architectural change. Phase 3b is a mechanical application of the pattern tha
 - `packages/db/src/schema/brands.ts` — `memberBrandScope` constraint block.
 - `packages/db/src/schema/menu.ts` — both parent and child constraint blocks across `menuCategories`, `menuItems`, `menuVariants`, `menuModifiers`, `menuModifierOptions`, `menuItemModifiers`.
 - `packages/db/migrations/0025_composite_tenant_fk_phase_3b.sql` — new hand-authored migration.
+- `packages/db/migrations/meta/_journal.json` — add entries for `0024` (Phase 3a repair) and `0025`.
 - `packages/db/test/integration/composite-tenant-fk.spec.ts` — new parametrized regression spec.
 
 No application code (repositories, services, controllers) is touched.
@@ -289,9 +292,10 @@ The existing `tenant-isolation.spec.ts` stays unchanged. Its scope is RLS guard 
 ## 8. PR shape
 
 - **Branch:** `res-236` (already created off main at `b834444`).
-- **Commits (2):**
-  1. `feat(db): composite tenant FK for remaining tenant-scoped children (RES-236)` — schema edits + migration `0025`.
-  2. `test(db): regression for composite tenant FK on tenant-scoped children (RES-236)` — new spec.
+- **Commits (3):**
+  1. `fix(db): register 0024 brand_domains composite FK migration (RES-236)` — journal entry for `0024` only. Repairs the Phase 3a oversight. Stands alone so the repair is atomically revertible.
+  2. `feat(db): composite tenant FK for remaining tenant-scoped children (RES-236)` — schema edits, migration `0025`, journal entry for `0025`.
+  3. `test(db): regression for composite tenant FK on tenant-scoped children (RES-236)` — new spec.
 - **PR title:** `feat(db): composite tenant FK for remaining tenant-scoped children (RES-236)`.
 - **PR body:** none (per `~/.claude/CLAUDE.md` rule — the why lives in Linear + ADR-0020).
 
@@ -314,6 +318,7 @@ The existing `tenant-isolation.spec.ts` stays unchanged. Its scope is RLS guard 
 
 - All 6 FK in `\d` output point at `(parent_id, tenant_id)` → `parent(id, tenant_id)`.
 - All 3 new `<parent>_id_tenant_uq` indexes exist on the parents.
+- The `brand_domains_brand_fk` from Phase 3a is verifiably composite after a fresh `pnpm db:reset && pnpm db:migrate` (proves the journal repair).
 - New spec `composite-tenant-fk.spec.ts` has 6 passing test cases.
 - Existing `tenant-isolation.spec.ts` and the rest of `packages/db` integration suite pass without modification.
 - Lint + typecheck pass on `packages/db`.
