@@ -1,10 +1,3 @@
--- RES-204: caller-specific GUC for tenancy_erase_tenant.
--- The previous gate (app.is_system='true') was set by every withoutTenant
--- caller, making erasure available to any system-context code path. This
--- migration replaces the gate with app.allow_erasure=<expected-tenant-uuid>
--- and adds an audit_log row keyed to the actor. Old 2-arg signature is
--- dropped so any stale SQL caller fails fast.
-
 CREATE OR REPLACE FUNCTION app_allow_erasure(p_tenant uuid)
 RETURNS void
 LANGUAGE plpgsql
