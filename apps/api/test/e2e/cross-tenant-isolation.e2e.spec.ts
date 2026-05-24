@@ -28,8 +28,6 @@ interface I1Fixture {
   categoryB: string;
   itemA: string;
   itemB: string;
-  modifierA: string;
-  modifierB: string;
 }
 
 const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
@@ -102,15 +100,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       })
       .returning({ id: schema.menuItems.id });
 
-    const [modifierA] = await tx
-      .insert(schema.menuModifiers)
-      .values({ tenantId: tenantA.id, name: { en: 'Mod A' } })
-      .returning({ id: schema.menuModifiers.id });
-    const [modifierB] = await tx
-      .insert(schema.menuModifiers)
-      .values({ tenantId: tenantB.id, name: { en: 'Mod B' } })
-      .returning({ id: schema.menuModifiers.id });
-
     await tx.insert(schema.auditLog).values([
       {
         tenantId: tenantA.id,
@@ -132,7 +121,7 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       },
     ]);
 
-    if (!brandA || !brandB || !itemA || !itemB || !modifierA || !modifierB) {
+    if (!brandA || !brandB || !itemA || !itemB) {
       throw new Error('seed I1 fixture failed');
     }
 
@@ -143,8 +132,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       categoryB: categoryB.id,
       itemA: itemA.id,
       itemB: itemB.id,
-      modifierA: modifierA.id,
-      modifierB: modifierB.id,
     };
   });
 
