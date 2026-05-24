@@ -50,3 +50,13 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT USAGE, SELECT ON SEQUENCES TO resto_app;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT EXECUTE ON FUNCTIONS TO resto_app;
+
+-- RES-206: BA credential tables are resto_auth-only (ADR-0013).
+-- Revoke resto_app to prevent SELECT * leak of password hashes, OAuth
+-- tokens, 2FA secrets, session tokens. Excluded from runtime app role
+-- because no legitimate app code path should reach them directly —
+-- BA's session lookups run under resto_auth (BYPASSRLS).
+REVOKE SELECT, INSERT, UPDATE, DELETE ON account FROM resto_app;
+REVOKE SELECT, INSERT, UPDATE, DELETE ON two_factor FROM resto_app;
+REVOKE SELECT, INSERT, UPDATE, DELETE ON verification FROM resto_app;
+REVOKE SELECT, INSERT, UPDATE, DELETE ON session FROM resto_app;
