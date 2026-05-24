@@ -144,6 +144,42 @@ suite('Row-Level Security — tenant isolation', () => {
     expect((error as Error).message).toMatch(/Tenant GUC drift detected in withoutTenant/);
   });
 
+  it('RES-238: withoutTenant nesting withTenant throws (ALS not bound)', async () => {
+    // Per README "Tenant context wrappers — formal contract" §Nesting:
+    // `withoutTenant` does not bind ALS — it only opens a transaction and
+    // sets the SQL-session GUC to `''`. An inner `db.withTenant(...)` calls
+    // `requireTenantContext()` first, which throws because no ALS frame is
+    // bound. Documents the JS-level guard that prevents accidental
+    // cross-context wrapper nesting.
+    const error = await pg.db
+      .withoutTenant('test withTenant-inside-withoutTenant guard', async () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.tenants)),
+      )
+      .then(
+        () => null,
+        (e: unknown) => e,
+      );
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toMatch(/No tenant context bound/i);
+  });
+
+  it('RES-238: withTenant holds tx open across setTimeout resolution', async () => {
+    // Per README "Tenant context wrappers — formal contract" §Async boundary:
+    // the wrapper awaits the entire promise returned by `op` before running
+    // #assertGucUnchanged and committing. A callback that resolves via
+    // setTimeout keeps the transaction open for that duration; the awaited
+    // tx still resolves queries correctly once the timeout fires. Guards
+    // against an accidental refactor that would short-circuit the await.
+    const result = await runInTenantContext({ tenantId: tenantA }, () =>
+      pg.db.withTenant(async (tx) => {
+        await new Promise<void>((resolve) => setTimeout(resolve, 50));
+        const rows = await tx.select().from(schema.tenants);
+        return rows.map((r) => r.id);
+      }),
+    );
+    expect(result).toEqual([tenantA]);
+  });
+
   it("attempting to UPDATE another tenant's row is blocked", async () => {
     const updated = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) =>

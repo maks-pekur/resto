@@ -109,6 +109,215 @@ await db.withoutTenant('outbox dispatcher polling all tenants', async (tx) => {
 The reason is mandatory and is logged at WARN. RLS bypass lasts only
 for the transaction (`SET LOCAL`).
 
+## Tenant context wrappers — formal contract
+
+The three wrappers `withTenant`, `withTenantId`, `withoutTenant` are the
+ONLY sanctioned ways for `apps/api` and the workers to issue SQL against
+`resto_app`. Direct `db.transaction(...)` / `db.select(...)` calls bypass
+RLS binding and are blocked by ESLint (`no-restricted-syntax` rule under
+[RES-235c](https://github.com/maks-pekur/resto/pull/147)). The
+SECURITY DEFINER wrapper `app_bind_tenant(text, boolean)` is the only
+function authorised to write `app.current_tenant`
+([RES-243](https://github.com/maks-pekur/resto/pull/158)); every wrapper
+funnels through it.
+
+### Signatures
+
+```ts
+// HTTP code path. Reads tenant id from AsyncLocalStorage (bound by
+// TenantContextMiddleware). Throws if ALS is empty.
+withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T>
+
+// Non-HTTP entry points (Better Auth hooks, NATS subscribers, outbox
+// dispatcher, CLI, background jobs). Takes the id explicitly.
+withTenantId<T>(
+  tenantId: string,
+  op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>,
+): Promise<T>
+
+// System bypass. No tenant binding — RLS allows cross-tenant scans.
+// `reason` is mandatory, non-empty, free-form, logged at WARN.
+withoutTenant<T>(reason: string, op: (tx: RestoTx) => Promise<T>): Promise<T>
+```
+
+### Decision tree — which to call
+
+```
+Are you inside an HTTP request handler?
+├── yes → withTenant(op)         // ALS already bound by middleware
+└── no
+    ├── do you have an authoritative tenant id (event envelope, job
+    │   payload, BA session)?
+    │   └── yes → withTenantId(id, op)
+    └── must you cross tenants by design (outbox poll, migration,
+        admin dashboard)?
+        └── yes → withoutTenant(reason, op)
+```
+
+`runInTenantContext` is **HTTP-middleware-only** ([ADR-0020 I-6](../../docs/adr/0020-multi-tenancy-and-event-bus-invariants.md)),
+enforced by the `no-restricted-imports` ESLint rule
+([RES-239](https://github.com/maks-pekur/resto/pull/144)). Everywhere
+else use the wrappers — they bind tenant at the SQL layer (so RLS sees
+it) without polluting ALS for code that should not have visibility.
+
+### Nesting
+
+**Rule:** never call another `db.with*` wrapper from inside a wrapper's
+callback. The callback owns one Drizzle transaction on one pool
+connection; calling `db.with*(...)` from inside acquires a **second**
+connection from the pool and opens an **independent** transaction.
+Outer's uncommitted writes are invisible to inner; inner's uncommitted
+writes are invisible to outer. Connection-pool contention is real;
+deadlock on shared rows is possible. Compose by passing the outer `tx`
+into helpers instead.
+
+The wrappers have only two **runtime guards** against accidental
+nesting; everything else "succeeds" structurally (two-connection
+anti-pattern) and must be caught at PR time:
+
+| Nesting attempt                           | What happens                                                                                                                                |
+| ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `withTenant` → `withTenantId`             | **Throws** (JS guard in `client.ts`): _"withTenantId must not be called inside an ALS-bound context."_                                      |
+| `withoutTenant` → `withTenant`            | **Throws** — outer does not bind ALS, inner `requireTenantContext()` fails with _"No tenant context bound."_                                |
+| `withTenant` → `withTenant` (same tenant) | Succeeds on a new pool connection. `app_bind_tenant(id, false)` is idempotent on same-tenant, so SQL-level guard is silent. Anti-pattern.   |
+| `withTenant` → `withTenant` (different)   | Cannot happen — would require rebinding ALS mid-request; `runInTenantContext` is middleware-only (RES-239 ESLint).                          |
+| `withTenant` → `withoutTenant`            | Succeeds on a new pool connection. Inner's session has fresh GUC (`v_current=''`), so `app_bind_tenant('', true)` is a no-op. Anti-pattern. |
+| `withTenantId` → `withTenant`             | **Throws** — `withTenantId` does not bind ALS; inner `requireTenantContext()` fails.                                                        |
+| `withTenantId` → `withTenantId` (same)    | Succeeds on a new pool connection. Covered by `with-tenant-id.spec.ts > nested withTenantId opens a new transaction`.                       |
+| `withTenantId` → `withTenantId` (diff)    | Succeeds on a new pool connection (separate sessions don't see each other's GUC). Anti-pattern.                                             |
+| `withoutTenant` → `withTenantId`          | Succeeds on a new pool connection. (Distinguish from the case below — same-connection manipulation.)                                        |
+| `withoutTenant` → `withoutTenant`         | Succeeds on a new pool connection. Pointless.                                                                                               |
+
+#### Same-connection manipulation (sharper guards)
+
+If you reach into the outer `tx` and call `app_bind_tenant` (or
+`SET LOCAL app.current_tenant = …`) on it directly — same SQL session
+— the guards bite:
+
+| Action on outer `tx`                                                   | Result                                                                                                                                                                                                              |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Inside `withTenant(A)`, `tx.execute(app_bind_tenant('B', false))`      | **Throws SQLSTATE 42501** (`v_current='A'<>p_tenant='B'`). Covered by `tenant-isolation.spec.ts > RES-243: rebind to a different tenant via app_bind_tenant raises`.                                                |
+| Inside `withTenant(A)`, `tx.execute(app_bind_tenant('A', false))`      | Idempotent. Covered by `tenant-isolation.spec.ts > RES-243: rebind to the same tenant via app_bind_tenant is idempotent`.                                                                                           |
+| Inside `withoutTenant`, `tx.execute(app_bind_tenant(tenantId, false))` | Wrapper succeeds (v_current was `''`); outer `#assertGucUnchanged` then **throws drift**, transaction rolls back. Covered by `tenant-isolation.spec.ts > RES-243: binding a tenant inside withoutTenant is caught`. |
+| Any `tx.execute(SET LOCAL app.current_tenant = …)` forge form          | `set_config` EXECUTE is REVOKED from `resto_app` (migration 0023). SQL errors at the role layer. Plus drift sentinel as defense in depth (RES-243).                                                                 |
+| Any `tx.execute(RESET app.current_tenant)`                             | Setting goes blank; outer `#assertGucUnchanged` throws drift on exit. Covered by `RES-243: forge via RESET`.                                                                                                        |
+
+### Transaction handle (`tx`) — lifetime
+
+The callback receives a Drizzle `PgTransaction` (alias `RestoTx`), not
+the unscoped `db`. One callback = one transaction:
+
+- All-or-nothing commit. A thrown error from `op` rolls everything back.
+- Pass `tx` down to repository methods; do not store it past `op`.
+- `withTenant` / `withTenantId` also pass a `ScopedTx` as the second
+  argument — that is the **preferred** surface for tenant-scoped
+  reads/writes. It auto-applies `eq(table.tenantId, ctx.tenantId)` on
+  SELECT / UPDATE and auto-injects `tenantId` on INSERT (RES-235).
+  Reach for raw `tx` only when the query joins to a non-tenant-scoped
+  table or needs raw SQL — those sites are audited at PR time and
+  carry an inline comment explaining the escape.
+
+### Async boundary
+
+The wrapper holds the transaction open until the promise returned by
+`op` resolves. Concretely:
+
+- ✅ `await`-ed Drizzle queries — the standard pattern.
+- ✅ `op` resolves via `setTimeout` / microtask / `process.nextTick` —
+  transaction stays open until then. Connection pool waits; nothing
+  leaks. (Costs a connection for the duration; keep callbacks short.)
+- ❌ `op` schedules a fire-and-forget continuation that runs AFTER
+  `op` returns (e.g. an un-`await`-ed `setTimeout(() => tx.insert(...))`).
+  That continuation runs OUTSIDE the transaction; the `tx` handle is
+  invalid and queries through it throw. No runtime guard catches this
+  pattern — reviewers reject it at PR time.
+- ❌ Storing `tx` in a module-level variable, returning it from `op`,
+  or passing it across an async boundary that outlives `op`. Same
+  failure mode; same reviewer-gate.
+
+ALS frame propagation: Node's `AsyncResource` carries the frame across
+`await`, microtasks, `setImmediate`, `setTimeout`. Native bindings and
+some third-party libraries that detach (rare) lose the frame and
+`requireTenantContext()` then throws — preferable to silent leakage.
+The wrappers do NOT rebind ALS; they read once at the top of `op`.
+
+### `withoutTenant` — `reason` argument format
+
+- Free-form string, non-empty (whitespace-only rejected).
+- Logged at WARN by `logger.ts` with shape:
+  `{ pkg: '@resto/db', reason: '<value>', msg: 'Running database operation without a tenant context (RLS bypass)' }`.
+- Convention: lowercase `<context>.<action>` dot-notation —
+  `'outbox.dispatch'`, `'tenancy.brands.findByDomainHost'`,
+  `'migrate.create-extension'`. Test seeds may use sentence fragments
+  (`'seed cross-tenant isolation fixture'`).
+- NOT an enum. Adding a bypass site should not require a `@resto/db`
+  change. Reviewers reject vague reasons like `'admin'` or `'system'`.
+- The reason is intentionally NOT surfaced in OTel attributes today —
+  the WARN log line is the audit trail. Promoting it to a span
+  attribute is a future enhancement (track separately if needed).
+
+### Outbox interaction
+
+The outbox dispatcher polls cross-tenant via
+`withoutTenant('outbox.dispatch', ...)` and publishes envelopes as
+written. Envelopes are stamped at append time, NOT at dispatch:
+
+- **Stamp at append.** `appendToOutbox(tx, envelope)` from
+  `@resto/events` writes the outbox row inside the originating
+  `withTenant` / `withTenantId` transaction. `envelope.tenantId` comes
+  from the bound tenant context; `envelope.correlationId` is derived
+  from the active OTel span via the shared `buildEnvelope` helper
+  ([ADR-0020 I-4](../../docs/adr/0020-multi-tenancy-and-event-bus-invariants.md)).
+  Same transaction commits both the side effect and the outbox row —
+  no dual-write.
+- **Forbidden:** emitting a NEW event from inside `withoutTenant`. If
+  the dispatcher (or any system-context code) needs to publish a
+  tenant-scoped event, it MUST open a nested-by-tenant write via
+  `withTenantId(targetTenantId, async (tx) => appendToOutbox(tx, …))`
+  — never reuse the `withoutTenant` `tx`.
+- Consumers de-dup via `runDeduped(db, envelope, consumer, async (tx) => …)`
+  from `@resto/events`. The inbox insert and the handler's side effects
+  share one transaction
+  ([ADR-0020 I-5](../../docs/adr/0020-multi-tenancy-and-event-bus-invariants.md));
+  the handler runs inside `withTenantId(envelope.tenantId, ...)`.
+
+### Boundary with `runInTenantContext`
+
+`runInTenantContext(context, op)` BINDS ALS. The three wrappers READ
+ALS (or take an explicit id). Only `TenantContextMiddleware`
+(`apps/api/src/shared/tenant-context.middleware.ts`) is allowed to call
+`runInTenantContext`; every other call site is rejected by the
+`no-restricted-imports` ESLint rule (RES-239). Mapping:
+
+| Call site                           | Wrapper to use                                                                |
+| ----------------------------------- | ----------------------------------------------------------------------------- |
+| HTTP route handler / NestJS service | `withTenant(op)` — middleware already bound ALS                               |
+| Better Auth hook (`/sign-out`, …)   | `withTenantId(envelope.tenantId, op)` — no HTTP middleware in the BA pipeline |
+| NATS subscriber                     | `withTenantId(envelope.tenantId, op)` — envelope carries the id               |
+| Outbox dispatcher poll loop         | `withoutTenant('outbox.dispatch', op)` — by design crosses tenants            |
+| Outbox dispatcher per-event publish | `withTenantId(envelope.tenantId, op)` for any DB write per event              |
+| Migration / CLI                     | `withoutTenant('migrate.<step>', op)` or run as `resto_admin`                 |
+| Background job                      | `withTenantId(jobPayload.tenantId, op)`                                       |
+
+### Test coverage map
+
+The contract above is exercised by integration tests under
+`packages/db/test/integration/`:
+
+| Documented behaviour                                  | Test                                                                                          |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `withTenant` reads ALS, throws if empty               | `tenant-isolation.spec.ts` — multiple                                                         |
+| `withTenantId` rejects ALS-bound context              | `with-tenant-id.spec.ts > throws when ALS is already bound`                                   |
+| `withTenantId` nested same-tenant                     | `with-tenant-id.spec.ts > nested withTenantId opens a new transaction`                        |
+| `withoutTenant` requires non-empty reason             | unit guard in `client.ts`; covered indirectly                                                 |
+| `app_bind_tenant` same-tenant idempotent              | `tenant-isolation.spec.ts > RES-243: rebind to the same tenant via app_bind_tenant`           |
+| `app_bind_tenant` different-tenant raises 42501       | `tenant-isolation.spec.ts > RES-243: rebind to a different tenant via app_bind_tenant raises` |
+| `#assertGucUnchanged` catches SET LOCAL / RESET forge | `tenant-isolation.spec.ts > RES-243: forge via SET LOCAL`, `via RESET`                        |
+| `withoutTenant` → `withTenantId` drift caught         | `tenant-isolation.spec.ts > RES-243: binding a tenant inside withoutTenant`                   |
+| `withoutTenant` → `withTenant` throws (ALS not bound) | `tenant-isolation.spec.ts > RES-238: withoutTenant nesting withTenant throws (ALS not bound)` |
+| `withTenant` callback resolving after setTimeout      | `tenant-isolation.spec.ts > RES-238: withTenant holds tx open across setTimeout`              |
+| ScopedTx auto-filter / auto-inject / auto-update      | `scoped-tx.spec.ts` — multiple                                                                |
+
 ## Conventions
 
 ### Tables
