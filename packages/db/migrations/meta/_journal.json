@@ -190,6 +190,13 @@
       "when": 1779840200000,
       "tag": "0026_tenancy_erase_caller_specific_guc",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1779840300000,
+      "tag": "0027_revoke_resto_app_ba_credential_tables",
+      "breakpoints": true
     }
   ]
 }
