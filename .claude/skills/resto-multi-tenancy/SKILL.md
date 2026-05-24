@@ -68,6 +68,8 @@ Three functions:
 
 Source: `packages/db/src/client.ts`, exported via `@resto/db`.
 
+> **Authoritative reference:** The full wrapper contract — exact signatures, when-to-use decision tree, the 9-row nesting matrix (including symmetric guards from RES-243 + RES-238), async-boundary rules, `withoutTenant` `reason` format, outbox interaction, and the test-coverage map — lives in [`packages/db/README.md` §Tenant context wrappers — formal contract](../../../packages/db/README.md#tenant-context-wrappers--formal-contract) (RES-238). The summary below is a quick-reference; the README wins on conflict.
+
 Created via factory: `createDb(options: CreateClientOptions): TenantAwareDb`. Injected into NestJS modules as a provider.
 
 ### Tenant-scoped writes/reads (HTTP path)
