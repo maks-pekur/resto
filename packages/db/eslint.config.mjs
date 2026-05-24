@@ -38,12 +38,25 @@ export default [
           selector: "Identifier[name='set_config']",
           message: 'RES-243: `set_config` belongs only in client.ts.',
         },
+        {
+          selector: "CallExpression[callee.property.name='withoutTenant']",
+          message:
+            "RES-252 I-1: `withoutTenant` bypasses tenant filter + RLS. Allowed only in packages/db's allowlist (packages/db/src/withoutTenant.allowlist.ts: src/cli/audit-fks.ts). Add the file path there + update this config's allow-block, or use db.withTenant / db.withTenantId.",
+        },
       ],
     },
   },
   {
-    // Wrapper invocations and drift-sentinel query live here.
+    // set_config / app.current_tenant forge primitives live here only.
     files: ['src/client.ts', 'src/preflight.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    // @withoutTenant-allowlist — RES-252: system-context callers in
+    // packages/db. Mirrors packages/db/src/withoutTenant.allowlist.ts.
+    files: ['src/cli/audit-fks.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },
