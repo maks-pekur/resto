@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import { provisionAuthRole, RESTO_AUTH_ROLE } from '../../src/index';
+import {
+  provisionAuthRole,
+  RESTO_AUTH_ROLE,
+  provisionAppRole,
+  RESTO_APP_ROLE,
+} from '../../src/index';
 import { isDockerAvailable } from '../setup';
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../migrations', import.meta.url));
@@ -143,5 +148,63 @@ suite('RES-205: resto_auth role grants are restricted to BA-owned tables', () =>
     it('cannot DELETE from tenants', async () => {
       await expectPermissionDenied(authClient`DELETE FROM tenants WHERE id = ${tenantId}`);
     });
+  });
+});
+
+const APP_PWD = 'app_role_206_test_pwd_1234';
+
+suite('RES-206: resto_app cannot access BA credential tables', () => {
+  let container: StartedPostgreSqlContainer;
+  let appClient: Sql;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16-alpine')
+      .withDatabase('resto_test')
+      .withUsername('resto_test')
+      .withPassword('resto_test')
+      .start();
+
+    const adminUrl = container.getConnectionUri();
+    const admin = postgres(adminUrl, { max: 1, prepare: false });
+    try {
+      await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
+      await provisionAppRole(admin, { appPassword: APP_PWD });
+    } finally {
+      await admin.end({ timeout: 5 });
+    }
+
+    const appUrl = new URL(adminUrl);
+    appUrl.username = RESTO_APP_ROLE;
+    appUrl.password = APP_PWD;
+    appClient = postgres(appUrl.toString(), { max: 1, prepare: false });
+  }, 90_000);
+
+  afterAll(async () => {
+    await appClient.end({ timeout: 5 });
+    await container.stop({ timeout: 5_000 });
+  });
+
+  it('cannot SELECT from account', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM account LIMIT 1`);
+  });
+
+  it('cannot SELECT from two_factor', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM two_factor LIMIT 1`);
+  });
+
+  it('cannot SELECT from verification', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM verification LIMIT 1`);
+  });
+
+  it('cannot SELECT from session', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM session LIMIT 1`);
+  });
+
+  it('STILL has SELECT on member (sanity — not over-revoked)', async () => {
+    await appClient`SELECT 1 FROM member LIMIT 1`;
+  });
+
+  it('STILL has SELECT on "user" (sanity — not over-revoked)', async () => {
+    await appClient`SELECT 1 FROM "user" LIMIT 1`;
   });
 });
