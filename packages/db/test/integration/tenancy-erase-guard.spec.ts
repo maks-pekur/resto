@@ -113,5 +113,8 @@ suite('RES-204: tenancy_erase_tenant requires caller-specific app.allow_erasure'
       )
       .catch((e: unknown) => e);
     expect(err).toBeInstanceOf(Error);
+    const cause = (err as Error).cause;
+    expect(cause).toBeInstanceOf(Error);
+    expect((cause as Error).message).toMatch(/app\.allow_erasure/i);
   });
 });
