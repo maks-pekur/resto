@@ -27,9 +27,8 @@ export default [
     },
   },
   {
-    // RES-252: system-context callers in packages/events — inbox dedup
-    // wrapper and outbox dispatcher perform cross-tenant operations that
-    // cannot bind an ALS tenant.
+    // @withoutTenant-allowlist — RES-252: system-context callers in
+    // packages/events. Mirrors packages/db/src/withoutTenant.allowlist.ts.
     files: ['src/inbox/run-deduped.ts', 'src/outbox/dispatcher.ts'],
     rules: {
       'no-restricted-syntax': 'off',

@@ -47,9 +47,16 @@ export default [
     },
   },
   {
-    // Wrapper invocations and drift-sentinel query live here.
-    // audit-fks.ts is a system-context CLI tool (RES-252 allowlist).
-    files: ['src/client.ts', 'src/preflight.ts', 'src/cli/audit-fks.ts'],
+    // set_config / app.current_tenant forge primitives live here only.
+    files: ['src/client.ts', 'src/preflight.ts'],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    // @withoutTenant-allowlist — RES-252: system-context callers in
+    // packages/db. Mirrors packages/db/src/withoutTenant.allowlist.ts.
+    files: ['src/cli/audit-fks.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },

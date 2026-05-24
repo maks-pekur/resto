@@ -105,9 +105,9 @@ export default [
     },
   },
   {
-    // RES-252 I-1: explicit allowlist for withoutTenant callers. These are
-    // system-context callers that cannot bind an ALS tenant. All others
-    // must use db.withTenant / db.withTenantId. Mirrors
+    // @withoutTenant-allowlist — RES-252 I-1: explicit allowlist for
+    // withoutTenant callers. System-context only; all others must use
+    // db.withTenant / db.withTenantId. Mirrors
     // packages/db/src/withoutTenant.allowlist.ts (apps/api entries).
     files: [
       'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
