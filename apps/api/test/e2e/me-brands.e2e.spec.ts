@@ -93,7 +93,7 @@ describe('GET + POST /v1/me/brands', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/me/brands',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-slug': slug },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
@@ -150,7 +150,7 @@ describe('GET + POST /v1/me/brands', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/me/brands',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-slug': slug },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
@@ -173,7 +173,7 @@ describe('GET + POST /v1/me/brands', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/v1/me/brands',
-      headers: { cookie, 'content-type': 'application/json' },
+      headers: { cookie, 'content-type': 'application/json', 'x-tenant-slug': slug },
       payload: { slug: newSlug, displayName: 'Fresh Brand' },
     });
     expect(res.statusCode).toBe(201);
@@ -195,7 +195,7 @@ describe('GET + POST /v1/me/brands', () => {
     const first = await app.inject({
       method: 'POST',
       url: '/v1/me/brands',
-      headers: { cookie, 'content-type': 'application/json' },
+      headers: { cookie, 'content-type': 'application/json', 'x-tenant-slug': slug },
       payload: { slug: dupeSlug, displayName: 'Dupe Brand' },
     });
     expect(first.statusCode).toBe(201);
@@ -204,7 +204,7 @@ describe('GET + POST /v1/me/brands', () => {
     const second = await app.inject({
       method: 'POST',
       url: '/v1/me/brands',
-      headers: { cookie, 'content-type': 'application/json' },
+      headers: { cookie, 'content-type': 'application/json', 'x-tenant-slug': slug },
       payload: { slug: dupeSlug, displayName: 'Dupe Brand' },
     });
     expect(second.statusCode).toBe(201);
@@ -230,7 +230,7 @@ describe('GET + POST /v1/me/brands', () => {
     const okA = await app.inject({
       method: 'POST',
       url: '/v1/me/brands',
-      headers: { cookie: cookieA, 'content-type': 'application/json' },
+      headers: { cookie: cookieA, 'content-type': 'application/json', 'x-tenant-slug': slugA },
       payload: { slug: sharedSlug, displayName: 'A Brand' },
     });
     expect(okA.statusCode).toBe(201);
@@ -239,7 +239,7 @@ describe('GET + POST /v1/me/brands', () => {
     const conflict = await app.inject({
       method: 'POST',
       url: '/v1/me/brands',
-      headers: { cookie: cookieB, 'content-type': 'application/json' },
+      headers: { cookie: cookieB, 'content-type': 'application/json', 'x-tenant-slug': slugB },
       payload: { slug: sharedSlug, displayName: 'B Brand' },
     });
     expect(conflict.statusCode).toBe(409);
@@ -301,7 +301,7 @@ describe('GET + POST /v1/me/brands', () => {
     const res = await app.inject({
       method: 'GET',
       url: '/v1/me/brands',
-      headers: { cookie: cookieA },
+      headers: { cookie: cookieA, 'x-tenant-slug': slugA },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
