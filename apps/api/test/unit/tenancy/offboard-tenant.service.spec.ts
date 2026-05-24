@@ -83,6 +83,7 @@ describe('OffboardTenantService', () => {
     expect(repo.eraseTenant).toHaveBeenCalledWith(
       TenantId.parse(erasedSnapshot.id),
       'unit-test-salt-32-chars-padding-aaaa',
+      'system:tenant-offboarding',
     );
   });
 

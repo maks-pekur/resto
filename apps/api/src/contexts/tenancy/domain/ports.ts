@@ -33,7 +33,7 @@ export interface TenantRepository {
    * as `findCurrentTenant`.
    */
   listCurrentTenantDomains(): Promise<readonly TenantDomain[]>;
-  eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot>;
+  eraseTenant(id: TenantId, auditSalt: string, actorSubject: string): Promise<TenantSnapshot>;
   listScheduledForErasure(): Promise<readonly TenantSnapshot[]>;
 }
 

@@ -176,7 +176,11 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
-  async eraseTenant(id: TenantId, auditSalt: string): Promise<TenantSnapshot> {
+  async eraseTenant(
+    id: TenantId,
+    auditSalt: string,
+    actorSubject: string,
+  ): Promise<TenantSnapshot> {
     return this.db.withoutTenant('tenancy.eraseTenant', async (tx) => {
       const tenant = await this.loadByIdWithTx(tx, id);
       if (!tenant) {
@@ -190,7 +194,10 @@ export class TenantDrizzleRepository implements TenantRepository {
       tenant.executeErasure(new Date());
       const erasedSnapshot = tenant.toSnapshot();
 
-      await tx.execute(sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text)`);
+      await tx.execute(sql`SELECT app_allow_erasure(${id}::uuid)`);
+      await tx.execute(
+        sql`SELECT tenancy_erase_tenant(${id}::uuid, ${auditSalt}::text, ${actorSubject}::text)`,
+      );
       await tx
         .update(schema.tenants)
         .set({
