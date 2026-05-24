@@ -80,6 +80,11 @@ export default [
           message:
             'RES-243: `set_config` is reserved for packages/db/src/client.ts. Use db.withTenant / withTenantId / withoutTenant.',
         },
+        {
+          selector: "CallExpression[callee.property.name='withoutTenant']",
+          message:
+            "RES-252 I-1: `withoutTenant` bypasses tenant filter + RLS. Allowed only in apps/api's allowlist (packages/db/src/withoutTenant.allowlist.ts). Add the file path there + update this config's allow-block, or use db.withTenant / db.withTenantId.",
+        },
       ],
     },
   },
@@ -94,6 +99,21 @@ export default [
       'src/contexts/**/infrastructure/*-drizzle.repository.ts',
       'src/contexts/**/infrastructure/*-drizzle.reader.ts',
       'src/contexts/audit/application/record-audit.service.ts',
+    ],
+    rules: {
+      'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    // RES-252 I-1: explicit allowlist for withoutTenant callers. These are
+    // system-context callers that cannot bind an ALS tenant. All others
+    // must use db.withTenant / db.withTenantId. Mirrors
+    // packages/db/src/withoutTenant.allowlist.ts (apps/api entries).
+    files: [
+      'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
+      'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
+      'src/contexts/audit/application/record-audit.service.ts',
+      'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
     ],
     rules: {
       'no-restricted-syntax': 'off',

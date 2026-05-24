@@ -34,6 +34,10 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // Inbox dedup wrapper — message-broker delivery has no ALS tenant; the
   // envelope carries tenantId for the downstream handler.
   'packages/events/src/inbox/run-deduped.ts',
+
+  // Outbox dispatcher performs a cross-tenant scan (claim / release /
+  // mark-delivered) — it must see all tenants' rows; no ALS binding applies.
+  'packages/events/src/outbox/dispatcher.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];
