@@ -52,7 +52,7 @@ export class OffboardTenantService {
           'a schema regression (ADR-0020 I-3).',
       );
     }
-    const snapshot = await this.repo.eraseTenant(id, salt);
+    const snapshot = await this.repo.eraseTenant(id, salt, 'system:tenant-offboarding');
     this.logger.warn({ tenantId: id }, 'Tenant erased (irreversible)');
     return snapshot;
   }
