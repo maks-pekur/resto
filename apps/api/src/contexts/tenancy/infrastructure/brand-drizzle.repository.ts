@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { schema, TenantAwareDb } from '@resto/db';
+import { schema, TenantAwareDb, TenantScopedRepository } from '@resto/db';
 import { BrandId, BrandSlug, BrandTheme, TenantId } from '@resto/domain';
-import { and, eq, inArray, like, ne, or } from 'drizzle-orm';
+import { and, asc, eq, inArray, like, ne, or } from 'drizzle-orm';
 import type { BrandSnapshot } from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
 
@@ -22,14 +22,12 @@ const ROW_TO_SNAPSHOT = (row: {
 });
 
 @Injectable()
-export class BrandDrizzleRepository implements BrandRepository {
-  constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
+export class BrandDrizzleRepository extends TenantScopedRepository implements BrandRepository {
+  constructor(@Inject(TenantAwareDb) db: TenantAwareDb) {
+    super(db);
+  }
 
   findByDomainHost(host: string): Promise<BrandSnapshot | null> {
-    // Host resolution runs BEFORE tenant context is bound (middleware
-    // uses this to derive the tenant from the host) — must stay
-    // `withoutTenant`. Inlines the brand row fetch so it does not call
-    // out to `findById` (which is `withTenant`).
     return this.db.withoutTenant('tenancy.brands.findByDomainHost', async (tx) => {
       const rows = await tx
         .select({
@@ -50,9 +48,6 @@ export class BrandDrizzleRepository implements BrandRepository {
   }
 
   findBySlug(slug: BrandSlug): Promise<BrandSnapshot | null> {
-    // Slug-only lookups also run pre-tenant (middleware fallback path
-    // when a brand subdomain identifies the brand without a tenant
-    // header). `withoutTenant` is correct here.
     return this.db.withoutTenant('tenancy.brands.findBySlug', async (tx) => {
       const rows = await tx
         .select({
@@ -71,48 +66,17 @@ export class BrandDrizzleRepository implements BrandRepository {
     });
   }
 
-  findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null> {
-    // Called only after a tenant context is bound (operator flows).
-    // Defense-in-depth: rely on RLS to scope the read to the active
-    // tenant (RES-173).
-    return this.db.withTenant(async (tx) => {
-      const rows = await tx
-        .select({
-          id: schema.brands.id,
-          tenantId: schema.brands.tenantId,
-          slug: schema.brands.slug,
-          displayName: schema.brands.displayName,
-          status: schema.brands.status,
-          theme: schema.brands.theme,
-        })
-        .from(schema.brands)
-        .where(and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug)))
-        .limit(1);
-      const row = rows[0];
-      return row ? ROW_TO_SNAPSHOT(row) : null;
-    });
+  async findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null> {
+    const row = await this.selectOne(
+      schema.brands,
+      and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug)),
+    );
+    return row ? ROW_TO_SNAPSHOT(row) : null;
   }
 
-  findById(id: BrandId): Promise<BrandSnapshot | null> {
-    // Operator-facing lookup. RLS scopes the row to the active tenant —
-    // a forged brand-id from another tenant resolves to `null` even if
-    // the request happens to know a real id (RES-173).
-    return this.db.withTenant(async (tx) => {
-      const rows = await tx
-        .select({
-          id: schema.brands.id,
-          tenantId: schema.brands.tenantId,
-          slug: schema.brands.slug,
-          displayName: schema.brands.displayName,
-          status: schema.brands.status,
-          theme: schema.brands.theme,
-        })
-        .from(schema.brands)
-        .where(eq(schema.brands.id, id))
-        .limit(1);
-      const row = rows[0];
-      return row ? ROW_TO_SNAPSHOT(row) : null;
-    });
+  async findById(id: BrandId): Promise<BrandSnapshot | null> {
+    const row = await this.selectOne(schema.brands, eq(schema.brands.id, id));
+    return row ? ROW_TO_SNAPSHOT(row) : null;
   }
 
   async listForTenant(
@@ -120,7 +84,7 @@ export class BrandDrizzleRepository implements BrandRepository {
     brandIds?: readonly string[],
   ): Promise<readonly BrandSnapshot[]> {
     if (brandIds?.length === 0) return [];
-    return this.db.withTenant(async (tx) => {
+    return this.withTenant(async (scoped) => {
       const whereClauses = [
         eq(schema.brands.tenantId, tenantId),
         ne(schema.brands.status, 'erased'),
@@ -128,32 +92,14 @@ export class BrandDrizzleRepository implements BrandRepository {
       if (brandIds !== undefined) {
         whereClauses.push(inArray(schema.brands.id, [...brandIds]));
       }
-      const rows = await tx
-        .select({
-          id: schema.brands.id,
-          tenantId: schema.brands.tenantId,
-          slug: schema.brands.slug,
-          displayName: schema.brands.displayName,
-          status: schema.brands.status,
-          theme: schema.brands.theme,
-        })
-        .from(schema.brands)
-        .where(and(...whereClauses))
-        .orderBy(schema.brands.displayName);
+      const rows = await scoped
+        .selectFrom(schema.brands, and(...whereClauses))
+        .orderBy(asc(schema.brands.displayName));
       return rows.map(ROW_TO_SNAPSHOT);
     });
   }
 
   findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]> {
-    // Global slug lookup: slug uniqueness is platform-wide
-    // (`brands_slug_active_uq`). Runs `withoutTenant` because the
-    // suggestion logic must see slugs across ALL tenants — RLS-scoped
-    // read would only show the current tenant's brands and miss
-    // collisions in others. The `LIKE` pattern escape covers `_` and
-    // `%` so slugs with those characters never match unintendedly,
-    // even though the `BrandSlug` regex forbids them today. The
-    // `limit` bounds work on a pathological short prefix that would
-    // otherwise scan an arbitrary slice of the brands table.
     const escaped = prefix.replace(/[\\%_]/g, (m) => `\\${m}`);
     return this.db.withoutTenant('tenancy.brands.findActiveSlugsByPrefix', async (tx) => {
       const rows = await tx
@@ -171,23 +117,19 @@ export class BrandDrizzleRepository implements BrandRepository {
   }
 
   async save(snapshot: BrandSnapshot, primaryDomainHostname: string): Promise<void> {
-    await this.db.withTenant(async (tx) => {
-      await tx
-        .insert(schema.brands)
-        .values({
+    await this.withTenant(async (scoped) => {
+      await scoped
+        .insertInto(schema.brands, {
           id: snapshot.id,
-          tenantId: snapshot.tenantId,
           slug: snapshot.slug,
           displayName: snapshot.displayName,
           status: snapshot.status,
         })
         .onConflictDoNothing({ target: [schema.brands.tenantId, schema.brands.slug] });
 
-      await tx
-        .insert(schema.brandDomains)
-        .values({
+      await scoped
+        .insertInto(schema.brandDomains, {
           brandId: snapshot.id,
-          tenantId: snapshot.tenantId,
           domain: primaryDomainHostname,
           kind: 'subdomain',
           isPrimary: true,
