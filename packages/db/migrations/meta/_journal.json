@@ -169,6 +169,20 @@
       "when": 1779096848188,
       "tag": "0023_revoke_set_config",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779840000000,
+      "tag": "0024_brand_domains_composite_fk",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1779840100000,
+      "tag": "0025_composite_tenant_fk_phase_3b",
+      "breakpoints": true
     }
   ]
 }
