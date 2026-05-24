@@ -71,9 +71,12 @@ suite('tenancy_erase_tenant — wipes brand rows', () => {
   });
 
   it('removes brand_domains, member_brand_scope, and brands rows for the erased tenant', async () => {
-    await pg.db.withoutTenant('run erase', async (tx) =>
-      tx.execute(sql`SELECT tenancy_erase_tenant(${tenantId}::uuid, ${SALT})`),
-    );
+    await pg.db.withoutTenant('run erase', async (tx) => {
+      await tx.execute(sql`SELECT app_allow_erasure(${tenantId}::uuid)`);
+      await tx.execute(
+        sql`SELECT tenancy_erase_tenant(${tenantId}::uuid, ${SALT}, 'test:erase-includes-brands')`,
+      );
+    });
 
     const remainingBrands = await pg.db.withoutTenant('count brands', async (tx) =>
       tx
