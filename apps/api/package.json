@@ -29,7 +29,7 @@
     "@resto/db": "workspace:*",
     "@resto/domain": "workspace:*",
     "@resto/events": "workspace:*",
-    "better-auth": "~1.4.22",
+    "better-auth": "=1.4.22",
     "drizzle-orm": "^0.45.2",
     "fastify": "4.28.1",
     "ioredis": "^5.4.2",
@@ -41,7 +41,7 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@better-auth/cli": "~1.4.22",
+    "@better-auth/cli": "=1.4.22",
     "@nestjs/testing": "^10.4.15",
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
