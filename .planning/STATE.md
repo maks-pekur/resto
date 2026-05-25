@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: milestone
+status: planning
+stopped_at: Phase 1 context gathered
+last_updated: '2026-05-25T01:33:31.880Z'
+last_activity: 2026-05-24 — ROADMAP.md revised after persona-cto + persona-skeptic reviews; 13 new requirements added, Phases 9/10 swapped, Phase 6 re-scoped as stub, GNOTIF folded into Phase 8, PROMO-06 moved to Phase 7, SITE-08 moved to Phase 8
+progress:
+  total_phases: 16
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
+---
+
 # Project State
 
 ## Project Reference
@@ -91,6 +107,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-24
-Stopped at: Roadmap revised after persona-cto + persona-skeptic reviews — 13 new requirements added (TEN-16..18, CAT-10, ORD-11..12, PAY-12..13, ORDINT-09..10, DELV-08, GNOTIF-01..04), Phases 9/10 swapped, Phase 6 re-scoped, GNOTIF folded into Phase 8, PROMO-06 moved to Phase 7, ANL-04 redefined, total v1 count now 150
-Resume file: None
+Last session: 2026-05-25T01:33:31.872Z
+Stopped at: Phase 1 context gathered
+Resume file: .planning/phases/01-tenancy-hardening/01-CONTEXT.md
