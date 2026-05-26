@@ -1,3 +1,28 @@
+// PR 06 / TEN-08 inventory (Task 0, 2026-05-26):
+// - Fixture 1 (ALS leak): NOT COVERED — all `it()` blocks issue a single
+//   sequential request under one tenant cookie. There is no `Promise.all`
+//   pair of A/B requests and no iteration loop, so an ALS frame leak
+//   between concurrently-scheduled requests cannot be observed here.
+//   → `cross-tenant-als-leak.e2e.spec.ts` adds the 100-iteration Promise.all
+//   design from D-07 §1 / Pitfall 4.
+// - Fixture 2 (NATS mix): NOT COVERED — this suite starts with
+//   `natsEnabledInApp: false` and never publishes/subscribes. The NATS
+//   subscriber tenant-context-mix bug class is entirely absent.
+//   → `cross-tenant-nats-mix.e2e.spec.ts` adds the publish-loop fixture.
+// - Fixture 3 (concurrent write): NOT COVERED — every seed uses a single
+//   `withoutTenant(...)` block; no Promise.all writes from concurrent
+//   `withTenant` callbacks, no `pg_sleep(0.5)` widening.
+//   → `concurrent-write-race.spec.ts` (in `packages/db/test/integration/`)
+//   adds the concurrent-write race fixture.
+// - Fixture 4 (raw-tx RLS fence): PARTIAL — the `audit` `it()` block
+//   asserts that `withTenantId(A)` reading `audit_log` filtered only by
+//   `actor_subject` returns only A's rows, which is a one-tenant RLS-only
+//   read. It does NOT (a) assert the symmetric tenant-B read, (b) provision
+//   a test-only table with the standard RLS pattern from scratch, or
+//   (c) probe a tenant-scoped table other than `audit_log`. The new
+//   `raw-tx-rls-fence.spec.ts` extends with a dedicated test-only
+//   `test_rls_fence` table created in the spec, four rows seeded across
+//   two tenants, and symmetric assertions under both tenants.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
