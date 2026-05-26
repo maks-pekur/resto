@@ -29,10 +29,12 @@ export {
   assertNoRlsBypass,
   assertSetConfigRevoked,
   assertTenantLockInstalled,
+  assertWithoutTenantCallsiteRegistered,
   BaCredentialAccessNotRevokedError,
   RlsBypassError,
   SetConfigNotRevokedError,
   TenantLockNotInstalledError,
+  WithoutTenantAllowlistMisalignedError,
 } from './preflight';
 export { provisionAppRole, RESTO_APP_ROLE } from './roles';
 export { provisionAuthRole, RESTO_AUTH_ROLE } from './auth-role';
