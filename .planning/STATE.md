@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 01 Wave 1 merged to main (PR #183 plan 01-01, PR #184 plan 01-02); ready for Wave 2
-last_updated: '2026-05-26T19:35:00.000Z'
-last_activity: 2026-05-26 -- Phase 01 Wave 1 merged to main via rebase (5 code commits + 1 docs commit)
+stopped_at: Phase 01 Wave 2 complete on res-1-tenancy-hardening (plans 01-03 + 01-04, 15 commits); awaiting user review before merge
+last_updated: '2026-05-26T20:30:00.000Z'
+last_activity: 2026-05-26 -- Phase 01 Wave 2 shipped (15 commits on res-1-tenancy-hardening; plan 01-03 + plan 01-04)
 progress:
   total_phases: 16
   completed_phases: 0
   total_plans: 6
-  completed_plans: 2
+  completed_plans: 4
   percent: 0
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 1 of 16 (Tenancy Hardening)
-Plan: 2 of 6 in current phase (Wave 1 merged to main; Waves 2–3 pending)
-Status: Wave 1 shipped — ready to launch Wave 2 (plans 01-03 + 01-04) from updated main
-Last activity: 2026-05-26 -- Phase 01 Wave 1 merged to main via rebase (PRs #183 + #184)
+Plan: 4 of 6 in current phase (Waves 1 + 2 implemented; Wave 3 pending)
+Status: Wave 2 implemented on res-1-tenancy-hardening — awaiting review + merge before Wave 3
+Last activity: 2026-05-26 -- Phase 01 Wave 2 shipped (15 commits; plan 01-03 + plan 01-04)
 
-Progress: [██░░░░░░░░░░░░░░░░░░] 33% within Phase 01
+Progress: [█████████░░░░░░░░░░░] 67% within Phase 01
 
 ## Performance Metrics
 
@@ -107,7 +107,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-26T19:35:00.000Z
-Stopped at: Phase 01 Wave 1 merged to main via PRs #183 + #184; ready for Wave 2
-Resume file: .planning/phases/01-tenancy-hardening/01-01-SUMMARY.md, 01-02-SUMMARY.md
-Branch: main (Wave 1 fully landed; create fresh branch for Wave 2)
+Last session: 2026-05-26T20:30:00.000Z
+Stopped at: Phase 01 Wave 2 implemented (plans 01-03 + 01-04) on res-1-tenancy-hardening; awaiting review + merge
+Resume file: .planning/phases/01-tenancy-hardening/01-03-SUMMARY.md, 01-04-SUMMARY.md
+Branch: res-1-tenancy-hardening (15 commits ahead of main)
