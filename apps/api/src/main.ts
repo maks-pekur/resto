@@ -13,6 +13,7 @@ import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import {
+  assertInboxProcessedDeletable,
   assertNoBaCredentialAccess,
   assertNoRlsBypass,
   assertSetConfigRevoked,
@@ -58,6 +59,12 @@ const bootstrap = async (): Promise<void> => {
   // tables (account, session, two_factor, verification). Heavier DB
   // check runs first so infra misconfig fails fast.
   await assertNoBaCredentialAccess(env.DATABASE_URL);
+
+  // TEN-13: refuse to start if resto_app lacks DELETE on inbox_processed.
+  // Without this grant the daily InboxRetentionService cron is a silent
+  // no-op (the service swallows permission errors). Defense-in-depth
+  // alongside migration 0028 and the GRANT block in roles.sql.
+  await assertInboxProcessedDeletable(env.DATABASE_URL);
 
   // TEN-11: refuse to start if any entry in WITHOUT_TENANT_ALLOWLIST
   // points at a file that no longer exists (renamed / deleted source).

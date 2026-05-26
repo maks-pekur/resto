@@ -207,6 +207,39 @@ export const assertNoBaCredentialAccess = async (url: string): Promise<void> => 
   }
 };
 
+export class InboxProcessedDeleteMissingError extends Error {
+  constructor() {
+    super(
+      'TEN-13: resto_app lacks DELETE on inbox_processed. ' +
+        'The daily retention sweep cannot run; rows accumulate unbounded. ' +
+        'Re-run `pnpm db:migrate` (migration 0028) or re-provision the role ' +
+        '(`packages/db/sql/roles.sql` issues the GRANT post-migrate).',
+    );
+    this.name = 'InboxProcessedDeleteMissingError';
+  }
+}
+
+// TEN-13 defense-in-depth: migration 0028 + roles.sql each issue the GRANT
+// independently so the end state is order-independent. This preflight is the
+// boot-time witness that one of them won. Surfaces the misconfig in startup
+// logs instead of as a silent cron no-op (which is exactly how the bug shipped
+// in the first place — `InboxRetentionService.run()` swallows the permission
+// error in its try/catch).
+export const assertInboxProcessedDeletable = async (url: string): Promise<void> => {
+  const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
+  try {
+    const rows = await client<{ has: boolean }[]>`
+      SELECT has_table_privilege(current_user, 'inbox_processed', 'DELETE') AS has
+    `;
+    if (rows[0]?.has !== true) {
+      throw new InboxProcessedDeleteMissingError();
+    }
+    logger.info('Database preflight passed: resto_app holds DELETE on inbox_processed.');
+  } finally {
+    await client.end({ timeout: 5 });
+  }
+};
+
 export class WithoutTenantAllowlistMisalignedError extends Error {
   constructor(public readonly missing: string[]) {
     super(
