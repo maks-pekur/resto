@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 01 Wave 2 complete on res-1-tenancy-hardening (plans 01-03 + 01-04, 15 commits); awaiting user review before merge
-last_updated: '2026-05-26T20:30:00.000Z'
-last_activity: 2026-05-26 -- Phase 01 Wave 2 shipped (15 commits on res-1-tenancy-hardening; plan 01-03 + plan 01-04)
+stopped_at: Phase 01 Wave 2 merged to main (PR #186 plan 01-03, PR #187 plan 01-04); ready for Wave 3
+last_updated: '2026-05-26T21:05:00.000Z'
+last_activity: 2026-05-26 -- Phase 01 Wave 2 merged to main via rebase (15 code commits + 1 docs commit)
 progress:
   total_phases: 16
   completed_phases: 0
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 1 of 16 (Tenancy Hardening)
-Plan: 4 of 6 in current phase (Waves 1 + 2 implemented; Wave 3 pending)
-Status: Wave 2 implemented on res-1-tenancy-hardening — awaiting review + merge before Wave 3
-Last activity: 2026-05-26 -- Phase 01 Wave 2 shipped (15 commits; plan 01-03 + plan 01-04)
+Plan: 4 of 6 in current phase (Waves 1 + 2 merged to main; Wave 3 pending)
+Status: Wave 2 shipped — ready to launch Wave 3 (plans 01-05 + 01-06) from updated main
+Last activity: 2026-05-26 -- Phase 01 Wave 2 merged to main via rebase (PRs #186 + #187)
 
 Progress: [█████████░░░░░░░░░░░] 67% within Phase 01
 
@@ -107,7 +107,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-26T20:30:00.000Z
-Stopped at: Phase 01 Wave 2 implemented (plans 01-03 + 01-04) on res-1-tenancy-hardening; awaiting review + merge
+Last session: 2026-05-26T21:05:00.000Z
+Stopped at: Phase 01 Wave 2 merged to main via PRs #186 + #187; ready for Wave 3
 Resume file: .planning/phases/01-tenancy-hardening/01-03-SUMMARY.md, 01-04-SUMMARY.md
-Branch: res-1-tenancy-hardening (15 commits ahead of main)
+Branch: main (Waves 1+2 fully landed; create fresh branch for Wave 3)
