@@ -42,9 +42,25 @@ RestOS is a brownfield multi-tenant restaurant SaaS with a mature platform found
 3. `resto_app` role cannot read or write any Better Auth credential table; SQL preflight asserts this at every boot
 4. Any call to `withoutTenant()` from an unregistered call site throws at runtime, and the ESLint rule catches new violations in CI before they ship
 5. All `EventEnvelope` construction goes through `buildEnvelope`; the ESLint rule rejects direct `correlationId: randomUUID()` construction; `appendToOutbox` validates via `EventEnvelope.parse()` before insert; `OutboxDispatcher.stop()` is idempotent under concurrent callers; cross-tenant isolation tests pass under concurrent load with no ALS leak detected; Better Auth is pinned to `=1.4.22` exact
-   **Plans**: TBD
-   **UI hint**: no
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+   **Plans**: 6 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 01-01-PLAN.md — TEN-16 OutboxDispatcher.stop() idempotency + TEN-17 EventEnvelope.parse() at appendToOutbox + TEN-18 verification
+- [ ] 01-02-PLAN.md — Docker test stack (docker-compose.test.yml + wrapper scripts + smoke spec) for PR 4 and PR 6 dependencies
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [ ] 01-03-PLAN.md — Suspend/resume lifecycle (TEN-01..04) + BackgroundJobsModule (TEN-05/06/13) + buildEnvelope helper (TEN-14) + migration 0028 narrow GRANT
+- [ ] 01-04-PLAN.md — Boot preflight assertions (TEN-07 + TEN-11) + ESLint enforcement (TEN-12 + TEN-15)
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [ ] 01-05-PLAN.md — Audit gap close (TEN-09) + per-tenant OTel labels (TEN-10) + migrate 8 existing buildEnvelope sites (TEN-14)
+- [ ] 01-06-PLAN.md — Cross-tenant isolation test net (TEN-08) — PHASE GATE: 4 fixture categories
+      **UI hint**: no
+      **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
 ### Phase 2: Admin Shell
 
@@ -288,7 +304,7 @@ Note: Phase 9 (Delivery Zones) now precedes Phase 10 (Admin Order Intake) so zon
 
 | Phase                        | Plans Complete | Status      | Completed |
 | ---------------------------- | -------------- | ----------- | --------- |
-| 1. Tenancy Hardening         | 0/?            | Not started | -         |
+| 1. Tenancy Hardening         | 0/6            | Not started | -         |
 | 2. Admin Shell               | 0/?            | Not started | -         |
 | 3. Auth Completion           | 0/?            | Not started | -         |
 | 4. Catalog Admin             | 0/?            | Not started | -         |
