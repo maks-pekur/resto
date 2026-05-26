@@ -17,6 +17,7 @@ interface ProblemDetails {
   status: number;
   detail?: string;
   instance: string;
+  code?: string;
   correlationId?: string;
   traceId?: string;
 }
@@ -98,6 +99,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
         ? 'Internal server error — see correlationId in logs.'
         : detail;
     }
+    // `code` is the stable machine-readable error identifier (e.g.
+    // `tenancy.tenant_suspended`); clients branch on it rather than the
+    // human-readable `title`. The filter already uses it for the `type`
+    // URI; surfacing it as its own field keeps callers from having to
+    // parse the URI suffix.
+    if (code !== undefined) problem.code = code;
     const correlationId = getCorrelationId();
     if (correlationId !== undefined) problem.correlationId = correlationId;
     if (traceId !== undefined) problem.traceId = traceId;
