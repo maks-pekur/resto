@@ -107,6 +107,7 @@ export const buildAuthFromEnv = (
         type: IdentitySignedOutV1.type,
         version: IdentitySignedOutV1.version,
         tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: new Date(),
@@ -124,6 +125,7 @@ export const buildAuthFromEnv = (
         type: IdentityPasswordResetCompletedV1.type,
         version: IdentityPasswordResetCompletedV1.version,
         tenantId: snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: new Date(),
@@ -148,6 +150,7 @@ export const buildAuthFromEnv = (
         type: IdentitySignedInV1.type,
         version: IdentitySignedInV1.version,
         tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: new Date(),

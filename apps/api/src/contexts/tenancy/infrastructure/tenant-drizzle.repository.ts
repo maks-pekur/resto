@@ -300,6 +300,7 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         type: TenantProvisionedV1.type,
         version: TenantProvisionedV1.version,
         tenantId: event.tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: event.occurredAt,
@@ -316,6 +317,7 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         type: TenantArchivedV1.type,
         version: TenantArchivedV1.version,
         tenantId: event.tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: event.occurredAt,
@@ -327,6 +329,7 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         type: TenantOffboardingScheduledV1.type,
         version: TenantOffboardingScheduledV1.version,
         tenantId: event.tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: event.occurredAt,
@@ -342,6 +345,7 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         type: TenantOffboardingCancelledV1.type,
         version: TenantOffboardingCancelledV1.version,
         tenantId: event.tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: event.occurredAt,
@@ -356,6 +360,7 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         type: TenantErasureCompletedV1.type,
         version: TenantErasureCompletedV1.version,
         tenantId: event.tenantId,
+        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
         correlationId: randomUUID(),
         causationId: null,
         occurredAt: event.occurredAt,
