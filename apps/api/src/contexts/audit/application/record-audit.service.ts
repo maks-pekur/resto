@@ -7,6 +7,8 @@ import { AuditRecord } from '../domain/audit-record';
 const ACTION_TARGET_KIND: Record<string, string> = {
   'tenancy.tenant_provisioned': 'tenant',
   'tenancy.tenant_archived': 'tenant',
+  'tenancy.tenant_suspended': 'tenant',
+  'tenancy.tenant_resumed': 'tenant',
   'identity.signed_in': 'user',
   'identity.signed_out': 'user',
   'identity.password_reset_completed': 'user',

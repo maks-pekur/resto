@@ -4,11 +4,14 @@ import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@rest
 import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import {
   appendToOutbox,
+  buildEnvelope,
   TenantArchivedV1,
   TenantErasureCompletedV1,
   TenantOffboardingCancelledV1,
   TenantOffboardingScheduledV1,
   TenantProvisionedV1,
+  TenantResumedV1,
+  TenantSuspendedV1,
   type EventEnvelope,
 } from '@resto/events';
 import { eq, sql } from 'drizzle-orm';
@@ -361,5 +364,24 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
           executedAt: event.executedAt,
         },
       };
+    case 'TenantSuspended':
+      return buildEnvelope(
+        TenantSuspendedV1,
+        {
+          tenantId: event.tenantId,
+          requestedBy: event.requestedBy,
+          suspendedAt: event.suspendedAt,
+        },
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
+    case 'TenantResumed':
+      return buildEnvelope(
+        TenantResumedV1,
+        {
+          tenantId: event.tenantId,
+          resumedAt: event.resumedAt,
+        },
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
   }
 };

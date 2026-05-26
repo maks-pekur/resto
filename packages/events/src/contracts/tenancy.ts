@@ -68,3 +68,26 @@ export const TenantErasureCompletedV1 = defineEventContract({
   type: 'tenancy.tenant_erasure_completed.v1',
   payload: TenantErasureCompletedV1Payload,
 });
+
+export const TenantSuspendedV1Payload = z.object({
+  tenantId: TenantId,
+  requestedBy: z.string().min(1),
+  suspendedAt: z.coerce.date(),
+});
+export type TenantSuspendedV1Payload = z.infer<typeof TenantSuspendedV1Payload>;
+
+export const TenantSuspendedV1 = defineEventContract({
+  type: 'tenancy.tenant_suspended.v1',
+  payload: TenantSuspendedV1Payload,
+});
+
+export const TenantResumedV1Payload = z.object({
+  tenantId: TenantId,
+  resumedAt: z.coerce.date(),
+});
+export type TenantResumedV1Payload = z.infer<typeof TenantResumedV1Payload>;
+
+export const TenantResumedV1 = defineEventContract({
+  type: 'tenancy.tenant_resumed.v1',
+  payload: TenantResumedV1Payload,
+});
