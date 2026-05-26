@@ -140,7 +140,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const sanityBefore = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-id': tenant.id },
     });
     expect(sanityBefore.statusCode).toBe(200);
 
@@ -155,7 +155,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const sanityAfter = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-id': tenant.id },
     });
     expect(sanityAfter.statusCode).toBe(401);
 
@@ -210,7 +210,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const sanityBefore = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-id': tenant.id },
     });
     expect(sanityBefore.statusCode).toBe(200);
 
@@ -249,7 +249,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const sanityAfter = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie },
+      headers: { cookie, 'x-tenant-id': tenant.id },
     });
     expect(sanityAfter.statusCode).toBe(401);
 
@@ -263,7 +263,7 @@ suite('Identity audit pipeline — sign-in → NATS → audit_log (RES-132)', ()
     const sanityNew = await stack.app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie: newCookie },
+      headers: { cookie: newCookie, 'x-tenant-id': tenant.id },
     });
     expect(sanityNew.statusCode).toBe(200);
 
