@@ -51,6 +51,19 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT EXECUTE ON FUNCTIONS TO resto_app;
 
+-- TEN-13 / OQ-2 Option B: the daily inbox-retention sweep is the one place
+-- resto_app needs DELETE. Migration 0028 also issues this GRANT but its
+-- table-existence guard fails when migrate runs before this role is
+-- provisioned (test container order). Restating the GRANT here keeps the
+-- end state convergent regardless of which step runs first.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'inbox_processed') THEN
+    EXECUTE 'GRANT DELETE ON inbox_processed TO resto_app';
+  END IF;
+END
+$$;
+
 -- RES-206: BA credential tables are resto_auth-only (ADR-0013).
 -- Revoke resto_app to prevent SELECT * leak of password hashes, OAuth
 -- tokens, 2FA secrets, session tokens. Excluded from runtime app role
