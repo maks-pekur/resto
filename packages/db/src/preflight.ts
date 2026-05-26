@@ -1,5 +1,9 @@
+import { existsSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import postgres, { type Sql } from 'postgres';
 import { logger } from './logger';
+import { WITHOUT_TENANT_ALLOWLIST } from './withoutTenant.allowlist';
 
 /**
  * Error raised when a connection's authenticated role can bypass RLS.
@@ -201,6 +205,56 @@ export const assertNoBaCredentialAccess = async (url: string): Promise<void> => 
   } finally {
     await client.end({ timeout: 5 });
   }
+};
+
+export class WithoutTenantAllowlistMisalignedError extends Error {
+  constructor(public readonly missing: string[]) {
+    super(
+      'TEN-11: WITHOUT_TENANT_ALLOWLIST entries point at files that do not exist: ' +
+        missing.join(', ') +
+        '. Either restore the file (likely a rename or delete) or remove the dead ' +
+        'entry from packages/db/src/withoutTenant.allowlist.ts and the parity ESLint ' +
+        'overrides.',
+    );
+    this.name = 'WithoutTenantAllowlistMisalignedError';
+  }
+}
+
+// D-08 + Pitfall 6: presence-check only. Call-site enforcement is the ESLint
+// job (TEN-12); this function catches "allowlist entry pointed at a renamed/deleted
+// file" at boot. Resolves paths against the workspace root (detected by
+// pnpm-workspace.yaml), not process.cwd(), so the check works whether boot is
+// from the repo root (dev) or the api app directory (built image).
+const findWorkspaceRoot = (start: string): string => {
+  let dir = start;
+  // Walk up until pnpm-workspace.yaml is found or we hit the filesystem root.
+  // A stuck loop is impossible: every iteration ascends one directory.
+  for (;;) {
+    if (existsSync(resolve(dir, 'pnpm-workspace.yaml'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return start;
+    dir = parent;
+  }
+};
+
+const WORKSPACE_ROOT = findWorkspaceRoot(dirname(fileURLToPath(import.meta.url)));
+
+export const assertWithoutTenantCallsiteRegistered = (
+  allowlist: readonly string[] = WITHOUT_TENANT_ALLOWLIST,
+): void => {
+  const missing: string[] = [];
+  for (const entry of allowlist) {
+    if (!existsSync(resolve(WORKSPACE_ROOT, entry))) {
+      missing.push(entry);
+    }
+  }
+  if (missing.length > 0) {
+    throw new WithoutTenantAllowlistMisalignedError(missing);
+  }
+  logger.info(
+    { allowed: allowlist.length },
+    'Database preflight passed: every withoutTenant allowlist entry resolves to a file on disk.',
+  );
 };
 
 interface ExpectedRoleAttributes {

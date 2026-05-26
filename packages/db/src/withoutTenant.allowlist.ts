@@ -4,6 +4,12 @@
  * caller that cannot bind an ALS tenant (lookup happens before tenant
  * resolution, message-broker delivery path, platform-wide tables, CLI).
  *
+ * TEN-11 / TEN-12: every file in this list must (a) exist on disk
+ * (asserted at boot by `assertWithoutTenantCallsiteRegistered` in
+ * preflight.ts — catches renamed/deleted files) and (b) be permitted to
+ * call `db.withoutTenant` by the ESLint per-file override in each
+ * package's eslint.config.mjs.
+ *
  * ESLint configs in apps/api, packages/db, packages/events mirror this
  * list in per-package override blocks. The parity test at
  * test/unit/withoutTenant-allowlist.spec.ts enforces they stay in sync.
