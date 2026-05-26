@@ -1,5 +1,9 @@
+import { randomUUID } from 'node:crypto';
+import pino from 'pino';
 import { z } from 'zod';
+import { getTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
+import { getCorrelationId } from './correlation';
 
 /**
  * Event type — `<context>.<event>.v<n>`.
@@ -117,4 +121,48 @@ export const defineEventContract = <TPayload, TName extends string>(opts: {
     payloadSchema: opts.payload,
     parse: (input) => schema.parse(input) as TypedEnvelope<TPayload>,
   };
+};
+
+export const logger = pino({
+  name: 'events.build-envelope',
+  level: process.env.LOG_LEVEL ?? 'info',
+  base: { pkg: '@resto/events' },
+});
+
+export interface BuildEnvelopeOptions {
+  readonly tenantId?: string | null;
+  readonly occurredAt?: Date;
+  readonly correlationId?: string;
+  readonly causationId?: string | null;
+}
+
+export const buildEnvelope = <TPayload>(
+  contract: EventContract<TPayload>,
+  payload: TPayload,
+  options: BuildEnvelopeOptions = {},
+): EventEnvelope => {
+  let correlationId = options.correlationId ?? getCorrelationId();
+  if (!correlationId) {
+    // D-10: when no ALS frame is active (cron handlers, top-level scripts), generate a fresh
+    // correlationId and WARN. Explicit threading via options.correlationId is the upgrade path.
+    correlationId = randomUUID();
+    logger.warn(
+      { eventType: contract.type, fallbackCorrelationId: correlationId },
+      'buildEnvelope: no active OTel span / ALS correlationId — falling back to randomUUID (D-10)',
+    );
+  }
+  const rawTenantId =
+    options.tenantId !== undefined ? options.tenantId : (getTenantContext()?.tenantId ?? null);
+  const tenantId = rawTenantId === null ? null : TenantId.parse(rawTenantId);
+
+  return {
+    id: randomUUID(),
+    type: contract.type,
+    version: contract.version,
+    tenantId,
+    correlationId,
+    causationId: options.causationId ?? null,
+    occurredAt: options.occurredAt ?? new Date(),
+    payload,
+  } satisfies EventEnvelope;
 };
