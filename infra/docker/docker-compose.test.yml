@@ -1,0 +1,45 @@
+# docker-compose.test.yml — ephemeral test stack. Mirror of dev. Per D-06 of Phase 1 plan.
+# Do NOT add Redis / MinIO / MailHog / Jaeger — they are not test-path dependencies.
+name: resto-test
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: resto-test-postgres
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-resto}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-resto_test_dev_only}
+      POSTGRES_DB: ${POSTGRES_DB:-resto_test}
+    ports:
+      - "127.0.0.1:${POSTGRES_TEST_PORT:-55432}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    mem_limit: 512m
+    cpus: 1.0
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-resto} -d ${POSTGRES_DB:-resto_test}"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  nats:
+    image: nats:2.10-alpine
+    container_name: resto-test-nats
+    restart: "no"
+    command:
+      - "--jetstream"
+      - "--store_dir=/data"
+      - "--http_port=8222"
+    ports:
+      - "127.0.0.1:${NATS_TEST_PORT:-54222}:4222"
+      - "127.0.0.1:${NATS_TEST_HTTP_PORT:-58222}:8222"
+    tmpfs:
+      - /data
+    mem_limit: 256m
+    cpus: 0.5
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8222/healthz"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
