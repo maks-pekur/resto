@@ -12,7 +12,13 @@ import 'reflect-metadata';
 import { Logger } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { assertNoRlsBypass, assertSetConfigRevoked, assertTenantLockInstalled } from '@resto/db';
+import {
+  assertNoBaCredentialAccess,
+  assertNoRlsBypass,
+  assertSetConfigRevoked,
+  assertTenantLockInstalled,
+  assertWithoutTenantCallsiteRegistered,
+} from '@resto/db';
 import { AppModule } from './app.module';
 import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
@@ -46,6 +52,18 @@ const bootstrap = async (): Promise<void> => {
   // new image rolls before `pnpm db:migrate` completes.
   await assertTenantLockInstalled(env.DATABASE_URL);
   await assertSetConfigRevoked(env.DATABASE_URL);
+
+  // TEN-07: refuse to start if migration 0027 has silently regressed and
+  // resto_app retains any SELECT/INSERT/UPDATE on the BA credential
+  // tables (account, session, two_factor, verification). Heavier DB
+  // check runs first so infra misconfig fails fast.
+  await assertNoBaCredentialAccess(env.DATABASE_URL);
+
+  // TEN-11: refuse to start if any entry in WITHOUT_TENANT_ALLOWLIST
+  // points at a file that no longer exists (renamed / deleted source).
+  // Pure FS check (D-08 + Pitfall 6) — the call-site fence itself is
+  // the ESLint job (TEN-12).
+  assertWithoutTenantCallsiteRegistered();
 
   // ADR-0020 I-3 defense-in-depth: refuse to start if any tracked
   // dev-fallback constant is still present in a non-dev NODE_ENV.
