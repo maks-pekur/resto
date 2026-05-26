@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { Currency, TenantId, TenantSlug } from '@resto/domain';
@@ -295,80 +294,50 @@ const rowToTenantDomain = (row: typeof schema.tenantDomains.$inferSelect): Tenan
 const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
   switch (event.kind) {
     case 'TenantProvisioned':
-      return {
-        id: randomUUID(),
-        type: TenantProvisionedV1.type,
-        version: TenantProvisionedV1.version,
-        tenantId: event.tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: event.occurredAt,
-        payload: {
+      return buildEnvelope(
+        TenantProvisionedV1,
+        {
           tenantId: event.tenantId,
           slug: event.slug,
           displayName: event.displayName,
           defaultCurrency: event.defaultCurrency,
         },
-      };
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
     case 'TenantArchived':
-      return {
-        id: randomUUID(),
-        type: TenantArchivedV1.type,
-        version: TenantArchivedV1.version,
-        tenantId: event.tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: event.occurredAt,
-        payload: { tenantId: event.tenantId },
-      };
+      return buildEnvelope(
+        TenantArchivedV1,
+        { tenantId: event.tenantId },
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
     case 'TenantOffboardingScheduled':
-      return {
-        id: randomUUID(),
-        type: TenantOffboardingScheduledV1.type,
-        version: TenantOffboardingScheduledV1.version,
-        tenantId: event.tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: event.occurredAt,
-        payload: {
+      return buildEnvelope(
+        TenantOffboardingScheduledV1,
+        {
           tenantId: event.tenantId,
           requestedBy: event.requestedBy,
           scheduledAt: event.scheduledAt,
         },
-      };
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
     case 'TenantOffboardingCancelled':
-      return {
-        id: randomUUID(),
-        type: TenantOffboardingCancelledV1.type,
-        version: TenantOffboardingCancelledV1.version,
-        tenantId: event.tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: event.occurredAt,
-        payload: {
+      return buildEnvelope(
+        TenantOffboardingCancelledV1,
+        {
           tenantId: event.tenantId,
           cancelledAt: event.cancelledAt,
         },
-      };
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
     case 'TenantErasureCompleted':
-      return {
-        id: randomUUID(),
-        type: TenantErasureCompletedV1.type,
-        version: TenantErasureCompletedV1.version,
-        tenantId: event.tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: event.occurredAt,
-        payload: {
+      return buildEnvelope(
+        TenantErasureCompletedV1,
+        {
           tenantId: event.tenantId,
           executedAt: event.executedAt,
         },
-      };
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
     case 'TenantSuspended':
       return buildEnvelope(
         TenantSuspendedV1,
