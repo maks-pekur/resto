@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 01 Wave 2 merged to main (PR #186 plan 01-03, PR #187 plan 01-04); ready for Wave 3
-last_updated: '2026-05-26T21:05:00.000Z'
-last_activity: 2026-05-26 -- Phase 01 Wave 2 merged to main via rebase (15 code commits + 1 docs commit)
+stopped_at: Phase 01 Tenancy Hardening COMPLETE — all 6 plans merged to main via 7 PRs (#183-#190); pre-existing e2e regressions surfaced for follow-up
+last_updated: '2026-05-26T21:40:00.000Z'
+last_activity: 2026-05-26 -- Phase 01 complete (Waves 1+2+3 merged via PRs #183, #184, #186, #187, #189, #190 + lockfile #185)
 progress:
   total_phases: 16
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 4
-  percent: 0
+  completed_plans: 6
+  percent: 6
 ---
 
 # Project State
@@ -25,12 +25,21 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-Phase: 1 of 16 (Tenancy Hardening)
-Plan: 4 of 6 in current phase (Waves 1 + 2 merged to main; Wave 3 pending)
-Status: Wave 2 shipped — ready to launch Wave 3 (plans 01-05 + 01-06) from updated main
-Last activity: 2026-05-26 -- Phase 01 Wave 2 merged to main via rebase (PRs #186 + #187)
+Phase: 1 of 16 (Tenancy Hardening) — COMPLETE
+Plan: 6 of 6 in Phase 01 (ALL waves merged to main)
+Status: Phase 01 closed — ready to verify + extract learnings, then move to Phase 02 (Admin Shell)
+Last activity: 2026-05-26 -- Phase 01 complete (7 PRs merged: outbox/test-infra → tenancy/preflight → identity/isolation)
 
-Progress: [█████████░░░░░░░░░░░] 67% within Phase 01
+Progress: [████████████████████] 100% within Phase 01
+
+## ⚠ Phase 01 follow-up — pre-existing e2e regressions on Wave 2 baseline
+
+Surfaced by plan 01-05 subagent BEFORE its commits; not introduced by Wave 3. Track for a fix before Phase 02 starts:
+
+- `identity-audit.e2e.spec.ts` — sign-out / password-reset cases failing
+- `tenancy-suspend.e2e.spec.ts` — 4 menu-block / 409-code cases failing
+- `background-jobs.e2e.spec.ts` — inbox retention failing
+- `BLOCKED` row in `audit-gap.md` — role-change audit ⏸ Better Auth 1.4.22 has no `databaseHooks.member.update.after` hook → deferred to AUTH-09 in Phase 03
 
 ## Performance Metrics
 
@@ -107,7 +116,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-26T21:05:00.000Z
-Stopped at: Phase 01 Wave 2 merged to main via PRs #186 + #187; ready for Wave 3
-Resume file: .planning/phases/01-tenancy-hardening/01-03-SUMMARY.md, 01-04-SUMMARY.md
-Branch: main (Waves 1+2 fully landed; create fresh branch for Wave 3)
+Last session: 2026-05-26T21:40:00.000Z
+Stopped at: Phase 01 COMPLETE — all 6 plans merged via 7 PRs; pre-existing e2e regressions flagged for follow-up before Phase 02
+Resume file: .planning/phases/01-tenancy-hardening/01-{01..06}-SUMMARY.md
+Branch: main (Phase 01 fully landed; next phase 02 — Admin Shell)
