@@ -21,6 +21,7 @@ export interface AppendOutboxOptions {
  * no DB commit without a corresponding outbox row.
  */
 export const appendToOutbox = async (tx: RestoTx, options: AppendOutboxOptions): Promise<void> => {
+  EventEnvelope.parse(options.envelope);
   await tx.insert(schema.outboxEvents).values({
     id: options.envelope.id,
     tenantId: options.envelope.tenantId,
