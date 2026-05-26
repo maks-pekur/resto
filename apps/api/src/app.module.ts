@@ -1,5 +1,5 @@
 import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from './config/config.module';
 import { BackgroundJobsModule } from './infrastructure/background-jobs.module';
 import { DatabaseModule } from './infrastructure/database.module';
@@ -13,6 +13,7 @@ import { IdentityHttpModule } from './contexts/identity/identity-http.module';
 import { SharedApiModule } from './shared/api/shared-api.module';
 import { CorrelationMiddleware } from './shared/correlation.middleware';
 import { ProblemDetailsFilter } from './shared/exception.filter';
+import { HttpMetricsInterceptor } from './shared/http-metrics.interceptor';
 import { TenantContextMiddleware } from './shared/tenant-context.middleware';
 
 @Module({
@@ -31,6 +32,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
   ],
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
+    { provide: APP_INTERCEPTOR, useClass: HttpMetricsInterceptor },
     CorrelationMiddleware,
     TenantContextMiddleware,
   ],
