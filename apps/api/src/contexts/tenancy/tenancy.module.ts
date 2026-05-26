@@ -32,6 +32,7 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     TenantAndBrandResolverService,
   ],
   exports: [
+    TENANT_REPOSITORY,
     TenantResolverService,
     TenantAndBrandResolverService,
     TenantQueriesService,
