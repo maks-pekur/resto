@@ -22,10 +22,16 @@ import {
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { TenantId } from '@resto/domain';
-import { ProvisionTenantInputDto, ScheduleOffboardingInputDto } from '../../application/dto';
+import {
+  ProvisionTenantInputDto,
+  ScheduleOffboardingInputDto,
+  SuspendTenantInputDto,
+  SuspendTenantInputSchema,
+} from '../../application/dto';
 import { ProvisionTenantService } from '../../application/provision-tenant.service';
 import { ArchiveTenantService } from '../../application/archive-tenant.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
+import { SuspendTenantService } from '../../application/suspend-tenant.service';
 import { TenantNotFoundError } from '../../domain/errors';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
@@ -52,6 +58,7 @@ export class InternalTenantsController {
     @Inject(ProvisionTenantService) private readonly provisioning: ProvisionTenantService,
     @Inject(ArchiveTenantService) private readonly archiving: ArchiveTenantService,
     @Inject(OffboardTenantService) private readonly offboarding: OffboardTenantService,
+    @Inject(SuspendTenantService) private readonly suspending: SuspendTenantService,
   ) {}
 
   @Post()
@@ -114,6 +121,37 @@ export class InternalTenantsController {
     const snapshot = await wrap(() =>
       this.offboarding.cancel({ tenantId: parseTenantIdOr404(id) }),
     );
+    return toResponse(snapshot);
+  }
+
+  @Post(':id/suspend')
+  @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: SuspendTenantInputDto })
+  @ApiOkResponse({ type: TenantResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiConflictResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  async suspend(
+    @Param('id') id: string,
+    @Body(new RestoZodValidationPipe(SuspendTenantInputSchema)) input: SuspendTenantInputDto,
+  ): Promise<TenantResponseDto> {
+    const snapshot = await wrap(() =>
+      this.suspending.suspend({
+        tenantId: parseTenantIdOr404(id),
+        requestedBy: input.requestedBy,
+      }),
+    );
+    return toResponse(snapshot);
+  }
+
+  @Post(':id/resume')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: TenantResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  @ApiConflictResponse({ type: ProblemDetailsDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  async resume(@Param('id') id: string): Promise<TenantResponseDto> {
+    const snapshot = await wrap(() => this.suspending.resume({ tenantId: parseTenantIdOr404(id) }));
     return toResponse(snapshot);
   }
 }

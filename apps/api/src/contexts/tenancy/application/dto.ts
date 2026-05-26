@@ -25,3 +25,13 @@ export const CancelOffboardingInputSchema = z.object({
 });
 export type CancelOffboardingInput = z.infer<typeof CancelOffboardingInputSchema>;
 export class CancelOffboardingInputDto extends createZodDto(CancelOffboardingInputSchema) {}
+
+export const SuspendTenantInputSchema = z.object({
+  requestedBy: z.string().min(1).max(120),
+});
+export type SuspendTenantInput = z.infer<typeof SuspendTenantInputSchema>;
+export class SuspendTenantInputDto extends createZodDto(SuspendTenantInputSchema) {}
+
+export const ResumeTenantInputSchema = z.object({});
+export type ResumeTenantInput = z.infer<typeof ResumeTenantInputSchema>;
+export class ResumeTenantInputDto extends createZodDto(ResumeTenantInputSchema) {}

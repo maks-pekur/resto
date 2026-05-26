@@ -3,6 +3,7 @@ import { ProvisionTenantService } from './application/provision-tenant.service';
 import { ProvisionBrandService } from './application/provision-brand.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
 import { OffboardTenantService } from './application/offboard-tenant.service';
+import { SuspendTenantService } from './application/suspend-tenant.service';
 import { TenantQueriesService } from './application/tenant-queries.service';
 import { BrandQueriesService } from './application/brand-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
@@ -24,6 +25,7 @@ import { TenantsController } from './interfaces/http/tenants.controller';
     ProvisionBrandService,
     ArchiveTenantService,
     OffboardTenantService,
+    SuspendTenantService,
     TenantQueriesService,
     BrandQueriesService,
     TenantResolverService,
