@@ -57,7 +57,7 @@ describe('RES-252 Phase 2b: withoutTenant allowlist parity', () => {
     expect(extracted).toEqual(tsConst);
   });
 
-  it('TS const contains exactly seven entries (sanity check on scope creep)', () => {
-    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(7);
+  it('TS const contains exactly eight entries (sanity check on scope creep)', () => {
+    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(8);
   });
 });

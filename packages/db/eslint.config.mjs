@@ -56,7 +56,7 @@ export default [
   {
     // @withoutTenant-allowlist — RES-252: system-context callers in
     // packages/db. Mirrors packages/db/src/withoutTenant.allowlist.ts.
-    files: ['src/cli/audit-fks.ts'],
+    files: ['src/cli/audit-fks.ts', 'src/inbox-retention.ts'],
     rules: {
       'no-restricted-syntax': 'off',
     },
