@@ -97,13 +97,18 @@ export default [
     // projection query that carries an explicit `eq(brands.tenantId, ...)`.
     // record-audit.service.ts writes to the platform-wide auditLog table
     // (no tenant_id column) inside withoutTenant.
+    //
+    // TEN-15: the FORBIDDEN_CORRELATION_ID_LITERALS selectors stay active
+    // even in these overrides — the existing 5 sites in tenant-drizzle
+    // carry per-line `// eslint-disable-next-line` PR-5 markers, and
+    // PR 5 removes them as it migrates each call to buildEnvelope().
     files: [
       'src/contexts/**/infrastructure/*-drizzle.repository.ts',
       'src/contexts/**/infrastructure/*-drizzle.reader.ts',
       'src/contexts/audit/application/record-audit.service.ts',
     ],
     rules: {
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
     },
   },
   {
@@ -111,6 +116,8 @@ export default [
     // withoutTenant callers. System-context only; all others must use
     // db.withTenant / db.withTenantId. Mirrors
     // packages/db/src/withoutTenant.allowlist.ts (apps/api entries).
+    //
+    // TEN-15 selectors stay active for the same reason as above.
     files: [
       'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
       'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
@@ -118,7 +125,7 @@ export default [
       'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
     ],
     rules: {
-      'no-restricted-syntax': 'off',
+      'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
     },
   },
   {
