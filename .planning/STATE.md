@@ -121,7 +121,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-26T21:40:00.000Z
-Stopped at: Phase 01 COMPLETE — all 6 plans merged via 7 PRs; pre-existing e2e regressions flagged for follow-up before Phase 02
+Last session: 2026-05-27T00:00:00.000Z
+Stopped at: Phase 01 COMPLETE + 3 follow-up fix PRs (#191, #192, #193) merged; ready for Phase 02 (Admin Shell)
 Resume file: .planning/phases/01-tenancy-hardening/01-{01..06}-SUMMARY.md
-Branch: main (Phase 01 fully landed; next phase 02 — Admin Shell)
+Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
