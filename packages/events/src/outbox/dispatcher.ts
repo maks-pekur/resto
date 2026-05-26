@@ -43,6 +43,8 @@ export class OutboxDispatcher {
   #running = false;
   #stopped = false;
   #stopResolver: (() => void) | null = null;
+  // TEN-16: cached so concurrent stop() callers converge — see packages/events/CLAUDE.md
+  #stopPromise: Promise<void> | null = null;
 
   constructor(options: DispatcherOptions) {
     this.#db = options.db;
@@ -115,12 +117,13 @@ export class OutboxDispatcher {
   }
 
   /** Stop the polling loop, awaiting the in-flight tick to finish. */
-  async stop(): Promise<void> {
-    if (!this.#running) return;
+  stop(): Promise<void> {
+    if (!this.#running) return Promise.resolve();
     this.#stopped = true;
-    await new Promise<void>((resolve) => {
+    this.#stopPromise ??= new Promise<void>((resolve) => {
       this.#stopResolver = resolve;
     });
+    return this.#stopPromise;
   }
 
   async #runLoop(): Promise<void> {
@@ -135,9 +138,10 @@ export class OutboxDispatcher {
         await this.#sleep(this.#tickIntervalMs);
       }
     }
-    this.#running = false;
-    this.#stopResolver?.();
+    const resolver = this.#stopResolver;
     this.#stopResolver = null;
+    this.#running = false;
+    resolver?.();
   }
 
   async #sleep(ms: number): Promise<void> {
