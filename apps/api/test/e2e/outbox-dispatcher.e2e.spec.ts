@@ -1,5 +1,6 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
+import type { Counter } from '@opentelemetry/api';
 import { schema, runInTenantContext, TenantAwareDb } from '@resto/db';
 import {
   appendToOutbox,
@@ -13,6 +14,7 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
+import { OutboxDispatcherService } from '../../src/infrastructure/outbox-dispatcher.service';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -155,5 +157,89 @@ suite('OutboxDispatcherService — domain → NATS delivery', () => {
     // between the two flows even though they share a subject.
     expect(sawA?.tenantId).toBe(TENANT_A_ID);
     expect(sawB?.tenantId).toBe(TENANT_B_ID);
+  }, 30_000);
+
+  it('emits tenant.id attribute on delivered counter for tenant-scoped events', async () => {
+    const subject = 'tenancy.dispatcher_metrics_tenant.v1';
+    const dispatcherSvc = stack.app.get(OutboxDispatcherService);
+    const deliveredCounter = (dispatcherSvc as unknown as { deliveredCounter: Counter })
+      .deliveredCounter;
+    const spy = vi.spyOn(deliveredCounter, 'add');
+
+    const collector = collectFirst(subject, 'odp-metrics-tenant');
+    const envelope = buildEnvelope(TENANT_A_ID, subject);
+    await runInTenantContext({ tenantId: TENANT_A_ID }, () =>
+      stack.app.get(TenantAwareDb).withTenant((tx) => appendToOutbox(tx, { envelope })),
+    );
+
+    const deadline = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timed out waiting for NATS message')), 5000),
+    );
+    const { subscription } = await Promise.race([collector, deadline]);
+    await subscription.stop();
+
+    // The dispatcher publishes asynchronously after collectFirst resolves; wait briefly
+    // for the publisher wrapper to flush its counter add.
+    const attrDeadline = Date.now() + 2000;
+    let matched = false;
+    while (Date.now() < attrDeadline) {
+      matched = spy.mock.calls.some(([, attrs]) => {
+        const tenantAttr = (attrs as { 'tenant.id'?: string } | undefined)?.['tenant.id'];
+        const typeAttr = (attrs as { 'event.type'?: string } | undefined)?.['event.type'];
+        return tenantAttr === TENANT_A_ID && typeAttr === subject;
+      });
+      if (matched) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    expect(matched).toBe(true);
+    spy.mockRestore();
+  }, 30_000);
+
+  it('emits tenant.id=platform attribute for platform-level events', async () => {
+    const subject = 'tenancy.dispatcher_metrics_platform.v1';
+    const dispatcherSvc = stack.app.get(OutboxDispatcherService);
+    const deliveredCounter = (dispatcherSvc as unknown as { deliveredCounter: Counter })
+      .deliveredCounter;
+    const spy = vi.spyOn(deliveredCounter, 'add');
+
+    const collector = collectFirst(subject, 'odp-metrics-platform');
+    // Platform-level envelope: tenantId = null. Build directly via parse so we skip the
+    // helper's ALS tenantId resolution.
+    const platformEnvelope = EventEnvelope.parse({
+      id: randomUUID(),
+      type: subject,
+      version: 1,
+      tenantId: null,
+      correlationId: randomUUID(),
+      causationId: null,
+      occurredAt: new Date(),
+      payload: { source: 'platform' },
+    });
+    // append without a tenant binding — appendToOutbox tolerates a null tenantId envelope.
+    await stack.app
+      .get(TenantAwareDb)
+      .withoutTenant('outbox-dispatcher metrics platform test', (tx) =>
+        appendToOutbox(tx, { envelope: platformEnvelope }),
+      );
+
+    const deadline = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('timed out waiting for NATS message')), 5000),
+    );
+    const { subscription } = await Promise.race([collector, deadline]);
+    await subscription.stop();
+
+    const attrDeadline = Date.now() + 2000;
+    let matched = false;
+    while (Date.now() < attrDeadline) {
+      matched = spy.mock.calls.some(([, attrs]) => {
+        const tenantAttr = (attrs as { 'tenant.id'?: string } | undefined)?.['tenant.id'];
+        const typeAttr = (attrs as { 'event.type'?: string } | undefined)?.['event.type'];
+        return tenantAttr === 'platform' && typeAttr === subject;
+      });
+      if (matched) break;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    expect(matched).toBe(true);
+    spy.mockRestore();
   }, 30_000);
 });
