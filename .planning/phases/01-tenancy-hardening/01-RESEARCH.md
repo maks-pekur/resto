@@ -851,37 +851,37 @@ Apply to `PublicMenuController.menu()` and `item()`.
 | A5  | TEN-09 "role-change" audit gap depends on a Better Auth hook that may or may not exist for role mutations (persona-skeptic flagged)                                                   | Persona Risk 5                 | Audit gap stays open; gap analysis must explicitly mark "role-change: blocked on BA hook surface" if no hookable surface exists |
 | A6  | `STREAM_SUBJECTS` in `apps/api/src/infrastructure/nats.module.ts` already includes `tenancy.>` wildcard so new `tenant_suspended.v1` events flow through without subject-list changes | Runtime State Inventory        | If wildcards are too narrow, new event types silently fail to dispatch — verify before PR 3                                     |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **TEN-02 status code: 403 or 410?**
    - What we know: ROADMAP success criterion says "403/410." Persona reviews silent on the choice.
    - What's unclear: which condition produces which code.
-   - Recommendation: **403 Forbidden for `suspended` (recoverable via resume), 410 Gone for `erased` (irrecoverable).** Document in `error-mapping.ts`. Out-of-scope for Phase 1: surface a custom problem+json `code` so admin UIs can distinguish.
+   - **RESOLVED:** 403 with `Retry-After` absent (suspended ≠ erased; 410 reserved for fully-erased tenants). Locked in `01-03-PLAN.md` → `<locked_open_questions>` truth #2.
 
 2. **TEN-13 retention DELETE: `resto_admin` via SECURITY DEFINER, or narrow GRANT to `resto_app`?**
    - What we know: `resto_app` has no DELETE per project invariant. `inbox_processed` is the only legitimate sweep target.
    - What's unclear: which mechanism the project prefers.
-   - Recommendation: **Option B (narrow `GRANT DELETE ON inbox_processed TO resto_app` in a new migration).** Reasoning: `SECURITY DEFINER` functions are a known attack surface (search_path, role escalation); a narrow grant is auditable and reversible. Add an ESLint/SQL invariant test that asserts `inbox_processed` is the ONLY table where `resto_app` has DELETE. **Lock during planning.**
+   - **RESOLVED:** Narrow `GRANT DELETE ON inbox_processed TO resto_app` via migration 0028 (Option B over `SECURITY DEFINER`). Locked in `01-03-PLAN.md` Task 6 + `<locked_open_questions>` truth #3.
 
 3. **TEN-02 implementation surface: middleware-level rejection, or per-controller decorator?**
    - What we know: persona reviews don't lock either approach. Decorator gives controllers opt-in; middleware blocks everything by default.
    - What's unclear: whether operator-facing routes need to be reachable while their own tenant is suspended.
-   - Recommendation: **decorator pattern (`@RequireActiveTenant()` on `PublicMenuController`)** — keeps middleware focused on context binding; failure mode is explicit at the controller layer. **Lock during planning.**
+   - **RESOLVED:** `@RequireActiveTenant()` decorator on `PublicMenuController` handlers; `TenantContextMiddleware` stays purely informational (just resolves tenant; does not enforce status). Locked in `01-03-PLAN.md` Task 5 + `<locked_open_questions>` truth #1.
 
 4. **TEN-09 audit-gap.md format: table, checklist, or hybrid?**
    - What we know: existing GSD docs (`.planning/codebase/CONCERNS.md`) use markdown tables with `Sub-section / File / Issue / Severity / Status` columns.
    - What's unclear: what the planner wants for downstream review.
-   - Recommendation: **Markdown table.** Columns: `Action | Context | Current Status | Gap | Closure Task`. The "Closure Task" column lets the plan reference specific task IDs (`Tenancy.Suspend.AuditWire` etc.).
+   - **RESOLVED:** Plain Markdown with `| Event | Currently Logged | Required Action |` table. Locked in `01-05-PLAN.md` Task 5.
 
 5. **TEN-09 "role-change" gap closure — what's the BA hookable surface?**
    - What we know: persona-skeptic flagged that `role-change` may not have a hookable BA surface.
    - What's unclear: whether BA's `member` plugin emits a role-mutation hook, or whether the gap must be closed by intercepting the DB write directly.
-   - Recommendation: **Investigate during planning** by reading `apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts` for available callbacks. If no hook exists, document in `audit-gap.md` as "BLOCKED — role-change events not yet audit-emittable; deferred to AUTH-09 in Phase 3 (where role seeding/management is fully implemented)" and exclude from Phase 1's closure scope. Persona-skeptic specifically called this out as a "premature done" risk — handle deliberately.
+   - **RESOLVED:** Use the existing identity-context outbox-publishing path (no new BA-internal hook surface). Locked in `01-05-PLAN.md` Task 5 audit-gap entry for role-change event.
 
 6. **Is the existing `commit bdeb831` cross-tenant scaffold in `apps/api/test/e2e/cross-tenant-isolation.e2e.spec.ts` sequential or concurrent?**
    - What we know: CTO persona review flagged the file as already-present but did not confirm the 4 fixture categories.
    - What's unclear: which of the 4 categories the existing file covers.
-   - Recommendation: **Read `apps/api/test/e2e/cross-tenant-isolation.e2e.spec.ts` in full during PR 6 planning** and inventory what's already covered. The file is 227 lines. If most of category (3) "concurrent-write" is already present, scope down TEN-08 accordingly.
+   - **RESOLVED-AT-EXECUTION-TIME:** Plan 06 Task 0 explicitly inventories `apps/api/test/e2e/cross-tenant-isolation.e2e.spec.ts` against the 4 fixture categories from D-07 and writes the gap analysis to `audit-gap-test-scaffold.md` before Tasks 1-4 begin. The OQ is closed by the executor as the first action of Plan 06.
 
 ## Environment Availability
 
