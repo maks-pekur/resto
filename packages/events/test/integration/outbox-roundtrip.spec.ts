@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { z } from 'zod';
 import { schema } from '@resto/db';
 import { eq } from 'drizzle-orm';
 import {
@@ -7,6 +8,7 @@ import {
   OutboxDispatcher,
   TenantProvisionedV1,
   runDeduped,
+  type EventEnvelope,
   type TypedEnvelope,
   type TenantProvisionedV1Payload,
 } from '../../src/index';
@@ -109,6 +111,35 @@ suite('Outbox → NATS roundtrip', () => {
     expect(row[0]?.deliveredAt).toBeInstanceOf(Date);
 
     await sub.stop();
+  }, 60_000);
+
+  it('rejects malformed envelope before insert', async () => {
+    const beforeRows = await env.db.withoutTenant(
+      'count outbox rows before malformed insert',
+      (tx) => tx.select().from(schema.outboxEvents),
+    );
+    const beforeCount = beforeRows.length;
+
+    const malformed = {
+      ...buildEnvelope(randomUUID(), {
+        tenantId: TENANT_UUID as TenantProvisionedV1Payload['tenantId'],
+        slug: 'cafe-malformed',
+        displayName: 'Cafe Malformed',
+        defaultCurrency: 'USD' as TenantProvisionedV1Payload['defaultCurrency'],
+      }),
+      correlationId: 123 as unknown as string,
+    } as unknown as EventEnvelope;
+
+    await expect(
+      env.db.withoutTenant('attempt malformed append', (tx) =>
+        appendToOutbox(tx, { envelope: malformed }),
+      ),
+    ).rejects.toBeInstanceOf(z.ZodError);
+
+    const afterRows = await env.db.withoutTenant('count outbox rows after malformed insert', (tx) =>
+      tx.select().from(schema.outboxEvents),
+    );
+    expect(afterRows.length).toBe(beforeCount);
   }, 60_000);
 });
 
