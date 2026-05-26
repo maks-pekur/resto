@@ -65,3 +65,37 @@ export class TenantErasureTooEarlyError extends Error {
     this.name = 'TenantErasureTooEarlyError';
   }
 }
+
+export class TenantSuspendedError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" is suspended.`);
+    this.name = 'TenantSuspendedError';
+  }
+}
+
+export class TenantAlreadySuspendedError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" is already suspended.`);
+    this.name = 'TenantAlreadySuspendedError';
+  }
+}
+
+export class TenantNotSuspendedError extends Error {
+  constructor(
+    public readonly tenantId: string,
+    public readonly currentStatus: string,
+  ) {
+    super(`Tenant "${tenantId}" is not suspended (current status: "${currentStatus}").`);
+    this.name = 'TenantNotSuspendedError';
+  }
+}
+
+export class TenantSuspensionNotAllowedError extends Error {
+  constructor(
+    public readonly tenantId: string,
+    public readonly currentStatus: string,
+  ) {
+    super(`Tenant "${tenantId}" cannot be suspended from status "${currentStatus}".`);
+    this.name = 'TenantSuspensionNotAllowedError';
+  }
+}

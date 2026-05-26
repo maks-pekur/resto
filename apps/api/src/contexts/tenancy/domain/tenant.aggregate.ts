@@ -4,9 +4,12 @@ import type { TenantDomain } from './tenant-domain';
 import type { TenantDomainEvent } from './events';
 import {
   TenantAlreadyArchivedError,
+  TenantAlreadySuspendedError,
   TenantErasureTooEarlyError,
+  TenantNotSuspendedError,
   TenantOffboardingCoolOffExpiredError,
   TenantOffboardingNotAllowedError,
+  TenantSuspensionNotAllowedError,
 } from './errors';
 
 const COOL_OFF_DAYS = 30;
@@ -113,6 +116,36 @@ export class Tenant {
     this.#events.push({
       kind: 'TenantArchived',
       tenantId: this.snapshot.id,
+      occurredAt: now,
+    });
+  }
+
+  suspend(requestedBy: string, now: Date = new Date()): void {
+    if (this.snapshot.status === 'suspended') {
+      throw new TenantAlreadySuspendedError(this.snapshot.id);
+    }
+    if (this.snapshot.status !== 'active') {
+      throw new TenantSuspensionNotAllowedError(this.snapshot.id, this.snapshot.status);
+    }
+    this.snapshot = { ...this.snapshot, status: 'suspended', updatedAt: now };
+    this.#events.push({
+      kind: 'TenantSuspended',
+      tenantId: this.snapshot.id,
+      requestedBy,
+      suspendedAt: now,
+      occurredAt: now,
+    });
+  }
+
+  resume(now: Date = new Date()): void {
+    if (this.snapshot.status !== 'suspended') {
+      throw new TenantNotSuspendedError(this.snapshot.id, this.snapshot.status);
+    }
+    this.snapshot = { ...this.snapshot, status: 'active', updatedAt: now };
+    this.#events.push({
+      kind: 'TenantResumed',
+      tenantId: this.snapshot.id,
+      resumedAt: now,
       occurredAt: now,
     });
   }
