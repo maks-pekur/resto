@@ -9,7 +9,9 @@
 
 export {
   EventEnvelope,
+  buildEnvelope,
   defineEventContract,
+  type BuildEnvelopeOptions,
   type EventContract,
   type TypedEnvelope,
 } from './envelope';
@@ -54,6 +56,10 @@ export {
   TenantOffboardingScheduledV1Payload,
   TenantProvisionedV1,
   TenantProvisionedV1Payload,
+  TenantResumedV1,
+  TenantResumedV1Payload,
+  TenantSuspendedV1,
+  TenantSuspendedV1Payload,
 } from './contracts/tenancy';
 
 export {
