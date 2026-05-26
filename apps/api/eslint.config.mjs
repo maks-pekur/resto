@@ -1,4 +1,5 @@
 import { node } from '@resto/config-eslint/node';
+import { FORBIDDEN_CORRELATION_ID_LITERALS } from '@resto/config-eslint/base';
 
 export default [
   ...node,
@@ -85,6 +86,7 @@ export default [
           message:
             "RES-252 I-1: `withoutTenant` bypasses tenant filter + RLS. Allowed only in apps/api's allowlist (packages/db/src/withoutTenant.allowlist.ts). Add the file path there + update this config's allow-block, or use db.withTenant / db.withTenantId.",
         },
+        ...FORBIDDEN_CORRELATION_ID_LITERALS,
       ],
     },
   },
