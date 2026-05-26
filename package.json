@@ -22,6 +22,10 @@
     "dev:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",
     "dev:reset": "docker compose -f infra/docker/docker-compose.dev.yml down -v",
+    "test:stack:up": "node scripts/test-stack.mjs up",
+    "test:stack:down": "node scripts/test-stack.mjs down",
+    "test:stack:status": "node scripts/test-stack.mjs status",
+    "test:stack:smoke": "vitest run infra/docker/test-stack-smoke.spec.ts",
     "resto:seed": "tsx tools/scripts/seed/cli.ts",
     "resto:erase-tenant": "tsx --tsconfig apps/api/tsconfig.json tools/scripts/erase-tenant/cli.ts",
     "prepare": "husky"
