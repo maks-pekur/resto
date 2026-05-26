@@ -114,7 +114,10 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
       db: this.db,
       publisher: wrapped,
       onError: (err) => {
-        this.claimFailuresCounter.add(1);
+        // TEN-10 / D-05: claim/tick failures are pre-publish — no envelope is in hand, so the
+        // 'tenant.id' label degrades to 'platform'. The label is still emitted so dashboards can
+        // group all three outbox metrics uniformly.
+        this.claimFailuresCounter.add(1, { 'tenant.id': 'platform' });
         this.logger.error({ err }, 'Outbox dispatcher tick failed');
       },
     });
@@ -128,8 +131,16 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
       publish: async (envelope: EventEnvelope): Promise<void> => {
         await publisher.publish(envelope);
         const lagMs = Date.now() - new Date(envelope.occurredAt).getTime();
-        deliveredCounter.add(1, { 'event.type': envelope.type });
-        lagHistogram.record(lagMs, { 'event.type': envelope.type });
+        // TEN-10 / D-05: 'tenant.id' label enables per-tenant outbox observability. Cardinality
+        // ceiling: 50+ tenants is a known scaling gate; revisit metric series shape at that point.
+        deliveredCounter.add(1, {
+          'event.type': envelope.type,
+          'tenant.id': envelope.tenantId ?? 'platform',
+        });
+        lagHistogram.record(lagMs, {
+          'event.type': envelope.type,
+          'tenant.id': envelope.tenantId ?? 'platform',
+        });
       },
       close: () => publisher.close(),
     };
