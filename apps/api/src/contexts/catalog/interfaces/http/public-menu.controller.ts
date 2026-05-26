@@ -10,7 +10,7 @@ import { GetPublishedMenuService } from '../../application/get-published-menu.se
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
-import { Public } from '../../../../shared/auth';
+import { Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
@@ -106,6 +106,7 @@ export class PublicMenuController {
   ) {}
 
   @Get()
+  @RequireActiveTenant()
   @ApiOkResponse({ type: PublishedMenuDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
   async menu(): Promise<PublishedMenu> {
@@ -114,6 +115,7 @@ export class PublicMenuController {
   }
 
   @Get('items/:id')
+  @RequireActiveTenant()
   @ApiOkResponse({ type: PublishedMenuItemDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async item(@Param('id') id: string): Promise<PublishedMenuItem> {

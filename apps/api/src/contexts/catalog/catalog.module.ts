@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { TenancyModule } from '../tenancy/tenancy.module';
+import { RequireActiveTenantGuard } from '../../shared/auth/require-active-tenant.guard';
 import { GetMenuItemService } from './application/get-menu-item.service';
 import { GetPublishedMenuService } from './application/get-published-menu.service';
 import { PublishMenuService } from './application/publish-menu.service';
@@ -18,6 +20,7 @@ import { InternalCatalogController } from './interfaces/http/internal-catalog.co
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
 @Module({
+  imports: [TenancyModule],
   controllers: [PublicMenuController, InternalCatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },
@@ -31,6 +34,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     UpsertItemService,
     UpsertModifierService,
     PublishMenuService,
+    RequireActiveTenantGuard,
   ],
 })
 export class CatalogModule {}
