@@ -13,6 +13,7 @@ const ProblemDetailsSchema = z.object({
   status: z.number(),
   detail: z.string().optional(),
   instance: z.string(),
+  code: z.string().optional(),
   correlationId: z.string().optional(),
   traceId: z.string().optional(),
 });
