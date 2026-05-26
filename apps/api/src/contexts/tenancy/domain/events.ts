@@ -45,9 +45,26 @@ export interface TenantErasureCompletedDomainEvent {
   readonly occurredAt: Date;
 }
 
+export interface TenantSuspendedDomainEvent {
+  readonly kind: 'TenantSuspended';
+  readonly tenantId: TenantId;
+  readonly requestedBy: string;
+  readonly suspendedAt: Date;
+  readonly occurredAt: Date;
+}
+
+export interface TenantResumedDomainEvent {
+  readonly kind: 'TenantResumed';
+  readonly tenantId: TenantId;
+  readonly resumedAt: Date;
+  readonly occurredAt: Date;
+}
+
 export type TenantDomainEvent =
   | TenantProvisionedDomainEvent
   | TenantArchivedDomainEvent
   | TenantOffboardingScheduledDomainEvent
   | TenantOffboardingCancelledDomainEvent
-  | TenantErasureCompletedDomainEvent;
+  | TenantErasureCompletedDomainEvent
+  | TenantSuspendedDomainEvent
+  | TenantResumedDomainEvent;
