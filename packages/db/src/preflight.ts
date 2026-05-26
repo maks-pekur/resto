@@ -158,6 +158,51 @@ export const assertSetConfigRevoked = async (url: string): Promise<void> => {
   }
 };
 
+export class BaCredentialAccessNotRevokedError extends Error {
+  constructor(public readonly grants: { table: string; priv: string }[]) {
+    super(
+      'TEN-07: resto_app retains the following privileges on BA credential tables: ' +
+        grants.map((g) => `${g.priv} ${g.table}`).join(', ') +
+        '. Re-run `pnpm db:migrate` (migration 0027).',
+    );
+    this.name = 'BaCredentialAccessNotRevokedError';
+  }
+}
+
+// TEN-07: enforce migration 0027 stays applied; resto_app role must hold ZERO
+// privileges on BA credential tables. has_table_privilege handles role-inheritance
+// chains transparently.
+const BA_TABLES = ['account', 'session', 'two_factor', 'verification'] as const;
+const BA_PRIVS = ['SELECT', 'INSERT', 'UPDATE'] as const;
+
+export const assertNoBaCredentialAccess = async (url: string): Promise<void> => {
+  const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
+  try {
+    const rows = await Promise.all(
+      BA_TABLES.flatMap((table) =>
+        BA_PRIVS.map(async (priv) => {
+          const r = await client<{ has: boolean }[]>`
+            SELECT has_table_privilege(current_user, ${table}, ${priv}) AS has
+          `;
+          return { table, priv, has: r[0]?.has ?? false };
+        }),
+      ),
+    );
+    const offending = rows.filter((r) => r.has);
+    if (offending.length > 0) {
+      throw new BaCredentialAccessNotRevokedError(
+        offending.map((r) => ({ table: r.table, priv: r.priv })),
+      );
+    }
+    logger.info(
+      { checks: BA_TABLES.length * BA_PRIVS.length },
+      'Database preflight passed: resto_app has zero privileges on BA credential tables.',
+    );
+  } finally {
+    await client.end({ timeout: 5 });
+  }
+};
+
 interface ExpectedRoleAttributes {
   readonly rolsuper: boolean;
   readonly rolbypassrls: boolean;
