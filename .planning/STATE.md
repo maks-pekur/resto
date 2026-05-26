@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 01 Tenancy Hardening COMPLETE — all 6 plans merged to main via 7 PRs (#183-#190); pre-existing e2e regressions surfaced for follow-up
-last_updated: '2026-05-26T21:40:00.000Z'
-last_activity: 2026-05-26 -- Phase 01 complete (Waves 1+2+3 merged via PRs #183, #184, #186, #187, #189, #190 + lockfile #185)
+stopped_at: Phase 01 Tenancy Hardening COMPLETE + e2e regressions fixed (PRs #191/#192/#193); ready for Phase 02 (Admin Shell)
+last_updated: '2026-05-27T00:00:00.000Z'
+last_activity: 2026-05-26 -- Phase 01 fully closed: 10 PRs merged total (#183-#193 minus #185 lockfile, minus #188 unrelated)
 progress:
   total_phases: 16
   completed_phases: 1
@@ -27,19 +27,24 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 Phase: 1 of 16 (Tenancy Hardening) — COMPLETE
 Plan: 6 of 6 in Phase 01 (ALL waves merged to main)
-Status: Phase 01 closed — ready to verify + extract learnings, then move to Phase 02 (Admin Shell)
-Last activity: 2026-05-26 -- Phase 01 complete (7 PRs merged: outbox/test-infra → tenancy/preflight → identity/isolation)
+Status: Phase 01 closed + e2e regressions fixed — ready for Phase 02 (Admin Shell)
+Last activity: 2026-05-26 -- 3 follow-up fixes shipped (PRs #191-#193); all Wave-1-2-3 e2e specs green
 
 Progress: [████████████████████] 100% within Phase 01
 
-## ⚠ Phase 01 follow-up — pre-existing e2e regressions on Wave 2 baseline
+## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
-Surfaced by plan 01-05 subagent BEFORE its commits; not introduced by Wave 3. Track for a fix before Phase 02 starts:
+3 root causes fixed via 3 PRs:
 
-- `identity-audit.e2e.spec.ts` — sign-out / password-reset cases failing
-- `tenancy-suspend.e2e.spec.ts` — 4 menu-block / 409-code cases failing
-- `background-jobs.e2e.spec.ts` — inbox retention failing
-- `BLOCKED` row in `audit-gap.md` — role-change audit ⏸ Better Auth 1.4.22 has no `databaseHooks.member.update.after` hook → deferred to AUTH-09 in Phase 03
+- **PR #191** — RC-1: `fix(db): grant DELETE on inbox_processed in roles.sql + preflight guard` (production-affecting; daily retention cron was a silent no-op)
+- **PR #192** — RC-2: `fix(api): emit error code in ProblemDetails response body` (wire contract gap; `body.code` was always undefined)
+- **PR #193** — RC-3: `test(identity): add x-tenant-id header to /v1/tenants/me sanity probes` (predates Wave 2, broken since RES-191 / 2026-05-13)
+
+All three failing specs now green: `background-jobs.e2e.spec.ts` 4/4, `tenancy-suspend.e2e.spec.ts` 6/6, `identity-audit.e2e.spec.ts` 4/4. Debug session resolved in `.planning/debug/wave-2-e2e-regressions.md`.
+
+Still deferred to Phase 03:
+
+- `BLOCKED` row in `audit-gap.md` — role-change audit ⏸ Better Auth 1.4.22 has no `databaseHooks.member.update.after` hook → AUTH-09 in Phase 03
 
 ## Performance Metrics
 
