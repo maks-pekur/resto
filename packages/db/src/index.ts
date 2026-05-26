@@ -35,4 +35,5 @@ export {
 export { provisionAppRole, RESTO_APP_ROLE } from './roles';
 export { provisionAuthRole, RESTO_AUTH_ROLE } from './auth-role';
 export { TenantScopedRepository } from './repository-base';
+export { deleteInboxProcessedOlderThan } from './inbox-retention';
 export type { LocalizedText } from './schema/_types';

@@ -38,6 +38,9 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // Outbox dispatcher performs a cross-tenant scan (claim / release /
   // mark-delivered) — it must see all tenants' rows; no ALS binding applies.
   'packages/events/src/outbox/dispatcher.ts',
+
+  // TEN-13: scheduled inbox retention sweep — see packages/db/src/inbox-retention.ts.
+  'packages/db/src/inbox-retention.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];
