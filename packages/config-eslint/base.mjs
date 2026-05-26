@@ -40,6 +40,33 @@ const moduleBoundariesRule = [
 ];
 
 /**
+ * TEN-15 / ADR-0020 I-4: forbidden patterns for direct correlationId
+ * construction. Exported so consumer ESLint configs that redefine
+ * `no-restricted-syntax` (apps/api, packages/db, packages/events) can
+ * spread these entries into their own rule list — flat-config does NOT
+ * merge entries within an object rule definition, so the only way to
+ * apply these selectors universally is for every consumer to include
+ * them explicitly.
+ *
+ * Direct `randomUUID()` / `crypto.randomUUID()` literals silently drop
+ * the OTel trace link — the only sanctioned source for `correlationId`
+ * is `buildEnvelope()` from `@resto/events`.
+ */
+export const FORBIDDEN_CORRELATION_ID_LITERALS = [
+  {
+    selector: "Property[key.name='correlationId'] > CallExpression[callee.name='randomUUID']",
+    message:
+      'TEN-15 / ADR-0020 I-4: correlationId MUST come from buildEnvelope(). Direct randomUUID() loses the OTel trace link. Import buildEnvelope from @resto/events.',
+  },
+  {
+    selector:
+      "Property[key.name='correlationId'] > CallExpression[callee.object.name='crypto'][callee.property.name='randomUUID']",
+    message:
+      'TEN-15 / ADR-0020 I-4: correlationId MUST come from buildEnvelope(). Direct crypto.randomUUID() loses the OTel trace link. Import buildEnvelope from @resto/events.',
+  },
+];
+
+/**
  * Base ESLint flat config for all Resto TypeScript projects.
  * Apps should spread this and add `languageOptions.parserOptions.tsconfigRootDir`
  * pointing at their own directory so type-aware rules pick up the right tsconfig.
@@ -88,6 +115,12 @@ export const base = tseslint.config(
       ],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
+      // TEN-15 / ADR-0020 I-4: forbidden direct correlationId
+      // construction. Note: consumer configs that redefine
+      // `no-restricted-syntax` MUST spread `FORBIDDEN_CORRELATION_ID_LITERALS`
+      // into their own list — flat-config does not merge entries within
+      // a single rule definition.
+      'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
     },
   },
   // Nx module boundaries — applied to TS sources only (skipping config and
