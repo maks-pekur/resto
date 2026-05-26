@@ -1,4 +1,3 @@
-import { randomUUID } from 'node:crypto';
 import { Logger, Module, type Provider } from '@nestjs/common';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
@@ -13,6 +12,7 @@ import { PERMISSION_CHECKER } from './application/ports/permission-checker.port'
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 import { TenantId } from '@resto/domain';
 import {
+  buildEnvelope,
   IdentityPasswordResetCompletedV1,
   IdentitySignedInV1,
   IdentitySignedOutV1,
@@ -102,40 +102,33 @@ export const buildAuthFromEnv = (
     ...(cookieDomain ? { cookieDomain } : {}),
     onSignedOut: async (snapshot) => {
       const tenantId = TenantId.parse(snapshot.tenantId);
-      await emitter.emit({
-        id: randomUUID(),
-        type: IdentitySignedOutV1.type,
-        version: IdentitySignedOutV1.version,
-        tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: new Date(),
-        payload: {
-          userId: snapshot.userId,
-          actorSubject: snapshot.userId,
-          tenantId,
-          sessionId: snapshot.sessionId,
-        },
-      });
+      await emitter.emit(
+        buildEnvelope(
+          IdentitySignedOutV1,
+          {
+            userId: snapshot.userId,
+            actorSubject: snapshot.userId,
+            tenantId,
+            sessionId: snapshot.sessionId,
+          },
+          { tenantId },
+        ),
+      );
     },
     onPasswordResetCompleted: async (snapshot) => {
-      await emitter.emit({
-        id: randomUUID(),
-        type: IdentityPasswordResetCompletedV1.type,
-        version: IdentityPasswordResetCompletedV1.version,
-        tenantId: snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: new Date(),
-        payload: {
-          userId: snapshot.userId,
-          actorSubject: snapshot.userId,
-          ...(snapshot.tenantId ? { tenantId: TenantId.parse(snapshot.tenantId) } : {}),
-          sessionRevokedCount: snapshot.sessionRevokedCount,
-        },
-      });
+      const tenantId = snapshot.tenantId ? TenantId.parse(snapshot.tenantId) : null;
+      await emitter.emit(
+        buildEnvelope(
+          IdentityPasswordResetCompletedV1,
+          {
+            userId: snapshot.userId,
+            actorSubject: snapshot.userId,
+            ...(tenantId ? { tenantId } : {}),
+            sessionRevokedCount: snapshot.sessionRevokedCount,
+          },
+          { tenantId },
+        ),
+      );
     },
     onActiveOrganizationSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
@@ -145,23 +138,19 @@ export const buildAuthFromEnv = (
         xffFirst !== '' && xffFirst !== undefined ? xffFirst : readHeader(ctx.headers, 'x-real-ip');
       const userAgent = readHeader(ctx.headers, 'user-agent');
       const tenantId = TenantId.parse(session.activeOrganizationId);
-      await emitter.emit({
-        id: randomUUID(),
-        type: IdentitySignedInV1.type,
-        version: IdentitySignedInV1.version,
-        tenantId,
-        // eslint-disable-next-line no-restricted-syntax -- TEN-14 PR-5: this literal migrates to buildEnvelope() in PR 5. Removing this comment without the migration regresses TEN-15 enforcement.
-        correlationId: randomUUID(),
-        causationId: null,
-        occurredAt: new Date(),
-        payload: {
-          userId: session.userId,
-          actorSubject: session.userId,
-          tenantId,
-          ...(ipAddress ? { ipAddress } : {}),
-          ...(userAgent ? { userAgent } : {}),
-        },
-      });
+      await emitter.emit(
+        buildEnvelope(
+          IdentitySignedInV1,
+          {
+            userId: session.userId,
+            actorSubject: session.userId,
+            tenantId,
+            ...(ipAddress ? { ipAddress } : {}),
+            ...(userAgent ? { userAgent } : {}),
+          },
+          { tenantId },
+        ),
+      );
     },
   });
 };
