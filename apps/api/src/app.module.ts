@@ -1,6 +1,7 @@
 import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from '@nestjs/common';
 import { APP_FILTER } from '@nestjs/core';
 import { ConfigModule } from './config/config.module';
+import { BackgroundJobsModule } from './infrastructure/background-jobs.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
@@ -26,6 +27,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     IdentityHttpModule,
     CatalogModule,
     AuditModule,
+    BackgroundJobsModule,
   ],
   providers: [
     { provide: APP_FILTER, useClass: ProblemDetailsFilter },
