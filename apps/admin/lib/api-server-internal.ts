@@ -1,14 +1,5 @@
 import 'server-only';
-
-const apiOrigin = (): string => process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3000';
-
-const internalToken = (): string => {
-  const token = process.env.INTERNAL_API_TOKEN;
-  if (!token) {
-    throw new Error('INTERNAL_API_TOKEN is required for admin internal fetches');
-  }
-  return token;
-};
+import { apiOrigin, internalApiToken } from './env';
 
 interface InternalRequestOptions {
   readonly method?: 'GET' | 'POST' | 'DELETE';
@@ -30,7 +21,7 @@ export const apiFetchInternal = async <T>(
     method: options.method ?? 'GET',
     headers: {
       accept: 'application/json',
-      'x-internal-token': internalToken(),
+      'x-internal-token': internalApiToken(),
       ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

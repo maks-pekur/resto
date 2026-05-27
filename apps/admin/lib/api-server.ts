@@ -1,6 +1,7 @@
 import 'server-only';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
+import { apiOrigin, adminOrigin } from './env';
 
 /**
  * Server-side fetch wrapper for the api.
@@ -17,10 +18,6 @@ import { cookies } from 'next/headers';
  * leaks to the client bundle. Server actions, RSC, and route handlers
  * are the only legitimate callers.
  */
-
-const apiOrigin = (): string => process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3000';
-
-const adminOrigin = (): string => process.env.ADMIN_WEB_URL ?? 'http://localhost:3001';
 
 interface RequestOptions {
   readonly method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
