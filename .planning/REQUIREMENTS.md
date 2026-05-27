@@ -34,7 +34,8 @@
 
 > First real api ↔ admin wiring. Uses Better Auth as already configured (dev-seeded operator).
 
-- [ ] **ADM-01**: Operator signs in at `/sign-in` with email + password
+- [ ] **ADM-00**: Scaffold smoke-walk verifies existing `apps/admin` behavior end-to-end before Phase 02 modifies code — 6 scenarios (valid sign-in, 0-brand tenant, 3+ brand tenant, non-owner role, expired session, multi-tab sync); failing scenarios precisely define Phase 02 gap-closure scope (per CONTEXT.md D-18, D-19)
+- [ ] **ADM-01**: Operator signs in at `/login` with email + password
 - [ ] **ADM-02**: Authenticated operator lands on dashboard layout (sidebar + main pane); 401 redirects to sign-in
 - [ ] **ADM-03**: Sidebar shows operator's tenants/brands (`organization` plugin output)
 - [ ] **ADM-04**: Operator can create a new brand inside their current tenant (`POST /v1/tenancy/brands`)
@@ -369,7 +370,7 @@
 
 ## Traceability
 
-> Updated 2026-05-24 — revised after persona reviews. 150 v1 requirements total.
+> Updated 2026-05-24 — revised after persona reviews. 151 v1 requirements total (ADM-00 appended 2026-05-27).
 
 | Requirement | Phase    | Status  |
 | ----------- | -------- | ------- |
@@ -391,6 +392,7 @@
 | TEN-16      | Phase 1  | Pending |
 | TEN-17      | Phase 1  | Pending |
 | TEN-18      | Phase 1  | Pending |
+| ADM-00      | Phase 2  | Pending |
 | ADM-01      | Phase 2  | Pending |
 | ADM-02      | Phase 2  | Pending |
 | ADM-03      | Phase 2  | Pending |
@@ -526,8 +528,8 @@
 
 **Coverage:**
 
-- v1 requirements: 150 total
-- Mapped to phases: 150
+- v1 requirements: 151 total
+- Mapped to phases: 151
 - Unmapped: 0
 
 ---

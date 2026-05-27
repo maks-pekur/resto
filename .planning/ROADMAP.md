@@ -75,17 +75,35 @@ Plans:
 
 **Goal**: Wire the existing Better Auth setup into a real operator sign-in flow and brand management UX so operators can authenticate and navigate before auth completion work begins
 **Depends on**: Phase 1
-**Requirements**: ADM-01, ADM-02, ADM-03, ADM-04, ADM-05, ADM-06, ADM-07, ADM-08
+**Requirements**: ADM-00, ADM-01, ADM-02, ADM-03, ADM-04, ADM-05, ADM-06, ADM-07, ADM-08
 **Success Criteria** (what must be TRUE):
 
-1. Operator signs in at `/sign-in` with email + password and lands on the dashboard; unauthenticated requests redirect to `/sign-in`
+1. Operator signs in at `/login` with email + password and lands on the dashboard; unauthenticated requests redirect to `/login`
 2. Sidebar shows the operator's real tenants/brands from the `organization` plugin; `NavUser` shows the operator's real email and role, not a placeholder
 3. Operator creates a new brand and switches active brand; active-brand state persists across page navigations via signed cookie
 4. All admin API calls return 403 to unauthorized roles and the UI surfaces a user-friendly empty state rather than a stack trace
 5. `apps/admin` boot throws loudly if `NEXT_PUBLIC_API_ORIGIN`, `ADMIN_WEB_URL`, or `INTERNAL_API_TOKEN` are missing outside development
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+   **Plans**: 5 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Foundation hardening: `lib/env.ts` (ADM-08) + apiFetch timeouts + one-retry on idempotent GET 5xx + 401 → `/login?expired=1` + cookie `secure:` flag fix (ADM-02, ADM-08)
+
+**Wave 2** _(parallel — depends on Plan 01)_
+
+- [ ] 02-02-PLAN.md — ADM-00 scaffold smoke-walk: Playwright infrastructure + 6 scenarios; only scenario 2 `test.fixme`-deferred until Plan 04 (ADM-00, ADM-01 verification)
+- [ ] 02-03-PLAN.md — Signed `resto.active_brand` cookie: HMAC-SHA256 via dedicated `ACTIVE_BRAND_COOKIE_SECRET`; thread through 4 cookie I/O sites (ADM-05)
+
+**Wave 3** _(depends on Plans 01, 02, 03)_
+
+- [ ] 02-04-PLAN.md — Sidebar + identity wiring: `<EmptyState>` component (both variants), sidebar shadcn-debris cleanup, brand-switcher single-brand collapse, NavUser real-data wiring from `/v1/me` (ADM-03, ADM-06, ADM-07)
+
+**Wave 4** _(depends on Plans 01, 03, 04)_
+
+- [ ] 02-05-PLAN.md — Dashboard content + Phase 03 placeholders: Setup Checklist card, AI preview card with email capture, `/signup` `/forgot-password` `/reset-password` rendered as `<EmptyState variant="forbidden">`; flips scenario 2 `.fixme` + adds ADM-04 scenario 7 (ADM-04 verification)
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
 ### Phase 3: Auth Completion
 
