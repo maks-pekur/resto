@@ -97,7 +97,7 @@ Plans:
 
 **Wave 3** _(depends on Plans 01, 02, 03)_
 
-- [ ] 02-04-PLAN.md — Sidebar + identity wiring: `<EmptyState>` component (both variants), sidebar shadcn-debris cleanup, brand-switcher single-brand collapse, NavUser real-data wiring from `/v1/me` (ADM-03, ADM-06, ADM-07)
+- [x] 02-04-PLAN.md — Sidebar + identity wiring: `<EmptyState>` component (both variants), sidebar shadcn-debris cleanup, brand-switcher single-brand collapse, NavUser real-data wiring from `/v1/me` (ADM-03, ADM-06, ADM-07)
 
 **Wave 4** _(depends on Plans 01, 03, 04)_
 
@@ -356,7 +356,7 @@ Notes:
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
 | 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
-| 2. Admin Shell               | 3/5            | In Progress |            |
+| 2. Admin Shell               | 4/5            | In Progress |            |
 | 3. Auth Completion           | 0/?            | Not started | -          |
 | 4. Catalog Admin             | 0/?            | Not started | -          |
 | 5. Customer Site             | 0/?            | Not started | -          |
