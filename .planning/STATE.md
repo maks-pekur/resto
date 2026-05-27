@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
+milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: Phase 01 Tenancy Hardening COMPLETE + e2e regressions fixed (PRs #191/#192/#193); ready for Phase 02 (Admin Shell)
-last_updated: '2026-05-27T00:00:00.000Z'
-last_activity: 2026-05-26 -- Phase 01 fully closed: 10 PRs merged total (#183-#193 minus #185 lockfile, minus #188 unrelated)
+stopped_at: AI-driven pivot landed; PROJECT.md + ROADMAP.md restructured into MVP-1/2/3; Phase 01 done; ready for Phase 02 (Admin Shell)
+last_updated: '2026-05-27T12:00:00.000Z'
+last_activity: 2026-05-27 -- AI-driven pivot via /gsd-explore; planning restructure committed (PROJECT.md / ROADMAP.md / REQUIREMENTS.md); Site reordered before QR-menu
 progress:
   total_phases: 16
   completed_phases: 1
@@ -20,17 +20,18 @@ progress:
 
 See: .planning/PROJECT.md (updated 2026-05-24)
 
-**Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer.
-**Current focus:** Phase 1 — Tenancy Hardening
+**Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
+**Current focus:** MVP-1 / Phase 2 — Admin Shell (Phase 1 Tenancy Hardening done; 15 phases remain in MVP-1)
+**Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
 
 ## Current Position
 
-Phase: 1 of 16 (Tenancy Hardening) — COMPLETE
+Phase: 1 of 16 (Tenancy Hardening) — COMPLETE; ready to start Phase 2 under restructured MVP-1
 Plan: 6 of 6 in Phase 01 (ALL waves merged to main)
-Status: Phase 01 closed + e2e regressions fixed — ready for Phase 02 (Admin Shell)
-Last activity: 2026-05-26 -- 3 follow-up fixes shipped (PRs #191-#193); all Wave-1-2-3 e2e specs green
+Status: Phase 01 closed + e2e regressions fixed + AI-driven pivot landed — ready for Phase 02 (Admin Shell)
+Last activity: 2026-05-27 -- AI-driven pivot via /gsd-explore; planning restructure committed (PROJECT.md / ROADMAP.md / REQUIREMENTS.md); Site reordered before QR-menu
 
-Progress: [████████████████████] 100% within Phase 01
+Progress: [█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 6% of MVP-1 (1/16 phases)
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -84,6 +85,7 @@ Recent decisions affecting current work:
 - 2026-05-24 (persona review): GNOTIF-01..04 folded into Phase 8 — all fire off Stripe webhook events, no phase renumbering needed
 - 2026-05-24 (persona review): ANL-04 redefined — order conversion rate = paid_orders / checkout_initiations from `orders` table; full client-side funnel deferred to v2 (MKT-06)
 - 2026-05-24 (user): Phase 16 (Self-serve Onboarding) kept as MVP-1; Phase 8 uses full Stripe Connect Express (not Checkout); CONT-03, CONT-02, CAT-08, QRM-10, PROMO-02, TEN-10, TEN-15, FIN-06 all kept in scope per broad-MVP-scope rule
+- 2026-05-27 (user, AI-driven pivot via /gsd-explore): RestOS pivots to AI-driven positioning. Three-milestone structure MVP-1/2/3 replaces flat 16-phase MVP. iiko = partner not competitor. Standalone-first preserved. Site reordered before QR-menu. Phase 16 Self-serve Onboarding (non-AI) will be superseded by MVP-2 AI onboarding constructor. Open question for Phase 12 CRM discuss: include MVP-2-ready per-customer profile fields to avoid retrofit? Authoritative context: `.planning/notes/ai-driven-pivot.md`, seeds `mvp2-ai-platform.md` + `mvp3-channels-iiko.md`.
 
 ### Pending Todos
 

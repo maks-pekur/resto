@@ -3,6 +3,9 @@ title: Restructure ROADMAP under AI-driven positioning (MVP-1 / MVP-2 / MVP-3)
 date: 2026-05-27
 priority: high
 blocks: any new phase work beyond Phase 01 (which is done and is direction-agnostic)
+status: completed
+completed: 2026-05-27
+resolution: Inline restructure via Edit (not /gsd-new-milestone — that workflow is designed for ADDING a v1.1 on top of v1.0, while we restructured v1.0 itself into 3 milestone tiers). PROJECT.md / ROADMAP.md / REQUIREMENTS.md / STATE.md updated. Phase 5↔6 swapped. Key Decisions row added. STATE accumulated context entry added. Committed in single batch alongside this todo's status update.
 ---
 
 # Restructure ROADMAP via `/gsd-new-milestone`

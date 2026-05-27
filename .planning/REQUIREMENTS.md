@@ -242,9 +242,13 @@
 - [ ] **ONB-04**: Stripe Connect onboarding offered as separate step (can be skipped and resumed later)
 - [ ] **ONB-05**: Dev-mode shortcut: skip-to-paid-flow toggle for development testing
 
-## v2 Requirements
+## v2 Requirements (Deferred — MVP-2 / MVP-3 / Future)
 
-> Deferred. Will be in the roadmap as later phases. Not committed to MVP-1.
+> Deferred. Not in MVP-1 scope. After the 2026-05-27 AI-driven pivot (see `.planning/notes/ai-driven-pivot.md`), the following category mapping applies:
+>
+> - **MVP-2 (AI tier):** `AI` — supersedes by `.planning/seeds/mvp2-ai-platform.md`. The placeholder AI-01..03 below are obsolete under the new positioning; the actual MVP-2 requirements (LLM gateway, per-tenant RAG, per-customer memory, tool registry, 3 surfaces) will be defined at `/gsd-new-milestone` activation. The CRM category in MVP-1 may need to carry "per-customer profile fields" as AI-readiness — to decide before Phase 12 planning.
+> - **MVP-3 (channels + iiko):** `TG` (Telegram Mini App), `POS` (iiko/r_keeper/Poster adapters) — see `.planning/seeds/mvp3-channels-iiko.md`. Existing TG-01..02 and POS-01..03 reqs survive in spirit but are re-scoped at MVP-3 activation (Telegram is a full ordering channel, iiko is a partnership integration).
+> - **Future / post-MVP-3:** `LOY`, `MKT`, `DELVADV`, `TIPS`, `REV`, `STAFF`, `MOB`, `AGGR`, `PAYMP`, `AUTHEXT`, `CMS`, `PART` — no scheduled milestone yet.
 
 ### Loyalty (`LOY`)
 

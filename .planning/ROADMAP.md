@@ -2,33 +2,42 @@
 
 ## Overview
 
-RestOS is a brownfield multi-tenant restaurant SaaS with a mature platform foundation (4 bounded contexts, RLS double-enforcement, NATS JetStream, Better Auth) and a gap between infrastructure completeness and product completeness. This roadmap closes that gap across 16 phases ordered by the user's explicit depth-first strategy: harden the foundation before building on it, unlock operator tooling before customer surfaces, build the ordering engine before financial reporting flows from it. MVP-1 (Phases 1–16) is the bar for a first paying customer by Q1 2027.
+RestOS is a brownfield multi-tenant restaurant SaaS pivoting to **AI-driven positioning** (decided 2026-05-27 — see `.planning/notes/ai-driven-pivot.md`). The roadmap is staged across three milestones:
 
-## Phases
+| Milestone | Scope                                                                                                                                  | Gate                                                         | Target     |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------- |
+| **MVP-1** | Standalone non-AI platform: admin + auth + catalog + customer site + qr-menu + ordering + payments + ops + content/SEO + onboarding    | First paying restaurant takes paid orders end-to-end via web | Q1 2027    |
+| **MVP-2** | AI agent platform + 3 surfaces (admin assistant, guest chat, AI onboarding constructor)                                                | Restaurant uses AI daily; onboarding <30 min via AI          | Q2–Q3 2027 |
+| **MVP-3** | Telegram channel as 4th delivery surface; iiko adapter as B2B GTM channel; other POS adapters as the partnership motion validates them | Active iiko partnership pipeline; measurable Telegram volume | Q4 2027+   |
+
+MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planning/seeds/mvp3-channels-iiko.md`. Detailed planning happens when their trigger conditions activate (`/gsd-new-milestone`).
+
+## MVP-1: Standalone Platform — Phases
 
 **Phase Numbering:**
 
 - Integer phases (1–16): MVP-1 planned work
 - Decimal phases (e.g. 3.1): Urgent insertions added post-planning via `/gsd:phase insert`
+- MVP-2 / MVP-3 phases will be numbered 17+ at their respective `/gsd-new-milestone` activation
 
-- [ ] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built
+- [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
 - [ ] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX
 - [ ] **Phase 3: Auth Completion** - Close production-readiness gaps in auth so real operators can be onboarded (email flows, invitations, RBAC presets)
 - [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
-- [ ] **Phase 5: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
-- [ ] **Phase 6: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes
+- [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
+- [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
 - [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
 - [ ] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF)
 - [ ] **Phase 9: Delivery Zones** - Polygon-based delivery zone editor, fee/threshold config, in-zone check at checkout with Redis geocode cache
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); requires zones to exist for delivery validation
 - [ ] **Phase 11: Promo & Discounts** - Single + bulk promo codes, automatic discounts, admin UX (pure discount engine already shipped in Phase 7)
-- [ ] **Phase 12: CRM** - Customer record, order history, GDPR delete-on-request
+- [ ] **Phase 12: CRM** - Customer record, order history, GDPR delete-on-request _(open question for Phase 12 discuss: include MVP-2-ready customer profile fields to avoid retrofit?)_
 - [ ] **Phase 13: Analytics** - Revenue / AOV / order count / conversion rate dashboard for operators
 - [ ] **Phase 14: Finance** - Order list with filters + export, refunds, VAT, RestOS commission line
 - [ ] **Phase 15: Content & SEO** - Tenant theming, content pages, per-city SEO landing pages, sitemap
-- [ ] **Phase 16: Self-serve Onboarding** - End-to-end signup-to-published-menu wizard threading all prior phases together
+- [ ] **Phase 16: Self-serve Onboarding (non-AI)** - End-to-end signup-to-published-menu wizard threading all prior phases together. MVP-2 supersedes this with the AI onboarding constructor.
 
-## Phase Details
+## MVP-1 Phase Details
 
 ### Phase 1: Tenancy Hardening
 
@@ -110,23 +119,7 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
-### Phase 5: QR-Menu Customer
-
-**Goal**: Deliver a real customer-facing ordering UX in `apps/qr-menu` — branded menu display, item detail with modifiers, cart, table binding — over the already-working `/v1/menu` API
-**Depends on**: Phase 4
-**Requirements**: QRM-01, QRM-02, QRM-03, QRM-04, QRM-05, QRM-06, QRM-07, QRM-08, QRM-09, QRM-10, QRM-11, QRM-12
-**Success Criteria** (what must be TRUE):
-
-1. Guest sees the restaurant's branded header, categories, items with photos and prices; stop-listed items appear visibly disabled
-2. Guest opens an item detail, selects modifiers with live price updates, adds the item to cart, adjusts quantity, and sees running subtotal
-3. Guest's table number is auto-bound from the `?table=` QR param or can be entered manually
-4. Multi-language switcher works (locale from URL > cookie > Accept-Language)
-5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
-
-### Phase 6: Customer Site
+### Phase 5: Customer Site
 
 **Goal**: Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button is disabled until Phase 8 completes
 **Depends on**: Phase 4
@@ -142,10 +135,26 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
+### Phase 6: QR-Menu Customer
+
+**Goal**: Deliver a real customer-facing ordering UX in `apps/qr-menu` — branded menu display, item detail with modifiers, cart, table binding — over the already-working `/v1/menu` API
+**Depends on**: Phase 4
+**Requirements**: QRM-01, QRM-02, QRM-03, QRM-04, QRM-05, QRM-06, QRM-07, QRM-08, QRM-09, QRM-10, QRM-11, QRM-12
+**Success Criteria** (what must be TRUE):
+
+1. Guest sees the restaurant's branded header, categories, items with photos and prices; stop-listed items appear visibly disabled
+2. Guest opens an item detail, selects modifiers with live price updates, adds the item to cart, adjusts quantity, and sees running subtotal
+3. Guest's table number is auto-bound from the `?table=` QR param or can be entered manually
+4. Multi-language switcher works (locale from URL > cookie > Accept-Language)
+5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
 ### Phase 7: Ordering
 
 **Goal**: Build the new `ordering` bounded context — Order aggregate with full state machine, idempotent creation, immutable item snapshot, totals calculation, event contracts, DB tables, NATS subject, audit wiring, outbox claim-token race fix, and the pure domain discount engine
-**Depends on**: Phase 6
+**Depends on**: Phase 5
 **Requirements**: ORD-01, ORD-02, ORD-03, ORD-04, ORD-05, ORD-06, ORD-07, ORD-08, ORD-09, ORD-10, ORD-11, ORD-12, PROMO-06
 **Success Criteria** (what must be TRUE):
 
@@ -177,7 +186,7 @@ Plans:
 ### Phase 9: Delivery Zones
 
 **Goal**: Give operators a polygon-based delivery zone editor with per-zone fee and threshold configuration, enforce in-zone checks at site checkout via geocoding, and add a Redis geocode cache to survive Nominatim rate limits
-**Depends on**: Phase 6, Phase 7, Phase 8
+**Depends on**: Phase 5, Phase 7, Phase 8
 **Requirements**: DELV-01, DELV-02, DELV-03, DELV-04, DELV-05, DELV-06, DELV-07, DELV-08
 **Success Criteria** (what must be TRUE):
 
@@ -267,7 +276,7 @@ Plans:
 ### Phase 15: Content & SEO
 
 **Goal**: Give operators brand theme controls, WYSIWYG content page editing, per-city SEO landing page generation, editable meta tags, and tenant sitemap/robots.txt — with security constraints on all URL and font fields
-**Depends on**: Phase 6
+**Depends on**: Phase 5
 **Requirements**: CONT-01, CONT-02, CONT-03, CONT-04, CONT-05, CONT-06, CONT-07
 **Success Criteria** (what must be TRUE):
 
@@ -295,28 +304,52 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
 
+## MVP-2: AI Agent Platform + 3 Surfaces (placeholder)
+
+> Trigger: MVP-1 closed; first paying customer onboarded; standalone platform stable in prod >30 days. Detailed scope in `.planning/seeds/mvp2-ai-platform.md`. Phase numbering assigned at `/gsd-new-milestone` activation time.
+
+- [ ] **MVP-2 Phase A: AI agent platform foundation** — LLM gateway (Anthropic primary, fallback TBD), per-tenant RAG knowledge base, per-customer profile/memory, conversation/thread storage, tool registry honoring `ScopedTx` + RBAC, NATS event subscriptions, eval harness
+- [ ] **MVP-2 Phase B: AI admin assistant** — agentic chat in `apps/admin`; tools: read analytics, edit menu, suggest promos, generate reports, draft emails; operator approval gate on destructive actions
+- [ ] **MVP-2 Phase C: AI guest chat** — widget on `apps/website` (+ `apps/qr-menu` later); brand-voiced; per-customer memory; tools: menu search, recommend, upsell, reorder, human handoff
+- [ ] **MVP-2 Phase D: AI onboarding constructor** — supersedes MVP-1 Phase 16; OCR/LLM menu extraction from photos/PDF, brand/theme generation, target <30 min signup-to-publishable-site
+
+Open architectural questions to resolve before MVP-2 activation: vector store choice (pgvector vs managed), LLM provider lock-in + fallback, embedding model + re-embedding strategy, conversation context window strategy, tool-call safety (human-in-the-loop boundaries), unit economics (per-tenant cost caps).
+
+## MVP-3: Telegram Channel + iiko Adapter (placeholder)
+
+> Trigger: MVP-2 stable in prod >30 days; positioning validated with 5–10 paying tenants; iiko partnership conversation initiated. Detailed scope in `.planning/seeds/mvp3-channels-iiko.md`. Phase numbering assigned at activation.
+
+- [ ] **MVP-3 Phase A: Telegram bot as 4th delivery channel** — per-tenant bot, catalog browsing (inline keyboard / mini-app), cart + checkout (Telegram Payments or fallback to web), AI guest chat reused across transports, push notifications for order status, bot setup wizard in admin
+- [ ] **MVP-3 Phase B: iiko adapter (B2B GTM channel)** — catalog sync (iiko → RestOS, ops-side fields), order sync (RestOS → iiko), per-tenant API credentials. Sales angle: "Already on iiko? Add RestOS in 10 min for AI guest chat + digital storefront."
+- [ ] **MVP-3 Phase C (optional): r_keeper / Poster / other POS adapters** — only if iiko adapter validates the partnership motion
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16
+MVP-1 phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16. MVP-2/3 phases are sequenced at their respective `/gsd-new-milestone` activations.
 
-Note: Phase 9 (Delivery Zones) now precedes Phase 10 (Admin Order Intake) so zone validation exists before live delivery orders are accepted through the operator intake feed.
+Notes:
 
-| Phase                        | Plans Complete | Status      | Completed |
-| ---------------------------- | -------------- | ----------- | --------- |
-| 1. Tenancy Hardening         | 0/6            | Not started | -         |
-| 2. Admin Shell               | 0/?            | Not started | -         |
-| 3. Auth Completion           | 0/?            | Not started | -         |
-| 4. Catalog Admin             | 0/?            | Not started | -         |
-| 5. QR-Menu Customer          | 0/?            | Not started | -         |
-| 6. Customer Site             | 0/?            | Not started | -         |
-| 7. Ordering                  | 0/?            | Not started | -         |
-| 8. Payments (Stripe Connect) | 0/?            | Not started | -         |
-| 9. Delivery Zones            | 0/?            | Not started | -         |
-| 10. Admin Order Intake       | 0/?            | Not started | -         |
-| 11. Promo & Discounts        | 0/?            | Not started | -         |
-| 12. CRM                      | 0/?            | Not started | -         |
-| 13. Analytics                | 0/?            | Not started | -         |
-| 14. Finance                  | 0/?            | Not started | -         |
-| 15. Content & SEO            | 0/?            | Not started | -         |
-| 16. Self-serve Onboarding    | 0/?            | Not started | -         |
+- Phase 5 (Customer Site) precedes Phase 6 (QR-Menu Customer) per 2026-05-27 AI-driven pivot decision — web shopfront is the primary customer surface and the surface AI guest chat (MVP-2) will be embedded on.
+- Phase 9 (Delivery Zones) precedes Phase 10 (Admin Order Intake) so zone validation exists before live delivery orders are accepted through the operator intake feed.
+
+### MVP-1 Phase Status
+
+| Phase                        | Plans Complete | Status      | Completed  |
+| ---------------------------- | -------------- | ----------- | ---------- |
+| 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
+| 2. Admin Shell               | 0/?            | Not started | -          |
+| 3. Auth Completion           | 0/?            | Not started | -          |
+| 4. Catalog Admin             | 0/?            | Not started | -          |
+| 5. Customer Site             | 0/?            | Not started | -          |
+| 6. QR-Menu Customer          | 0/?            | Not started | -          |
+| 7. Ordering                  | 0/?            | Not started | -          |
+| 8. Payments (Stripe Connect) | 0/?            | Not started | -          |
+| 9. Delivery Zones            | 0/?            | Not started | -          |
+| 10. Admin Order Intake       | 0/?            | Not started | -          |
+| 11. Promo & Discounts        | 0/?            | Not started | -          |
+| 12. CRM                      | 0/?            | Not started | -          |
+| 13. Analytics                | 0/?            | Not started | -          |
+| 14. Finance                  | 0/?            | Not started | -          |
+| 15. Content & SEO            | 0/?            | Not started | -          |
+| 16. Self-serve Onboarding    | 0/?            | Not started | -          |

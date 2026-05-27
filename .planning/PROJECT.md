@@ -2,15 +2,29 @@
 
 ## What This Is
 
-RestOS is a multi-tenant SaaS for restaurants. One subscription gives a restaurant a "turnkey digital presence": guests order via QR-menu, public site, and (post-MVP) mobile / Telegram; staff work in dedicated surfaces; everything is administered from one operator panel. One SaaS customer = one restaurant company (Tenant) with internal `Brand → Location → Menu / Zones / Staff` hierarchy. RestOS owns the core (orders, menu, customers, loyalty, marketing); third-party POS systems are optional adapter integrations, never a prerequisite.
+RestOS is an **AI-driven multi-tenant SaaS for restaurants**. One subscription gives a restaurant a turnkey digital presence (public site, in-restaurant QR-menu, and — later — Telegram channel) backed by an AI layer that is present in every operator and guest interaction. One SaaS customer = one restaurant company (Tenant) with internal `Brand → Location → Menu / Zones / Staff` hierarchy. RestOS owns the customer-facing layer (orders, menu, customers, loyalty, marketing) + the AI layer. Third-party POS systems (iiko, r_keeper, Poster) are **partner integrations** that open a B2B GTM channel, never a technical prerequisite — a restaurant arriving without any POS gets full value standalone.
 
-The canonical product specification is `SPEC.md` (Russian, kept as source-of-truth for product surface area). This document captures planning context, decisions, and scope boundaries — not duplicated product detail.
+The pivot to AI-driven positioning was decided on 2026-05-27 via `/gsd-explore`. The authoritative pivot context lives in `.planning/notes/ai-driven-pivot.md`; the rollout is staged across three milestones (see "Milestone Structure" below). The canonical product specification is `SPEC.md` (Russian, kept as source-of-truth for product surface area).
 
 ## Core Value
 
-A restaurant can publish its digital presence (menu, brand, locations) and start accepting paid orders from guests via web — without integrating any external POS or hiring a developer.
+A restaurant can publish its digital presence (menu, brand, locations) and start accepting paid orders from guests via web — without integrating any external POS or hiring a developer. This is the **MVP-1** bar: standalone, ship-able, billable.
 
-If everything else fails (no mobile, no loyalty, no marketing automation, no advanced analytics, no Telegram, no Staff app), this one capability still delivers value: a restaurant goes from "no digital presence" to "guests place paid orders that I can fulfill" inside RestOS alone.
+The AI layer — admin assistant + guest chat + onboarding constructor — is **MVP-2**, layered on top once the standalone platform is paying. Telegram channel + iiko/POS adapters are **MVP-3**.
+
+If everything else fails (no mobile, no loyalty, no marketing automation, no advanced analytics, no AI, no Telegram, no Staff app), the MVP-1 capability still delivers value on its own: a restaurant goes from "no digital presence" to "guests place paid orders that I can fulfill" inside RestOS alone.
+
+## Milestone Structure
+
+> Decided 2026-05-27 (see `.planning/notes/ai-driven-pivot.md`). The 16-phase original ROADMAP becomes MVP-1; MVP-2 and MVP-3 are seeded forward.
+
+| Milestone | Scope                                                                                                                                                                                                                          | Gate criterion                                                                                                                        | Target      |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **MVP-1** | Standalone non-AI platform: admin shell, auth, catalog, customer site, QR-menu (after site), ordering, payments, delivery zones, admin order intake, basic CRM, basic analytics, content/SEO, self-serve onboarding (non-AI).  | "First paying customer" — restaurant signs up, publishes site, takes paid orders end-to-end.                                          | **Q1 2027** |
+| **MVP-2** | AI agent platform (LLM gateway, per-tenant RAG, per-customer memory, tool registry) + 3 surfaces: AI assistant in admin, AI chat with guest, AI onboarding constructor. Supersedes the old MVP-1 self-serve onboarding wizard. | Restaurant uses AI assistant in admin daily; guest chat handles >X% of customer interactions; onboarding completes in <30 min via AI. | Q2–Q3 2027  |
+| **MVP-3** | Telegram bot as 4th delivery channel. iiko adapter as B2B GTM channel into the iiko customer base. r_keeper / Poster / other POS adapters as the partnership motion validates.                                                 | Active iiko partnership pipeline. Measurable Telegram order volume.                                                                   | Q4 2027+    |
+
+**Authoritative seeds for MVP-2 / MVP-3:** `.planning/seeds/mvp2-ai-platform.md`, `.planning/seeds/mvp3-channels-iiko.md`. Detailed requirements + roadmap for MVP-2 and MVP-3 are deferred to their respective `/gsd-new-milestone` activations once trigger conditions are met.
 
 ## Requirements
 
@@ -57,26 +71,41 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 
 > Current scope. These are the hypotheses we're building toward. Each phase in `ROADMAP.md` advances one or more.
 
-**MVP-1 (v1) — per SPEC section 7: Admin + QR-menu + Site**
+**MVP-1 — Standalone non-AI platform (target Q1 2027 first-paying gate)**
 
-- [ ] **Tenancy hardening to production-enterprise bar** — close out `suspend` lifecycle, automated erasure scheduler, BA credential separation closure, expanded cross-tenant test net, audit completeness gap fix, per-tenant observability, `withoutTenant` runtime + lint enforcement, `inbox_processed` retention, `correlationId` via OTel span (`buildEnvelope`)
+> Ordering: site comes BEFORE qr-menu (decided 2026-05-27); web shopfront is the primary customer surface and the surface AI guest chat will later live on.
+
+- [x] **Tenancy hardening to production-enterprise bar** — close out `suspend` lifecycle, automated erasure scheduler, BA credential separation closure, expanded cross-tenant test net, audit completeness gap fix, per-tenant observability, `withoutTenant` runtime + lint enforcement, `inbox_processed` retention, `correlationId` via OTel span (`buildEnvelope`) — _shipped 2026-05-26_
 - [ ] **Admin shell + auth wiring** — sign-in flow, tenant resolution UI, brand list/create/switch UI over existing Better Auth
 - [ ] **Auth completion to operator-onboarding bar** — Resend SMTP email adapter, invitation flow, password reset, RBAC presets (`owner`, `admin`, `staff`), secure cookie fix, full email-callback assertions
 - [ ] **Catalog admin UX** — CRUD for categories / items / modifiers / variants / photos, publish-flow UI, stop-lists (manual)
-- [ ] **QR-menu customer polish** — real ordering UI over `/v1/menu` (cart, item detail, modifier selection, table binding via QR param)
 - [ ] **Customer Site** — `apps/website` scaffolded from `.gitkeep` to working multi-tenant restaurant site (menu, delivery/pickup, cart, checkout)
+- [ ] **QR-menu customer polish** — real ordering UI over `/v1/menu` (cart, item detail, modifier selection, table binding via QR param)
 - [ ] **Ordering bounded context** — new `ordering` context: cart, checkout, payment intent, fulfillment state machine; new DB tables, event contracts (`ordering.>`), NATS subject
 - [ ] **Stripe Connect implementation** — replace `NoopStripeConnectAdapter` with real adapter: account creation, account-link onboarding, payment-intent routing with application fee, webhook handling
 - [ ] **Admin order intake & operational view** — incoming-orders feed, status transitions, refund/cancel actions (where Staff app would be, MVP uses Admin)
 - [ ] **Delivery zones (basic)** — polygon-on-map editor, minimum order value, free-delivery threshold, in-zone check at checkout
 - [ ] **Promo & discounts (basic)** — single-use and bulk promo codes, percent/fixed discount on item/category/cart
-- [ ] **CRM (basic)** — customer base with order history, GDPR delete-on-request
+- [ ] **CRM (basic)** — customer base with order history, GDPR delete-on-request. _Open question for milestone setup: include "per-customer profile fields" (dietary preferences, brand-voice opt-ins) to avoid retrofit at MVP-2?_
 - [ ] **Analytics (basic)** — revenue / AOV / order count / conversion dashboard
 - [ ] **Finance (basic)** — order list with filters and export, refunds, VAT rates, RestOS commission line
 - [ ] **Content & SEO basics** — restaurant theming (light/dark, accent), logo, content pages (About / Delivery / Contact / FAQ), per-city SEO pages generated from templates
-- [ ] **Self-serve onboarding** — restaurant signs up, configures, and publishes within < 24 hours without operator help (per SPEC growth-marketer lens)
+- [ ] **Self-serve onboarding (non-AI)** — restaurant signs up, configures, and publishes within < 24 hours without operator help. MVP-2 supersedes this with the AI onboarding constructor.
 
-**Post-MVP (deferred, but not "Out of Scope" — explicitly scheduled for later milestones)**
+**MVP-2 — AI agent platform + 3 surfaces** (forward-looking; see `.planning/seeds/mvp2-ai-platform.md`)
+
+- [ ] **AI agent platform foundation** — LLM gateway (Anthropic primary), per-tenant RAG knowledge base, per-customer profile + memory, conversation/thread storage, tool registry honoring `ScopedTx` + RBAC, NATS event subscriptions for context refresh, eval harness
+- [ ] **AI admin assistant** — agentic chat in `apps/admin`; tool calls to read analytics, edit menu, suggest promos, generate reports, draft emails; operator approval gate on destructive actions
+- [ ] **AI guest chat** — widget on `apps/website` (+ `apps/qr-menu`); brand-voiced; per-customer memory; tools for menu search, recommend, upsell, reorder, human handoff
+- [ ] **AI onboarding constructor** — replaces non-AI onboarding wizard; OCR/LLM menu extraction from photos/PDF, brand/theme generation, <30 min from signup to publishable site
+
+**MVP-3 — Telegram channel + iiko adapter** (forward-looking; see `.planning/seeds/mvp3-channels-iiko.md`)
+
+- [ ] **Telegram bot as 4th delivery channel** — per-tenant bot, catalog browsing, cart + checkout (Telegram Payments or fallback to web), AI guest chat reused across transports
+- [ ] **iiko adapter (B2B GTM channel)** — catalog sync (iiko → RestOS, ops-side fields), order sync (RestOS → iiko), per-tenant API credentials. Sales positioning: "Already on iiko? Add RestOS in 10 min for AI guest chat + digital storefront."
+- [ ] **r_keeper / Poster / other POS adapters** — only if iiko adapter validates the partnership motion
+
+**Future / post-MVP-3 (deferred — these don't fit MVP-1/2/3, scheduled for later)**
 
 - [ ] Loyalty program (points, tiers, referrals, welcome bonus)
 - [ ] Marketing automation (email campaigns, push, stories, banners, upsell)
@@ -85,22 +114,19 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 - [ ] Reviews (post-order request, tag taxonomy, moderation, restaurant replies)
 - [ ] Staff app (`apps/mobile-staff` or web) — KDS, waiter, manager, courier views
 - [ ] Customer mobile app — React Native iOS/Android
-- [ ] Telegram Mini App
-- [ ] POS integrations (iiko, r_keeper) via adapters
 - [ ] External delivery integrations (Glovo, Bolt Food, Wolt, Uber Direct)
 - [ ] Multi-payment-provider support (Mollie, Adyen, regional acquirers)
 - [ ] Advanced auth (Google, Apple, Telegram, Phone OTP)
 - [ ] Headless CMS for restaurant content
 - [ ] Partner / agency panel
-- [ ] AI assistant
 
 ### Out of Scope
 
 > Explicit no's, with reasoning. Do not re-add without revisiting.
 
 - **Headless CMS for restaurant content (initially)** — one shared site template with per-tenant theming is enough for v1. Skeptic lens: avoid the headless-CMS detour until at least 10 paying tenants explicitly need it.
-- **Custom mobile apps in MVP-1** — React Native deferred per SPEC section 7. Customer can order via web; Telegram MA is the lightweight alternative if mobile gap hurts retention.
-- **POS integration in MVP-1** — RestOS is positioned as "own core, optional POS sync." Building POS adapters before having paying customers actively asking for them is YAGNI.
+- **Custom mobile apps in MVP-1** — React Native deferred per SPEC section 7. Customer can order via web; Telegram channel is the lightweight alternative if mobile gap hurts retention.
+- **POS integration in MVP-1** — RestOS is positioned as "own core, optional POS partnership." Building POS adapters in MVP-1 is YAGNI; iiko (and other POS) adapters move to MVP-3 where they serve a partnership GTM motion, not a technical dependency.
 - **Commission-from-orders pricing model** — restaurants culturally reject % cuts (already paying delivery aggregators). Monetization v1 = flat subscription per location + tier add-ons. Stripe Connect handles restaurant↔guest payments; SaaS billing is a separate (later) adapter.
 - **Geographic restriction** — architecture stays locale/currency-agnostic. RU and EU are the baseline test markets; no code paths assume a specific region.
 - **Full RBAC customization in v1** — three system roles (`owner`, `admin`, `staff`) cover MVP; per-tenant custom roles defer to post-MVP.
@@ -122,8 +148,9 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 
 **Positioning relative to alternatives.**
 
-- vs. Toast / Olo: lower-touch, EU-first, no POS hardware lock-in
-- vs. POS-attached SaaS (iiko, r_keeper Marketplace): RestOS is the source of truth, not a plugin
+- vs. Toast / Olo: lower-touch, EU-first, no POS hardware lock-in, AI-driven differentiation
+- vs. iiko / r_keeper / Poster: NOT a competitor. They own POS / kitchen / fiscal back-of-house; RestOS owns the customer-facing layer + AI. iiko adapter in MVP-3 is a partnership, not a feature-parity play.
+- vs. Tilda / no-code site builders: not a competitor — they build static sites, RestOS builds AI-assisted operational restaurants with ordering
 - vs. delivery aggregators (Glovo, Bolt, Wolt, Uber Eats): restaurant owns its customer and conversion path
 - vs. Choice / Tablein / SumUp: broader vertical surface; not just bookings or just payments
 
@@ -145,7 +172,7 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 - **Compliance**: GDPR (EU) — full erasure pipeline with 30-day cool-off, anonymization via `AUDIT_ERASURE_SALT`, audit log of all PII touches. PCI never directly touched (Stripe Connect tokenizes everything). Fiscal compliance per market is a deferred problem (skeptic lens: do not build EU-wide fiscalization adapter in MVP).
 - **Performance**: Public menu reads MUST stay fast on cold Redis (degraded mode is acceptable but must not crash). Peak load assumption: Friday-evening simultaneous order spikes across many tenants — no per-tenant noisy-neighbor patterns allowed.
 - **Team**: Solo founder on the 12-month roadmap horizon. Phase sizing accommodates solo throughput (no parallel multi-developer assumptions). Persona reviews substitute for the missing co-founder/tech-lead second opinion.
-- **Timeline / monetization milestone**: First paying customer target Q1 2027 (~7–9 months from 2026-05-24). MVP-1 (Phases 1–7) is the bar for "can take a customer's money."
+- **Timeline / monetization milestone**: First paying customer target Q1 2027 (~7–9 months from 2026-05-27). MVP-1 (all phases under the MVP-1 milestone in ROADMAP.md) is the bar for "can take a customer's money." MVP-2 (AI tier) targets Q2–Q3 2027; MVP-3 (Telegram + iiko) Q4 2027+. AI-driven marketing without AI in MVP-1 is a known positioning risk — re-tested at MVP-1 close.
 - **Budget**: Bootstrap; infra cost-sensitivity matters. Prefer managed services that scale to zero (R2 over S3 if neutral, NATS over Kafka, self-hosted Better Auth over Auth0).
 - **`.planning/` is committed**: planning artifacts are durable, version-controlled, and reviewed. Decision log lives in `## Key Decisions` below + phase artifacts, NOT in a separate ADR directory.
 
@@ -166,18 +193,19 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 
 ## Key Decisions
 
-| Decision                                                                                         | Rationale                                                                                                                                                                                                         | Outcome                                  |
-| ------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------- |
-| GSD is single source of truth for planning AND decisions; abandon ADRs                           | One consistent home for planning, decisions, execution; prior ADR+ROADMAP+memory split was high-overhead for a solo founder. Decided 2026-05-24.                                                                  | — Pending (revisit at milestone-1 audit) |
-| `.planning/` committed (removed from `.gitignore`)                                               | Consequence of above — GSD artifacts are durable, not ephemeral.                                                                                                                                                  | — Pending                                |
-| Drop layered T1..T6 milestone model (from deleted ADR-0021)                                      | The 6-tier freeze-gate model was over-structured for solo throughput; new GSD ROADMAP uses flat phase ordering.                                                                                                   | — Pending (revisit if scope grows)       |
-| Persona reviews are mandatory on `/gsd:discuss-phase` (CTO + skeptic baseline)                   | Solo founder lacks the friction of co-founder/tech-lead debate; persona spawns substitute. Decided 2026-05-24.                                                                                                    | — Pending                                |
-| Project structure mode = Horizontal Layers (`PROJECT_MODE=standard`)                             | User explicitly chose layer-by-layer ordering (tenancy → auth → admin → catalog → ordering → ...) over vertical MVP slices, because the platform foundation needed depth-first completion before product breadth. | — Pending                                |
-| Monetization v1 = flat sub per location + tier add-ons; NOT % commission                         | Restaurants culturally reject %-from-orders (already paying delivery aggregators). Margin model is rent-like recurring, not transactional.                                                                        | — Pending                                |
-| Target first paying customer = Q1 2027                                                           | Realistic given solo founder + 6 phases to MVP-bar + onboarding + sales cycle. Drives phase-sizing pressure.                                                                                                      | — Pending                                |
-| Phase 2 = Admin shell BEFORE Phase 3 = Auth completion                                           | Admin shell can run on the dev-only Better Auth wire that already exists; auth completion (email/invitations/secure cookies) closes the prod-readiness gaps once there's UX to integrate them into.               | — Pending                                |
-| MVP-1 customer surface = Admin + QR-menu + Site (no Staff app, no mobile, no Telegram MA, no AI) | Per SPEC section 7. Skeptic lens: every surface deferred saves 4–8 weeks; first paying customer doesn't need them. Order intake in MVP-1 runs through Admin's operational view.                                   | — Pending                                |
-| Stripe Connect for restaurant↔guest, separate adapter (later) for SaaS billing                   | Two payment surfaces serve different flows; coupling them creates "you can't sign up until you have Stripe" friction. SaaS billing can stay manual / invoiced until MVP-2.                                        | — Pending                                |
+| Decision                                                                                      | Rationale                                                                                                                                                                                                                                                                                                                                                          | Outcome                                  |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| GSD is single source of truth for planning AND decisions; abandon ADRs                        | One consistent home for planning, decisions, execution; prior ADR+ROADMAP+memory split was high-overhead for a solo founder. Decided 2026-05-24.                                                                                                                                                                                                                   | — Pending (revisit at milestone-1 audit) |
+| `.planning/` committed (removed from `.gitignore`)                                            | Consequence of above — GSD artifacts are durable, not ephemeral.                                                                                                                                                                                                                                                                                                   | — Pending                                |
+| Drop layered T1..T6 milestone model (from deleted ADR-0021)                                   | The 6-tier freeze-gate model was over-structured for solo throughput; new GSD ROADMAP uses flat phase ordering.                                                                                                                                                                                                                                                    | — Pending (revisit if scope grows)       |
+| Persona reviews are mandatory on `/gsd:discuss-phase` (CTO + skeptic baseline)                | Solo founder lacks the friction of co-founder/tech-lead debate; persona spawns substitute. Decided 2026-05-24.                                                                                                                                                                                                                                                     | — Pending                                |
+| Project structure mode = Horizontal Layers (`PROJECT_MODE=standard`)                          | User explicitly chose layer-by-layer ordering (tenancy → auth → admin → catalog → ordering → ...) over vertical MVP slices, because the platform foundation needed depth-first completion before product breadth.                                                                                                                                                  | — Pending                                |
+| Monetization v1 = flat sub per location + tier add-ons; NOT % commission                      | Restaurants culturally reject %-from-orders (already paying delivery aggregators). Margin model is rent-like recurring, not transactional.                                                                                                                                                                                                                         | — Pending                                |
+| Target first paying customer = Q1 2027                                                        | Realistic given solo founder + 6 phases to MVP-bar + onboarding + sales cycle. Drives phase-sizing pressure.                                                                                                                                                                                                                                                       | — Pending                                |
+| Phase 2 = Admin shell BEFORE Phase 3 = Auth completion                                        | Admin shell can run on the dev-only Better Auth wire that already exists; auth completion (email/invitations/secure cookies) closes the prod-readiness gaps once there's UX to integrate them into.                                                                                                                                                                | — Pending                                |
+| MVP-1 customer surface = Admin + Site + QR-menu (no Staff app, no mobile, no Telegram, no AI) | Per SPEC section 7, adjusted 2026-05-27: Site BEFORE QR-menu (web shopfront is the primary customer surface). Skeptic lens: every surface deferred saves 4–8 weeks; first paying customer doesn't need them. Order intake in MVP-1 runs through Admin's operational view.                                                                                          | — Pending                                |
+| Stripe Connect for restaurant↔guest, separate adapter (later) for SaaS billing                | Two payment surfaces serve different flows; coupling them creates "you can't sign up until you have Stripe" friction. SaaS billing can stay manual / invoiced until MVP-2.                                                                                                                                                                                         | — Pending                                |
+| Pivot to AI-driven positioning; 3-milestone structure MVP-1/2/3                               | 2026-05-27 explore session decided: AI is the differentiator across all RestOS surfaces; iiko = partner not competitor; Tilda = irrelevant. Rollout pragmatic: standalone platform first (preserves Q1 2027 first-paying gate), AI tier MVP-2 (Q2-Q3 2027), Telegram + iiko MVP-3 (Q4 2027+). Authoritative context: `.planning/notes/ai-driven-pivot.md` + seeds. | — Pending (revisit at MVP-1 close)       |
 
 ## Evolution
 
@@ -201,4 +229,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-24 after initialization (post-reset)_
+_Last updated: 2026-05-27 — AI-driven pivot; 3-milestone restructure (MVP-1/2/3); Site reordered before QR-menu_
