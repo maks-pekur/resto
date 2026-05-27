@@ -3,7 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { LoginForm } from './login-form-client';
 
 interface PageProps {
-  readonly searchParams: Promise<{ readonly next?: string; readonly reset?: string }>;
+  readonly searchParams: Promise<{
+    readonly next?: string;
+    readonly reset?: string;
+    readonly expired?: string;
+  }>;
 }
 
 /**
@@ -17,6 +21,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
   const params = await searchParams;
   const next = params.next ?? '/dashboard';
   const resetSuccess = params.reset === 'success';
+  const sessionExpired = params.expired === '1';
 
   return (
     <div className="bg-muted/30 flex min-h-svh items-center justify-center p-6">
@@ -29,6 +34,11 @@ export default async function LoginPage({ searchParams }: PageProps) {
           <CardDescription>Operator console — use your work email.</CardDescription>
         </CardHeader>
         <CardContent>
+          {sessionExpired ? (
+            <p role="status" className="bg-muted text-foreground mb-4 rounded-md px-3 py-2 text-sm">
+              Your session expired. Please sign in again.
+            </p>
+          ) : null}
           {resetSuccess ? (
             <p role="status" className="bg-muted text-foreground mb-4 rounded-md px-3 py-2 text-sm">
               Password updated. Sign in with your new password.

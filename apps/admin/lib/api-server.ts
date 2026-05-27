@@ -1,7 +1,44 @@
 import 'server-only';
 import { cache } from 'react';
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { apiOrigin, adminOrigin } from './env';
+
+const TIMEOUT_GET_MS = 10_000;
+const TIMEOUT_MUTATION_MS = 30_000;
+const RETRY_BACKOFF_MS = 500;
+
+const isRetryableServerError = (status: number): boolean => status >= 500 && status <= 504;
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * `fetch` wrapper enforcing apps/CLAUDE.md network rules:
+ *  - `AbortSignal.timeout(timeoutMs)` on every server-side request.
+ *  - One retry on idempotent GET 5xx (500-504), ~500ms backoff.
+ *  - Mutations are NEVER retried.
+ *
+ * Caller decides idempotency via `isGet`. Returns the final `Response`
+ * (success or last-attempt failure) and lets the caller interpret the
+ * status. AbortError / network errors propagate to caller for uniform
+ * `{ ok: false, status: 0 }` handling.
+ */
+const executeWithRetry = async (
+  input: string,
+  init: Omit<RequestInit, 'signal'>,
+  opts: { readonly isGet: boolean; readonly timeoutMs: number },
+): Promise<Response> => {
+  const maxAttempts = opts.isGet ? 2 : 1;
+  // First attempt is unconditional; loop body covers retries up to maxAttempts.
+  // Final iteration always returns, so the loop never falls through.
+  for (let attempt = 1; ; attempt += 1) {
+    const res = await fetch(input, { ...init, signal: AbortSignal.timeout(opts.timeoutMs) });
+    if (!opts.isGet || !isRetryableServerError(res.status) || attempt >= maxAttempts) {
+      return res;
+    }
+    await sleep(RETRY_BACKOFF_MS);
+  }
+};
 
 /**
  * Server-side fetch wrapper for the api.
@@ -106,6 +143,8 @@ export const apiFetch = async <T>(
     path === '/api/auth/get-session' ? null : await getActiveTenantId(cookieHeader);
 
   const url = `${apiOrigin()}${path.startsWith('/') ? '' : '/'}${path}`;
+  const method = options.method ?? 'GET';
+  const isGet = method === 'GET';
   const headers: Record<string, string> = {
     accept: 'application/json',
     origin: adminOrigin(),
@@ -115,13 +154,37 @@ export const apiFetch = async <T>(
     ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
     ...options.headers,
   };
-  const res = await fetch(url, {
-    method: options.method ?? 'GET',
-    headers,
-    body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-    cache: 'no-store',
-    redirect: 'manual',
-  });
+
+  let res: Response;
+  try {
+    res = await executeWithRetry(
+      url,
+      {
+        method,
+        headers,
+        body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
+        cache: 'no-store',
+        redirect: 'manual',
+      },
+      { isGet, timeoutMs: isGet ? TIMEOUT_GET_MS : TIMEOUT_MUTATION_MS },
+    );
+  } catch (err) {
+    // AbortError (timeout) and network errors collapse into the same
+    // shape callers already handle for non-2xx responses. `status: 0` is
+    // the conventional sentinel; the raw `Response` carries 599 because
+    // the web `Response` constructor refuses status 0.
+    if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
+      return { status: 0, ok: false, data: null, raw: new Response(null, { status: 599 }) };
+    }
+    throw err;
+  }
+
+  // CONTEXT D-10: stale BA session → bounce to login with a notice
+  // instead of rendering an empty dashboard. The session-lookup probe is
+  // exempt (it is the redirect's own dependency).
+  if (res.status === 401 && path !== '/api/auth/get-session') {
+    redirect('/login?expired=1');
+  }
 
   if (options.forwardSetCookie === true) {
     const incoming = collectSetCookies(res);
@@ -154,11 +217,15 @@ export const apiFetch = async <T>(
 const getActiveTenantId = cache(async (cookieHeader: string): Promise<string | null> => {
   if (!cookieHeader) return null;
   try {
-    const res = await fetch(`${apiOrigin()}/api/auth/get-session`, {
-      headers: { accept: 'application/json', cookie: cookieHeader, origin: adminOrigin() },
-      cache: 'no-store',
-      redirect: 'manual',
-    });
+    const res = await executeWithRetry(
+      `${apiOrigin()}/api/auth/get-session`,
+      {
+        headers: { accept: 'application/json', cookie: cookieHeader, origin: adminOrigin() },
+        cache: 'no-store',
+        redirect: 'manual',
+      },
+      { isGet: true, timeoutMs: TIMEOUT_GET_MS },
+    );
     if (!res.ok) return null;
     const ct = res.headers.get('content-type') ?? '';
     if (!ct.includes('application/json')) return null;
