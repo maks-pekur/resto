@@ -18,18 +18,16 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await ctx.close();
   });
 
-  // FIXME (jointly owned by Plans 04 + 05):
-  //   - Plan 04 ships the EmptyState component and wires it into the 0-brand path.
-  //   - Plan 05 flips this `.fixme` to active `test()`.
-  // Today: redirects to /onboarding/brand. After Plan 04: inline EmptyState.
-  test.fixme('scenario 2: 0-brand tenant renders EmptyState empty-variant', async ({
+  test('scenario 2: 0-brand tenant renders EmptyState empty-variant', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.zeroBrands);
     const page = await ctx.newPage();
     await page.goto('/dashboard');
-    await expect(page.locator('text=/your tenant has no brands/i')).toBeVisible();
-    await expect(page.locator('a[href*="/onboarding/brand"]')).toBeVisible();
+    await expect(page.locator('text=/your tenant has no brands yet/i')).toBeVisible();
+    await expect(
+      page.locator('a[href*="/onboarding/brand"]', { hasText: /create your first brand/i }),
+    ).toBeVisible();
     await ctx.close();
   });
 
@@ -106,6 +104,65 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await tabC.waitForTimeout(500);
     const cookieAfter = (await ctx.cookies()).find((c) => c.name === 'resto.active_brand')?.value;
     expect(cookieAfter).toBeTruthy();
+    await ctx.close();
+  });
+
+  // ADM-04 brand creation roundtrip — two sub-flows per CONTEXT D-14 + F-6
+  // revision: single-brand operators reach onboarding through the Plus icon
+  // adjacent to the static brand label (Plan 04 introduced
+  // `data-testid="brand-switcher-add-brand"`); multi-brand operators reach
+  // it through the existing dropdown's `+ Add brand` item. Both sub-flows
+  // verify the Plan 03 HMAC signed-cookie pipeline produces a valid signed
+  // cookie on brand-creation success.
+  test('scenario 7a (ADM-04 single-brand): operator clicks Plus icon and creates a brand', async ({
+    operatorSession,
+  }) => {
+    const ctx = await operatorSession(FIXTURES.oneBrandOwner);
+    const page = await ctx.newPage();
+    await page.goto('/dashboard');
+    await expect(page.locator('[data-testid="brand-switcher-static"]')).toBeVisible();
+    const addBrandBtn = page.locator('[data-testid="brand-switcher-add-brand"]');
+    await expect(addBrandBtn).toBeVisible();
+    await addBrandBtn.click();
+    await page.waitForURL(/\/onboarding\/brand/, { timeout: 10_000 });
+    const stamp = Date.now().toString();
+    await page.fill('input[name="slug"]', `test-brand-${stamp}`);
+    await page.fill('input[name="displayName"]', `Test Brand ${stamp}`);
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/dashboard', { timeout: 10_000 });
+    const cookies = await ctx.cookies();
+    const activeBrand = cookies.find((c) => c.name === 'resto.active_brand');
+    expect(activeBrand).toBeDefined();
+    expect(activeBrand?.httpOnly).toBe(true);
+    const parts = (activeBrand?.value ?? '').split('.');
+    expect(parts.length).toBeGreaterThanOrEqual(2);
+    expect((parts[parts.length - 1] ?? '').length).toBeGreaterThan(0);
+    await ctx.close();
+  });
+
+  test('scenario 7b (ADM-04 multi-brand): operator opens dropdown and clicks + Add brand', async ({
+    operatorSession,
+  }) => {
+    const ctx = await operatorSession(FIXTURES.threeBrands);
+    const page = await ctx.newPage();
+    await page.goto('/dashboard');
+    const trigger = page.locator('[data-testid="brand-switcher-trigger"]');
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    await page.locator('a[href*="/onboarding/brand"]').click();
+    await page.waitForURL(/\/onboarding\/brand/, { timeout: 10_000 });
+    const stamp = Date.now().toString();
+    await page.fill('input[name="slug"]', `extra-brand-${stamp}`);
+    await page.fill('input[name="displayName"]', `Extra Brand ${stamp}`);
+    await page.click('button[type="submit"]');
+    await page.waitForURL('**/dashboard', { timeout: 10_000 });
+    const cookies = await ctx.cookies();
+    const activeBrand = cookies.find((c) => c.name === 'resto.active_brand');
+    expect(activeBrand).toBeDefined();
+    expect(activeBrand?.httpOnly).toBe(true);
+    const parts = (activeBrand?.value ?? '').split('.');
+    expect(parts.length).toBeGreaterThanOrEqual(2);
+    expect((parts[parts.length - 1] ?? '').length).toBeGreaterThan(0);
     await ctx.close();
   });
 });
