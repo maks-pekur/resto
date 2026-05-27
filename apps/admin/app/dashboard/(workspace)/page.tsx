@@ -1,8 +1,13 @@
 import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { Separator } from '@/components/ui/separator';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { SetupChecklistCard } from '@/components/setup-checklist-card';
+import { AiPreviewCard } from '@/components/ai-preview-card';
+import { getMyBrands } from '@/lib/me-brands';
 
-export default function Page() {
+export default async function Page() {
+  const brandsRes = await getMyBrands();
+  const brandsCount = brandsRes.ok && brandsRes.data ? brandsRes.data.brands.length : 0;
   return (
     <>
       <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
@@ -13,12 +18,10 @@ export default function Page() {
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-        <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
-          <div className="bg-muted/50 aspect-video rounded-xl" />
+        <div className="grid gap-4 md:grid-cols-2">
+          <SetupChecklistCard brandsCount={brandsCount} />
+          <AiPreviewCard />
         </div>
-        <div className="bg-muted/50 min-h-[100vh] flex-1 rounded-xl md:min-h-min" />
       </div>
     </>
   );
