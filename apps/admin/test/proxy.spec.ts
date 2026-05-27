@@ -36,4 +36,25 @@ describe('admin proxy', () => {
     );
     expect(res.status).toBe(200);
   });
+
+  it('preserves query string when the path is safe (single-/ prefix)', () => {
+    const res = proxy(makeReq('/onboarding/brand?welcome=1'));
+    expect(res.status).toBe(307);
+    const location = res.headers.get('location');
+    const u = new URL(location ?? '');
+    expect(u.searchParams.get('next')).toBe('/onboarding/brand?welcome=1');
+  });
+
+  it('rejects protocol-relative `next=` paths via fallback to /dashboard (apps/CLAUDE.md open-redirect rule)', () => {
+    // Build a request where pathname starts with `//` (protocol-relative
+    // primitive an attacker could attempt via a crafted link or proxy
+    // header). Construct via URL so `req.nextUrl.pathname` is `//evil.com/x`.
+    const req = new NextRequest('http://localhost:3001//evil.com/x');
+    const res = proxy(req);
+    expect(res.status).toBe(307);
+    const location = res.headers.get('location');
+    const u = new URL(location ?? '');
+    expect(u.searchParams.get('next')).toBe('/dashboard');
+    expect(u.searchParams.get('next')).not.toContain('//evil.com');
+  });
 });

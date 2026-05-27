@@ -22,8 +22,12 @@ export function proxy(req: NextRequest): NextResponse {
   if (hasSession) return NextResponse.next();
 
   const loginUrl = new URL('/login', req.url);
-  const dest = `${req.nextUrl.pathname}${req.nextUrl.search}`;
-  loginUrl.searchParams.set('next', dest);
+  const rawDest = `${req.nextUrl.pathname}${req.nextUrl.search}`;
+  // apps/CLAUDE.md open-redirect rule: only same-origin paths beginning
+  // with a single `/` (NOT `//` protocol-relative) survive; everything
+  // else falls back to /dashboard.
+  const safeDest = rawDest.startsWith('/') && !rawDest.startsWith('//') ? rawDest : '/dashboard';
+  loginUrl.searchParams.set('next', safeDest);
   return NextResponse.redirect(loginUrl);
 }
 
