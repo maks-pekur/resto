@@ -1,22 +1,13 @@
 'use client';
 
 import * as React from 'react';
-import {
-  BookOpen,
-  Bot,
-  Frame,
-  LayoutDashboard,
-  Map,
-  PieChart,
-  Settings2,
-  SquareTerminal,
-} from 'lucide-react';
+import { LayoutDashboard, Settings2, Store } from 'lucide-react';
 
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { BrandTabSync } from '@/components/brand-tab-sync';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
-import { NavProjects } from '@/components/nav-projects';
 import { NavUser } from '@/components/nav-user';
+import type { OperatorSummary } from '@/lib/me';
 import {
   Sidebar,
   SidebarContent,
@@ -33,39 +24,10 @@ const navMain: NavMainItem[] = [
     scope: 'any',
   },
   {
-    title: 'Playground',
-    url: '#',
-    icon: SquareTerminal,
-    isActive: true,
-    scope: 'any',
-    items: [
-      { title: 'History', url: '#' },
-      { title: 'Starred', url: '#' },
-      { title: 'Settings', url: '#' },
-    ],
-  },
-  {
-    title: 'Models',
-    url: '#',
-    icon: Bot,
-    scope: 'any',
-    items: [
-      { title: 'Genesis', url: '#' },
-      { title: 'Explorer', url: '#' },
-      { title: 'Quantum', url: '#' },
-    ],
-  },
-  {
-    title: 'Documentation',
-    url: '#',
-    icon: BookOpen,
-    scope: 'any',
-    items: [
-      { title: 'Introduction', url: '#' },
-      { title: 'Get Started', url: '#' },
-      { title: 'Tutorials', url: '#' },
-      { title: 'Changelog', url: '#' },
-    ],
+    title: 'Brands',
+    url: '/dashboard',
+    icon: Store,
+    scope: 'tenant',
   },
   {
     title: 'Settings',
@@ -75,28 +37,18 @@ const navMain: NavMainItem[] = [
   },
 ];
 
-const projects = [
-  { name: 'Design Engineering', url: '#', icon: Frame },
-  { name: 'Sales & Marketing', url: '#', icon: PieChart },
-  { name: 'Travel', url: '#', icon: Map },
-];
-
-const placeholderUser = {
-  name: 'Operator',
-  email: 'operator@example.com',
-  avatar: '/avatars/shadcn.jpg',
-};
-
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   readonly brands: readonly BrandOption[];
   readonly activeBrandSlug: string | null;
   readonly canViewAllBrands: boolean;
+  readonly operator: OperatorSummary;
 }
 
 export function AppSidebar({
   brands,
   activeBrandSlug,
   canViewAllBrands,
+  operator,
   ...props
 }: AppSidebarProps) {
   return (
@@ -110,10 +62,9 @@ export function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />
-        <NavProjects projects={projects} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={placeholderUser} />
+        <NavUser operator={operator} />
       </SidebarFooter>
       <SidebarRail />
       <BrandTabSync />

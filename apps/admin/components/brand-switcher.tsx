@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { ChevronsUpDown, Plus, LayoutGrid } from 'lucide-react';
 import { setActiveBrandAction } from '@/lib/actions/set-active-brand';
 import { BRAND_TAB_SYNC_STORAGE_KEY } from '@/components/brand-tab-sync';
+import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -38,6 +39,7 @@ export function BrandSwitcher({ brands, activeBrandSlug, canViewAllBrands }: Bra
   const triggerLabel = activeBrand?.displayName ?? ALL_BRANDS_LABEL;
   const triggerSubLabel = activeBrand?.slug ?? '—';
   const showAllBrandsItem = canViewAllBrands && brands.length >= 2;
+  const isSingleBrand = brands.length === 1 && !canViewAllBrands;
 
   const switchTo = (slug: string | null) => {
     startTransition(async () => {
@@ -52,6 +54,45 @@ export function BrandSwitcher({ brands, activeBrandSlug, canViewAllBrands }: Bra
       router.refresh();
     });
   };
+
+  if (isSingleBrand) {
+    const only = brands[0];
+    if (!only) return null;
+    return (
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <div className="flex items-center gap-1" data-testid="brand-switcher-static-row">
+            <SidebarMenuButton
+              size="lg"
+              data-testid="brand-switcher-static"
+              disabled
+              className="flex-1"
+            >
+              <div className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                <span className="text-xs font-semibold">{initialsOf(only.displayName)}</span>
+              </div>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">{only.displayName}</span>
+                <span className="text-muted-foreground truncate text-xs">{only.slug}</span>
+              </div>
+            </SidebarMenuButton>
+            {/* CONTEXT D-14: Brand creation (ADM-04) still works regardless: <Plus /> icon next to the label in either mode. */}
+            <Button
+              asChild
+              variant="ghost"
+              size="icon"
+              data-testid="brand-switcher-add-brand"
+              aria-label="Add brand"
+            >
+              <Link href="/onboarding/brand">
+                <Plus className="size-4" />
+              </Link>
+            </Button>
+          </div>
+        </SidebarMenuItem>
+      </SidebarMenu>
+    );
+  }
 
   return (
     <SidebarMenu>

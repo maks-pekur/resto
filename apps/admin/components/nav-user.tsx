@@ -1,20 +1,12 @@
 'use client';
 
-import {
-  BadgeCheck,
-  Bell,
-  ChevronsUpDown,
-  CreditCard,
-  LogOut,
-  Monitor,
-  Moon,
-  Sparkles,
-  Sun,
-} from 'lucide-react';
+import Link from 'next/link';
+import { BadgeCheck, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 import { signOutAction } from '@/lib/actions/sign-out';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import type { OperatorSummary } from '@/lib/me';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,17 +23,18 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 
-export function NavUser({
-  user,
-}: {
-  user: {
-    name: string;
-    email: string;
-    avatar: string;
-  };
-}) {
+const FALLBACK_ROLE_LABEL = 'Operator';
+
+const capitalize = (s: string): string =>
+  s.length === 0 ? s : `${s.charAt(0).toUpperCase()}${s.slice(1)}`;
+
+const avatarInitial = (email: string): string => email.charAt(0).toUpperCase() || '?';
+
+export function NavUser({ operator }: { operator: OperatorSummary }) {
   const { isMobile } = useSidebar();
   const { setTheme } = useTheme();
+  const initial = avatarInitial(operator.email);
+  const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
 
   return (
     <SidebarMenu>
@@ -53,12 +46,11 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                <AvatarFallback className="rounded-lg">{initial}</AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate font-medium">{roleLabel}</span>
+                <span className="truncate text-xs">{operator.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -72,35 +64,21 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">CN</AvatarFallback>
+                  <AvatarFallback className="rounded-lg">{initial}</AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate font-medium">{roleLabel}</span>
+                  <span className="truncate text-xs">{operator.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <Sparkles />
-                Upgrade to Pro
-              </DropdownMenuItem>
-            </DropdownMenuGroup>
-            <DropdownMenuSeparator />
-            <DropdownMenuGroup>
-              <DropdownMenuItem>
-                <BadgeCheck />
-                Account
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <CreditCard />
-                Billing
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                Notifications
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard/settings">
+                  <BadgeCheck />
+                  Account
+                </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
