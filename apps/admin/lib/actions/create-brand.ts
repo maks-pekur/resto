@@ -67,6 +67,7 @@ export async function createBrandAction(
   const cookieStore = await cookies();
   cookieStore.set('resto.active_brand', slug, {
     httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
   });

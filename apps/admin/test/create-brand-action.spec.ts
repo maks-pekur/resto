@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 const apiFetchMock = vi.fn();
 const cookiesSetMock = vi.fn();
@@ -27,6 +27,10 @@ describe('createBrandAction', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('returns inline validation error for an invalid slug shape', async () => {
     const result = await createBrandAction({ error: null }, buildForm({ slug: '-not-a-slug' }));
     expect(result.error).toMatch(/slug/i);
@@ -48,6 +52,7 @@ describe('createBrandAction', () => {
     });
     expect(cookiesSetMock).toHaveBeenCalledWith('resto.active_brand', 'z-burger', {
       httpOnly: true,
+      secure: false,
       sameSite: 'lax',
       path: '/',
     });
@@ -75,5 +80,37 @@ describe('createBrandAction', () => {
     });
     const result = await createBrandAction({ error: null }, buildForm());
     expect(result.error).toMatch(/Something went wrong/);
+  });
+
+  it('sets cookie with secure:true when NODE_ENV is production (apps/CLAUDE.md, CONTEXT D-04)', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 201,
+      data: { id: 'brand-uuid', slug: 'z-burger', displayName: 'Z Burger' },
+      raw: new Response(),
+    });
+    await expect(createBrandAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
+    expect(cookiesSetMock).toHaveBeenCalledWith(
+      'resto.active_brand',
+      'z-burger',
+      expect.objectContaining({ secure: true }),
+    );
+  });
+
+  it('sets cookie with secure:false when NODE_ENV is development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 201,
+      data: { id: 'brand-uuid', slug: 'z-burger', displayName: 'Z Burger' },
+      raw: new Response(),
+    });
+    await expect(createBrandAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
+    expect(cookiesSetMock).toHaveBeenCalledWith(
+      'resto.active_brand',
+      'z-burger',
+      expect.objectContaining({ secure: false }),
+    );
   });
 });

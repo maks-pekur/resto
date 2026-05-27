@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
 const cookiesSetMock = vi.fn();
 const cookiesDeleteMock = vi.fn();
@@ -16,11 +16,16 @@ describe('setActiveBrandAction', () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   it('sets resto.active_brand cookie when given a slug', async () => {
     const result = await setActiveBrandAction('z-burger');
     expect(result).toEqual({ ok: true });
     expect(cookiesSetMock).toHaveBeenCalledWith('resto.active_brand', 'z-burger', {
       httpOnly: true,
+      secure: false,
       sameSite: 'lax',
       path: '/',
     });
@@ -42,5 +47,25 @@ describe('setActiveBrandAction', () => {
     expect(cookiesSetMock).not.toHaveBeenCalled();
     expect(cookiesDeleteMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
+  });
+
+  it('sets cookie with secure:true when NODE_ENV is production (apps/CLAUDE.md, CONTEXT D-04)', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    await setActiveBrandAction('z-burger');
+    expect(cookiesSetMock).toHaveBeenCalledWith(
+      'resto.active_brand',
+      'z-burger',
+      expect.objectContaining({ secure: true }),
+    );
+  });
+
+  it('sets cookie with secure:false when NODE_ENV is development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    await setActiveBrandAction('z-burger');
+    expect(cookiesSetMock).toHaveBeenCalledWith(
+      'resto.active_brand',
+      'z-burger',
+      expect.objectContaining({ secure: false }),
+    );
   });
 });

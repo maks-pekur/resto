@@ -31,6 +31,7 @@ export async function setActiveBrandAction(slug: string | null): Promise<SetActi
   } else {
     cookieStore.set('resto.active_brand', slug, {
       httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
     });
