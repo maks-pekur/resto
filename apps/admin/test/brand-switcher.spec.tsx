@@ -67,22 +67,53 @@ describe('BrandSwitcher', () => {
     expect(await screen.findByRole('menuitem', { name: /All brands/u })).toBeInTheDocument();
   });
 
-  it('hides the All brands menu entry when canViewAllBrands is false', async () => {
-    const [first] = brands;
-    if (!first) throw new Error('brands fixture missing');
-    const { user } = renderSwitcher({ canViewAllBrands: false, brands: [first] });
+  it('hides the All brands menu entry when canViewAllBrands is false (multi-brand)', async () => {
+    const { user } = renderSwitcher({ canViewAllBrands: false });
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     await screen.findByRole('menuitem', { name: /Add brand/u });
     expect(screen.queryByRole('menuitem', { name: /All brands/u })).toBeNull();
   });
 
-  it('always shows the Add brand menu entry linking to /onboarding/brand', async () => {
+  it('shows the Add brand menu entry linking to /onboarding/brand in multi-brand dropdown', async () => {
     const { user } = renderSwitcher();
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     const item = await screen.findByRole('menuitem', { name: /Add brand/u });
     expect(item).toBeInTheDocument();
     const link = item.tagName === 'A' ? item : item.querySelector('a');
     expect(link?.getAttribute('href')).toBe('/onboarding/brand');
+  });
+
+  it('renders static label + inline Plus icon when single brand and !canViewAllBrands (CONTEXT D-14)', () => {
+    const [first] = brands;
+    if (!first) throw new Error('brands fixture missing');
+    renderSwitcher({ canViewAllBrands: false, brands: [first], activeBrandSlug: first.slug });
+    expect(screen.getByTestId('brand-switcher-static')).toHaveTextContent('Z Burger');
+    expect(screen.queryByTestId('brand-switcher-trigger')).toBeNull();
+    const addBrandBtn = screen.getByTestId('brand-switcher-add-brand');
+    expect(addBrandBtn).toBeInTheDocument();
+    const link = addBrandBtn.tagName === 'A' ? addBrandBtn : addBrandBtn.querySelector('a');
+    expect(link?.getAttribute('href')).toBe('/onboarding/brand');
+  });
+
+  it('renders the dropdown trigger when 2+ brands (multi-brand path preserved)', () => {
+    renderSwitcher();
+    expect(screen.getByTestId('brand-switcher-trigger')).toBeInTheDocument();
+    expect(screen.queryByTestId('brand-switcher-static')).toBeNull();
+  });
+
+  it('renders the dropdown when canViewAllBrands is true regardless of brand count', () => {
+    const [first] = brands;
+    if (!first) throw new Error('brands fixture missing');
+    renderSwitcher({ canViewAllBrands: true, brands: [first], activeBrandSlug: first.slug });
+    expect(screen.getByTestId('brand-switcher-trigger')).toBeInTheDocument();
+    expect(screen.queryByTestId('brand-switcher-static')).toBeNull();
+  });
+
+  it('single-brand Plus icon has accessible label "Add brand"', () => {
+    const [first] = brands;
+    if (!first) throw new Error('brands fixture missing');
+    renderSwitcher({ canViewAllBrands: false, brands: [first], activeBrandSlug: first.slug });
+    expect(screen.getByLabelText(/Add brand/u)).toBeInTheDocument();
   });
 
   it('calls setActiveBrandAction(slug) on brand click and signals other tabs via localStorage', async () => {
