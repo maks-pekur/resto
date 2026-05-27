@@ -1,40 +1,33 @@
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ResetPasswordForm } from './reset-password-form-client';
+import { EmptyState } from '@/components/empty-state';
+import { Button } from '@/components/ui/button';
 
-interface PageProps {
-  readonly searchParams: Promise<{ readonly token?: string }>;
-}
-
-export default async function ResetPasswordPage({ searchParams }: PageProps) {
-  const params = await searchParams;
-  const token = params.token ?? '';
-
+/**
+ * CONTEXT D-02 Phase 02 deliverable: render an honest "Phase 03 — not yet
+ * wired" placeholder using <EmptyState variant="forbidden">. The existing
+ * server action in `./actions.ts` and the `ResetPasswordForm` client
+ * island stay untouched — Phase 03 re-imports the form to lift the gate.
+ *
+ * Renders the same EmptyState regardless of `?token=` param presence;
+ * token validation is Phase 03 work.
+ */
+export default function ResetPasswordPage() {
   return (
     <div className="bg-muted/30 flex min-h-svh items-center justify-center p-6">
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Choose a new password</CardTitle>
-          <CardDescription>
-            {token
-              ? 'Pick something at least 12 characters long.'
-              : 'Reset link is missing or malformed — request a new email.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {token ? (
-            <ResetPasswordForm token={token} />
-          ) : (
-            <Link className="underline text-sm" href="/forgot-password">
-              Request a new reset link
-            </Link>
-          )}
-        </CardContent>
-      </Card>
+      <EmptyState
+        variant="forbidden"
+        title="Password reset is coming in Phase 03"
+        description="The reset flow is being wired in Phase 03. Sign in to your existing account, or contact your tenant owner."
+        action={
+          <Button asChild>
+            <Link href="/login">Back to sign in</Link>
+          </Button>
+        }
+      />
     </div>
   );
 }
