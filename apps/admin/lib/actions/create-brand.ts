@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { BrandSlug } from '@resto/domain';
 import { apiFetch } from '@/lib/api-server';
+import { signActiveBrand } from '@/lib/active-brand-cookie';
 
 const CreateBrandFormSchema = z.object({
   slug: BrandSlug,
@@ -65,7 +66,7 @@ export async function createBrandAction(
   }
 
   const cookieStore = await cookies();
-  cookieStore.set('resto.active_brand', slug, {
+  cookieStore.set('resto.active_brand', signActiveBrand(slug), {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

@@ -5,12 +5,14 @@ const cookiesSetMock = vi.fn();
 const redirectMock = vi.fn(() => {
   throw new Error('REDIRECT');
 });
+const signActiveBrandMock = vi.fn((slug: string) => `${slug}.mocked-sig`);
 
 vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 vi.mock('next/headers', () => ({
   cookies: vi.fn(() => Promise.resolve({ set: cookiesSetMock })),
 }));
 vi.mock('next/navigation', () => ({ redirect: redirectMock }));
+vi.mock('@/lib/active-brand-cookie', () => ({ signActiveBrand: signActiveBrandMock }));
 
 const { createBrandAction } = await import('../lib/actions/create-brand');
 
@@ -38,7 +40,7 @@ describe('createBrandAction', () => {
     expect(cookiesSetMock).not.toHaveBeenCalled();
   });
 
-  it('posts to /v1/me/brands, sets active_brand cookie, and redirects on 201', async () => {
+  it('posts to /v1/me/brands, sets HMAC-signed active_brand cookie, and redirects on 201', async () => {
     apiFetchMock.mockResolvedValue({
       ok: true,
       status: 201,
@@ -50,7 +52,8 @@ describe('createBrandAction', () => {
       method: 'POST',
       body: { slug: 'z-burger', displayName: 'Z Burger' },
     });
-    expect(cookiesSetMock).toHaveBeenCalledWith('resto.active_brand', 'z-burger', {
+    expect(signActiveBrandMock).toHaveBeenCalledWith('z-burger');
+    expect(cookiesSetMock).toHaveBeenCalledWith('resto.active_brand', 'z-burger.mocked-sig', {
       httpOnly: true,
       secure: false,
       sameSite: 'lax',
@@ -93,7 +96,7 @@ describe('createBrandAction', () => {
     await expect(createBrandAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
     expect(cookiesSetMock).toHaveBeenCalledWith(
       'resto.active_brand',
-      'z-burger',
+      'z-burger.mocked-sig',
       expect.objectContaining({ secure: true }),
     );
   });
@@ -109,8 +112,25 @@ describe('createBrandAction', () => {
     await expect(createBrandAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
     expect(cookiesSetMock).toHaveBeenCalledWith(
       'resto.active_brand',
-      'z-burger',
+      'z-burger.mocked-sig',
       expect.objectContaining({ secure: false }),
+    );
+  });
+
+  it('writes signed cookie on brand-create success path (defense-in-depth — CONTEXT D-03)', async () => {
+    signActiveBrandMock.mockReturnValueOnce('z-burger.DETERMINISTIC');
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 201,
+      data: { id: 'brand-uuid', slug: 'z-burger', displayName: 'Z Burger' },
+      raw: new Response(),
+    });
+    await expect(createBrandAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
+    expect(signActiveBrandMock).toHaveBeenCalledWith('z-burger');
+    expect(cookiesSetMock).toHaveBeenCalledWith(
+      'resto.active_brand',
+      'z-burger.DETERMINISTIC',
+      expect.any(Object),
     );
   });
 });

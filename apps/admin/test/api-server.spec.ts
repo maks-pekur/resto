@@ -17,6 +17,11 @@ const redirectMock = vi.fn((url: string) => {
 });
 vi.mock('next/navigation', () => ({ redirect: redirectMock }));
 
+const readActiveBrandMock = vi.fn<() => Promise<string | null>>(() => Promise.resolve(null));
+vi.mock('../lib/active-brand-cookie', () => ({
+  readActiveBrand: readActiveBrandMock,
+}));
+
 const fetchMock = vi.fn<typeof fetch>();
 const originalFetch = globalThis.fetch;
 
@@ -58,6 +63,8 @@ describe('apiFetch — X-Brand-Slug header', () => {
   beforeEach(() => {
     cookieEntries.length = 0;
     fetchMock.mockReset();
+    readActiveBrandMock.mockReset();
+    readActiveBrandMock.mockResolvedValue(null);
     installDefaultFetchMock();
     globalThis.fetch = fetchMock;
   });
@@ -66,25 +73,36 @@ describe('apiFetch — X-Brand-Slug header', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('forwards resto.active_brand cookie as X-Brand-Slug header', async () => {
-    cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma' });
+  it('forwards readActiveBrand() value as X-Brand-Slug header (HMAC-verified)', async () => {
+    cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma.SIG' });
+    readActiveBrandMock.mockResolvedValue('cafe-roma');
     await apiFetch('/v1/menu');
     expect(lastApiCall().headers['x-brand-slug']).toBe('cafe-roma');
   });
 
   it('omits X-Brand-Slug when resto.active_brand cookie is absent', async () => {
+    readActiveBrandMock.mockResolvedValue(null);
     await apiFetch('/v1/menu');
     expect(lastApiCall().headers['x-brand-slug']).toBeUndefined();
   });
 
   it('does not duplicate the brand cookie in the cookie header (it is already part of getAll())', async () => {
-    cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma' });
+    cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma.SIG' });
     cookieEntries.push({ name: 'better-auth.session_token', value: 'abc' });
+    readActiveBrandMock.mockResolvedValue('cafe-roma');
     await apiFetch('/v1/menu');
     const { headers } = lastApiCall();
-    expect(headers.cookie).toContain('resto.active_brand=cafe-roma');
+    expect(headers.cookie).toContain('resto.active_brand=cafe-roma.SIG');
     expect(headers.cookie).toContain('better-auth.session_token=abc');
     expect(headers['x-brand-slug']).toBe('cafe-roma');
+  });
+
+  it('omits X-Brand-Slug header when cookie HMAC verification fails (readActiveBrand returns null)', async () => {
+    // Browser sent a tampered cookie — readActiveBrand returns null, so api gets no brand context.
+    cookieEntries.push({ name: 'resto.active_brand', value: 'cafe-roma.TAMPERED' });
+    readActiveBrandMock.mockResolvedValue(null);
+    await apiFetch('/v1/menu');
+    expect(lastApiCall().headers['x-brand-slug']).toBeUndefined();
   });
 });
 
