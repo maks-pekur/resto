@@ -3,6 +3,7 @@ import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { apiOrigin, adminOrigin } from './env';
+import { readActiveBrand } from './active-brand-cookie';
 
 const TIMEOUT_GET_MS = 10_000;
 const TIMEOUT_MUTATION_MS = 30_000;
@@ -134,7 +135,7 @@ export const apiFetch = async <T>(
     .getAll()
     .map((c) => `${c.name}=${c.value}`)
     .join('; ');
-  const activeBrand = cookieStore.get('resto.active_brand')?.value;
+  const activeBrand = await readActiveBrand();
   // Resolve BA's active organization id (= tenant id) once per request
   // and forward as `x-tenant-id` so the api's `TenantContextMiddleware`
   // binds ALS for `@RequiresTenantContext` operator routes (RES-181).

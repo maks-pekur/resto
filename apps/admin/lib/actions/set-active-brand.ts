@@ -3,6 +3,7 @@
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { BrandSlug } from '@resto/domain';
+import { signActiveBrand } from '@/lib/active-brand-cookie';
 
 export interface SetActiveBrandResult {
   readonly ok: boolean;
@@ -29,7 +30,7 @@ export async function setActiveBrandAction(slug: string | null): Promise<SetActi
   if (slug === null) {
     cookieStore.delete('resto.active_brand');
   } else {
-    cookieStore.set('resto.active_brand', slug, {
+    cookieStore.set('resto.active_brand', signActiveBrand(slug), {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

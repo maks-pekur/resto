@@ -1,8 +1,8 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { apiFetch } from '@/lib/api-server';
+import { readActiveBrand } from '@/lib/active-brand-cookie';
 import { getMyBrands } from '@/lib/me-brands';
 
 interface TenantSummary {
@@ -12,17 +12,16 @@ interface TenantSummary {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [tenantRes, brandsRes, cookieStore] = await Promise.all([
+  const [tenantRes, brandsRes, activeBrandSlug] = await Promise.all([
     apiFetch<TenantSummary>('/v1/tenants/me'),
     getMyBrands(),
-    cookies(),
+    readActiveBrand(),
   ]);
   if (!tenantRes.ok || !tenantRes.data) {
     redirect('/login');
   }
   const brands = brandsRes.ok && brandsRes.data ? brandsRes.data.brands : [];
   const canViewAllBrands = brandsRes.ok && brandsRes.data ? brandsRes.data.canViewAllBrands : false;
-  const activeBrandSlug = cookieStore.get('resto.active_brand')?.value ?? null;
 
   return (
     <SidebarProvider>
