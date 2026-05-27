@@ -21,7 +21,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - MVP-2 / MVP-3 phases will be numbered 17+ at their respective `/gsd-new-milestone` activation
 
 - [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
-- [ ] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX
+- [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
 - [ ] **Phase 3: Auth Completion** - Close production-readiness gaps in auth so real operators can be onboarded (email flows, invitations, RBAC presets)
 - [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
@@ -101,7 +101,7 @@ Plans:
 
 **Wave 4** _(depends on Plans 01, 03, 04)_
 
-- [ ] 02-05-PLAN.md — Dashboard content + Phase 03 placeholders: Setup Checklist card, AI preview card with email capture, `/signup` `/forgot-password` `/reset-password` rendered as `<EmptyState variant="forbidden">`; flips scenario 2 `.fixme` + adds ADM-04 scenario 7 (ADM-04 verification)
+- [x] 02-05-PLAN.md — Dashboard content + Phase 03 placeholders: Setup Checklist card, AI preview card with email capture, `/signup` `/forgot-password` `/reset-password` rendered as `<EmptyState variant="forbidden">`; flips scenario 2 `.fixme` + adds ADM-04 scenario 7 (ADM-04 verification)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
@@ -356,7 +356,7 @@ Notes:
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
 | 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
-| 2. Admin Shell               | 4/5            | In Progress |            |
+| 2. Admin Shell               | 5/5            | Complete    | 2026-05-27 |
 | 3. Auth Completion           | 0/?            | Not started | -          |
 | 4. Catalog Admin             | 0/?            | Not started | -          |
 | 5. Customer Site             | 0/?            | Not started | -          |
