@@ -92,8 +92,8 @@ Plans:
 
 **Wave 2** _(parallel — depends on Plan 01)_
 
-- [ ] 02-02-PLAN.md — ADM-00 scaffold smoke-walk: Playwright infrastructure + 6 scenarios; only scenario 2 `test.fixme`-deferred until Plan 04 (ADM-00, ADM-01 verification)
-- [ ] 02-03-PLAN.md — Signed `resto.active_brand` cookie: HMAC-SHA256 via dedicated `ACTIVE_BRAND_COOKIE_SECRET`; thread through 4 cookie I/O sites (ADM-05)
+- [x] 02-02-PLAN.md — ADM-00 scaffold smoke-walk: Playwright infrastructure + 6 scenarios; only scenario 2 `test.fixme`-deferred until Plan 04 (ADM-00, ADM-01 verification)
+- [x] 02-03-PLAN.md — Signed `resto.active_brand` cookie: HMAC-SHA256 via dedicated `ACTIVE_BRAND_COOKIE_SECRET`; thread through 4 cookie I/O sites (ADM-05)
 
 **Wave 3** _(depends on Plans 01, 02, 03)_
 
@@ -356,7 +356,7 @@ Notes:
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
 | 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
-| 2. Admin Shell               | 1/5            | In Progress |            |
+| 2. Admin Shell               | 3/5            | In Progress |            |
 | 3. Auth Completion           | 0/?            | Not started | -          |
 | 4. Catalog Admin             | 0/?            | Not started | -          |
 | 5. Customer Site             | 0/?            | Not started | -          |
