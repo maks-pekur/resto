@@ -8,7 +8,10 @@
   "scripts": {
     "dev": "next dev --port 3001",
     "build": "next build",
-    "start": "next start --port 3001"
+    "start": "next start --port 3001",
+    "e2e": "playwright test",
+    "e2e:headed": "playwright test --headed",
+    "e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@resto/domain": "workspace:*",
@@ -37,6 +40,7 @@
     "@types/node": "^25.8.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@playwright/test": "1.60.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^10.4.0",
     "eslint-config-next": "^16.2.6",
