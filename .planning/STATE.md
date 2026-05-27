@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
-status: Phase 01 closed + e2e regressions fixed + AI-driven pivot landed — ready for Phase 02 (Admin Shell)
-stopped_at: Phase 02 planning complete — 5 plans (17 tasks across 4 waves); plan-checker passed after one revision pass; ready for /gsd-execute-phase 2
-last_updated: '2026-05-27T17:51:07.125Z'
-last_activity: 2026-05-27 -- AI-driven pivot via /gsd-explore; planning restructure committed (PROJECT.md / ROADMAP.md / REQUIREMENTS.md); Site reordered before QR-menu
+status: executing
+stopped_at: Phase 02 Wave 1 complete — Plan 01 merged to main (7 commits, 103 tests passing); 1/5 plans done; awaiting go-ahead for Wave 2 (Plans 02-02 + 02-03)
+last_updated: '2026-05-27T18:15:14.693Z'
+last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 16
   completed_phases: 1
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
   percent: 6
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** MVP-1 / Phase 2 — Admin Shell (Phase 1 Tenancy Hardening done; 15 phases remain in MVP-1)
+**Current focus:** Phase 02 — Admin Shell
 **Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
 
 ## Current Position
 
-Phase: 1 of 16 (Tenancy Hardening) — COMPLETE; ready to start Phase 2 under restructured MVP-1
-Plan: 6 of 6 in Phase 01 (ALL waves merged to main)
-Status: Phase 01 closed + e2e regressions fixed + AI-driven pivot landed — ready for Phase 02 (Admin Shell)
-Last activity: 2026-05-27 -- AI-driven pivot via /gsd-explore; planning restructure committed (PROJECT.md / ROADMAP.md / REQUIREMENTS.md); Site reordered before QR-menu
+Phase: 02 (Admin Shell) — EXECUTING
+Plan: 1 of 5
+Status: Executing Phase 02
+Last activity: 2026-05-27 -- Phase 02 execution started
 
 Progress: [█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 6% of MVP-1 (1/16 phases)
 
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-27T17:51:07.115Z
-Stopped at: Phase 02 planning complete — 5 plans (17 tasks across 4 waves); plan-checker passed after one revision pass; ready for /gsd-execute-phase 2
-Resume file: .planning/phases/02-admin-shell/
+Last session: 2026-05-27T18:15:14.687Z
+Stopped at: Phase 02 Wave 1 complete — Plan 01 merged to main (7 commits, 103 tests passing); 1/5 plans done; awaiting go-ahead for Wave 2 (Plans 02-02 + 02-03)
+Resume file: .planning/phases/02-admin-shell/02-01-SUMMARY.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)

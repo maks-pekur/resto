@@ -88,7 +88,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Foundation hardening: `lib/env.ts` (ADM-08) + apiFetch timeouts + one-retry on idempotent GET 5xx + 401 → `/login?expired=1` + cookie `secure:` flag fix (ADM-02, ADM-08)
+- [x] 02-01-PLAN.md — Foundation hardening: `lib/env.ts` (ADM-08) + apiFetch timeouts + one-retry on idempotent GET 5xx + 401 → `/login?expired=1` + cookie `secure:` flag fix (ADM-02, ADM-08)
 
 **Wave 2** _(parallel — depends on Plan 01)_
 
@@ -356,7 +356,7 @@ Notes:
 | Phase                        | Plans Complete | Status      | Completed  |
 | ---------------------------- | -------------- | ----------- | ---------- |
 | 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
-| 2. Admin Shell               | 0/?            | Not started | -          |
+| 2. Admin Shell               | 1/5            | In Progress |            |
 | 3. Auth Completion           | 0/?            | Not started | -          |
 | 4. Catalog Admin             | 0/?            | Not started | -          |
 | 5. Customer Site             | 0/?            | Not started | -          |
