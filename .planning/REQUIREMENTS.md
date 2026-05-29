@@ -54,11 +54,21 @@
 - [ ] **AUTH-04**: Operator can request password reset at `/forgot-password`
 - [ ] **AUTH-05**: Operator receives password reset email with single-use link, sets new password at `/reset-password`
 - [ ] **AUTH-06**: New operator receives email verification on signup; unverified accounts blocked from sensitive actions per `REQUIRE_EMAIL_VERIFICATION`
-- [ ] **AUTH-07**: Operator can enable 2FA TOTP from account settings
+- [ ] **AUTH-07**: Operator can enable 2FA TOTP from account settings; on enable, 10 recovery codes generated, shown once with copy-to-clipboard, user confirms saved before activation completes. Lost-device admin-reset UI deferred to Phase 17 / TEAM-04; for the first 100 customers, lost-device recovery for sole owner is manual founder-side reset via SQL script with audit row.
 - [ ] **AUTH-08**: All cookies set by server actions use `secure: process.env.NODE_ENV === 'production'`, `httpOnly: true`, `sameSite: 'lax'`
-- [ ] **AUTH-09**: System roles `owner` / `admin` / `staff` have correct permission presets seeded (idempotent migration / seed step)
+- [ ] **AUTH-09**: System roles `owner` / `admin` / `staff` have correct permission presets seeded (idempotent NestJS bootstrap step OR generated static SQL migration). Role-change audit row (BLOCKED in `.planning/phases/01-tenancy-hardening/audit-gap.md`) stays BLOCKED with explicit re-eval trigger: first multi-member tenant with role ≠ owner OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after`. Custom role-change endpoint deferred to Phase 17 / TEAM-03.
 - [ ] **AUTH-10**: NATS consumer `max_deliver` + DLQ subject configured; poison messages don't redeliver forever
 - [ ] **AUTH-11**: Better Auth context-stash for sign-out audit (`__restoSignOut`) replaced with `WeakMap<object, Stash>` (no `as unknown as` cast)
+
+### Operator Self-service Polish (`TEAM`) — Phase 17, post-MVP-1
+
+> Full team-management UX deferred from Phase 3 (scope split 2026-05-29 via CTO + Skeptic persona reviews). Activation trigger: first paying tenant adds a 2nd member with role ≠ owner OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after`. Non-blocking for MVP-1 close.
+
+- [ ] **TEAM-01**: New `/dashboard/team` page (renamed from "staff" to avoid namespace collision with the `staff` role) renders member list with email + role + status; "Invite member" affordance gated on `staff:invite` permission
+- [ ] **TEAM-02**: Pending-invitations table on `/dashboard/team`; operator with `staff:remove` can revoke a pending invite before its 48h TTL
+- [ ] **TEAM-03**: In-place role-change on `/dashboard/team` for owner / admin; mutation calls `auth.api.updateMemberRole(...)` (BA server-side API — preserves BA permission graph + session invalidation), controller emits `identity.role_changed.v1` envelope through outbox in same request; `ACTION_TARGET_KIND['identity.role_changed']='user'`; closes BLOCKED row in `audit-gap.md`; e2e test asserts an `admin`-tier operator cannot promote themselves to `owner`
+- [ ] **TEAM-04**: Owner / admin can reset 2FA for subordinates from `/dashboard/team` (lost-device flow); reset emits audit row. Owner-role lost-device recovery stays manual founder-side (the email-recovery-loop variant is explicitly out of scope — it cancels the 2FA security gain)
+- [ ] **TEAM-05**: Operator can regenerate 2FA recovery codes from `/dashboard/settings`; previous codes invalidated atomically; new set shown once with copy-to-clipboard + saved-confirmation gate (same shape as Phase 3 / AUTH-07 enable flow)
 
 ### Catalog Admin (`CAT`)
 
@@ -525,14 +535,20 @@
 | ONB-03      | Phase 16 | Pending |
 | ONB-04      | Phase 16 | Pending |
 | ONB-05      | Phase 16 | Pending |
+| TEAM-01     | Phase 17 | Pending |
+| TEAM-02     | Phase 17 | Pending |
+| TEAM-03     | Phase 17 | Pending |
+| TEAM-04     | Phase 17 | Pending |
+| TEAM-05     | Phase 17 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 151 total
-- Mapped to phases: 151
+- v1 requirements: 156 total (151 MVP-1 core + 5 TEAM Phase 17 post-MVP-1 polish)
+- Mapped to phases: 156
 - Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-05-24_
-_Last updated: 2026-05-24 — revised after persona reviews (persona-cto, persona-skeptic); 13 new requirements added, PROMO-06 reassigned to Phase 7, SITE-08 reassigned to Phase 8, Phases 9/10 swapped, GNOTIF category added_
+_Last updated: 2026-05-29 — Phase 3 scope split via CTO + Skeptic persona reviews; TEAM-01..05 added for new Phase 17 (post-MVP-1 polish); AUTH-07 / AUTH-09 scope-noted in place_
+_2026-05-24 — initial revision after persona reviews (persona-cto, persona-skeptic); 13 new requirements added, PROMO-06 reassigned to Phase 7, SITE-08 reassigned to Phase 8, Phases 9/10 swapped, GNOTIF category added_

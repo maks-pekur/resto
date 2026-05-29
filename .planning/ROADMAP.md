@@ -22,7 +22,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 
 - [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
 - [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
-- [ ] **Phase 3: Auth Completion** - Close production-readiness gaps in auth so real operators can be onboarded (email flows, invitations, RBAC presets)
+- [ ] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_
 - [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
@@ -36,6 +36,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 14: Finance** - Order list with filters + export, refunds, VAT, RestOS commission line
 - [ ] **Phase 15: Content & SEO** - Tenant theming, content pages, per-city SEO landing pages, sitemap
 - [ ] **Phase 16: Self-serve Onboarding (non-AI)** - End-to-end signup-to-published-menu wizard threading all prior phases together. MVP-2 supersedes this with the AI onboarding constructor.
+- [ ] **Phase 17: Operator Self-service Polish (post-MVP-1)** - Full `/dashboard/team` page (member list, pending invitations, revoke, role-change), AUTH-07 full 2FA UX (lost-device admin reset for subordinates, recovery-code regeneration), closes BLOCKED row in `audit-gap.md` via `auth.api.updateMemberRole` + `identity.role_changed.v1` envelope. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner, OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after` _(scope split via Phase 3 persona review 2026-05-29 — CTO HIGH-1 + Skeptic HIGH-4)_
 
 ## MVP-1 Phase Details
 
@@ -105,18 +106,26 @@ Plans:
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
-### Phase 3: Auth Completion
+### Phase 3: Auth Completion (Security Core)
 
-**Goal**: Close production-readiness gaps in authentication so real operators can be onboarded via invitation, recover lost passwords, and have email verification enforced
+**Goal**: Close production-readiness gaps in authentication so real operators can be onboarded via invitation, recover lost passwords, have email verification enforced, and run on hardened cookies + NATS DLQ. Operator self-service UX (full team-management page + 2FA lost-device flow) deferred to Phase 17. Activation rule: this is the MVP-1 security-critical subset; first paying customer must ship on top of Phase 3, not Phase 17.
 **Depends on**: Phase 2
 **Requirements**: AUTH-01, AUTH-02, AUTH-03, AUTH-04, AUTH-05, AUTH-06, AUTH-07, AUTH-08, AUTH-09, AUTH-10, AUTH-11
+**Scope notes**:
+
+- **AUTH-07** scoped to: enable 2FA TOTP from account settings + recovery codes shown once on enable. Lost-device admin-reset UI moves to Phase 17 (TEAM-04). For the first 100 customers, lost-device recovery for sole owner is manual founder-side reset via SQL script with audit row.
+- **AUTH-09** scoped to: idempotent role-seeding of `owner` / `admin` / `staff` permission presets only. The role-change audit row (BLOCKED in `.planning/phases/01-tenancy-hardening/audit-gap.md`) stays BLOCKED with explicit re-eval trigger: first multi-member tenant with role ≠ owner OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after`.
+- **Invite UX**: minimal form in `/dashboard/settings` (1 email input + 1 role dropdown + 1 submit), not a dedicated `/dashboard/team` page. Pending-invitations table, revoke, in-place role-change all deferred to Phase 17 (TEAM-01..03).
+
 **Success Criteria** (what must be TRUE):
 
-1. Operator added to a tenant receives an invitation email and can complete signup via the single-use link at `/accept-invitation`
-2. Operator who forgot their password can request a reset email and set a new password via the single-use link at `/reset-password`; new signups receive email verification and unverified accounts are blocked from sensitive actions
-3. Operator can enable and use 2FA TOTP from account settings
-4. All cookies set by server actions carry `secure`, `httpOnly`, and `sameSite: 'lax'` flags; NATS consumers have `max_deliver` + DLQ configured so poison messages do not redeliver indefinitely
-5. System roles `owner`, `admin`, and `staff` are seeded with correct permission presets via an idempotent migration step
+1. Operator added to a tenant receives an invitation email and can complete signup via the single-use link at `/accept-invitation`; existing-account email auto-attaches to the new tenant (multi-tenant membership); role is encoded in the invitation token and immutable through accept flow; owner role is selectable only by owner-tier inviter (with regression test)
+2. Operator who forgot their password can request a reset email and set a new password via the single-use link at `/reset-password`; new signups receive email verification and unverified accounts are blocked from sensitive actions per `REQUIRE_EMAIL_VERIFICATION`
+3. Operator can enable 2FA TOTP from account settings; 10 recovery codes are generated on enable, shown once with copy-to-clipboard, and require explicit "I saved them" confirmation before activation; owner email-recovery loop is NOT shipped (eliminates the 2FA-equals-email regression)
+4. All cookies set by server actions carry `secure: NODE_ENV==='production'`, `httpOnly: true`, `sameSite: 'lax'` (full sweep across server actions, not just the two flagged in Phase 02 D-04); NATS consumers have `max_deliver: 5` + `dlq.<subject>` configured and the configuration is exercised by an e2e poison-message test that asserts (i) `max_deliver` reached, (ii) message lands in DLQ subject, (iii) alert envelope emitted
+5. System roles `owner`, `admin`, `staff` are seeded with permission presets from `packages/domain/src/rbac/system-roles.ts` via an idempotent NestJS bootstrap step (or a generated static SQL migration — keep convention with `pnpm db:migrate`); seed is re-runnable; role-change audit (BLOCKED row) stays BLOCKED with explicit re-eval trigger
+6. Email adapter wired three-way: Resend (staging/prod) + MailHog (dev) + `CapturedEmailAdapter` (tests); `assertEmailAdapterWired` extended to all three callbacks AND the `?? (() => Promise.resolve())` NOOP defaults removed from `auth.config.ts` so a misconfigured prod boot fails loud; `assertProdGuardrails` extended to assert non-empty `RESEND_API_KEY` + adapter class name when `NODE_ENV ∈ {staging, production}`; signup and password-reset endpoints return identical status + body + ±10ms timing for "email exists" vs "does not" (enumeration parity); Resend adapter retries 3× (250→1000→4000ms, total <6s) on 5xx and emits `identity.email_dispatch_failed.v1` envelope through outbox on terminal failure
+
    **Plans**: TBD
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-skeptic
@@ -322,6 +331,23 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
 
+### Phase 17: Operator Self-service Polish (post-MVP-1)
+
+**Goal**: Ship full operator self-service UX deferred from Phase 3 once first paying customer reveals a real need. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner, OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after` hook. Until trigger fires, all Phase 17 items are non-blocking for MVP-1 close.
+**Depends on**: Phase 3 (security-core auth must already be in prod), Phase 4 (catalog admin — operator must already have something to manage before /dashboard/team is meaningful)
+**Requirements**: TEAM-01, TEAM-02, TEAM-03, TEAM-04, TEAM-05
+**Success Criteria** (what must be TRUE):
+
+1. New `/dashboard/team` page (renamed from "staff" to avoid collision with the `staff` role) renders the member list with email + role + status; operator with `staff:invite` permission sees an "Invite member" affordance
+2. Operator with `staff:remove` permission sees pending-invitations table and can revoke a pending invite before its 48h TTL expires
+3. Owner / admin can change a member's role in place; mutation goes through `auth.api.updateMemberRole(...)` (BA server-side API — preserves permission graph + session invalidation) and the controller emits `identity.role_changed.v1` envelope through outbox in the same request; closes the BLOCKED row in `.planning/phases/01-tenancy-hardening/audit-gap.md`; e2e test pins that an `admin`-tier operator cannot promote themselves to `owner`
+4. Owner / admin can reset 2FA for subordinates from `/dashboard/team` (lost-device flow); reset emits audit row; for the owner role itself, the documented recovery remains manual founder-side via runbook (the 2FA-equals-email regression of an owner email-recovery loop stays out of scope)
+5. Operator can regenerate 2FA recovery codes from `/dashboard/settings`; previous codes are invalidated atomically and the new set is shown once with copy-to-clipboard + saved-confirmation gate (same UX shape as Phase 3 enable flow)
+
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic
+
 ## MVP-2: AI Agent Platform + 3 Surfaces (placeholder)
 
 > Trigger: MVP-1 closed; first paying customer onboarded; standalone platform stable in prod >30 days. Detailed scope in `.planning/seeds/mvp2-ai-platform.md`. Phase numbering assigned at `/gsd-new-milestone` activation time.
@@ -344,7 +370,7 @@ Open architectural questions to resolve before MVP-2 activation: vector store ch
 ## Progress
 
 **Execution Order:**
-MVP-1 phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16. MVP-2/3 phases are sequenced at their respective `/gsd-new-milestone` activations.
+MVP-1 phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant OR BA ≥ 1.5 hook). MVP-2/3 phases are sequenced at their respective `/gsd-new-milestone` activations.
 
 Notes:
 
@@ -353,21 +379,22 @@ Notes:
 
 ### MVP-1 Phase Status
 
-| Phase                        | Plans Complete | Status      | Completed  |
-| ---------------------------- | -------------- | ----------- | ---------- |
-| 1. Tenancy Hardening         | 6/6            | ✓ Done      | 2026-05-26 |
-| 2. Admin Shell               | 5/5            | Complete    | 2026-05-27 |
-| 3. Auth Completion           | 0/?            | Not started | -          |
-| 4. Catalog Admin             | 0/?            | Not started | -          |
-| 5. Customer Site             | 0/?            | Not started | -          |
-| 6. QR-Menu Customer          | 0/?            | Not started | -          |
-| 7. Ordering                  | 0/?            | Not started | -          |
-| 8. Payments (Stripe Connect) | 0/?            | Not started | -          |
-| 9. Delivery Zones            | 0/?            | Not started | -          |
-| 10. Admin Order Intake       | 0/?            | Not started | -          |
-| 11. Promo & Discounts        | 0/?            | Not started | -          |
-| 12. CRM                      | 0/?            | Not started | -          |
-| 13. Analytics                | 0/?            | Not started | -          |
-| 14. Finance                  | 0/?            | Not started | -          |
-| 15. Content & SEO            | 0/?            | Not started | -          |
-| 16. Self-serve Onboarding    | 0/?            | Not started | -          |
+| Phase                                         | Plans Complete | Status        | Completed  |
+| --------------------------------------------- | -------------- | ------------- | ---------- |
+| 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
+| 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
+| 3. Auth Completion (Security Core)            | 0/?            | Not started   | -          |
+| 4. Catalog Admin                              | 0/?            | Not started   | -          |
+| 5. Customer Site                              | 0/?            | Not started   | -          |
+| 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
+| 7. Ordering                                   | 0/?            | Not started   | -          |
+| 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
+| 9. Delivery Zones                             | 0/?            | Not started   | -          |
+| 10. Admin Order Intake                        | 0/?            | Not started   | -          |
+| 11. Promo & Discounts                         | 0/?            | Not started   | -          |
+| 12. CRM                                       | 0/?            | Not started   | -          |
+| 13. Analytics                                 | 0/?            | Not started   | -          |
+| 14. Finance                                   | 0/?            | Not started   | -          |
+| 15. Content & SEO                             | 0/?            | Not started   | -          |
+| 16. Self-serve Onboarding                     | 0/?            | Not started   | -          |
+| 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
