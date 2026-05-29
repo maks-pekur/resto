@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: Phase 02 VERIFIED — 5/5 success criteria, 9/9 requirements, 0 critical findings; 5 non-critical + 4 documented exceptions all Phase 03 carry-over; ready to close phase or move to Phase 03
-last_updated: '2026-05-27T21:30:54.733Z'
+stopped_at: Phase 3 context gathered; scope split into 3 (security core) + new Phase 17 (operator self-service polish, post-MVP-1); persona reviews applied
+last_updated: '2026-05-29T20:41:47.311Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
-  total_phases: 16
+  total_phases: 17
   completed_phases: 2
   total_plans: 11
   completed_plans: 11
-  percent: 13
+  percent: 12
 ---
 
 # Project State
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-27T21:30:54.725Z
-Stopped at: Phase 02 VERIFIED — 5/5 success criteria, 9/9 requirements, 0 critical findings; 5 non-critical + 4 documented exceptions all Phase 03 carry-over; ready to close phase or move to Phase 03
-Resume file: .planning/phases/02-admin-shell/02-VERIFICATION.md
+Last session: 2026-05-29T20:41:47.303Z
+Stopped at: Phase 3 context gathered; scope split into 3 (security core) + new Phase 17 (operator self-service polish, post-MVP-1); persona reviews applied
+Resume file: .planning/phases/03-auth-completion/03-CONTEXT.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
