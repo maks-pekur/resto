@@ -165,9 +165,38 @@ Plans:
 4. Modifier vs Modifier Group entities cleanly separated; size as own entity (or embedded — researcher recommends); stop-list shape decided (table vs column) and wired to existing audit pipeline
 5. Publish flow supports a delayed-publish revert capability (publish event fires only at end of 5s window, no compensating outbox events); `catalog.menu_first_published.v1` vs `catalog.menu_republished.v1` distinct event types; Redis menu-version counter uses Postgres `nextval` sequence as authoritative fallback
 6. Public `/v1/menu` DTO contains all new fields; `docs/api/openapi.yaml` regenerated and CI drift-check added
-   **Plans**: TBD
-   **UI hint**: no
-   **Persona reviewers**: persona-cto, persona-skeptic (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
+   **Plans**: 7 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 04A-01-PLAN.md — Install transliteration npm pkg (blocking human-verify legitimacy gate per D-4a-04 [ASSUMED]) + start dev Docker stack for downstream migrations
+
+**Wave 2** _(after Wave 1)_
+
+- [ ] 04A-02-PLAN.md — Drizzle schema: menu_items photos/BJU/source/needs_review/source_external_id, menu_categories.parent_id self-FK, tenants.menu_first_published_at, menu_versions_seq Postgres sequence (CAT-02, CAT-10; D-4a-01/02/03/06/07)
+
+**Wave 3** _(after Wave 2)_
+
+- [ ] 04A-03-PLAN.md — New tables menu_stop_list + menu_item_slug_aliases with composite FK + RLS ENABLE/FORCE + iso policies; composite-FK audit pass (CAT-06, CAT-09; D-4a-04/10)
+
+**Wave 4** _(after Waves 2+3)_
+
+- [ ] 04A-04-PLAN.md — Renames: menu_variants → menu_item_sizes (price_delta → absolute price), menu_modifiers → menu_modifier_groups, junction + FK column renames, add default_amount + free_amount on options (CAT-04, CAT-05; Pitfall 3 hand-written + Pitfall 6 price semantic backfill)
+
+**Wave 5** _(after Wave 4)_
+
+- [ ] 04A-05-PLAN.md — 4 catalog event contracts (menu_first_published, menu_republished, item_stopped, item_unstopped); refactor catalog/application/dto.ts (CAT-09 max-length sweep, photos JSONB, BJU, source enum, slug auto-derive, modifier groups, item sizes, stop-list); audit ACTION_TARGET_KIND map; 3 new domain errors (CAT-02, CAT-04, CAT-05, CAT-09; D-4a-01/02/03/04/06/10)
+
+**Wave 6** _(after Wave 5)_
+
+- [ ] 04A-06-PLAN.md — Application + infrastructure refactor: DelayedPublishService (5s timer per tenant); PublishMenuService.doPublish with first-publish detection + outbox emit; StopListService with cache invalidate; UpsertModifierGroup/Option/ItemSize services; slug auto-derive + alias insert on change; repository refactor against renamed tables + photos + BJU read; MenuVersionPort.bump nextval fallback; CatalogCachePort.invalidate; GRANT DELETE on menu_stop_list (CAT-06, CAT-10; D-4a-04/05/06/07/10; ADR-0020 I-4/I-6)
+
+**Wave 7** _(after Wave 6)_
+
+- [ ] 04A-07-PLAN.md — Controllers (modifier-groups/options/item-sizes/stop-list POST + DELETE, publish + DELETE publish for undo); error mapping for 3 new errors; downstream consumer refactors (qr-menu types, e2e specs imageS3Key → photos, tenant-isolation cross-tenant matrix for 5 new entities); regen docs/api/openapi.yaml + packages/api-client; pnpm openapi:check script + CI workflow gate (CAT-02/04/05/06; D-4a-08/09)
+      **UI hint**: no
+      **Persona reviewers**: persona-cto, persona-skeptic (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
 ### Phase 4b: Catalog Admin UI
 
