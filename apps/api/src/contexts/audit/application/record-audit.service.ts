@@ -15,6 +15,9 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   'identity.signed_in': 'user',
   'identity.signed_out': 'user',
   'identity.password_reset_completed': 'user',
+  // AUTH-10 / D-05: platform-level alert. DLQ branch may have no userId
+  // (poison envelope unparseable) so this is NOT 'user'.
+  'identity.email_dispatch_failed': 'platform',
 };
 
 const targetKindFor = (action: string): string | null => {

@@ -126,6 +126,38 @@ describe('RecordAuditService', () => {
     expect(inserted.targetId).toBe('00000000-0000-4000-8000-0000000000aa');
   });
 
+  it('projects identity.email_dispatch_failed.v1 with targetType=platform (AUTH-10 / D-05)', async () => {
+    // The DLQ branch may have no userId (poison envelope unparseable), so the
+    // alert is platform-level — not user-level. record-audit.service must NOT
+    // try to derive a user target for this event type.
+    const insert = vi.fn();
+    const db = {
+      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
+        return fn({ insert: () => ({ values: insert }) });
+      }),
+    } as unknown as TenantAwareDb;
+
+    const service = new RecordAuditService(db);
+    const envelope = buildEnvelope({
+      type: 'identity.email_dispatch_failed.v1',
+      tenantId: null,
+      payload: {
+        reason: 'dlq_routed',
+        originalSubject: 'identity.signed_in.v1',
+        redeliveryCount: 4,
+        errorMessage: 'malformed envelope',
+      },
+    });
+    await service.fromEnvelope(envelope);
+
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.action).toBe('identity.email_dispatch_failed.v1');
+    expect(inserted.targetType).toBe('platform');
+    // No userId in payload → targetId falls through to null (NOT a fabricated user row).
+    expect(inserted.targetId).toBeNull();
+    expect(inserted.tenantId).toBeNull();
+  });
+
   it('fromEnvelopeWithTx writes via the passed tx (skips withoutTenant)', async () => {
     const insert = vi.fn();
     const db = {

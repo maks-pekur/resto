@@ -63,6 +63,8 @@ export {
 } from './contracts/tenancy';
 
 export {
+  IdentityEmailDispatchFailedV1,
+  IdentityEmailDispatchFailedV1Payload,
   IdentityPasswordResetCompletedV1,
   IdentityPasswordResetCompletedV1Payload,
   IdentitySignedInV1,
