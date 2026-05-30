@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: 'Phase 3 planned: 5 plans, 5 waves, 11/11 AUTH reqs + TEN-11 covered; plan-checker passed iteration 2; revisions per CTO/Skeptic + research findings applied'
-last_updated: '2026-05-30T06:50:43.588Z'
+stopped_at: 'Phase 3 Wave 1 complete: 03-01 NATS DLQ + poison e2e + TEN-11 allowlist; AUTH-10 gate GREEN, downstream waves unblocked'
+last_updated: '2026-05-30T08:45:09.722Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
   completed_phases: 2
   total_plans: 16
-  completed_plans: 11
+  completed_plans: 12
   percent: 12
 ---
 
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T06:50:43.581Z
-Stopped at: Phase 3 planned: 5 plans, 5 waves, 11/11 AUTH reqs + TEN-11 covered; plan-checker passed iteration 2; revisions per CTO/Skeptic + research findings applied
-Resume file: .planning/phases/03-auth-completion/03-01-nats-dlq-PLAN.md
+Last session: 2026-05-30T08:45:09.714Z
+Stopped at: Phase 3 Wave 1 complete: 03-01 NATS DLQ + poison e2e + TEN-11 allowlist; AUTH-10 gate GREEN, downstream waves unblocked
+Resume file: .planning/phases/03-auth-completion/03-02-email-adapter-PLAN.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
