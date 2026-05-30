@@ -93,7 +93,12 @@ const parseSetCookie = (header: string): ParsedSetCookie => {
   const value = eq >= 0 ? first.slice(eq + 1) : '';
   const options: ParsedSetCookie['options'] = {};
   for (const seg of segments.slice(1)) {
-    const [k, v] = seg.split('=');
+    // WR-04: split on the first `=` only. Cookie attribute values can
+    // themselves contain `=` (e.g. base64-encoded paths in some edge
+    // proxies). The previous `split('=')` truncated such values.
+    const eqIdx = seg.indexOf('=');
+    const k = eqIdx >= 0 ? seg.slice(0, eqIdx) : seg;
+    const v = eqIdx >= 0 ? seg.slice(eqIdx + 1) : '';
     if (!k) continue;
     const key = k.toLowerCase();
     if (key === 'httponly') options.httpOnly = true;
