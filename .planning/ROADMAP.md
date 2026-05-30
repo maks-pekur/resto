@@ -126,9 +126,30 @@ Plans:
 5. System roles `owner`, `admin`, `staff` are seeded with permission presets from `packages/domain/src/rbac/system-roles.ts` via an idempotent NestJS bootstrap step (or a generated static SQL migration — keep convention with `pnpm db:migrate`); seed is re-runnable; `organizationHooks.afterUpdateMemberRole` is wired in `auth.config.ts` to emit `identity.role_changed.v1` envelope through outbox on every BA-driven role mutation; audit projection map covers the new event type; the BLOCKED row in `audit-gap.md` is updated to WIRED with reference to the live hook
 6. Email adapter wired three-way: Resend (staging/prod) + MailHog (dev) + `CapturedEmailAdapter` (tests); `assertEmailAdapterWired` extended to all three callbacks AND the `?? (() => Promise.resolve())` NOOP defaults removed from `auth.config.ts` so a misconfigured prod boot fails loud; `assertProdGuardrails` extended to assert non-empty `RESEND_API_KEY` + adapter class name when `NODE_ENV ∈ {staging, production}`; signup and password-reset endpoints return identical status + body + ±10ms timing for "email exists" vs "does not" (enumeration parity); Resend adapter retries 3× (250→1000→4000ms, total <6s) on 5xx and emits `identity.email_dispatch_failed.v1` envelope through outbox on terminal failure
 
-   **Plans**: TBD
-   **UI hint**: no
-   **Persona reviewers**: persona-cto, persona-skeptic
+   **Plans**: 5 plans
+
+Plans:
+**Wave 1** _(GATING per D-18 — NATS DLQ ships first; gates everything below)_
+
+- [ ] 03-01-nats-dlq-PLAN.md — AUTH-10 NATS DLQ wiring + IdentityEmailDispatchFailedV1 contract + ACTION_TARGET_KIND extension + e2e poison-message gating test
+
+**Wave 2** _(after Wave 1)_
+
+- [ ] 03-02-email-adapter-PLAN.md — AUTH-01 email adapter port + Resend/MailHog/Captured adapters + assertProdGuardrails + assertEmailAdapterWired 3-callback + NOOP-defaults removal + verifyTransport boot ping + boot-time integration test (D-13/D-14/D-15/D-17, D-01, D-03, D-05) + envs
+
+**Wave 3** _(after Wave 2)_
+
+- [ ] 03-03-flows-PLAN.md — AUTH-02/03 invitation send+accept + AUTH-04/05 password reset + AUTH-06 email verification + D-06 /v1/signup enumeration parity wrap + Phase 02 carry-overs (forgot-password localhost fallback + login 3-call fan-out refactor) + open-redirect refinement on next= params
+
+**Wave 4** _(after Wave 3)_
+
+- [ ] 03-04-cookies-2fa-PLAN.md — AUTH-08 full cookie sweep (every cookies().set site, not just the two from Phase 02 D-04) + AUTH-07 2FA TOTP enable + 10 recovery codes + saved-confirmation gate per D-22 (no admin-reset UI, no email-recovery loop, no regeneration UI per D-23)
+
+**Wave 5** _(after Wave 4 — closure)_
+
+- [ ] 03-05-role-seed-hook-closure-PLAN.md — AUTH-09 role seed (NestJS bootstrap step from SYSTEM_ROLES) + organizationHooks.afterUpdateMemberRole wiring (D-16a, closes audit-gap.md BLOCKED row → WIRED) + IdentityRoleChangedV1 contract + AUTH-11 WeakMap refactor + D-21 GDPR sweep on invitation+verification + D-20 per-tenant signin rate-limit + D-23 founder-side 2FA recovery runbook + scripts/reset-2fa.ts + D-07 SPF/DKIM/DMARC pre-deploy checklist
+      **UI hint**: no
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 4: Catalog Admin
 

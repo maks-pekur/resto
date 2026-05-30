@@ -747,32 +747,43 @@ export class RoleSeedBootstrap implements OnApplicationBootstrap {
 | A5  | NestJS `OnApplicationBootstrap` runs AFTER `pnpm db:migrate` job completes in the k8s deploy pipeline                                                              | AUTH-09 role-seed approach                                       | If migrations run as part of pod startup INSIDE the same container (non-job-based), `OnApplicationBootstrap` runs too early and the seed fails. **Planner must verify `infra/k8s/` or equivalent deploy spec to confirm migrations are a separate job.** Fallback: implement as a `pnpm db:seed-roles` script + add to deploy step. |
 | A6  | `requireEmailVerificationOnInvitation: true` is the safe choice and doesn't break the BA invitation flow when combined with `emailVerification.sendOnSignUp: true` | Pitfall 8                                                        | If this combination has an edge case (e.g., invitation accept fails for users created by signup who haven't clicked verification yet), the planner needs a small e2e to verify the happy path and possibly relax the constraint with a separate "verified-or-invited" check at controller level.                                    |
 
-## Open Questions
+## Open Questions (RESOLVED 2026-05-30 — see resolutions below)
 
 1. **`organization_role` Drizzle schema exact column names + composite uniqueness** for the AUTH-09 seed step.
    - What we know: BA 1.4.22 `OrganizationRole` schema referenced in `organization/types.d.mts:249-253`; system roles are global (no `organizationId`).
    - What's unclear: Local repo's `packages/db/src/schema/auth.ts` (or `packages/db/sql/`) may have RestOS overrides; the UPSERT must match the local schema, not the upstream default.
    - Recommendation: Add a "scout the local BA Drizzle schema" sub-task to the first wave touching AUTH-09 (waves 5 in recommendation). Owner: plan-checker before locking the seed shape.
+   - **RESOLVED:** Schema is `packages/db/src/schema/auth.ts` `organizationRole` table — columns `id (text PK)`, `organizationId (uuid, NOT NULL, FK -> tenants.id ON DELETE CASCADE)`, `role (text)`, `permission (text)`, `createdAt`, `updatedAt`. **Crucial design observation:** `organization_role` is BA DYNAMIC tenant-creatable role storage — it is NOT where the static system presets (`owner`/`admin`/`staff` from `SYSTEM_ROLES`) live. The static presets are already loaded in-memory via `apps/api/src/contexts/identity/infrastructure/better-auth/access-control.ts:6-9` (`ac.newRole(SYSTEM_ROLES.owner/admin/staff)`) and passed to `organization({ roles: { owner, admin, staff } })` in `auth.config.ts:148-153`. **AUTH-09 D-16 is REINTERPRETED:** no DB UPSERT for static presets — they are injected at BA init time. D-16 becomes verification + traceability: (a) confirm in-code presets at `access-control.ts:6-9` match `SYSTEM_ROLES` exactly (regression test), (b) add boot-time assertion (`assertSystemRolesPresent`) that the BA `accessControl` map contains exactly `owner`/`admin`/`staff` with permissions from `SYSTEM_ROLES` (catches drift), (c) confirm BA `organization.create` server-side action assigns the operator as `owner` by default. **No SQL migration for `organization_role` in AUTH-09.** Plan 05 Task 1 is rewritten accordingly.
 
 2. **Is the existing GDPR cron a single class/file, or per-context?**
    - What we know: STATE.md references Phase 1's daily erasure cron; `audit-gap.md` mentions the path.
    - What's unclear: Whether Phase 3's invitation+verification sweep should EXTEND the existing job or add a sibling. The simpler one is the extension; verify before authoring a new file.
    - Recommendation: Scout step before D-21 task.
+   - **RESOLVED:** Path is `apps/api/src/infrastructure/background-jobs.module.ts` with sibling per-job service files (e.g. `tenant-erasure-scheduler.service.ts`). Plan 05 Task 3 (GDPR sweep) adds two new sibling files: `invitation-retention-scheduler.service.ts` + `verification-retention-scheduler.service.ts` (or one consolidated `auth-token-retention-scheduler.service.ts`), registered in `BackgroundJobsModule.providers`. Mirror the existing `tenant-erasure-scheduler.service.ts` shape (NestJS `@Injectable()` + `@Cron(CronExpression.EVERY_DAY_AT_3AM)` decorator).
 
 3. **NATS DLQ subject convention — `dlq.<original_subject>` literal or `dlq.<context>.<event>.v<n>`?**
    - What we know: `packages/events/CLAUDE.md` says `dlq.<subject>`. The subject in `STREAM_SUBJECTS` for identity events is `identity.>`.
    - What's unclear: Whether the DLQ subject for a poison `identity.email_dispatch_failed.v1` envelope should be `dlq.identity.email_dispatch_failed.v1` (specific) or `dlq.identity` (wildcard catch-all). Implication: how the DLQ is monitored downstream.
    - Recommendation: Use `dlq.<specific.subject>` per the CLAUDE.md convention; the planner can decide to alias them under a single audit-pipeline subscriber later.
+   - **RESOLVED:** Per `packages/events/CLAUDE.md` line 98: `dlq.<subject>`. Concretely: `dlq.identity.email_dispatch_failed.v1`, `dlq.identity.signed_in.v1`, `dlq.identity.signed_out.v1`, etc. — one DLQ subject per source subject, NOT a single bucket. Plan 01 codifies this in the `SubscribeOptions` shape + e2e test.
 
 4. **AUTH-07: backup codes returned as plain strings or as a single "shown once" object?**
    - What we know: BA `backup-codes` sub-module exists in 1.4.22.
    - What's unclear: Exact response shape of BA's `/api/auth/two-factor/enable`. Determines admin UI rendering shape.
    - Recommendation: Verify against `node_modules/.../two-factor/backup-codes/*.d.mts` in first wave touching AUTH-07. Plan-checker action.
+   - **RESOLVED:** Per BA `node_modules/.../two-factor/index.d.mts`:
+     - Endpoint: `POST /two-factor/enable` (line 18)
+     - Server-side: `auth.api.enableTwoFactor` (line 23)
+     - Client: `authClient.twoFactor.enable` (line 26)
+     - Input: `{ password: z.ZodString }` (line 33) — **the user CURRENT password is required**
+     - Response includes `backupCodes: string[]` (line 92) — plain string array, shown once
+       **UX implication:** The 2FA enable flow MUST include a password re-prompt (the user re-enters their password before BA generates the TOTP secret + backup codes). Plan 04 Task 2 locks the UX to the password-re-prompt shape (not session-pull): a `<PasswordConfirmDialog>` component shown when the user clicks "Enable 2FA". Backup codes render as a plain `string[]` in a copy-to-clipboard list with "I saved them" confirmation gate before activation completes.
 
 5. **CTO LOW-1 caveat for invitation locale: should the planner add a small `notes` field on `invitation` so the admin can set the invitee's preferred locale at invite-time?**
    - What we know: Default behavior is "inviter's browser language" — RU operator inviting EN consultant gets RU.
    - What's unclear: Whether scope tolerates a small `inviteLocale: 'en' | 'ru'` additional field in BA's `organization.schema.invitation.additionalFields`.
    - Recommendation: NO for Phase 3 (per D-03 scope minimization); accept the caveat. Revisit at MVP-2 CRM phase.
+   - **RESOLVED:** Decision: **NO** `inviteLocale` BA additionalField in Phase 3. Per CONTEXT.md D-03 the limitation is accepted (EN-speaking admin inviting an RU-speaking invitee -> invitee gets EN email). Proper fix (per-user `locale` BA additionalField) deferred to MVP-2 CRM phase per CONTEXT.md `<deferred>` section. No plan edit needed.
 
 ## Environment Availability
 
