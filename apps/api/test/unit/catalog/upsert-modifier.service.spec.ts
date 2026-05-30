@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { LocalizedText } from '@resto/domain';
 import { UpsertModifierService } from '../../../src/contexts/catalog/application/upsert-modifier.service';
-import { UpsertModifierInputSchema } from '../../../src/contexts/catalog/application/dto';
+import { UpsertModifierGroupInputSchema } from '../../../src/contexts/catalog/application/dto';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
@@ -15,7 +15,7 @@ const buildRepo = (): CatalogRepository => ({
   upsertModifier: vi.fn().mockResolvedValue({ id: 'modifier-uuid' }),
 });
 
-const baseInput = UpsertModifierInputSchema.parse({
+const baseInput = UpsertModifierGroupInputSchema.parse({
   name: { en: 'Spice level' },
   minSelectable: 0,
   maxSelectable: 1,
@@ -27,7 +27,7 @@ describe('UpsertModifierService', () => {
     const repo = buildRepo();
     const service = new UpsertModifierService(repo);
 
-    const input = UpsertModifierInputSchema.parse({
+    const input = UpsertModifierGroupInputSchema.parse({
       name: { en: 'Spice level' },
       minSelectable: 0,
       maxSelectable: 1,
@@ -49,7 +49,7 @@ describe('UpsertModifierService', () => {
 
   it('rejects at the DTO boundary when maxSelectable < minSelectable', () => {
     expect(() =>
-      UpsertModifierInputSchema.parse({
+      UpsertModifierGroupInputSchema.parse({
         name: LocalizedText.parse({ en: 'Foo' }),
         minSelectable: 3,
         maxSelectable: 1,
@@ -60,7 +60,7 @@ describe('UpsertModifierService', () => {
   it('throws when no tenant context is bound', async () => {
     const service = new UpsertModifierService(buildRepo());
     await expect(
-      service.execute(UpsertModifierInputSchema.parse({ name: { en: 'X' } })),
+      service.execute(UpsertModifierGroupInputSchema.parse({ name: { en: 'X' } })),
     ).rejects.toThrow(/tenant context/i);
   });
 

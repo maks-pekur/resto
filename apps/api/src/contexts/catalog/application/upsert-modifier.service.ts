@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { getBrandId, requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { UpsertModifierInput } from './dto';
+import type { UpsertModifierGroupInput } from './dto';
 
 @Injectable()
 export class UpsertModifierService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}
 
-  async execute(input: UpsertModifierInput): Promise<{ id: string }> {
+  async execute(input: UpsertModifierGroupInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
     const brandId = getBrandId() ?? null;
     return this.repo.upsertModifier({

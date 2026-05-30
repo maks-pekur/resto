@@ -8,7 +8,7 @@ import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard'
 import {
   UpsertCategoryInputDto,
   UpsertItemInputDto,
-  UpsertModifierInputDto,
+  UpsertModifierGroupInputDto,
 } from '../../application/dto';
 import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
@@ -75,11 +75,12 @@ export class InternalCatalogController {
 
   @Post('modifiers')
   @HttpCode(HttpStatus.OK)
-  @ApiBody({ type: UpsertModifierInputDto })
+  @ApiBody({ type: UpsertModifierGroupInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   modifier(
-    @Body(new RestoZodValidationPipe(UpsertModifierInputDto)) input: UpsertModifierInputDto,
+    @Body(new RestoZodValidationPipe(UpsertModifierGroupInputDto))
+    input: UpsertModifierGroupInputDto,
   ): Promise<IdResponseDto> {
     return wrap(() => this.upsertModifier.execute(input));
   }

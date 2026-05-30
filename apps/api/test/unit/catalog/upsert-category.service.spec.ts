@@ -16,6 +16,7 @@ const buildRepo = (): CatalogRepository => ({
 
 const baseInput = {
   slug: Slug.parse('starters'),
+  parentId: null,
   name: LocalizedText.parse({ en: 'Starters' }),
   description: null,
   sortOrder: 0,

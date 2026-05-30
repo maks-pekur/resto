@@ -21,6 +21,10 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   // AUTH-10 / D-05: platform-level alert. DLQ branch may have no userId
   // (poison envelope unparseable) so this is NOT 'user'.
   'identity.email_dispatch_failed': 'platform',
+  'catalog.menu_first_published': 'menu',
+  'catalog.menu_republished': 'menu',
+  'catalog.item_stopped': 'menu_item',
+  'catalog.item_unstopped': 'menu_item',
 };
 
 const targetKindFor = (action: string): string | null => {
@@ -41,9 +45,7 @@ export class RecordAuditService {
     // events whose envelope tenantId is null (e.g. identity.email_dispatch_failed
     // DLQ branch, tenancy.tenant_erasure_completed).
     if (envelope.tenantId !== null) {
-      await this.db.withTenantId(envelope.tenantId, (tx) =>
-        this.fromEnvelopeWithTx(envelope, tx),
-      );
+      await this.db.withTenantId(envelope.tenantId, (tx) => this.fromEnvelopeWithTx(envelope, tx));
       return;
     }
     await this.db.withoutTenant(`audit platform event: ${envelope.type}`, (tx) =>
@@ -74,14 +76,20 @@ export class RecordAuditService {
     const ipAddress = typeof payload.ipAddress === 'string' ? payload.ipAddress : null;
     const userAgent = typeof payload.userAgent === 'string' ? payload.userAgent : null;
     const targetType = targetKindFor(envelope.type);
-    // WR-03: per-event target resolution. `tenant`-typed events MUST take
-    // targetId from payload.tenantId — using payload.userId would point at
-    // the operator instead of the tenant. `user`-typed events take userId.
-    // `platform`-typed events (DLQ alerts) have no target — leave null.
-    const targetId = (() => {
-      if (targetType === 'tenant') {
+    // Per-targetType resolution combining identity (WR-03) and catalog (04A-05) flows:
+    // - 'tenant' / 'menu' → payload.tenantId (menus are per-tenant 1:1 in RestOS)
+    // - 'menu_item' → payload.itemId
+    // - 'user' → payload.userId
+    // - 'platform' (DLQ alerts) → null
+    const targetId = ((): string | null => {
+      if (targetType === 'tenant' || targetType === 'menu') {
         return typeof payload.tenantId === 'string' && payload.tenantId.length > 0
           ? payload.tenantId
+          : null;
+      }
+      if (targetType === 'menu_item') {
+        return typeof payload.itemId === 'string' && payload.itemId.length > 0
+          ? payload.itemId
           : null;
       }
       if (targetType === 'user') {

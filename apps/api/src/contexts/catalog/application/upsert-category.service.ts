@@ -10,11 +10,14 @@ export class UpsertCategoryService {
   async execute(input: UpsertCategoryInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
     const brandId = getBrandId() ?? null;
+    // 04A-05: slug optional in DTO (auto-derived from name in plan 06 service).
+    // Until plan 06 lands the transliteration helper, fall back to a placeholder
+    // so the repository row's `slug: string` invariant holds.
     return this.repo.upsertCategory({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
       brandId,
-      slug: input.slug,
+      slug: input.slug ?? '',
       name: input.name,
       description: input.description,
       sortOrder: input.sortOrder,

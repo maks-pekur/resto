@@ -16,17 +16,21 @@ export class UpsertItemService {
     const currency = input.currency as Currency;
     const ctx = requireTenantContext();
     const brandId = getBrandId() ?? null;
+    // 04A-05: slug optional in DTO (auto-derived in plan 06). imageS3Key removed
+    // in favour of `photos[]`; until plan 06 refactors the repository row, we
+    // derive imageS3Key from the first photo so existing storage code stays
+    // valid. Plan 06 replaces the repo row to accept `photos[]` directly.
     return this.repo.upsertItem({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
       brandId,
       categoryId: input.categoryId,
-      slug: input.slug,
+      slug: input.slug ?? '',
       name: input.name,
       description: input.description,
       basePrice: basePrice,
       currency: currency,
-      imageS3Key: input.imageS3Key,
+      imageS3Key: input.photos[0]?.s3Key ?? null,
       allergens: input.allergens,
       status: input.status,
       sortOrder: input.sortOrder,
