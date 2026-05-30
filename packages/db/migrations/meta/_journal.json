@@ -197,6 +197,48 @@
       "when": 1779840300000,
       "tag": "0027_revoke_resto_app_ba_credential_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1779840400000,
+      "tag": "0028_grant_delete_inbox_processed",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1779840500000,
+      "tag": "0029_catalog_phase4a_menu_items_extend",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1779840600000,
+      "tag": "0030_catalog_phase4a_menu_items_drop_image_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1779840700000,
+      "tag": "0031_catalog_phase4a_categories_parent",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1779840800000,
+      "tag": "0032_catalog_phase4a_tenants_first_publish",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1779840900000,
+      "tag": "0033_catalog_phase4a_menu_versions_seq",
+      "breakpoints": true
     }
   ]
 }
