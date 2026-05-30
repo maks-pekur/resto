@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: planning
 stopped_at: Phase 4 context gathered + iiko schema redesign direction set; 4 personas running in background
-last_updated: "2026-05-30T16:58:34.388Z"
+last_updated: '2026-05-30T16:58:34.388Z'
 last_activity: 2026-05-30
 progress:
   total_phases: 17

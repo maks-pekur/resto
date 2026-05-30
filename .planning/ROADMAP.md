@@ -23,7 +23,8 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
 - [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
 - [x] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_ (completed 2026-05-30)
-- [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
+- [ ] **Phase 4a: Catalog Schema + API** - Foundational menu domain redesign aligned with iiko nomenclature model; Drizzle schema migration, DTO updates, `/v1/menu` DTO extension, draft/publish snapshot + revert capability — backend only, no admin UI _(split from Phase 4 on 2026-05-30 — CTO HIGH-2 + Skeptic HIGH-4)_
+- [ ] **Phase 4b: Catalog Admin UI** - Full CRUD admin UX on top of finalized catalog schema; categories, items, modifiers, modifier groups, sizes, stop-list, photos, draft/publish flow — designed via `/gsd:ui-phase` then `/gsd:discuss-phase` before planning _(split from Phase 4 on 2026-05-30 — labor-intensive UI work isolated per user request)_
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
 - [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
@@ -151,26 +152,44 @@ Plans:
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic
 
-### Phase 4: Catalog Admin
+### Phase 4a: Catalog Schema + API
 
-**Goal**: Give operators a full CRUD UX for menu management — categories, items, modifiers, variants, photos, stop-lists, and a publish flow — so the catalog is ready to be consumed by customer-facing surfaces
+**Goal**: Redesign the catalog domain aligned with iiko nomenclature model (Группа / Блюдо / Размер / Модификатор / Группа модификаторов / Стоп-лист / ТТК-fields) so MVP-3 iiko-integration becomes a thin adapter rather than a structural reshape. Ship the full Drizzle migration, DTO updates, new entity types (modifier groups, sizes, stop-list, photos as forward-compatible array), and extend the public `/v1/menu` DTO with all new fields. Backend only — no admin UI in this phase.
 **Depends on**: Phase 3
-**Requirements**: CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-06, CAT-07, CAT-08, CAT-09, CAT-10
+**Requirements**: CAT-02 (item schema fields incl. БЖУ), CAT-04 (modifier groups schema), CAT-05 (variants/sizes schema), CAT-06 (publish snapshot logic incl. delayed-publish revert capability), CAT-09 (Zod max-length constraints), CAT-10 (Redis menu-version + nextval fallback)
 **Success Criteria** (what must be TRUE):
 
-1. Operator creates, edits, and archives categories and items (with name, description, price, allergens, photo) with explicit ordering, and uploads photos via presigned S3 PUT with preview
-2. Operator creates and manages modifier groups with per-option price deltas and item variants with price overrides
-3. Operator triggers publish and the snapshot becomes the new published version with cache invalidation; operator can see a diff between draft and published before publishing; menu version counter uses Postgres `nextval` sequence as authoritative fallback when Redis is unavailable
-4. Operator manages a manual stop-list, marking items as 86'd so they appear disabled on customer surfaces
-5. All catalog free-text fields enforce Zod max-length constraints (`imageS3Key`, `allergens` array and element lengths)
+1. `04a-SCHEMA-MAP.md` exists and maps every iiko nomenclature entity to a proposed RestOS entity, with migration impact + downstream-consumer note (qr-menu mock, `packages/api-client` generated DTO, `tenant-isolation.spec.ts`, ESLint composite-FK audit)
+2. Drizzle migration lands and is idempotent + reversible; existing dev-seed continues to work or is replaced; composite FK on every tenant-scoped child table; RLS double-enforcement preserved
+3. `UpsertItemInputSchema` extended with structured БЖУ (proteins/fats/carbs/kcal nullable + estimated flag), `source` provenance enum (`manual / ai_generated / imported_iiko / imported_csv`), forward-compatible `photos` array (single-entry in MVP-1), URL-safe ASCII-transliterated `slug` + `slug_aliases` table
+4. Modifier vs Modifier Group entities cleanly separated; size as own entity (or embedded — researcher recommends); stop-list shape decided (table vs column) and wired to existing audit pipeline
+5. Publish flow supports a delayed-publish revert capability (publish event fires only at end of 5s window, no compensating outbox events); `catalog.menu_first_published.v1` vs `catalog.menu_republished.v1` distinct event types; Redis menu-version counter uses Postgres `nextval` sequence as authoritative fallback
+6. Public `/v1/menu` DTO contains all new fields; `docs/api/openapi.yaml` regenerated and CI drift-check added
    **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-skeptic (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
+
+### Phase 4b: Catalog Admin UI
+
+**Goal**: Build the full `apps/admin` CRUD UX over the Phase-4a-finalized catalog schema — categories, items (with photo upload + БЖУ + allergens + ingredients), modifier groups, sizes, stop-list (inline + dashboard widget), draft/publish flow with status badges + sticky publish bar, "Preview as customer" link to existing `apps/qr-menu` for activation feedback loop.
+**Depends on**: Phase 4ba
+**Requirements**: CAT-01 (categories CRUD UX), CAT-02 (items editor UX — form layout), CAT-03 (photo upload UX + presigned PUT), CAT-04 (modifier groups UX), CAT-05 (variants UX), CAT-07 (stop-list UX), CAT-08 (diff UX — badges + sticky bar)
+**Success Criteria** (what must be TRUE):
+
+1. Sidebar `Menu` expandable group with sub-routes for Categories / Items / Modifiers / Stop-list; Items default = compact table (thumb + name + category + price + status); default filter = all except archived
+2. Full-page item editor at `/dashboard/menu/items/[id]` with tabs for variants + modifier groups; single-locale MVP-1; structured БЖУ inputs (per 100g, nullable, estimated flag); single-photo upload with drag-drop
+3. Auto-save-draft + explicit Publish (revised D-08 per Product Strategist HIGH-2); delayed-publish + 5s undo toast (revised D-10 per CTO HIGH-1 + Skeptic HIGH-2 convergence — see `04b-CONTEXT.md` after discuss); status badges + sticky publish bar with first-publish vs republish distinction
+4. Stop-list as inline switch in Items row + "Today's 86" widget on Dashboard with "Reset all" button; stale-stop-list warning surface at >24h (per Skeptic MED); manual reset only
+5. "Preview as customer" link from admin to `apps/qr-menu` route for the active tenant — closes the Phase-04 activation gap (per Growth Marketer HIGH-1)
+6. Badge copy uses `Paused` / `Стоп` (not `86'd` — per Growth Marketer MED-1); `destructive` variant reserved for archive, not paused
+   **Plans**: TBD
+   **UI hint**: yes (mandatory ui-phase pass before discuss-phase)
+   **Persona reviewers**: persona-product-strategist, persona-growth-marketer (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
 ### Phase 5: Customer Site
 
 **Goal**: Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button is disabled until Phase 8 completes
-**Depends on**: Phase 4
+**Depends on**: Phase 4b
 **Requirements**: SITE-01, SITE-02, SITE-03, SITE-04, SITE-05, SITE-06, SITE-07, SITE-09, SITE-10
 **Success Criteria** (what must be TRUE):
 
@@ -186,7 +205,7 @@ Plans:
 ### Phase 6: QR-Menu Customer
 
 **Goal**: Deliver a real customer-facing ordering UX in `apps/qr-menu` — branded menu display, item detail with modifiers, cart, table binding — over the already-working `/v1/menu` API
-**Depends on**: Phase 4
+**Depends on**: Phase 4b
 **Requirements**: QRM-01, QRM-02, QRM-03, QRM-04, QRM-05, QRM-06, QRM-07, QRM-08, QRM-09, QRM-10, QRM-11, QRM-12
 **Success Criteria** (what must be TRUE):
 
@@ -405,7 +424,8 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4. Catalog Admin                              | 0/?            | Not started   | -          |
+| 4a. Catalog Schema + API                      | 0/?            | Not started   | -          |
+| 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |

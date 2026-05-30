@@ -24,6 +24,7 @@
 The cost is not architectural — `imageS3Key` becoming `imagesS3Keys: string[]` (or a sibling `item_photos` table) is a one-day schema move WHEN there is zero production data. Doing it in v2 means a migration across paying tenants' catalogs plus refit of the upload UX. Phase 04 is the ONLY cheap window.
 
 **Restaurant-vertical specifics:**
+
 - Food photography is the single highest-impact conversion lever for menu items on a customer-facing surface (this is well-documented in QSR + delivery-app A/B testing — Toast/DoorDash blog content confirms 30%+ uplifts from hero photo presence).
 - Restaurants pay food photographers up-front during onboarding; the typical asset delivery is 3–5 photos per dish, not 1. The operator has the photos; the platform's job is to accept them.
 - The "main photo" pattern works for delivery aggregators (Glovo, Wolt) because their grid card surface only renders one photo. But on RestOS's QR-menu item detail and Site item detail, there is real estate for a gallery.
@@ -31,6 +32,7 @@ The cost is not architectural — `imageS3Key` becoming `imagesS3Keys: string[]`
 **Severity rationale:** HIGH because (a) it impacts first-paying-customer perceived polish vs incumbents the prospect is comparing against, and (b) the in-phase cost is fractional while the retrofit cost compounds with every paying tenant.
 
 **Recommendation:**
+
 - **Minimum:** Reserve the schema slot now. Add `item_photos` table OR `imageS3Keys: string[]` column in Phase 04 even if the admin UI only writes/reads the first slot. Cost: ~0.5d schema + DTO. UI stays MVP-1.
 - **Preferred:** Ship gallery upload in Phase 04 (drag-drop area accepting multiple files, first photo = hero, reorder via drag). Add 1–2 days to phase plan. shadcn primitives are already present; react-dropzone supports multi-file out of the box.
 - **D-07 alternative captured in the decision log already** (one photo + v2 slot in schema) — that option should be promoted from rejected to selected.
@@ -52,6 +54,7 @@ The cited risk ("accidental edits") is real but solvable: every modern auto-save
 **Severity rationale:** HIGH because the workflow it most affects is the onboarding TTL (first-paying-customer gate), and because the decision is locked-in by Phase 04 schema only weakly (auto-save vs explicit-save is a UI decision, not a schema decision — so reversing it post-Phase-04 is cheap, but reversing the user's mental model on a UX they've already used is not).
 
 **Recommendation:**
+
 - **Auto-save to draft on field blur or 800ms debounce.** Status indicator "Saved" / "Saving..." in the form header. No Save button.
 - **Keep the explicit "Publish" gesture in the sticky bar (D-09/D-10) unchanged** — that's the commit operation.
 - **Add an Undo affordance per edit:** `Cmd+Z` and a 5s toast on field change ("Reverted price from 800 → 850. Undo"). Matches D-10 publish-undo mental model.
@@ -69,12 +72,14 @@ The cited risk ("accidental edits") is real but solvable: every modern auto-save
 2. **MVP-3 iiko adapter**: "catalog sync (iiko → RestOS)" → items pulled from iiko-side ТТК need to be marked as "synced from iiko" so RestOS-side edits know not to round-trip back.
 
 If Phase 04 ships without an item `source` column AND `needs_review` flag, then:
+
 - MVP-2 has to migrate every tenant's items table to add the column, and AI-generated items will have no flag distinguishing them from operator-typed items, so the AI dashboard's "items needing review" widget has nothing to query.
 - MVP-3 has to either re-migrate or hack `source` into a metadata JSONB, leading to inconsistent query patterns.
 
 **Cost of adding now:** ~0.25d. Two columns: `source: 'manual' | 'ai_generated' | 'iiko_imported' | 'csv_import'` (enum, default `manual`) and `needs_review: boolean` (default `false`). Admin UI in Phase 04 ignores both; just ensures Default values are correct. Filter dropdown in items table gets a `Source` filter as a no-op in Phase 04, real options surface in MVP-2/3.
 
 **Recommendation:**
+
 - Add `source` enum and `needs_review` boolean to the new `menu_items` schema in Phase 04.
 - Optionally: add `source_external_id` (string, nullable) for the future iiko ID — matches the architectural pattern of `tenant_domains.external_id` and avoids a second migration in MVP-3.
 - This is the single highest-leverage, lowest-cost cross-milestone insurance in the phase.
@@ -89,16 +94,17 @@ If Phase 04 ships without an item `source` column AND `needs_review` flag, then:
 
 **What the iiko alignment actually buys (and what it doesn't):**
 
-| Benefit | Real or assumed? | Notes |
-|---|---|---|
-| Lighter MVP-3 iiko adapter | Real but small | The adapter cost is bounded regardless of schema (iiko's API is what it is). Saving 5 days in MVP-3 is real but not phase-defining. |
-| "Easy import from iiko" as onboarding lever | Assumed and probably overweighted | "Already on iiko? Import in 10 min" is a STRATEGIC GTM pitch (MVP-3 partnership motion), not an MVP-1 onboarding lever. MVP-1 customers self-build menu in the AI constructor (MVP-2) or by hand (MVP-1 fallback). iiko import lands in MVP-3. |
-| Better menu primitives for ALL operators | Real and underweighted | Hierarchical categories (Группа is a tree), `Размер` as first-class entity, separate `ModifierGroup` vs `Modifier` — these are LITERALLY the data shapes restaurateurs already think in because they're domain conventions, not iiko-specific. The schema is closer to how restaurant menus exist on paper. |
-| Talent / hiring signal | Real | When the founder hires a second engineer, "our schema mirrors iiko nomenclature" is a much easier 5-minute onboarding than "ours is custom flat." |
+| Benefit                                     | Real or assumed?                  | Notes                                                                                                                                                                                                                                                                                                       |
+| ------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Lighter MVP-3 iiko adapter                  | Real but small                    | The adapter cost is bounded regardless of schema (iiko's API is what it is). Saving 5 days in MVP-3 is real but not phase-defining.                                                                                                                                                                         |
+| "Easy import from iiko" as onboarding lever | Assumed and probably overweighted | "Already on iiko? Import in 10 min" is a STRATEGIC GTM pitch (MVP-3 partnership motion), not an MVP-1 onboarding lever. MVP-1 customers self-build menu in the AI constructor (MVP-2) or by hand (MVP-1 fallback). iiko import lands in MVP-3.                                                              |
+| Better menu primitives for ALL operators    | Real and underweighted            | Hierarchical categories (Группа is a tree), `Размер` as first-class entity, separate `ModifierGroup` vs `Modifier` — these are LITERALLY the data shapes restaurateurs already think in because they're domain conventions, not iiko-specific. The schema is closer to how restaurant menus exist on paper. |
+| Talent / hiring signal                      | Real                              | When the founder hires a second engineer, "our schema mirrors iiko nomenclature" is a much easier 5-minute onboarding than "ours is custom flat."                                                                                                                                                           |
 
 **Severity rationale:** MED because the decision (do the redesign) is correct, but the internal narrative should be corrected so the planner doesn't over-optimize for iiko-mapping-fidelity at the cost of UX simplicity. The redesign is justified primarily by "menu primitives that match restaurateur mental model," NOT by "MVP-3 adapter is 3 days vs 8 days."
 
 **Recommendation:**
+
 - Reframe in the planner's research mandate: "Use iiko nomenclature as a reference for restaurant-domain entity boundaries; deviate where the iiko model carries operational complexity RestOS doesn't need (e.g., iiko ТТК ingredient lists tie to cost-of-goods workflows that are out of scope until MVP-3+)."
 - Specifically: **do not** copy iiko field-by-field. Copy entity-by-entity (Группа, Блюдо, Размер, Модификатор, Группа Модификаторов, Стоп-лист). Skip iiko-specific fields like `nomenclatureGroupId` parent reference traversal patterns that won't help RestOS UX.
 - The schema redesign is correct as a strategic bet; the rationale framing needs adjustment.
@@ -113,7 +119,7 @@ If Phase 04 ships without an item `source` column AND `needs_review` flag, then:
 
 **However, D-13 (no auto-reset, manual toggle off) carries real operational risk that the discussion log dismisses too quickly.**
 
-The stated rationale ("operator predпочитает manual control, особенно когда дефицит ингредиента длится >1 дня") describes the *good* case. The bad case:
+The stated rationale ("operator predпочитает manual control, особенно когда дефицит ингредиента длится >1 дня") describes the _good_ case. The bad case:
 
 - Friday night, sous-chef 86s 12 items as the kitchen runs out of components. Monday morning, the operator (a different person) opens the QR-menu and sees 12 items still 86'd from Friday because nobody remembered to reset. Customers see a half-empty menu, scan-to-bounce rate spikes.
 - Quick Resto and Poster default to auto-reset at end of business day (configurable). iiko offers BOTH (manual + auto-reset at start-of-day). RestOS shipping only manual is a competitive regression vs the segment standard.
@@ -121,6 +127,7 @@ The stated rationale ("operator predпочитает manual control, особе�
 **Severity rationale:** MED because the fix is well-scoped (toggle in tenant settings) and can ship in MVP-1 or v2 without architectural debt; the harm window is bounded (operators learn to reset manually within a week of paid use); but each unreset stop-list item on a Monday morning is a real conversion-impacting customer experience.
 
 **Recommendation:**
+
 - **MVP-1 (Phase 04 scope):** Ship D-13 manual reset as-is + add a Dashboard widget prompt: "12 items have been 86'd for >24h. Reset?" as a soft nudge. Cost: trivial (it's a query against `stopped_at`).
 - **v2:** Add a tenant-setting "Auto-reset stop-list at HH:MM tenant-local time" (default off). When pilot operators ask for it (they will), enable cleanly.
 - Do NOT ship auto-reset cron in Phase 04 — D-13's deferral is correct for in-phase scope. But ship the soft nudge.
@@ -134,17 +141,20 @@ The stated rationale ("operator predпочитает manual control, особе�
 **Evidence:** D-09 satisfies CAT-08 ("operator sees a diff between draft and published before publishing") via "status badges per item + sticky publish bar showing N unpublished changes." D-10 ships instant-publish + 5s undo toast.
 
 **What's right:**
+
 - Instant + undo matches modern SaaS norms (Linear, Notion). Confirm modals are friction.
 - Per-item status badges are good ambient information.
 - The 5s undo is genuine safety net.
 
 **What's borderline:**
+
 - "View list" expansion of the sticky bar (per `<specifics>` section: "N unpublished changes • [View list ▾]") is the **only** place where the operator sees what they're about to publish. If the operator publishes 25 unpublished changes accidentally and within 5s the kitchen has already received 3 orders against the wrong price — the 5s undo can't actually undo orders.
 - Larger restaurants (the small-chain segment) do think in release-management terms. "I want to publish only the lunch-menu changes, not the dinner-menu changes I made last night that aren't ready" is a real workflow.
 
 **Severity rationale:** MED because for solo-operator independent restaurants (the MVP-1 segment), this is fine. For small-chain segment (which RestOS markets to per PROJECT.md "1–10 locations"), it's thin. But solving it fully = scope creep into v2.
 
 **Recommendation:**
+
 - **Keep D-09/D-10 as designed for Phase 04** — instant publish + undo + badge + sticky bar.
 - **Add ONE thing to the sticky bar:** when N > 5 unpublished changes, expand by default and require operator to click "Publish" (don't auto-collapse). Soft friction proportional to change-count without a confirm modal.
 - **Defer to v2:** selective publish ("publish only these 3 items"). Mention in deferred ideas section.
@@ -161,12 +171,14 @@ The stated rationale ("operator predпочитает manual control, особе�
 **The trap:** Restaurants will not actually have precise БЖУ values for most house-made items. They'll have them for industrial supply (packaged drinks, branded ice cream) but for "Caesar salad" the operator will guess. iiko ТТК solves this with cost-of-goods workflow (ingredients × per-100g values aggregated), but that requires the full recipe entity which is **deferred to v2** (correctly per "Recipe / ТТК (v2)" in deferred list).
 
 If the БЖУ fields are presented as required-feeling and unforgiving, operators will either:
+
 1. Skip them (defeating the purpose), or
 2. Fabricate values (worse — false claims on a customer-facing surface, with EU consumer-protection exposure).
 
 **Severity rationale:** MED. The schema decision is right. The UX presentation is what needs care.
 
 **Recommendation:**
+
 - БЖУ fields default to `null`, not 0. Schema column nullable.
 - UI presents them as optional with helper text "Leave blank if not measured. Required for nutrition filters on QR-menu."
 - AI assistant in MVP-2 will be a natural source of estimated values — flag the field as `nutrition_estimated: boolean` (similar to `needs_review` in Finding 3, can be same generic field).
@@ -198,6 +210,7 @@ If the БЖУ fields are presented as required-feeling and unforgiving, operator
 **Severity rationale:** LOW because the core decisions are right; only a UI polish note for the planner.
 
 **Recommendation:**
+
 - Empty-state copy: "Create your first menu item to start building your menu."
 - Stub a disabled "Import from CSV" link with tooltip "Coming soon" — sets expectation that bulk import lands in v2.
 - Sort default = `sortOrder ASC NULLS LAST, createdAt DESC` so unsorted items still surface meaningfully.
@@ -209,6 +222,7 @@ If the БЖУ fields are presented as required-feeling and unforgiving, operator
 **Framework:** Operator trust.
 
 **Evidence:** D-10 implies "backend capability `revert to previous snapshot` within 5s." This is a CORRECT capability but warrants explicit test coverage in the plan:
+
 - Concurrent reads during the 5s window: customer reading menu at second 3 of a 5s undo window — does the customer see version N or N-1? Stale-read inconsistency on a customer-paid order is a real harm.
 - Undo after partial NATS event propagation: publish emits `catalog.menu_published.v1` → audit subscribers tick → undo retracts the snapshot but audit row stays. Eventual consistency footprint needs auditing.
 
@@ -220,23 +234,23 @@ If the БЖУ fields are presented as required-feeling and unforgiving, operator
 
 ## Decision-by-Decision Verdict Matrix
 
-| Decision | Verdict | Action Required |
-|---|---|---|
-| D-01 Sidebar Menu group | Keep | None |
-| D-02 Compact table | Keep | Empty-state copy + sort default refinement (LOW) |
-| D-03 Default filter (all except archived) | Keep | None |
-| D-04 Full-page editor | Keep | None |
-| D-05 Single-locale editor | Keep | None |
-| D-06 БЖУ structured | Keep | UX: nullable + estimated flag (MED) |
-| D-07 Single photo | **Revise** | Reserve schema slot minimum; ship gallery preferred (HIGH) |
-| D-08 Explicit Save draft + lose-on-navigate | **Revise** | Auto-save to draft; keep explicit Publish (HIGH) |
-| D-09 Status badges + sticky bar (diff via UI) | Keep | Soft friction when N>5 unpublished (MED) |
-| D-10 Instant publish + 5s undo | Keep | Add explicit concurrency tests for undo window (LOW) |
-| D-11 Stop-list ≠ Archive | Keep | None |
-| D-12 Inline stop-list toggle + dashboard widget | Keep | None |
-| D-13 Manual stop-list reset (no auto-cron) | Keep | Add "items 86'd >24h" soft nudge widget (MED) |
-| Schema redesign (iiko alignment) | Keep | Reframe rationale; add `source`/`needs_review` columns (HIGH cross-milestone insurance) |
-| Phase 04/05 scope split | Keep | None |
+| Decision                                        | Verdict    | Action Required                                                                         |
+| ----------------------------------------------- | ---------- | --------------------------------------------------------------------------------------- |
+| D-01 Sidebar Menu group                         | Keep       | None                                                                                    |
+| D-02 Compact table                              | Keep       | Empty-state copy + sort default refinement (LOW)                                        |
+| D-03 Default filter (all except archived)       | Keep       | None                                                                                    |
+| D-04 Full-page editor                           | Keep       | None                                                                                    |
+| D-05 Single-locale editor                       | Keep       | None                                                                                    |
+| D-06 БЖУ structured                             | Keep       | UX: nullable + estimated flag (MED)                                                     |
+| D-07 Single photo                               | **Revise** | Reserve schema slot minimum; ship gallery preferred (HIGH)                              |
+| D-08 Explicit Save draft + lose-on-navigate     | **Revise** | Auto-save to draft; keep explicit Publish (HIGH)                                        |
+| D-09 Status badges + sticky bar (diff via UI)   | Keep       | Soft friction when N>5 unpublished (MED)                                                |
+| D-10 Instant publish + 5s undo                  | Keep       | Add explicit concurrency tests for undo window (LOW)                                    |
+| D-11 Stop-list ≠ Archive                        | Keep       | None                                                                                    |
+| D-12 Inline stop-list toggle + dashboard widget | Keep       | None                                                                                    |
+| D-13 Manual stop-list reset (no auto-cron)      | Keep       | Add "items 86'd >24h" soft nudge widget (MED)                                           |
+| Schema redesign (iiko alignment)                | Keep       | Reframe rationale; add `source`/`needs_review` columns (HIGH cross-milestone insurance) |
+| Phase 04/05 scope split                         | Keep       | None                                                                                    |
 
 ---
 
@@ -258,6 +272,7 @@ The `source` + `needs_review` + `source_external_id` trio is the single highest-
 ## Strategic Frame Summary
 
 **Vertical completeness for first-paying-customer:** Phase 04 as designed gets RestOS to "operator can build a working menu" — yes. The gaps that erode the "felt completeness" vs incumbents:
+
 1. Single photo (D-07) — competitive regression
 2. Explicit save (D-08) — modern UX regression
 3. No auto-reset stop-list nudge (D-13) — operational regression
@@ -305,4 +320,4 @@ None of these are MVP-1 blockers individually. Together they degrade the demo vs
 
 ---
 
-*Reviewer's net assessment:* Phase 04 is **80% well-judged with two high-severity UX regressions and one cheap cross-milestone insurance to add.** Schema redesign is the right strategic bet for the timing. The discussion log shows good rigor on stop-list-vs-archive and publish-flow design. The two HIGH-severity findings (D-07 single-photo, D-08 explicit-save) are both "small in-phase fix, large delayed-cost if unfixed" — exactly the kind of pre-plan-phase catch a product strategist persona is here to surface. Fix those plus the schema flags trio and Phase 04 is plan-phase ready.
+_Reviewer's net assessment:_ Phase 04 is **80% well-judged with two high-severity UX regressions and one cheap cross-milestone insurance to add.** Schema redesign is the right strategic bet for the timing. The discussion log shows good rigor on stop-list-vs-archive and publish-flow design. The two HIGH-severity findings (D-07 single-photo, D-08 explicit-save) are both "small in-phase fix, large delayed-cost if unfixed" — exactly the kind of pre-plan-phase catch a product strategist persona is here to surface. Fix those plus the schema flags trio and Phase 04 is plan-phase ready.

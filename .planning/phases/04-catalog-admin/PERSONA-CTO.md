@@ -4,6 +4,7 @@
 **Date:** 2026-05-30
 **Phase:** 04-catalog-admin
 **Inputs reviewed:**
+
 - `.planning/phases/04-catalog-admin/04-CONTEXT.md`
 - `.planning/phases/04-catalog-admin/04-DISCUSSION-LOG.md`
 - `.planning/ROADMAP.md` (Phase 4 + Phase 5 sections)
@@ -44,11 +45,13 @@ The qr-menu / website / qr-menu split with `/v1/menu` as the contract boundary i
 #### H1. D-10 "5s undo" backend capability is asserted, not designed
 
 **Evidence:**
+
 - `apps/api/src/contexts/catalog/application/publish-menu.service.ts:13-20` — entire publish service is `versions.bump(tenantId)`. No snapshot stored. No previous-version pointer.
 - `apps/api/src/contexts/catalog/domain/ports.ts:28-31` — `MenuVersionPort` exposes only `current()` / `bump()`. No `revertTo(version)`.
 - `packages/events/README.md:38` — `catalog.menu_published.v1` already documented as an emitted event.
 
 **Why HIGH:** Three concrete problems the planner needs a decision on before writing tasks:
+
 1. **No snapshot to revert to.** "Published menu" is the live state of `menu_items.status = 'published'`; rolling back requires either (a) introducing an immutable `menu_snapshots` table (Drizzle migration, new repo methods, snapshot-on-publish path, snapshot-on-read switch), or (b) holding the publish in a 5s "pending" window before the version bump (simpler — but then the toast is fake; nothing was published yet).
 2. **The outbox event already fired.** If we picked option (a), the `catalog.menu_published.v1` envelope has already been written to outbox by the time the user clicks Undo. Walking back an outbox event that may already have been dispatched to NATS subscribers (audit, cache invalidators, future POS push) is a distributed-systems landmine. Compensating events (`catalog.menu_publish_reverted.v1`) are the only clean answer and have to be designed now.
 3. **Redis cache version key.** Bumping version invalidates cache; reverting means either bumping again (so cache cold-starts twice for one user action) or restoring the pre-bump key (impossible after evict).
@@ -58,6 +61,7 @@ The qr-menu / website / qr-menu split with `/v1/menu` as the contract boundary i
 #### H2. Scope of Phase 04 is now ~2× original, with no split point
 
 **Evidence:**
+
 - `.planning/REQUIREMENTS.md:77-86` — CAT-01..CAT-10 (10 reqs, originally scoped as "CRUD UX over existing schema")
 - `04-CONTEXT.md:11-17` — phase now also owns schema redesign + DTO + public surface
 - `PROJECT.md` Constraints: "Solo founder on the 12-month roadmap horizon. Phase sizing accommodates solo throughput"
@@ -65,6 +69,7 @@ The qr-menu / website / qr-menu split with `/v1/menu` as the contract boundary i
 **Why HIGH:** A schema reshape touching `menu_items`, `menu_variants`, `menu_modifiers` (rename to `modifier_groups`?), `menu_modifier_options`, plus new tables (sizes, stop_list, нutrition) is itself a multi-day data-model phase. Layering 10 CRUD requirements + admin UI + publish flow + undo on top means one of two outcomes: (i) phase slips by 50-100%, eroding the Q1 2027 paying-customer milestone, or (ii) the admin UI is rushed against a not-quite-stable schema, requiring rework in Phase 05/06.
 
 **Recommendation:** Split into:
+
 - **Phase 04a** — Schema redesign + API DTO updates + `/v1/menu` shape update + migration. Output: stable schema + green types in `@resto/api-client` + integration tests proving Public read path works. Single PR, single user verification.
 - **Phase 04b** — Admin UI CRUD + publish flow + stop-list + undo. Output: operator can manage menu end-to-end.
 
@@ -73,6 +78,7 @@ The user has zero paying customers — breaking 04a/04b boundary explicit is che
 #### H3. Researcher gates must produce `04-SCHEMA-MAP.md` and a migration script sketch BEFORE planner runs
 
 **Evidence:**
+
 - `04-CONTEXT.md:26-49` — researcher's mandate exists in CONTEXT but is "guidance," not a gate.
 - Existing schema already has composite FKs and `tenant_id` discipline (`packages/db/src/schema/menu.ts:81-103`) — losing that during reshape is a regression vector.
 

@@ -19,6 +19,7 @@
 </domain>
 
 <schema_redesign_direction>
+
 ## Schema Redesign — iiko Alignment (NEW в Phase 04)
 
 **Решение пользователя 2026-05-30:** пересобрать catalog schema "полностью пересмотрев номенклатурные группы и поля для всех items" под iiko nomenclature. Это foundational work — все остальные decisions (UI/UX/API) накладываются СВЕРХУ финализированной schema.
@@ -88,6 +89,7 @@
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
@@ -124,6 +126,7 @@
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
@@ -170,27 +173,35 @@
 ## Deferred Ideas
 
 ### Multi-photo gallery (v2)
+
 - Несколько фото per item с hero-slot. Требует new `item_photos` table или JSONB array на items. После первого платящего клиента, когда придёт реальный feedback от operator'ов.
 
 ### Multilingual editor (v2)
+
 - Tabs для RU/EN/etc в редакторе LocalizedText полей. `LocalizedText` schema это уже поддерживает (Map locale→string), но UI пишет только default. Откладывается до запроса от клиента с мультиязычной аудиторией.
 
 ### Hierarchical categories (v2 — но iiko-research может рекомендовать в MVP-1)
+
 - iiko `Группа` — это дерево. Наша current schema плоская. Researcher должен оценить trade-off: hierarchical обязателен сейчас, или MVP-1 ок с плоскими + миграция к hierarchical в v2 без боли?
 
 ### Bulk operations (v2)
+
 - "Raise all prices by 10%", "Archive all items in category X", bulk stop-list toggle. Out of MVP-1 scope.
 
 ### Auto-reset stop-list at tenant-local 03:00 (v2)
+
 - Cron-based reset stop-list по локальному tz tenant'а. Откладываем — операторы предпочитают manual control. Если feedback от пилотов скажет иначе, добавим в v2.
 
 ### Стоп-листы с reason (v2)
+
 - iiko позволяет указать причину stop-list ("Out of stock", "Quality issue"). MVP-1 — простой on/off без reason. Research: насколько reason полезен операторам.
 
 ### Confirm modal перед publish (v2)
+
 - Текущее решение — instant + undo. Если 5s undo окажется недостаточным safety net (например после реального инцидента "случайно опубликовал draft"), добавить per-tenant settings toggle "Require confirm on publish".
 
 ### Recipe / ТТК (v2)
+
 - iiko Технико-Технологическая Карта (recipe + cost breakdown + yield). RestOS MVP-1 — только nutritional structured fields (БЖУ + ккал). ТТК как entity с ingredients-list + cost откладывается.
 
 ### Reviewed Todos (not folded)
@@ -201,5 +212,5 @@ None — discussion stayed within phase scope.
 
 ---
 
-*Phase: 4-Catalog Admin*
-*Context gathered: 2026-05-30*
+_Phase: 4-Catalog Admin_
+_Context gathered: 2026-05-30_

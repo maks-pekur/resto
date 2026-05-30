@@ -1,7 +1,13 @@
 ---
 phase: 04-catalog-admin
 reviewed: 2026-05-30
-personas: [persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer]
+personas:
+  [
+    persona-cto,
+    persona-skeptic,
+    persona-product-strategist,
+    persona-growth-marketer,
+  ]
 total_high: 14
 total_med: 16
 total_low: 9
@@ -69,6 +75,7 @@ unresolved_conflicts: 1
 ### Skeptic HIGH-3 — "dev seed OK to break" hides real dependencies
 
 Specific files to inventory before any schema change lands:
+
 - `apps/qr-menu/` mocks reading `/v1/menu`
 - `packages/api-client/` generated DTO (`openapi-typescript`)
 - `tenant-isolation.spec.ts` (Phase 01's TEN-08 cross-tenant net)
