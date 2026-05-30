@@ -23,7 +23,11 @@ import {
   type TenantProvisioningPort,
 } from './ports/tenant-provisioning.port';
 
-const MAX_SLUG_SUFFIX = 99;
+// WR-06: total candidates is MAX_SLUG_CANDIDATES (base + base-2 .. base-100).
+// There is no `base-1` — base IS the first candidate. Renamed from the
+// off-by-one MAX_SLUG_SUFFIX label so future readers do not assume the
+// constant is the suffix value.
+const MAX_SLUG_CANDIDATES = 100;
 const SLUG_MAX_LEN = 30;
 
 /**
@@ -183,8 +187,13 @@ export class SignUpService {
   }
 
   private async findFreeSlug(base: string): Promise<string> {
-    for (let suffix = 0; suffix <= MAX_SLUG_SUFFIX; suffix++) {
-      const candidate = suffix === 0 ? base : `${base}-${(suffix + 1).toString()}`;
+    // WR-06 part 2 (DEFERRED): batch via `LIKE 'base%'` requires a new
+    // TenantLookupPort method + repository impl + adapter wiring across
+    // the identity → tenancy bounded-context boundary. Tracked for a
+    // future ticket; current sequential lookup is acceptable for the
+    // typical N=0..1 case on signup.
+    for (let i = 0; i < MAX_SLUG_CANDIDATES; i++) {
+      const candidate = i === 0 ? base : `${base}-${(i + 1).toString()}`;
       const existing = await this.tenantLookup.findBySlug(candidate);
       if (!existing) return candidate;
     }
