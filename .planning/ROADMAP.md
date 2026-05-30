@@ -186,7 +186,7 @@ Plans:
 
 **Wave 5** _(after Wave 4)_
 
-- [ ] 04A-05-PLAN.md — 4 catalog event contracts (menu_first_published, menu_republished, item_stopped, item_unstopped); refactor catalog/application/dto.ts (CAT-09 max-length sweep, photos JSONB, BJU, source enum, slug auto-derive, modifier groups, item sizes, stop-list); audit ACTION_TARGET_KIND map; 3 new domain errors (CAT-02, CAT-04, CAT-05, CAT-09; D-4a-01/02/03/04/06/10)
+- [x] 04A-05-PLAN.md — 4 catalog event contracts (menu_first_published, menu_republished, item_stopped, item_unstopped); refactor catalog/application/dto.ts (CAT-09 max-length sweep, photos JSONB, BJU, source enum, slug auto-derive, modifier groups, item sizes, stop-list); audit ACTION_TARGET_KIND map; 3 new domain errors (CAT-02, CAT-04, CAT-05, CAT-09; D-4a-01/02/03/04/06/10)
 
 **Wave 6** _(after Wave 5)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 4/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 5/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
