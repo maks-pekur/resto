@@ -52,13 +52,19 @@ interface EnableResponseBody {
   backupCodes?: unknown;
 }
 
+// WR-08: BA default is 10 backup codes; a future config change could
+// shrink this. Require at least 1 non-empty code so a misconfigured shrink
+// to e.g. 8 does not silently fail every enable. The UI itself prints
+// whatever count BA returns.
+const MIN_BACKUP_CODES = 1;
+
 const isValidEnableResponse = (
   body: EnableResponseBody | null,
 ): body is { totpURI: string; backupCodes: string[] } => {
   if (!body) return false;
   if (typeof body.totpURI !== 'string' || body.totpURI.length === 0) return false;
   if (!Array.isArray(body.backupCodes)) return false;
-  if (body.backupCodes.length < 10) return false;
+  if (body.backupCodes.length < MIN_BACKUP_CODES) return false;
   return body.backupCodes.every((c) => typeof c === 'string' && c.length > 0);
 };
 
