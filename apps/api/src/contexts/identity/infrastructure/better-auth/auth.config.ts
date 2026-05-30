@@ -134,12 +134,18 @@ export const buildAuth = (opts: BuildOpts) =>
       requireEmailVerification: opts.requireEmailVerification ?? false,
       minPasswordLength: opts.minPasswordLength ?? 12,
       maxPasswordLength: opts.maxPasswordLength ?? 128,
-      sendResetPassword: opts.sendResetPassword ?? (() => Promise.resolve()),
+      // D-13: NOOP `?? (() => Promise.resolve())` fallback removed. The
+      // module-level `assertEmailAdapterWired` (identity-core.module.ts)
+      // catches an unwired callback BEFORE BA boot in staging/prod, so
+      // forwarding `opts.sendResetPassword` directly is safe — a missing
+      // callback in non-dev means the boot guard already threw.
+      ...(opts.sendResetPassword ? { sendResetPassword: opts.sendResetPassword } : {}),
     },
     emailVerification: {
       sendOnSignUp: true,
       autoSignInAfterVerification: true,
-      sendVerificationEmail: opts.sendVerificationEmail ?? (() => Promise.resolve()),
+      // D-13: NOOP fallback removed (see emailAndPassword above).
+      ...(opts.sendVerificationEmail ? { sendVerificationEmail: opts.sendVerificationEmail } : {}),
     },
     plugins: [
       // Cast needed: organization()'s concrete endpoint overloads don't
@@ -149,7 +155,12 @@ export const buildAuth = (opts: BuildOpts) =>
         ac,
         roles: { owner: ownerRole, admin: adminRole, staff: staffRole },
         dynamicAccessControl: { enabled: true },
-        sendInvitationEmail: opts.sendInvitationEmail ?? (() => Promise.resolve()),
+        // Pitfall 8 (RESEARCH.md): a malicious actor cannot invite a
+        // mailbox they do not own and accept the invitation from a fresh
+        // unverified account. Defends spoofing pre-AUTH-06 land.
+        requireEmailVerificationOnInvitation: true,
+        // D-13: NOOP fallback removed (see emailAndPassword above).
+        ...(opts.sendInvitationEmail ? { sendInvitationEmail: opts.sendInvitationEmail } : {}),
       }) as unknown as BetterAuthPlugin,
       twoFactor(),
       bearer(),

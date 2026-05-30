@@ -2,6 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type { Env } from '../../../src/config/env.schema';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 import type { IdentityEventEmitterPort } from '../../../src/contexts/identity/application/ports/identity-event-emitter.port';
+import type { EmailAdapterPort } from '../../../src/contexts/identity/domain/ports';
 
 vi.mock('../../../src/contexts/identity/infrastructure/better-auth/auth.config', () => ({
   buildAuth: vi.fn(() => ({ kind: 'stub-auth' })),
@@ -55,24 +56,37 @@ const envFor = (nodeEnv: Env['NODE_ENV']): Env =>
 
 const stubAuthDb = {} as AuthDrizzle;
 const stubEmitter: IdentityEventEmitterPort = { emit: vi.fn() };
+const stubEmailAdapter: EmailAdapterPort = {
+  adapterName: 'resend',
+  sendInvitation: vi.fn(() => Promise.resolve()),
+  sendResetPassword: vi.fn(() => Promise.resolve()),
+  sendVerification: vi.fn(() => Promise.resolve()),
+  verifyTransport: vi.fn(() => Promise.resolve()),
+};
 
-describe('buildAuthFromEnv (RES-187)', () => {
+describe('buildAuthFromEnv (D-13 + RES-187)', () => {
   beforeEach(() => {
     vi.mocked(buildAuth).mockClear();
   });
 
   it('boots in NODE_ENV=staging without tripping the email-adapter gate', () => {
-    expect(() => buildAuthFromEnv(stubAuthDb, envFor('staging'), stubEmitter)).not.toThrow();
+    expect(() =>
+      buildAuthFromEnv(stubAuthDb, envFor('staging'), stubEmitter, stubEmailAdapter),
+    ).not.toThrow();
   });
 
   it('boots in NODE_ENV=production without tripping the email-adapter gate', () => {
-    expect(() => buildAuthFromEnv(stubAuthDb, envFor('production'), stubEmitter)).not.toThrow();
+    expect(() =>
+      buildAuthFromEnv(stubAuthDb, envFor('production'), stubEmitter, stubEmailAdapter),
+    ).not.toThrow();
   });
 
-  it('forwards a real sendVerificationEmail to buildAuth (not undefined)', () => {
-    buildAuthFromEnv(stubAuthDb, envFor('staging'), stubEmitter);
+  it('forwards real sendVerificationEmail / sendResetPassword / sendInvitationEmail to buildAuth (D-13: NOT undefined, NOT NOOP)', () => {
+    buildAuthFromEnv(stubAuthDb, envFor('staging'), stubEmitter, stubEmailAdapter);
     expect(buildAuth).toHaveBeenCalledTimes(1);
     const opts = vi.mocked(buildAuth).mock.calls[0]?.[0];
     expect(opts?.sendVerificationEmail).toBeTypeOf('function');
+    expect(opts?.sendResetPassword).toBeTypeOf('function');
+    expect(opts?.sendInvitationEmail).toBeTypeOf('function');
   });
 });
