@@ -185,6 +185,38 @@ export const envSchema = z
     PASSWORD_MIN_LENGTH: z.coerce.number().int().min(8).default(12),
     /** Maximum password length enforced by BA's emailAndPassword config (RES-137). */
     PASSWORD_MAX_LENGTH: z.coerce.number().int().min(64).default(128),
+
+    /**
+     * Per-tenant signin rate-limit (D-20). Applied IN ADDITION to the
+     * per-IP and per-email buckets — an attacker rotating both IPs and
+     * email addresses against one tenant is still throttled here.
+     * Default 60 (generous for onboarding, tight against credential
+     * stuffing). Enforcement lands in Plan 03; declared here so all the
+     * new envs ship in the same wave.
+     */
+    RATE_LIMIT_AUTH_SIGNIN_PER_TENANT_PER_MIN: z.coerce.number().int().positive().default(60),
+
+    /**
+     * Resend SDK API key (D-01). Optional at the schema level so dev/test
+     * boot without one (the factory picks MailHog/Captured in those
+     * envs). `assertProdGuardrails` (boot-time, non-dev/test) is the
+     * prod-rejection layer — it throws if the value is empty OR equals
+     * the documented dummy literal in staging/production.
+     */
+    RESEND_API_KEY: z.string().min(1).optional(),
+    /**
+     * Sender identity used by the Resend adapter. Must be a verified
+     * domain in the Resend dashboard before deploy (D-07 SPF/DKIM/DMARC
+     * runbook). Default applies in dev so MailHog runs without env-seed.
+     */
+    RESEND_FROM: z.string().min(1).default('RestOS <noreply@resto.app>'),
+    /** Operator support address for replies to platform emails. */
+    RESEND_REPLY_TO: z.string().email().default('support@resto.app'),
+
+    /** MailHog SMTP host (dev adapter target). Matches docker-compose.dev.yml. */
+    MAILHOG_HOST: z.string().min(1).default('localhost'),
+    /** MailHog SMTP port (dev adapter target). Matches docker-compose.dev.yml. */
+    MAILHOG_PORT: z.coerce.number().int().positive().default(1025),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {

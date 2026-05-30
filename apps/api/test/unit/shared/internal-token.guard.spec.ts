@@ -30,6 +30,11 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   REQUIRE_EMAIL_VERIFICATION: false,
   PASSWORD_MIN_LENGTH: 12,
   PASSWORD_MAX_LENGTH: 128,
+  RATE_LIMIT_AUTH_SIGNIN_PER_TENANT_PER_MIN: 60,
+  RESEND_FROM: 'RestOS <noreply@resto.app>',
+  RESEND_REPLY_TO: 'support@resto.app',
+  MAILHOG_HOST: 'localhost',
+  MAILHOG_PORT: 1025,
   AUDIT_ERASURE_SALT: undefined,
   ...overrides,
 });
