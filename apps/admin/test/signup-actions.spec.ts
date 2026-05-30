@@ -31,7 +31,7 @@ describe('signUpAction', () => {
     expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
-  it('forwards request and redirects on 201 without setting an active brand cookie', async () => {
+  it('forwards request and redirects on 201 without forwarding Set-Cookie (D-06 parity)', async () => {
     apiFetchMock.mockResolvedValue({
       ok: true,
       status: 201,
@@ -42,13 +42,13 @@ describe('signUpAction', () => {
       raw: new Response(),
     });
     await expect(signUpAction({ error: null }, buildForm())).rejects.toThrow('REDIRECT');
-    expect(apiFetchMock).toHaveBeenCalledWith(
-      '/v1/signup',
-      expect.objectContaining({ method: 'POST', forwardSetCookie: true }),
-    );
+    const call = apiFetchMock.mock.calls[0] as [string, Record<string, unknown>] | undefined;
+    expect(call?.[0]).toBe('/v1/signup');
+    expect(call?.[1]?.method).toBe('POST');
+    expect(call?.[1]?.forwardSetCookie).not.toBe(true);
   });
 
-  it('surfaces email-taken friendly message', async () => {
+  it('surfaces 409 signup.email_taken message generically (D-06 enumeration parity)', async () => {
     apiFetchMock.mockResolvedValue({
       ok: false,
       status: 409,
@@ -56,7 +56,7 @@ describe('signUpAction', () => {
       raw: new Response(),
     });
     const result = await signUpAction({ error: null }, buildForm());
-    expect(result.error).toMatch(/already exists/);
+    expect(result.error).toBe('taken');
   });
 
   it('surfaces 500 with generic message', async () => {

@@ -32,10 +32,11 @@ const codeOf = (err: unknown): string | undefined => {
 };
 
 describe('mapIdentityError', () => {
-  it('maps SignupEmailAlreadyExistsError to 409 signup.email_taken', () => {
-    const mapped = mapIdentityError(new SignupEmailAlreadyExistsError('a@b.c'));
-    expect(mapped).toBeInstanceOf(ConflictException);
-    expect(codeOf(mapped)).toBe('signup.email_taken');
+  it('leaves SignupEmailAlreadyExistsError un-mapped (D-06 enumeration parity)', () => {
+    const original = new SignupEmailAlreadyExistsError('a@b.c');
+    const mapped = mapIdentityError(original);
+    expect(mapped).toBe(original);
+    expect(mapped).not.toBeInstanceOf(ConflictException);
   });
 
   it('maps SlugUnavailableError to 409 signup.slug_unavailable', () => {

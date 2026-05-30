@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('server-only', () => ({}));
+
 const apiFetchMock = vi.fn();
 vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
+
+const adminOriginMock = vi.fn(() => 'https://admin.example.test');
+vi.mock('@/lib/env', () => ({ adminOrigin: adminOriginMock }));
 
 const { forgotPasswordAction } = await import('../app/(auth)/forgot-password/actions');
 
@@ -52,9 +57,8 @@ describe('forgotPasswordAction', () => {
     expect(result.error).toMatch(/Something went wrong/);
   });
 
-  it('passes ADMIN_WEB_URL-derived redirectTo to BA', async () => {
+  it('passes adminOrigin-derived redirectTo to BA', async () => {
     apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: {}, raw: new Response() });
-    process.env.ADMIN_WEB_URL = 'https://admin.example.test';
     await forgotPasswordAction({ error: null, submitted: false }, buildForm());
     expect(apiFetchMock).toHaveBeenCalledWith('/api/auth/request-password-reset', {
       method: 'POST',
@@ -63,6 +67,5 @@ describe('forgotPasswordAction', () => {
         redirectTo: 'https://admin.example.test/reset-password',
       },
     });
-    delete process.env.ADMIN_WEB_URL;
   });
 });

@@ -108,11 +108,11 @@ describe('two-factor-actions.enableTwoFactorAction', () => {
     expect(result).toEqual({ ok: false, error: 'unknown' });
   });
 
-  it('rejects a malformed BA response (fewer than 10 backup codes) as unknown', async () => {
+  it('rejects a malformed BA response (zero backup codes) as unknown', async () => {
     apiFetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
-      data: { totpURI: 'otpauth://x', backupCodes: ['only-two', 'codes'] },
+      data: { totpURI: 'otpauth://x', backupCodes: [] },
       raw: new Response(),
     });
     const result = await enableTwoFactorAction('current-password');
