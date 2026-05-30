@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: 'Phase 3 Wave 2 complete: 03-02 email adapter (Resend+MailHog+Captured) + boot guards + assertProdGuardrails Resend extension; DNS+bounce-webhook deferred per Task 0 founder choice; recovered from prior agent stall via cherry-pick + fresh re-spawn'
-last_updated: '2026-05-30T12:02:41.235Z'
+stopped_at: 'Phase 3 Wave 3 complete: 03-03 flows (AUTH-02..06 + D-06 enumeration parity + 2 Phase 02 carry-overs); e2e specs written, not yet run (deferred to verify wave); 5 commits merged'
+last_updated: '2026-05-30T12:34:37.382Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
   completed_phases: 2
   total_plans: 16
-  completed_plans: 13
+  completed_plans: 14
   percent: 12
 ---
 
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T12:02:41.226Z
-Stopped at: Phase 3 Wave 2 complete: 03-02 email adapter (Resend+MailHog+Captured) + boot guards + assertProdGuardrails Resend extension; DNS+bounce-webhook deferred per Task 0 founder choice; recovered from prior agent stall via cherry-pick + fresh re-spawn
-Resume file: .planning/phases/03-auth-completion/03-03-flows-PLAN.md
+Last session: 2026-05-30T12:34:37.374Z
+Stopped at: Phase 3 Wave 3 complete: 03-03 flows (AUTH-02..06 + D-06 enumeration parity + 2 Phase 02 carry-overs); e2e specs written, not yet run (deferred to verify wave); 5 commits merged
+Resume file: .planning/phases/03-auth-completion/03-04-cookies-2fa-PLAN.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
