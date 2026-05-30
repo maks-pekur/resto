@@ -182,7 +182,7 @@ Plans:
 
 **Wave 4** _(after Waves 2+3)_
 
-- [ ] 04A-04-PLAN.md — Renames: menu_variants → menu_item_sizes (price_delta → absolute price), menu_modifiers → menu_modifier_groups, junction + FK column renames, add default_amount + free_amount on options (CAT-04, CAT-05; Pitfall 3 hand-written + Pitfall 6 price semantic backfill)
+- [x] 04A-04-PLAN.md — Renames: menu_variants → menu_item_sizes (price_delta → absolute price), menu_modifiers → menu_modifier_groups, junction + FK column renames, add default_amount + free_amount on options (CAT-04, CAT-05; Pitfall 3 hand-written + Pitfall 6 price semantic backfill)
 
 **Wave 5** _(after Wave 4)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 3/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 4/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
