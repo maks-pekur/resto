@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
-status: planning
+status: executing
 stopped_at: Phase 4a planning complete (7 plans / 7 waves) — verification PASSED
-last_updated: "2026-05-30T18:01:41.799Z"
-last_activity: 2026-05-30
+last_updated: '2026-05-30T21:24:14.422Z'
+last_activity: 2026-05-30 -- Phase 04a execution started
 progress:
   total_phases: 18
   completed_phases: 3
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 4 — catalog admin
+**Current focus:** Phase 04a — catalog-schema-api
 **Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
 
 ## Current Position
 
-Phase: 4
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-05-30
+Phase: 04a (catalog-schema-api) — EXECUTING
+Plan: 1 of 7
+Status: Executing Phase 04a
+Last activity: 2026-05-30 -- Phase 04a execution started
 
 Progress: [█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 6% of MVP-1 (1/16 phases)
 
