@@ -3,7 +3,7 @@ phase: 04a-catalog-schema-api
 plan: 07
 type: execute
 wave: 7
-depends_on: ['04a-06']
+depends_on: ['04A-06']
 files_modified:
   - apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts
   - apps/api/src/contexts/catalog/interfaces/http/error-mapping.ts

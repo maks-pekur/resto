@@ -3,7 +3,7 @@ phase: 04a-catalog-schema-api
 plan: 06
 type: execute
 wave: 6
-depends_on: ['04a-05']
+depends_on: ['04A-05']
 files_modified:
   - apps/api/src/contexts/catalog/domain/ports.ts
   - apps/api/src/contexts/catalog/domain/published-menu.ts

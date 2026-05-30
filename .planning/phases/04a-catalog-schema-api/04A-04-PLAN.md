@@ -3,7 +3,7 @@ phase: 04a-catalog-schema-api
 plan: 04
 type: execute
 wave: 4
-depends_on: ['04a-02', '04a-03']
+depends_on: ['04A-02', '04A-03']
 files_modified:
   - packages/db/src/schema/menu.ts
   - packages/db/src/schema/index.ts
