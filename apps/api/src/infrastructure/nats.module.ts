@@ -20,7 +20,18 @@ import { OutboxDispatcherService } from './outbox-dispatcher.service';
 export { EVENT_PUBLISHER } from './event-publisher.token';
 export const EVENT_SUBSCRIBER = Symbol('EVENT_SUBSCRIBER');
 
-const STREAM_SUBJECTS = ['tenancy.>', 'identity.>', 'catalog.>', 'ordering.>', 'billing.>'];
+const STREAM_SUBJECTS = [
+  'tenancy.>',
+  'identity.>',
+  'catalog.>',
+  'ordering.>',
+  'billing.>',
+  // AUTH-10: NATS subscriber DLQ branch republishes poison bytes to
+  // `dlq.<original_subject>` (D-19). The stream MUST accept that subject
+  // prefix or the republish fails with NatsError 503 and ops loses the
+  // forensic payload.
+  'dlq.>',
+];
 
 const moduleLogger = new Logger('NatsModule');
 
