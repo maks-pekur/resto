@@ -174,8 +174,11 @@ if (!actorEmail || !/^[a-z0-9._%+-]+@resto\.app$/i.test(actorEmail)) {
   process.exit(1);
 }
 // Look up the BA user, fail if not found.
-const actor = await db.select({ id: schema.user.id }).from(schema.user)
-  .where(eq(schema.user.email, actorEmail)).limit(1);
+const actor = await db
+  .select({ id: schema.user.id })
+  .from(schema.user)
+  .where(eq(schema.user.email, actorEmail))
+  .limit(1);
 if (actor.length === 0) {
   process.stderr.write(`Actor ${actorEmail} not a BA user; refusing.\n`);
   process.exit(1);
@@ -245,9 +248,10 @@ exists.
 ### CR-03: Per-tenant rate-limit bucket store has unbounded growth
 
 **Status:** FIXED at `ae34ca4` — both `tenantBuckets` (per-tenant-signin-rate-limit.ts) and `identityBuckets` (shared/security.ts) now have:
-  1. periodic sweeper (`setInterval(...).unref()`, 5-minute interval) that drops expired entries;
-  2. LRU cap (10k for tenant buckets, 50k for identity) — drops oldest entries on overflow;
-  3. strict allowlist regex for `x-tenant-slug` and UUID-shape check for `organizationId` — adversarial header values fall through to per-IP rate limit only.
+
+1. periodic sweeper (`setInterval(...).unref()`, 5-minute interval) that drops expired entries;
+2. LRU cap (10k for tenant buckets, 50k for identity) — drops oldest entries on overflow;
+3. strict allowlist regex for `x-tenant-slug` and UUID-shape check for `organizationId` — adversarial header values fall through to per-IP rate limit only.
 
 **File:** `apps/api/src/middleware/per-tenant-signin-rate-limit.ts:22, 57-74`
 **Issue:** The module-scoped Map stores bucket entries keyed by
@@ -262,6 +266,7 @@ tenantBuckets.set(key, { count: 1, resetAt: ts + WINDOW_MS });
 ```
 
 Failure modes:
+
 1. **Slow heap leak:** at a sustained 1 unique `x-tenant-slug` value per
    second, the Map grows by 60 entries per minute and is never pruned —
    a long-running pod accumulates ~31M entries per year per unique slug.
@@ -551,7 +556,10 @@ picker because the result is indistinguishable from happy path.
 ```ts
 export interface SignInAndBindOrgResult {
   readonly ok: boolean;
-  readonly error?: 'invalid_credentials' | 'org_activation_failed' | 'org_list_failed';
+  readonly error?:
+    | 'invalid_credentials'
+    | 'org_activation_failed'
+    | 'org_list_failed';
   readonly orgCount?: number;
 }
 // In step 2:
@@ -604,7 +612,9 @@ const used = await this.tenantLookup.findSlugsByPrefix(base, 100);
 **Issue:**
 
 ```ts
-const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
+const path = rawRequest?.url
+  ? new URL(rawRequest.url, 'http://x').pathname
+  : '';
 if (!path.endsWith('/api/auth/organization/set-active')) return;
 ```
 
@@ -621,7 +631,9 @@ context (mirrors the pattern elsewhere in this file), or pin the check
 to an exact equality with a known base path:
 
 ```ts
-const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
+const path = rawRequest?.url
+  ? new URL(rawRequest.url, 'http://x').pathname
+  : '';
 if (path !== '/api/auth/organization/set-active') return;
 ```
 
@@ -666,7 +678,8 @@ if (!isValidEnableResponse(res.data)) {
 
 ```ts
 if (!res.ok) {
-  if (res.status >= 400 && res.status < 500) return { ok: false, error: 'invalid_code' };
+  if (res.status >= 400 && res.status < 500)
+    return { ok: false, error: 'invalid_code' };
   return { ok: false, error: 'unknown' };
 }
 ```
@@ -684,7 +697,8 @@ explicitly includes `'session_expired'`; consistency would be cheap.
 ```ts
 if (!res.ok) {
   if (res.status === 403) return { ok: false, error: 'session_expired' };
-  if (res.status >= 400 && res.status < 500) return { ok: false, error: 'invalid_code' };
+  if (res.status >= 400 && res.status < 500)
+    return { ok: false, error: 'invalid_code' };
   return { ok: false, error: 'unknown' };
 }
 ```
@@ -770,7 +784,7 @@ const timeoutId = setTimeout(() => controller.abort(), SEND_TIMEOUT_MS);
 try {
   result = await this.#client.emails.send(payload, {
     idempotencyKey: cmd.idempotencyKey,
-    signal: controller.signal,  // requires SDK support; else use Promise.race
+    signal: controller.signal, // requires SDK support; else use Promise.race
   });
 } finally {
   clearTimeout(timeoutId);
@@ -807,8 +821,8 @@ the message:
 ```ts
 super(
   `system-roles-drift: ... ${diff.join('; ')}.\n` +
-  `actual=${JSON.stringify(actual, null, 2)}\n` +
-  `expected=${JSON.stringify(expected, null, 2)}`,
+    `actual=${JSON.stringify(actual, null, 2)}\n` +
+    `expected=${JSON.stringify(expected, null, 2)}`,
 );
 ```
 
@@ -816,9 +830,10 @@ super(
 
 **File:** `apps/api/src/contexts/audit/application/record-audit.service.ts:7`
 **Issue:** Map currently has 10 entries (counted: 7 tenancy + 3 identity
-+ 1 platform = 11). The TODO threshold has been crossed; either move the
-mapping into `defineEventContract` (the documented endpoint) or delete
-the TODO. Leaving a stale TODO erodes signal in `git grep TODO`.
+
+- 1 platform = 11). The TODO threshold has been crossed; either move the
+  mapping into `defineEventContract` (the documented endpoint) or delete
+  the TODO. Leaving a stale TODO erodes signal in `git grep TODO`.
 
 ### IN-04: `nats-subscriber.ts` defaults `DEFAULT_MAX_IN_FLIGHT = 10` but the per-tenant rate-limit suite intentionally bumps caps to 1000s — assert-stack drift
 
@@ -878,25 +893,26 @@ _Depth: standard_
 
 **Fixed:** 15 of 15 in-scope findings (4 Critical + 11 Warning). 6 Info findings out of scope (--all flag not set).
 
-| ID    | Status                                | Commit    |
-|-------|---------------------------------------|-----------|
-| CR-01 | FIXED                                 | `b6bd470` |
-| CR-02 | FIXED                                 | `9ee7b77` |
-| CR-03 | FIXED                                 | `ae34ca4` |
-| CR-04 | FIXED                                 | `e692ae6` |
-| WR-01 | FIXED                                 | `8930d6d` |
-| WR-02 | FIXED                                 | `5de453d` |
-| WR-03 | FIXED — **requires human verification** | `52c9dd0` |
-| WR-04 | FIXED                                 | `6d065ba` |
-| WR-05 | FIXED                                 | `c1ab13a` |
+| ID    | Status                                   | Commit    |
+| ----- | ---------------------------------------- | --------- |
+| CR-01 | FIXED                                    | `b6bd470` |
+| CR-02 | FIXED                                    | `9ee7b77` |
+| CR-03 | FIXED                                    | `ae34ca4` |
+| CR-04 | FIXED                                    | `e692ae6` |
+| WR-01 | FIXED                                    | `8930d6d` |
+| WR-02 | FIXED                                    | `5de453d` |
+| WR-03 | FIXED — **requires human verification**  | `52c9dd0` |
+| WR-04 | FIXED                                    | `6d065ba` |
+| WR-05 | FIXED                                    | `c1ab13a` |
 | WR-06 | PARTIAL — perf deferred to future ticket | `3f6a1d2` |
-| WR-07 | FIXED                                 | `0c5d2cd` |
-| WR-08 | FIXED                                 | `aa3b681` |
-| WR-09 | FIXED                                 | `5dbba8a` |
-| WR-10 | FIXED                                 | `76d6d5f` |
-| WR-11 | FIXED                                 | `ef71960` |
+| WR-07 | FIXED                                    | `0c5d2cd` |
+| WR-08 | FIXED                                    | `aa3b681` |
+| WR-09 | FIXED                                    | `5dbba8a` |
+| WR-10 | FIXED                                    | `76d6d5f` |
+| WR-11 | FIXED                                    | `ef71960` |
 
 **Verification:**
+
 - `pnpm exec nx run api:typecheck` — passed
 - `pnpm exec nx run admin:typecheck` — passed
 - `apps/api/test/unit/audit/record-audit.service.spec.ts` — 6/6 passed (WR-02 test updates verified)
@@ -905,6 +921,7 @@ _Depth: standard_
 - `apps/api/test/unit/identity/error-mapping.spec.ts` — 1 pre-existing failure (unrelated to this fix scope; flagged for separate investigation)
 
 **Deferred items** (re-file as future tickets):
+
 - WR-06 perf optimisation: batch slug-prefix lookup (`TenantLookupPort.findSlugsByPrefix`)
 - IN-01 through IN-06: cosmetic / type-annotation polishes (out of `--fix` scope)
 
