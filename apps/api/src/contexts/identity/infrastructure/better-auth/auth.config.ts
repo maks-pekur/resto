@@ -3,6 +3,9 @@ import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where }
 import { createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { TenantId } from '@resto/domain';
+import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
+import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
@@ -15,8 +18,35 @@ export type SendVerificationEmail = NonNullable<
   NonNullable<BetterAuthOptions['emailVerification']>['sendVerificationEmail']
 >;
 
+/**
+ * AUTH-09 / D-16a (Phase 3 / Plan 05): explicit parameter type for the
+ * `organizationHooks.afterUpdateMemberRole` callback. Sourced from BA
+ * 1.4.22 `organization/types.d.mts:520-525`. Surfacing it as a named type
+ * keeps the inline hook in `buildAuth()` zero-implicit-any — the
+ * micro-task contract is "no `any` in the role-change hook".
+ */
+export type AfterUpdateMemberRoleHook = NonNullable<
+  NonNullable<OrganizationOptions['organizationHooks']>['afterUpdateMemberRole']
+>;
+export type AfterUpdateMemberRoleData = Parameters<AfterUpdateMemberRoleHook>[0];
+
 interface BuildOpts {
   authDb: AuthDrizzle;
+  /**
+   * AUTH-09 / D-16a (Phase 3 / Plan 05): canonical event emitter shared
+   * across the identity context. The `organizationHooks.afterUpdateMemberRole`
+   * hook below uses it INLINE — emitter.emit() handles `db.withTenantId` +
+   * `appendToOutbox` internally (see `identity-event-emitter.adapter.ts`),
+   * so the hook stays free of direct DB knowledge.
+   *
+   * Plan-checker W-2 (2026-05-30) forbids adding NEW per-event callbacks to
+   * BuildOpts (e.g. `onMemberRoleChanged?: (snapshot) => Promise<void>`).
+   * `emitter` is the primitive dependency, not a per-event abstraction —
+   * the same emitter handles every identity event the hook surface emits.
+   * Optional so existing test fixtures (boot-integration spec etc.) that
+   * construct `buildAuth({...})` without the audit pipeline still work.
+   */
+  emitter?: IdentityEventEmitterPort;
   secret: string;
   baseUrl: string;
   cookieDomain?: string;
@@ -161,6 +191,48 @@ export const buildAuth = (opts: BuildOpts) =>
         requireEmailVerificationOnInvitation: true,
         // D-13: NOOP fallback removed (see emailAndPassword above).
         ...(opts.sendInvitationEmail ? { sendInvitationEmail: opts.sendInvitationEmail } : {}),
+        // AUTH-09 / D-16a (Phase 3 / Plan 05): emit `identity.role_changed.v1`
+        // on every BA-driven role mutation. Hook signature per BA 1.4.22
+        // `organization/types.d.mts:520-525` — `previousRole` is the prior
+        // slug, `member.role` is the new one, `member.organizationId` is
+        // the tenant. Wired INLINE here (per plan-checker W-2 2026-05-30 —
+        // no per-event callback abstraction added to BuildOpts).
+        // `opts.emitter` encapsulates the canonical `db.withTenantId` +
+        // `appendToOutbox` pipeline (see `identity-event-emitter.adapter.ts`),
+        // so the hook body stays infrastructure-free.
+        // Failures are caught + logged + swallowed — audit is eventually-
+        // consistent observability; we never block the BA role-change
+        // response on an audit-write failure.
+        organizationHooks: {
+          afterUpdateMemberRole: async (data: AfterUpdateMemberRoleData) => {
+            if (!opts.emitter) return;
+            try {
+              const tenantId = TenantId.parse(data.member.organizationId);
+              await opts.emitter.emit(
+                buildEnvelope(
+                  IdentityRoleChangedV1,
+                  {
+                    userId: data.user.id,
+                    tenantId,
+                    previousRole: data.previousRole,
+                    newRole: data.member.role,
+                  },
+                  { tenantId },
+                ),
+              );
+            } catch (err) {
+              new Logger('IdentityEventHook').error(
+                {
+                  err,
+                  type: 'identity.role_changed.v1',
+                  userId: data.user.id,
+                  tenantId: data.member.organizationId,
+                },
+                'Failed to emit identity.role_changed.v1',
+              );
+            }
+          },
+        },
       }) as unknown as BetterAuthPlugin,
       twoFactor(),
       bearer(),

@@ -246,6 +246,12 @@ export const buildAuthFromEnv = (
 
   return buildAuth({
     authDb,
+    // AUTH-09 / D-16a (Phase 3 / Plan 05): emitter is consumed INLINE by
+    // organizationHooks.afterUpdateMemberRole in auth.config.ts to emit
+    // identity.role_changed.v1 via the canonical outbox pipeline. Same
+    // shape as identity-event-emitter.adapter.ts — no new per-event
+    // callback abstraction added to BuildOpts (W-2 2026-05-30).
+    emitter,
     secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
     baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
     trustedOrigins,
