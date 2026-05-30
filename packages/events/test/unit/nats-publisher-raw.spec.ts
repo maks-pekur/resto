@@ -10,9 +10,9 @@ describe('NatsJetStreamPublisher.publishRaw (AUTH-10 DLQ branch)', () => {
     const subject = 'dlq.identity.signed_in.v1';
     const bytes = new TextEncoder().encode('this is NOT a valid envelope at all');
     const publisher = Object.create(NatsJetStreamPublisher.prototype) as NatsJetStreamPublisher;
-    // Inject minimal stub of the JS client into the private field.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (publisher as any).js = { publish };
+    // Inject minimal stub of the JS client into the private field via index
+    // assignment — avoids `any` while still bypassing TS visibility.
+    (publisher as unknown as { js: { publish: typeof publish } }).js = { publish };
 
     await publisher.publishRaw(subject, bytes);
 

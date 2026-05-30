@@ -47,6 +47,13 @@ export const WITHOUT_TENANT_ALLOWLIST = [
 
   // TEN-13: scheduled inbox retention sweep — see packages/db/src/inbox-retention.ts.
   'packages/db/src/inbox-retention.ts',
+
+  // AUTH-10 / Phase 3: NATS subscriber DLQ branch emits a platform-level
+  // identity.email_dispatch_failed.v1 alert envelope when a poison message
+  // exhausts max_deliver. Fires from message-broker delivery code (no HTTP
+  // middleware, no ALS tenant), and the poison envelope itself may not
+  // carry a parseable tenantId — alert is platform-scoped.
+  'packages/events/src/infrastructure/nats-subscriber.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];

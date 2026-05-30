@@ -49,7 +49,12 @@ export default [
   {
     // @withoutTenant-allowlist — RES-252: system-context callers in
     // packages/events. Mirrors packages/db/src/withoutTenant.allowlist.ts.
-    files: ['src/inbox/run-deduped.ts', 'src/outbox/dispatcher.ts'],
+    files: [
+      'src/inbox/run-deduped.ts',
+      'src/outbox/dispatcher.ts',
+      // AUTH-10: NATS subscriber DLQ branch — see allowlist entry comment.
+      'src/infrastructure/nats-subscriber.ts',
+    ],
     rules: {
       'no-restricted-syntax': 'off',
     },

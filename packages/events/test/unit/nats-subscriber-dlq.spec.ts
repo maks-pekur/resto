@@ -66,12 +66,12 @@ describe('NatsJetStreamSubscriber — DLQ wiring (AUTH-10)', () => {
   });
 
   describe('SubscribeOptions surface', () => {
-    it('exposes optional maxDeliver / ackWaitMs / dlqPublisher fields without breaking existing call sites', async () => {
+    it('exposes optional maxDeliver / ackWaitMs / dlqPublisher fields without breaking existing call sites', () => {
       // Compile-time check: the existing call sites in outbox-dispatcher and
       // identity-audit suites pass only { subject, durableName, handler }.
       // The new fields are optional. This is a TS-level assertion that fails
       // at typecheck time, not a runtime check — vitest still needs a body.
-      const noopHandler = vi.fn(async () => Promise.resolve());
+      const noopHandler = vi.fn(() => Promise.resolve());
       const minimal = { subject: 's', durableName: 'd', handler: noopHandler };
       const extended = {
         subject: 's',
