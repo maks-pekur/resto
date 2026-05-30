@@ -35,8 +35,10 @@
     "fastify": "4.28.1",
     "ioredis": "^5.4.2",
     "nestjs-zod": "^5.3.0",
+    "nodemailer": "8.0.10",
     "pino": "^9.5.0",
     "reflect-metadata": "^0.2.2",
+    "resend": "6.12.4",
     "rxjs": "^7.8.1",
     "yaml": "^2.6.1",
     "zod": "^3.24.1"
@@ -48,6 +50,7 @@
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
     "@types/node": "^25.8.0",
+    "@types/nodemailer": "8.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",
     "postgres": "^3.4.5",
