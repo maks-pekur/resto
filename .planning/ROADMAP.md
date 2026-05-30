@@ -174,7 +174,7 @@ Plans:
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 04A-02-PLAN.md — Drizzle schema: menu_items photos/BJU/source/needs_review/source_external_id, menu_categories.parent_id self-FK, tenants.menu_first_published_at, menu_versions_seq Postgres sequence (CAT-02, CAT-10; D-4a-01/02/03/06/07)
+- [x] 04A-02-PLAN.md — Drizzle schema: menu_items photos/BJU/source/needs_review/source_external_id, menu_categories.parent_id self-FK, tenants.menu_first_published_at, menu_versions_seq Postgres sequence (CAT-02, CAT-10; D-4a-01/02/03/06/07)
 
 **Wave 3** _(after Wave 2)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 1/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 2/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
