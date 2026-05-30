@@ -35,7 +35,18 @@ export class RecordAuditService {
   constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
   async fromEnvelope(envelope: EventEnvelope): Promise<void> {
-    await this.db.withoutTenant(`audit consumer: ${envelope.type}`, (tx) =>
+    // WR-02: prefer withTenantId for tenant-bound events so RLS stays scoped
+    // and the bypass-WARN log line is not emitted for ordinary tenant audit
+    // rows. withoutTenant remains the legitimate path for platform-level
+    // events whose envelope tenantId is null (e.g. identity.email_dispatch_failed
+    // DLQ branch, tenancy.tenant_erasure_completed).
+    if (envelope.tenantId !== null) {
+      await this.db.withTenantId(envelope.tenantId, (tx) =>
+        this.fromEnvelopeWithTx(envelope, tx),
+      );
+      return;
+    }
+    await this.db.withoutTenant(`audit platform event: ${envelope.type}`, (tx) =>
       this.fromEnvelopeWithTx(envelope, tx),
     );
   }

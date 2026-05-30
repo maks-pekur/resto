@@ -29,23 +29,34 @@ describe('RecordAuditService', () => {
     vi.restoreAllMocks();
   });
 
+  // WR-02: tenant-bound envelopes route through withTenantId; platform-level
+  // (null-tenant) envelopes still go through withoutTenant. Mock both
+  // methods on the db stub so either branch works.
+  const buildDbStub = (
+    insert: ReturnType<typeof vi.fn>,
+  ): { db: TenantAwareDb; withTenantId: ReturnType<typeof vi.fn>; withoutTenant: ReturnType<typeof vi.fn> } => {
+    const tx = { insert: () => ({ values: insert }) };
+    const withTenantId = vi.fn(
+      async (_id: string, fn: (tx: unknown, scoped: unknown) => Promise<unknown>) => fn(tx, {}),
+    );
+    const withoutTenant = vi.fn(
+      async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => fn(tx),
+    );
+    const db = { withTenantId, withoutTenant } as unknown as TenantAwareDb;
+    return { db, withTenantId, withoutTenant };
+  };
+
   it('inserts a projected row from a tenant_provisioned envelope', async () => {
     const insert = vi.fn();
-    const db = {
-      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
-        return fn({ insert: () => ({ values: insert }) });
-      }),
-    } as unknown as TenantAwareDb;
+    const { db, withTenantId, withoutTenant } = buildDbStub(insert);
 
     const service = new RecordAuditService(db);
     const envelope = buildEnvelope();
     await service.fromEnvelope(envelope);
 
-    expect(db.withoutTenant).toHaveBeenCalledTimes(1);
-    expect(db.withoutTenant).toHaveBeenCalledWith(
-      'audit consumer: tenancy.tenant_provisioned.v1',
-      expect.any(Function),
-    );
+    expect(withTenantId).toHaveBeenCalledTimes(1);
+    expect(withTenantId).toHaveBeenCalledWith(envelope.tenantId, expect.any(Function));
+    expect(withoutTenant).not.toHaveBeenCalled();
     expect(insert).toHaveBeenCalledTimes(1);
     const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(inserted.tenantId).toBe(envelope.tenantId);
@@ -61,11 +72,7 @@ describe('RecordAuditService', () => {
 
   it('uses payload.actorSubject when present', async () => {
     const insert = vi.fn();
-    const db = {
-      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
-        return fn({ insert: () => ({ values: insert }) });
-      }),
-    } as unknown as TenantAwareDb;
+    const { db } = buildDbStub(insert);
 
     const service = new RecordAuditService(db);
     const envelope = buildEnvelope({
@@ -83,29 +90,27 @@ describe('RecordAuditService', () => {
     expect(inserted.targetId).toBe('00000000-0000-4000-8000-0000000000aa');
   });
 
-  it('passes a null tenantId straight through (platform-level events)', async () => {
+  it('passes a null tenantId through withoutTenant (platform-level events)', async () => {
     const insert = vi.fn();
-    const db = {
-      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
-        return fn({ insert: () => ({ values: insert }) });
-      }),
-    } as unknown as TenantAwareDb;
+    const { db, withTenantId, withoutTenant } = buildDbStub(insert);
 
     const service = new RecordAuditService(db);
     const envelope = buildEnvelope({ tenantId: null });
     await service.fromEnvelope(envelope);
 
+    expect(withTenantId).not.toHaveBeenCalled();
+    expect(withoutTenant).toHaveBeenCalledTimes(1);
+    expect(withoutTenant).toHaveBeenCalledWith(
+      'audit platform event: tenancy.tenant_provisioned.v1',
+      expect.any(Function),
+    );
     const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(inserted.tenantId).toBeNull();
   });
 
   it('threads ipAddress and userAgent from payload into the row', async () => {
     const insert = vi.fn();
-    const db = {
-      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
-        return fn({ insert: () => ({ values: insert }) });
-      }),
-    } as unknown as TenantAwareDb;
+    const { db } = buildDbStub(insert);
 
     const service = new RecordAuditService(db);
     const envelope = buildEnvelope({
@@ -131,11 +136,7 @@ describe('RecordAuditService', () => {
     // alert is platform-level — not user-level. record-audit.service must NOT
     // try to derive a user target for this event type.
     const insert = vi.fn();
-    const db = {
-      withoutTenant: vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => {
-        return fn({ insert: () => ({ values: insert }) });
-      }),
-    } as unknown as TenantAwareDb;
+    const { db } = buildDbStub(insert);
 
     const service = new RecordAuditService(db);
     const envelope = buildEnvelope({
@@ -158,12 +159,13 @@ describe('RecordAuditService', () => {
     expect(inserted.tenantId).toBeNull();
   });
 
-  it('fromEnvelopeWithTx writes via the passed tx (skips withoutTenant)', async () => {
+  it('fromEnvelopeWithTx writes via the passed tx (skips withoutTenant / withTenantId)', async () => {
     const insert = vi.fn();
     const db = {
-      // If fromEnvelopeWithTx accidentally calls withoutTenant, the test fails
-      // because this mock returns void instead of running the callback.
+      // If fromEnvelopeWithTx accidentally calls either method, the test
+      // fails because the mock returns void instead of running the callback.
       withoutTenant: vi.fn(),
+      withTenantId: vi.fn(),
     } as unknown as TenantAwareDb;
     const tx = { insert: () => ({ values: insert }) } as unknown as Parameters<
       Parameters<TenantAwareDb['withoutTenant']>[1]
@@ -174,6 +176,7 @@ describe('RecordAuditService', () => {
     await service.fromEnvelopeWithTx(envelope, tx);
 
     expect(db.withoutTenant).not.toHaveBeenCalled();
+    expect(db.withTenantId).not.toHaveBeenCalled();
     expect(insert).toHaveBeenCalledTimes(1);
     const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(inserted.action).toBe('tenancy.tenant_provisioned.v1');
