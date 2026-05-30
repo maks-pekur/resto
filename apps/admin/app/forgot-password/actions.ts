@@ -25,10 +25,10 @@ export async function forgotPasswordAction(
   }
 
   // Phase 03 carry-over from Phase 02 D-04: previously this file held a
-  // `?? 'http://localhost:3001'` fallback which would silently route prod
-  // reset emails to the dev host when ADMIN_WEB_URL was missing. The
-  // adminOrigin() helper in @/lib/env throws at module load in non-dev when
-  // ADMIN_WEB_URL is missing — Pitfall 4 in 03-RESEARCH.md.
+  // dev-host fallback which would silently route prod reset emails to the
+  // localhost dev host when ADMIN_WEB_URL was missing. The adminOrigin()
+  // helper in @/lib/env throws at module load in non-dev when ADMIN_WEB_URL
+  // is missing — Pitfall 4 in 03-RESEARCH.md.
   const res = await apiFetch<unknown>('/api/auth/request-password-reset', {
     method: 'POST',
     body: {
