@@ -239,6 +239,27 @@
       "when": 1779840900000,
       "tag": "0033_catalog_phase4a_menu_versions_seq",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1779841000000,
+      "tag": "0034_catalog_phase4a_menu_stop_list",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1779841100000,
+      "tag": "0035_catalog_phase4a_item_slug_aliases",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1779841200000,
+      "tag": "0036_catalog_phase4a_new_tables_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -11,6 +11,7 @@ import {
   primaryKey,
   smallint,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -283,5 +284,77 @@ export const menuItemModifiers = pgTable(
       parent: { id: menuModifiers.id, tenantId: menuModifiers.tenantId },
     }).onDelete('cascade'),
     index('menu_item_modifiers_tenant_item_idx').on(table.tenantId, table.menuItemId),
+  ],
+);
+
+/**
+ * D-4a-10: stop-list overlay. Separate table (researcher recommendation in
+ * SCHEMA-MAP §Q5) — keeps audit trail (`stopped_at`, `stopped_by_user_id`,
+ * `reason`) without bloating `menu_items` and stays multi-replica consistent.
+ * Read-time filtering wires in plan 06 inside `loadPublishedMenu`.
+ */
+export const menuStopList = pgTable(
+  'menu_stop_list',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    brandId: uuid('brand_id'),
+    itemId: uuid('item_id').notNull(),
+    stoppedAt: timestamp('stopped_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+    reason: text('reason'),
+    stoppedByUserId: text('stopped_by_user_id'),
+  },
+  (table) => [
+    foreignKey({
+      name: 'menu_stop_list_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_stop_list_item_fk',
+      child: { id: table.itemId, tenantId: table.tenantId },
+      parent: { id: menuItems.id, tenantId: menuItems.tenantId },
+    }).onDelete('cascade'),
+    uniqueIndex('menu_stop_list_item_tenant_uq').on(table.tenantId, table.itemId),
+    tenantParentUniqueIndex('menu_stop_list', { id: table.id, tenantId: table.tenantId }),
+  ],
+);
+
+/**
+ * D-4a-04: historical slug → item lookup for SEO / 301 redirects when a
+ * menu item's primary slug changes. Plan 06 wires alias insertion inside
+ * `upsert-item.service.ts`. CHECK matches the URL-safe slug regex used
+ * by `menu_items.slug`.
+ */
+export const menuItemSlugAliases = pgTable(
+  'menu_item_slug_aliases',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    itemId: uuid('item_id').notNull(),
+    alias: text('alias').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    foreignKey({
+      name: 'menu_item_slug_aliases_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_item_slug_aliases_item_fk',
+      child: { id: table.itemId, tenantId: table.tenantId },
+      parent: { id: menuItems.id, tenantId: menuItems.tenantId },
+    }).onDelete('cascade'),
+    uniqueIndex('menu_item_slug_aliases_tenant_alias_uq').on(table.tenantId, table.alias),
+    tenantParentUniqueIndex('menu_item_slug_aliases', {
+      id: table.id,
+      tenantId: table.tenantId,
+    }),
+    check('menu_item_slug_aliases_format_chk', sql`${table.alias} ~ '^[a-z0-9][a-z0-9-]*$'`),
   ],
 );
