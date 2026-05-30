@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { describe, expect, it, vi, beforeEach, beforeAll, afterAll } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
@@ -18,27 +18,28 @@ Object.defineProperty(navigator, 'clipboard', {
   value: { writeText: writeTextMock },
 });
 
-// jsdom does not implement window.location.reload(); attach a no-op listener on
-// the `beforeunload` event to short-circuit the navigation. The component only
-// calls `reload()` after a successful verify, and the assertion already runs
-// before the call site, so the noisy stderr is harmless — but we still want a
-// quiet log. Wrap reload in a try/catch on the component side via a guard:
-// since the linter forbids spreading a class instance and forbids redefining
-// the location prototype, we silence the noise by overriding console.error to
-// drop only the specific jsdom navigation warning.
+// WR-10: scope the console.error filter to this file via beforeAll/afterAll
+// so it cannot bleed into sibling test files in the same Vitest worker. The
+// component triggers a jsdom "Not implemented: navigation" warning after a
+// successful verify (`window.location.reload`); we drop only that line.
 const originalConsoleError = console.error.bind(console);
-console.error = (...args: unknown[]): void => {
-  if (
-    args.length > 0 &&
-    typeof args[0] === 'object' &&
-    args[0] !== null &&
-    args[0] instanceof Error &&
-    args[0].message.includes('Not implemented: navigation')
-  ) {
-    return;
-  }
-  originalConsoleError(...args);
-};
+beforeAll(() => {
+  console.error = (...args: unknown[]): void => {
+    if (
+      args.length > 0 &&
+      typeof args[0] === 'object' &&
+      args[0] !== null &&
+      args[0] instanceof Error &&
+      args[0].message.includes('Not implemented: navigation')
+    ) {
+      return;
+    }
+    originalConsoleError(...args);
+  };
+});
+afterAll(() => {
+  console.error = originalConsoleError;
+});
 
 const { TwoFactorSection } =
   await import('../app/dashboard/(workspace)/settings/two-factor-enable-client');
