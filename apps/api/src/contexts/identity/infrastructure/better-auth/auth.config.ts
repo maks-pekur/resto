@@ -278,7 +278,10 @@ export const buildAuth = (opts: BuildOpts) =>
               return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
-            if (!path.endsWith('/api/auth/organization/set-active')) return;
+            // WR-07: exact-equality on the BA-mounted path. `endsWith` would
+            // match a nested route like `/proxy/foo/api/auth/organization/set-active`
+            // if a future deployment mounts BA under a path prefix.
+            if (path !== '/api/auth/organization/set-active') return;
             try {
               const reqHeaders = rawRequest?.headers;
               await opts.onActiveOrganizationSet(
