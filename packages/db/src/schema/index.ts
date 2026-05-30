@@ -8,6 +8,11 @@
 export * from './tenants';
 export * from './brands';
 export * from './menu';
+// Public-surface contract — visible to schema consumers via `schema.<name>`:
+//   - menuCategories, menuItems, menuVariants, menuModifiers, menuModifierOptions,
+//     menuItemModifiers
+//   - menuStopList (D-4a-10, plan 04A-03)
+//   - menuItemSlugAliases (D-4a-04, plan 04A-03)
 export * from './audit';
 export * from './outbox';
 export * from './inbox';
