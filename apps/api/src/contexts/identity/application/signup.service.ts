@@ -26,10 +26,30 @@ import {
 const MAX_SLUG_SUFFIX = 99;
 const SLUG_MAX_LEN = 30;
 
+/**
+ * D-06 (Phase 03): floor on total `executeOrTimeEqualize` duration. Both
+ * branches (real signup vs. swallowed email-taken) pad to this floor so
+ * response-time analysis cannot distinguish "this email is registered" from
+ * "this email is new". 350ms covers the p95 of the happy path in dev
+ * (provision tenant + signUpEmail scrypt + addMember + signInEmail scrypt);
+ * happy-path runs longer than the floor are returned without padding.
+ */
+const PARITY_FLOOR_MS = 350;
+
 export interface SignUpResult {
   readonly tenant: IdentityTenantView;
   readonly userId: string;
   readonly setCookie: readonly string[];
+}
+
+/**
+ * D-06 enumeration-safe public response. The wrapped `executeOrTimeEqualize`
+ * NEVER leaks tenant id, user id, or Set-Cookie — both branches collapse to
+ * `{ status: 'pending_verification' }`. The caller must complete the email
+ * verification + sign-in dance on the next request.
+ */
+export interface SignUpEqualizedResult {
+  readonly status: 'pending_verification';
 }
 
 const slugify = (raw: string): string => {
@@ -54,6 +74,55 @@ export class SignUpService {
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
     @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
   ) {}
+
+  /**
+   * D-06 enumeration-parity wrapper. The HTTP controller MUST call this
+   * method (not `execute`) so neither response body nor response time
+   * distinguishes "email is taken" from "email is new".
+   *
+   * Behavior:
+   *   1. Run the real `execute(input)`; on success the cookies / tenantId
+   *      / userId from the success branch are intentionally DROPPED — both
+   *      branches collapse to `{ status: 'pending_verification' }`. The new
+   *      user follows the email-verification + explicit-sign-in dance on
+   *      subsequent requests; pre-D-06 the controller auto-signed-in via
+   *      the returned cookies, which was the timing leak.
+   *   2. On `SignupEmailAlreadyExistsError`, swallow it. Other errors
+   *      (slug exhaustion, BA failure, validation) propagate — those are
+   *      observable to a legitimate caller and don't leak email existence.
+   *   3. Always pad the total method duration to `PARITY_FLOOR_MS` so the
+   *      fast "email exists" probe path cannot be distinguished by timing.
+   */
+  async executeOrTimeEqualize(input: SignUpInput): Promise<SignUpEqualizedResult> {
+    const t0 = Date.now();
+    try {
+      await this.execute(input);
+    } catch (err) {
+      if (!(err instanceof SignupEmailAlreadyExistsError)) {
+        throw err;
+      }
+      this.logger.log(
+        { email: this.redactEmail(input.email) },
+        'signup.email_taken swallowed for enumeration parity (D-06).',
+      );
+    }
+    const elapsed = Date.now() - t0;
+    if (elapsed < PARITY_FLOOR_MS) {
+      await new Promise<void>((resolve) => setTimeout(resolve, PARITY_FLOOR_MS - elapsed));
+    }
+    return { status: 'pending_verification' };
+  }
+
+  /**
+   * Domain-side log redaction: keep `<first>***@<host>` so support can match
+   * a complaint without the structured log itself leaking the full address.
+   */
+  private redactEmail(email: string): string {
+    const at = email.indexOf('@');
+    if (at <= 1) return '***';
+    const host = email.slice(at);
+    return `${email[0] ?? '*'}***${host}`;
+  }
 
   async execute(input: SignUpInput): Promise<SignUpResult> {
     // RestoZodValidationPipe already validated the regex via CurrencyValue

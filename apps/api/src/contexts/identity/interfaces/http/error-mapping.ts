@@ -16,11 +16,7 @@ import {
   PrincipalKindMismatchError,
   TenantMismatchError,
 } from '../../domain/errors';
-import {
-  SignupBetterAuthFailureError,
-  SignupEmailAlreadyExistsError,
-  SlugUnavailableError,
-} from '../../domain/signup-errors';
+import { SignupBetterAuthFailureError, SlugUnavailableError } from '../../domain/signup-errors';
 
 const SIGNUP_FAILURE_CODE: Record<SignupBetterAuthFailureError['stage'], string> = {
   signUpEmail: 'signup.signup_failed',
@@ -42,9 +38,11 @@ export const mapIdentityError = (err: unknown): unknown => {
     return new BadGatewayException({ code: 'bootstrap.failed', message: err.message });
   }
 
-  if (err instanceof SignupEmailAlreadyExistsError) {
-    return new ConflictException({ code: 'signup.email_taken', message: err.message });
-  }
+  // D-06 (Phase 03): `SignupEmailAlreadyExistsError` is deliberately
+  // un-mapped here. `SignUpService.executeOrTimeEqualize` swallows the
+  // error inside the application layer so the controller returns the
+  // enumeration-safe 201 body in both branches. Mapping it to a distinct
+  // 409 here would re-introduce the leak.
   if (err instanceof SlugUnavailableError) {
     return new ConflictException({ code: 'signup.slug_unavailable', message: err.message });
   }

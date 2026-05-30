@@ -26,11 +26,19 @@ const buildSignupBody = (overrides: Partial<Record<string, unknown>> = {}) => ({
 });
 
 interface SignUpResponse {
-  tenant: { id: string; slug: string };
-  userId: string;
+  status: 'pending_verification';
 }
 
-suite('Identity — public signup', () => {
+/**
+ * D-06 (Phase 03) contract change: `POST /v1/signup` now returns the
+ * enumeration-safe `{ status: 'pending_verification' }` body in BOTH the
+ * new-email and email-taken branches. Set-Cookie is intentionally absent —
+ * the new user follows the verification email + explicit sign-in path. The
+ * dedicated enumeration parity spec is `signup-enumeration.e2e.spec.ts`;
+ * this spec asserts the underlying side effects (tenant + member rows)
+ * via direct DB inspection.
+ */
+suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
   let stack: RealStack;
   let db: TenantAwareDb;
 
@@ -43,8 +51,9 @@ suite('Identity — public signup', () => {
     await stopRealStack(stack);
   });
 
-  it('creates tenant + user + owner-member and returns Set-Cookie', async () => {
-    const body = buildSignupBody({ displayName: `Roma ${randomUUID().slice(0, 6)}` });
+  it('creates tenant + owner-member on new-email signup; no Set-Cookie', async () => {
+    const displayName = `Roma ${randomUUID().slice(0, 6)}`;
+    const body = buildSignupBody({ displayName });
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/signup',
@@ -53,26 +62,32 @@ suite('Identity — public signup', () => {
     });
     expect(res.statusCode).toBe(201);
     const json = res.json<SignUpResponse>();
-    expect(json.tenant.id).toBeDefined();
-    expect(json.userId).toBeDefined();
-    const setCookie = res.headers['set-cookie'];
-    expect(setCookie).toBeDefined();
-    expect(JSON.stringify(setCookie)).toContain('better-auth.session_token');
+    expect(json).toEqual({ status: 'pending_verification' });
 
+    // D-06: NO Set-Cookie on the wire (would leak which branch ran).
+    const setCookie = res.headers['set-cookie'];
+    expect(setCookie === undefined || (Array.isArray(setCookie) && setCookie.length === 0)).toBe(
+      true,
+    );
+
+    // Side effect IS observable to the operator team via DB — assert it
+    // happened by looking up by displayName (the public body doesn't
+    // surface the tenant id under D-06).
     const tenants = await db.withoutTenant('inspect signup tenant', (tx) =>
-      tx.select().from(schema.tenants).where(eq(schema.tenants.id, json.tenant.id)),
+      tx.select().from(schema.tenants).where(eq(schema.tenants.displayName, displayName)),
     );
     expect(tenants).toHaveLength(1);
+    const tenantId = tenants[0]?.id;
+    if (typeof tenantId !== 'string') throw new Error('expected tenant id to be defined');
 
     const members = await db.withoutTenant('inspect signup member', (tx) =>
-      tx.select().from(schema.member).where(eq(schema.member.organizationId, json.tenant.id)),
+      tx.select().from(schema.member).where(eq(schema.member.organizationId, tenantId)),
     );
     expect(members).toHaveLength(1);
     expect(members[0]?.role).toBe('owner');
-    expect(members[0]?.userId).toBe(json.userId);
   }, 60_000);
 
-  it('rejects duplicate email with 409', async () => {
+  it('returns identical 201 body on duplicate email — no leak', async () => {
     const body = buildSignupBody();
     const first = await stack.app.inject({
       method: 'POST',
@@ -81,14 +96,23 @@ suite('Identity — public signup', () => {
       payload: body,
     });
     expect(first.statusCode).toBe(201);
+    expect(first.json<SignUpResponse>()).toEqual({ status: 'pending_verification' });
 
+    // D-06: duplicate-email branch returns the SAME 201 + body shape.
     const dup = await stack.app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
       payload: { ...body, displayName: `Different ${randomUUID().slice(0, 6)}` },
     });
-    expect(dup.statusCode).toBe(409);
+    expect(dup.statusCode).toBe(201);
+    expect(dup.json<SignUpResponse>()).toEqual({ status: 'pending_verification' });
+
+    // No Set-Cookie on either branch.
+    const dupCookie = dup.headers['set-cookie'];
+    expect(dupCookie === undefined || (Array.isArray(dupCookie) && dupCookie.length === 0)).toBe(
+      true,
+    );
   }, 60_000);
 
   it('auto-bumps slug suffix on displayName collision', async () => {
@@ -101,7 +125,6 @@ suite('Identity — public signup', () => {
       payload: buildSignupBody({ displayName: sameName }),
     });
     expect(a.statusCode).toBe(201);
-    const slugA = a.json<SignUpResponse>().tenant.slug;
 
     const b = await stack.app.inject({
       method: 'POST',
@@ -110,13 +133,21 @@ suite('Identity — public signup', () => {
       payload: buildSignupBody({ displayName: sameName }),
     });
     expect(b.statusCode).toBe(201);
-    const slugB = b.json<SignUpResponse>().tenant.slug;
 
-    expect(slugA).not.toEqual(slugB);
-    expect(slugB).toMatch(new RegExp(`^${slugA}-2$`));
+    // Both attempts return the same enumeration-safe body shape; slug
+    // bump is observable in the DB only.
+    const tenants = await db.withoutTenant('inspect collision tenants', (tx) =>
+      tx.select().from(schema.tenants).where(eq(schema.tenants.displayName, sameName)),
+    );
+    expect(tenants).toHaveLength(2);
+    const slugs = new Set(tenants.map((t) => t.slug));
+    expect(slugs.size).toBe(2);
+    // The second-inserted slug carries the `-2` suffix per `findFreeSlug`.
+    const hasSuffix = [...slugs].some((s) => s.endsWith("-2"));
+    expect(hasSuffix).toBe(true);
   }, 60_000);
 
-  it('returns 400 on missing fields', async () => {
+  it('returns 400 on missing fields (validation never reaches enumeration wrap)', async () => {
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/signup',
@@ -125,38 +156,4 @@ suite('Identity — public signup', () => {
     });
     expect(res.statusCode).toBe(400);
   });
-
-  it('signed-up session can read /v1/me with active tenant', async () => {
-    const body = buildSignupBody({ displayName: `Active ${randomUUID().slice(0, 6)}` });
-    const signupRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/signup',
-      headers: { 'content-type': 'application/json' },
-      payload: body,
-    });
-    expect(signupRes.statusCode).toBe(201);
-    const json = signupRes.json<SignUpResponse>();
-
-    const setCookies = signupRes.headers['set-cookie'];
-    const cookieHeader = Array.isArray(setCookies)
-      ? setCookies.map((c) => c.split(';')[0]).join('; ')
-      : (setCookies?.split(';')[0] ?? '');
-
-    const meRes = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/me',
-      headers: { cookie: cookieHeader },
-    });
-    expect(meRes.statusCode).toBe(200);
-    const me = meRes.json<{
-      kind: string;
-      tenantId?: string;
-      userId?: string;
-      baseRole?: string;
-    }>();
-    expect(me.kind).toBe('operator');
-    expect(me.tenantId).toBe(json.tenant.id);
-    expect(me.userId).toBe(json.userId);
-    expect(me.baseRole).toBe('owner');
-  }, 60_000);
 });
