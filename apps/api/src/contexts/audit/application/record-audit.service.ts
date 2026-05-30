@@ -74,19 +74,53 @@ export class RecordAuditService {
     const ipAddress = typeof payload.ipAddress === 'string' ? payload.ipAddress : null;
     const userAgent = typeof payload.userAgent === 'string' ? payload.userAgent : null;
     const targetType = targetKindFor(envelope.type);
-    const targetId =
-      (typeof payload.userId === 'string' && payload.userId) ||
-      (typeof payload.tenantId === 'string' && payload.tenantId) ||
-      null;
+    // WR-03: per-event target resolution. `tenant`-typed events MUST take
+    // targetId from payload.tenantId — using payload.userId would point at
+    // the operator instead of the tenant. `user`-typed events take userId.
+    // `platform`-typed events (DLQ alerts) have no target — leave null.
+    const targetId = (() => {
+      if (targetType === 'tenant') {
+        return typeof payload.tenantId === 'string' && payload.tenantId.length > 0
+          ? payload.tenantId
+          : null;
+      }
+      if (targetType === 'user') {
+        return typeof payload.userId === 'string' && payload.userId.length > 0
+          ? payload.userId
+          : null;
+      }
+      return null;
+    })();
+    // WR-03: actorUserId (when BA surfaces the calling user) is the truthful
+    // actor for role-change events. Fall back to actorSubject literal, then
+    // to payload.userId (the subject of the change — semantically wrong but
+    // preserves Phase 3 e2e baseline; WARN once so the gap is visible).
+    const actorUserId =
+      typeof payload.actorUserId === 'string' && payload.actorUserId.length > 0
+        ? payload.actorUserId
+        : null;
+    const actorSubjectLiteral =
+      typeof payload.actorSubject === 'string' && payload.actorSubject.length > 0
+        ? payload.actorSubject
+        : null;
+    const subjectUserId =
+      typeof payload.userId === 'string' && payload.userId.length > 0 ? payload.userId : null;
+    let actorSubject: string;
+    if (actorUserId !== null) actorSubject = actorUserId;
+    else if (actorSubjectLiteral !== null) actorSubject = actorSubjectLiteral;
+    else if (subjectUserId !== null) {
+      actorSubject = subjectUserId;
+      if (envelope.type.startsWith('identity.role_changed')) {
+        this.logger.warn(
+          { type: envelope.type, fallbackActor: subjectUserId },
+          'role_changed audit row missing actorUserId — falling back to subject userId.',
+        );
+      }
+    } else actorSubject = 'system';
     return {
       tenantId: envelope.tenantId,
       actorKind: 'system',
-      actorSubject:
-        typeof payload.actorSubject === 'string' && payload.actorSubject.length > 0
-          ? payload.actorSubject
-          : typeof payload.userId === 'string' && payload.userId.length > 0
-            ? payload.userId
-            : 'system',
+      actorSubject,
       action: envelope.type,
       targetType,
       targetId,
