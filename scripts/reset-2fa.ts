@@ -106,9 +106,47 @@ if (answer.trim().toLowerCase() !== 'y') {
 }
 
 // ---------------------------------------------------------------------------
+// Actor verification (CR-01)
+// ---------------------------------------------------------------------------
+// The audit row produced below is forensic — it proves a verified operator
+// pressed the reset button. Treat RESET_ACTOR_EMAIL as load-bearing:
+//   (a) require explicit value (no fallback to a placeholder identity);
+//   (b) constrain to @resto.app addresses so a shell with random env vars
+//       cannot manufacture an arbitrary attribution;
+//   (c) resolve to a real BA user and write that user.id as actorSubject.
+const actorEmail = process.env['RESET_ACTOR_EMAIL'];
+if (!actorEmail || !/^[a-z0-9._%+-]+@resto\.app$/i.test(actorEmail)) {
+  process.stderr.write(
+    'RESET_ACTOR_EMAIL=<your @resto.app email> is required (forensic audit field).\n',
+  );
+  await pg.end();
+  process.exit(1);
+}
+
+const actorRows = await db
+  .select({ id: schema.user.id, email: schema.user.email })
+  .from(schema.user)
+  .where(eq(schema.user.email, actorEmail))
+  .limit(1);
+
+if (actorRows.length === 0) {
+  process.stderr.write(
+    `Actor ${actorEmail} is not a registered BA user — refusing to write an unverified audit row.\n`,
+  );
+  await pg.end();
+  process.exit(1);
+}
+
+const actor = actorRows[0];
+if (!actor) {
+  process.stderr.write('Actor lookup returned empty row — refusing.\n');
+  await pg.end();
+  process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
 // Execute (single transaction)
 // ---------------------------------------------------------------------------
-const actorEmail = process.env['RESET_ACTOR_EMAIL'] ?? 'founder';
 const resetAt = new Date().toISOString();
 
 await db.transaction(async (tx) => {
@@ -121,15 +159,17 @@ await db.transaction(async (tx) => {
   await tx.insert(schema.auditLog).values({
     id: randomUUID(),
     tenantId: null,
-    actorKind: 'system',
-    actorSubject: `founder:manual:${actorEmail}`,
+    actorKind: 'admin',
+    actorSubject: actor.id,
     action: 'identity.two_factor_reset_manual',
     targetType: 'user',
     targetId: userId,
-    payload: { reason: 'lost-device-recovery', resetAt },
+    payload: { reason: 'lost-device-recovery', resetAt, actorEmail: actor.email },
     occurredAt: sql`now()`,
   });
 });
 
-process.stdout.write(`\nReset complete. Audit row written for userId=${userId} at ${resetAt}\n`);
+process.stdout.write(
+  `\nReset complete. Audit row written for userId=${userId} at ${resetAt} by ${actor.email}\n`,
+);
 await pg.end();
