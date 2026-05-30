@@ -26,12 +26,43 @@ export interface SubscribeOptions {
    */
   readonly durableName: string;
   /**
-   * Maximum unacked messages in flight. Default 1 — sequential consumption
-   * is the safe baseline; raise per-consumer when the handler is cheap.
+   * Maximum unacked messages in flight. Default 10 — bumped above 1 per
+   * packages/events/CLAUDE.md rule (a NAK on one message must not block
+   * the whole subject behind the NAK timeout).
    */
   readonly maxInFlight?: number;
+  /**
+   * AUTH-10: maximum delivery attempts per message before routing to
+   * `dlq.<subject>`. Default 5 (D-19). Without this bound a poison
+   * message NAK-loops forever and stalls the consumer.
+   */
+  readonly maxDeliver?: number;
+  /**
+   * AUTH-10: how long the broker waits for ack before redelivering, in
+   * milliseconds. Default 30_000 ms (30 s). Must exceed slowest expected
+   * handler so duplicate invocations do not race; revisit per consumer.
+   */
+  readonly ackWaitMs?: number;
+  /**
+   * AUTH-10: optional DLQ publisher. When the message hits
+   * `deliveryCount >= maxDeliver` AND the handler still throws, the
+   * subscriber republishes the raw bytes via this publisher to
+   * `dlq.<originalSubject>`. If omitted, the subscriber ACKs the poison
+   * message (preventing redelivery loops) but does NOT republish —
+   * strictly degraded operation, logged at error level.
+   */
+  readonly dlqPublisher?: DlqPublisher;
   /** Consumer callback. Resolves on success → ack; throws → nak (redeliver). */
   readonly handler: (envelope: EventEnvelope) => Promise<void>;
+}
+
+/**
+ * Subset of `EventPublisher` required by the DLQ branch — just `publishRaw`.
+ * Lets the subscriber accept a publisher without coupling to the full
+ * envelope-publish path.
+ */
+export interface DlqPublisher {
+  publishRaw(subject: string, data: Uint8Array): Promise<void>;
 }
 
 /**

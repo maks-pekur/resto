@@ -7,7 +7,7 @@ import {
   type NatsConnection,
 } from 'nats';
 import type { EventEnvelope } from '../envelope';
-import type { EventPublisher } from '../ports';
+import type { DlqPublisher, EventPublisher } from '../ports';
 import { HEADER_CAUSATION, HEADER_CORRELATION, HEADER_VERSION } from '../outbox/headers';
 
 const HEADER_EVENT_ID = 'event-id';
@@ -39,7 +39,7 @@ export interface NatsPublisherOptions {
  * envelope.id`, which the broker uses to dedup retries within its
  * configured window.
  */
-export class NatsJetStreamPublisher implements EventPublisher {
+export class NatsJetStreamPublisher implements EventPublisher, DlqPublisher {
   private constructor(
     private readonly nc: NatsConnection,
     private readonly js: JetStreamClient,
@@ -70,6 +70,19 @@ export class NatsJetStreamPublisher implements EventPublisher {
     }
     const data = new TextEncoder().encode(JSON.stringify(envelope));
     await this.js.publish(envelope.type, data, { headers: h, msgID: envelope.id });
+  }
+
+  /**
+   * AUTH-10 DLQ branch: publish raw bytes to an arbitrary subject WITHOUT
+   * EventEnvelope.parse. Poison bytes that failed envelope validation are
+   * relayed verbatim to `dlq.<original_subject>` for forensic analysis.
+   *
+   * Intentionally bypasses `publish()`'s envelope schema check — that's
+   * the whole point. Do not call from application code; use `publish()`
+   * for normal envelopes.
+   */
+  async publishRaw(subject: string, data: Uint8Array): Promise<void> {
+    await this.js.publish(subject, data);
   }
 
   async close(): Promise<void> {

@@ -18,7 +18,13 @@ export {
 
 export { withCorrelationId, getCorrelationId, requireCorrelationId } from './correlation';
 
-export type { EventPublisher, EventSubscriber, EventSubscription, SubscribeOptions } from './ports';
+export type {
+  DlqPublisher,
+  EventPublisher,
+  EventSubscriber,
+  EventSubscription,
+  SubscribeOptions,
+} from './ports';
 
 export {
   appendToOutbox,
