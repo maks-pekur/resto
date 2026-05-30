@@ -77,3 +77,34 @@ export const IdentityEmailDispatchFailedV1 = defineEventContract({
   type: 'identity.email_dispatch_failed.v1',
   payload: IdentityEmailDispatchFailedV1Payload,
 });
+
+/**
+ * Phase 3 / AUTH-09 / D-16a (REINTERPRETED per plan-checker B-4 2026-05-30):
+ *
+ * Emitted by `organizationHooks.afterUpdateMemberRole` in `auth.config.ts`
+ * on every BA-driven role mutation. Closes the role-change BLOCKED row in
+ * `.planning/phases/01-tenancy-hardening/audit-gap.md` (the hook exists in
+ * BA 1.4.22 at `node_modules/.../organization/types.d.mts:520-525` — the
+ * earlier "BA ≥ 1.5 trigger" narrative was based on a wrong hook path).
+ *
+ * `actorUserId` is the user who performed the role change. Best-effort:
+ * BA does not always surface the calling user in the hook context; the
+ * field is optional so the audit row materialises even when null.
+ *
+ * `previousRole` / `newRole` are BA role-slug strings; in practice these
+ * are the system presets `owner` / `admin` / `staff` plus any custom
+ * tenant-creatable role (which BA stores in `organization_role`).
+ */
+export const IdentityRoleChangedV1Payload = z.object({
+  userId: z.string().uuid(),
+  tenantId: TenantId,
+  previousRole: z.string().min(1).max(64),
+  newRole: z.string().min(1).max(64),
+  actorUserId: z.string().uuid().optional(),
+});
+export type IdentityRoleChangedV1Payload = z.infer<typeof IdentityRoleChangedV1Payload>;
+
+export const IdentityRoleChangedV1 = defineEventContract({
+  type: 'identity.role_changed.v1',
+  payload: IdentityRoleChangedV1Payload,
+});

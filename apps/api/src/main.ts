@@ -21,6 +21,7 @@ import {
   assertWithoutTenantCallsiteRegistered,
 } from '@resto/db';
 import { AppModule } from './app.module';
+import { assertSystemRolesPresent } from './bootstrap/assert-system-roles-present';
 import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
 import { assertProdGuardrails } from './config/prod-guardrails';
@@ -73,6 +74,13 @@ const bootstrap = async (): Promise<void> => {
   // Pure FS check (D-08 + Pitfall 6) — the call-site fence itself is
   // the ESLint job (TEN-12).
   assertWithoutTenantCallsiteRegistered();
+
+  // AUTH-09 / D-16 (Phase 3 / Plan 05): refuse to start if the BA
+  // accessControl map (the in-code `owner` / `admin` / `staff` presets fed
+  // to the organization() plugin at construction time) has drifted from
+  // packages/domain SYSTEM_ROLES. Synchronous fail-fast — mirrors the other
+  // boot-time assertions above. No DB access; pure code-vs-code equality.
+  assertSystemRolesPresent();
 
   // ADR-0020 I-3 defense-in-depth: refuse to start if any tracked
   // dev-fallback constant is still present in a non-dev NODE_ENV.

@@ -73,6 +73,8 @@ export {
   IdentityEmailDispatchFailedV1Payload,
   IdentityPasswordResetCompletedV1,
   IdentityPasswordResetCompletedV1Payload,
+  IdentityRoleChangedV1,
+  IdentityRoleChangedV1Payload,
   IdentitySignedInV1,
   IdentitySignedInV1Payload,
   IdentitySignedOutV1,

@@ -15,6 +15,9 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   'identity.signed_in': 'user',
   'identity.signed_out': 'user',
   'identity.password_reset_completed': 'user',
+  // AUTH-09 / D-16a (Phase 3 / Plan 05): role-change audit row closes the
+  // Phase 1 BLOCKED entry in audit-gap.md. Payload always carries `userId`.
+  'identity.role_changed': 'user',
   // AUTH-10 / D-05: platform-level alert. DLQ branch may have no userId
   // (poison envelope unparseable) so this is NOT 'user'.
   'identity.email_dispatch_failed': 'platform',
