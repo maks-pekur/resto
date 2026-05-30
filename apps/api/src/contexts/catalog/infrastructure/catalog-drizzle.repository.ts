@@ -118,7 +118,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             description: r.description ?? null,
             basePrice: MoneyAmount.parse(r.basePrice),
             currency: Currency.parse(r.currency),
-            imageUrl: await this.signImage(r.imageS3Key),
+            // 04a-02 shim: read presign from photos[0] until plan 06 wires the full photo array.
+            imageUrl: await this.signImage(r.photos[0]?.s3Key ?? null),
             allergens: r.allergens ?? [],
             sortOrder: r.sortOrder,
             variants: (variantsByItem.get(r.id) ?? []).map<PublishedMenuVariant>((v) => ({
@@ -210,7 +211,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: row.description ?? null,
         basePrice: MoneyAmount.parse(row.basePrice),
         currency: Currency.parse(row.currency),
-        imageUrl: await this.signImage(row.imageS3Key),
+        // 04a-02 shim: read presign from photos[0] until plan 06 wires the full photo array.
+        imageUrl: await this.signImage(row.photos[0]?.s3Key ?? null),
         allergens: row.allergens ?? [],
         sortOrder: row.sortOrder,
         variants: variants.map<PublishedMenuVariant>((v) => ({
@@ -253,6 +255,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async upsertItem(input: UpsertItemRow): Promise<{ id: string }> {
+    // 04a-02 shim: translate the legacy single `imageS3Key` input into the new
+    // `photos` JSONB array column. Plan 05 widens the DTO to accept the full
+    // photos array; plan 06 wires the full repository projection.
+    const photos = input.imageS3Key
+      ? [{ s3Key: input.imageS3Key, sortOrder: 0, isPrimary: true }]
+      : [];
     return this.db.withTenant(async (_tx, scoped) => {
       const [row] = await scoped
         .insertInto(schema.menuItems, {
@@ -264,7 +272,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           description: input.description,
           basePrice: input.basePrice,
           currency: input.currency,
-          imageS3Key: input.imageS3Key,
+          photos,
           allergens: input.allergens ? [...input.allergens] : null,
           status: input.status,
           sortOrder: input.sortOrder,
@@ -278,7 +286,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             description: input.description,
             basePrice: input.basePrice,
             currency: input.currency,
-            imageS3Key: input.imageS3Key,
+            photos,
             allergens: input.allergens ? [...input.allergens] : null,
             status: input.status,
             sortOrder: input.sortOrder,

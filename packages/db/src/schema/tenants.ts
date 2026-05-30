@@ -30,6 +30,15 @@ export const tenants = pgTable(
       mode: 'date',
     }),
     offboardingRequestedBy: text('offboarding_requested_by'),
+    /**
+     * D-4a-06: timestamp of the tenant's first menu publish. Used by the
+     * `catalog.menu_first_published.v1` vs `catalog.menu_republished.v1`
+     * event split (plan 06 wires the detection).
+     */
+    menuFirstPublishedAt: timestamp('menu_first_published_at', {
+      withTimezone: true,
+      mode: 'date',
+    }),
     ...timestampsColumns(),
   },
   (table) => [
