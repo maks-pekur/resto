@@ -60,6 +60,31 @@ interface IdentityBucket {
 const identityBuckets = new Map<string, IdentityBucket>();
 const IDENTITY_BUCKET_WINDOW_MS = 60_000;
 
+// CR-03: identityBuckets keyed by per-email lowercased value has unbounded
+// cardinality (attacker can rotate email-shaped strings). Periodic sweep
+// drops expired entries; the LRU cap is a belt-and-suspenders bound on
+// adversarial bursts.
+const IDENTITY_SWEEP_INTERVAL_MS = 5 * 60_000;
+const IDENTITY_MAX_BUCKETS = 50_000;
+
+const sweepExpiredIdentity = (): void => {
+  const now = Date.now();
+  for (const [k, v] of identityBuckets) {
+    if (v.resetAt <= now) identityBuckets.delete(k);
+  }
+  if (identityBuckets.size > IDENTITY_MAX_BUCKETS) {
+    const overflow = identityBuckets.size - IDENTITY_MAX_BUCKETS;
+    let dropped = 0;
+    for (const k of identityBuckets.keys()) {
+      if (dropped >= overflow) break;
+      identityBuckets.delete(k);
+      dropped += 1;
+    }
+  }
+};
+
+setInterval(sweepExpiredIdentity, IDENTITY_SWEEP_INTERVAL_MS).unref();
+
 const consumeIdentityBucket = (key: string, cap: number): { allowed: boolean; ttlMs: number } => {
   const now = Date.now();
   const existing = identityBuckets.get(key);

@@ -17,11 +17,45 @@ interface TenantBucket {
 
 const WINDOW_MS = 60_000;
 
+// CR-03: bound the bucket store so a slug-rotating attacker cannot grow
+// the Map without limit. SWEEP_INTERVAL_MS drains expired entries; the
+// LRU cap is a belt-and-suspenders cap on adversarial cardinality bursts.
+const SWEEP_INTERVAL_MS = 5 * 60_000;
+const MAX_BUCKETS = 10_000;
+
+// CR-03: strict allowlist for `x-tenant-slug`. Matches DNS-label rules used
+// elsewhere in the codebase (TenantSlug). Anything outside is rejected at
+// extractTenantKey() so adversarial keys never reach the bucket map.
+const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+// UUID v4 shape — BA's organizationId surface is UUID-like; bound cardinality
+// by rejecting anything else.
+const ORG_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Module-scope bucket store — resets on process restart (acceptable for
 // MVP-1 in-process rate limiting; Redis-backed store is a Phase 6+ concern).
 const tenantBuckets = new Map<string, TenantBucket>();
 
 const now = (): number => Date.now();
+
+const sweepExpired = (): void => {
+  const ts = now();
+  for (const [k, v] of tenantBuckets) {
+    if (v.resetAt <= ts) tenantBuckets.delete(k);
+  }
+  if (tenantBuckets.size > MAX_BUCKETS) {
+    // Insertion-order iteration drops the oldest entries first.
+    const overflow = tenantBuckets.size - MAX_BUCKETS;
+    let dropped = 0;
+    for (const k of tenantBuckets.keys()) {
+      if (dropped >= overflow) break;
+      tenantBuckets.delete(k);
+      dropped += 1;
+    }
+  }
+};
+
+setInterval(sweepExpired, SWEEP_INTERVAL_MS).unref();
 
 const formatMinuteKey = (ts: number): string => {
   const d = new Date(ts);
@@ -36,19 +70,23 @@ const formatMinuteKey = (ts: number): string => {
  * 1. `x-tenant-slug` header (admin panel sets this — Phase 1 mechanism).
  * 2. `organizationId` from the BA request body (BA sign-in can carry it).
  *
- * Returns `undefined` when neither is present; caller falls back to
- * per-IP + per-email buckets only.
+ * Returns `undefined` when neither is present OR fails the strict slug /
+ * uuid allowlist; caller falls back to per-IP + per-email buckets only.
+ * The allowlist (CR-03) prevents an attacker from allocating one bucket
+ * per invented `x-tenant-slug` value.
  */
 const extractTenantKey = (req: FastifyRequest): string | undefined => {
   const slugHeader = req.headers['x-tenant-slug'];
   if (typeof slugHeader === 'string' && slugHeader.length > 0) {
-    return `slug:${slugHeader.toLowerCase()}`;
+    const slug = slugHeader.toLowerCase();
+    if (!SLUG_PATTERN.test(slug)) return undefined;
+    return `slug:${slug}`;
   }
   const body = req.body;
   if (typeof body === 'object' && body !== null) {
     const orgId = (body as Record<string, unknown>).organizationId;
-    if (typeof orgId === 'string' && orgId.length > 0) {
-      return `org:${orgId}`;
+    if (typeof orgId === 'string' && ORG_ID_PATTERN.test(orgId)) {
+      return `org:${orgId.toLowerCase()}`;
     }
   }
   return undefined;
