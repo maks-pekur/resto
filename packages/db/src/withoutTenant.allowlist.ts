@@ -63,6 +63,12 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // yet. tenantId IS bound via withTenantId when available — this
   // allowlist entry covers the genuine pre-org-bind branch only.
   'apps/api/src/contexts/identity/infrastructure/email/resend.adapter.ts',
+
+  // D-21 / Phase 3 / Plan 05: GDPR daily sweep on invitation + verification
+  // tables. BA-owned auth tables swept cross-tenant by the retention scheduler;
+  // no ALS binding applies to scheduled NestJS cron jobs.
+  'apps/api/src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
+  'apps/api/src/infrastructure/jobs/verification-retention-scheduler.service.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];

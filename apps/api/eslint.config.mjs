@@ -127,6 +127,10 @@ export default [
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
       // for the matching entry.
       'src/contexts/identity/infrastructure/email/resend.adapter.ts',
+      // D-21 / Phase 3 / Plan 05: GDPR retention sweep schedulers. Cron jobs
+      // have no HTTP request / ALS tenant context. See withoutTenant.allowlist.ts.
+      'src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
+      'src/infrastructure/jobs/verification-retention-scheduler.service.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
