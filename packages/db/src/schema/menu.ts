@@ -147,40 +147,43 @@ export const menuItems = pgTable(
 );
 
 /**
- * Variant of a menu item: e.g. "Small / Medium / Large", "330ml / 500ml".
+ * Per-item size for a menu item: e.g. "Small / Medium / Large", "330ml / 500ml".
  *
- * `priceDelta` is added to the item `basePrice` when this variant is
- * chosen. Each item must have at most one default variant; we enforce
- * that with a partial unique index.
+ * D-4a CAT-05: renamed from `menu_variants` to align with iiko `NSizeModel`.
+ * `price` is the ABSOLUTE per-size price (not a delta on top of base price),
+ * matching iiko `NPSizePriceModel.price.current_price` semantics — see
+ * SCHEMA-MAP §Q2. Each item must have at most one default size; enforced
+ * with a partial unique index.
  */
-export const menuVariants = pgTable(
-  'menu_variants',
+export const menuItemSizes = pgTable(
+  'menu_item_sizes',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     brandId: uuid('brand_id'),
     menuItemId: uuid('menu_item_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
-    priceDelta: money('price_delta').notNull().default('0'),
+    price: money('price').notNull(),
     isDefault: boolean('is_default').notNull().default(false),
     sortOrder: integer('sort_order').notNull().default(0),
     ...timestampsColumns(),
   },
   (table) => [
     foreignKey({
-      name: 'menu_variants_tenant_fk',
+      name: 'menu_item_sizes_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_variants_item_fk',
+      name: 'menu_item_sizes_item_fk',
       child: { id: table.menuItemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
-    index('menu_variants_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
-    uniqueIndex('menu_variants_one_default_per_item_uq')
+    index('menu_item_sizes_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
+    uniqueIndex('menu_item_sizes_one_default_per_item_uq')
       .on(table.menuItemId)
       .where(sql`${table.isDefault} = true`),
+    tenantParentUniqueIndex('menu_item_sizes', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
@@ -188,9 +191,12 @@ export const menuVariants = pgTable(
  * Modifier group (e.g. "Toppings", "Sauce", "Spice level"). Constrains
  * how many options a customer can pick at order time via
  * `min_selectable` and `max_selectable`.
+ *
+ * D-4a CAT-04: renamed from `menu_modifiers` to align with iiko
+ * `Группа модификаторов` — see SCHEMA-MAP §Q3.
  */
-export const menuModifiers = pgTable(
-  'menu_modifiers',
+export const menuModifierGroups = pgTable(
+  'menu_modifier_groups',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
@@ -203,21 +209,25 @@ export const menuModifiers = pgTable(
   },
   (table) => [
     foreignKey({
-      name: 'menu_modifiers_tenant_fk',
+      name: 'menu_modifier_groups_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     check(
-      'menu_modifiers_selectable_range_chk',
+      'menu_modifier_groups_selectable_range_chk',
       sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
     ),
-    tenantParentUniqueIndex('menu_modifiers', { id: table.id, tenantId: table.tenantId }),
+    tenantParentUniqueIndex('menu_modifier_groups', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
 /**
  * One option within a modifier group (e.g. "Mozzarella" under "Toppings").
  * `priceDelta` is added to the item base price when selected.
+ *
+ * D-4a CAT-04 (iiko alignment): `defaultAmount` mirrors
+ * `NPModifierModel.default_amount`; `freeAmount` mirrors
+ * `NPModifierModel.free_of_charge_amount`.
  */
 export const menuModifierOptions = pgTable(
   'menu_modifier_options',
@@ -225,9 +235,11 @@ export const menuModifierOptions = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     brandId: uuid('brand_id'),
-    modifierId: uuid('modifier_id').notNull(),
+    modifierGroupId: uuid('modifier_group_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     priceDelta: money('price_delta').notNull().default('0'),
+    defaultAmount: smallint('default_amount').notNull().default(0),
+    freeAmount: smallint('free_amount').notNull().default(0),
     sortOrder: integer('sort_order').notNull().default(0),
     ...timestampsColumns(),
   },
@@ -238,52 +250,56 @@ export const menuModifierOptions = pgTable(
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_modifier_options_modifier_fk',
-      child: { id: table.modifierId, tenantId: table.tenantId },
-      parent: { id: menuModifiers.id, tenantId: menuModifiers.tenantId },
+      name: 'menu_modifier_options_group_fk',
+      child: { id: table.modifierGroupId, tenantId: table.tenantId },
+      parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    index('menu_modifier_options_tenant_modifier_idx').on(
+    index('menu_modifier_options_tenant_group_idx').on(
       table.tenantId,
-      table.modifierId,
+      table.modifierGroupId,
       table.sortOrder,
     ),
+    tenantParentUniqueIndex('menu_modifier_options', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
 /**
  * Junction: which modifier groups apply to which item, with item-local
  * sort order on the menu UI.
+ *
+ * D-4a CAT-04: renamed from `menu_item_modifiers`; `modifierId` →
+ * `modifierGroupId` follows the parent rename.
  */
-export const menuItemModifiers = pgTable(
-  'menu_item_modifiers',
+export const menuItemModifierGroups = pgTable(
+  'menu_item_modifier_groups',
   {
     tenantId: tenantIdColumn(),
     brandId: uuid('brand_id'),
     menuItemId: uuid('menu_item_id').notNull(),
-    modifierId: uuid('modifier_id').notNull(),
+    modifierGroupId: uuid('modifier_group_id').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),
   },
   (table) => [
     primaryKey({
-      name: 'menu_item_modifiers_pk',
-      columns: [table.menuItemId, table.modifierId],
+      name: 'menu_item_modifier_groups_pk',
+      columns: [table.menuItemId, table.modifierGroupId],
     }),
     foreignKey({
-      name: 'menu_item_modifiers_tenant_fk',
+      name: 'menu_item_modifier_groups_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_item_modifiers_item_fk',
+      name: 'menu_item_modifier_groups_item_fk',
       child: { id: table.menuItemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_item_modifiers_modifier_fk',
-      child: { id: table.modifierId, tenantId: table.tenantId },
-      parent: { id: menuModifiers.id, tenantId: menuModifiers.tenantId },
+      name: 'menu_item_modifier_groups_group_fk',
+      child: { id: table.modifierGroupId, tenantId: table.tenantId },
+      parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    index('menu_item_modifiers_tenant_item_idx').on(table.tenantId, table.menuItemId),
+    index('menu_item_modifier_groups_tenant_item_idx').on(table.tenantId, table.menuItemId),
   ],
 );
 
