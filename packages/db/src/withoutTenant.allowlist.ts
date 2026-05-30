@@ -54,6 +54,15 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // middleware, no ALS tenant), and the poison envelope itself may not
   // carry a parseable tenantId — alert is platform-scoped.
   'packages/events/src/infrastructure/nats-subscriber.ts',
+
+  // AUTH-01 / Phase 3 / D-05 + D-17: Resend email adapter — terminal
+  // failure (3 retries exhausted on 5xx, or 4xx including 429) emits
+  // identity.email_dispatch_failed.v1 from the BA send-callback path.
+  // BA hooks fire outside HTTP middleware (no ALS), and the verification
+  // email pre-org-bind path has no tenantId on data.user.activeOrganization
+  // yet. tenantId IS bound via withTenantId when available — this
+  // allowlist entry covers the genuine pre-org-bind branch only.
+  'apps/api/src/contexts/identity/infrastructure/email/resend.adapter.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];

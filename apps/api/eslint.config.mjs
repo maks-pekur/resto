@@ -123,6 +123,10 @@ export default [
       'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
       'src/contexts/audit/application/record-audit.service.ts',
       'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
+      // AUTH-01 / Phase 3 / D-05 + D-17: Resend adapter pre-org-bind
+      // verification path. See packages/db/src/withoutTenant.allowlist.ts
+      // for the matching entry.
+      'src/contexts/identity/infrastructure/email/resend.adapter.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
