@@ -10,7 +10,16 @@ ALTER INDEX menu_variants_tenant_item_idx RENAME TO menu_item_sizes_tenant_item_
 --> statement-breakpoint
 ALTER INDEX menu_variants_one_default_per_item_uq RENAME TO menu_item_sizes_one_default_per_item_uq;
 --> statement-breakpoint
-ALTER INDEX menu_variants_id_tenant_uq RENAME TO menu_item_sizes_id_tenant_uq;
+-- Guard: in some dev environments the composite-FK target index from migration 0025
+-- was not created (drift). If it exists, rename; if not, create directly under the new name.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class WHERE relname = 'menu_variants_id_tenant_uq' AND relkind = 'i') THEN
+    EXECUTE 'ALTER INDEX menu_variants_id_tenant_uq RENAME TO menu_item_sizes_id_tenant_uq';
+  ELSIF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = 'menu_item_sizes_id_tenant_uq' AND relkind = 'i') THEN
+    EXECUTE 'CREATE UNIQUE INDEX menu_item_sizes_id_tenant_uq ON menu_variants (id, tenant_id)';
+  END IF;
+END$$;
 --> statement-breakpoint
 ALTER TABLE menu_variants RENAME COLUMN price_delta TO price;
 --> statement-breakpoint
