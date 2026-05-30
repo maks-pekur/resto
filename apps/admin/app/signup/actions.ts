@@ -25,15 +25,25 @@ interface ProblemDetails {
 }
 
 interface SignUpSuccess {
-  readonly tenant: { id: string; slug: string };
-  readonly userId: string;
+  readonly status: 'pending_verification';
 }
 
+/**
+ * Phase 03 D-06: the api now returns the enumeration-safe
+ * `{ status: 'pending_verification' }` on BOTH the new-email and
+ * existing-email branches. The admin UI deliberately no longer
+ * differentiates the two — every successful submission redirects to
+ * `/login?signup=pending_verification`, where the login page renders the
+ * generic "Check your email to verify your account" toast. The friendly
+ * "email taken" message is the trade-off Pattern 3 in 03-RESEARCH.md
+ * documents.
+ */
 const friendly = (status: number, body: ProblemDetails | null): string => {
+  // 409 still occurs for slug exhaustion (rare); 400 for validation.
   if (status === 409) {
-    if (body?.code === 'signup.email_taken') return 'An account with that email already exists.';
-    if (body?.code === 'signup.slug_unavailable')
+    if (body?.code === 'signup.slug_unavailable') {
       return 'That company name is too common; try a more specific one.';
+    }
     return body?.message ?? body?.detail ?? 'Conflict.';
   }
   if (status === 400) return body?.message ?? body?.detail ?? 'Please check your inputs.';
@@ -57,9 +67,10 @@ export async function signUpAction(
 
   const { email, password, displayName, defaultCurrency } = parsed.data;
 
+  // D-06: do NOT forwardSetCookie — both branches must look identical on
+  // the wire, and the api now strips Set-Cookie from the response.
   const res = await apiFetch<SignUpSuccess | ProblemDetails>('/v1/signup', {
     method: 'POST',
-    forwardSetCookie: true,
     body: {
       email,
       password,
@@ -74,5 +85,5 @@ export async function signUpAction(
     return { error: friendly(res.status, errorBody) };
   }
 
-  redirect('/dashboard');
+  redirect('/login?signup=pending_verification');
 }

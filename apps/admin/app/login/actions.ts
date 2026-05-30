@@ -2,36 +2,31 @@
 
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import { apiFetch } from '@/lib/api-server';
+import { signInAndBindOrg } from '@/lib/actions/sign-in-and-bind-org';
 
+/**
+ * Phase 03 carry-over: previously this file fanned out three sequential
+ * apiFetch calls (sign-in → org-list → set-active) with bespoke error
+ * handling at each step. The work moved into
+ * `apps/admin/lib/actions/sign-in-and-bind-org.ts` (single try/catch,
+ * single 401 path) per CTO D-02 suggestion in Phase 02.
+ *
+ * `next` is refined against the `//evil.com` protocol-relative
+ * open-redirect primitive per apps/CLAUDE.md CR-01.
+ */
 const SignInInput = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
-  next: z.string().startsWith('/').default('/dashboard'),
+  next: z
+    .string()
+    .startsWith('/')
+    .refine((s) => !/^\/[\\/]/.test(s), 'protocol-relative paths are not allowed')
+    .default('/dashboard'),
 });
 
 export interface LoginActionState {
   readonly error: string | null;
 }
-
-interface OrgSummary {
-  readonly id: string;
-}
-
-interface SignInResponse {
-  readonly token?: string;
-  readonly user?: { readonly id: string };
-}
-
-const fetchSingleOrgId = async (): Promise<string | null> => {
-  const res = await apiFetch<readonly OrgSummary[]>('/api/auth/organization/list', {
-    method: 'GET',
-  });
-  if (!res.ok || res.data === null) return null;
-  if (res.data.length !== 1) return null;
-  const first = res.data[0];
-  return first ? first.id : null;
-};
 
 export async function signInAction(
   _prev: LoginActionState,
@@ -46,28 +41,15 @@ export async function signInAction(
     return { error: 'Enter a valid email and password.' };
   }
 
-  // Sign in — relay BA's Set-Cookie to the user agent.
-  const signIn = await apiFetch<SignInResponse>('/api/auth/sign-in/email', {
-    method: 'POST',
-    body: { email: parsed.data.email, password: parsed.data.password },
-    forwardSetCookie: true,
+  const result = await signInAndBindOrg({
+    email: parsed.data.email,
+    password: parsed.data.password,
   });
-  if (!signIn.ok) {
-    return { error: 'Invalid credentials.' };
-  }
-
-  // Auto-activate the operator's tenant when they belong to exactly one
-  // org. Multi-org picker lands with a future ticket.
-  const orgId = await fetchSingleOrgId();
-  if (orgId) {
-    const setActive = await apiFetch<unknown>('/api/auth/organization/set-active', {
-      method: 'POST',
-      body: { organizationId: orgId },
-      forwardSetCookie: true,
-    });
-    if (!setActive.ok) {
+  if (!result.ok) {
+    if (result.error === 'org_activation_failed') {
       return { error: 'Could not activate your organization.' };
     }
+    return { error: 'Invalid credentials.' };
   }
 
   redirect(parsed.data.next);

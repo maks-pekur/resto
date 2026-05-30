@@ -1,13 +1,12 @@
-import Link from 'next/link';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { EmptyState } from '@/components/empty-state';
-import { Button } from '@/components/ui/button';
+import { ForgotPasswordForm } from './forgot-password-form-client';
 
 /**
- * CONTEXT D-02 Phase 02 deliverable: render an honest "Phase 03 — not yet
- * wired" placeholder using <EmptyState variant="forbidden">. The existing
- * server action in `./actions.ts` and the `ForgotPasswordForm` client
- * island stay untouched — Phase 03 re-imports the form to lift the gate.
+ * Phase 03 AUTH-04: replaces the Phase 02 EmptyState placeholder with the
+ * real form. Submission triggers BA's `/api/auth/request-password-reset`
+ * which dispatches the reset email through the wired EmailAdapterPort
+ * (Plan 02). The response shape is intentionally identical for "email
+ * matched" and "email did not" — see `actions.ts` for the parity comment.
  */
 export default function ForgotPasswordPage() {
   return (
@@ -15,16 +14,15 @@ export default function ForgotPasswordPage() {
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
-      <EmptyState
-        variant="forbidden"
-        title="Password reset is coming in Phase 03"
-        description="Email-based password reset will be available shortly. For now, contact your tenant owner if you cannot sign in."
-        action={
-          <Button asChild>
-            <Link href="/login">Back to sign in</Link>
-          </Button>
-        }
-      />
+      <div className="bg-background w-full max-w-md space-y-6 rounded-lg p-8 shadow">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Forgot your password?</h1>
+          <p className="text-muted-foreground text-sm">
+            Enter the email tied to your operator account and we&apos;ll send a reset link.
+          </p>
+        </div>
+        <ForgotPasswordForm />
+      </div>
     </div>
   );
 }
