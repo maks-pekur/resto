@@ -154,11 +154,14 @@ export class SignUpService {
         throw new SignupEmailAlreadyExistsError(input.email);
       }
       if (err instanceof BetterAuthBootstrapFailureError) {
-        const message = err.message;
-        if (/email/i.test(message) && /already/i.test(message)) {
+        // CR-02: avoid regex-matching BA's error message — `^email.*already`
+        // is not part of BA's API contract and silently breaks on upgrades,
+        // re-opening the D-06 enumeration channel. Re-probe the BA user
+        // store instead so we ground the email-taken branch in DB state.
+        if (await this.userExistsByEmail(input.email)) {
           throw new SignupEmailAlreadyExistsError(input.email);
         }
-        const stage: 'signUpEmail' | 'addMember' = message.includes('addMember')
+        const stage: 'signUpEmail' | 'addMember' = /addMember/i.test(err.message)
           ? 'addMember'
           : 'signUpEmail';
         throw new SignupBetterAuthFailureError(stage, err);
