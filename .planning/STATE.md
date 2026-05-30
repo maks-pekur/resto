@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: 'Phase 3 Wave 3 complete: 03-03 flows (AUTH-02..06 + D-06 enumeration parity + 2 Phase 02 carry-overs); e2e specs written, not yet run (deferred to verify wave); 5 commits merged'
-last_updated: '2026-05-30T12:34:37.382Z'
+stopped_at: 'Phase 3 Wave 4 complete: 03-04 (AUTH-07 2FA enable + recovery codes + D-22/D-23 UX guards) + (AUTH-08 cookie sweep AST + setForwardedCookie helper); 4 commits merged'
+last_updated: '2026-05-30T13:12:37.158Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
   completed_phases: 2
   total_plans: 16
-  completed_plans: 14
+  completed_plans: 15
   percent: 12
 ---
 
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T12:34:37.374Z
-Stopped at: Phase 3 Wave 3 complete: 03-03 flows (AUTH-02..06 + D-06 enumeration parity + 2 Phase 02 carry-overs); e2e specs written, not yet run (deferred to verify wave); 5 commits merged
-Resume file: .planning/phases/03-auth-completion/03-04-cookies-2fa-PLAN.md
+Last session: 2026-05-30T13:12:37.150Z
+Stopped at: Phase 3 Wave 4 complete: 03-04 (AUTH-07 2FA enable + recovery codes + D-22/D-23 UX guards) + (AUTH-08 cookie sweep AST + setForwardedCookie helper); 4 commits merged
+Resume file: .planning/phases/03-auth-completion/03-05-role-seed-hook-closure-PLAN.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
