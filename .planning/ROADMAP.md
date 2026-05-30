@@ -22,7 +22,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 
 - [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
 - [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
-- [ ] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_
+- [x] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_ (completed 2026-05-30)
 - [ ] **Phase 4: Catalog Admin** - CRUD UX for menu management so operators have something to publish before customer surfaces go live
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
@@ -131,23 +131,23 @@ Plans:
 Plans:
 **Wave 1** _(GATING per D-18 — NATS DLQ ships first; gates everything below)_
 
-- [ ] 03-01-nats-dlq-PLAN.md — AUTH-10 NATS DLQ wiring + IdentityEmailDispatchFailedV1 contract + ACTION_TARGET_KIND extension + e2e poison-message gating test
+- [x] 03-01-nats-dlq-PLAN.md — AUTH-10 NATS DLQ wiring + IdentityEmailDispatchFailedV1 contract + ACTION_TARGET_KIND extension + e2e poison-message gating test
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 03-02-email-adapter-PLAN.md — AUTH-01 email adapter port + Resend/MailHog/Captured adapters + assertProdGuardrails + assertEmailAdapterWired 3-callback + NOOP-defaults removal + verifyTransport boot ping + boot-time integration test (D-13/D-14/D-15/D-17, D-01, D-03, D-05) + envs
+- [x] 03-02-email-adapter-PLAN.md — AUTH-01 email adapter port + Resend/MailHog/Captured adapters + assertProdGuardrails + assertEmailAdapterWired 3-callback + NOOP-defaults removal + verifyTransport boot ping + boot-time integration test (D-13/D-14/D-15/D-17, D-01, D-03, D-05) + envs
 
 **Wave 3** _(after Wave 2)_
 
-- [ ] 03-03-flows-PLAN.md — AUTH-02/03 invitation send+accept + AUTH-04/05 password reset + AUTH-06 email verification + D-06 /v1/signup enumeration parity wrap + Phase 02 carry-overs (forgot-password localhost fallback + login 3-call fan-out refactor) + open-redirect refinement on next= params
+- [x] 03-03-flows-PLAN.md — AUTH-02/03 invitation send+accept + AUTH-04/05 password reset + AUTH-06 email verification + D-06 /v1/signup enumeration parity wrap + Phase 02 carry-overs (forgot-password localhost fallback + login 3-call fan-out refactor) + open-redirect refinement on next= params
 
 **Wave 4** _(after Wave 3)_
 
-- [ ] 03-04-cookies-2fa-PLAN.md — AUTH-08 full cookie sweep (every cookies().set site, not just the two from Phase 02 D-04) + AUTH-07 2FA TOTP enable + 10 recovery codes + saved-confirmation gate per D-22 (no admin-reset UI, no email-recovery loop, no regeneration UI per D-23)
+- [x] 03-04-cookies-2fa-PLAN.md — AUTH-08 full cookie sweep (every cookies().set site, not just the two from Phase 02 D-04) + AUTH-07 2FA TOTP enable + 10 recovery codes + saved-confirmation gate per D-22 (no admin-reset UI, no email-recovery loop, no regeneration UI per D-23)
 
 **Wave 5** _(after Wave 4 — closure)_
 
-- [ ] 03-05-role-seed-hook-closure-PLAN.md — AUTH-09 role seed (NestJS bootstrap step from SYSTEM_ROLES) + organizationHooks.afterUpdateMemberRole wiring (D-16a, closes audit-gap.md BLOCKED row → WIRED) + IdentityRoleChangedV1 contract + AUTH-11 WeakMap refactor + D-21 GDPR sweep on invitation+verification + D-20 per-tenant signin rate-limit + D-23 founder-side 2FA recovery runbook + scripts/reset-2fa.ts + D-07 SPF/DKIM/DMARC pre-deploy checklist
+- [x] 03-05-role-seed-hook-closure-PLAN.md — AUTH-09 role seed (NestJS bootstrap step from SYSTEM_ROLES) + organizationHooks.afterUpdateMemberRole wiring (D-16a, closes audit-gap.md BLOCKED row → WIRED) + IdentityRoleChangedV1 contract + AUTH-11 WeakMap refactor + D-21 GDPR sweep on invitation+verification + D-20 per-tenant signin rate-limit + D-23 founder-side 2FA recovery runbook + scripts/reset-2fa.ts + D-07 SPF/DKIM/DMARC pre-deploy checklist
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic
 
@@ -404,7 +404,7 @@ Notes:
 | --------------------------------------------- | -------------- | ------------- | ---------- |
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
-| 3. Auth Completion (Security Core)            | 0/?            | Not started   | -          |
+| 3. Auth Completion (Security Core)            | 5/5 | Complete   | 2026-05-30 |
 | 4. Catalog Admin                              | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
