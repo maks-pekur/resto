@@ -170,7 +170,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 04A-01-PLAN.md — Install transliteration npm pkg (blocking human-verify legitimacy gate per D-4a-04 [ASSUMED]) + start dev Docker stack for downstream migrations
+- [x] 04A-01-PLAN.md — Install transliteration npm pkg (blocking human-verify legitimacy gate per D-4a-04 [ASSUMED]) + start dev Docker stack for downstream migrations
 
 **Wave 2** _(after Wave 1)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 0/?            | Not started   | -          |
+| 4a. Catalog Schema + API                      | 1/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
