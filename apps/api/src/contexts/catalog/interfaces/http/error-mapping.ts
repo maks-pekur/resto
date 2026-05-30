@@ -3,13 +3,19 @@ import {
   CatalogPublishConflictError,
   MenuCategoryNotFoundError,
   MenuItemNotFoundError,
+  MenuItemSizeNotFoundError,
+  MenuModifierGroupNotFoundError,
+  StopListItemNotFoundError,
   type CatalogDomainError,
 } from '../../domain/errors';
 
 const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof MenuItemNotFoundError ||
   err instanceof MenuCategoryNotFoundError ||
-  err instanceof CatalogPublishConflictError;
+  err instanceof CatalogPublishConflictError ||
+  err instanceof MenuModifierGroupNotFoundError ||
+  err instanceof MenuItemSizeNotFoundError ||
+  err instanceof StopListItemNotFoundError;
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -26,6 +32,21 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'CatalogPublishConflictError':
       return new ConflictException({
         code: 'catalog.publish_conflict',
+        message: err.message,
+      });
+    case 'MenuModifierGroupNotFoundError':
+      return new NotFoundException({
+        code: 'catalog.menu_modifier_group_not_found',
+        message: err.message,
+      });
+    case 'MenuItemSizeNotFoundError':
+      return new NotFoundException({
+        code: 'catalog.menu_item_size_not_found',
+        message: err.message,
+      });
+    case 'StopListItemNotFoundError':
+      return new NotFoundException({
+        code: 'catalog.stop_list_item_not_found',
         message: err.message,
       });
     default: {

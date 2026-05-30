@@ -15,6 +15,10 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   'identity.signed_in': 'user',
   'identity.signed_out': 'user',
   'identity.password_reset_completed': 'user',
+  'catalog.menu_first_published': 'menu',
+  'catalog.menu_republished': 'menu',
+  'catalog.item_stopped': 'menu_item',
+  'catalog.item_unstopped': 'menu_item',
 };
 
 const targetKindFor = (action: string): string | null => {
@@ -57,10 +61,28 @@ export class RecordAuditService {
     const ipAddress = typeof payload.ipAddress === 'string' ? payload.ipAddress : null;
     const userAgent = typeof payload.userAgent === 'string' ? payload.userAgent : null;
     const targetType = targetKindFor(envelope.type);
-    const targetId =
-      (typeof payload.userId === 'string' && payload.userId) ||
-      (typeof payload.tenantId === 'string' && payload.tenantId) ||
-      null;
+    // 04A-05: per-targetType resolution. `menu_item` events (item_stopped /
+    // item_unstopped) carry the menu item ID in `payload.itemId`. `menu` events
+    // (menu_first_published / menu_republished) use the tenantId as the menu's
+    // stable identifier — RestOS menus are per-tenant 1:1, so the tenant ID is
+    // the canonical menu identity for audit cross-referencing.
+    const targetId = ((): string | null => {
+      if (targetType === 'menu_item') {
+        return typeof payload.itemId === 'string' && payload.itemId.length > 0
+          ? payload.itemId
+          : null;
+      }
+      if (targetType === 'menu') {
+        return typeof payload.tenantId === 'string' && payload.tenantId.length > 0
+          ? payload.tenantId
+          : null;
+      }
+      return (
+        (typeof payload.userId === 'string' && payload.userId) ||
+        (typeof payload.tenantId === 'string' && payload.tenantId) ||
+        null
+      );
+    })();
     return {
       tenantId: envelope.tenantId,
       actorKind: 'system',
