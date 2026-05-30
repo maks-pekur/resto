@@ -254,20 +254,36 @@ export class ResendEmailAdapter implements EmailAdapterPort {
       if (delay > 0) await sleep(delay + jitter());
 
       let result: ResendSendResult;
+      // WR-11: timer-clearing race. Previously `#abortAfter` kept the sleep
+      // timer scheduled even after `send` resolved, stacking up to 4 live
+      // timers across retries and turning into an unhandled rejection at
+      // process shutdown. Clear the timer in `finally` so node releases it
+      // as soon as either branch wins.
+      let timeoutId: NodeJS.Timeout | null = null;
       try {
-        result = await Promise.race([
-          this.#client.emails.send(
-            {
-              from: this.#from,
-              to: cmd.to,
-              replyTo: this.#replyTo,
-              subject: cmd.subject,
-              text: cmd.text,
-            },
-            { idempotencyKey: cmd.idempotencyKey },
-          ),
-          this.#abortAfter(SEND_TIMEOUT_MS),
-        ]);
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(
+            () => reject(new Error(`Resend send timed out after ${String(SEND_TIMEOUT_MS)}ms`)),
+            SEND_TIMEOUT_MS,
+          );
+        });
+        try {
+          result = await Promise.race([
+            this.#client.emails.send(
+              {
+                from: this.#from,
+                to: cmd.to,
+                replyTo: this.#replyTo,
+                subject: cmd.subject,
+                text: cmd.text,
+              },
+              { idempotencyKey: cmd.idempotencyKey },
+            ),
+            timeoutPromise,
+          ]);
+        } finally {
+          if (timeoutId !== null) clearTimeout(timeoutId);
+        }
       } catch (err) {
         lastNetworkError = err instanceof Error ? err : new Error(String(err));
         this.#logger.warn(
@@ -348,11 +364,6 @@ export class ResendEmailAdapter implements EmailAdapterPort {
       lastError?.message ?? lastNetworkError?.message ?? 'Resend send failed (no error captured)';
     await this.#emitTerminalFailure(cmd, fallback);
     throw new Error(fallback);
-  }
-
-  async #abortAfter(ms: number): Promise<never> {
-    await sleep(ms);
-    throw new Error(`Resend send timed out after ${String(ms)}ms`);
   }
 
   async #emitTerminalFailure(cmd: SendCommand, errorMessage: string): Promise<void> {
