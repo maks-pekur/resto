@@ -49,6 +49,9 @@ export async function signInAction(
     if (result.error === 'org_activation_failed') {
       return { error: 'Could not activate your organization.' };
     }
+    if (result.error === 'org_list_failed') {
+      return { error: 'Signed in, but could not load your organizations. Try again.' };
+    }
     return { error: 'Invalid credentials.' };
   }
 
