@@ -5,11 +5,13 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { DangerZoneCard } from '@/components/danger-zone-card';
 import { apiFetch } from '@/lib/api-server';
 import { InviteForm } from './invite-form-client';
+import { TwoFactorSection } from './two-factor-enable-client';
 
 interface MeResponse {
   kind: string;
   baseRole?: 'owner' | 'admin' | 'staff';
   tenantId?: string;
+  twoFactorEnabled?: boolean;
 }
 
 interface TenantResponse {
@@ -39,6 +41,7 @@ export default async function SettingsPage() {
         </div>
       </header>
       <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
+        <TwoFactorSection twoFactorEnabled={me.data.twoFactorEnabled === true} />
         <section className="bg-card space-y-4 rounded-lg border p-6 shadow-sm">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold tracking-tight">Invite a teammate</h2>

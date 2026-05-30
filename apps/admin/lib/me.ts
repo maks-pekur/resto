@@ -8,6 +8,13 @@ export interface MeResponse {
   readonly email?: string;
   readonly tenantId?: string;
   readonly baseRole?: 'owner' | 'admin' | 'staff';
+  /**
+   * AUTH-07: present only for operator principals; admin UI uses it on
+   * /dashboard/settings to render the 2FA enable vs already-enabled state.
+   * Undefined when the api hasn't been re-deployed with the augmented
+   * MeController yet — graceful: treat as not-enabled.
+   */
+  readonly twoFactorEnabled?: boolean;
 }
 
 export interface OperatorSummary {
