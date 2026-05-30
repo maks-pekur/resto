@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
-status: executing
-stopped_at: 'Phase 3 Wave 5 partial: Plan 05 Task 1 (drift guard + IdentityRoleChangedV1 contract) + Micro-A (organizationHooks.afterUpdateMemberRole wired, audit-gap BLOCKED→WIRED, e2e spec) merged. Остаётся: AUTH-11 WeakMap, D-20 per-tenant rate-limit, D-21 GDPR sweep schedulers, D-23 2FA recovery runbook, D-07 DNS checklist, 03-05-SUMMARY. Продолжать через /gsd-execute-phase 3 в свежей сессии (контекст оркестратора 65% — пауза перед compact).'
-last_updated: '2026-05-30T14:25:32.511Z'
+status: ready_to_plan
+stopped_at: Phase 03 complete (5/5) — ready to discuss Phase 4
+last_updated: 2026-05-30T16:17:52.832Z
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
   completed_phases: 2
   total_plans: 16
-  completed_plans: 15
+  completed_plans: 16
   percent: 12
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 02 — Admin Shell
+**Current focus:** Phase 4 — catalog admin
 **Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
 
 ## Current Position
 
-Phase: 02 (Admin Shell) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 02
-Last activity: 2026-05-27 -- Phase 02 execution started
+Phase: 4
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-05-30
 
 Progress: [█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 6% of MVP-1 (1/16 phases)
 
@@ -51,7 +51,7 @@ Still deferred to Phase 03:
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 5
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -60,6 +60,7 @@ Still deferred to Phase 03:
 | Phase | Plans | Total | Avg/Plan |
 | ----- | ----- | ----- | -------- |
 | —     | —     | —     | —        |
+| 03 | 5 | - | - |
 
 **Recent Trend:**
 
