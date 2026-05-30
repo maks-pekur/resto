@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: 'Phase 3 Wave 4 complete: 03-04 (AUTH-07 2FA enable + recovery codes + D-22/D-23 UX guards) + (AUTH-08 cookie sweep AST + setForwardedCookie helper); 4 commits merged'
-last_updated: '2026-05-30T13:12:37.158Z'
+stopped_at: 'Phase 3 Wave 5 partial: Plan 05 Task 1 (drift guard + IdentityRoleChangedV1 contract) + Micro-A (organizationHooks.afterUpdateMemberRole wired, audit-gap BLOCKED→WIRED, e2e spec) merged. Остаётся: AUTH-11 WeakMap, D-20 per-tenant rate-limit, D-21 GDPR sweep schedulers, D-23 2FA recovery runbook, D-07 DNS checklist, 03-05-SUMMARY. Продолжать через /gsd-execute-phase 3 в свежей сессии (контекст оркестратора 65% — пауза перед compact).'
+last_updated: '2026-05-30T14:25:32.511Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T13:12:37.150Z
-Stopped at: Phase 3 Wave 4 complete: 03-04 (AUTH-07 2FA enable + recovery codes + D-22/D-23 UX guards) + (AUTH-08 cookie sweep AST + setForwardedCookie helper); 4 commits merged
+Last session: 2026-05-30T14:25:32.503Z
+Stopped at: Phase 3 Wave 5 partial: Plan 05 Task 1 (drift guard + IdentityRoleChangedV1 contract) + Micro-A (organizationHooks.afterUpdateMemberRole wired, audit-gap BLOCKED→WIRED, e2e spec) merged. Остаётся: AUTH-11 WeakMap, D-20 per-tenant rate-limit, D-21 GDPR sweep schedulers, D-23 2FA recovery runbook, D-07 DNS checklist, 03-05-SUMMARY. Продолжать через /gsd-execute-phase 3 в свежей сессии (контекст оркестратора 65% — пауза перед compact).
 Resume file: .planning/phases/03-auth-completion/03-05-role-seed-hook-closure-PLAN.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
