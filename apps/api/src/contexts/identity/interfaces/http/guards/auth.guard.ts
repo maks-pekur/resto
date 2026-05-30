@@ -85,7 +85,12 @@ export class AuthGuard implements CanActivate {
     // loses that type information. Cast to the narrower shape we depend on.
     const principal = buildPrincipal(
       session as {
-        user: { id: string; email: string; phoneNumber?: string | null };
+        user: {
+          id: string;
+          email: string;
+          phoneNumber?: string | null;
+          twoFactorEnabled?: boolean | null;
+        };
         session: { activeOrganizationId?: string | null };
       },
       alsTenantId,
@@ -165,7 +170,12 @@ const toWebHeaders = (raw: FastifyRequest['headers']): Headers => {
 
 const buildPrincipal = (
   session: {
-    user: { id: string; email: string; phoneNumber?: string | null };
+    user: {
+      id: string;
+      email: string;
+      phoneNumber?: string | null;
+      twoFactorEnabled?: boolean | null;
+    };
     session: { activeOrganizationId?: string | null };
   },
   alsTenantId: string | undefined,
@@ -190,6 +200,13 @@ const buildPrincipal = (
     email: session.user.email,
     ...(session.session.activeOrganizationId
       ? { tenantId: session.session.activeOrganizationId }
+      : {}),
+    // AUTH-07: BA's twoFactor plugin schema adds `user.twoFactorEnabled`
+    // (defaultValue:false). When the plugin is loaded BA always returns a
+    // boolean; the optional-chain handles older fixtures that pre-date the
+    // plugin (e.g. some integration-test stubs).
+    ...(typeof session.user.twoFactorEnabled === 'boolean'
+      ? { twoFactorEnabled: session.user.twoFactorEnabled }
       : {}),
   };
   return operator;

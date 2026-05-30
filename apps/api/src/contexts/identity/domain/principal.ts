@@ -13,6 +13,14 @@ export interface OperatorPrincipal {
   email: string;
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
+  /**
+   * AUTH-07 (Phase 3 / Plan 04): true when the operator has activated the BA
+   * `twoFactor()` TOTP plugin. Surfaced on `/v1/me` so the admin settings
+   * page can render the enable-CTA vs the already-enabled affordance.
+   * Undefined when BA's session shape predates the twoFactor plugin (older
+   * test fixtures may not populate it).
+   */
+  twoFactorEnabled?: boolean;
 }
 
 export interface CustomerPrincipal {

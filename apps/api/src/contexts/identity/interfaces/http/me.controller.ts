@@ -9,6 +9,12 @@ interface MeResponse {
   email?: string;
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
+  /**
+   * AUTH-07 (Phase 03 / Plan 04): present only for `kind: 'operator'`.
+   * The admin /dashboard/settings page reads this to render the 2FA
+   * enable-CTA vs already-enabled affordance.
+   */
+  twoFactorEnabled?: boolean;
 }
 
 /**
@@ -35,6 +41,9 @@ export class MeController {
         email: actor.email,
         ...(actor.tenantId ? { tenantId: actor.tenantId } : {}),
         ...(actor.baseRole ? { baseRole: actor.baseRole } : {}),
+        ...(typeof actor.twoFactorEnabled === 'boolean'
+          ? { twoFactorEnabled: actor.twoFactorEnabled }
+          : {}),
       };
     }
     if (actor.kind === 'customer') {
