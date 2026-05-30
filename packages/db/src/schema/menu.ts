@@ -6,8 +6,10 @@ import {
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   primaryKey,
+  smallint,
   text,
   uniqueIndex,
   uuid,
@@ -34,6 +36,7 @@ export const menuCategories = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     brandId: uuid('brand_id'),
+    parentId: uuid('parent_id'),
     slug: text('slug').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     description: jsonb('description').$type<LocalizedText>(),
@@ -46,12 +49,33 @@ export const menuCategories = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
+    // D-4a-01 iiko `Группа.parent_group` tree alignment. ADR-0020 I-2: composite tenant FK.
+    foreignKey({
+      name: 'menu_categories_parent_fk',
+      columns: [table.parentId, table.tenantId],
+      foreignColumns: [table.id, table.tenantId],
+    }).onDelete('restrict'),
     uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
     tenantParentUniqueIndex('menu_categories', { id: table.id, tenantId: table.tenantId }),
   ],
 );
+
+/**
+ * Photo attached to a menu item. Stored as a JSONB array on
+ * `menu_items.photos` (D-4a-02). The S3 key is opaque — never a URL — and
+ * gets converted to a presigned GET URL at read time by the catalog
+ * repository.
+ */
+export interface MenuItemPhoto {
+  s3Key: string;
+  sortOrder: number;
+  alt?: string;
+  width?: number;
+  height?: number;
+  isPrimary?: boolean;
+}
 
 /**
  * Menu item — a single sellable unit (with potential variants and
@@ -70,9 +94,23 @@ export const menuItems = pgTable(
     description: jsonb('description').$type<LocalizedText>(),
     basePrice: money('base_price').notNull(),
     currency: text('currency').notNull(),
-    imageS3Key: text('image_s3_key'),
+    /** D-4a-02: photos JSONB array supersedes the single `image_s3_key` column. */
+    photos: jsonb('photos')
+      .$type<MenuItemPhoto[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     /** Allergen tags (e.g. `gluten`, `dairy`, `nuts`). Mandatory for restaurant disclosure. */
     allergens: text('allergens').array(),
+    // D-4a-03: structured БЖУ (per 100 g, all nullable until a recipe lands).
+    proteins: numeric('proteins', { precision: 5, scale: 2 }),
+    fats: numeric('fats', { precision: 5, scale: 2 }),
+    carbs: numeric('carbs', { precision: 5, scale: 2 }),
+    kcal: smallint('kcal'),
+    nutritionEstimated: boolean('nutrition_estimated').notNull().default(false),
+    // D-4a-01: provenance — how this item came into the catalog.
+    source: text('source').notNull().default('manual'),
+    needsReview: boolean('needs_review').notNull().default(false),
+    sourceExternalId: text('source_external_id'),
     status: text('status').notNull().default('draft'),
     sortOrder: integer('sort_order').notNull().default(0),
     ...timestampsColumns(),
@@ -99,6 +137,10 @@ export const menuItems = pgTable(
     check('menu_items_currency_format_chk', sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check('menu_items_base_price_nonneg_chk', sql`${table.basePrice}::numeric >= 0`),
     check('menu_items_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    check(
+      'menu_items_source_chk',
+      sql`${table.source} IN ('manual', 'ai_generated', 'imported_iiko', 'imported_csv')`,
+    ),
     tenantParentUniqueIndex('menu_items', { id: table.id, tenantId: table.tenantId }),
   ],
 );
