@@ -214,19 +214,23 @@ export const apiFetch = async <T>(
     throw err;
   }
 
-  // CONTEXT D-10: stale BA session → bounce to login with a notice
-  // instead of rendering an empty dashboard. The session-lookup probe is
-  // exempt (it is the redirect's own dependency).
-  if (res.status === 401 && path !== '/api/auth/get-session') {
-    redirect('/login?expired=1');
-  }
-
+  // CR-04: forward Set-Cookie BEFORE redirect. `redirect()` throws
+  // NEXT_REDIRECT, bypassing the rest of the function — without this
+  // ordering, BA's session-clearing Set-Cookie on 401 is dropped and the
+  // browser keeps the stale token, looping /login?expired=1 indefinitely.
   if (options.forwardSetCookie === true) {
     const incoming = collectSetCookies(res);
     for (const sc of incoming) {
       const parsed = parseSetCookie(sc);
       setForwardedCookie(cookieStore, parsed);
     }
+  }
+
+  // CONTEXT D-10: stale BA session → bounce to login with a notice
+  // instead of rendering an empty dashboard. The session-lookup probe is
+  // exempt (it is the redirect's own dependency).
+  if (res.status === 401 && path !== '/api/auth/get-session') {
+    redirect('/login?expired=1');
   }
 
   let data: T | null = null;
