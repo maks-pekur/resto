@@ -126,6 +126,9 @@ export async function verifyTwoFactorAction(code: string): Promise<VerifyTwoFact
   });
 
   if (!res.ok) {
+    // WR-09: preserve `session_expired` resolution for 403 so the UI can
+    // route the user back to /login instead of looping "Invalid code".
+    if (res.status === 403) return { ok: false, error: 'session_expired' };
     if (res.status >= 400 && res.status < 500) return { ok: false, error: 'invalid_code' };
     return { ok: false, error: 'unknown' };
   }
