@@ -70,3 +70,14 @@ export {
   IdentitySignedOutV1,
   IdentitySignedOutV1Payload,
 } from './contracts/identity';
+
+export {
+  ItemStoppedV1,
+  ItemStoppedV1Payload,
+  ItemUnstoppedV1,
+  ItemUnstoppedV1Payload,
+  MenuFirstPublishedV1,
+  MenuFirstPublishedV1Payload,
+  MenuRepublishedV1,
+  MenuRepublishedV1Payload,
+} from './contracts/catalog';
