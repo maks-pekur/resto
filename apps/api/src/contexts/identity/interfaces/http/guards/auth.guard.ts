@@ -157,6 +157,15 @@ export class AuthGuard implements CanActivate {
 const toWebHeaders = (raw: FastifyRequest['headers']): Headers => {
   const headers = new Headers();
   for (const [k, v] of Object.entries(raw)) {
+    // WR-01: BA's getSession reads a single `cookie` header. Behind a proxy
+    // that joins multiple cookies into an array of values (or as two entries),
+    // `headers.append` would create duplicates that BA / undici handle
+    // inconsistently across versions. Collapse the cookie header explicitly.
+    if (k.toLowerCase() === 'cookie') {
+      const joined = Array.isArray(v) ? v.join('; ') : typeof v === 'string' ? v : '';
+      if (joined.length > 0) headers.set('cookie', joined);
+      continue;
+    }
     if (Array.isArray(v)) {
       v.forEach((vv) => {
         headers.append(k, vv);
