@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-const { signUpAction } = await import('../app/signup/actions');
+const { signUpAction } = await import('../app/(auth)/signup/actions');
 
 describe('signUpAction', () => {
   beforeEach(() => {

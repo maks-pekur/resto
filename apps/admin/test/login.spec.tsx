@@ -1,11 +1,11 @@
 import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
-vi.mock('@/app/login/actions', () => ({
+vi.mock('@/app/(auth)/login/actions', () => ({
   signInAction: vi.fn(),
 }));
 
-import { LoginForm } from '@/app/login/login-form-client';
+import { LoginForm } from '@/app/(auth)/login/login-form-client';
 
 describe('LoginForm (client island)', () => {
   it('renders email + password inputs and a submit button', () => {

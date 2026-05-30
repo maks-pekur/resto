@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { cleanup, render, screen } from '@testing-library/react';
-import { SignUpForm } from '../app/signup/signup-form-client';
+import { SignUpForm } from '../app/(auth)/signup/signup-form-client';
 
-vi.mock('../app/signup/actions', () => ({ signUpAction: vi.fn() }));
+vi.mock('../app/(auth)/signup/actions', () => ({ signUpAction: vi.fn() }));
 
 describe('SignUpForm', () => {
   beforeEach(() => {

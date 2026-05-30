@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const apiFetchMock = vi.fn();
 vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 
-const { forgotPasswordAction } = await import('../app/forgot-password/actions');
+const { forgotPasswordAction } = await import('../app/(auth)/forgot-password/actions');
 
 const buildForm = (over: Record<string, string> = {}) => {
   const fd = new FormData();

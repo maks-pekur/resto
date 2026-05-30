@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-const { resetPasswordAction } = await import('../app/reset-password/actions');
+const { resetPasswordAction } = await import('../app/(auth)/reset-password/actions');
 
 const buildForm = (over: Record<string, string> = {}) => {
   const fd = new FormData();
