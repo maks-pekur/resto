@@ -22,8 +22,16 @@ const baseInput = {
   description: null,
   basePrice: MoneyAmount.parse('12.50'),
   currency: Currency.parse('USD'),
-  imageS3Key: null,
+  photos: [],
   allergens: null,
+  proteins: null,
+  fats: null,
+  carbs: null,
+  kcal: null,
+  nutritionEstimated: false,
+  source: 'manual' as const,
+  needsReview: false,
+  sourceExternalId: null,
   status: 'draft' as const,
   sortOrder: 0,
 };
@@ -70,7 +78,7 @@ describe('UpsertItemService', () => {
         ...baseInput,
         status: 'published',
         allergens: ['gluten', 'dairy'],
-        imageS3Key: 'tenants/11/items/item.jpg',
+        photos: [{ s3Key: 'tenants/11/items/item.jpg', sortOrder: 0 }],
       }),
     );
     const call = vi.mocked(repo.upsertItem).mock.calls[0]?.[0];
