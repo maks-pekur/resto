@@ -77,7 +77,7 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 
 - [x] **Tenancy hardening to production-enterprise bar** — close out `suspend` lifecycle, automated erasure scheduler, BA credential separation closure, expanded cross-tenant test net, audit completeness gap fix, per-tenant observability, `withoutTenant` runtime + lint enforcement, `inbox_processed` retention, `correlationId` via OTel span (`buildEnvelope`) — _shipped 2026-05-26_
 - [ ] **Admin shell + auth wiring** — sign-in flow, tenant resolution UI, brand list/create/switch UI over existing Better Auth
-- [ ] **Auth completion to operator-onboarding bar** — Resend SMTP email adapter, invitation flow, password reset, RBAC presets (`owner`, `admin`, `staff`), secure cookie fix, full email-callback assertions
+- [x] **Auth completion to operator-onboarding bar** — Resend SMTP email adapter, invitation flow, password reset, RBAC presets (`owner`, `admin`, `staff`), secure cookie fix, full email-callback assertions, NATS DLQ, 2FA TOTP, boot-time role drift guard, `organizationHooks.afterUpdateMemberRole` audit hook, AUTH-11 WeakMap stash refactor, per-tenant signin rate-limit, GDPR sweep on invitation+verification tables — _shipped 2026-05-30 (static verification 11/11; 9 e2e items in HUMAN-UAT pending Docker stack)_
 - [ ] **Catalog admin UX** — CRUD for categories / items / modifiers / variants / photos, publish-flow UI, stop-lists (manual)
 - [ ] **Customer Site** — `apps/website` scaffolded from `.gitkeep` to working multi-tenant restaurant site (menu, delivery/pickup, cart, checkout)
 - [ ] **QR-menu customer polish** — real ordering UI over `/v1/menu` (cart, item detail, modifier selection, table binding via QR param)
@@ -229,4 +229,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-27 — AI-driven pivot; 3-milestone restructure (MVP-1/2/3); Site reordered before QR-menu_
+_Last updated: 2026-05-30 — Phase 03 (Auth Completion / Security Core) shipped; static verification 11/11 must_haves; e2e in HUMAN-UAT pending Docker stack_
