@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: 'Phase 3 Wave 1 complete: 03-01 NATS DLQ + poison e2e + TEN-11 allowlist; AUTH-10 gate GREEN, downstream waves unblocked'
-last_updated: '2026-05-30T08:45:09.722Z'
+stopped_at: 'Phase 3 Wave 2 complete: 03-02 email adapter (Resend+MailHog+Captured) + boot guards + assertProdGuardrails Resend extension; DNS+bounce-webhook deferred per Task 0 founder choice; recovered from prior agent stall via cherry-pick + fresh re-spawn'
+last_updated: '2026-05-30T12:02:41.235Z'
 last_activity: 2026-05-27 -- Phase 02 execution started
 progress:
   total_phases: 17
   completed_phases: 2
   total_plans: 16
-  completed_plans: 12
+  completed_plans: 13
   percent: 12
 ---
 
@@ -123,7 +123,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T08:45:09.714Z
-Stopped at: Phase 3 Wave 1 complete: 03-01 NATS DLQ + poison e2e + TEN-11 allowlist; AUTH-10 gate GREEN, downstream waves unblocked
-Resume file: .planning/phases/03-auth-completion/03-02-email-adapter-PLAN.md
+Last session: 2026-05-30T12:02:41.226Z
+Stopped at: Phase 3 Wave 2 complete: 03-02 email adapter (Resend+MailHog+Captured) + boot guards + assertProdGuardrails Resend extension; DNS+bounce-webhook deferred per Task 0 founder choice; recovered from prior agent stall via cherry-pick + fresh re-spawn
+Resume file: .planning/phases/03-auth-completion/03-03-flows-PLAN.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
