@@ -120,6 +120,24 @@ interface BuildOpts {
   }) => Promise<void>;
 }
 
+// AUTH-11 / D-22: WeakMap stashes keyed on the BA ctx.context object.
+// WeakMap prevents property pollution on BA internals and allows GC to drop
+// entries when the context is dropped. Replaces the prior `as { __resto* }`
+// cast pattern that mutated enumerable properties on an internal BA object.
+interface SignOutStash {
+  readonly userId: string;
+  readonly tenantId: string;
+  readonly sessionId: string;
+}
+
+interface PasswordResetStash {
+  readonly userId: string;
+  readonly sessionCount: number;
+}
+
+const signOutStash = new WeakMap<object, SignOutStash>();
+const passwordResetStash = new WeakMap<object, PasswordResetStash>();
+
 const resolvePrimaryTenantId = async (
   adapter: {
     findMany: (data: { model: string; where?: Where[]; limit?: number }) => Promise<unknown[]>;
@@ -302,15 +320,11 @@ export const buildAuth = (opts: BuildOpts) =>
           const activeOrgId = (found.session as { activeOrganizationId?: string | null })
             .activeOrganizationId;
           if (typeof activeOrgId !== 'string' || !activeOrgId) return;
-          (
-            ctx.context as {
-              __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
-            }
-          ).__restoSignOut = {
+          signOutStash.set(ctx.context, {
             userId: found.user.id,
             tenantId: activeOrgId,
             sessionId: found.session.id,
-          };
+          });
           return;
         }
         if (path.endsWith('/reset-password')) {
@@ -331,23 +345,17 @@ export const buildAuth = (opts: BuildOpts) =>
             // listSessions failure is non-fatal — proceed with count = 0; the
             // load-bearing deleteSessions call in `after` does not depend on this.
           }
-          (
-            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
-          ).__restoPasswordReset = {
+          passwordResetStash.set(ctx.context, {
             userId,
             sessionCount,
-          };
+          });
         }
       }),
       after: createAuthMiddleware(async (ctx) => {
         const path = ctx.path;
         if (path.endsWith('/sign-out')) {
           if (!opts.onSignedOut) return;
-          const stash = (
-            ctx.context as {
-              __restoSignOut?: { userId: string; tenantId: string; sessionId: string };
-            }
-          ).__restoSignOut;
+          const stash = signOutStash.get(ctx.context);
           if (!stash) return;
           if (ctx.context.returned instanceof Error) return;
           try {
@@ -366,9 +374,7 @@ export const buildAuth = (opts: BuildOpts) =>
           return;
         }
         if (path.endsWith('/reset-password')) {
-          const stash = (
-            ctx.context as { __restoPasswordReset?: { userId: string; sessionCount: number } }
-          ).__restoPasswordReset;
+          const stash = passwordResetStash.get(ctx.context);
           if (!stash) return;
           if (ctx.context.returned instanceof Error) return;
           if (!opts.onPasswordResetCompleted) return;

@@ -133,6 +133,21 @@ export default [
     },
   },
   {
+    // Better Auth `createAuthMiddleware` callback parameter `ctx` and the
+    // `organization()` plugin hook parameter `data` are typed `any` in BA
+    // 1.4.22 — the library does not export narrowed middleware types for
+    // its callback-API surface. No-unsafe-* rules are disabled for the
+    // single auth.config.ts composition root that wires BA hooks directly.
+    files: ['src/contexts/identity/infrastructure/better-auth/auth.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+    },
+  },
+  {
     // NestJS modules are class-based markers for the DI container; an
     // empty class is the idiomatic shape and not a code smell here.
     files: ['src/**/*.module.ts'],
