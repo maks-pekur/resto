@@ -22,6 +22,14 @@ const DEV_DEFAULTS = {
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
 
+/**
+ * D-01 / Skeptic HIGH-2: `.env.example` ships a placeholder so dev tooling
+ * works without a real Resend account. The literal MUST NEVER survive to
+ * staging/production — `assertProdGuardrails` rejects it, and so does the
+ * email-adapter factory (`email-adapter.factory.ts`) as defense-in-depth.
+ */
+export const DUMMY_RESEND_API_KEY_LITERAL = 're_test_dummy_for_ci_do_not_use_in_prod';
+
 export class ProdGuardrailsError extends Error {
   constructor(public readonly violations: readonly string[]) {
     super(
@@ -34,7 +42,27 @@ export class ProdGuardrailsError extends Error {
   }
 }
 
-export const assertProdGuardrails = (env: Env): void => {
+/**
+ * D-01 / Skeptic HIGH-2: extended guard contract.
+ *
+ * In addition to the ADR-0020 I-3 dev-default check (S3 / audit salt /
+ * internal token), this also rejects boot in staging/production when:
+ *   - `RESEND_API_KEY` is empty / whitespace-only / undefined.
+ *   - `RESEND_API_KEY` equals the documented dummy literal that ships in
+ *     `.env.example`.
+ *   - `emailAdapterName` (when supplied — wired adapter's `adapterName`
+ *     getter) is not `'resend'`. Catches "MailHog accidentally wired in
+ *     prod" via a swapped env var.
+ *
+ * `emailAdapterName` is optional so main.ts can call this BEFORE the
+ * NestJS app is constructed (env-only check) AND a second time AFTER the
+ * app context exposes the wired adapter (extended check — see Plan 03-02
+ * Task 4).
+ */
+export const assertProdGuardrails = (
+  env: Env,
+  options: { readonly emailAdapterName?: string } = {},
+): void => {
   if (env.NODE_ENV === 'development' || env.NODE_ENV === 'test') return;
   const violations: string[] = [];
   for (const key of Object.keys(DEV_DEFAULTS) as GuardedKey[]) {
@@ -43,6 +71,19 @@ export const assertProdGuardrails = (env: Env): void => {
     if (value === undefined || value === devDefault) {
       violations.push(`${key} is unset or equals the dev default`);
     }
+  }
+  // D-01 / Skeptic HIGH-2.
+  if (env.RESEND_API_KEY === undefined || env.RESEND_API_KEY.trim().length === 0) {
+    violations.push(`RESEND_API_KEY is required in NODE_ENV=${env.NODE_ENV}`);
+  } else if (env.RESEND_API_KEY === DUMMY_RESEND_API_KEY_LITERAL) {
+    violations.push(
+      `RESEND_API_KEY equals the documented dummy literal in NODE_ENV=${env.NODE_ENV}`,
+    );
+  }
+  if (options.emailAdapterName !== undefined && options.emailAdapterName !== 'resend') {
+    violations.push(
+      `email adapter must be ResendEmailAdapter in NODE_ENV=${env.NODE_ENV}, got ${options.emailAdapterName}`,
+    );
   }
   if (violations.length > 0) throw new ProdGuardrailsError(violations);
 };

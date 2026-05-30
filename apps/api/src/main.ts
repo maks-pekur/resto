@@ -25,6 +25,8 @@ import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
 import { assertProdGuardrails } from './config/prod-guardrails';
 import { parseTrustProxy } from './config/trust-proxy';
+import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from './contexts/identity/domain/ports';
+import { assertEmailAdapterWired } from './contexts/identity/identity-core.module';
 import { applyOpenApi } from './openapi';
 import { registerSecurity } from './shared/security';
 
@@ -74,7 +76,26 @@ const bootstrap = async (): Promise<void> => {
 
   // ADR-0020 I-3 defense-in-depth: refuse to start if any tracked
   // dev-fallback constant is still present in a non-dev NODE_ENV.
+  // First pass: env-only (catches missing RESEND_API_KEY before adapter
+  // construction — important so the email-adapter factory failure mode is
+  // a clean ProdGuardrailsError instead of an opaque DI exception).
   assertProdGuardrails(env);
+
+  // D-01 / D-15 / Skeptic HIGH-2 second pass: now that NestJS has built
+  // the EMAIL_ADAPTER_PORT provider, assert the wired adapter class is
+  // ResendEmailAdapter (catches a mis-wired MailHog in prod) AND ping it
+  // (catches an invalid RESEND_API_KEY before the first invitation).
+  const emailAdapter = app.get<EmailAdapterPort>(EMAIL_ADAPTER_PORT);
+  assertProdGuardrails(env, { emailAdapterName: emailAdapter.adapterName });
+  await assertEmailAdapterWired(
+    env.NODE_ENV,
+    {
+      sendInvitationEmail: () => Promise.resolve(),
+      sendResetPassword: () => Promise.resolve(),
+      sendVerificationEmail: () => Promise.resolve(),
+    },
+    emailAdapter,
+  );
 
   await registerSecurity(app, env);
   applyOpenApi(app, env);
