@@ -260,6 +260,27 @@
       "when": 1779841200000,
       "tag": "0036_catalog_phase4a_new_tables_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779841300000,
+      "tag": "0037_catalog_phase4a_menu_variants_rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1779841400000,
+      "tag": "0038_catalog_phase4a_menu_modifiers_rename",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1779841500000,
+      "tag": "0039_catalog_phase4a_modifier_options_extend",
+      "breakpoints": true
     }
   ]
 }
