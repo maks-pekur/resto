@@ -127,9 +127,28 @@ export default [
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
       // for the matching entry.
       'src/contexts/identity/infrastructure/email/resend.adapter.ts',
+      // D-21 / Phase 3 / Plan 05: GDPR retention sweep schedulers. Cron jobs
+      // have no HTTP request / ALS tenant context. See withoutTenant.allowlist.ts.
+      'src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
+      'src/infrastructure/jobs/verification-retention-scheduler.service.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
+    },
+  },
+  {
+    // Better Auth `createAuthMiddleware` callback parameter `ctx` and the
+    // `organization()` plugin hook parameter `data` are typed `any` in BA
+    // 1.4.22 — the library does not export narrowed middleware types for
+    // its callback-API surface. No-unsafe-* rules are disabled for the
+    // single auth.config.ts composition root that wires BA hooks directly.
+    files: ['src/contexts/identity/infrastructure/better-auth/auth.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
     },
   },
   {

@@ -5,6 +5,7 @@ import { type NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 
 import type { Env } from '../config/env.schema';
+import { applyPerTenantSigninRateLimit } from '../middleware/per-tenant-signin-rate-limit';
 import { RateLimitGuard, type RateLimitHandler } from './rate-limit.guard';
 
 const escapeRegex = (input: string): string => input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -172,6 +173,12 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     const isSignin = req.url.startsWith('/api/auth/sign-in/email');
     const isReset = req.url.startsWith('/api/auth/request-password-reset');
     if (!isSignin && !isReset) return;
+
+    // D-20: per-tenant signin rate-limit applied before per-email so that
+    // tenant-scoped burst is caught first (the higher default cap of 60/min
+    // makes it the outer fence; per-email at 10/min is the inner fence).
+    if (isSignin && !applyPerTenantSigninRateLimit(req, reply, env)) return;
+
     const email = readEmailFromBody(req.body);
     if (!email) return;
     const cap = isSignin
