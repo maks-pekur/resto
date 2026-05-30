@@ -178,7 +178,7 @@ Plans:
 
 **Wave 3** _(after Wave 2)_
 
-- [ ] 04A-03-PLAN.md — New tables menu_stop_list + menu_item_slug_aliases with composite FK + RLS ENABLE/FORCE + iso policies; composite-FK audit pass (CAT-06, CAT-09; D-4a-04/10)
+- [x] 04A-03-PLAN.md — New tables menu_stop_list + menu_item_slug_aliases with composite FK + RLS ENABLE/FORCE + iso policies; composite-FK audit pass (CAT-06, CAT-09; D-4a-04/10)
 
 **Wave 4** _(after Waves 2+3)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 2/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 3/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
