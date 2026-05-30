@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
-status: ready_to_plan
-stopped_at: Phase 03 complete (5/5) — ready to discuss Phase 4
-last_updated: 2026-05-30T16:17:52.832Z
-last_activity: 2026-05-27 -- Phase 02 execution started
+status: planning
+stopped_at: Phase 4 context gathered + iiko schema redesign direction set; 4 personas running in background
+last_updated: "2026-05-30T16:58:34.388Z"
+last_activity: 2026-05-30
 progress:
   total_phases: 17
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 16
   completed_plans: 16
-  percent: 12
+  percent: 18
 ---
 
 # Project State
@@ -60,7 +60,7 @@ Still deferred to Phase 03:
 | Phase | Plans | Total | Avg/Plan |
 | ----- | ----- | ----- | -------- |
 | —     | —     | —     | —        |
-| 03 | 5 | - | - |
+| 03    | 5     | -     | -        |
 
 **Recent Trend:**
 
@@ -124,7 +124,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-30T14:25:32.503Z
-Stopped at: Phase 3 Wave 5 partial: Plan 05 Task 1 (drift guard + IdentityRoleChangedV1 contract) + Micro-A (organizationHooks.afterUpdateMemberRole wired, audit-gap BLOCKED→WIRED, e2e spec) merged. Остаётся: AUTH-11 WeakMap, D-20 per-tenant rate-limit, D-21 GDPR sweep schedulers, D-23 2FA recovery runbook, D-07 DNS checklist, 03-05-SUMMARY. Продолжать через /gsd-execute-phase 3 в свежей сессии (контекст оркестратора 65% — пауза перед compact).
-Resume file: .planning/phases/03-auth-completion/03-05-role-seed-hook-closure-PLAN.md
+Last session: 2026-05-30T16:58:34.379Z
+Stopped at: Phase 4 context gathered + iiko schema redesign direction set; 4 personas running in background
+Resume file: .planning/phases/04-catalog-admin/04-CONTEXT.md
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
