@@ -61,46 +61,47 @@ const CASES: FkCase[] = [
       ),
   },
   {
-    name: 'menu_variants.menu_item_id → menu_items(id, tenant_id)',
+    name: 'menu_item_sizes.menu_item_id → menu_items(id, tenant_id)',
     probe: async (pg, fx) =>
-      pg.db.withoutTenant('I-2 probe: menu_variants', async (tx) =>
-        tx.insert(schema.menuVariants).values({
+      pg.db.withoutTenant('I-2 probe: menu_item_sizes', async (tx) =>
+        tx.insert(schema.menuItemSizes).values({
           tenantId: fx.tenantA,
           menuItemId: fx.itemB,
+          price: '1.00',
           name: { en: 'Probe' },
         }),
       ),
   },
   {
-    name: 'menu_modifier_options.modifier_id → menu_modifiers(id, tenant_id)',
+    name: 'menu_modifier_options.modifier_group_id → menu_modifier_groups(id, tenant_id)',
     probe: async (pg, fx) =>
       pg.db.withoutTenant('I-2 probe: menu_modifier_options', async (tx) =>
         tx.insert(schema.menuModifierOptions).values({
           tenantId: fx.tenantA,
-          modifierId: fx.modifierB,
+          modifierGroupId: fx.modifierB,
           name: { en: 'Probe' },
         }),
       ),
   },
   {
-    name: 'menu_item_modifiers.menu_item_id → menu_items(id, tenant_id)',
+    name: 'menu_item_modifier_groups.menu_item_id → menu_items(id, tenant_id)',
     probe: async (pg, fx) =>
-      pg.db.withoutTenant('I-2 probe: menu_item_modifiers.menu_item_id', async (tx) =>
-        tx.insert(schema.menuItemModifiers).values({
+      pg.db.withoutTenant('I-2 probe: menu_item_modifier_groups.menu_item_id', async (tx) =>
+        tx.insert(schema.menuItemModifierGroups).values({
           tenantId: fx.tenantA,
           menuItemId: fx.itemB,
-          modifierId: fx.modifierA,
+          modifierGroupId: fx.modifierA,
         }),
       ),
   },
   {
-    name: 'menu_item_modifiers.modifier_id → menu_modifiers(id, tenant_id)',
+    name: 'menu_item_modifier_groups.modifier_group_id → menu_modifier_groups(id, tenant_id)',
     probe: async (pg, fx) =>
-      pg.db.withoutTenant('I-2 probe: menu_item_modifiers.modifier_id', async (tx) =>
-        tx.insert(schema.menuItemModifiers).values({
+      pg.db.withoutTenant('I-2 probe: menu_item_modifier_groups.modifier_group_id', async (tx) =>
+        tx.insert(schema.menuItemModifierGroups).values({
           tenantId: fx.tenantA,
           menuItemId: fx.itemA,
-          modifierId: fx.modifierB,
+          modifierGroupId: fx.modifierB,
         }),
       ),
   },
@@ -192,13 +193,13 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
       if (!itemA || !itemB) throw new Error('seed items failed');
 
       const [modifierA] = await tx
-        .insert(schema.menuModifiers)
+        .insert(schema.menuModifierGroups)
         .values({ tenantId: tenantA.id, name: { en: 'Mod A' } })
-        .returning({ id: schema.menuModifiers.id });
+        .returning({ id: schema.menuModifierGroups.id });
       const [modifierB] = await tx
-        .insert(schema.menuModifiers)
+        .insert(schema.menuModifierGroups)
         .values({ tenantId: tenantB.id, name: { en: 'Mod B' } })
-        .returning({ id: schema.menuModifiers.id });
+        .returning({ id: schema.menuModifierGroups.id });
       if (!modifierA || !modifierB) throw new Error('seed modifiers failed');
 
       return {

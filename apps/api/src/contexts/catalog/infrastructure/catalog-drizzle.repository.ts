@@ -86,9 +86,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       ]);
 
       const [variantsRows, itemModifierRows, modifiersRows] = await Promise.all([
-        scoped.selectFrom(schema.menuVariants),
-        scoped.selectFrom(schema.menuItemModifiers),
-        scoped.selectFrom(schema.menuModifiers),
+        scoped.selectFrom(schema.menuItemSizes),
+        scoped.selectFrom(schema.menuItemModifierGroups),
+        scoped.selectFrom(schema.menuModifierGroups),
       ]);
 
       const itemIds = itemsRows.map((r) => r.id);
@@ -98,14 +98,14 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           : await scoped.selectFrom(
               schema.menuModifierOptions,
               inArray(
-                schema.menuModifierOptions.modifierId,
+                schema.menuModifierOptions.modifierGroupId,
                 modifiersRows.map((m) => m.id),
               ),
             );
 
       const variantsByItem = groupBy(variantsRows, (r) => r.menuItemId);
       const modifiersByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
-      const optionsByModifier = groupBy(optionsRows, (r) => r.modifierId);
+      const optionsByModifier = groupBy(optionsRows, (r) => r.modifierGroupId);
 
       const items = await Promise.all(
         itemsRows
@@ -125,12 +125,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             variants: (variantsByItem.get(r.id) ?? []).map<PublishedMenuVariant>((v) => ({
               id: MenuVariantId.parse(v.id),
               name: v.name,
-              priceDelta: PriceDelta.parse(v.priceDelta),
+              priceDelta: PriceDelta.parse(v.price),
               isDefault: v.isDefault,
               sortOrder: v.sortOrder,
             })),
             modifierIds: (modifiersByItem.get(r.id) ?? []).map((m) =>
-              MenuModifierId.parse(m.modifierId),
+              MenuModifierId.parse(m.modifierGroupId),
             ),
           })),
       );
@@ -197,10 +197,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const row = items[0];
       if (!row) return null;
       const [variants, links] = await Promise.all([
-        scoped.selectFrom(schema.menuVariants, eq(schema.menuVariants.menuItemId, row.id)),
+        scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
         scoped.selectFrom(
-          schema.menuItemModifiers,
-          eq(schema.menuItemModifiers.menuItemId, row.id),
+          schema.menuItemModifierGroups,
+          eq(schema.menuItemModifierGroups.menuItemId, row.id),
         ),
       ]);
       return {
@@ -218,11 +218,11 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         variants: variants.map<PublishedMenuVariant>((v) => ({
           id: MenuVariantId.parse(v.id),
           name: v.name,
-          priceDelta: PriceDelta.parse(v.priceDelta),
+          priceDelta: PriceDelta.parse(v.price),
           isDefault: v.isDefault,
           sortOrder: v.sortOrder,
         })),
-        modifierIds: links.map((m) => MenuModifierId.parse(m.modifierId)),
+        modifierIds: links.map((m) => MenuModifierId.parse(m.modifierGroupId)),
       };
     });
   }
@@ -306,7 +306,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       if (input.id) {
         const [row] = await scoped
           .updateTable(
-            schema.menuModifiers,
+            schema.menuModifierGroups,
             {
               name: input.name,
               minSelectable: input.minSelectable,
@@ -314,21 +314,21 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               isRequired: input.isRequired,
               updatedAt: new Date(),
             },
-            eq(schema.menuModifiers.id, input.id),
+            eq(schema.menuModifierGroups.id, input.id),
           )
-          .returning({ id: schema.menuModifiers.id });
+          .returning({ id: schema.menuModifierGroups.id });
         if (!row) throw new Error('upsertModifier: update returned no row');
         return { id: row.id };
       }
       const [row] = await scoped
-        .insertInto(schema.menuModifiers, {
+        .insertInto(schema.menuModifierGroups, {
           brandId: input.brandId ?? null,
           name: input.name,
           minSelectable: input.minSelectable,
           maxSelectable: input.maxSelectable,
           isRequired: input.isRequired,
         })
-        .returning({ id: schema.menuModifiers.id });
+        .returning({ id: schema.menuModifierGroups.id });
       if (!row) throw new Error('upsertModifier: insert returned no row');
       return { id: row.id };
     });

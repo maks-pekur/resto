@@ -9,8 +9,10 @@ export * from './tenants';
 export * from './brands';
 export * from './menu';
 // Public-surface contract — visible to schema consumers via `schema.<name>`:
-//   - menuCategories, menuItems, menuVariants, menuModifiers, menuModifierOptions,
-//     menuItemModifiers
+//   - menuCategories, menuItems, menuModifierOptions
+//   - menuItemSizes (D-4a CAT-05, plan 04A-04 — renamed from menuVariants)
+//   - menuModifierGroups (D-4a CAT-04, plan 04A-04 — renamed from menuModifiers)
+//   - menuItemModifierGroups (D-4a CAT-04, plan 04A-04 — renamed from menuItemModifiers)
 //   - menuStopList (D-4a-10, plan 04A-03)
 //   - menuItemSlugAliases (D-4a-04, plan 04A-03)
 export * from './audit';
