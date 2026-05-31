@@ -1,4 +1,4 @@
-import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ENV_TOKEN } from '../../../config/config.module';
@@ -57,5 +57,37 @@ export class S3SignedImageUrlAdapter implements ImageUrlPort {
       this.logger.warn({ err, s3Key }, 'Failed to presign image URL — falling back to empty.');
       return '';
     }
+  }
+
+  // Phase 4b CAT-03: presign a PUT for browser direct-upload. SigV4 binds
+  // ContentType + ContentLength into the signature so the browser MUST send
+  // matching headers on PUT (mismatch → 403 from S3). PUT errors propagate
+  // — the caller surfaces 5xx and the UI shows a real failure (different
+  // from presignGet, where an empty string falls through to a placeholder).
+  async presignPut(
+    s3Key: string,
+    contentType: string,
+    contentLength: number,
+    ttlSeconds: number,
+  ): Promise<string> {
+    if (ttlSeconds > 600) {
+      // OWASP V12: presigned-upload URLs should live no longer than the
+      // operator's interaction window. >10 min is a misuse signal —
+      // GetPhotoUploadUrlService pins this to 300s.
+      this.logger.warn(
+        { ttlSeconds, s3Key },
+        'presignPut called with ttl > 10 min — defense check.',
+      );
+    }
+    return getSignedUrl(
+      this.client,
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: s3Key,
+        ContentType: contentType,
+        ContentLength: contentLength,
+      }),
+      { expiresIn: ttlSeconds },
+    );
   }
 }

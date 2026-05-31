@@ -104,6 +104,22 @@ export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
  */
 export interface ImageUrlPort {
   presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
+  /**
+   * Presign a PUT URL the operator's browser uses to direct-upload a photo
+   * to the bucket (Phase 4b CAT-03). The signed URL binds Content-Type and
+   * Content-Length into the SigV4 signature — the browser MUST send the
+   * same headers on PUT or S3 returns 403. Unlike `presignGet`, failures
+   * propagate to the caller so the controller can return 5xx and the UI
+   * can surface a real error.
+   *
+   * `ttlSeconds` should be ≤ 300 (5 min) per OWASP V12.
+   */
+  presignPut(
+    s3Key: string,
+    contentType: string,
+    contentLength: number,
+    ttlSeconds: number,
+  ): Promise<string>;
 }
 
 export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
