@@ -15,12 +15,22 @@ import { wrapWith } from '../../../../shared/api/wrap';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
 
-const PublishedMenuVariantSchema = z.object({
+const PublishedMenuItemSizeSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedTextSchema,
-  priceDelta: z.string(),
+  price: z.string(),
   isDefault: z.boolean(),
   sortOrder: z.number().int().nonnegative(),
+});
+
+const PublishedMenuItemPhotoSchema = z.object({
+  s3Key: z.string(),
+  sortOrder: z.number().int().nonnegative(),
+  alt: z.string().optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  isPrimary: z.boolean().optional(),
+  url: z.string().url(),
 });
 
 const PublishedMenuItemSchema = z.object({
@@ -32,10 +42,16 @@ const PublishedMenuItemSchema = z.object({
   basePrice: z.string(),
   currency: z.string().regex(/^[A-Z]{3}$/),
   imageUrl: z.string().url().nullable(),
+  photos: z.array(PublishedMenuItemPhotoSchema),
   allergens: z.array(z.string()),
   sortOrder: z.number().int().nonnegative(),
-  variants: z.array(PublishedMenuVariantSchema),
-  modifierIds: z.array(z.string().uuid()),
+  proteins: z.string().nullable(),
+  fats: z.string().nullable(),
+  carbs: z.string().nullable(),
+  kcal: z.number().int().nullable(),
+  nutritionEstimated: z.boolean(),
+  sizes: z.array(PublishedMenuItemSizeSchema),
+  modifierGroupIds: z.array(z.string().uuid()),
 });
 
 const PublishedMenuCategorySchema = z.object({
@@ -50,10 +66,12 @@ const PublishedMenuModifierOptionSchema = z.object({
   id: z.string(),
   name: LocalizedTextSchema,
   priceDelta: z.string(),
+  defaultAmount: z.number().int().nonnegative(),
+  freeAmount: z.number().int().nonnegative(),
   sortOrder: z.number().int().nonnegative(),
 });
 
-const PublishedMenuModifierSchema = z.object({
+const PublishedMenuModifierGroupSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedTextSchema,
   minSelectable: z.number().int().nonnegative(),
@@ -82,7 +100,7 @@ const PublishedMenuSchema = z.object({
   brand: PublishedMenuBrandSchema.nullable(),
   categories: z.array(PublishedMenuCategorySchema),
   items: z.array(PublishedMenuItemSchema),
-  modifiers: z.array(PublishedMenuModifierSchema),
+  modifierGroups: z.array(PublishedMenuModifierGroupSchema),
 });
 
 class PublishedMenuDto extends createZodDto(PublishedMenuSchema) {}

@@ -8,7 +8,6 @@ import type {
   MenuModifierId,
   MenuVariantId,
   MoneyAmount,
-  PriceDelta,
 } from '@resto/domain';
 
 /**
@@ -19,10 +18,21 @@ import type {
  * boundary — the domain primitives in `@resto/domain` enforce that, and
  * this projection just preserves the shape on the way out.
  */
-export interface PublishedMenuVariant {
+
+/**
+ * Item size (D-4a CAT-05 / SCHEMA-MAP §Q2). Renamed from
+ * `PublishedMenuVariant`; `price` is the ABSOLUTE per-size price (not a
+ * delta over the item's base price) to match iiko `NPSizePriceModel`.
+ *
+ * The brand `MenuVariantId` is reused as the size id alias — semantically
+ * `MenuVariantId === MenuItemSizeId` after the 4a rename. A dedicated
+ * `MenuItemSizeId` brand can be introduced later without breaking the
+ * wire shape (string UUID).
+ */
+export interface PublishedMenuItemSize {
   readonly id: MenuVariantId;
   readonly name: LocalizedText;
-  readonly priceDelta: PriceDelta;
+  readonly price: MoneyAmount;
   readonly isDefault: boolean;
   readonly sortOrder: number;
 }
@@ -30,17 +40,38 @@ export interface PublishedMenuVariant {
 export interface PublishedMenuModifierOption {
   readonly id: string;
   readonly name: LocalizedText;
-  readonly priceDelta: PriceDelta;
+  readonly priceDelta: MoneyAmount;
+  readonly defaultAmount: number;
+  readonly freeAmount: number;
   readonly sortOrder: number;
 }
 
-export interface PublishedMenuModifier {
+/**
+ * Modifier group (D-4a CAT-04 / SCHEMA-MAP §Q3). Renamed from
+ * `PublishedMenuModifier`; the underlying brand alias maps to
+ * `menu_modifier_groups.id`.
+ */
+export interface PublishedMenuModifierGroup {
   readonly id: MenuModifierId;
   readonly name: LocalizedText;
   readonly minSelectable: number;
   readonly maxSelectable: number;
   readonly isRequired: boolean;
   readonly options: readonly PublishedMenuModifierOption[];
+}
+
+/**
+ * Photo entry on a published menu item (D-4a-02). Each entry carries
+ * its own presigned GET URL (server-signed at read time).
+ */
+export interface PublishedMenuItemPhoto {
+  readonly s3Key: string;
+  readonly sortOrder: number;
+  readonly alt?: string;
+  readonly width?: number;
+  readonly height?: number;
+  readonly isPrimary?: boolean;
+  readonly url: string;
 }
 
 export interface PublishedMenuItem {
@@ -52,16 +83,45 @@ export interface PublishedMenuItem {
   readonly basePrice: MoneyAmount;
   readonly currency: Currency;
   /**
-   * Short-lived presigned GET URL for the item image, or `null` if the
-   * item has no photo. The raw S3 key never crosses the API boundary
-   * (RES-92): the bucket is private, presigning happens server-side at
-   * read time. URL TTL matches the catalog cache TTL.
+   * Backward-compatibility convenience: presigned GET URL of the first
+   * photo (or `null` if the item has no photo). Same source as
+   * `photos[0]?.url`. Retained so existing qr-menu / website consumers
+   * that read a single hero image don't need to update for D-4a-02.
+   *
+   * The raw S3 key never crosses the API boundary (RES-92): the bucket
+   * is private, presigning happens server-side at read time. URL TTL
+   * matches the catalog cache TTL.
    */
   readonly imageUrl: string | null;
+  /**
+   * Forward-compatible photos array (D-4a-02). Multi-photo gallery UI
+   * lands in Phase 5/6; the schema is forward-compatible in 4a. Each
+   * entry includes its own presigned GET URL.
+   */
+  readonly photos: readonly PublishedMenuItemPhoto[];
   readonly allergens: readonly string[];
   readonly sortOrder: number;
-  readonly variants: readonly PublishedMenuVariant[];
-  readonly modifierIds: readonly MenuModifierId[];
+  /**
+   * Per-100g nutrition values (D-4a-03). Decimal columns serialise as
+   * strings via Drizzle `numeric`; `kcal` is an integer; null until a
+   * recipe lands or the operator estimates the values.
+   */
+  readonly proteins: string | null;
+  readonly fats: string | null;
+  readonly carbs: string | null;
+  readonly kcal: number | null;
+  readonly nutritionEstimated: boolean;
+  /**
+   * Item sizes (D-4a CAT-05). Renamed from `variants`; `price` is the
+   * absolute per-size price (not a delta on top of `basePrice`).
+   */
+  readonly sizes: readonly PublishedMenuItemSize[];
+  /**
+   * Modifier-group ids referenced by this item (D-4a CAT-04). Renamed
+   * from `modifierIds`. The actual group payloads are listed in
+   * `PublishedMenu.modifierGroups`.
+   */
+  readonly modifierGroupIds: readonly MenuModifierId[];
 }
 
 export interface PublishedMenuCategory {
@@ -97,5 +157,5 @@ export interface PublishedMenu {
   readonly brand: PublishedMenuBrand | null;
   readonly categories: readonly PublishedMenuCategory[];
   readonly items: readonly PublishedMenuItem[];
-  readonly modifiers: readonly PublishedMenuModifier[];
+  readonly modifierGroups: readonly PublishedMenuModifierGroup[];
 }

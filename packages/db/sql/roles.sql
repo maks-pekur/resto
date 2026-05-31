@@ -64,6 +64,17 @@ BEGIN
 END
 $$;
 
+-- Phase 4a-06: stop-list unstop is the inverse of the stop INSERT — rows are
+-- bounded per-item (UNIQUE on (tenant_id, item_id)). Migration 0040 issues the
+-- same GRANT; restating it here keeps the end state convergent on fresh setups.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'menu_stop_list') THEN
+    EXECUTE 'GRANT DELETE ON menu_stop_list TO resto_app';
+  END IF;
+END
+$$;
+
 -- RES-206: BA credential tables are resto_auth-only (ADR-0013).
 -- Revoke resto_app to prevent SELECT * leak of password hashes, OAuth
 -- tokens, 2FA secrets, session tokens. Excluded from runtime app role
