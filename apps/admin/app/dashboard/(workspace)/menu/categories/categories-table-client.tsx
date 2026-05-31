@@ -2,6 +2,16 @@
 
 import * as React from 'react';
 import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import {
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
 import {
@@ -38,6 +48,66 @@ interface RenderRow {
   readonly isChild: boolean;
   readonly canMoveUp: boolean;
   readonly canMoveDown: boolean;
+}
+
+interface SortableCategoryRowProps {
+  readonly category: CategoryListItemApi;
+  readonly isChild: boolean;
+  readonly parentName: string;
+  readonly onEdit: () => void;
+  readonly onArchive: () => void;
+}
+
+function SortableCategoryRow({
+  category,
+  isChild,
+  parentName,
+  onEdit,
+  onArchive,
+}: SortableCategoryRowProps): React.ReactElement {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: category.id,
+  });
+  const displayName = fromLocalizedText(category.name);
+  return (
+    <TableRow
+      ref={setNodeRef}
+      data-testid={`category-row-${category.id}`}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.4 : 1,
+      }}
+    >
+      <TableCell className="cursor-grab text-muted-foreground" {...attributes} {...listeners}>
+        <GripVertical className="size-4" />
+      </TableCell>
+      <TableCell className={isChild ? 'pl-8' : ''}>
+        {isChild ? `↳ ${displayName}` : displayName}
+      </TableCell>
+      <TableCell>{parentName}</TableCell>
+      <TableCell className="text-right">
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Редактировать ${displayName}`}
+            onClick={onEdit}
+          >
+            <Pencil className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label={`Архивировать ${displayName}`}
+            onClick={onArchive}
+          >
+            <Trash2 className="size-4" />
+          </Button>
+        </div>
+      </TableCell>
+    </TableRow>
+  );
 }
 
 const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRow[] => {
@@ -83,9 +153,8 @@ export function CategoriesTableClient({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
-  const [draggingId, setDraggingId] = React.useState<string | null>(null);
-  const [dragOverId, setDragOverId] = React.useState<string | null>(null);
   const [, startTransition] = React.useTransition();
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const visible = React.useMemo(
     () => categories.filter((c) => c.status !== 'archived'),
@@ -94,16 +163,11 @@ export function CategoriesTableClient({
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
 
-  const handleDrop = (targetId: string): void => {
-    if (!draggingId || draggingId === targetId) {
-      setDraggingId(null);
-      setDragOverId(null);
-      return;
-    }
-    const dragged = categories.find((c) => c.id === draggingId);
-    const target = categories.find((c) => c.id === targetId);
-    setDraggingId(null);
-    setDragOverId(null);
+  const handleDragEnd = (event: DragEndEvent): void => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const dragged = categories.find((c) => c.id === String(active.id));
+    const target = categories.find((c) => c.id === String(over.id));
     if (!dragged || dragged.parentId !== target?.parentId) return;
     const siblings = rows.map((r) => r.category).filter((c) => c.parentId === dragged.parentId);
     const fromIdx = siblings.findIndex((c) => c.id === dragged.id);
@@ -156,99 +220,45 @@ export function CategoriesTableClient({
           }
         />
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-10"></TableHead>
-              <TableHead>Название</TableHead>
-              <TableHead>Родитель</TableHead>
-              <TableHead className="w-24 text-right">Действия</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {rows.map(({ category, isChild }) => {
-              const displayName = fromLocalizedText(category.name);
-              const parent = category.parentId
-                ? categories.find((c) => c.id === category.parentId)
-                : null;
-              const parentName = parent ? fromLocalizedText(parent.name) : '—';
-              const isDragging = draggingId === category.id;
-              const isDragOver = dragOverId === category.id && draggingId !== category.id;
-              return (
-                <TableRow
-                  key={category.id}
-                  data-testid={`category-row-${category.id}`}
-                  draggable
-                  onDragStart={(e) => {
-                    setDraggingId(category.id);
-                    e.dataTransfer.effectAllowed = 'move';
-                    e.dataTransfer.setData('text/plain', category.id);
-                  }}
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    e.dataTransfer.dropEffect = 'move';
-                    if (draggingId && draggingId !== category.id) {
-                      const dragged = categories.find((c) => c.id === draggingId);
-                      if (dragged?.parentId === category.parentId) {
-                        setDragOverId(category.id);
-                      }
-                    }
-                  }}
-                  onDragLeave={() => {
-                    if (dragOverId === category.id) setDragOverId(null);
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    handleDrop(category.id);
-                  }}
-                  onDragEnd={() => {
-                    setDraggingId(null);
-                    setDragOverId(null);
-                  }}
-                  className={
-                    isDragging
-                      ? 'opacity-50'
-                      : isDragOver
-                        ? 'bg-accent/40 border-primary border-t-2'
-                        : undefined
-                  }
-                >
-                  <TableCell className="cursor-grab text-muted-foreground">
-                    <GripVertical className="size-4" />
-                  </TableCell>
-                  <TableCell className={isChild ? 'pl-8' : ''}>
-                    {isChild ? `↳ ${displayName}` : displayName}
-                  </TableCell>
-                  <TableCell>{parentName}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Редактировать ${displayName}`}
-                        onClick={() => {
-                          setEditingId(category.id);
-                        }}
-                      >
-                        <Pencil className="size-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        aria-label={`Архивировать ${displayName}`}
-                        onClick={() => {
-                          setArchiveTarget(category);
-                        }}
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={rows.map((r) => r.category.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10"></TableHead>
+                  <TableHead>Название</TableHead>
+                  <TableHead>Родитель</TableHead>
+                  <TableHead className="w-24 text-right">Действия</TableHead>
                 </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+              </TableHeader>
+              <TableBody>
+                {rows.map(({ category, isChild }) => (
+                  <SortableCategoryRow
+                    key={category.id}
+                    category={category}
+                    isChild={isChild}
+                    parentName={
+                      category.parentId
+                        ? fromLocalizedText(
+                            categories.find((c) => c.id === category.parentId)?.name ?? {},
+                          )
+                        : '—'
+                    }
+                    onEdit={() => {
+                      setEditingId(category.id);
+                    }}
+                    onArchive={() => {
+                      setArchiveTarget(category);
+                    }}
+                  />
+                ))}
+              </TableBody>
+            </Table>
+          </SortableContext>
+        </DndContext>
       )}
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>

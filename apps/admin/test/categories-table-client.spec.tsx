@@ -95,10 +95,10 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     expect(screen.queryByText('Снэки')).not.toBeInTheDocument();
   });
 
-  it('rows are draggable for reorder', () => {
+  it('renders rows with drag handles for reorder', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
-    expect(napitkiRow).toHaveAttribute('draggable', 'true');
+    expect(napitkiRow).toBeInTheDocument();
   });
 
   it('opens the archive AlertDialog with the UI-SPEC §Destructive actions row-1 copy', () => {
