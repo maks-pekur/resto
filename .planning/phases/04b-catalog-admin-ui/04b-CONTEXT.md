@@ -94,6 +94,7 @@
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
@@ -152,6 +153,7 @@
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
@@ -175,7 +177,7 @@
 
 - **api → admin via apiFetch:** every catalog mutation goes through `internal-catalog.controller.ts` endpoints. 4b enumerates them from the generated client.
 - **PermissionsGuard tokens:** catalog actions require `staff:menu:write` / `staff:menu:publish` permissions (verify they exist in SYSTEM_ROLES — research item; if missing, surface to planner).
-- **Audit trail:** every mutation in 4b produces an audit row via the api's existing flow (4a wired audit ACTION_TARGET_KIND for `catalog.menu_*` and `catalog.item_*` events). No 4b work — confirm at verification time.
+- **Audit trail:** every mutation in 4b produces an audit row via the api's existing flow (4a wired audit ACTION*TARGET_KIND for `catalog.menu*\_`and`catalog.item\_\_` events). No 4b work — confirm at verification time.
 - **Stop-list cache invalidation:** 4a's `StopListService` already calls `CatalogCachePort.invalidate(...)` after write. 4b just wires the UI; cache behavior is transparent.
 
 </code_context>

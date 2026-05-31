@@ -12,6 +12,7 @@
 ## Pre-flight context
 
 Loaded:
+
 - `.planning/PROJECT.md` (post-4a evolution)
 - `.planning/phases/04-catalog-admin/04-CONTEXT.md` (pre-split D-01..D-13)
 - `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md` (4 personas, 14 HIGH / 16 MED / 9 LOW)
@@ -30,11 +31,11 @@ Pre-split persona reviews inherited; no fresh persona round spawned for 04b (mec
 
 **Sub-question 1: How deep will categories actually nest in MVP-1?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| 1 level — effectively flat | parent_id in schema (for iiko-import in MVP-3), but UI doesn't allow creating sub-categories | |
-| 2 levels max (Напитки → Горячие/Кофе/Чай) | Realistic max for café/restaurant. Indented flat list, dropdown with indents, sidebar stays flat | ✓ |
-| 3+ levels — full tree | iiko-style. Requires tree-view UI with drag-drop, breadcrumb sidebar modes, tree-picker. Much more UX code | |
+| Option                                    | Description                                                                                                | Selected |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------- |
+| 1 level — effectively flat                | parent_id in schema (for iiko-import in MVP-3), but UI doesn't allow creating sub-categories               |          |
+| 2 levels max (Напитки → Горячие/Кофе/Чай) | Realistic max for café/restaurant. Indented flat list, dropdown with indents, sidebar stays flat           | ✓        |
+| 3+ levels — full tree                     | iiko-style. Requires tree-view UI with drag-drop, breadcrumb sidebar modes, tree-picker. Much more UX code |          |
 
 **User's choice:** 2 levels max.
 **Notes:** Schema permits deeper trees; frontend Zod refine enforces `depth <= 2`. Drag-drop reorder = Claude's discretion (skip-acceptable for MVP-1; baseline is integer `sortOrder` + up/down).
@@ -47,10 +48,10 @@ Pre-split persona reviews inherited; no fresh persona round spawned for 04b (mec
 
 **Sub-question 1: How are draft changes saved?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Auto-save on 1.5s debounce + explicit Publish (PS HIGH-2) | Draft saves automatically on field-blur / debounce. "Saved 2s ago" indicator in top-right. Publish remains explicit via sticky bar | ✓ |
-| Explicit Save + explicit Publish (original D-08) | "Save draft" button + beforeunload warning. Simpler, predictable, but breaks MVP-2 AI flow (AI generates 50 items, operator visits each and Save's) | |
+| Option                                                    | Description                                                                                                                                         | Selected |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Auto-save on 1.5s debounce + explicit Publish (PS HIGH-2) | Draft saves automatically on field-blur / debounce. "Saved 2s ago" indicator in top-right. Publish remains explicit via sticky bar                  | ✓        |
+| Explicit Save + explicit Publish (original D-08)          | "Save draft" button + beforeunload warning. Simpler, predictable, but breaks MVP-2 AI flow (AI generates 50 items, operator visits each and Save's) |          |
 
 **User's choice:** Auto-save.
 **Notes:** No `beforeunload` warning needed (state is persistent). Original explicit "Save draft" button removed from D-08.
@@ -63,21 +64,22 @@ Pre-split persona reviews inherited; no fresh persona round spawned for 04b (mec
 
 **Sub-question 1: Toast presentation?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Sonner toast bottom-right, countdown progress bar + "Undo" button | 5s linear progress, auto-dismisses. Sonner already in admin (shadcn pack). Undo click → DELETE /publish, toast swaps | ✓ |
-| Modal-banner at bottom (sticky publish bar morphs) | Sticky bar transforms to "Publishing in 5s… [Cancel]". More visually prominent but more code (publish-bar state machine coupling) | |
+| Option                                                            | Description                                                                                                                       | Selected |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Sonner toast bottom-right, countdown progress bar + "Undo" button | 5s linear progress, auto-dismisses. Sonner already in admin (shadcn pack). Undo click → DELETE /publish, toast swaps              | ✓        |
+| Modal-banner at bottom (sticky publish bar morphs)                | Sticky bar transforms to "Publishing in 5s… [Cancel]". More visually prominent but more code (publish-bar state machine coupling) |          |
 
 **Sub-question 2: Re-click Publish behavior inside 5s window?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Publish button disabled while timer is active | Simple — no race, operator sees state in toast | ✓ |
-| Re-click cancels and reschedules (backend supports this) | DelayedPublishService.schedule already cancels-and-reschedules, but UX behavior less obvious — toast confusion risk | |
+| Option                                                   | Description                                                                                                         | Selected |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- | -------- |
+| Publish button disabled while timer is active            | Simple — no race, operator sees state in toast                                                                      | ✓        |
+| Re-click cancels and reschedules (backend supports this) | DelayedPublishService.schedule already cancels-and-reschedules, but UX behavior less obvious — toast confusion risk |          |
 
 **Sub-question 3 (originally proposed): First-publish celebration + Preview-as-customer link?**
 
 User pushed back: "зачем нам это вообще". Discussion clarified:
+
 - qr-menu is in placeholder state until Phase 6
 - `apps/website` (the real customer surface) is Phase 5
 - Pre-paying-customer "celebration toast" has no audience
@@ -94,17 +96,17 @@ User pushed back: "зачем нам это вообще". Discussion clarified:
 
 **Sub-question 1: Sizes editor location?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Tab "Sizes" inside item editor (consistent with D-04) | Inline rows: [Name] [Price (absolute)] [Default ●] [× remove] + Add. Sizes are tied to item — logically live together | ✓ |
-| Inline in Detail tab under price — no separate tab | If sizes empty, show plain price. Form gets conditional (price OR sizes-list) — more complex | |
+| Option                                                | Description                                                                                                           | Selected |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| Tab "Sizes" inside item editor (consistent with D-04) | Inline rows: [Name] [Price (absolute)] [Default ●] [× remove] + Add. Sizes are tied to item — logically live together | ✓        |
+| Inline in Detail tab under price — no separate tab    | If sizes empty, show plain price. Form gets conditional (price OR sizes-list) — more complex                          |          |
 
 **Sub-question 2: Modifier groups editor location?**
 
-| Option | Description | Selected |
-|--------|-------------|----------|
-| Separate sidebar section `/dashboard/menu/modifier-groups` + assignment in item editor | Modifier groups CRUD on their own page (reusable across items). Item editor's Modifiers tab uses multi-select of existing groups | ✓ |
-| Only in item context (tab + inline create) | No separate section. Hurts reuse — operator can't browse "all my groups" without finding an item that uses one | |
+| Option                                                                                 | Description                                                                                                                      | Selected |
+| -------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
+| Separate sidebar section `/dashboard/menu/modifier-groups` + assignment in item editor | Modifier groups CRUD on their own page (reusable across items). Item editor's Modifiers tab uses multi-select of existing groups | ✓        |
+| Only in item context (tab + inline create)                                             | No separate section. Hurts reuse — operator can't browse "all my groups" without finding an item that uses one                   |          |
 
 **User's choice:** Sizes inside item editor tab; Modifier groups on their own page + assignment UI in item editor.
 **Notes:** Two-surface model for modifier groups: top-level CRUD page is primary creation path; item editor offers quick-create via side-sheet but the dedicated page is authoritative.
