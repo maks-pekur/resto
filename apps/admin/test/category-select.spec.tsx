@@ -2,14 +2,6 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { CategorySelect } from '@/components/menu/category-select';
 
-/**
- * Radix Select renders its content lazily via a portal once the trigger is
- * opened. Asserting on the raw `<SelectItem>` data slots inside the closed
- * select isn't possible without opening it programmatically — and JSDOM
- * doesn't drive the pointer events that open Radix's popover. We instead
- * use a thin mock for the Select primitives that exposes everything
- * synchronously, mirroring how the production code wires `Select`.
- */
 vi.mock('@/components/ui/select', () => {
   return {
     Select: ({
@@ -90,7 +82,6 @@ describe('CategorySelect (D-4b-01, RESEARCH.md Pattern 5)', () => {
         mode="parent-picker"
       />,
     );
-    // Disabled child option must include the muted label suffix
     expect(screen.getByText(/Кофе \(уже является подкатегорией\)/u)).toBeInTheDocument();
     const childItem = screen
       .getAllByRole('generic', { hidden: true })
@@ -122,7 +113,6 @@ describe('CategorySelect (D-4b-01, RESEARCH.md Pattern 5)', () => {
     );
     expect(screen.getByText('Напитки')).toBeInTheDocument();
     expect(screen.getByText('↳ Кофе')).toBeInTheDocument();
-    // item-picker has no "— Без родителя —" sentinel
     expect(screen.queryByText(/— Без родителя —/u)).not.toBeInTheDocument();
   });
 

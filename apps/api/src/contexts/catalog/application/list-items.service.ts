@@ -3,11 +3,6 @@ import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository, type ItemStatusFilter } from '../domain/ports';
 import type { ItemListResponse } from './dto';
 
-/**
- * Phase 4b D-4b-07 / Open Question #3: items list returns thin rows with a
- * `hasSizes: boolean` flag. Default `status` filter excludes archived (the
- * admin items page surfaces draft + published + paused by default per D-03).
- */
 @Injectable()
 export class ListItemsService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}

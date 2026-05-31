@@ -42,7 +42,6 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     { provide: CATALOG_CACHE_PORT, useExisting: RedisCatalogCacheAdapter },
     { provide: MENU_VERSION_PORT, useExisting: RedisCatalogCacheAdapter },
     { provide: IMAGE_URL_PORT, useClass: S3SignedImageUrlAdapter },
-    // Phase 4b read services (D-4b-07).
     ListCategoriesService,
     ListItemsService,
     GetItemService,
@@ -50,12 +49,9 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     GetModifierGroupService,
     GetStopListService,
     GetDraftDiffService,
-    // Phase 4b archive services (D-4b-07).
     ArchiveCategoryService,
     ArchiveItemService,
-    // Phase 4b CAT-03 photo upload service.
     GetPhotoUploadUrlService,
-    // Existing services.
     GetPublishedMenuService,
     GetMenuItemService,
     UpsertCategoryService,

@@ -1,13 +1,3 @@
-/**
- * Russian noun declension for "неопубликованных изменений" (unpublished changes).
- *
- * Three forms — nominative-singular / genitive-singular / genitive-plural — chosen by
- * the standard Russian rule:
- *   - 11..19 → genitive plural ("изменений")
- *   - last digit 1 → nominative singular ("изменение")
- *   - last digit 2..4 → genitive singular ("изменения")
- *   - else (0, 5..9) → genitive plural ("изменений")
- */
 const SINGULAR = 'неопубликованное изменение';
 const FEW = 'неопубликованных изменения';
 const MANY = 'неопубликованных изменений';

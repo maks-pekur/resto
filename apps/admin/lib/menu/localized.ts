@@ -1,13 +1,3 @@
-/**
- * LocalizedText boundary helpers (RESEARCH.md Pitfall #9, Open Question #1).
- *
- * The api persists `LocalizedText` as `{ [locale: string]: string }`. The
- * admin UI is single-locale Russian for MVP-1 (D-05), so we pin a
- * `DEFAULT_LOCALE` constant here and lift plain strings into / out of the
- * api shape at the network boundary. Multilingual editor + per-tenant
- * default-locale lookup is deferred to v2.
- */
-
 export const DEFAULT_LOCALE = 'ru' as const;
 
 export type LocalizedText = Record<string, string>;

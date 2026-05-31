@@ -2,17 +2,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import type { Status } from '@/lib/menu/types';
 
-/**
- * Status badge per UI-SPEC §Status badge color semantics + D-09.
- *
- * Variant mapping:
- *   draft     → outline
- *   modified  → outline + amber inline className (warning, not destructive)
- *   published → default
- *   paused    → secondary (GM MED-1: NOT destructive)
- *   archived  → ghost + muted-foreground
- */
-
+// `paused` is secondary (GM MED-1: must NOT render destructive).
 const LABELS: Record<Status, string> = {
   draft: 'Черновик',
   modified: 'Изменено',

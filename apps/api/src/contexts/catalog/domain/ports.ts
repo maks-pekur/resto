@@ -2,11 +2,6 @@ import type { TenantId } from '@resto/domain';
 import type { MenuItemPhoto } from '@resto/db';
 import type { PublishedMenu, PublishedMenuItem } from './published-menu';
 
-/**
- * Catalog repository — read + write surface for menu rows. The write
- * methods accept already-validated DTOs (the application service layer
- * does Zod validation); the repo is a thin Drizzle wrapper.
- */
 export interface CatalogRepository {
   loadPublishedMenu(
     tenantId: TenantId,
@@ -24,7 +19,6 @@ export interface CatalogRepository {
     itemId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
 
-  // ── Phase 4b D-4b-07 read surface ──
   listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]>;
   listItems(input: {
     status: ItemStatusFilter;
@@ -42,20 +36,11 @@ export interface CatalogRepository {
     totalCount: number;
   }>;
 
-  // ── Phase 4b D-4b-07 archive surface ──
   archiveCategory(id: string): Promise<{ found: boolean }>;
   archiveItem(id: string): Promise<{ found: boolean }>;
 
   getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
-  /**
-   * Atomically: bump `tenants.menu_first_published_at` to NOW() if it is
-   * currently NULL, and append the appropriate outbox event in the same
-   * transaction. Returns whether the row was a first-publish or a
-   * republish. Called from the publish path (delayed-publish 5s timer
-   * callback or the ALS-bound HTTP wrapper). `tenantId` is passed
-   * explicitly because the setTimeout callback escapes the ALS frame
-   * (ADR-0020 I-6).
-   */
+  // tenantId is passed explicitly because the setTimeout callback escapes the ALS frame (ADR-0020 I-6).
   finalizeMenuPublish(input: { tenantId: TenantId; version: number }): Promise<{
     isFirstPublish: boolean;
   }>;
@@ -64,11 +49,6 @@ export interface CatalogRepository {
 
 export const CATALOG_REPOSITORY = Symbol('CATALOG_REPOSITORY');
 
-/**
- * Tenant-scoped menu version store. Each tenant has a monotonically
- * increasing menu version that cache keys depend on; bumping it on
- * publish busts every cache entry without scanning keys.
- */
 export interface MenuVersionPort {
   current(tenantId: TenantId): Promise<number>;
   bump(tenantId: TenantId): Promise<number>;
@@ -76,15 +56,7 @@ export interface MenuVersionPort {
 
 export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
 
-/**
- * Cache adapter for the public read path. Keyed by `(tenantId, version)`;
- * a publish bumps the version, so old cache entries become unreachable
- * (Redis TTL eventually evicts them).
- *
- * `invalidate` lets non-publish writes (e.g. stop-list toggles) flush the
- * current-version cache entry without bumping the version — see D-4a-10 /
- * RESEARCH.md Pattern 2 Option B.
- */
+// `invalidate` flushes the current-version cache entry without bumping the version (D-4a-10) for non-publish writes (e.g. stop-list toggle).
 export interface CatalogCachePort {
   get(tenantId: TenantId, version: number, brandId?: string | null): Promise<PublishedMenu | null>;
   set(menu: PublishedMenu, ttlSeconds: number, brandId?: string | null): Promise<void>;
@@ -93,27 +65,10 @@ export interface CatalogCachePort {
 
 export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
 
-/**
- * Image-URL signing port.
- *
- * Catalog images live in a private S3-compatible bucket (R2 / AWS S3 /
- * MinIO in dev). The public read path MUST NOT leak the raw S3 key —
- * a public bucket would expose every tenant's catalog (including
- * unpublished items) to the world. This port turns a key into a
- * short-lived presigned GET URL the qr-menu can render.
- */
+// Bucket is private — public read path must never leak the raw S3 key; this port turns a key into a short-lived presigned URL.
 export interface ImageUrlPort {
   presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
-  /**
-   * Presign a PUT URL the operator's browser uses to direct-upload a photo
-   * to the bucket (Phase 4b CAT-03). The signed URL binds Content-Type and
-   * Content-Length into the SigV4 signature — the browser MUST send the
-   * same headers on PUT or S3 returns 403. Unlike `presignGet`, failures
-   * propagate to the caller so the controller can return 5xx and the UI
-   * can surface a real error.
-   *
-   * `ttlSeconds` should be ≤ 300 (5 min) per OWASP V12.
-   */
+  // SigV4 binds Content-Type and Content-Length: browser must send the same headers or S3 returns 403. ttlSeconds ≤ 300 (OWASP V12).
   presignPut(
     s3Key: string,
     contentType: string,
@@ -123,8 +78,6 @@ export interface ImageUrlPort {
 }
 
 export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
-
-// ---- Write DTOs ----
 
 export interface UpsertCategoryRow {
   readonly id?: string;
@@ -201,8 +154,6 @@ export interface StopListInsertRow {
   readonly reason: string | null;
   readonly stoppedByUserId: string | null;
 }
-
-// ── Phase 4b D-4b-07 read-surface row types ──
 
 export type ItemStatusFilter = 'all' | 'draft' | 'published' | 'archived' | 'active';
 

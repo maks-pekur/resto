@@ -20,20 +20,15 @@ Object.defineProperty(window, 'matchMedia', {
   }),
 });
 
-// Plan 04b-05 Task 3: tests that exercise Radix Sheet / AlertDialog mount
-// `<PopperContent>` which uses `useSize` → `ResizeObserver`. JSDOM 25 does
-// not implement ResizeObserver, so popper effects throw inside other test
-// files' setup phase when this constructor is referenced. Stub it.
+// JSDOM 25 lacks ResizeObserver; Radix popper (Sheet / AlertDialog) throws without this stub.
 if (typeof globalThis.ResizeObserver === 'undefined') {
   const noop = (): void => {
-    /* JSDOM ResizeObserver stub — see comment above */
+    /* stub */
   };
   class ResizeObserverStub {
     readonly observe = noop;
     readonly unobserve = noop;
     readonly disconnect = noop;
   }
-  // Assigning to the global is the simplest way to make it visible to
-  // both `window` and module-scope references in Radix.
   (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
 }

@@ -33,22 +33,6 @@ import { toggleStopListAction } from './toggle-stop-list-action';
 import { archiveItemAction } from './archive-item-action';
 import type { ItemListItemApi } from './page';
 
-/**
- * Plan 04b-06 Task 2 — Items list compact table client island.
- *
- * Per UI-SPEC §Items list page:
- *   - 6 columns: photo (48px) / name+path / price / status / stop / actions.
- *   - Row height `h-12` (48px) — compact density.
- *   - 40px square thumbnail or placeholder.
- *   - Stop-list switch: optimistic flip, no confirm (D-12). On failure the
- *     switch snaps back and an error toast surfaces.
- *   - Archive: AlertDialog with the UI-SPEC §Destructive actions row-2 copy.
- *     PATCH-based archive (Plan 04b Wave 1) — never DELETE.
- *
- * Pagination: server-side via URL (`?page=`). Buttons disable at boundaries
- * (D-03 page-1 has no back, last page has no forward).
- */
-
 const PAGE_SIZE_DEFAULT = 50;
 
 export interface ItemsTableClientProps {
@@ -120,7 +104,6 @@ export function ItemsTableClient({
     const isCurrentlyPaused = currentEffective === 'paused';
     const next: 'paused' | 'published' = isCurrentlyPaused ? 'published' : 'paused';
 
-    // Optimistic flip.
     setOptimistic((prev) => ({ ...prev, [item.id]: next }));
     setPendingIds((prev) => {
       const copy = new Set(prev);
@@ -142,7 +125,6 @@ export function ItemsTableClient({
           toast.success('Блюдо возобновлено', { duration: 1500 });
         }
       } else {
-        // Snap back on failure.
         setOptimistic((prev) => ({ ...prev, [item.id]: undefined }));
         toast.error(res.error ?? 'Не удалось обновить стоп-лист. Попробуйте ещё раз.');
       }
@@ -190,8 +172,7 @@ export function ItemsTableClient({
               <TableRow key={item.id} className="h-12" data-testid={`item-row-${item.id}`}>
                 <TableCell>
                   {item.photoUrl ? (
-                    // Thumbnails come from S3 presigned URLs; next/image would
-                    // proxy each one and add unnecessary latency to the list view.
+                    // S3 presigned URLs; next/image would proxy each one and add latency.
                     <img src={item.photoUrl} alt="" className="size-10 rounded object-cover" />
                   ) : (
                     <div

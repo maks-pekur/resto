@@ -4,10 +4,6 @@ import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import { MenuModifierGroupNotFoundError } from '../domain/errors';
 import type { ModifierGroupDetailResponse } from './dto';
 
-/**
- * Phase 4b D-4b-07: load one modifier group with its embedded options
- * (operator opens the group editor in /dashboard/menu/modifier-groups/[id]).
- */
 @Injectable()
 export class GetModifierGroupService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}

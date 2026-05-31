@@ -10,17 +10,6 @@ import { fromLocalizedText } from '@/lib/menu/localized';
 import { upsertCategoryAction, type UpsertCategoryActionState } from './upsert-category-action';
 import type { CategoryListItemApi } from './page';
 
-/**
- * Plan 04b-05 Task 3 — Category create/edit form (Sheet-rendered).
- *
- * Simple `useActionState` form (categories have no auto-save per D-4b-02
- * which is item-only). Parent picker uses `<CategorySelect mode="parent-
- * picker">` so existing children are disabled — D-4b-01 depth ≤ 2 client
- * side (Zod refine in `zod-schemas.ts` is the server-side belt).
- *
- * Russian copy per D-05 single-locale MVP-1.
- */
-
 const INITIAL: UpsertCategoryActionState = { error: null, success: null };
 
 export interface CategoryFormClientProps {

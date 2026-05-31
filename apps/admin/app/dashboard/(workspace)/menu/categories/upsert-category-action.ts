@@ -5,18 +5,6 @@ import { apiFetchInternal } from '@/lib/api-server-internal';
 import { CategoryFormSchema } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
 
-/**
- * Plan 04b-05 Task 2 — create/update a category.
- *
- * Pattern S1: catalog mutations go through `apiFetchInternal`
- * (InternalTokenGuard, NOT BA session). Pattern S8: revalidate the menu
- * layout segment so the sticky publish bar diff count refreshes.
- *
- * Boundary: the form sends a plain Russian `name` string; this action
- * lifts it into the api's `LocalizedText` shape via `toLocalizedText`
- * pinned to `DEFAULT_LOCALE = 'ru'` (Open Question #1 RESOLVED).
- */
-
 interface ProblemDetails {
   readonly type?: string;
   readonly title?: string;

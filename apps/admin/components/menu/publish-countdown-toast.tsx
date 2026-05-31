@@ -4,19 +4,8 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
-/**
- * Sonner-custom toast content rendering the 5-second cancellation window
- * for the delayed publish (D-4b-03, UI-SPEC §Delayed-Publish Toast Spec).
- *
- * Implementation note: the elapsed time is computed against a `Date.now()`
- * baseline captured on mount, not by counting ticks — `setInterval(100ms)`
- * is throttled by browsers when the tab is backgrounded, which would
- * desynchronise a tick-counter from wall-clock seconds. `onElapse` is
- * guarded by a ref so it fires exactly once at the 5s boundary.
- *
- * Width is fixed via `w-[360px]` per UI-SPEC.
- */
-
+// Elapsed is computed off a Date.now() baseline (not tick-count) because
+// setInterval is throttled when the tab backgrounds and would desync from wall-clock.
 const COUNTDOWN_MS = 5_000;
 const TICK_MS = 100;
 

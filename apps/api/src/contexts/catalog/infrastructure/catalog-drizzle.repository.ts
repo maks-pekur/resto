@@ -48,7 +48,7 @@ import type {
   PublishedMenuModifierOption,
 } from '../domain/published-menu';
 
-/** Signed image URLs match the catalog cache TTL — see GetPublishedMenuService. */
+// Signed image URLs must match the catalog cache TTL (GetPublishedMenuService).
 const IMAGE_URL_TTL_SECONDS = 300;
 
 @Injectable()
@@ -95,8 +95,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             })
             .from(schema.brands)
             .where(
-              // ScopedTx does not support column projection; explicit tenant
-              // filter upholds ADR-0020 I-1 at this single call site.
+              // ADR-0020 I-1: ScopedTx does not support column projection; explicit tenant filter at this single call site.
               and(
                 eq(schema.brands.tenantId, requireTenantContext().tenantId),
                 eq(schema.brands.id, brandId),
@@ -105,10 +104,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             .limit(1)
         : Promise.resolve([] as const);
 
-      // D-4a-10: stop-list overlay (RESEARCH.md Pattern 2). Three parallel
-      // scoped selects; stopped items are filtered before any per-item join
-      // queries fire so the size + modifier-group selects don't pay for rows
-      // we throw away.
+      // D-4a-10: stop-list overlay — filter stopped items before per-item joins fire to avoid wasted size/modifier work.
       const [categoriesRows, allItemsRows, stopListRows, brandRows] = await Promise.all([
         scoped.selectFrom(
           schema.menuCategories,
@@ -245,6 +241,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       if (!row) return null;
       // D-4a-10: stopped items must not surface via the per-item read either.
       if (stopListRows.length > 0) return null;
+
       const [sizes, links] = await Promise.all([
         scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
         scoped.selectFrom(
@@ -315,30 +312,20 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     input: UpsertItemRow,
   ): Promise<{ id: string; slugChanged?: { oldSlug: string } }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      // Drizzle's `$inferInsert` wants a mutable array; clone from readonly.
       const photos: MenuItemPhoto[] = [...input.photos];
 
-      // Two upsert keys exist: (a) id (when supplied — operator edits an
-      // existing item, slug may change) and (b) (tenant_id, slug) for new
-      // creates and re-imports. Using (tenant_id, slug) as the on-conflict
-      // target when the id is also supplied breaks the slug-rename path
-      // (D-4a-04): the conflict target wouldn't match the new slug, so
-      // Postgres would try a fresh INSERT and fail on the id primary-key
-      // constraint. Split the two paths.
+      // D-4a-04: id-based path and (tenant_id, slug)-based path are split so a
+      // slug rename does not trigger an id-PK conflict on the upsert.
       let oldSlug: string | null = null;
       let rowId: string;
 
       if (input.id) {
-        // Path A — explicit id supplied: UPDATE WHERE id = input.id.
         const existing = await scoped
           .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
           .limit(1);
         oldSlug = existing[0]?.slug ?? null;
 
         if (existing.length === 0) {
-          // Operator supplied an id that doesn't exist yet — fall through to
-          // the insert path (treat as a "create with stable id" — useful for
-          // CSV imports where the operator provides the deterministic uuid).
           const [row] = await scoped
             .insertInto(schema.menuItems, {
               id: input.id,
@@ -398,8 +385,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           rowId = row.id;
         }
       } else {
-        // Path B — no id: INSERT … ON CONFLICT (tenant_id, slug) DO UPDATE
-        // (slug is the natural key for re-imports of the same source row).
         const [row] = await scoped
           .insertInto(schema.menuItems, {
             brandId: input.brandId ?? null,
@@ -452,8 +437,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
 
       if (oldSlug !== null && oldSlug !== input.slug) {
-        // D-4a-04: slug change → alias the prior slug. Idempotent via
-        // onConflictDoNothing — old slug may already exist from a rename cycle.
+        // D-4a-04: slug change → alias the prior slug (idempotent on rename cycle).
         await scoped
           .insertInto(schema.menuItemSlugAliases, {
             itemId: rowId,
@@ -573,8 +557,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      // Look up the item slug FIRST — the outbox event payload carries it
-      // for downstream consumers that key by slug (e.g. SEO cache busts).
+      // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
       const existingItem = await scoped
         .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
         .limit(1);
@@ -598,7 +581,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       if (inserted[0]) {
         return { id: inserted[0].id, itemSlug };
       }
-      // Conflict path: an entry already exists for this (tenant, item).
       const existing = await scoped
         .selectFrom(schema.menuStopList, eq(schema.menuStopList.itemId, input.itemId))
         .limit(1);
@@ -619,10 +601,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       )[0];
       const itemSlug = itemRow?.slug ?? null;
 
-      // ScopedTx forbids DELETE by design; the unstop path is the only
-      // sanctioned hard-delete on a tenant-scoped table — migration 0040
-      // grants the privilege explicitly. The two-column predicate satisfies
-      // RLS + the ScopedTx auto-filter contract.
+      // Sole sanctioned hard DELETE on a tenant-scoped table — migration 0040 grants the privilege.
+      // Two-column predicate satisfies RLS + ScopedTx auto-filter contract (ADR-0020 I-1).
       const ctx = requireTenantContext();
       const result = await tx
         .delete(schema.menuStopList)
@@ -640,9 +620,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null> {
     return this.db.withTenant(async (tx) => {
-      // `tenants` is not in TenantScopedTable (id IS the tenant id, no
-      // tenant_id FK column). Direct tx.select with explicit equality is
-      // the established pattern (ADR-0020 I-1; mirrors `findCurrentTenant`).
+      // tenants is not in TenantScopedTable (id IS the tenant id); direct tx.select with explicit eq() is the ADR-0020 I-1 pattern.
       const rows = await tx
         .select({ menuFirstPublishedAt: schema.tenants.menuFirstPublishedAt })
         .from(schema.tenants)
@@ -652,24 +630,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  /**
-   * D-4a-06: atomic publish-finalize. Stamps
-   * `tenants.menu_first_published_at` if NULL and emits the
-   * `MenuFirstPublishedV1` event; otherwise emits `MenuRepublishedV1`. Both
-   * tenants-row write and outbox insert happen in the same transaction so a
-   * concurrent publish cannot emit the first-publish event twice
-   * (T-04a-06-05). `tenants` is platform-level (no tenant_id column); the
-   * `eq(tenants.id, tenantId)` predicate is the canonical ADR-0020 I-1
-   * pattern for self-iso queries on the tenants table.
-   */
+  // D-4a-06: tenants-row stamp + outbox insert in one tx so a concurrent publish cannot double-emit MenuFirstPublishedV1 (T-04a-06-05).
   async finalizeMenuPublish(input: {
     tenantId: TenantId;
     version: number;
   }): Promise<{ isFirstPublish: boolean }> {
     const { tenantId, version } = input;
-    // Choose ALS-bound vs explicit binding depending on caller context.
-    // `withTenant` requires an active ALS frame; `withTenantId` requires the
-    // ALS frame to be ABSENT. Probe ALS once at the boundary.
+    // withTenant requires an active ALS frame, withTenantId requires it absent — probe once at boundary.
     const hasAls = ((): boolean => {
       try {
         requireTenantContext();
@@ -722,19 +689,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  // ── Phase 4b D-4b-07 read surface ──
-
   async listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const where =
         parentId === null
           ? isNull(schema.menuCategories.parentId)
           : eq(schema.menuCategories.parentId, parentId);
-      const rows = await scoped.selectFrom(schema.menuCategories, where).orderBy(
-        // sortOrder ASC then slug ASC for stable ordering.
-        asc(schema.menuCategories.sortOrder),
-        asc(schema.menuCategories.slug),
-      );
+      const rows = await scoped
+        .selectFrom(schema.menuCategories, where)
+        .orderBy(asc(schema.menuCategories.sortOrder), asc(schema.menuCategories.slug));
       return rows.map<CategoryListRow>((r) => ({
         id: r.id,
         parentId: r.parentId,
@@ -756,8 +719,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }): Promise<{ rows: ItemListRow[]; total: number }> {
     return this.db.withTenant(async (tx, scoped) => {
       const ctx = requireTenantContext();
-      // Build the status predicate. 'active' (the default) excludes archived;
-      // 'all' includes everything; specific values match exactly.
       const statusPred = ((): ReturnType<typeof eq> | undefined => {
         if (input.status === 'all') return undefined;
         if (input.status === 'active') return ne(schema.menuItems.status, 'archived');
@@ -782,7 +743,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             )
           : undefined;
 
-      // Paged item rows.
       const rows = await scoped
         .selectFrom(schema.menuItems, composed)
         .orderBy(asc(schema.menuItems.sortOrder), asc(schema.menuItems.slug));
@@ -794,11 +754,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
       const itemIds = sliced.map((r) => r.id);
       const categoryIds = Array.from(new Set(sliced.map((r) => r.categoryId)));
-      // Load categories (own + parents) so categoryName + parentCategoryName
-      // are available. Inline an explicit empty literal typed against the
-      // table's `$inferSelect` so the `[]` branch keeps the same row shape
-      // as the populated branch — otherwise TS unifies with the broader
-      // `ScopedTx.selectFrom` union and `.id` lookup loses its type.
+      // Empty-literal `[]` branch must be typed against `$inferSelect`; otherwise TS unifies with the broader ScopedTx union and `.id` loses its type.
       type CategoryRow = typeof schema.menuCategories.$inferSelect;
       const categoryRows: CategoryRow[] =
         categoryIds.length > 0
@@ -827,8 +783,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const sizeByItem = new Set(sizeRows.map((s) => s.menuItemId));
       const stopByItem = new Map(stopRows.map((s) => [s.itemId, s.stoppedAt]));
 
-      // Side-effect-free check that ScopedTx is doing its job — assertion is
-      // implicit in the table reads above; no raw tx used here.
       void ctx;
       void tx;
 
@@ -1017,7 +971,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const firstPublishedAt = firstPublishedRows[0]?.at ?? null;
 
-      // Items with draft / modified / archived disposition.
       const items = await scoped.selectFrom(schema.menuItems);
       const entries: DraftDiffEntryRow[] = [];
       for (const it of items) {
@@ -1034,15 +987,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         }
       }
       const totalCount = entries.length;
-      // D-4b-07 / Open Question #5: draft-diff is items-only for MVP-1. The
-      // 100-row cap leaves headroom for future expansion to categories +
-      // modifier groups without changing the response shape.
       const sliced = entries.slice(0, 100);
       return { items: sliced, totalCount };
     });
   }
-
-  // ── Phase 4b D-4b-07 archive surface ──
 
   async archiveCategory(id: string): Promise<{ found: boolean }> {
     return this.db.withTenant(async (_tx, scoped) => {

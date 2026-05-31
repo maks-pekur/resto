@@ -7,14 +7,6 @@ import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { CategoriesTableClient } from './categories-table-client';
 
-/**
- * Plan 04b-05 Task 3 — Categories list RSC page.
- *
- * Pattern: settings/page.tsx (auth probe + content). Catalog reads go
- * through `apiFetchInternal` (InternalTokenGuard, NOT BA session) per
- * Pattern S1. Empty / forbidden states use the shared `<EmptyState>`.
- */
-
 interface MeResponse {
   readonly kind?: string;
   readonly tenantId?: string;

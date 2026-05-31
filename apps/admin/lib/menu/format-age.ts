@@ -1,12 +1,3 @@
-/**
- * Russian "X ago" formatter for the AutoSaveIndicator (D-4b-02). Three
- * buckets only — UI-SPEC §Auto-Save Indicator Spec. No external time-ago
- * library to keep the client bundle small.
- *
- * Floors at "0с назад" for sub-second values; days are reported in hours
- * (`24ч назад`) — anything older than an hour signals a hung session, not
- * a usable timestamp.
- */
 export const formatAge = (timestampMs: number, now: number = Date.now()): string => {
   const diff = Math.max(0, now - timestampMs);
   if (diff < 60_000) {

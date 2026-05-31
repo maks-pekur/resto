@@ -13,23 +13,6 @@ import type { Status } from '@/lib/menu/types';
 import { ItemsTableClient } from './items-table-client';
 import { ItemsFilterBarClient } from './items-filter-bar-client';
 
-/**
- * Plan 04b-06 Task 2 — Items list RSC page.
- *
- * Reads filter state from URL search params, fetches `/internal/v1/catalog/items`
- * with the right query, and hands the rows to the client island. The
- * categories list comes along in parallel for the filter dropdown.
- *
- * D-03 default = all statuses except `archived`; the backend already
- * defaults that way, so we OMIT the status query when the sentinel
- * `'all-except-archived'` is active. The operator opts into archived
- * explicitly via the status filter.
- *
- * Pagination: 50 per page, offset = (page - 1) * 50. URL is the single
- * source of truth — `?status=&category=&q=&page=` survives a refresh and a
- * shared bookmark.
- */
-
 const PAGE_SIZE = 50;
 
 interface MeResponse {
@@ -76,8 +59,7 @@ const buildItemsQuery = (params: {
   readonly offset: number;
 }): string => {
   const search = new URLSearchParams();
-  // D-03 default — backend excludes archived by default, so omit when
-  // the sentinel is active. Otherwise pass the exact status to the api.
+  // D-03: backend default already excludes archived; omit `status` to keep that behaviour.
   if (params.status !== 'all-except-archived') {
     search.set('status', params.status);
   }

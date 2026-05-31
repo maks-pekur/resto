@@ -4,11 +4,6 @@ import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import { MenuItemNotFoundError } from '../domain/errors';
 import type { ItemDetailResponse } from './dto';
 
-/**
- * Phase 4b D-4b-07: load a single item with embedded sizes + modifierGroupIds
- * for the editor page. RLS-scoped via `CatalogRepository.getItemById`
- * (ADR-0020 I-1).
- */
 @Injectable()
 export class GetItemService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}

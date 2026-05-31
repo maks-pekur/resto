@@ -25,12 +25,6 @@ import {
 } from './_columns';
 import { tenants } from './tenants';
 
-/**
- * Menu category — a grouping of items, e.g. "Pizza", "Drinks".
- *
- * Naming is stored as `LocalizedText` (`{ en: ..., ru: ... }`) so the
- * qr-menu can render in whichever locale the customer's device negotiates.
- */
 export const menuCategories = pgTable(
   'menu_categories',
   {
@@ -42,7 +36,6 @@ export const menuCategories = pgTable(
     name: jsonb('name').$type<LocalizedText>().notNull(),
     description: jsonb('description').$type<LocalizedText>(),
     sortOrder: integer('sort_order').notNull().default(0),
-    // D-4b-07: status enables same badge surface as menu_items + archive flow.
     status: text('status').notNull().default('draft'),
     ...timestampsColumns(),
   },
@@ -52,7 +45,7 @@ export const menuCategories = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    // D-4a-01 iiko `Группа.parent_group` tree alignment. ADR-0020 I-2: composite tenant FK.
+    // ADR-0020 I-2: composite tenant FK on the parent reference.
     foreignKey({
       name: 'menu_categories_parent_fk',
       columns: [table.parentId, table.tenantId],
@@ -66,12 +59,7 @@ export const menuCategories = pgTable(
   ],
 );
 
-/**
- * Photo attached to a menu item. Stored as a JSONB array on
- * `menu_items.photos` (D-4a-02). The S3 key is opaque — never a URL — and
- * gets converted to a presigned GET URL at read time by the catalog
- * repository.
- */
+// S3 key is opaque — never a URL — and is presigned at read time by the catalog repository.
 export interface MenuItemPhoto {
   s3Key: string;
   sortOrder: number;
@@ -81,11 +69,7 @@ export interface MenuItemPhoto {
   isPrimary?: boolean;
 }
 
-/**
- * Menu item — a single sellable unit (with potential variants and
- * modifiers attached). `status = 'published'` is the only state visible to
- * the public read endpoints.
- */
+// `status = 'published'` is the only state visible to the public read endpoints.
 export const menuItems = pgTable(
   'menu_items',
   {
@@ -98,20 +82,17 @@ export const menuItems = pgTable(
     description: jsonb('description').$type<LocalizedText>(),
     basePrice: money('base_price').notNull(),
     currency: text('currency').notNull(),
-    /** D-4a-02: photos JSONB array supersedes the single `image_s3_key` column. */
     photos: jsonb('photos')
       .$type<MenuItemPhoto[]>()
       .notNull()
       .default(sql`'[]'::jsonb`),
-    /** Allergen tags (e.g. `gluten`, `dairy`, `nuts`). Mandatory for restaurant disclosure. */
     allergens: text('allergens').array(),
-    // D-4a-03: structured БЖУ (per 100 g, all nullable until a recipe lands).
+    // Per 100g, all nullable until a recipe lands.
     proteins: numeric('proteins', { precision: 5, scale: 2 }),
     fats: numeric('fats', { precision: 5, scale: 2 }),
     carbs: numeric('carbs', { precision: 5, scale: 2 }),
     kcal: smallint('kcal'),
     nutritionEstimated: boolean('nutrition_estimated').notNull().default(false),
-    // D-4a-01: provenance — how this item came into the catalog.
     source: text('source').notNull().default('manual'),
     needsReview: boolean('needs_review').notNull().default(false),
     sourceExternalId: text('source_external_id'),
@@ -149,15 +130,8 @@ export const menuItems = pgTable(
   ],
 );
 
-/**
- * Per-item size for a menu item: e.g. "Small / Medium / Large", "330ml / 500ml".
- *
- * D-4a CAT-05: renamed from `menu_variants` to align with iiko `NSizeModel`.
- * `price` is the ABSOLUTE per-size price (not a delta on top of base price),
- * matching iiko `NPSizePriceModel.price.current_price` semantics — see
- * SCHEMA-MAP §Q2. Each item must have at most one default size; enforced
- * with a partial unique index.
- */
+// `price` is the ABSOLUTE per-size price, not a delta on base (iiko NPSizePriceModel.price.current_price semantics).
+// At most one default size per item — enforced by a partial unique index below.
 export const menuItemSizes = pgTable(
   'menu_item_sizes',
   {
@@ -190,14 +164,6 @@ export const menuItemSizes = pgTable(
   ],
 );
 
-/**
- * Modifier group (e.g. "Toppings", "Sauce", "Spice level"). Constrains
- * how many options a customer can pick at order time via
- * `min_selectable` and `max_selectable`.
- *
- * D-4a CAT-04: renamed from `menu_modifiers` to align with iiko
- * `Группа модификаторов` — see SCHEMA-MAP §Q3.
- */
 export const menuModifierGroups = pgTable(
   'menu_modifier_groups',
   {
@@ -224,14 +190,8 @@ export const menuModifierGroups = pgTable(
   ],
 );
 
-/**
- * One option within a modifier group (e.g. "Mozzarella" under "Toppings").
- * `priceDelta` is added to the item base price when selected.
- *
- * D-4a CAT-04 (iiko alignment): `defaultAmount` mirrors
- * `NPModifierModel.default_amount`; `freeAmount` mirrors
- * `NPModifierModel.free_of_charge_amount`.
- */
+// `priceDelta` is added to the item base price when selected.
+// `defaultAmount` / `freeAmount` mirror iiko NPModifierModel.{default_amount,free_of_charge_amount}.
 export const menuModifierOptions = pgTable(
   'menu_modifier_options',
   {
@@ -266,13 +226,6 @@ export const menuModifierOptions = pgTable(
   ],
 );
 
-/**
- * Junction: which modifier groups apply to which item, with item-local
- * sort order on the menu UI.
- *
- * D-4a CAT-04: renamed from `menu_item_modifiers`; `modifierId` →
- * `modifierGroupId` follows the parent rename.
- */
 export const menuItemModifierGroups = pgTable(
   'menu_item_modifier_groups',
   {
@@ -306,12 +259,8 @@ export const menuItemModifierGroups = pgTable(
   ],
 );
 
-/**
- * D-4a-10: stop-list overlay. Separate table (researcher recommendation in
- * SCHEMA-MAP §Q5) — keeps audit trail (`stopped_at`, `stopped_by_user_id`,
- * `reason`) without bloating `menu_items` and stays multi-replica consistent.
- * Read-time filtering wires in plan 06 inside `loadPublishedMenu`.
- */
+// D-4a-10: stop-list overlay is a separate table to keep the audit trail and stay multi-replica consistent.
+// Read-time filtering happens in `loadPublishedMenu`.
 export const menuStopList = pgTable(
   'menu_stop_list',
   {

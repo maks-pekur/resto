@@ -103,14 +103,12 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
     expect(res).toEqual({ error: null, success: true });
     const postCalls = postCallsOf();
     expect(postCalls).toHaveLength(2);
-    // A.sortOrder was 0 → now 1 (B's old order).
     expect(postCalls[0]?.body).toEqual({
       id: A,
       name: { ru: 'Кофе' },
       parentId: PARENT,
       sortOrder: 1,
     });
-    // B.sortOrder was 1 → now 0 (A's old order).
     expect(postCalls[1]?.body).toEqual({
       id: B,
       name: { ru: 'Чай' },
@@ -143,7 +141,6 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
       { id: A, direction: 'up' },
     );
     expect(res).toEqual({ error: null, success: true });
-    // Only the GET should have fired.
     expect(apiFetchInternalMock).toHaveBeenCalledTimes(1);
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
@@ -207,7 +204,6 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
     );
     expect(res.error).toMatch(/Серверная ошибка/u);
     expect(res.success).toBe(false);
-    // Only 1 GET + 1 failed POST — second POST short-circuits.
     expect(apiFetchInternalMock).toHaveBeenCalledTimes(2);
   });
 });

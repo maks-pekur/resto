@@ -3,18 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 
-/**
- * Plan 04b-06 Task 1 — toggle an item's stop-list state.
- *
- * D-11 + D-12: stop-list is runtime-state, not a draft/publish dance.
- * Click = instant publish. POST puts the item ON the stop-list (paused);
- * DELETE removes it (back to published). Reason stays null per D-13
- * (UI surface for reason deferred to v2; schema column stays nullable).
- *
- * Pattern S8: revalidatePath layout so the sticky publish bar diff count
- * and any rendered status badges refresh after the mutation.
- */
-
 interface ProblemDetails {
   readonly code?: string;
   readonly detail?: string;

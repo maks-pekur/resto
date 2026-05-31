@@ -9,23 +9,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-/**
- * Indented category dropdown (D-4b-01, RESEARCH.md Pattern 5).
- *
- * Two modes:
- *  - `parent-picker`: used in the category create/edit form. The first
- *    option is "— Без родителя —" (= top-level). Existing child categories
- *    (parentId !== null) are rendered disabled with a muted "(уже является
- *    подкатегорией)" label so the operator cannot pick them as a parent —
- *    enforcing depth ≤ 2 (D-4b-01). Zod refine in `zod-schemas.ts` is the
- *    server-side belt to this client-side suspender.
- *  - `item-picker`: used in the item editor (Plan 06) and items-list
- *    filter. All options selectable; children visually indented with `↳ `
- *    and `pl-8` so the operator sees the hierarchy at a glance.
- *
- * Russian copy per D-05 single-locale MVP-1.
- */
-
 const NONE_VALUE = '__none__';
 
 export interface CategorySelectOption {

@@ -12,8 +12,6 @@ vi.mock('@/app/dashboard/(workspace)/menu/categories/archive-category-action', (
 vi.mock('@/app/dashboard/(workspace)/menu/categories/reorder-category-action', () => ({
   reorderCategoryAction: reorderMock,
 }));
-// The form client and upsert action are not exercised in these specs.
-// We stub them to keep render fast and avoid pulling server-only modules.
 vi.mock('@/app/dashboard/(workspace)/menu/categories/category-form-client', () => ({
   CategoryFormClient: () => <div data-testid="category-form-stub" />,
 }));
@@ -86,8 +84,6 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
 
   it('renders parent rows then their children indented with the ↳ prefix', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
-    // Напитки appears in its own row + as parent label of two children;
-    // assert at-least-one match and the prefixed-child cells are unique.
     expect(screen.getAllByText('Напитки').length).toBeGreaterThan(0);
     expect(screen.getByText('↳ Кофе')).toBeInTheDocument();
     expect(screen.getByText('↳ Чай')).toBeInTheDocument();
@@ -104,19 +100,13 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     const toggle = screen.getByRole('button', { name: /Показать архив/u });
     fireEvent.click(toggle);
     expect(screen.getByText('Снэки')).toBeInTheDocument();
-    // Toggle re-labels itself
     expect(screen.getByRole('button', { name: /Скрыть архив/u })).toBeInTheDocument();
   });
 
   it('hides ↑ on the first parent row and ↓ on the last visible parent row', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
-    // The first parent (Напитки) should NOT have a "Переместить выше".
-    // We scope the assertion to the Напитки row to avoid colliding with
-    // child rows. Children of Напитки have their own up/down logic; the
-    // first child (Кофе) also has no up button.
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
     expect(napitkiRow.querySelector('[aria-label="Переместить выше"]')).toBeNull();
-    // Last visible parent (Десерты — Снэки is archived/hidden) → no ↓
     const dessertRow = screen.getByTestId(`category-row-${PARENT_B}`);
     expect(dessertRow.querySelector('[aria-label="Переместить ниже"]')).toBeNull();
   });
@@ -146,7 +136,6 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
 
   it('clicking ↓ on a row calls reorderCategoryAction(id, "down")', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
-    // Напитки is the first parent — only has ↓
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
     const downBtn = napitkiRow.querySelector('[aria-label="Переместить ниже"]');
     expect(downBtn).not.toBeNull();

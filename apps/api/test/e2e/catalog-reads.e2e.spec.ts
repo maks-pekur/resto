@@ -33,8 +33,6 @@ const provisionTenant = async (
   return res.json();
 };
 
-// Phase 4b D-4b-07: covers the 7 new GET endpoints + 2 new PATCH archive
-// endpoints landed on `internal-catalog.controller.ts`.
 suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   let stack: RealStack;
 
@@ -59,11 +57,9 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     await stopRealStack(stack);
   });
 
-  // ── GET /categories ──
   it('GET /categories returns own-tenant categories filtered by parentId and sorted by sortOrder', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
 
-    // Seed: two top-level categories with explicit sortOrder + one child.
     const top1 = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/categories',
@@ -87,7 +83,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     });
     expect(child.statusCode).toBe(200);
 
-    // Top-level read.
     const topRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/categories',
@@ -98,11 +93,9 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
       items: { slug: string; sortOrder: number; parentId: string | null; status: string }[];
     }>();
     const topSlugs = topBody.items.filter((i) => i.parentId === null).map((i) => i.slug);
-    // sortOrder=1 (cat-a-1) comes before sortOrder=2 (cat-a-2).
     expect(topSlugs.indexOf('cat-a-1')).toBeLessThan(topSlugs.indexOf('cat-a-2'));
     expect(topBody.items.every((i) => i.status === 'draft')).toBe(true);
 
-    // Child read (parentId filter).
     const childRes = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/categories?parentId=${parentId}`,
@@ -116,7 +109,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(childBody.items.every((i) => i.parentId === parentId)).toBe(true);
   }, 60_000);
 
-  // ── GET /items + GET /items/:id ──
   it('GET /items returns thin rows with hasSizes flag and respects status filter', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const categoryRes = await stack.app.inject({
@@ -143,7 +135,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(itemRes.statusCode).toBe(200);
     const itemId = itemRes.json<{ id: string }>().id;
 
-    // Add a size so hasSizes flips to true.
     const sizeRes = await stack.app.inject({
       method: 'POST',
       url: '/internal/v1/catalog/item-sizes',
@@ -157,7 +148,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     });
     expect(sizeRes.statusCode).toBe(200);
 
-    // Default filter is 'active' (excludes archived but includes draft).
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/items',
@@ -279,7 +269,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
 
-  // ── GET /modifier-groups + GET /modifier-groups/:id ──
   it('GET /modifier-groups returns option-count and usage-count', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const groupRes = await stack.app.inject({
@@ -358,7 +347,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(res.statusCode).toBe(404);
   }, 60_000);
 
-  // ── GET /stop-list ──
   it('GET /stop-list surfaces stoppedAt per item, sorted DESC', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const catRes = await stack.app.inject({
@@ -403,7 +391,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(entry?.stoppedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   }, 60_000);
 
-  // ── GET /draft-diff ──
   it('GET /draft-diff returns unpublishedCount and capped items', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const res = await stack.app.inject({
@@ -422,7 +409,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(body.items.length).toBeLessThanOrEqual(100);
   }, 60_000);
 
-  // ── PATCH archive ──
   it('PATCH /categories/:id/archive flips status to archived (idempotent on re-call)', async () => {
     const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const catRes = await stack.app.inject({
@@ -445,7 +431,6 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     });
     expect(arch2.statusCode).toBe(204);
 
-    // Verify via list — the row should still be returned with status='archived'.
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/categories',

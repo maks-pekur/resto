@@ -1,15 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 
-/**
- * Plan 04b-06 Task 2 — Items list RSC page.
- *
- * Spec scope: RSC builds the correct query string for the
- * `/internal/v1/catalog/items` call from URL search params, and skips the
- * `status` query when the operator picked the default
- * 'all-except-archived' (Plan 02 backend default).
- */
-
 const { apiFetchMock, apiFetchInternalMock, redirectMock } = vi.hoisted(() => ({
   apiFetchMock: vi.fn(),
   apiFetchInternalMock: vi.fn(),
@@ -22,8 +13,6 @@ vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 vi.mock('@/lib/api-server-internal', () => ({ apiFetchInternal: apiFetchInternalMock }));
 vi.mock('next/navigation', () => ({ redirect: redirectMock }));
 
-// Replace the client islands with placeholder div components — we are
-// asserting on the server-side query construction only.
 vi.mock('@/app/dashboard/(workspace)/menu/items/items-table-client', () => ({
   ItemsTableClient: ({ items }: { items: readonly { id: string }[] }) => (
     <div data-testid="items-table-stub" data-count={items.length} />

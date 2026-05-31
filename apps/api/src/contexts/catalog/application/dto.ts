@@ -98,10 +98,6 @@ export const StopItemInputSchema = z.object({
 export type StopItemInput = z.infer<typeof StopItemInputSchema>;
 export class StopItemInputDto extends createZodDto(StopItemInputSchema) {}
 
-// ────────────────────────────────────────────────────────────────────────────
-// Phase 4b D-4b-07 — read-side DTOs for the admin UI surface.
-// ────────────────────────────────────────────────────────────────────────────
-
 const CategoryStatusSchema = z.enum(['draft', 'published', 'archived']);
 const ItemStatusSchema = z.enum(['draft', 'published', 'archived']);
 
@@ -254,22 +250,10 @@ export const DraftDiffResponseSchema = z.object({
 export type DraftDiffResponse = z.infer<typeof DraftDiffResponseSchema>;
 export class DraftDiffResponseDto extends createZodDto(DraftDiffResponseSchema) {}
 
-// ────────────────────────────────────────────────────────────────────────────
-// Phase 4b CAT-03 — direct-PUT photo upload (presigned URL handshake).
-// ────────────────────────────────────────────────────────────────────────────
-
-/**
- * Server-side allowlist for browser direct-PUT. Only formats the qr-menu
- * renderer is willing to embed (RES-92 / RESEARCH.md Pattern 4). Adding a
- * new format requires a parallel update to the public read path so the
- * S3-key extension matches.
- */
+// Browser direct-PUT allowlist; must stay in sync with the qr-menu renderer's accepted formats (RES-92).
 export const PhotoUploadContentTypeSchema = z.enum(['image/jpeg', 'image/png', 'image/webp']);
 
-// 5 MiB cap — large enough for any restaurant photo at web-render quality,
-// small enough that one malicious PUT cannot exhaust the bucket budget.
-// SigV4 binds Content-Length into the signed URL so the browser cannot lie
-// after the fact.
+// SigV4 binds Content-Length into the signed URL, so 5 MiB cap is enforced by S3, not just trust.
 const MAX_PHOTO_BYTES = 5_242_880;
 
 export const PhotoUploadUrlInputSchema = z.object({

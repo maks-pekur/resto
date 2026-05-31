@@ -13,17 +13,6 @@ import {
 import { CategorySelect } from '@/components/menu/category-select';
 import type { ItemListStatusFilter } from '@/lib/menu/zod-schemas';
 
-/**
- * Plan 04b-06 Task 2 — Items list filter bar.
- *
- * URL is the source of truth: each change pushes a new querystring via
- * `router.push`. Search input is debounced 300ms (mirrors
- * brand-form-client.tsx slug-availability pattern); the Select widgets
- * push immediately. Every filter change resets `page=1` so the operator
- * is not stranded on an out-of-range offset after narrowing the result
- * set.
- */
-
 const DEBOUNCE_MS = 300;
 const ALL_CATEGORIES_VALUE = '__all__';
 
@@ -74,16 +63,11 @@ export function ItemsFilterBarClient({
   currentFilters,
 }: ItemsFilterBarClientProps): React.ReactElement {
   const router = useRouter();
-  // useSearchParams() is referenced to opt-in to dynamic rendering — the
-  // RSC parent has already parsed the params, so we read directly from
-  // `currentFilters`. Calling the hook keeps the segment marked dynamic
-  // and avoids a stale-cache foot-gun on prefetched links.
+  // useSearchParams() opt-in keeps this segment dynamic so prefetched links don't serve stale filter state.
   useSearchParams();
 
   const [localQ, setLocalQ] = React.useState(currentFilters.q);
   const requestId = React.useRef(0);
-  // Keep latest filters in a ref so the debounce closure doesn't capture
-  // a stale snapshot after the operator changes the Select widgets.
   const latestRef = React.useRef(currentFilters);
   React.useEffect(() => {
     latestRef.current = currentFilters;

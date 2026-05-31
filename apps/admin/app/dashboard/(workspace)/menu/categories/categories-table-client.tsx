@@ -31,19 +31,6 @@ import { reorderCategoryAction } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
 import type { CategoryListItemApi } from './page';
 
-/**
- * Plan 04b-05 Task 3 — Categories table client island.
- *
- * Renders the parent → child indented flat list per UI-SPEC §Categories
- * page (D-4b-01 caps depth at 2). Archive uses an AlertDialog with the
- * exact UI-SPEC §Destructive actions row-1 copy. Reorder buttons hide at
- * row boundaries (top row has no ↑, bottom row has no ↓).
- *
- * The "Показать архив / Скрыть архив" toggle filters client-side because
- * the backend list endpoint returns all statuses (D-03 default = all
- * except archived).
- */
-
 export interface CategoriesTableClientProps {
   readonly categories: readonly CategoryListItemApi[];
 }

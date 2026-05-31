@@ -8,10 +8,6 @@ vi.mock('@/app/dashboard/(workspace)/menu/categories/upsert-category-action', ()
   upsertCategoryAction: upsertMock,
 }));
 
-// React 19's `useActionState` calls the action in a transition; in unit
-// tests we drive the state machine deterministically via a thin shim that
-// exposes `submit()` synchronously. We also stub `CategorySelect` so the
-// portal-bound Radix Select isn't required in JSDOM.
 vi.mock('@/components/menu/category-select', () => ({
   CategorySelect: ({
     onChange,
@@ -148,10 +144,6 @@ describe('CategoryFormClient (Plan 04b-05 Task 3)', () => {
         onClose={vi.fn()}
       />,
     );
-    // The stubbed CategorySelect exposes a data-value attribute but the
-    // real check is that the upstream filter strips the current id from
-    // `selectOptions`. We verify behavioural surface: the hidden id input
-    // for the edited row is present.
     const hiddenId = document.querySelector<HTMLInputElement>('input[type="hidden"][name="id"]');
     expect(hiddenId?.value).toBe(category.id);
   });

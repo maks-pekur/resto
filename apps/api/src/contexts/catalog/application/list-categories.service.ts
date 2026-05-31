@@ -3,12 +3,6 @@ import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { CategoryListResponse } from './dto';
 
-/**
- * Phase 4b D-4b-07: list categories for the admin UI. Filters by parentId
- * (null = top-level); ordering is sortOrder ASC then slug ASC. RLS
- * double-enforcement happens inside `CatalogRepository.listCategoriesByParent`
- * via `ScopedTx` (ADR-0020 I-1).
- */
 @Injectable()
 export class ListCategoriesService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}

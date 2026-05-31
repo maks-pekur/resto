@@ -20,19 +20,6 @@ const isRetryableServerError = (status: number): boolean => status >= 500 && sta
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
-/**
- * `fetch` wrapper enforcing apps/CLAUDE.md network rules for the internal
- * service-to-service channel (operator admin → api `/internal/v1/*`):
- *  - `AbortSignal.timeout(timeoutMs)` on every server-side request
- *    (10s for GET, 30s for mutations). RESEARCH.md Pitfall #7: the
- *    previous implementation hung indefinitely on a slow upstream,
- *    exhausting RSC render handles.
- *  - One retry on idempotent GET 5xx (500-504), ~500ms backoff.
- *  - Mutations are NEVER retried (POST/PATCH/DELETE).
- *
- * Mirrors the helper in apps/admin/lib/api-server.ts; kept in sync by hand
- * because the two callers have different cookie / org-resolution wiring.
- */
 const executeWithRetry = async (
   input: string,
   init: Omit<RequestInit, 'signal'>,
@@ -73,8 +60,6 @@ export const apiFetchInternal = async <T>(
       { isGet, timeoutMs: isGet ? TIMEOUT_GET_MS : TIMEOUT_MUTATION_MS },
     );
   } catch (err) {
-    // AbortError (timeout) and network errors collapse into the same shape
-    // callers already handle for non-2xx responses. Mirrors api-server.ts.
     if (err instanceof Error && (err.name === 'AbortError' || err.name === 'TimeoutError')) {
       return { status: 0, ok: false, data: null };
     }

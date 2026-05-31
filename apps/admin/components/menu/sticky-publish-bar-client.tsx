@@ -13,19 +13,7 @@ import type { DraftDiffEntry } from '@/lib/menu/types';
 import { PublishCountdownToast } from './publish-countdown-toast';
 import { StatusBadge } from './status-badge';
 
-/**
- * Client island for the sticky publish bar (D-09, D-4b-03).
- *
- * Toast id contract (RESEARCH §Pattern 2 + Pitfall #3): every toast call
- * for the publish flow uses the constant id `'publish-countdown'` so the
- * count-up countdown is replaced in place by the success / info / error
- * outcome rather than stacking multiple toasts.
- *
- * Re-click protection: while a publish countdown is active, the
- * "Опубликовать меню" button is disabled and wrapped in a Tooltip
- * explaining the operator should cancel from the toast (D-4b-03).
- */
-
+// Constant toast id so countdown / success / error replace in place via Sonner instead of stacking.
 const TOAST_ID = 'publish-countdown' as const;
 const SUCCESS_AUTO_DISMISS_MS = 3_000;
 

@@ -3,17 +3,6 @@
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 
-/**
- * Plan 04b-06 Task 1 — soft-archive an item (D-4b-07).
- *
- * Hard deletes are forbidden (ADR-0020 + Catalog domain policy). Archive
- * sets `status='archived'` server-side via the dedicated PATCH route.
- * Mirrors `archive-category-action.ts` shape from Plan 04b-05.
- *
- * Pattern S8: revalidatePath layout so the sticky bar diff count and the
- * items table (default filter excludes archived) refresh immediately.
- */
-
 interface ProblemDetails {
   readonly code?: string;
   readonly detail?: string;

@@ -104,7 +104,6 @@ describe('StickyPublishBarClient (D-4b-03, UI-SPEC §Sticky Publish Bar Spec)', 
     if (!errorCall) throw new Error('toast.error was not called');
     expect(errorCall[0]).toBe('Не удалось опубликовать — проверьте соединение');
     expect((errorCall[1] as { id: string }).id).toBe('publish-countdown');
-    // Button must be re-enabled after error
     expect(screen.getByRole('button', { name: 'Опубликовать меню' })).not.toBeDisabled();
   });
 

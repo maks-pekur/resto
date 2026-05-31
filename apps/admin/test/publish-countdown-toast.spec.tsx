@@ -39,7 +39,6 @@ describe('PublishCountdownToast (D-4b-03, UI-SPEC §Delayed-Publish Toast Spec)'
       vi.advanceTimersByTime(200);
     });
     expect(onElapse).toHaveBeenCalledTimes(1);
-    // Advance well past elapse; must not fire again.
     act(() => {
       vi.advanceTimersByTime(10_000);
     });

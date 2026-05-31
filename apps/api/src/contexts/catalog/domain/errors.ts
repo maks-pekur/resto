@@ -46,11 +46,7 @@ export class StopListItemNotFoundError extends Error {
   }
 }
 
-// Phase 4b D-4b-07. Archive services are idempotent on already-archived rows
-// (the behavior spec calls for no-op re-archive); these classes exist as a
-// defensive type-level slot for the controller's error mapping in case a
-// future caller wants strict mode. Left in the union so the exhaustive
-// switch in error-mapping.ts stays honest.
+// Kept in the union so error-mapping's exhaustive switch stays honest; archive services are idempotent today.
 export class MenuCategoryAlreadyArchivedError extends Error {
   readonly kind = 'MenuCategoryAlreadyArchivedError' as const;
   constructor(public readonly categoryId: string) {

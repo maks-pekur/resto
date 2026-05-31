@@ -1,19 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 
-/**
- * Plan 04b-06 Task 2 — ItemsTableClient
- *
- * Asserts:
- *  - Stop-list switch click calls toggleStopListAction with the right next
- *    value AND shows a success Sonner toast on ok (UI-SPEC §Stop-list switch).
- *  - On error: switch snaps back + an error Sonner toast surfaces.
- *  - Actions DropdownMenu → Archive opens an AlertDialog with the exact
- *    UI-SPEC §Destructive actions row-2 copy.
- *  - Pagination buttons disable at boundaries.
- *  - Price column renders 'от {basePrice}₽' when hasSizes=true.
- */
-
 const { toggleMock, archiveMock, toastSuccessMock, toastErrorMock, pushMock } = vi.hoisted(() => ({
   toggleMock: vi.fn(),
   archiveMock: vi.fn(),
@@ -106,7 +93,6 @@ describe('ItemsTableClient (Plan 04b-06 Task 2)', () => {
     render(
       <ItemsTableClient items={baseItems} totalCount={2} pagination={{ page: 1, pageSize: 50 }} />,
     );
-    // ITEM_A is published — switch label is "Добавить в стоп-лист"
     const sw = screen.getByLabelText('Добавить в стоп-лист');
     fireEvent.click(sw);
     await waitFor(() => {

@@ -1,14 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 
-/**
- * Plan 04b-06 Task 2 — ItemsFilterBarClient
- *
- * The filter bar drives URL state. Search is debounced 300ms (mirrors
- * brand-form-client.tsx slug-availability pattern). Status + category
- * selects push immediately. Every filter change resets `page=1`.
- */
-
 const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
 
 vi.mock('next/navigation', () => ({
@@ -16,8 +8,6 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
 }));
 
-// Use a thin stub for the Radix Select to keep the test synchronous
-// (mirrors the pattern used in category-select.spec.tsx).
 vi.mock('@/components/ui/select', () => {
   return {
     Select: ({

@@ -33,9 +33,6 @@ const provisionTenant = async (
   return res.json();
 };
 
-// Deterministic stub: records the inputs presignPut was called with so the
-// spec can assert ttlSeconds + tenant-scoped key shape without reaching for
-// MinIO. The presignGet leg keeps existing catalog-reads tests stable.
 const recorded: {
   s3Key: string;
   contentType: string;

@@ -75,23 +75,12 @@ const PublishCancelResponseSchema = z.object({
 });
 class PublishCancelResponseDto extends createZodDto(PublishCancelResponseSchema) {}
 
-/**
- * Internal catalog write surface. Used by the seed CLI to provision the
- * menu for design-partner restaurants. No public callers in MVP-1 — the
- * admin UI lands in MVP-2.
- *
- * Auth: shared `INTERNAL_API_TOKEN` via `InternalTokenGuard` (ADR-0012).
- * The seed CLI passes the same token the api enforces. Real per-user
- * IAM lands when MVP-2 introduces the admin UI; until then the
- * internal token is the only call site.
- */
 @ApiTags('catalog/internal')
 @Public()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/catalog')
 export class InternalCatalogController {
-  // CAT-06: 5_000 ms must mirror DelayedPublishService.#DELAY_MS so the
-  // operator-facing Undo window is documented in the response payload.
+  // CAT-06: must mirror DelayedPublishService.#DELAY_MS so the response documents the Undo window.
   private static readonly PUBLISH_CANCEL_AFTER_MS = 5_000;
 
   constructor(
@@ -105,7 +94,6 @@ export class InternalCatalogController {
     private readonly upsertItemSize: UpsertItemSizeService,
     @Inject(StopListService) private readonly stopList: StopListService,
     @Inject(DelayedPublishService) private readonly delayed: DelayedPublishService,
-    // Phase 4b D-4b-07 read + archive services.
     @Inject(ListCategoriesService) private readonly listCategoriesService: ListCategoriesService,
     @Inject(ListItemsService) private readonly listItemsService: ListItemsService,
     @Inject(GetItemService) private readonly getItemService: GetItemService,
@@ -117,7 +105,6 @@ export class InternalCatalogController {
     @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
     @Inject(ArchiveCategoryService) private readonly archiveCategoryService: ArchiveCategoryService,
     @Inject(ArchiveItemService) private readonly archiveItemService: ArchiveItemService,
-    // Phase 4b CAT-03 photo upload handshake.
     @Inject(GetPhotoUploadUrlService)
     private readonly getPhotoUploadUrlService: GetPhotoUploadUrlService,
   ) {}
@@ -198,18 +185,6 @@ export class InternalCatalogController {
     return wrap(() => this.stopList.unstop(itemId));
   }
 
-  /**
-   * Phase 4b CAT-03: presigned PUT handshake for browser direct-upload.
-   *
-   * Returns `{ uploadUrl, s3Key }` — the browser PUTs the photo bytes
-   * straight to S3 with the same `Content-Type` header (SigV4 binds it
-   * into the signature). The operator never picks the key; the service
-   * derives a tenant-scoped UUID prefix so an attacker cannot overwrite
-   * cross-tenant objects (T-04b-03-02 Tampering mitigation).
-   *
-   * Allowlist + size cap (5 MiB) enforced at the DTO boundary; TTL is
-   * 5 min per OWASP V12.
-   */
   @Post('photo-upload-url')
   @HttpCode(HttpStatus.OK)
   @ApiBody({ type: PhotoUploadUrlInputDto })
@@ -221,16 +196,6 @@ export class InternalCatalogController {
     return wrap(() => this.getPhotoUploadUrlService.execute(input));
   }
 
-  /**
-   * CAT-06: schedule a delayed publish. DelayedPublishService installs a
-   * 5-second in-memory timer per tenant; calling this endpoint a second
-   * time within the window auto-cancels the prior pending timer.
-   *
-   * Stateless on the controller side — the returned `cancel` handle from
-   * `schedule(tenantId)` is discarded because operator Undo runs through
-   * `DELETE /publish` calling `cancelPending(tenantId)` instead. The
-   * service's per-tenant Map is the source of truth.
-   */
   @Post('publish')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: PublishScheduledResponseDto })
@@ -247,11 +212,6 @@ export class InternalCatalogController {
     });
   }
 
-  /**
-   * CAT-06 Undo: cancel the currently-pending publish for this tenant if
-   * the 5-second window has not yet elapsed. `cancelled: false` means no
-   * pending timer exists (either it already fired or none was scheduled).
-   */
   @Delete('publish')
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: PublishCancelResponseDto })
@@ -264,8 +224,6 @@ export class InternalCatalogController {
       return Promise.resolve({ cancelled });
     });
   }
-
-  // ── Phase 4b D-4b-07 read endpoints ──
 
   @Get('categories')
   @HttpCode(HttpStatus.OK)
@@ -353,8 +311,6 @@ export class InternalCatalogController {
   getDraftDiff(): Promise<DraftDiffResponseDto> {
     return wrap(() => this.getDraftDiffService.execute());
   }
-
-  // ── Phase 4b D-4b-07 archive endpoints ──
 
   @Patch('categories/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
