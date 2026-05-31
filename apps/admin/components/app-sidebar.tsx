@@ -56,9 +56,16 @@ interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   readonly operator: OperatorSummary;
 }
 
-export function AppSidebar({ brands, activeBrandSlug, operator, ...props }: AppSidebarProps) {
+export function AppSidebar({
+  brands,
+  activeBrandSlug,
+  operator,
+  variant = 'inset',
+  collapsible = 'icon',
+  ...props
+}: AppSidebarProps) {
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader>
         <BrandSwitcher brands={brands} activeBrandSlug={activeBrandSlug} />
       </SidebarHeader>

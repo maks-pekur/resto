@@ -85,6 +85,7 @@
 }
 
 @theme inline {
+  --font-sans: var(--font-inter);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -129,5 +130,26 @@
   }
   body {
     @apply bg-background text-foreground;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@media (-webkit-min-device-pixel-ratio: 1.5), (min-resolution: 144dpi) {
+  body {
+    -webkit-font-smoothing: subpixel-antialiased;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@media (min-width: 768px) {
+  [data-side='right'][data-variant='inset'] ~ [data-slot='sidebar-inset'] {
+    margin-right: 0 !important;
+  }
+  [data-side='right'][data-variant='inset'][data-state='collapsed'] ~ [data-slot='sidebar-inset'] {
+    margin-right: 0.5rem !important;
   }
 }
