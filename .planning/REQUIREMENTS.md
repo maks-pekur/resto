@@ -76,7 +76,7 @@
 
 - [x] **CAT-01**: Operator creates / edits / archives menu categories; categories have explicit ordering
 - [x] **CAT-02**: Operator creates / edits / archives menu items (name, description, price, allergens, BJU, ingredients, photo)
-- [ ] **CAT-03**: Operator uploads item photo to S3 via presigned PUT; preview shown
+- [x] **CAT-03**: Operator uploads item photo to S3 via presigned PUT; preview shown
 - [x] **CAT-04**: Operator creates / edits modifier groups + options (per-option price delta)
 - [x] **CAT-05**: Operator creates variants (size/portion) per item with price overrides
 - [ ] **CAT-06**: Operator triggers publish; snapshot becomes new published version (cache version bumped)
@@ -424,7 +424,7 @@
 | AUTH-11     | Phase 3       | Pending  |
 | CAT-01      | Phase 4b      | Complete |
 | CAT-02      | Phase 4a + 4b | Complete |
-| CAT-03      | Phase 4b      | Pending  |
+| CAT-03      | Phase 4b      | Complete |
 | CAT-04      | Phase 4a + 4b | Complete |
 | CAT-05      | Phase 4a + 4b | Complete |
 | CAT-06      | Phase 4a      | Pending  |

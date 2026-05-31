@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: Completed 04b-01-PLAN.md
-last_updated: '2026-05-31T12:35:50.773Z'
+stopped_at: Completed 04b-03-PLAN.md
+last_updated: '2026-05-31T14:35:10.559Z'
 last_activity: 2026-05-31
 progress:
   total_phases: 18
   completed_phases: 4
   total_plans: 32
-  completed_plans: 25
+  completed_plans: 26
   percent: 22
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 04b (catalog-admin-ui) — EXECUTING
-Plan: 3 of 9
+Plan: 4 of 9
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [████████░░] 78%
+Progress: [████████░░] 81%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -71,6 +71,7 @@ Still deferred to Phase 03:
 _Updated after each plan completion_
 | Phase 04b-catalog-admin-ui P01 | 15min | 3 tasks | 13 files |
 | Phase 04b P02 | ~40min | 3 tasks | 26 files |
+| Phase 04b-catalog-admin-ui P03 | ~55min | 4 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 04b-02: archive endpoints idempotent on already-archived rows (204, not 409); MenuCategoryAlreadyArchivedError + MenuItemAlreadyArchivedError ship anyway as defensive 409 mapping for future strict-mode callers
 - [Phase ?]: 04b-02: draft-diff scope is items-only for MVP-1 (Open Question #5 resolved); cap 100 rows with truncatedCount sentinel
 - [Phase ?]: 04b-02: migration 0042 idempotent — ADD COLUMN IF NOT EXISTS + DO-block-guarded CHECK constraint + backfill UPDATE that only flips status='draft' rows
+- [Phase ?]: Plan 04b-03 Task 4 (manual browser smoke probe) deferred to Plan 04b-07 (photo-upload-client.tsx) — e2e (7/7) + curl OPTIONS preflight already cover the contract; first real-browser PUT happens naturally in 04b-07.
 
 ### Pending Todos
 
@@ -134,7 +136,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T12:35:38.821Z
-Stopped at: Completed 04b-01-PLAN.md
+Last session: 2026-05-31T14:35:05.659Z
+Stopped at: Completed 04b-03-PLAN.md
 Resume file:
-None

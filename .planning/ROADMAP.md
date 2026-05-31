@@ -224,7 +224,7 @@ Plans:
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 04b-03-PLAN.md — Backend addendum: S3 presignPut + ImageUrlPort extension + POST /photo-upload-url + MinIO dev CORS + Terraform stub for prod + manual MinIO smoke probe (CAT-03)
+- [x] 04b-03-PLAN.md — Backend addendum: S3 presignPut + ImageUrlPort extension + POST /photo-upload-url + MinIO dev CORS + Terraform stub for prod + manual MinIO smoke probe (CAT-03)
 
 **Wave 3** _(after Waves 1+2 — frontend foundation; sidebar/sticky-bar runs parallel with categories)_
 
