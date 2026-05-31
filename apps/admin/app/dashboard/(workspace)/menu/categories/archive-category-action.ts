@@ -2,17 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
-import { friendlyCatalogError } from './upsert-category-action';
+import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ArchiveCategoryActionState {
   readonly error: string | null;
   readonly success: boolean;
-}
-
-interface ProblemDetails {
-  readonly code?: string;
-  readonly detail?: string;
-  readonly message?: string;
 }
 
 export async function archiveCategoryAction(

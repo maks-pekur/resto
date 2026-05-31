@@ -25,12 +25,7 @@ const renderSwitcher = (props: Partial<React.ComponentProps<typeof BrandSwitcher
   const user = userEvent.setup();
   const result = render(
     <SidebarProvider>
-      <BrandSwitcher
-        brands={brands}
-        activeBrandSlug="z-burger"
-        canViewAllBrands={true}
-        {...props}
-      />
+      <BrandSwitcher brands={brands} activeBrandSlug="z-burger" {...props} />
     </SidebarProvider>,
   );
   return { user, ...result };
@@ -49,9 +44,14 @@ describe('BrandSwitcher', () => {
     expect(screen.getByTestId('brand-switcher-trigger')).toHaveTextContent('Z Burger');
   });
 
-  it('shows the All brands label when activeBrandSlug is null', () => {
+  it('falls back to first brand when activeBrandSlug is null', () => {
     renderSwitcher({ activeBrandSlug: null });
-    expect(screen.getByTestId('brand-switcher-trigger')).toHaveTextContent('All brands');
+    expect(screen.getByTestId('brand-switcher-trigger')).toHaveTextContent('Z Burger');
+  });
+
+  it('falls back to first brand when activeBrandSlug is stale (not in list)', () => {
+    renderSwitcher({ activeBrandSlug: 'deleted-brand' });
+    expect(screen.getByTestId('brand-switcher-trigger')).toHaveTextContent('Z Burger');
   });
 
   it('lists every brand option in the dropdown', async () => {
@@ -61,20 +61,14 @@ describe('BrandSwitcher', () => {
     expect(screen.getByRole('menuitem', { name: /Sushi Master/u })).toBeInTheDocument();
   });
 
-  it('shows the All brands menu entry when canViewAllBrands and brands.length >= 2', async () => {
+  it('never shows an "All brands" menu entry', async () => {
     const { user } = renderSwitcher();
-    await user.click(screen.getByTestId('brand-switcher-trigger'));
-    expect(await screen.findByRole('menuitem', { name: /All brands/u })).toBeInTheDocument();
-  });
-
-  it('hides the All brands menu entry when canViewAllBrands is false (multi-brand)', async () => {
-    const { user } = renderSwitcher({ canViewAllBrands: false });
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     await screen.findByRole('menuitem', { name: /Add brand/u });
     expect(screen.queryByRole('menuitem', { name: /All brands/u })).toBeNull();
   });
 
-  it('shows the Add brand menu entry linking to /onboarding/brand in multi-brand dropdown', async () => {
+  it('shows the Add brand menu entry linking to /onboarding/brand', async () => {
     const { user } = renderSwitcher();
     await user.click(screen.getByTestId('brand-switcher-trigger'));
     const item = await screen.findByRole('menuitem', { name: /Add brand/u });
@@ -83,37 +77,14 @@ describe('BrandSwitcher', () => {
     expect(link?.getAttribute('href')).toBe('/onboarding/brand');
   });
 
-  it('renders static label + inline Plus icon when single brand and !canViewAllBrands (CONTEXT D-14)', () => {
+  it('renders the dropdown trigger with a single brand (no static branch)', async () => {
     const [first] = brands;
     if (!first) throw new Error('brands fixture missing');
-    renderSwitcher({ canViewAllBrands: false, brands: [first], activeBrandSlug: first.slug });
-    expect(screen.getByTestId('brand-switcher-static')).toHaveTextContent('Z Burger');
-    expect(screen.queryByTestId('brand-switcher-trigger')).toBeNull();
-    const addBrandBtn = screen.getByTestId('brand-switcher-add-brand');
-    expect(addBrandBtn).toBeInTheDocument();
-    const link = addBrandBtn.tagName === 'A' ? addBrandBtn : addBrandBtn.querySelector('a');
-    expect(link?.getAttribute('href')).toBe('/onboarding/brand');
-  });
-
-  it('renders the dropdown trigger when 2+ brands (multi-brand path preserved)', () => {
-    renderSwitcher();
-    expect(screen.getByTestId('brand-switcher-trigger')).toBeInTheDocument();
-    expect(screen.queryByTestId('brand-switcher-static')).toBeNull();
-  });
-
-  it('renders the dropdown when canViewAllBrands is true regardless of brand count', () => {
-    const [first] = brands;
-    if (!first) throw new Error('brands fixture missing');
-    renderSwitcher({ canViewAllBrands: true, brands: [first], activeBrandSlug: first.slug });
-    expect(screen.getByTestId('brand-switcher-trigger')).toBeInTheDocument();
-    expect(screen.queryByTestId('brand-switcher-static')).toBeNull();
-  });
-
-  it('single-brand Plus icon has accessible label "Add brand"', () => {
-    const [first] = brands;
-    if (!first) throw new Error('brands fixture missing');
-    renderSwitcher({ canViewAllBrands: false, brands: [first], activeBrandSlug: first.slug });
-    expect(screen.getByLabelText(/Add brand/u)).toBeInTheDocument();
+    const { user } = renderSwitcher({ brands: [first], activeBrandSlug: first.slug });
+    expect(screen.getByTestId('brand-switcher-trigger')).toHaveTextContent('Z Burger');
+    await user.click(screen.getByTestId('brand-switcher-trigger'));
+    expect(await screen.findByRole('menuitem', { name: /Z Burger/u })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: /Add brand/u })).toBeInTheDocument();
   });
 
   it('calls setActiveBrandAction(slug) on brand click and signals other tabs via localStorage', async () => {
@@ -126,15 +97,5 @@ describe('BrandSwitcher', () => {
     });
     expect(window.localStorage.getItem(BRAND_TAB_SYNC_STORAGE_KEY)).not.toBeNull();
     expect(refreshMock).toHaveBeenCalled();
-  });
-
-  it('calls setActiveBrandAction(null) on All brands click', async () => {
-    setActiveBrandMock.mockResolvedValue({ ok: true });
-    const { user } = renderSwitcher();
-    await user.click(screen.getByTestId('brand-switcher-trigger'));
-    await user.click(await screen.findByRole('menuitem', { name: /All brands/u }));
-    await waitFor(() => {
-      expect(setActiveBrandMock).toHaveBeenCalledWith(null);
-    });
   });
 });

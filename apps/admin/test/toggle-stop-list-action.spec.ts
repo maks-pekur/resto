@@ -47,7 +47,7 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     expect(res).toEqual({ ok: true, error: null });
   });
 
-  it('surfaces 409 catalog.menu_item_not_found as a Russian error', async () => {
+  it('surfaces 409 catalog.menu_item_not_found as an "Item not found" error', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 409,
@@ -55,11 +55,11 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     });
     const res = await toggleStopListAction({ itemId: ITEM_ID, next: 'paused' });
     expect(res.ok).toBe(false);
-    expect(res.error).toBe('Блюдо не найдено.');
+    expect(res.error).toBe('Item not found.');
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it('surfaces 409 catalog.stop_list_item_not_found as a Russian error', async () => {
+  it('surfaces 409 catalog.stop_list_item_not_found as a not-on-stop-list error', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 409,
@@ -67,10 +67,10 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     });
     const res = await toggleStopListAction({ itemId: ITEM_ID, next: 'published' });
     expect(res.ok).toBe(false);
-    expect(res.error).toBe('Блюдо не в стоп-листе.');
+    expect(res.error).toBe('Item is not on the stop list.');
   });
 
-  it('surfaces 5xx with a generic Russian retry message', async () => {
+  it('surfaces 5xx with a generic retry message', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 502,
@@ -78,7 +78,7 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     });
     const res = await toggleStopListAction({ itemId: ITEM_ID, next: 'paused' });
     expect(res.ok).toBe(false);
-    expect(res.error).toMatch(/Не удалось обновить стоп-лист/u);
+    expect(res.error).toMatch(/Could not update the stop list/u);
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 });

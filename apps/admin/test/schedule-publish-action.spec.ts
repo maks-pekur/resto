@@ -38,7 +38,7 @@ describe('schedulePublishAction', () => {
     expect(res.ok).toBe(false);
     if (!res.ok) {
       expect(res.scheduledAt).toBeNull();
-      expect(res.error).toBe('Не удалось опубликовать — проверьте соединение');
+      expect(res.error).toBe('Could not publish — check your connection.');
     }
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });

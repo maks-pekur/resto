@@ -43,7 +43,7 @@ describe('cancelPublishAction', () => {
     const res = await cancelPublishAction();
     expect(res.ok).toBe(false);
     if (!res.ok) {
-      expect(res.error).toBe('Не удалось отменить публикацию — попробуйте снова');
+      expect(res.error).toBe('Could not cancel publication — please try again.');
     }
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });

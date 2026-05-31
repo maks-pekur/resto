@@ -16,7 +16,7 @@ export const cancelPublishAction = async (): Promise<CancelPublishActionResult> 
     method: 'DELETE',
   });
   if (!res.ok) {
-    return { ok: false, error: 'Не удалось отменить публикацию — попробуйте снова' };
+    return { ok: false, error: 'Could not cancel publication — please try again.' };
   }
   revalidatePath('/dashboard/menu', 'layout');
   const cancelled = res.data?.cancelled === true;

@@ -79,7 +79,7 @@ export async function inviteMemberAction(
     };
   }
 
-  revalidatePath('/dashboard/settings');
+  revalidatePath('/dashboard/team');
   return {
     error: null,
     success: `Invitation sent to ${parsed.data.email}.`,

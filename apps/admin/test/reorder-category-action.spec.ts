@@ -169,7 +169,7 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
       { error: null, success: false },
       { id: 'ffffffff-ffff-4fff-8fff-ffffffffffff', direction: 'down' },
     );
-    expect(res.error).toBe('Категория не найдена.');
+    expect(res.error).toBe('Category not found.');
     expect(res.success).toBe(false);
   });
 
@@ -183,7 +183,7 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
       { error: null, success: false },
       { id: A, direction: 'down' },
     );
-    expect(res.error).toMatch(/Серверная ошибка/u);
+    expect(res.error).toMatch(/Server error/u);
   });
 
   it('surfaces failure of the first upsert POST (best-effort; second never fires)', async () => {
@@ -202,7 +202,7 @@ describe('reorderCategoryAction (Plan 04b-05 Task 2)', () => {
       { error: null, success: false },
       { id: A, direction: 'down' },
     );
-    expect(res.error).toMatch(/Серверная ошибка/u);
+    expect(res.error).toMatch(/Server error/u);
     expect(res.success).toBe(false);
     expect(apiFetchInternalMock).toHaveBeenCalledTimes(2);
   });

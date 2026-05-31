@@ -24,12 +24,7 @@ const operator = { email: 'owner@example.test', baseRole: 'owner' as const };
 const renderSidebar = (activeBrandSlug: string | null = 'cafe-z') =>
   render(
     <SidebarProvider>
-      <AppSidebar
-        brands={brands}
-        activeBrandSlug={activeBrandSlug}
-        canViewAllBrands={false}
-        operator={operator}
-      />
+      <AppSidebar brands={brands} activeBrandSlug={activeBrandSlug} operator={operator} />
     </SidebarProvider>,
   );
 

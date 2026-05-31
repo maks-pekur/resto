@@ -2,26 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
-
-interface ProblemDetails {
-  readonly code?: string;
-  readonly detail?: string;
-  readonly message?: string;
-}
+import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ArchiveItemActionState {
   readonly error: string | null;
   readonly success: boolean;
 }
-
-const friendlyError = (status: number, body: ProblemDetails | null): string => {
-  if (status === 0) return 'Серверная ошибка. Попробуйте ещё раз.';
-  if (status === 404 || body?.code === 'catalog.menu_item_not_found') {
-    return 'Блюдо не найдено.';
-  }
-  if (status >= 500) return 'Серверная ошибка. Попробуйте ещё раз.';
-  return body?.detail ?? `Запрос не выполнен (${status.toString()}).`;
-};
 
 export async function archiveItemAction(
   _prev: ArchiveItemActionState,
@@ -32,7 +18,7 @@ export async function archiveItemAction(
   });
   if (!res.ok) {
     return {
-      error: friendlyError(res.status, res.data as ProblemDetails | null),
+      error: friendlyCatalogError(res.status, res.data as ProblemDetails | null),
       success: false,
     };
   }

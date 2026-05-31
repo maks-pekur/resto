@@ -92,7 +92,7 @@ describe('StickyPublishBarClient (D-4b-03, UI-SPEC §Sticky Publish Bar Spec)', 
     schedulePublishActionMock.mockResolvedValue({
       ok: false,
       scheduledAt: null,
-      error: 'Не удалось опубликовать — проверьте соединение',
+      error: 'Could not publish — check your connection.',
     });
     const user = userEvent.setup();
     renderBar();
@@ -102,7 +102,7 @@ describe('StickyPublishBarClient (D-4b-03, UI-SPEC §Sticky Publish Bar Spec)', 
     });
     const errorCall = toastErrorMock.mock.calls[0];
     if (!errorCall) throw new Error('toast.error was not called');
-    expect(errorCall[0]).toBe('Не удалось опубликовать — проверьте соединение');
+    expect(errorCall[0]).toBe('Could not publish — check your connection.');
     expect((errorCall[1] as { id: string }).id).toBe('publish-countdown');
     expect(screen.getByRole('button', { name: 'Опубликовать меню' })).not.toBeDisabled();
   });

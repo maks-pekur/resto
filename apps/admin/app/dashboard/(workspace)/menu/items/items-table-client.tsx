@@ -126,7 +126,7 @@ export function ItemsTableClient({
         }
       } else {
         setOptimistic((prev) => ({ ...prev, [item.id]: undefined }));
-        toast.error(res.error ?? 'Не удалось обновить стоп-лист. Попробуйте ещё раз.');
+        toast.error(res.error ?? 'Could not update the stop list. Please try again.');
       }
     });
   };

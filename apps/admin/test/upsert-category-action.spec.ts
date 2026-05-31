@@ -98,14 +98,14 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
   });
 
-  it('surfaces 5xx with a generic Russian message', async () => {
+  it('surfaces 5xx with a generic retry message', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 500,
       data: { detail: 'internal' },
     });
     const res = await upsertCategoryAction({ error: null, success: null }, buildForm());
-    expect(res.error).toMatch(/Серверная ошибка/u);
+    expect(res.error).toMatch(/Server error/u);
     expect(res.success).toBeNull();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
@@ -117,6 +117,6 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
       data: { code: 'catalog.menu_category_slug_taken' },
     });
     const res = await upsertCategoryAction({ error: null, success: null }, buildForm());
-    expect(res.error).toMatch(/уже существует/u);
+    expect(res.error).toMatch(/already exists/u);
   });
 });

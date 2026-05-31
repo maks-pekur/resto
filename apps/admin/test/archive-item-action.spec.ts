@@ -33,26 +33,26 @@ describe('archiveItemAction (Plan 04b-06 Task 1)', () => {
     expect(res).toEqual({ error: null, success: true });
   });
 
-  it('surfaces 404 as the Russian "Блюдо не найдено" message', async () => {
+  it('surfaces 404 as "Item not found."', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 404,
       data: { code: 'catalog.menu_item_not_found' },
     });
     const res = await archiveItemAction({ error: null, success: false }, { id: ITEM_ID });
-    expect(res.error).toBe('Блюдо не найдено.');
+    expect(res.error).toBe('Item not found.');
     expect(res.success).toBe(false);
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it('surfaces 5xx with a generic Russian message', async () => {
+  it('surfaces 5xx with a generic retry message', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 502,
       data: null,
     });
     const res = await archiveItemAction({ error: null, success: false }, { id: ITEM_ID });
-    expect(res.error).toMatch(/Серверная ошибка/u);
+    expect(res.error).toMatch(/Server error/u);
     expect(res.success).toBe(false);
   });
 });

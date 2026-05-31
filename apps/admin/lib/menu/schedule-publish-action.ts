@@ -20,7 +20,7 @@ export const schedulePublishAction = async (): Promise<SchedulePublishActionResu
     return {
       ok: false,
       scheduledAt: null,
-      error: 'Не удалось опубликовать — проверьте соединение',
+      error: 'Could not publish — check your connection.',
     };
   }
   revalidatePath('/dashboard/menu', 'layout');

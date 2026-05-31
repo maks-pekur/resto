@@ -120,7 +120,7 @@ describe('ItemsTableClient (Plan 04b-06 Task 2)', () => {
   });
 
   it('on toggle error, the switch snaps back to its prior state + an error toast fires', async () => {
-    toggleMock.mockResolvedValue({ ok: false, error: 'Не удалось обновить — попробуйте ещё раз' });
+    toggleMock.mockResolvedValue({ ok: false, error: 'Could not update — please try again.' });
     render(
       <ItemsTableClient items={baseItems} totalCount={2} pagination={{ page: 1, pageSize: 50 }} />,
     );
@@ -128,7 +128,7 @@ describe('ItemsTableClient (Plan 04b-06 Task 2)', () => {
     expect(sw).toHaveAttribute('data-state', 'unchecked');
     fireEvent.click(sw);
     await waitFor(() => {
-      expect(toastErrorMock).toHaveBeenCalledWith('Не удалось обновить — попробуйте ещё раз');
+      expect(toastErrorMock).toHaveBeenCalledWith('Could not update — please try again.');
     });
     expect(sw).toHaveAttribute('data-state', 'unchecked');
   });

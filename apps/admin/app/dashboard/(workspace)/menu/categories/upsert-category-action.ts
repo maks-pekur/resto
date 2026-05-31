@@ -4,15 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { CategoryFormSchema } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
-
-interface ProblemDetails {
-  readonly type?: string;
-  readonly title?: string;
-  readonly status?: number;
-  readonly detail?: string;
-  readonly message?: string;
-  readonly code?: string;
-}
+import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 interface UpsertCategoryResponse {
   readonly id: string;
@@ -22,21 +14,6 @@ export interface UpsertCategoryActionState {
   readonly error: string | null;
   readonly success: { readonly id: string } | null;
 }
-
-export const friendlyCatalogError = (status: number, body: ProblemDetails | null): string => {
-  if (status === 0) return 'Серверная ошибка. Попробуйте ещё раз.';
-  if (status === 404 || body?.code === 'catalog.menu_category_not_found') {
-    return 'Категория не найдена.';
-  }
-  if (status === 409 && body?.code === 'catalog.menu_category_slug_taken') {
-    return 'Категория с таким названием уже существует.';
-  }
-  if (status === 400) {
-    return body?.message ?? body?.detail ?? 'Проверьте поля формы.';
-  }
-  if (status >= 500) return 'Серверная ошибка. Попробуйте ещё раз.';
-  return body?.detail ?? `Запрос не выполнен (${status.toString()}).`;
-};
 
 export async function upsertCategoryAction(
   _prev: UpsertCategoryActionState,
@@ -62,7 +39,7 @@ export async function upsertCategoryAction(
   });
   if (!parsed.success) {
     return {
-      error: parsed.error.issues[0]?.message ?? 'Проверьте поля формы.',
+      error: parsed.error.issues[0]?.message ?? 'Please check the form fields.',
       success: null,
     };
   }

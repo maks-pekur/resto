@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { LayoutDashboard, Settings2, Store, UtensilsCrossed } from 'lucide-react';
+import { LayoutDashboard, Settings2, Users, UtensilsCrossed } from 'lucide-react';
 
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { BrandTabSync } from '@/components/brand-tab-sync';
@@ -24,12 +24,6 @@ const navMain: NavMainItem[] = [
     scope: 'any',
   },
   {
-    title: 'Brands',
-    url: '/dashboard',
-    icon: Store,
-    scope: 'tenant',
-  },
-  {
     title: 'Меню',
     url: '/dashboard/menu/items',
     icon: UtensilsCrossed,
@@ -43,6 +37,12 @@ const navMain: NavMainItem[] = [
     ],
   },
   {
+    title: 'Team',
+    url: '/dashboard/team',
+    icon: Users,
+    scope: 'tenant',
+  },
+  {
     title: 'Settings',
     url: '/dashboard/settings',
     icon: Settings2,
@@ -53,25 +53,14 @@ const navMain: NavMainItem[] = [
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   readonly brands: readonly BrandOption[];
   readonly activeBrandSlug: string | null;
-  readonly canViewAllBrands: boolean;
   readonly operator: OperatorSummary;
 }
 
-export function AppSidebar({
-  brands,
-  activeBrandSlug,
-  canViewAllBrands,
-  operator,
-  ...props
-}: AppSidebarProps) {
+export function AppSidebar({ brands, activeBrandSlug, operator, ...props }: AppSidebarProps) {
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <BrandSwitcher
-          brands={brands}
-          activeBrandSlug={activeBrandSlug}
-          canViewAllBrands={canViewAllBrands}
-        />
+        <BrandSwitcher brands={brands} activeBrandSlug={activeBrandSlug} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />

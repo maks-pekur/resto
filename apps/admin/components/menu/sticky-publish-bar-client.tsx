@@ -44,7 +44,7 @@ export function StickyPublishBarClient({
   const handleCancel = async (): Promise<void> => {
     const res = await cancelPublishAction();
     if (!res.ok) {
-      toast.error('Не удалось отменить публикацию — попробуйте снова', { id: TOAST_ID });
+      toast.error('Could not cancel publication — please try again.', { id: TOAST_ID });
     } else if (res.cancelled) {
       toast.success('Публикация отменена', { id: TOAST_ID });
     } else {

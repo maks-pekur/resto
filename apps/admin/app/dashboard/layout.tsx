@@ -1,8 +1,9 @@
+import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { apiFetch } from '@/lib/api-server';
-import { readActiveBrand } from '@/lib/active-brand-cookie';
+import { readActiveBrand, signActiveBrand } from '@/lib/active-brand-cookie';
 import { getMe, toOperatorSummary } from '@/lib/me';
 import { getMyBrands } from '@/lib/me-brands';
 
@@ -13,7 +14,7 @@ interface TenantSummary {
 }
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const [tenantRes, brandsRes, meRes, activeBrandSlug] = await Promise.all([
+  const [tenantRes, brandsRes, meRes, cookieBrandSlug] = await Promise.all([
     apiFetch<TenantSummary>('/v1/tenants/me'),
     getMyBrands(),
     getMe(),
@@ -30,20 +31,29 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login');
   }
   const brands = brandsRes.ok && brandsRes.data ? brandsRes.data.brands : [];
-  const canViewAllBrands = brandsRes.ok && brandsRes.data ? brandsRes.data.canViewAllBrands : false;
 
   if (brands.length === 0) {
     redirect('/onboarding/brand');
   }
 
+  let activeBrandSlug = cookieBrandSlug;
+  if (!activeBrandSlug || !brands.find((b) => b.slug === activeBrandSlug)) {
+    const fallback = brands[0]?.slug ?? null;
+    if (fallback) {
+      const cookieStore = await cookies();
+      cookieStore.set('resto.active_brand', signActiveBrand(fallback), {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        path: '/',
+      });
+      activeBrandSlug = fallback;
+    }
+  }
+
   return (
     <SidebarProvider>
-      <AppSidebar
-        brands={brands}
-        activeBrandSlug={activeBrandSlug}
-        canViewAllBrands={canViewAllBrands}
-        operator={operator}
-      />
+      <AppSidebar brands={brands} activeBrandSlug={activeBrandSlug} operator={operator} />
       <SidebarInset>{children}</SidebarInset>
     </SidebarProvider>
   );

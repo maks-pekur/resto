@@ -33,26 +33,26 @@ describe('archiveCategoryAction (Plan 04b-05 Task 2)', () => {
     expect(res).toEqual({ error: null, success: true });
   });
 
-  it('surfaces 404 as the Russian "Категория не найдена" message', async () => {
+  it('surfaces 404 as "Category not found."', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 404,
       data: { code: 'catalog.menu_category_not_found' },
     });
     const res = await archiveCategoryAction({ error: null, success: false }, { id: CAT_ID });
-    expect(res.error).toBe('Категория не найдена.');
+    expect(res.error).toBe('Category not found.');
     expect(res.success).toBe(false);
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it('surfaces 5xx with a generic Russian message', async () => {
+  it('surfaces 5xx with a generic retry message', async () => {
     apiFetchInternalMock.mockResolvedValue({
       ok: false,
       status: 502,
       data: null,
     });
     const res = await archiveCategoryAction({ error: null, success: false }, { id: CAT_ID });
-    expect(res.error).toMatch(/Серверная ошибка/u);
+    expect(res.error).toMatch(/Server error/u);
     expect(res.success).toBe(false);
   });
 });

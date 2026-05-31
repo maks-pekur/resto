@@ -23,12 +23,7 @@ const operator = { email: 'owner@example.test', baseRole: 'owner' as const };
 const renderSidebar = () =>
   render(
     <SidebarProvider>
-      <AppSidebar
-        brands={brands}
-        activeBrandSlug="cafe-z"
-        canViewAllBrands={false}
-        operator={operator}
-      />
+      <AppSidebar brands={brands} activeBrandSlug="cafe-z" operator={operator} />
     </SidebarProvider>,
   );
 
@@ -37,11 +32,13 @@ describe('AppSidebar (Phase 02 D-15 cleanup)', () => {
     cleanup();
   });
 
-  it('renders Dashboard, Brands, and Settings nav items only', () => {
+  it('renders Dashboard, Меню, Team, and Settings nav items only', () => {
     renderSidebar();
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Brands')).toBeInTheDocument();
+    expect(screen.getByText('Меню')).toBeInTheDocument();
+    expect(screen.getByText('Team')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.queryByText('Brands')).toBeNull();
   });
 
   it('does not render shadcn template debris (Playground / Models / Documentation / Travel / Design Engineering / Sales & Marketing)', () => {

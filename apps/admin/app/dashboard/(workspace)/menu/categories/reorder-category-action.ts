@@ -2,17 +2,11 @@
 
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
-import { friendlyCatalogError } from './upsert-category-action';
+import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ReorderCategoryActionState {
   readonly error: string | null;
   readonly success: boolean;
-}
-
-interface ProblemDetails {
-  readonly code?: string;
-  readonly detail?: string;
-  readonly message?: string;
 }
 
 interface CategoryListItemFromApi {
@@ -66,7 +60,7 @@ export async function reorderCategoryAction(
   const all = listRes.data.items;
   const current = all.find((c) => c.id === input.id);
   if (!current) {
-    return { error: 'Категория не найдена.', success: false };
+    return { error: 'Category not found.', success: false };
   }
 
   const siblings = all

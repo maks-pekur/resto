@@ -2,12 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
-
-interface ProblemDetails {
-  readonly code?: string;
-  readonly detail?: string;
-  readonly message?: string;
-}
+import { type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ToggleStopListResult {
   readonly ok: boolean;
@@ -20,12 +15,12 @@ export interface ToggleStopListInput {
 }
 
 const friendlyError = (status: number, body: ProblemDetails | null): string => {
-  if (status === 0) return 'Не удалось обновить стоп-лист. Попробуйте ещё раз.';
-  if (body?.code === 'catalog.menu_item_not_found') return 'Блюдо не найдено.';
-  if (body?.code === 'catalog.stop_list_item_not_found') return 'Блюдо не в стоп-листе.';
-  if (status >= 500) return 'Не удалось обновить стоп-лист. Попробуйте ещё раз.';
-  if (status === 404) return 'Блюдо не найдено.';
-  return body?.detail ?? `Не удалось обновить стоп-лист (${status.toString()}).`;
+  if (status === 0) return 'Could not update the stop list. Please try again.';
+  if (body?.code === 'catalog.menu_item_not_found') return 'Item not found.';
+  if (body?.code === 'catalog.stop_list_item_not_found') return 'Item is not on the stop list.';
+  if (status >= 500) return 'Could not update the stop list. Please try again.';
+  if (status === 404) return 'Item not found.';
+  return body?.detail ?? `Could not update the stop list (${status.toString()}).`;
 };
 
 export async function toggleStopListAction(
