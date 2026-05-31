@@ -1,7 +1,9 @@
 import { ConflictException, NotFoundException, type HttpException } from '@nestjs/common';
 import {
   CatalogPublishConflictError,
+  MenuCategoryAlreadyArchivedError,
   MenuCategoryNotFoundError,
+  MenuItemAlreadyArchivedError,
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
@@ -15,7 +17,9 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof CatalogPublishConflictError ||
   err instanceof MenuModifierGroupNotFoundError ||
   err instanceof MenuItemSizeNotFoundError ||
-  err instanceof StopListItemNotFoundError;
+  err instanceof StopListItemNotFoundError ||
+  err instanceof MenuCategoryAlreadyArchivedError ||
+  err instanceof MenuItemAlreadyArchivedError;
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -47,6 +51,16 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'StopListItemNotFoundError':
       return new NotFoundException({
         code: 'catalog.stop_list_item_not_found',
+        message: err.message,
+      });
+    case 'MenuCategoryAlreadyArchivedError':
+      return new ConflictException({
+        code: 'catalog.menu_category_already_archived',
+        message: err.message,
+      });
+    case 'MenuItemAlreadyArchivedError':
+      return new ConflictException({
+        code: 'catalog.menu_item_already_archived',
         message: err.message,
       });
     default: {

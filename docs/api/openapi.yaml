@@ -473,6 +473,24 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
+    get:
+      operationId: InternalCatalogController_listCategories
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
   /internal/v1/catalog/items:
     post:
       operationId: InternalCatalogController_item
@@ -498,6 +516,24 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
+    get:
+      operationId: InternalCatalogController_listItems
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
   /internal/v1/catalog/modifier-groups:
     post:
       operationId: InternalCatalogController_modifierGroup
@@ -515,6 +551,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IdResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+    get:
+      operationId: InternalCatalogController_listModifierGroups
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModifierGroupListResponseDto"
         "401":
           description: ""
           content:
@@ -598,6 +652,24 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
+    get:
+      operationId: InternalCatalogController_listStopList
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopListResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
   /internal/v1/catalog/stop-list/{itemId}:
     delete:
       operationId: InternalCatalogController_stopListRemove
@@ -640,6 +712,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublishCancelResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/items/{id}:
+    get:
+      operationId: InternalCatalogController_getItem
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDetailResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/modifier-groups/{id}:
+    get:
+      operationId: InternalCatalogController_getModifierGroup
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModifierGroupDetailResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/draft-diff:
+    get:
+      operationId: InternalCatalogController_getDraftDiff
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftDiffResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/categories/{id}/archive:
+    patch:
+      operationId: InternalCatalogController_archiveCategory
+      parameters: []
+      responses:
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/items/{id}/archive:
+    patch:
+      operationId: InternalCatalogController_archiveItem
+      parameters: []
+      responses:
         "401":
           description: ""
           content:
@@ -1654,3 +1809,496 @@ components:
           type: boolean
       required:
         - cancelled
+    CategoryListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              parentId:
+                type: string
+                format: uuid
+                nullable: true
+              slug:
+                type: string
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              description:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              status:
+                type: string
+                enum:
+                  - draft
+                  - published
+                  - archived
+            required:
+              - id
+              - parentId
+              - slug
+              - name
+              - description
+              - sortOrder
+              - status
+      required:
+        - items
+    ItemListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              slug:
+                type: string
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              categoryId:
+                type: string
+                format: uuid
+              categoryName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              parentCategoryName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              photo:
+                type: object
+                properties:
+                  s3Key:
+                    type: string
+                  sortOrder:
+                    type: integer
+                    minimum: 0
+                    exclusiveMinimum: false
+                required:
+                  - s3Key
+                  - sortOrder
+                nullable: true
+              basePrice:
+                type: string
+                pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+              currency:
+                type: string
+                pattern: ^[A-Z]{3}$
+              status:
+                type: string
+                enum:
+                  - draft
+                  - published
+                  - archived
+              hasSizes:
+                type: boolean
+              stoppedAt:
+                type: string
+                format: date-time
+                nullable: true
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - slug
+              - name
+              - categoryId
+              - categoryName
+              - parentCategoryName
+              - photo
+              - basePrice
+              - currency
+              - status
+              - hasSizes
+              - stoppedAt
+              - sortOrder
+        total:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        limit:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        offset:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - items
+        - total
+        - limit
+        - offset
+    ItemDetailResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        description:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+        basePrice:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              s3Key:
+                type: string
+                minLength: 1
+                maxLength: 1024
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              alt:
+                type: string
+                maxLength: 255
+              width:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              height:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              isPrimary:
+                type: boolean
+            required:
+              - s3Key
+              - sortOrder
+        allergens:
+          type: array
+          items:
+            type: string
+          nullable: true
+        proteins:
+          type: number
+          nullable: true
+        fats:
+          type: number
+          nullable: true
+        carbs:
+          type: number
+          nullable: true
+        kcal:
+          type: integer
+          nullable: true
+        nutritionEstimated:
+          type: boolean
+        source:
+          type: string
+          enum:
+            - manual
+            - ai_generated
+            - imported_iiko
+            - imported_csv
+        needsReview:
+          type: boolean
+        sourceExternalId:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        sizes:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              price:
+                type: string
+                pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+              isDefault:
+                type: boolean
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - name
+              - price
+              - isDefault
+              - sortOrder
+        modifierGroupIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - id
+        - categoryId
+        - slug
+        - name
+        - description
+        - basePrice
+        - currency
+        - photos
+        - allergens
+        - proteins
+        - fats
+        - carbs
+        - kcal
+        - nutritionEstimated
+        - source
+        - needsReview
+        - sourceExternalId
+        - status
+        - sortOrder
+        - sizes
+        - modifierGroupIds
+    ModifierGroupListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              minSelectable:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              maxSelectable:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              isRequired:
+                type: boolean
+              optionCount:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              usageCount:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - name
+              - minSelectable
+              - maxSelectable
+              - isRequired
+              - optionCount
+              - usageCount
+      required:
+        - items
+    ModifierGroupDetailResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        minSelectable:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        maxSelectable:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        isRequired:
+          type: boolean
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              priceDelta:
+                type: string
+                pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+              defaultAmount:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              freeAmount:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - name
+              - priceDelta
+              - defaultAmount
+              - freeAmount
+              - sortOrder
+      required:
+        - id
+        - name
+        - minSelectable
+        - maxSelectable
+        - isRequired
+        - options
+    StopListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              itemId:
+                type: string
+                format: uuid
+              itemName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              categoryName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              stoppedAt:
+                type: string
+                format: date-time
+              reason:
+                type: string
+                nullable: true
+            required:
+              - id
+              - itemId
+              - itemName
+              - categoryName
+              - stoppedAt
+              - reason
+      required:
+        - items
+    DraftDiffResponseDto:
+      type: object
+      properties:
+        unpublishedCount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              entityType:
+                type: string
+                enum:
+                  - item
+                  - category
+                  - modifier-group
+              id:
+                type: string
+                format: uuid
+              name:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+              status:
+                type: string
+                enum:
+                  - draft
+                  - modified
+                  - archived
+            required:
+              - entityType
+              - id
+              - name
+              - status
+        truncatedCount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - unpublishedCount
+        - items
+        - truncatedCount

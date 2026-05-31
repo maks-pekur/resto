@@ -2,7 +2,9 @@ import { ConflictException, NotFoundException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import {
   CatalogPublishConflictError,
+  MenuCategoryAlreadyArchivedError,
   MenuCategoryNotFoundError,
+  MenuItemAlreadyArchivedError,
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
@@ -57,6 +59,22 @@ describe('mapCatalogError', () => {
     expect(mapped).toBeInstanceOf(NotFoundException);
     expect((mapped as NotFoundException).getResponse()).toMatchObject({
       code: 'catalog.stop_list_item_not_found',
+    });
+  });
+
+  it('maps MenuCategoryAlreadyArchivedError to 409 with code catalog.menu_category_already_archived', () => {
+    const mapped = mapCatalogError(new MenuCategoryAlreadyArchivedError('cat-1'));
+    expect(mapped).toBeInstanceOf(ConflictException);
+    expect((mapped as ConflictException).getResponse()).toMatchObject({
+      code: 'catalog.menu_category_already_archived',
+    });
+  });
+
+  it('maps MenuItemAlreadyArchivedError to 409 with code catalog.menu_item_already_archived', () => {
+    const mapped = mapCatalogError(new MenuItemAlreadyArchivedError('item-1'));
+    expect(mapped).toBeInstanceOf(ConflictException);
+    expect((mapped as ConflictException).getResponse()).toMatchObject({
+      code: 'catalog.menu_item_already_archived',
     });
   });
 

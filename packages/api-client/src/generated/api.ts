@@ -283,7 +283,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["InternalCatalogController_listCategories"];
         put?: never;
         post: operations["InternalCatalogController_category"];
         delete?: never;
@@ -299,7 +299,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["InternalCatalogController_listItems"];
         put?: never;
         post: operations["InternalCatalogController_item"];
         delete?: never;
@@ -315,7 +315,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["InternalCatalogController_listModifierGroups"];
         put?: never;
         post: operations["InternalCatalogController_modifierGroup"];
         delete?: never;
@@ -363,7 +363,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["InternalCatalogController_listStopList"];
         put?: never;
         post: operations["InternalCatalogController_stopListAdd"];
         delete?: never;
@@ -402,6 +402,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/catalog/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InternalCatalogController_getItem"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/catalog/modifier-groups/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InternalCatalogController_getModifierGroup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/catalog/draft-diff": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InternalCatalogController_getDraftDiff"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/catalog/categories/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["InternalCatalogController_archiveCategory"];
+        trace?: never;
+    };
+    "/internal/v1/catalog/items/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["InternalCatalogController_archiveItem"];
         trace?: never;
     };
 }
@@ -780,6 +860,171 @@ export interface components {
         };
         PublishCancelResponseDto: {
             cancelled: boolean;
+        };
+        CategoryListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                parentId: string | null;
+                slug: string;
+                name: {
+                    [key: string]: string;
+                };
+                description: {
+                    [key: string]: string;
+                } | null;
+                sortOrder: number;
+                /** @enum {string} */
+                status: "draft" | "published" | "archived";
+            }[];
+        };
+        ItemListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                name: {
+                    [key: string]: string;
+                };
+                /** Format: uuid */
+                categoryId: string;
+                categoryName: {
+                    [key: string]: string;
+                } | null;
+                parentCategoryName: {
+                    [key: string]: string;
+                } | null;
+                photo: {
+                    s3Key: string;
+                    sortOrder: number;
+                } | null;
+                basePrice: string;
+                currency: string;
+                /** @enum {string} */
+                status: "draft" | "published" | "archived";
+                hasSizes: boolean;
+                /** Format: date-time */
+                stoppedAt: string | null;
+                sortOrder: number;
+            }[];
+            total: number;
+            limit: number;
+            offset: number;
+        };
+        ItemDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            categoryId: string;
+            slug: string;
+            name: {
+                [key: string]: string;
+            };
+            description: {
+                [key: string]: string;
+            } | null;
+            basePrice: string;
+            currency: string;
+            photos: {
+                s3Key: string;
+                sortOrder: number;
+                alt?: string;
+                width?: number;
+                height?: number;
+                isPrimary?: boolean;
+            }[];
+            allergens: string[] | null;
+            proteins: number | null;
+            fats: number | null;
+            carbs: number | null;
+            kcal: number | null;
+            nutritionEstimated: boolean;
+            /** @enum {string} */
+            source: "manual" | "ai_generated" | "imported_iiko" | "imported_csv";
+            needsReview: boolean;
+            sourceExternalId: string | null;
+            /** @enum {string} */
+            status: "draft" | "published" | "archived";
+            sortOrder: number;
+            sizes: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                price: string;
+                isDefault: boolean;
+                sortOrder: number;
+            }[];
+            modifierGroupIds: string[];
+        };
+        ModifierGroupListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                minSelectable: number;
+                maxSelectable: number;
+                isRequired: boolean;
+                optionCount: number;
+                usageCount: number;
+            }[];
+        };
+        ModifierGroupDetailResponseDto: {
+            /** Format: uuid */
+            id: string;
+            name: {
+                [key: string]: string;
+            };
+            minSelectable: number;
+            maxSelectable: number;
+            isRequired: boolean;
+            options: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                priceDelta: string;
+                defaultAmount: number;
+                freeAmount: number;
+                sortOrder: number;
+            }[];
+        };
+        StopListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                itemId: string;
+                itemName: {
+                    [key: string]: string;
+                } | null;
+                categoryName: {
+                    [key: string]: string;
+                } | null;
+                /** Format: date-time */
+                stoppedAt: string;
+                reason: string | null;
+            }[];
+        };
+        DraftDiffResponseDto: {
+            unpublishedCount: number;
+            items: {
+                /** @enum {string} */
+                entityType: "item" | "category" | "modifier-group";
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                /** @enum {string} */
+                status: "draft" | "modified" | "archived";
+            }[];
+            truncatedCount: number;
         };
     };
     responses: never;
@@ -1409,6 +1654,33 @@ export interface operations {
             };
         };
     };
+    InternalCatalogController_listCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryListResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     InternalCatalogController_category: {
         parameters: {
             query?: never;
@@ -1440,6 +1712,33 @@ export interface operations {
             };
         };
     };
+    InternalCatalogController_listItems: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemListResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     InternalCatalogController_item: {
         parameters: {
             query?: never;
@@ -1459,6 +1758,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_listModifierGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupListResponseDto"];
                 };
             };
             401: {
@@ -1552,6 +1878,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_listStopList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopListResponseDto"];
                 };
             };
             401: {
@@ -1658,6 +2011,125 @@ export interface operations {
                     "application/json": components["schemas"]["PublishCancelResponseDto"];
                 };
             };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_getItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ItemDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_getModifierGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_getDraftDiff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DraftDiffResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_archiveCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_archiveItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             401: {
                 headers: {
                     [name: string]: unknown;
