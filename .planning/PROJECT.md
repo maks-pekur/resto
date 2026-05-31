@@ -55,11 +55,20 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 - ✓ `withoutTenant` bypass allowlist with audit logging
 - ✓ Hard-delete forbidden (no DELETE privilege on `resto_app`); soft-delete via `archived_at` / `status = 'archived'`
 
-**Catalog (partial):**
+**Catalog:**
 
-- ✓ Menu items, categories, modifiers, variants in Drizzle schema
-- ✓ Public published-menu read endpoint `/v1/menu` with Redis cache
-- ✓ Image S3 presigning for menu items
+- ✓ Menu items, categories, modifier groups, item sizes in Drizzle schema — iiko-aligned nomenclature (renamed from `menu_modifiers`/`menu_variants` in Phase 4a)
+- ✓ Category tree via nullable `menu_categories.parent_id` (composite tenant self-FK)
+- ✓ Menu items carry photos[] JSONB, БЖУ (proteins/fats/carbs/kcal), source provenance (`manual`/`iiko`/`ai`), `needs_review`, `source_external_id`
+- ✓ Modifier options carry iiko `default_amount` + `free_amount`; item sizes carry absolute `price` (not delta)
+- ✓ Stop-list as separate table (`menu_stop_list`) with read-overlay in `loadPublishedMenu`
+- ✓ Slug auto-derive via `transliteration.slugify`; slug-history kept in `menu_item_slug_aliases` for SEO redirects (D-4a-04)
+- ✓ Delayed-publish revert (5s in-memory timer per tenant + cancel/undo) — `DelayedPublishService` (CAT-06 / D-4a-05)
+- ✓ First-publish vs republish detection via `tenants.menu_first_published_at` — emits `MenuFirstPublishedV1` / `MenuRepublishedV1` outbox events (D-4a-06)
+- ✓ Redis menu-version cache with `nextval('menu_versions_seq')` fallback on Redis outage (CAT-10 / D-4a-07)
+- ✓ Public published-menu read endpoint `/v1/menu` with Redis cache and presigned photos[]
+- ✓ OpenAPI drift-check (`pnpm openapi:check`) wired as CI gate (D-4a-08)
+- ✓ Cross-tenant isolation matrix in `tenant-isolation.spec.ts` covers all 6 catalog tables (composite-FK audit green, RLS ENABLE+FORCE on every new table)
 
 **Apps (scaffolded):**
 
@@ -229,4 +238,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-30 — Phase 03 (Auth Completion / Security Core) shipped; static verification 11/11 must_haves; e2e in HUMAN-UAT pending Docker stack_
+_Last updated: 2026-05-31 — Phase 04a (Catalog Schema + API redesign) shipped; verification 19/19 must_haves; iiko nomenclature aligned (sizes, modifier_groups), photos/БЖУ/source/stop-list/slug-aliases/delayed-publish/Redis-fallback all wired; OpenAPI drift-check on CI_
