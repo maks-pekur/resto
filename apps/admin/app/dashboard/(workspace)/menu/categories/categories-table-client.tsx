@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { GripVertical, Pencil } from 'lucide-react';
 import {
   DndContext,
   type DragEndEvent,
@@ -10,7 +10,12 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  arrayMove,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
@@ -22,19 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import { archiveCategoryAction } from './archive-category-action';
 import { reorderCategoryAction } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
 import type { CategoryListItemApi } from './page';
@@ -55,7 +49,6 @@ interface SortableCategoryRowProps {
   readonly isChild: boolean;
   readonly parentName: string;
   readonly onEdit: () => void;
-  readonly onArchive: () => void;
 }
 
 function SortableCategoryRow({
@@ -63,7 +56,6 @@ function SortableCategoryRow({
   isChild,
   parentName,
   onEdit,
-  onArchive,
 }: SortableCategoryRowProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
@@ -95,14 +87,6 @@ function SortableCategoryRow({
             onClick={onEdit}
           >
             <Pencil className="size-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label={`Архивировать ${displayName}`}
-            onClick={onArchive}
-          >
-            <Trash2 className="size-4" />
           </Button>
         </div>
       </TableCell>
@@ -152,13 +136,17 @@ export function CategoriesTableClient({
 }: CategoriesTableClientProps): React.ReactElement {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
-  const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
+  const [localCategories, setLocalCategories] = React.useState(categories);
   const [, startTransition] = React.useTransition();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
+  React.useEffect(() => {
+    setLocalCategories(categories);
+  }, [categories]);
+
   const visible = React.useMemo(
-    () => categories.filter((c) => c.status !== 'archived'),
-    [categories],
+    () => localCategories.filter((c) => c.status !== 'archived'),
+    [localCategories],
   );
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
@@ -166,28 +154,34 @@ export function CategoriesTableClient({
   const handleDragEnd = (event: DragEndEvent): void => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    const dragged = categories.find((c) => c.id === String(active.id));
-    const target = categories.find((c) => c.id === String(over.id));
+    const draggedId = String(active.id);
+    const targetId = String(over.id);
+    const dragged = localCategories.find((c) => c.id === draggedId);
+    const target = localCategories.find((c) => c.id === targetId);
     if (!dragged || dragged.parentId !== target?.parentId) return;
-    const siblings = rows.map((r) => r.category).filter((c) => c.parentId === dragged.parentId);
+
+    const siblings = localCategories
+      .filter((c) => c.parentId === dragged.parentId && c.status !== 'archived')
+      .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
     const fromIdx = siblings.findIndex((c) => c.id === dragged.id);
     const toIdx = siblings.findIndex((c) => c.id === target.id);
     if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+
+    const reordered = arrayMove(siblings, fromIdx, toIdx);
+    const newSortOrders = new Map(reordered.map((c, i) => [c.id, i * 10]));
+    setLocalCategories((prev) =>
+      prev.map((c) => {
+        const newSort = newSortOrders.get(c.id);
+        return newSort !== undefined ? { ...c, sortOrder: newSort } : c;
+      }),
+    );
+
     const direction = fromIdx < toIdx ? 'down' : 'up';
     const steps = Math.abs(toIdx - fromIdx);
     startTransition(async () => {
       for (let i = 0; i < steps; i += 1) {
         await reorderCategoryAction({ error: null, success: false }, { id: dragged.id, direction });
       }
-    });
-  };
-
-  const handleConfirmArchive = (): void => {
-    if (!archiveTarget) return;
-    const id = archiveTarget.id;
-    setArchiveTarget(null);
-    startTransition(() => {
-      void archiveCategoryAction({ error: null, success: false }, { id });
     });
   };
 
@@ -250,9 +244,6 @@ export function CategoriesTableClient({
                     onEdit={() => {
                       setEditingId(category.id);
                     }}
-                    onArchive={() => {
-                      setArchiveTarget(category);
-                    }}
                   />
                 ))}
               </TableBody>
@@ -302,30 +293,6 @@ export function CategoriesTableClient({
           </div>
         </SheetContent>
       </Sheet>
-
-      <AlertDialog
-        open={archiveTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setArchiveTarget(null);
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Архивировать категорию?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {archiveTarget
-                ? `Категория «${fromLocalizedText(archiveTarget.name)}» будет скрыта. Все блюда в ней останутся в черновике. Действие можно отменить, опубликовав категорию снова.`
-                : ''}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction variant="destructive" onClick={handleConfirmArchive}>
-              Архивировать
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </>
   );
 }

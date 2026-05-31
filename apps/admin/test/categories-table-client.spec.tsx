@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 
 const { archiveMock, reorderMock } = vi.hoisted(() => ({
   archiveMock: vi.fn(() => Promise.resolve({ error: null, success: true })),
@@ -99,29 +99,6 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
     expect(napitkiRow).toBeInTheDocument();
-  });
-
-  it('opens the archive AlertDialog with the UI-SPEC §Destructive actions row-1 copy', () => {
-    render(<CategoriesTableClient categories={baseCategories} />);
-    const archiveBtn = screen.getByRole('button', {
-      name: /Архивировать Напитки/u,
-    });
-    fireEvent.click(archiveBtn);
-    expect(screen.getByText('Архивировать категорию?')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        /Категория «Напитки» будет скрыта\. Все блюда в ней останутся в черновике\. Действие можно отменить, опубликовав категорию снова\./u,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Архивировать' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Отмена' })).toBeInTheDocument();
-  });
-
-  it('confirming the archive AlertDialog calls archiveCategoryAction with the row id', () => {
-    render(<CategoriesTableClient categories={baseCategories} />);
-    fireEvent.click(screen.getByRole('button', { name: /Архивировать Напитки/u }));
-    fireEvent.click(screen.getByRole('button', { name: 'Архивировать' }));
-    expect(archiveMock).toHaveBeenCalledWith({ error: null, success: false }, { id: PARENT_A });
   });
 
   it('renders the empty state when the input list is empty', () => {
