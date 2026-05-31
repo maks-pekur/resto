@@ -5,6 +5,15 @@ vi.mock('../lib/env', () => ({
   apiOrigin: () => 'http://api.test',
   internalApiToken: () => 'token-min-16-chars-xx',
 }));
+vi.mock('next/headers', () => ({
+  cookies: () => Promise.resolve({ getAll: () => [], get: () => undefined }),
+}));
+vi.mock('../lib/api-server', () => ({
+  getActiveTenantId: () => Promise.resolve(null),
+}));
+vi.mock('../lib/active-brand-cookie', () => ({
+  readActiveBrand: () => Promise.resolve(null),
+}));
 
 const fetchMock = vi.fn<typeof fetch>();
 const originalFetch = globalThis.fetch;

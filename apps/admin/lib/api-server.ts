@@ -258,7 +258,7 @@ export const apiFetch = async <T>(
  * signup paths, or when the session is loaded but no active org is
  * set — the api will surface the appropriate 401/403 from the route.
  */
-const getActiveTenantId = cache(async (cookieHeader: string): Promise<string | null> => {
+export const getActiveTenantId = cache(async (cookieHeader: string): Promise<string | null> => {
   if (!cookieHeader) return null;
   try {
     const res = await executeWithRetry(

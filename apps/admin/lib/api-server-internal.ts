@@ -1,5 +1,8 @@
 import 'server-only';
+import { cookies } from 'next/headers';
 import { apiOrigin, internalApiToken } from './env';
+import { getActiveTenantId } from './api-server';
+import { readActiveBrand } from './active-brand-cookie';
 
 interface InternalRequestOptions {
   readonly method?: 'GET' | 'POST' | 'PATCH' | 'DELETE';
@@ -39,6 +42,16 @@ export const apiFetchInternal = async <T>(
   path: string,
   options: InternalRequestOptions = {},
 ): Promise<InternalApiResponse<T>> => {
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map((c) => `${c.name}=${c.value}`)
+    .join('; ');
+  const [activeTenantId, activeBrand] = await Promise.all([
+    getActiveTenantId(cookieHeader),
+    readActiveBrand(),
+  ]);
+
   const url = `${apiOrigin()}${path.startsWith('/') ? '' : '/'}${path}`;
   const method = options.method ?? 'GET';
   const isGet = method === 'GET';
@@ -51,6 +64,8 @@ export const apiFetchInternal = async <T>(
         headers: {
           accept: 'application/json',
           'x-internal-token': internalApiToken(),
+          ...(activeTenantId ? { 'x-tenant-id': activeTenantId } : {}),
+          ...(activeBrand ? { 'x-brand-slug': activeBrand } : {}),
           ...(options.body !== undefined ? { 'content-type': 'application/json' } : {}),
         },
         body: options.body !== undefined ? JSON.stringify(options.body) : undefined,

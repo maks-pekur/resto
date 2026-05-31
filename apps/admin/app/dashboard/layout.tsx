@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import type { CSSProperties } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
-import { SiteFooter } from '@/components/site-footer';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { apiFetch } from '@/lib/api-server';
 import { readActiveBrand, signActiveBrand } from '@/lib/active-brand-cookie';
@@ -68,7 +67,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <div className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">
           {children}
         </div>
-        <SiteFooter />
       </SidebarInset>
     </SidebarProvider>
   );
