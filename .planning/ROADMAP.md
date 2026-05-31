@@ -190,7 +190,7 @@ Plans:
 
 **Wave 6** _(after Wave 5)_
 
-- [ ] 04A-06-PLAN.md — Application + infrastructure refactor: DelayedPublishService (5s timer per tenant); PublishMenuService.doPublish with first-publish detection + outbox emit; StopListService with cache invalidate; UpsertModifierGroup/Option/ItemSize services; slug auto-derive + alias insert on change; repository refactor against renamed tables + photos + BJU read; MenuVersionPort.bump nextval fallback; CatalogCachePort.invalidate; GRANT DELETE on menu_stop_list (CAT-06, CAT-10; D-4a-04/05/06/07/10; ADR-0020 I-4/I-6)
+- [x] 04A-06-PLAN.md — Application + infrastructure refactor: DelayedPublishService (5s timer per tenant); PublishMenuService.doPublish with first-publish detection + outbox emit; StopListService with cache invalidate; UpsertModifierGroup/Option/ItemSize services; slug auto-derive + alias insert on change; repository refactor against renamed tables + photos + BJU read; MenuVersionPort.bump nextval fallback; CatalogCachePort.invalidate; GRANT DELETE on menu_stop_list (CAT-06, CAT-10; D-4a-04/05/06/07/10; ADR-0020 I-4/I-6)
 
 **Wave 7** _(after Wave 6)_
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 5/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 6/7            | In Progress   |            |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
