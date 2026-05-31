@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
-stopped_at: Phase 4b UI-SPEC approved
-last_updated: '2026-05-31T10:00:35.359Z'
-last_activity: 2026-05-31 -- Phase 04b planning complete
+stopped_at: Completed 04b-01-PLAN.md
+last_updated: '2026-05-31T12:08:36.628Z'
+last_activity: 2026-05-31
 progress:
   total_phases: 18
   completed_phases: 4
   total_plans: 32
-  completed_plans: 23
+  completed_plans: 24
   percent: 22
 ---
 
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 04b — catalog admin ui
+**Current focus:** Phase 04b — catalog-admin-ui
 **Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
 
 ## Current Position
 
-Phase: 04b
-Plan: Not started
+Phase: 04b (catalog-admin-ui) — EXECUTING
+Plan: 2 of 9
 Status: Ready to execute
-Last activity: 2026-05-31 -- Phase 04b planning complete
+Last activity: 2026-05-31
 
-Progress: [█▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒] 6% of MVP-1 (1/16 phases)
+Progress: [████████░░] 75%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -69,6 +69,7 @@ Still deferred to Phase 03:
 - Trend: —
 
 _Updated after each plan completion_
+| Phase 04b-catalog-admin-ui P01 | 15min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Recent decisions affecting current work:
 - 2026-05-24 (persona review): ANL-04 redefined — order conversion rate = paid_orders / checkout_initiations from `orders` table; full client-side funnel deferred to v2 (MKT-06)
 - 2026-05-24 (user): Phase 16 (Self-serve Onboarding) kept as MVP-1; Phase 8 uses full Stripe Connect Express (not Checkout); CONT-03, CONT-02, CAT-08, QRM-10, PROMO-02, TEN-10, TEN-15, FIN-06 all kept in scope per broad-MVP-scope rule
 - 2026-05-27 (user, AI-driven pivot via /gsd-explore): RestOS pivots to AI-driven positioning. Three-milestone structure MVP-1/2/3 replaces flat 16-phase MVP. iiko = partner not competitor. Standalone-first preserved. Site reordered before QR-menu. Phase 16 Self-serve Onboarding (non-AI) will be superseded by MVP-2 AI onboarding constructor. Open question for Phase 12 CRM discuss: include MVP-2-ready per-customer profile fields to avoid retrofit? Authoritative context: `.planning/notes/ai-driven-pivot.md`, seeds `mvp2-ai-platform.md` + `mvp3-channels-iiko.md`.
+- [Phase ?]: 04b-01: shadcn ESLint override extended to keep pnpm dlx shadcn add a clean upgrade path (apps/admin/eslint.config.mjs)
+- [Phase ?]: 04b-01: apiFetchInternal hardened with executeWithRetry mirroring apps/admin/lib/api-server.ts (AbortSignal.timeout, retry-once on idempotent GET 5xx, PATCH added)
+- [Phase ?]: 04b-01: TDD RED+GREEN co-committed when pre-commit typecheck refuses RED-only (e.g. spec references types not yet widened)
 
 ### Pending Todos
 
@@ -125,7 +129,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T08:55:32.620Z
-Stopped at: Phase 4b UI-SPEC approved
-Resume file: .planning/phases/04b-catalog-admin-ui/04B-UI-SPEC.md
+Last session: 2026-05-31T12:08:30.460Z
+Stopped at: Completed 04b-01-PLAN.md
+Resume file:
 Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
