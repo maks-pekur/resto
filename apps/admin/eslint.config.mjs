@@ -31,6 +31,13 @@ export default [
     rules: {
       '@typescript-eslint/consistent-type-definitions': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',
+      // Rules below also fire on stock shadcn templates (e.g. `form`,
+      // `progress`) — relaxing them here keeps `pnpm dlx shadcn add …`
+      // a clean upgrade path per apps/CLAUDE.md.
+      '@typescript-eslint/no-unnecessary-condition': 'off',
+      '@typescript-eslint/no-unnecessary-template-expression': 'off',
+      '@typescript-eslint/no-unnecessary-type-conversion': 'off',
+      '@typescript-eslint/prefer-nullish-coalescing': 'off',
     },
   },
   {
