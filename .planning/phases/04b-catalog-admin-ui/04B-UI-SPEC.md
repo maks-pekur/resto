@@ -1,10 +1,11 @@
 ---
 phase: 4b
 slug: catalog-admin-ui
-status: draft
+status: approved
 shadcn_initialized: true
 preset: new-york / neutral
 created: 2026-05-31
+reviewed_at: 2026-05-31
 ---
 
 # Phase 4b — UI Design Contract: Catalog Admin UI
