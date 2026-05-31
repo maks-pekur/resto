@@ -3,9 +3,21 @@
 Items discovered out-of-scope during plan execution. Tracked here for future
 plan attention.
 
-## D-04a-deferred-01: tenancy_erase_tenant references renamed catalog tables
+## D-04a-deferred-01: tenancy_erase_tenant references renamed catalog tables — RESOLVED in 04a-07
 
 **Discovered during:** Plan 04a-06 execution (db:test failure on `erase-includes-brands.spec.ts` and `tenancy-erase-guard.spec.ts`).
+
+**Resolution (Plan 04a-07):** Migration
+`packages/db/migrations/0041_tenancy_erase_phase4a_tables.sql` DROPs +
+RECREATEs `tenancy_erase_tenant(uuid, text, text)` with the renamed catalog
+tables (`menu_item_sizes`, `menu_modifier_groups`, `menu_item_modifier_groups`,
+`menu_modifier_options`) plus the two new Phase 4a tables (`menu_stop_list`,
+`menu_item_slug_aliases`) in the DELETE list for GDPR completeness. Both
+previously failing integration specs now pass.
+
+---
+
+(Original entry preserved below for audit trail.)
 
 **Issue:** The PL/pgSQL function `tenancy_erase_tenant` created in
 `packages/db/migrations/0011_tenancy_erase_function.sql` still references the
