@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
 stopped_at: Completed 04b-01-PLAN.md
-last_updated: '2026-05-31T12:08:36.628Z'
+last_updated: '2026-05-31T12:35:50.773Z'
 last_activity: 2026-05-31
 progress:
   total_phases: 18
   completed_phases: 4
   total_plans: 32
-  completed_plans: 24
+  completed_plans: 25
   percent: 22
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 04b (catalog-admin-ui) — EXECUTING
-Plan: 2 of 9
+Plan: 3 of 9
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 78%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -70,6 +70,7 @@ Still deferred to Phase 03:
 
 _Updated after each plan completion_
 | Phase 04b-catalog-admin-ui P01 | 15min | 3 tasks | 13 files |
+| Phase 04b P02 | ~40min | 3 tasks | 26 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,10 @@ Recent decisions affecting current work:
 - [Phase ?]: 04b-01: shadcn ESLint override extended to keep pnpm dlx shadcn add a clean upgrade path (apps/admin/eslint.config.mjs)
 - [Phase ?]: 04b-01: apiFetchInternal hardened with executeWithRetry mirroring apps/admin/lib/api-server.ts (AbortSignal.timeout, retry-once on idempotent GET 5xx, PATCH added)
 - [Phase ?]: 04b-01: TDD RED+GREEN co-committed when pre-commit typecheck refuses RED-only (e.g. spec references types not yet widened)
+- [Phase ?]: 04b-02: item list status filter accepts 'all'|'active'|'draft'|'published'|'archived'; 'active' is the documented default (excludes archived only) per D-03
+- [Phase ?]: 04b-02: archive endpoints idempotent on already-archived rows (204, not 409); MenuCategoryAlreadyArchivedError + MenuItemAlreadyArchivedError ship anyway as defensive 409 mapping for future strict-mode callers
+- [Phase ?]: 04b-02: draft-diff scope is items-only for MVP-1 (Open Question #5 resolved); cap 100 rows with truncatedCount sentinel
+- [Phase ?]: 04b-02: migration 0042 idempotent — ADD COLUMN IF NOT EXISTS + DO-block-guarded CHECK constraint + backfill UPDATE that only flips status='draft' rows
 
 ### Pending Todos
 
@@ -129,7 +134,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T12:08:30.460Z
+Last session: 2026-05-31T12:35:38.821Z
 Stopped at: Completed 04b-01-PLAN.md
 Resume file:
-Branch: main (Phase 01 + follow-ups fully landed; next phase 02 — Admin Shell)
+None

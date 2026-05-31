@@ -220,7 +220,7 @@ Plans:
 
 **Wave 1** _(after Wave 0)_
 
-- [ ] 04b-02-PLAN.md — Backend addendum: migration 0042 (menu_categories.status) + 9 application services + 7 GET + 2 PATCH archive endpoints + OpenAPI regen + drift gate + [BLOCKING] db:migrate (CAT-01, CAT-02, CAT-04, CAT-05, CAT-07, CAT-08)
+- [x] 04b-02-PLAN.md — Backend addendum: migration 0042 (menu_categories.status) + 9 application services + 7 GET + 2 PATCH archive endpoints + OpenAPI regen + drift gate + [BLOCKING] db:migrate (CAT-01, CAT-02, CAT-04, CAT-05, CAT-07, CAT-08)
 
 **Wave 2** _(after Wave 1)_
 
@@ -485,7 +485,7 @@ Notes:
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
-| 4b. Catalog Admin UI                          | 1/9            | In Progress   |            |
+| 4b. Catalog Admin UI                          | 2/9            | In Progress   |            |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |

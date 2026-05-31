@@ -74,14 +74,14 @@
 
 > CRUD UX for menu management. Builds on existing `catalog` context API.
 
-- [ ] **CAT-01**: Operator creates / edits / archives menu categories; categories have explicit ordering
-- [ ] **CAT-02**: Operator creates / edits / archives menu items (name, description, price, allergens, BJU, ingredients, photo)
+- [x] **CAT-01**: Operator creates / edits / archives menu categories; categories have explicit ordering
+- [x] **CAT-02**: Operator creates / edits / archives menu items (name, description, price, allergens, BJU, ingredients, photo)
 - [ ] **CAT-03**: Operator uploads item photo to S3 via presigned PUT; preview shown
-- [ ] **CAT-04**: Operator creates / edits modifier groups + options (per-option price delta)
-- [ ] **CAT-05**: Operator creates variants (size/portion) per item with price overrides
+- [x] **CAT-04**: Operator creates / edits modifier groups + options (per-option price delta)
+- [x] **CAT-05**: Operator creates variants (size/portion) per item with price overrides
 - [ ] **CAT-06**: Operator triggers publish; snapshot becomes new published version (cache version bumped)
-- [ ] **CAT-07**: Operator manages manual stop-list (add/remove items as 86'd)
-- [ ] **CAT-08**: Operator sees diff between draft and currently-published menu before publishing
+- [x] **CAT-07**: Operator manages manual stop-list (add/remove items as 86'd)
+- [x] **CAT-08**: Operator sees diff between draft and currently-published menu before publishing
 - [ ] **CAT-09**: Catalog DTO/Zod max-length constraints applied on all free-text fields (`imageS3Key.max(1024)`, `allergens` array `.max(50)`, etc.)
 - [ ] **CAT-10**: Redis menu-version counter uses Postgres `nextval('menu_versions_seq')` sequence as authoritative fallback when Redis is unavailable; resolves cache-key collision on concurrent publish during Redis outage
 
@@ -382,164 +382,164 @@
 
 > Updated 2026-05-24 — revised after persona reviews. 151 v1 requirements total (ADM-00 appended 2026-05-27).
 
-| Requirement | Phase         | Status  |
-| ----------- | ------------- | ------- |
-| TEN-01      | Phase 1       | Pending |
-| TEN-02      | Phase 1       | Pending |
-| TEN-03      | Phase 1       | Pending |
-| TEN-04      | Phase 1       | Pending |
-| TEN-05      | Phase 1       | Pending |
-| TEN-06      | Phase 1       | Pending |
-| TEN-07      | Phase 1       | Pending |
-| TEN-08      | Phase 1       | Pending |
-| TEN-09      | Phase 1       | Pending |
-| TEN-10      | Phase 1       | Pending |
-| TEN-11      | Phase 1       | Pending |
-| TEN-12      | Phase 1       | Pending |
-| TEN-13      | Phase 1       | Pending |
-| TEN-14      | Phase 1       | Pending |
-| TEN-15      | Phase 1       | Pending |
-| TEN-16      | Phase 1       | Pending |
-| TEN-17      | Phase 1       | Pending |
-| TEN-18      | Phase 1       | Pending |
-| ADM-00      | Phase 2       | Pending |
-| ADM-01      | Phase 2       | Pending |
-| ADM-02      | Phase 2       | Pending |
-| ADM-03      | Phase 2       | Pending |
-| ADM-04      | Phase 2       | Pending |
-| ADM-05      | Phase 2       | Pending |
-| ADM-06      | Phase 2       | Pending |
-| ADM-07      | Phase 2       | Pending |
-| ADM-08      | Phase 2       | Pending |
-| AUTH-01     | Phase 3       | Pending |
-| AUTH-02     | Phase 3       | Pending |
-| AUTH-03     | Phase 3       | Pending |
-| AUTH-04     | Phase 3       | Pending |
-| AUTH-05     | Phase 3       | Pending |
-| AUTH-06     | Phase 3       | Pending |
-| AUTH-07     | Phase 3       | Pending |
-| AUTH-08     | Phase 3       | Pending |
-| AUTH-09     | Phase 3       | Pending |
-| AUTH-10     | Phase 3       | Pending |
-| AUTH-11     | Phase 3       | Pending |
-| CAT-01      | Phase 4b      | Pending |
-| CAT-02      | Phase 4a + 4b | Pending |
-| CAT-03      | Phase 4b      | Pending |
-| CAT-04      | Phase 4a + 4b | Pending |
-| CAT-05      | Phase 4a + 4b | Pending |
-| CAT-06      | Phase 4a      | Pending |
-| CAT-07      | Phase 4b      | Pending |
-| CAT-08      | Phase 4b      | Pending |
-| CAT-09      | Phase 4a      | Pending |
-| CAT-10      | Phase 4a      | Pending |
-| QRM-01      | Phase 5       | Pending |
-| QRM-02      | Phase 5       | Pending |
-| QRM-03      | Phase 5       | Pending |
-| QRM-04      | Phase 5       | Pending |
-| QRM-05      | Phase 5       | Pending |
-| QRM-06      | Phase 5       | Pending |
-| QRM-07      | Phase 5       | Pending |
-| QRM-08      | Phase 5       | Pending |
-| QRM-09      | Phase 5       | Pending |
-| QRM-10      | Phase 5       | Pending |
-| QRM-11      | Phase 5       | Pending |
-| QRM-12      | Phase 5       | Pending |
-| SITE-01     | Phase 6       | Pending |
-| SITE-02     | Phase 6       | Pending |
-| SITE-03     | Phase 6       | Pending |
-| SITE-04     | Phase 6       | Pending |
-| SITE-05     | Phase 6       | Pending |
-| SITE-06     | Phase 6       | Pending |
-| SITE-07     | Phase 6       | Pending |
-| SITE-09     | Phase 6       | Pending |
-| SITE-10     | Phase 6       | Pending |
-| ORD-01      | Phase 7       | Pending |
-| ORD-02      | Phase 7       | Pending |
-| ORD-03      | Phase 7       | Pending |
-| ORD-04      | Phase 7       | Pending |
-| ORD-05      | Phase 7       | Pending |
-| ORD-06      | Phase 7       | Pending |
-| ORD-07      | Phase 7       | Pending |
-| ORD-08      | Phase 7       | Pending |
-| ORD-09      | Phase 7       | Pending |
-| ORD-10      | Phase 7       | Pending |
-| ORD-11      | Phase 7       | Pending |
-| ORD-12      | Phase 7       | Pending |
-| PROMO-06    | Phase 7       | Pending |
-| PAY-01      | Phase 8       | Pending |
-| PAY-02      | Phase 8       | Pending |
-| PAY-03      | Phase 8       | Pending |
-| PAY-04      | Phase 8       | Pending |
-| PAY-05      | Phase 8       | Pending |
-| PAY-06      | Phase 8       | Pending |
-| PAY-07      | Phase 8       | Pending |
-| PAY-08      | Phase 8       | Pending |
-| PAY-09      | Phase 8       | Pending |
-| PAY-10      | Phase 8       | Pending |
-| PAY-11      | Phase 8       | Pending |
-| PAY-12      | Phase 8       | Pending |
-| PAY-13      | Phase 8       | Pending |
-| SITE-08     | Phase 8       | Pending |
-| GNOTIF-01   | Phase 8       | Pending |
-| GNOTIF-02   | Phase 8       | Pending |
-| GNOTIF-03   | Phase 8       | Pending |
-| GNOTIF-04   | Phase 8       | Pending |
-| DELV-01     | Phase 9       | Pending |
-| DELV-02     | Phase 9       | Pending |
-| DELV-03     | Phase 9       | Pending |
-| DELV-04     | Phase 9       | Pending |
-| DELV-05     | Phase 9       | Pending |
-| DELV-06     | Phase 9       | Pending |
-| DELV-07     | Phase 9       | Pending |
-| DELV-08     | Phase 9       | Pending |
-| ORDINT-01   | Phase 10      | Pending |
-| ORDINT-02   | Phase 10      | Pending |
-| ORDINT-03   | Phase 10      | Pending |
-| ORDINT-04   | Phase 10      | Pending |
-| ORDINT-05   | Phase 10      | Pending |
-| ORDINT-06   | Phase 10      | Pending |
-| ORDINT-07   | Phase 10      | Pending |
-| ORDINT-08   | Phase 10      | Pending |
-| ORDINT-09   | Phase 10      | Pending |
-| ORDINT-10   | Phase 10      | Pending |
-| PROMO-01    | Phase 11      | Pending |
-| PROMO-02    | Phase 11      | Pending |
-| PROMO-03    | Phase 11      | Pending |
-| PROMO-04    | Phase 11      | Pending |
-| PROMO-05    | Phase 11      | Pending |
-| CRM-01      | Phase 12      | Pending |
-| CRM-02      | Phase 12      | Pending |
-| CRM-03      | Phase 12      | Pending |
-| CRM-04      | Phase 12      | Pending |
-| CRM-05      | Phase 12      | Pending |
-| ANL-01      | Phase 13      | Pending |
-| ANL-02      | Phase 13      | Pending |
-| ANL-03      | Phase 13      | Pending |
-| ANL-04      | Phase 13      | Pending |
-| ANL-05      | Phase 13      | Pending |
-| FIN-01      | Phase 14      | Pending |
-| FIN-02      | Phase 14      | Pending |
-| FIN-03      | Phase 14      | Pending |
-| FIN-04      | Phase 14      | Pending |
-| FIN-05      | Phase 14      | Pending |
-| FIN-06      | Phase 14      | Pending |
-| CONT-01     | Phase 15      | Pending |
-| CONT-02     | Phase 15      | Pending |
-| CONT-03     | Phase 15      | Pending |
-| CONT-04     | Phase 15      | Pending |
-| CONT-05     | Phase 15      | Pending |
-| CONT-06     | Phase 15      | Pending |
-| CONT-07     | Phase 15      | Pending |
-| ONB-01      | Phase 16      | Pending |
-| ONB-02      | Phase 16      | Pending |
-| ONB-03      | Phase 16      | Pending |
-| ONB-04      | Phase 16      | Pending |
-| ONB-05      | Phase 16      | Pending |
-| TEAM-01     | Phase 17      | Pending |
-| TEAM-02     | Phase 17      | Pending |
-| TEAM-03     | Phase 17      | Pending |
-| TEAM-04     | Phase 17      | Pending |
-| TEAM-05     | Phase 17      | Pending |
+| Requirement | Phase         | Status   |
+| ----------- | ------------- | -------- |
+| TEN-01      | Phase 1       | Pending  |
+| TEN-02      | Phase 1       | Pending  |
+| TEN-03      | Phase 1       | Pending  |
+| TEN-04      | Phase 1       | Pending  |
+| TEN-05      | Phase 1       | Pending  |
+| TEN-06      | Phase 1       | Pending  |
+| TEN-07      | Phase 1       | Pending  |
+| TEN-08      | Phase 1       | Pending  |
+| TEN-09      | Phase 1       | Pending  |
+| TEN-10      | Phase 1       | Pending  |
+| TEN-11      | Phase 1       | Pending  |
+| TEN-12      | Phase 1       | Pending  |
+| TEN-13      | Phase 1       | Pending  |
+| TEN-14      | Phase 1       | Pending  |
+| TEN-15      | Phase 1       | Pending  |
+| TEN-16      | Phase 1       | Pending  |
+| TEN-17      | Phase 1       | Pending  |
+| TEN-18      | Phase 1       | Pending  |
+| ADM-00      | Phase 2       | Pending  |
+| ADM-01      | Phase 2       | Pending  |
+| ADM-02      | Phase 2       | Pending  |
+| ADM-03      | Phase 2       | Pending  |
+| ADM-04      | Phase 2       | Pending  |
+| ADM-05      | Phase 2       | Pending  |
+| ADM-06      | Phase 2       | Pending  |
+| ADM-07      | Phase 2       | Pending  |
+| ADM-08      | Phase 2       | Pending  |
+| AUTH-01     | Phase 3       | Pending  |
+| AUTH-02     | Phase 3       | Pending  |
+| AUTH-03     | Phase 3       | Pending  |
+| AUTH-04     | Phase 3       | Pending  |
+| AUTH-05     | Phase 3       | Pending  |
+| AUTH-06     | Phase 3       | Pending  |
+| AUTH-07     | Phase 3       | Pending  |
+| AUTH-08     | Phase 3       | Pending  |
+| AUTH-09     | Phase 3       | Pending  |
+| AUTH-10     | Phase 3       | Pending  |
+| AUTH-11     | Phase 3       | Pending  |
+| CAT-01      | Phase 4b      | Complete |
+| CAT-02      | Phase 4a + 4b | Complete |
+| CAT-03      | Phase 4b      | Pending  |
+| CAT-04      | Phase 4a + 4b | Complete |
+| CAT-05      | Phase 4a + 4b | Complete |
+| CAT-06      | Phase 4a      | Pending  |
+| CAT-07      | Phase 4b      | Complete |
+| CAT-08      | Phase 4b      | Complete |
+| CAT-09      | Phase 4a      | Pending  |
+| CAT-10      | Phase 4a      | Pending  |
+| QRM-01      | Phase 5       | Pending  |
+| QRM-02      | Phase 5       | Pending  |
+| QRM-03      | Phase 5       | Pending  |
+| QRM-04      | Phase 5       | Pending  |
+| QRM-05      | Phase 5       | Pending  |
+| QRM-06      | Phase 5       | Pending  |
+| QRM-07      | Phase 5       | Pending  |
+| QRM-08      | Phase 5       | Pending  |
+| QRM-09      | Phase 5       | Pending  |
+| QRM-10      | Phase 5       | Pending  |
+| QRM-11      | Phase 5       | Pending  |
+| QRM-12      | Phase 5       | Pending  |
+| SITE-01     | Phase 6       | Pending  |
+| SITE-02     | Phase 6       | Pending  |
+| SITE-03     | Phase 6       | Pending  |
+| SITE-04     | Phase 6       | Pending  |
+| SITE-05     | Phase 6       | Pending  |
+| SITE-06     | Phase 6       | Pending  |
+| SITE-07     | Phase 6       | Pending  |
+| SITE-09     | Phase 6       | Pending  |
+| SITE-10     | Phase 6       | Pending  |
+| ORD-01      | Phase 7       | Pending  |
+| ORD-02      | Phase 7       | Pending  |
+| ORD-03      | Phase 7       | Pending  |
+| ORD-04      | Phase 7       | Pending  |
+| ORD-05      | Phase 7       | Pending  |
+| ORD-06      | Phase 7       | Pending  |
+| ORD-07      | Phase 7       | Pending  |
+| ORD-08      | Phase 7       | Pending  |
+| ORD-09      | Phase 7       | Pending  |
+| ORD-10      | Phase 7       | Pending  |
+| ORD-11      | Phase 7       | Pending  |
+| ORD-12      | Phase 7       | Pending  |
+| PROMO-06    | Phase 7       | Pending  |
+| PAY-01      | Phase 8       | Pending  |
+| PAY-02      | Phase 8       | Pending  |
+| PAY-03      | Phase 8       | Pending  |
+| PAY-04      | Phase 8       | Pending  |
+| PAY-05      | Phase 8       | Pending  |
+| PAY-06      | Phase 8       | Pending  |
+| PAY-07      | Phase 8       | Pending  |
+| PAY-08      | Phase 8       | Pending  |
+| PAY-09      | Phase 8       | Pending  |
+| PAY-10      | Phase 8       | Pending  |
+| PAY-11      | Phase 8       | Pending  |
+| PAY-12      | Phase 8       | Pending  |
+| PAY-13      | Phase 8       | Pending  |
+| SITE-08     | Phase 8       | Pending  |
+| GNOTIF-01   | Phase 8       | Pending  |
+| GNOTIF-02   | Phase 8       | Pending  |
+| GNOTIF-03   | Phase 8       | Pending  |
+| GNOTIF-04   | Phase 8       | Pending  |
+| DELV-01     | Phase 9       | Pending  |
+| DELV-02     | Phase 9       | Pending  |
+| DELV-03     | Phase 9       | Pending  |
+| DELV-04     | Phase 9       | Pending  |
+| DELV-05     | Phase 9       | Pending  |
+| DELV-06     | Phase 9       | Pending  |
+| DELV-07     | Phase 9       | Pending  |
+| DELV-08     | Phase 9       | Pending  |
+| ORDINT-01   | Phase 10      | Pending  |
+| ORDINT-02   | Phase 10      | Pending  |
+| ORDINT-03   | Phase 10      | Pending  |
+| ORDINT-04   | Phase 10      | Pending  |
+| ORDINT-05   | Phase 10      | Pending  |
+| ORDINT-06   | Phase 10      | Pending  |
+| ORDINT-07   | Phase 10      | Pending  |
+| ORDINT-08   | Phase 10      | Pending  |
+| ORDINT-09   | Phase 10      | Pending  |
+| ORDINT-10   | Phase 10      | Pending  |
+| PROMO-01    | Phase 11      | Pending  |
+| PROMO-02    | Phase 11      | Pending  |
+| PROMO-03    | Phase 11      | Pending  |
+| PROMO-04    | Phase 11      | Pending  |
+| PROMO-05    | Phase 11      | Pending  |
+| CRM-01      | Phase 12      | Pending  |
+| CRM-02      | Phase 12      | Pending  |
+| CRM-03      | Phase 12      | Pending  |
+| CRM-04      | Phase 12      | Pending  |
+| CRM-05      | Phase 12      | Pending  |
+| ANL-01      | Phase 13      | Pending  |
+| ANL-02      | Phase 13      | Pending  |
+| ANL-03      | Phase 13      | Pending  |
+| ANL-04      | Phase 13      | Pending  |
+| ANL-05      | Phase 13      | Pending  |
+| FIN-01      | Phase 14      | Pending  |
+| FIN-02      | Phase 14      | Pending  |
+| FIN-03      | Phase 14      | Pending  |
+| FIN-04      | Phase 14      | Pending  |
+| FIN-05      | Phase 14      | Pending  |
+| FIN-06      | Phase 14      | Pending  |
+| CONT-01     | Phase 15      | Pending  |
+| CONT-02     | Phase 15      | Pending  |
+| CONT-03     | Phase 15      | Pending  |
+| CONT-04     | Phase 15      | Pending  |
+| CONT-05     | Phase 15      | Pending  |
+| CONT-06     | Phase 15      | Pending  |
+| CONT-07     | Phase 15      | Pending  |
+| ONB-01      | Phase 16      | Pending  |
+| ONB-02      | Phase 16      | Pending  |
+| ONB-03      | Phase 16      | Pending  |
+| ONB-04      | Phase 16      | Pending  |
+| ONB-05      | Phase 16      | Pending  |
+| TEAM-01     | Phase 17      | Pending  |
+| TEAM-02     | Phase 17      | Pending  |
+| TEAM-03     | Phase 17      | Pending  |
+| TEAM-04     | Phase 17      | Pending  |
+| TEAM-05     | Phase 17      | Pending  |
 
 **Coverage:**
 
