@@ -6,13 +6,20 @@ import type { CatalogRepository } from '../../../src/contexts/catalog/domain/por
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 
-const buildRepo = (): CatalogRepository => ({
-  loadPublishedMenu: vi.fn(),
-  findPublishedItem: vi.fn(),
-  upsertCategory: vi.fn().mockResolvedValue({ id: 'category-uuid' }),
-  upsertItem: vi.fn(),
-  upsertModifier: vi.fn(),
-});
+const buildRepo = (): CatalogRepository =>
+  ({
+    loadPublishedMenu: vi.fn(),
+    findPublishedItem: vi.fn(),
+    upsertCategory: vi.fn().mockResolvedValue({ id: 'category-uuid' }),
+    upsertItem: vi.fn(),
+    upsertModifierGroup: vi.fn(),
+    upsertModifierOption: vi.fn(),
+    upsertItemSize: vi.fn(),
+    addToStopList: vi.fn(),
+    removeFromStopList: vi.fn(),
+    getMenuFirstPublishedAt: vi.fn(),
+    insertSlugAlias: vi.fn(),
+  }) as unknown as CatalogRepository;
 
 const baseInput = {
   slug: Slug.parse('starters'),
@@ -36,11 +43,28 @@ describe('UpsertCategoryService', () => {
     expect(repo.upsertCategory).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
       brandId: null,
+      parentId: null,
       slug: 'starters',
       name: { en: 'Starters' },
       description: null,
       sortOrder: 0,
     });
+  });
+
+  it('auto-derives a slug from the localized name when none is supplied (D-4a-04)', async () => {
+    const repo = buildRepo();
+    const service = new UpsertCategoryService(repo);
+
+    await runInTenantContext({ tenantId: TENANT_ID }, () =>
+      service.execute({
+        ...baseInput,
+        slug: undefined,
+        name: LocalizedText.parse({ ru: 'Закуски' }),
+      }),
+    );
+
+    const call = vi.mocked(repo.upsertCategory).mock.calls[0]?.[0];
+    expect(call?.slug).toBe('zakuski');
   });
 
   it('passes through `id` when provided (update path) and omits it otherwise (insert path)', async () => {

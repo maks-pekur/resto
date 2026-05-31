@@ -7,13 +7,20 @@ import type { CatalogRepository } from '../../../src/contexts/catalog/domain/por
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 const CATEGORY_ID = '22222222-2222-4222-8222-222222222222';
 
-const buildRepo = (): CatalogRepository => ({
-  loadPublishedMenu: vi.fn(),
-  findPublishedItem: vi.fn(),
-  upsertCategory: vi.fn(),
-  upsertItem: vi.fn().mockResolvedValue({ id: 'item-uuid' }),
-  upsertModifier: vi.fn(),
-});
+const buildRepo = (): CatalogRepository =>
+  ({
+    loadPublishedMenu: vi.fn(),
+    findPublishedItem: vi.fn(),
+    upsertCategory: vi.fn(),
+    upsertItem: vi.fn().mockResolvedValue({ id: 'item-uuid' }),
+    upsertModifierGroup: vi.fn(),
+    upsertModifierOption: vi.fn(),
+    upsertItemSize: vi.fn(),
+    addToStopList: vi.fn(),
+    removeFromStopList: vi.fn(),
+    getMenuFirstPublishedAt: vi.fn(),
+    insertSlugAlias: vi.fn(),
+  }) as unknown as CatalogRepository;
 
 const baseInput = {
   categoryId: CATEGORY_ID,
@@ -37,7 +44,7 @@ const baseInput = {
 };
 
 describe('UpsertItemService', () => {
-  it('forwards a tenant-scoped row including category and price details', async () => {
+  it('forwards a tenant-scoped row including category, price, and photos', async () => {
     const repo = buildRepo();
     const service = new UpsertItemService(repo);
 
@@ -55,8 +62,16 @@ describe('UpsertItemService', () => {
       description: null,
       basePrice: '12.50',
       currency: 'USD',
-      imageS3Key: null,
+      photos: [],
       allergens: null,
+      proteins: null,
+      fats: null,
+      carbs: null,
+      kcal: null,
+      nutritionEstimated: false,
+      source: 'manual',
+      needsReview: false,
+      sourceExternalId: null,
       status: 'draft',
       sortOrder: 0,
     });
@@ -70,7 +85,7 @@ describe('UpsertItemService', () => {
     expect(call && 'id' in call).toBe(false);
   });
 
-  it('preserves status="published" and allergens list when provided', async () => {
+  it('forwards the full photos array to the repo (no first-photo shim)', async () => {
     const repo = buildRepo();
     const service = new UpsertItemService(repo);
     await runInTenantContext({ tenantId: TENANT_ID }, () =>
@@ -78,13 +93,31 @@ describe('UpsertItemService', () => {
         ...baseInput,
         status: 'published',
         allergens: ['gluten', 'dairy'],
-        photos: [{ s3Key: 'tenants/11/items/item.jpg', sortOrder: 0 }],
+        photos: [
+          { s3Key: 'tenants/11/items/item.jpg', sortOrder: 0 },
+          { s3Key: 'tenants/11/items/item-2.jpg', sortOrder: 1 },
+        ],
       }),
     );
     const call = vi.mocked(repo.upsertItem).mock.calls[0]?.[0];
     expect(call?.status).toBe('published');
     expect(call?.allergens).toEqual(['gluten', 'dairy']);
-    expect(call?.imageS3Key).toBe('tenants/11/items/item.jpg');
+    expect(call?.photos).toHaveLength(2);
+    expect(call?.photos[0]?.s3Key).toBe('tenants/11/items/item.jpg');
+  });
+
+  it('auto-derives a slug from the localized name when none is supplied (D-4a-04)', async () => {
+    const repo = buildRepo();
+    const service = new UpsertItemService(repo);
+    await runInTenantContext({ tenantId: TENANT_ID }, () =>
+      service.execute({
+        ...baseInput,
+        slug: undefined,
+        name: LocalizedText.parse({ ru: 'Цезарь с курицей' }),
+      }),
+    );
+    const call = vi.mocked(repo.upsertItem).mock.calls[0]?.[0];
+    expect(call?.slug).toBe('cezar-s-kuricey');
   });
 
   it('throws when no tenant context is bound', async () => {

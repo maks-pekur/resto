@@ -1,7 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { getBrandId, requireTenantContext } from '@resto/db';
+import { getBrandId, requireTenantContext, type MenuItemPhoto } from '@resto/db';
 import { Currency, MoneyAmount } from '@resto/domain';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
+import { deriveSlugFromName } from './slug-util';
 import type { UpsertItemInput } from './dto';
 
 @Injectable()
@@ -16,24 +17,46 @@ export class UpsertItemService {
     const currency = input.currency as Currency;
     const ctx = requireTenantContext();
     const brandId = getBrandId() ?? null;
-    // 04A-05: slug optional in DTO (auto-derived in plan 06). imageS3Key removed
-    // in favour of `photos[]`; until plan 06 refactors the repository row, we
-    // derive imageS3Key from the first photo so existing storage code stays
-    // valid. Plan 06 replaces the repo row to accept `photos[]` directly.
-    return this.repo.upsertItem({
+    // D-4a-04 / RESEARCH.md Pattern 4: auto-derive slug from name when
+    // operator did not supply one. Slug-change alias insertion happens at the
+    // repository layer (single transaction with the upsert so the alias and
+    // the new slug commit atomically).
+    const slug = input.slug ?? deriveSlugFromName(input.name);
+    // DTO `photos` is `MenuItemPhotoSchema[]` (Zod) — structurally equivalent
+    // to the DB `MenuItemPhoto` interface but with `optional()` fields typed
+    // as `T | undefined` rather than `T?`. Strip undefineds for
+    // exactOptionalPropertyTypes compatibility.
+    const photos: MenuItemPhoto[] = input.photos.map((p) => {
+      const photo: MenuItemPhoto = { s3Key: p.s3Key, sortOrder: p.sortOrder };
+      if (p.alt !== undefined) photo.alt = p.alt;
+      if (p.width !== undefined) photo.width = p.width;
+      if (p.height !== undefined) photo.height = p.height;
+      if (p.isPrimary !== undefined) photo.isPrimary = p.isPrimary;
+      return photo;
+    });
+    const result = await this.repo.upsertItem({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
       brandId,
       categoryId: input.categoryId,
-      slug: input.slug ?? '',
+      slug,
       name: input.name,
       description: input.description,
-      basePrice: basePrice,
-      currency: currency,
-      imageS3Key: input.photos[0]?.s3Key ?? null,
+      basePrice,
+      currency,
+      photos,
       allergens: input.allergens,
+      proteins: input.proteins,
+      fats: input.fats,
+      carbs: input.carbs,
+      kcal: input.kcal,
+      nutritionEstimated: input.nutritionEstimated,
+      source: input.source,
+      needsReview: input.needsReview,
+      sourceExternalId: input.sourceExternalId,
       status: input.status,
       sortOrder: input.sortOrder,
     });
+    return { id: result.id };
   }
 }

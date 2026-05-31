@@ -1,12 +1,16 @@
 import { Module } from '@nestjs/common';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { RequireActiveTenantGuard } from '../../shared/auth/require-active-tenant.guard';
+import { DelayedPublishService } from './application/delayed-publish.service';
 import { GetMenuItemService } from './application/get-menu-item.service';
 import { GetPublishedMenuService } from './application/get-published-menu.service';
 import { PublishMenuService } from './application/publish-menu.service';
+import { StopListService } from './application/stop-list.service';
 import { UpsertCategoryService } from './application/upsert-category.service';
 import { UpsertItemService } from './application/upsert-item.service';
-import { UpsertModifierService } from './application/upsert-modifier.service';
+import { UpsertItemSizeService } from './application/upsert-item-size.service';
+import { UpsertModifierGroupService } from './application/upsert-modifier-group.service';
+import { UpsertModifierOptionService } from './application/upsert-modifier-option.service';
 import {
   CATALOG_CACHE_PORT,
   CATALOG_REPOSITORY,
@@ -32,7 +36,11 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     GetMenuItemService,
     UpsertCategoryService,
     UpsertItemService,
-    UpsertModifierService,
+    UpsertItemSizeService,
+    UpsertModifierGroupService,
+    UpsertModifierOptionService,
+    StopListService,
+    DelayedPublishService,
     PublishMenuService,
     RequireActiveTenantGuard,
   ],

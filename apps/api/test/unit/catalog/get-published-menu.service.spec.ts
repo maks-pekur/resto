@@ -19,20 +19,28 @@ const buildMenu = (version: number, brand: PublishedMenu['brand'] = null): Publi
   brand,
   categories: [],
   items: [],
-  modifiers: [],
+  modifierGroups: [],
 });
 
-const buildRepo = (): CatalogRepository => ({
-  loadPublishedMenu: vi.fn().mockResolvedValue(buildMenu(7)),
-  findPublishedItem: vi.fn(),
-  upsertCategory: vi.fn(),
-  upsertItem: vi.fn(),
-  upsertModifier: vi.fn(),
-});
+const buildRepo = (): CatalogRepository =>
+  ({
+    loadPublishedMenu: vi.fn().mockResolvedValue(buildMenu(7)),
+    findPublishedItem: vi.fn(),
+    upsertCategory: vi.fn(),
+    upsertItem: vi.fn(),
+    upsertModifierGroup: vi.fn(),
+    upsertModifierOption: vi.fn(),
+    upsertItemSize: vi.fn(),
+    addToStopList: vi.fn(),
+    removeFromStopList: vi.fn(),
+    getMenuFirstPublishedAt: vi.fn(),
+    insertSlugAlias: vi.fn(),
+  }) as unknown as CatalogRepository;
 
 const buildCache = (): CatalogCachePort => ({
   get: vi.fn().mockResolvedValue(null),
   set: vi.fn().mockResolvedValue(undefined),
+  invalidate: vi.fn().mockResolvedValue(undefined),
 });
 
 const buildVersionPort = (): MenuVersionPort => ({
