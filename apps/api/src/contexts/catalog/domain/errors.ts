@@ -46,10 +46,33 @@ export class StopListItemNotFoundError extends Error {
   }
 }
 
+// Phase 4b D-4b-07. Archive services are idempotent on already-archived rows
+// (the behavior spec calls for no-op re-archive); these classes exist as a
+// defensive type-level slot for the controller's error mapping in case a
+// future caller wants strict mode. Left in the union so the exhaustive
+// switch in error-mapping.ts stays honest.
+export class MenuCategoryAlreadyArchivedError extends Error {
+  readonly kind = 'MenuCategoryAlreadyArchivedError' as const;
+  constructor(public readonly categoryId: string) {
+    super(`Menu category "${categoryId}" is already archived.`);
+    this.name = 'MenuCategoryAlreadyArchivedError';
+  }
+}
+
+export class MenuItemAlreadyArchivedError extends Error {
+  readonly kind = 'MenuItemAlreadyArchivedError' as const;
+  constructor(public readonly itemId: string) {
+    super(`Menu item "${itemId}" is already archived.`);
+    this.name = 'MenuItemAlreadyArchivedError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
   | CatalogPublishConflictError
   | MenuModifierGroupNotFoundError
   | MenuItemSizeNotFoundError
-  | StopListItemNotFoundError;
+  | StopListItemNotFoundError
+  | MenuCategoryAlreadyArchivedError
+  | MenuItemAlreadyArchivedError;

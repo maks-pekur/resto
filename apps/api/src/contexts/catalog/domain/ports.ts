@@ -23,6 +23,29 @@ export interface CatalogRepository {
   removeFromStopList(input: {
     itemId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
+
+  // ── Phase 4b D-4b-07 read surface ──
+  listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]>;
+  listItems(input: {
+    status: ItemStatusFilter;
+    categoryId: string | null;
+    q: string | null;
+    limit: number;
+    offset: number;
+  }): Promise<{ rows: ItemListRow[]; total: number }>;
+  getItemById(id: string): Promise<ItemDetailRow | null>;
+  listModifierGroups(): Promise<ModifierGroupListRow[]>;
+  getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
+  listStopListWithStoppedAt(): Promise<StopListEntryRow[]>;
+  computeDraftDiff(input: { tenantId: TenantId }): Promise<{
+    items: DraftDiffEntryRow[];
+    totalCount: number;
+  }>;
+
+  // ── Phase 4b D-4b-07 archive surface ──
+  archiveCategory(id: string): Promise<{ found: boolean }>;
+  archiveItem(id: string): Promise<{ found: boolean }>;
+
   getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
   /**
    * Atomically: bump `tenants.menu_first_published_at` to NOW() if it is
@@ -161,4 +184,113 @@ export interface StopListInsertRow {
   readonly brandId?: string | null;
   readonly reason: string | null;
   readonly stoppedByUserId: string | null;
+}
+
+// ── Phase 4b D-4b-07 read-surface row types ──
+
+export type ItemStatusFilter = 'all' | 'draft' | 'published' | 'archived' | 'active';
+
+export interface CategoryListRow {
+  readonly id: string;
+  readonly parentId: string | null;
+  readonly slug: string;
+  readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly sortOrder: number;
+  readonly status: 'draft' | 'published' | 'archived';
+}
+
+export interface ItemListRow {
+  readonly id: string;
+  readonly slug: string;
+  readonly name: Record<string, string>;
+  readonly categoryId: string;
+  readonly categoryName: Record<string, string> | null;
+  readonly parentCategoryName: Record<string, string> | null;
+  readonly photo: { s3Key: string; sortOrder: number } | null;
+  readonly basePrice: string;
+  readonly currency: string;
+  readonly status: 'draft' | 'published' | 'archived';
+  readonly hasSizes: boolean;
+  readonly stoppedAt: string | null;
+  readonly sortOrder: number;
+}
+
+export interface ItemDetailRow {
+  readonly id: string;
+  readonly categoryId: string;
+  readonly slug: string;
+  readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly basePrice: string;
+  readonly currency: string;
+  readonly photos: readonly {
+    s3Key: string;
+    sortOrder: number;
+    alt?: string;
+    width?: number;
+    height?: number;
+    isPrimary?: boolean;
+  }[];
+  readonly allergens: readonly string[] | null;
+  readonly proteins: number | null;
+  readonly fats: number | null;
+  readonly carbs: number | null;
+  readonly kcal: number | null;
+  readonly nutritionEstimated: boolean;
+  readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
+  readonly needsReview: boolean;
+  readonly sourceExternalId: string | null;
+  readonly status: 'draft' | 'published' | 'archived';
+  readonly sortOrder: number;
+  readonly sizes: readonly {
+    id: string;
+    name: Record<string, string>;
+    price: string;
+    isDefault: boolean;
+    sortOrder: number;
+  }[];
+  readonly modifierGroupIds: readonly string[];
+}
+
+export interface ModifierGroupListRow {
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly minSelectable: number;
+  readonly maxSelectable: number;
+  readonly isRequired: boolean;
+  readonly optionCount: number;
+  readonly usageCount: number;
+}
+
+export interface ModifierGroupDetailRow {
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly minSelectable: number;
+  readonly maxSelectable: number;
+  readonly isRequired: boolean;
+  readonly options: readonly {
+    id: string;
+    name: Record<string, string>;
+    priceDelta: string;
+    defaultAmount: number;
+    freeAmount: number;
+    sortOrder: number;
+  }[];
+}
+
+export interface StopListEntryRow {
+  readonly id: string;
+  readonly itemId: string;
+  readonly itemName: Record<string, string> | null;
+  readonly categoryName: Record<string, string> | null;
+  readonly stoppedAt: string;
+  readonly reason: string | null;
+}
+
+export interface DraftDiffEntryRow {
+  readonly entityType: 'item' | 'category' | 'modifier-group';
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly status: 'draft' | 'modified' | 'archived';
 }

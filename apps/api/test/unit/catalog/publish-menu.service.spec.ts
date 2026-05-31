@@ -27,6 +27,16 @@ const buildRepo = (isFirstPublish: boolean): CatalogRepository =>
     getMenuFirstPublishedAt: vi.fn(),
     finalizeMenuPublish: vi.fn().mockResolvedValue({ isFirstPublish }),
     insertSlugAlias: vi.fn(),
+    // Phase 4b D-4b-07 read + archive surface — unused in publish-menu tests.
+    listCategoriesByParent: vi.fn(),
+    listItems: vi.fn(),
+    getItemById: vi.fn(),
+    listModifierGroups: vi.fn(),
+    getModifierGroupById: vi.fn(),
+    listStopListWithStoppedAt: vi.fn(),
+    computeDraftDiff: vi.fn(),
+    archiveCategory: vi.fn(),
+    archiveItem: vi.fn(),
   }) satisfies CatalogRepository;
 
 describe('PublishMenuService', () => {

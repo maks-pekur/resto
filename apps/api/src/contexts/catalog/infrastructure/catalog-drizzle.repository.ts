@@ -17,11 +17,19 @@ import {
   MenuFirstPublishedV1,
   MenuRepublishedV1,
 } from '@resto/events';
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   IMAGE_URL_PORT,
+  type CategoryListRow,
   type CatalogRepository,
+  type DraftDiffEntryRow,
   type ImageUrlPort,
+  type ItemDetailRow,
+  type ItemListRow,
+  type ItemStatusFilter,
+  type ModifierGroupDetailRow,
+  type ModifierGroupListRow,
+  type StopListEntryRow,
   type StopListInsertRow,
   type UpsertCategoryRow,
   type UpsertItemRow,
@@ -711,6 +719,354 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           alias: input.alias,
         })
         .onConflictDoNothing();
+    });
+  }
+
+  // ── Phase 4b D-4b-07 read surface ──
+
+  async listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const where =
+        parentId === null
+          ? isNull(schema.menuCategories.parentId)
+          : eq(schema.menuCategories.parentId, parentId);
+      const rows = await scoped.selectFrom(schema.menuCategories, where).orderBy(
+        // sortOrder ASC then slug ASC for stable ordering.
+        asc(schema.menuCategories.sortOrder),
+        asc(schema.menuCategories.slug),
+      );
+      return rows.map<CategoryListRow>((r) => ({
+        id: r.id,
+        parentId: r.parentId,
+        slug: r.slug,
+        name: r.name,
+        description: r.description ?? null,
+        sortOrder: r.sortOrder,
+        status: r.status as 'draft' | 'published' | 'archived',
+      }));
+    });
+  }
+
+  async listItems(input: {
+    status: ItemStatusFilter;
+    categoryId: string | null;
+    q: string | null;
+    limit: number;
+    offset: number;
+  }): Promise<{ rows: ItemListRow[]; total: number }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const ctx = requireTenantContext();
+      // Build the status predicate. 'active' (the default) excludes archived;
+      // 'all' includes everything; specific values match exactly.
+      const statusPred = ((): ReturnType<typeof eq> | undefined => {
+        if (input.status === 'all') return undefined;
+        if (input.status === 'active') return ne(schema.menuItems.status, 'archived');
+        return eq(schema.menuItems.status, input.status);
+      })();
+      const categoryPred = input.categoryId
+        ? eq(schema.menuItems.categoryId, input.categoryId)
+        : undefined;
+      const qPred = input.q
+        ? or(
+            ilike(schema.menuItems.slug, `%${input.q}%`),
+            sql`${schema.menuItems.name}::text ILIKE ${`%${input.q}%`}`,
+          )
+        : undefined;
+      const composed =
+        [statusPred, categoryPred, qPred].filter((p): p is NonNullable<typeof p> => p !== undefined)
+          .length > 0
+          ? and(
+              ...[statusPred, categoryPred, qPred].filter(
+                (p): p is NonNullable<typeof p> => p !== undefined,
+              ),
+            )
+          : undefined;
+
+      // Paged item rows.
+      const rows = await scoped
+        .selectFrom(schema.menuItems, composed)
+        .orderBy(asc(schema.menuItems.sortOrder), asc(schema.menuItems.slug));
+      const sliced = rows.slice(input.offset, input.offset + input.limit);
+      const total = rows.length;
+      if (sliced.length === 0) {
+        return { rows: [], total };
+      }
+
+      const itemIds = sliced.map((r) => r.id);
+      const categoryIds = Array.from(new Set(sliced.map((r) => r.categoryId)));
+      // Load categories (own + parents) so categoryName + parentCategoryName
+      // are available. Inline an explicit empty literal typed against the
+      // table's `$inferSelect` so the `[]` branch keeps the same row shape
+      // as the populated branch — otherwise TS unifies with the broader
+      // `ScopedTx.selectFrom` union and `.id` lookup loses its type.
+      type CategoryRow = typeof schema.menuCategories.$inferSelect;
+      const categoryRows: CategoryRow[] =
+        categoryIds.length > 0
+          ? await scoped.selectFrom(
+              schema.menuCategories,
+              inArray(schema.menuCategories.id, categoryIds),
+            )
+          : [];
+      const [sizeRows, stopRows] = await Promise.all([
+        scoped.selectFrom(schema.menuItemSizes, inArray(schema.menuItemSizes.menuItemId, itemIds)),
+        scoped.selectFrom(schema.menuStopList, inArray(schema.menuStopList.itemId, itemIds)),
+      ]);
+      const parentIds = Array.from(
+        new Set(categoryRows.map((c) => c.parentId).filter((p): p is string => p !== null)),
+      );
+      const parentRows: CategoryRow[] =
+        parentIds.length > 0
+          ? await scoped.selectFrom(
+              schema.menuCategories,
+              inArray(schema.menuCategories.id, parentIds),
+            )
+          : [];
+
+      const categoryById = new Map(categoryRows.map((c) => [c.id, c]));
+      const parentNameById = new Map(parentRows.map((c) => [c.id, c.name]));
+      const sizeByItem = new Set(sizeRows.map((s) => s.menuItemId));
+      const stopByItem = new Map(stopRows.map((s) => [s.itemId, s.stoppedAt]));
+
+      // Side-effect-free check that ScopedTx is doing its job — assertion is
+      // implicit in the table reads above; no raw tx used here.
+      void ctx;
+      void tx;
+
+      return {
+        rows: sliced.map<ItemListRow>((r) => {
+          const cat = categoryById.get(r.categoryId);
+          const parentName = cat?.parentId ? (parentNameById.get(cat.parentId) ?? null) : null;
+          const stoppedAt = stopByItem.get(r.id) ?? null;
+          const primaryPhoto = r.photos.find((p) => p.isPrimary) ?? r.photos[0] ?? null;
+          return {
+            id: r.id,
+            slug: r.slug,
+            name: r.name,
+            categoryId: r.categoryId,
+            categoryName: cat?.name ?? null,
+            parentCategoryName: parentName,
+            photo: primaryPhoto
+              ? { s3Key: primaryPhoto.s3Key, sortOrder: primaryPhoto.sortOrder }
+              : null,
+            basePrice: r.basePrice,
+            currency: r.currency,
+            status: r.status as 'draft' | 'published' | 'archived',
+            hasSizes: sizeByItem.has(r.id),
+            stoppedAt: stoppedAt ? stoppedAt.toISOString() : null,
+            sortOrder: r.sortOrder,
+          };
+        }),
+        total,
+      };
+    });
+  }
+
+  async getItemById(id: string): Promise<ItemDetailRow | null> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped.selectFrom(schema.menuItems, eq(schema.menuItems.id, id)).limit(1);
+      const r = rows[0];
+      if (!r) return null;
+      const [sizes, links] = await Promise.all([
+        scoped
+          .selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, id))
+          .orderBy(asc(schema.menuItemSizes.sortOrder)),
+        scoped.selectFrom(
+          schema.menuItemModifierGroups,
+          eq(schema.menuItemModifierGroups.menuItemId, id),
+        ),
+      ]);
+      return {
+        id: r.id,
+        categoryId: r.categoryId,
+        slug: r.slug,
+        name: r.name,
+        description: r.description ?? null,
+        basePrice: r.basePrice,
+        currency: r.currency,
+        photos: r.photos,
+        allergens: r.allergens ?? null,
+        proteins: r.proteins === null ? null : Number(r.proteins),
+        fats: r.fats === null ? null : Number(r.fats),
+        carbs: r.carbs === null ? null : Number(r.carbs),
+        kcal: r.kcal,
+        nutritionEstimated: r.nutritionEstimated,
+        source: r.source as 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv',
+        needsReview: r.needsReview,
+        sourceExternalId: r.sourceExternalId,
+        status: r.status as 'draft' | 'published' | 'archived',
+        sortOrder: r.sortOrder,
+        sizes: sizes.map((s) => ({
+          id: s.id,
+          name: s.name,
+          price: s.price,
+          isDefault: s.isDefault,
+          sortOrder: s.sortOrder,
+        })),
+        modifierGroupIds: links.map((m) => m.modifierGroupId),
+      };
+    });
+  }
+
+  async listModifierGroups(): Promise<ModifierGroupListRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const groups = await scoped
+        .selectFrom(schema.menuModifierGroups)
+        .orderBy(asc(schema.menuModifierGroups.id));
+      if (groups.length === 0) return [];
+      const groupIds = groups.map((g) => g.id);
+      const [options, links] = await Promise.all([
+        scoped.selectFrom(
+          schema.menuModifierOptions,
+          inArray(schema.menuModifierOptions.modifierGroupId, groupIds),
+        ),
+        scoped.selectFrom(
+          schema.menuItemModifierGroups,
+          inArray(schema.menuItemModifierGroups.modifierGroupId, groupIds),
+        ),
+      ]);
+      const optionCount = new Map<string, number>();
+      for (const o of options)
+        optionCount.set(o.modifierGroupId, (optionCount.get(o.modifierGroupId) ?? 0) + 1);
+      const usageCount = new Map<string, number>();
+      for (const l of links)
+        usageCount.set(l.modifierGroupId, (usageCount.get(l.modifierGroupId) ?? 0) + 1);
+      return groups.map<ModifierGroupListRow>((g) => ({
+        id: g.id,
+        name: g.name,
+        minSelectable: g.minSelectable,
+        maxSelectable: g.maxSelectable,
+        isRequired: g.isRequired,
+        optionCount: optionCount.get(g.id) ?? 0,
+        usageCount: usageCount.get(g.id) ?? 0,
+      }));
+    });
+  }
+
+  async getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped
+        .selectFrom(schema.menuModifierGroups, eq(schema.menuModifierGroups.id, id))
+        .limit(1);
+      const g = rows[0];
+      if (!g) return null;
+      const options = await scoped
+        .selectFrom(schema.menuModifierOptions, eq(schema.menuModifierOptions.modifierGroupId, id))
+        .orderBy(asc(schema.menuModifierOptions.sortOrder));
+      return {
+        id: g.id,
+        name: g.name,
+        minSelectable: g.minSelectable,
+        maxSelectable: g.maxSelectable,
+        isRequired: g.isRequired,
+        options: options.map((o) => ({
+          id: o.id,
+          name: o.name,
+          priceDelta: o.priceDelta,
+          defaultAmount: o.defaultAmount,
+          freeAmount: o.freeAmount,
+          sortOrder: o.sortOrder,
+        })),
+      };
+    });
+  }
+
+  async listStopListWithStoppedAt(): Promise<StopListEntryRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const stopRows = await scoped
+        .selectFrom(schema.menuStopList)
+        .orderBy(desc(schema.menuStopList.stoppedAt));
+      if (stopRows.length === 0) return [];
+      const itemIds = stopRows.map((s) => s.itemId);
+      const items = await scoped.selectFrom(
+        schema.menuItems,
+        inArray(schema.menuItems.id, itemIds),
+      );
+      const itemById = new Map(items.map((i) => [i.id, i]));
+      const categoryIds = Array.from(new Set(items.map((i) => i.categoryId)));
+      const categories =
+        categoryIds.length > 0
+          ? await scoped.selectFrom(
+              schema.menuCategories,
+              inArray(schema.menuCategories.id, categoryIds),
+            )
+          : [];
+      const catById = new Map(categories.map((c) => [c.id, c.name]));
+      return stopRows.map<StopListEntryRow>((s) => {
+        const item = itemById.get(s.itemId);
+        return {
+          id: s.id,
+          itemId: s.itemId,
+          itemName: item?.name ?? null,
+          categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
+          stoppedAt: s.stoppedAt.toISOString(),
+          reason: s.reason ?? null,
+        };
+      });
+    });
+  }
+
+  async computeDraftDiff(input: { tenantId: TenantId }): Promise<{
+    items: DraftDiffEntryRow[];
+    totalCount: number;
+  }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const firstPublishedRows = await tx
+        .select({ at: schema.tenants.menuFirstPublishedAt })
+        .from(schema.tenants)
+        .where(eq(schema.tenants.id, input.tenantId))
+        .limit(1);
+      const firstPublishedAt = firstPublishedRows[0]?.at ?? null;
+
+      // Items with draft / modified / archived disposition.
+      const items = await scoped.selectFrom(schema.menuItems);
+      const entries: DraftDiffEntryRow[] = [];
+      for (const it of items) {
+        if (it.status === 'draft') {
+          entries.push({ entityType: 'item', id: it.id, name: it.name, status: 'draft' });
+        } else if (it.status === 'archived') {
+          entries.push({ entityType: 'item', id: it.id, name: it.name, status: 'archived' });
+        } else if (
+          it.status === 'published' &&
+          firstPublishedAt !== null &&
+          it.updatedAt > firstPublishedAt
+        ) {
+          entries.push({ entityType: 'item', id: it.id, name: it.name, status: 'modified' });
+        }
+      }
+      const totalCount = entries.length;
+      // D-4b-07 / Open Question #5: draft-diff is items-only for MVP-1. The
+      // 100-row cap leaves headroom for future expansion to categories +
+      // modifier groups without changing the response shape.
+      const sliced = entries.slice(0, 100);
+      return { items: sliced, totalCount };
+    });
+  }
+
+  // ── Phase 4b D-4b-07 archive surface ──
+
+  async archiveCategory(id: string): Promise<{ found: boolean }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped
+        .updateTable(
+          schema.menuCategories,
+          { status: 'archived', updatedAt: new Date() },
+          eq(schema.menuCategories.id, id),
+        )
+        .returning({ id: schema.menuCategories.id });
+      return { found: rows.length > 0 };
+    });
+  }
+
+  async archiveItem(id: string): Promise<{ found: boolean }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped
+        .updateTable(
+          schema.menuItems,
+          { status: 'archived', updatedAt: new Date() },
+          eq(schema.menuItems.id, id),
+        )
+        .returning({ id: schema.menuItems.id });
+      return { found: rows.length > 0 };
     });
   }
 }

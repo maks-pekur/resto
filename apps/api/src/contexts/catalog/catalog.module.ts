@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { RequireActiveTenantGuard } from '../../shared/auth/require-active-tenant.guard';
+import { ArchiveCategoryService } from './application/archive-category.service';
+import { ArchiveItemService } from './application/archive-item.service';
 import { DelayedPublishService } from './application/delayed-publish.service';
+import { GetDraftDiffService } from './application/get-draft-diff.service';
+import { GetItemService } from './application/get-item.service';
 import { GetMenuItemService } from './application/get-menu-item.service';
+import { GetModifierGroupService } from './application/get-modifier-group.service';
 import { GetPublishedMenuService } from './application/get-published-menu.service';
+import { GetStopListService } from './application/get-stop-list.service';
+import { ListCategoriesService } from './application/list-categories.service';
+import { ListItemsService } from './application/list-items.service';
+import { ListModifierGroupsService } from './application/list-modifier-groups.service';
 import { PublishMenuService } from './application/publish-menu.service';
 import { StopListService } from './application/stop-list.service';
 import { UpsertCategoryService } from './application/upsert-category.service';
@@ -32,6 +41,18 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     { provide: CATALOG_CACHE_PORT, useExisting: RedisCatalogCacheAdapter },
     { provide: MENU_VERSION_PORT, useExisting: RedisCatalogCacheAdapter },
     { provide: IMAGE_URL_PORT, useClass: S3SignedImageUrlAdapter },
+    // Phase 4b read services (D-4b-07).
+    ListCategoriesService,
+    ListItemsService,
+    GetItemService,
+    ListModifierGroupsService,
+    GetModifierGroupService,
+    GetStopListService,
+    GetDraftDiffService,
+    // Phase 4b archive services (D-4b-07).
+    ArchiveCategoryService,
+    ArchiveItemService,
+    // Existing services.
     GetPublishedMenuService,
     GetMenuItemService,
     UpsertCategoryService,
