@@ -22,28 +22,28 @@ Five planning landmines surface from the codebase audit. They are not "UI to des
 
 Hard directives that apply to every 4b task. The plan must verify all are honored.
 
-| Directive | Source | Scope |
-|---|---|---|
-| Server-side `fetch` MUST have `AbortSignal.timeout(ms)` | `apps/CLAUDE.md` | Every server action + RSC fetch |
-| One retry on idempotent GET 5xx only; never retry mutations | `apps/CLAUDE.md` | RSC reads of categories/items/diff lists |
-| Error UI must offer "Try again" affordance | `apps/CLAUDE.md` | Auto-save failed state, publish-POST failed state |
-| `INTERNAL_API_TOKEN` is server-only — never reach from a client boundary | `apps/CLAUDE.md` | All catalog mutations via `apiFetchInternal` (already exists) |
-| No static identity placeholders | `apps/CLAUDE.md` | Names, emails, breadcrumb trails read from real data |
-| No `NEXT_PUBLIC_*` / `VITE_*` production fallbacks | `apps/CLAUDE.md` | Photo bucket env, presigned-URL TTL config |
-| Cookies set in server actions MUST carry `secure: NODE_ENV==='production'`, `httpOnly: true`, `sameSite: 'lax'` | `apps/CLAUDE.md` | No new cookies in 4b — confirm no regression |
-| Open-redirect refinement on `next=`/`redirect=` params | `apps/CLAUDE.md` | Any new route that reads search params |
-| Kebab-case file names; `*-form-client.tsx`; `*-action.ts` colocated with page | `CLAUDE.md` Conventions | Every new component / action file |
-| ESLint `consistent-type-imports` (prefer `type` imports) | `CLAUDE.md` Code Style | All TS files |
-| ESLint `no-floating-promises: error` | `CLAUDE.md` Code Style | `void` on intentional fire-and-forget (e.g., toast triggers) |
-| `no-console: warn` — use Logger (server) or no log (client) | `CLAUDE.md` | No `console.log` in shipping UI |
-| `@/` alias used in Next admin app | `CLAUDE.md` Import Org. | Internal imports |
-| Monorepo packages accessed via `@resto/<name>` | `CLAUDE.md` Import Org. | `@resto/api-client`, `@resto/domain` |
-| Zod schemas are the single source of truth; types derived via `z.infer` | `CLAUDE.md` DTO/Schema | Every client-side form schema mirrors server DTO |
-| Free-text fields MUST have a max length | `packages/domain/CLAUDE.md` | Mirror api Zod max-lengths in client schemas (CAT-09 source of truth) |
-| URL fields MUST restrict scheme | `packages/domain/CLAUDE.md` | Photo `s3Key` schema already enforces (not a URL) |
-| No comments unless WHY-comment for hidden constraint | `MEMORY.md feedback_no_comments` | Don't restate code; only ADR/ticket refs |
-| Plain Russian copy for user-facing surfaces | `MEMORY.md feedback_plain_language` | Already locked in UI-SPEC Copywriting Contract |
-| iiko entity-shape alignment for partner adapter ease | `MEMORY.md feedback_iiko_catalog_model` | Already absorbed in 4a (Group/Item/Size/Modifier-Group naming) |
+| Directive                                                                                                       | Source                                  | Scope                                                                 |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------- | --------------------------------------------------------------------- |
+| Server-side `fetch` MUST have `AbortSignal.timeout(ms)`                                                         | `apps/CLAUDE.md`                        | Every server action + RSC fetch                                       |
+| One retry on idempotent GET 5xx only; never retry mutations                                                     | `apps/CLAUDE.md`                        | RSC reads of categories/items/diff lists                              |
+| Error UI must offer "Try again" affordance                                                                      | `apps/CLAUDE.md`                        | Auto-save failed state, publish-POST failed state                     |
+| `INTERNAL_API_TOKEN` is server-only — never reach from a client boundary                                        | `apps/CLAUDE.md`                        | All catalog mutations via `apiFetchInternal` (already exists)         |
+| No static identity placeholders                                                                                 | `apps/CLAUDE.md`                        | Names, emails, breadcrumb trails read from real data                  |
+| No `NEXT_PUBLIC_*` / `VITE_*` production fallbacks                                                              | `apps/CLAUDE.md`                        | Photo bucket env, presigned-URL TTL config                            |
+| Cookies set in server actions MUST carry `secure: NODE_ENV==='production'`, `httpOnly: true`, `sameSite: 'lax'` | `apps/CLAUDE.md`                        | No new cookies in 4b — confirm no regression                          |
+| Open-redirect refinement on `next=`/`redirect=` params                                                          | `apps/CLAUDE.md`                        | Any new route that reads search params                                |
+| Kebab-case file names; `*-form-client.tsx`; `*-action.ts` colocated with page                                   | `CLAUDE.md` Conventions                 | Every new component / action file                                     |
+| ESLint `consistent-type-imports` (prefer `type` imports)                                                        | `CLAUDE.md` Code Style                  | All TS files                                                          |
+| ESLint `no-floating-promises: error`                                                                            | `CLAUDE.md` Code Style                  | `void` on intentional fire-and-forget (e.g., toast triggers)          |
+| `no-console: warn` — use Logger (server) or no log (client)                                                     | `CLAUDE.md`                             | No `console.log` in shipping UI                                       |
+| `@/` alias used in Next admin app                                                                               | `CLAUDE.md` Import Org.                 | Internal imports                                                      |
+| Monorepo packages accessed via `@resto/<name>`                                                                  | `CLAUDE.md` Import Org.                 | `@resto/api-client`, `@resto/domain`                                  |
+| Zod schemas are the single source of truth; types derived via `z.infer`                                         | `CLAUDE.md` DTO/Schema                  | Every client-side form schema mirrors server DTO                      |
+| Free-text fields MUST have a max length                                                                         | `packages/domain/CLAUDE.md`             | Mirror api Zod max-lengths in client schemas (CAT-09 source of truth) |
+| URL fields MUST restrict scheme                                                                                 | `packages/domain/CLAUDE.md`             | Photo `s3Key` schema already enforces (not a URL)                     |
+| No comments unless WHY-comment for hidden constraint                                                            | `MEMORY.md feedback_no_comments`        | Don't restate code; only ADR/ticket refs                              |
+| Plain Russian copy for user-facing surfaces                                                                     | `MEMORY.md feedback_plain_language`     | Already locked in UI-SPEC Copywriting Contract                        |
+| iiko entity-shape alignment for partner adapter ease                                                            | `MEMORY.md feedback_iiko_catalog_model` | Already absorbed in 4a (Group/Item/Size/Modifier-Group naming)        |
 
 ## User Constraints (from 04b-CONTEXT.md)
 
@@ -92,32 +92,32 @@ Hard directives that apply to every 4b task. The plan must verify all are honore
 
 ## Phase Requirements
 
-| ID | Description | Research Support |
-|---|---|---|
-| CAT-01 | Operator creates / edits / archives menu categories with explicit ordering | UI-SPEC §Categories page; needs new GET `/categories` endpoint to list; existing POST `/categories` for upsert (4a-07); archival = `status: archived` patch (NB: `menuCategories` schema lacks a `status` column — see Pitfall #6 below). |
-| CAT-02 | Items editor UX — form layout (name, description, price, allergens, BJU, photo) | UI-SPEC §Item editor; existing `UpsertItemInputSchema` covers every field; needs new GET `/items` (list with filters) + `/items/:id` (single for draft edit). |
-| CAT-03 | Photo upload UX + presigned PUT | UI-SPEC §Photo Upload Spec; **needs new backend**: `presignPut` adapter method + POST `/internal/v1/catalog/photo-upload-url` endpoint + S3 bucket CORS. |
-| CAT-04 | Modifier groups + options UX | UI-SPEC §Modifier groups list + editor; existing POST `/modifier-groups`, POST `/modifier-options` for upsert; needs new GET `/modifier-groups` (list) + `/modifier-groups/:id` (single with options). |
-| CAT-05 | Variants/sizes UX | UI-SPEC §Sizes tab; existing POST `/item-sizes` for upsert; needs item-editor read to surface existing sizes (lands via GET `/items/:id` returning embedded sizes per spec). |
-| CAT-07 | Stop-list UX | UI-SPEC §Stop-list page + items table Switch column; existing POST `/stop-list` + DELETE `/stop-list/:itemId`; needs GET `/stop-list` (today's 86 widget) which can derive from item-list filter `status=paused`. |
-| CAT-08 | Diff UX (badges + sticky bar) | UI-SPEC §Sticky Publish Bar Spec; **needs new backend**: GET `/internal/v1/catalog/draft-diff` returning `{ unpublishedCount, items: [{entity, name, status}] }`. |
+| ID     | Description                                                                     | Research Support                                                                                                                                                                                                                          |
+| ------ | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CAT-01 | Operator creates / edits / archives menu categories with explicit ordering      | UI-SPEC §Categories page; needs new GET `/categories` endpoint to list; existing POST `/categories` for upsert (4a-07); archival = `status: archived` patch (NB: `menuCategories` schema lacks a `status` column — see Pitfall #6 below). |
+| CAT-02 | Items editor UX — form layout (name, description, price, allergens, BJU, photo) | UI-SPEC §Item editor; existing `UpsertItemInputSchema` covers every field; needs new GET `/items` (list with filters) + `/items/:id` (single for draft edit).                                                                             |
+| CAT-03 | Photo upload UX + presigned PUT                                                 | UI-SPEC §Photo Upload Spec; **needs new backend**: `presignPut` adapter method + POST `/internal/v1/catalog/photo-upload-url` endpoint + S3 bucket CORS.                                                                                  |
+| CAT-04 | Modifier groups + options UX                                                    | UI-SPEC §Modifier groups list + editor; existing POST `/modifier-groups`, POST `/modifier-options` for upsert; needs new GET `/modifier-groups` (list) + `/modifier-groups/:id` (single with options).                                    |
+| CAT-05 | Variants/sizes UX                                                               | UI-SPEC §Sizes tab; existing POST `/item-sizes` for upsert; needs item-editor read to surface existing sizes (lands via GET `/items/:id` returning embedded sizes per spec).                                                              |
+| CAT-07 | Stop-list UX                                                                    | UI-SPEC §Stop-list page + items table Switch column; existing POST `/stop-list` + DELETE `/stop-list/:itemId`; needs GET `/stop-list` (today's 86 widget) which can derive from item-list filter `status=paused`.                         |
+| CAT-08 | Diff UX (badges + sticky bar)                                                   | UI-SPEC §Sticky Publish Bar Spec; **needs new backend**: GET `/internal/v1/catalog/draft-diff` returning `{ unpublishedCount, items: [{entity, name, status}] }`.                                                                         |
 
 CAT-06 (publish snapshot + delayed-publish backend) and CAT-09 / CAT-10 close in 4a (per VERIFICATION.md and ROADMAP traceability).
 
 ## Architectural Responsibility Map
 
-| Capability | Primary Tier | Secondary Tier | Rationale |
-|---|---|---|---|
-| Sidebar menu group + sub-routes | Frontend Server (RSC) | — | Static layout under `apps/admin/components/app-sidebar.tsx` + new route segments. |
-| Categories CRUD list | Frontend Server (RSC) reads via apiFetch | API/Backend (new GET) | RSC fetches list at page load; mutations go through server action → `apiFetchInternal` POST. |
-| Item editor with auto-save | Frontend Server (RSC shell) + Browser/Client (RHF form island) | API/Backend (POST `/items`) | Server-side first render avoids hydration mismatch; RHF watch+debounce drives the auto-save side-effect on the client. |
-| Photo upload (presigned PUT) | Browser/Client (direct S3 PUT) | API/Backend (presign endpoint) + Frontend Server (action returns URL) | Browser uploads bytes directly to S3 to avoid round-tripping through admin or api; presign authority lives in api. |
-| Sticky publish bar + draft-diff list | Frontend Server (RSC reads diff on `/menu/*` routes) + Browser/Client (Sonner toast lifecycle) | API/Backend (new draft-diff GET + existing publish POST/DELETE) | Diff list pre-rendered on each menu-route navigation; client owns the 5s countdown timer + toast state. |
-| Stop-list inline toggle | Browser/Client (Switch widget) → Server action → API | API/Backend (existing POST/DELETE) | UI optimism not specified; UI-SPEC says "loading state during request" — go pessimistic for simplicity. |
-| Modifier group library + item-side picker | Frontend Server (RSC list pages) + Browser/Client (chip-picker + Sheet) | API/Backend (existing upserts; new list GET) | Two-surface model splits ownership cleanly. |
-| Status badges + amber `modified` styling | Browser/Client (badge variant prop) | — | Pure presentation. |
-| Auto-save indicator | Browser/Client (RHF subscription + local time state) | — | No backend involvement beyond the underlying upsert call. |
-| Draft-diff read (count + per-entity list) | API/Backend (new GET endpoint) | Frontend Server (RSC consumer) | Computing "what changed since last publish" is a server concern requiring SQL — cannot live in browser. |
+| Capability                                | Primary Tier                                                                                   | Secondary Tier                                                        | Rationale                                                                                                              |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Sidebar menu group + sub-routes           | Frontend Server (RSC)                                                                          | —                                                                     | Static layout under `apps/admin/components/app-sidebar.tsx` + new route segments.                                      |
+| Categories CRUD list                      | Frontend Server (RSC) reads via apiFetch                                                       | API/Backend (new GET)                                                 | RSC fetches list at page load; mutations go through server action → `apiFetchInternal` POST.                           |
+| Item editor with auto-save                | Frontend Server (RSC shell) + Browser/Client (RHF form island)                                 | API/Backend (POST `/items`)                                           | Server-side first render avoids hydration mismatch; RHF watch+debounce drives the auto-save side-effect on the client. |
+| Photo upload (presigned PUT)              | Browser/Client (direct S3 PUT)                                                                 | API/Backend (presign endpoint) + Frontend Server (action returns URL) | Browser uploads bytes directly to S3 to avoid round-tripping through admin or api; presign authority lives in api.     |
+| Sticky publish bar + draft-diff list      | Frontend Server (RSC reads diff on `/menu/*` routes) + Browser/Client (Sonner toast lifecycle) | API/Backend (new draft-diff GET + existing publish POST/DELETE)       | Diff list pre-rendered on each menu-route navigation; client owns the 5s countdown timer + toast state.                |
+| Stop-list inline toggle                   | Browser/Client (Switch widget) → Server action → API                                           | API/Backend (existing POST/DELETE)                                    | UI optimism not specified; UI-SPEC says "loading state during request" — go pessimistic for simplicity.                |
+| Modifier group library + item-side picker | Frontend Server (RSC list pages) + Browser/Client (chip-picker + Sheet)                        | API/Backend (existing upserts; new list GET)                          | Two-surface model splits ownership cleanly.                                                                            |
+| Status badges + amber `modified` styling  | Browser/Client (badge variant prop)                                                            | —                                                                     | Pure presentation.                                                                                                     |
+| Auto-save indicator                       | Browser/Client (RHF subscription + local time state)                                           | —                                                                     | No backend involvement beyond the underlying upsert call.                                                              |
+| Draft-diff read (count + per-entity list) | API/Backend (new GET endpoint)                                                                 | Frontend Server (RSC consumer)                                        | Computing "what changed since last publish" is a server concern requiring SQL — cannot live in browser.                |
 
 **Tier-assignment pitfalls to avoid in plans (from §Tier Mapping rules):**
 
@@ -129,25 +129,25 @@ CAT-06 (publish snapshot + delayed-publish backend) and CAT-09 / CAT-10 close in
 
 ### Core (already in `apps/admin`)
 
-| Library | Version (verified) | Purpose | Why Standard |
-|---|---|---|---|
-| Next.js | 16.2.6 | App Router + RSC + server actions | `apps/admin/package.json` `"next": "^16.2.6"` [VERIFIED: package.json] |
-| React | 19.0.0 | UI runtime | `useActionState` available; matches existing pattern [VERIFIED: package.json] |
-| Tailwind CSS | 4.0.0 | Styling | Already configured with `globals.css` oklch tokens (new-york/neutral) [VERIFIED: package.json + globals.css] |
-| shadcn/ui | new-york / neutral | Component primitives | `components.json` confirms preset + lucide icons [VERIFIED: components.json] |
-| Sonner | 2.0.7 | Toast surface | Already mounted at root `app/layout.tsx`; theme + icons configured in `components/ui/sonner.tsx` [VERIFIED: codebase + npm registry 2025-08-02] |
-| lucide-react | 1.16.0 | Icon library | Already used in existing components (BrandSwitcher, NavMain) [VERIFIED: package.json] |
-| zod | 3.24.1 | Client-side form schemas | Already a dep for env + invite + brand actions [VERIFIED: package.json] |
-| `@resto/domain` | workspace | LocalizedText / Slug / MoneyAmountValue / CurrencyValue | Reuse for form-schema parity with api DTOs [VERIFIED: dto.ts imports] |
-| `apiFetchInternal` | local | Server-only fetch carrying `x-internal-token` for `/internal/v1/*` | All catalog writes go through this [VERIFIED: `lib/api-server-internal.ts`] |
+| Library            | Version (verified) | Purpose                                                            | Why Standard                                                                                                                                    |
+| ------------------ | ------------------ | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Next.js            | 16.2.6             | App Router + RSC + server actions                                  | `apps/admin/package.json` `"next": "^16.2.6"` [VERIFIED: package.json]                                                                          |
+| React              | 19.0.0             | UI runtime                                                         | `useActionState` available; matches existing pattern [VERIFIED: package.json]                                                                   |
+| Tailwind CSS       | 4.0.0              | Styling                                                            | Already configured with `globals.css` oklch tokens (new-york/neutral) [VERIFIED: package.json + globals.css]                                    |
+| shadcn/ui          | new-york / neutral | Component primitives                                               | `components.json` confirms preset + lucide icons [VERIFIED: components.json]                                                                    |
+| Sonner             | 2.0.7              | Toast surface                                                      | Already mounted at root `app/layout.tsx`; theme + icons configured in `components/ui/sonner.tsx` [VERIFIED: codebase + npm registry 2025-08-02] |
+| lucide-react       | 1.16.0             | Icon library                                                       | Already used in existing components (BrandSwitcher, NavMain) [VERIFIED: package.json]                                                           |
+| zod                | 3.24.1             | Client-side form schemas                                           | Already a dep for env + invite + brand actions [VERIFIED: package.json]                                                                         |
+| `@resto/domain`    | workspace          | LocalizedText / Slug / MoneyAmountValue / CurrencyValue            | Reuse for form-schema parity with api DTOs [VERIFIED: dto.ts imports]                                                                           |
+| `apiFetchInternal` | local              | Server-only fetch carrying `x-internal-token` for `/internal/v1/*` | All catalog writes go through this [VERIFIED: `lib/api-server-internal.ts`]                                                                     |
 
 ### New dependencies (Wave 0 installs)
 
-| Library | Latest | Published | Purpose | Status |
-|---|---|---|---|---|
-| react-hook-form | 7.76.1 | 2026-05-23 | `useForm` + `watch()` subscription for auto-save | [ASSUMED — slopcheck unavailable]; provenance verified: 7-year-old package, `github.com/react-hook-form/react-hook-form`, official org |
-| @hookform/resolvers | 5.4.0 | 2026-05-21 | `zodResolver` bridge for client-side validation | [ASSUMED]; provenance verified: same org `react-hook-form` |
-| `@resto/api-client` | workspace | n/a | Typed `paths` / `components` / `operations` for endpoint shapes | Already exists from 4a-07; just consume |
+| Library             | Latest    | Published  | Purpose                                                         | Status                                                                                                                                 |
+| ------------------- | --------- | ---------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| react-hook-form     | 7.76.1    | 2026-05-23 | `useForm` + `watch()` subscription for auto-save                | [ASSUMED — slopcheck unavailable]; provenance verified: 7-year-old package, `github.com/react-hook-form/react-hook-form`, official org |
+| @hookform/resolvers | 5.4.0     | 2026-05-21 | `zodResolver` bridge for client-side validation                 | [ASSUMED]; provenance verified: same org `react-hook-form`                                                                             |
+| `@resto/api-client` | workspace | n/a        | Typed `paths` / `components` / `operations` for endpoint shapes | Already exists from 4a-07; just consume                                                                                                |
 
 **NOT required (UI-SPEC explicit "no third-party drag-drop library"):**
 
@@ -168,8 +168,8 @@ Already installed (per `apps/admin/components/ui/`): alert-dialog, avatar, bread
 **Note on shadcn `form`:** `npx shadcn add form` pulls in `react-hook-form` + `@hookform/resolvers` + `zod` as peer requirements. The shadcn primitive is a thin wrapper exposing `Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage`. Quote from shadcn docs [CITED: ui.shadcn.com/docs/components/form]:
 
 ```typescript
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 const form = useForm({ resolver: zodResolver(yourSchema) });
 ```
 
@@ -187,23 +187,23 @@ cd apps/admin && pnpm dlx shadcn@latest add badge table tabs switch form select 
 
 ### Alternatives Considered
 
-| Instead of | Could Use | Tradeoff |
-|---|---|---|
-| `react-hook-form` | React 19 `useActionState` (current pattern) | `useActionState` cannot drive auto-save: no per-field subscription, no debounced submit. UI-SPEC D-4b-02 mandates RHF; this is a forced upgrade. |
-| `react-hook-form` `watch()` callback | `useWatch` hook | useWatch isolates re-renders at the hook level but `watch(callback)` is the canonical auto-save pattern [CITED: react-hook-form GH discussion #3078 — community-recommended]. We need the subscription callback, not just current values. |
-| native HTML5 file input | `react-dropzone` | UI-SPEC explicitly chose native to avoid a dependency. Single-file upload doesn't justify dropzone's accept-rules feature surface. |
-| `toast.update(id, …)` | `toast(jsx, { id })` re-emit | Sonner 2.x mutates a toast in place when a subsequent `toast(...)` call uses the same `id` [CITED: sonner docs site]. We use this for "Публикация через 5с → Опубликовано". |
-| custom React countdown in toast | shadcn `<Progress>` + `setInterval(100ms)` | Already in shadcn pack (Wave 0 install). 50 lines of timer-management + cleanup vs. third-party countdown lib. |
-| presigned PUT direct to S3 | proxy upload through api | Direct PUT keeps the api binary-payload-free; the spec already mandates this pattern (CAT-03 + UI-SPEC §Photo Upload). |
+| Instead of                           | Could Use                                   | Tradeoff                                                                                                                                                                                                                                  |
+| ------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `react-hook-form`                    | React 19 `useActionState` (current pattern) | `useActionState` cannot drive auto-save: no per-field subscription, no debounced submit. UI-SPEC D-4b-02 mandates RHF; this is a forced upgrade.                                                                                          |
+| `react-hook-form` `watch()` callback | `useWatch` hook                             | useWatch isolates re-renders at the hook level but `watch(callback)` is the canonical auto-save pattern [CITED: react-hook-form GH discussion #3078 — community-recommended]. We need the subscription callback, not just current values. |
+| native HTML5 file input              | `react-dropzone`                            | UI-SPEC explicitly chose native to avoid a dependency. Single-file upload doesn't justify dropzone's accept-rules feature surface.                                                                                                        |
+| `toast.update(id, …)`                | `toast(jsx, { id })` re-emit                | Sonner 2.x mutates a toast in place when a subsequent `toast(...)` call uses the same `id` [CITED: sonner docs site]. We use this for "Публикация через 5с → Опубликовано".                                                               |
+| custom React countdown in toast      | shadcn `<Progress>` + `setInterval(100ms)`  | Already in shadcn pack (Wave 0 install). 50 lines of timer-management + cleanup vs. third-party countdown lib.                                                                                                                            |
+| presigned PUT direct to S3           | proxy upload through api                    | Direct PUT keeps the api binary-payload-free; the spec already mandates this pattern (CAT-03 + UI-SPEC §Photo Upload).                                                                                                                    |
 
 ## Package Legitimacy Audit
 
 > slopcheck was not installable in this session — every new package below is tagged `[ASSUMED]` per protocol. The planner MUST gate each install behind a `checkpoint:human-verify` task.
 
-| Package | Registry | Age | Created | Source Repo | slopcheck | Disposition |
-|---|---|---|---|---|---|---|
-| `react-hook-form` | npm | 7 yrs | 2019-03-20 | github.com/react-hook-form/react-hook-form | [ASSUMED] | Approved pending human-verify (provenance: official org, massive download base, in shadcn's own peer list) |
-| `@hookform/resolvers` | npm | 6 yrs | 2020-05-20 | github.com/react-hook-form/resolvers | [ASSUMED] | Approved pending human-verify (same official org) |
+| Package               | Registry | Age   | Created    | Source Repo                                | slopcheck | Disposition                                                                                                |
+| --------------------- | -------- | ----- | ---------- | ------------------------------------------ | --------- | ---------------------------------------------------------------------------------------------------------- |
+| `react-hook-form`     | npm      | 7 yrs | 2019-03-20 | github.com/react-hook-form/react-hook-form | [ASSUMED] | Approved pending human-verify (provenance: official org, massive download base, in shadcn's own peer list) |
+| `@hookform/resolvers` | npm      | 6 yrs | 2020-05-20 | github.com/react-hook-form/resolvers       | [ASSUMED] | Approved pending human-verify (same official org)                                                          |
 
 **Packages removed due to slopcheck [SLOP] verdict:** none.
 **Packages flagged as suspicious [SUS]:** none. Both are widely-adopted, long-established. Standard provenance signals (official GitHub org, multi-year history) compensate partially but cannot replace slopcheck — the planner must insert a `checkpoint:human-verify` task BEFORE the install line in Wave 0.
@@ -493,8 +493,14 @@ interface DraftDiff {
   }>;
 }
 
-export default async function MenuLayout({ children }: { readonly children: React.ReactNode }) {
-  const diff = await apiFetchInternal<DraftDiff>('/internal/v1/catalog/draft-diff');
+export default async function MenuLayout({
+  children,
+}: {
+  readonly children: React.ReactNode;
+}) {
+  const diff = await apiFetchInternal<DraftDiff>(
+    '/internal/v1/catalog/draft-diff',
+  );
   return (
     <>
       {children}
@@ -530,13 +536,15 @@ export default async function MenuLayout({ children }: { readonly children: Reac
 ```tsx
 // Source: shadcn select primitive composition
 <Select onValueChange={onChange} value={value}>
-  <SelectTrigger><SelectValue placeholder="Выберите категорию" /></SelectTrigger>
+  <SelectTrigger>
+    <SelectValue placeholder="Выберите категорию" />
+  </SelectTrigger>
   <SelectContent>
     {categories.map((c) => (
       <SelectItem
         key={c.id}
         value={c.id}
-        disabled={c.parentId !== null && fieldIsParentSelector}  // parent-of-a-parent is not allowed
+        disabled={c.parentId !== null && fieldIsParentSelector} // parent-of-a-parent is not allowed
         className={c.parentId === null ? '' : 'pl-8'}
       >
         {c.parentId === null ? c.name : `↳ ${c.name}`}
@@ -569,7 +577,8 @@ export const refineCategoryDepth = (
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['parentId'],
-        message: 'Уровень вложенности ограничен двумя — родитель уже является подкатегорией.',
+        message:
+          'Уровень вложенности ограничен двумя — родитель уже является подкатегорией.',
       });
     }
   });
@@ -587,16 +596,16 @@ export const refineCategoryDepth = (
 
 ## Don't Hand-Roll
 
-| Problem | Don't Build | Use Instead | Why |
-|---|---|---|---|
-| Form state + validation + per-field subscribe | Custom `useState` + per-input handlers | `react-hook-form` + `@hookform/resolvers/zod` | RHF has 7 years of edge-case coverage (touched-fields, defaultValues hydration, controlled vs uncontrolled, validation timing). Custom rolls drift. |
-| Toast positioning / stacking / theme | Custom React portal | `sonner` (already installed) | Sonner handles bottom-right placement, light/dark theme, stack mgmt, ARIA, dismiss-on-click. |
-| Cookie-signed active brand | Custom JWT | Existing `signActiveBrand` HMAC | Phase 02 already shipped this — reuse `readActiveBrand` from `lib/active-brand-cookie.ts`. |
-| Presigned URL generation | Roll your own SigV4 | `@aws-sdk/s3-request-presigner` (already in api) | The api already uses `getSignedUrl` for GET; add a `presignPut` method on the same adapter. |
-| Time-since formatting ("Xс назад") | `date-fns` / `react-time-ago` / `luxon` | Inline string formatter | UI-SPEC explicit. The full date library is overkill for a single 3-bucket formatter. |
-| Drag-drop file upload | `react-dropzone` | Native HTML5 `<input type="file">` + `dragover`/`drop` | UI-SPEC explicit. Single-file, image-only — no accept-rules engine needed. |
-| Cyrillic transliteration | Custom translit map | 4a-installed `transliteration@2.6.1` server-side | Already in api for slug derivation. Admin doesn't need to translit client-side — display the auto-derived slug as read-only helper text under name field. |
-| Inbox-style optimistic UI | Custom revert-on-error logic | Pessimistic + `revalidatePath` | UI-SPEC §Stop-list interaction: "switch shows loading state during request"; revert via re-fetch on error toast. |
+| Problem                                       | Don't Build                             | Use Instead                                            | Why                                                                                                                                                       |
+| --------------------------------------------- | --------------------------------------- | ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Form state + validation + per-field subscribe | Custom `useState` + per-input handlers  | `react-hook-form` + `@hookform/resolvers/zod`          | RHF has 7 years of edge-case coverage (touched-fields, defaultValues hydration, controlled vs uncontrolled, validation timing). Custom rolls drift.       |
+| Toast positioning / stacking / theme          | Custom React portal                     | `sonner` (already installed)                           | Sonner handles bottom-right placement, light/dark theme, stack mgmt, ARIA, dismiss-on-click.                                                              |
+| Cookie-signed active brand                    | Custom JWT                              | Existing `signActiveBrand` HMAC                        | Phase 02 already shipped this — reuse `readActiveBrand` from `lib/active-brand-cookie.ts`.                                                                |
+| Presigned URL generation                      | Roll your own SigV4                     | `@aws-sdk/s3-request-presigner` (already in api)       | The api already uses `getSignedUrl` for GET; add a `presignPut` method on the same adapter.                                                               |
+| Time-since formatting ("Xс назад")            | `date-fns` / `react-time-ago` / `luxon` | Inline string formatter                                | UI-SPEC explicit. The full date library is overkill for a single 3-bucket formatter.                                                                      |
+| Drag-drop file upload                         | `react-dropzone`                        | Native HTML5 `<input type="file">` + `dragover`/`drop` | UI-SPEC explicit. Single-file, image-only — no accept-rules engine needed.                                                                                |
+| Cyrillic transliteration                      | Custom translit map                     | 4a-installed `transliteration@2.6.1` server-side       | Already in api for slug derivation. Admin doesn't need to translit client-side — display the auto-derived slug as read-only helper text under name field. |
+| Inbox-style optimistic UI                     | Custom revert-on-error logic            | Pessimistic + `revalidatePath`                         | UI-SPEC §Stop-list interaction: "switch shows loading state during request"; revert via re-fetch on error toast.                                          |
 
 **Key insight:** All hand-roll temptations have either (a) an existing 4a/Phase-02 implementation to reuse, or (b) an explicit UI-SPEC instruction to use the platform primitive. The "auto-save" pattern is the **only** genuinely custom hook 4b authors — and even that is a known community pattern, not novel research.
 
@@ -614,6 +623,7 @@ export const refineCategoryDepth = (
 **What goes wrong:** Presigned PUT URL returned, browser does `fetch(url, { method: 'PUT', body: file })`, S3 returns 403 (`SignatureDoesNotMatch`) because the presigner signed for a `Content-Type` the browser is sending differently, OR the browser hits a CORS preflight failure (`Access-Control-Allow-Origin` not configured for the admin origin).
 **Why:** Presigned URLs lock in the exact request fingerprint the signer expects. MinIO default config does not allow PUT from another origin.
 **How to avoid:**
+
 1. Backend `presignPut` accepts the same `Content-Type` the browser will send — keep it deterministic (e.g., always `image/jpeg` or read from the file blob).
 2. Add `PUT` and the admin origin to the bucket's CORS config (`infra/docker/minio-init.sh` and the production bucket config).
 3. Browser PUT call sends matching `Content-Type` header explicitly.
@@ -645,11 +655,12 @@ export const refineCategoryDepth = (
 **What goes wrong:** UI-SPEC says "Archive category" via `AlertDialog`, but the underlying schema (`packages/db/src/schema/menu.ts` lines 34–64) has no `status` enum on `menu_categories`. Only `menu_items` has `status: draft|published|archived`.
 **Why:** 4a focused on item lifecycle; category archive is a 4b need that didn't drive 4a's schema.
 **How to avoid (PLANNING LANDMINE):** This is a backend addendum the planner MUST schedule. Options:
+
 - **Option A (cleanest):** add a `menu_categories.status` column via 4b-prefix migration + UpsertCategory accepts it + audit projection extended. Cost: 1 migration + 2 service updates + 1 DTO field.
 - **Option B (cheap):** "archive" a category by soft-delete via a new `archivedAt` timestamp column. Same surface area, less semantic.
 - **Option C (UX dodge):** drop "Archive category" from 4b scope; only support edit + reorder. Categories are few — operators can rename to "[archived]" manually. Surface as deferred-item.
-**Recommendation:** Option A. Two-line schema change; consistency with `menu_items.status`; aligns with future v2 multi-status filters.
-**Warning signs:** Planner writes "archive category action" without naming the schema column it patches.
+  **Recommendation:** Option A. Two-line schema change; consistency with `menu_items.status`; aligns with future v2 multi-status filters.
+  **Warning signs:** Planner writes "archive category action" without naming the schema column it patches.
 
 ### Pitfall 7: `apiFetchInternal` lacks AbortSignal.timeout
 
@@ -696,7 +707,7 @@ export const ItemEditorFormSchema = z.object({
   name: z.string().trim().min(1).max(255), // mirrors LocalizedText cap from packages/domain
   description: z.string().max(4096).nullable().default(null),
   categoryId: z.string().uuid(),
-  basePrice: z.coerce.number().min(0),     // Drizzle numeric → string; coerce on form load
+  basePrice: z.coerce.number().min(0), // Drizzle numeric → string; coerce on form load
   currency: z.string().regex(/^[A-Z]{3}$/),
   allergens: z.array(z.string().min(1).max(100)).max(50).default([]),
   proteins: z.coerce.number().min(0).max(999.99).nullable().default(null),
@@ -716,7 +727,10 @@ export type ItemEditorForm = z.infer<typeof ItemEditorFormSchema>;
 'use server';
 import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
-import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/catalog/schemas';
+import {
+  ItemEditorFormSchema,
+  type ItemEditorForm,
+} from '@/lib/catalog/schemas';
 import { toLocalizedText } from '@/lib/catalog/localized';
 
 export interface UpsertItemActionState {
@@ -731,14 +745,19 @@ export async function upsertItemAction(
 ): Promise<UpsertItemActionState> {
   const parsed = ItemEditorFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Validation failed.', savedAt: null };
+    return {
+      error: parsed.error.issues[0]?.message ?? 'Validation failed.',
+      savedAt: null,
+    };
   }
   const payload = {
     id: itemId === 'new' ? undefined : itemId,
     categoryId: parsed.data.categoryId,
     name: toLocalizedText(parsed.data.name, defaultLocale),
-    description: parsed.data.description ? toLocalizedText(parsed.data.description, defaultLocale) : null,
-    basePrice: parsed.data.basePrice.toFixed(2),  // numeric → string for Drizzle
+    description: parsed.data.description
+      ? toLocalizedText(parsed.data.description, defaultLocale)
+      : null,
+    basePrice: parsed.data.basePrice.toFixed(2), // numeric → string for Drizzle
     currency: parsed.data.currency,
     allergens: parsed.data.allergens,
     proteins: parsed.data.proteins,
@@ -747,12 +766,15 @@ export async function upsertItemAction(
     kcal: parsed.data.kcal,
     nutritionEstimated: parsed.data.nutritionEstimated,
     source: 'manual',
-    photos: [],  // photos managed separately via PhotoUploadClient
+    photos: [], // photos managed separately via PhotoUploadClient
   };
-  const res = await apiFetchInternal<{ id: string }>('/internal/v1/catalog/items', {
-    method: 'POST',
-    body: payload,
-  });
+  const res = await apiFetchInternal<{ id: string }>(
+    '/internal/v1/catalog/items',
+    {
+      method: 'POST',
+      body: payload,
+    },
+  );
   if (!res.ok) {
     return { error: `Не удалось сохранить (${res.status}).`, savedAt: null };
   }
@@ -774,14 +796,22 @@ export async function toggleStopListAction(
   next: 'paused' | 'published',
 ): Promise<{ readonly ok: boolean; readonly error: string | null }> {
   if (next === 'paused') {
-    const res = await apiFetchInternal<{ id: string }>('/internal/v1/catalog/stop-list', {
-      method: 'POST',
-      body: { itemId, reason: null },
-    });
-    if (!res.ok) return { ok: false, error: 'Не удалось добавить в стоп-лист.' };
+    const res = await apiFetchInternal<{ id: string }>(
+      '/internal/v1/catalog/stop-list',
+      {
+        method: 'POST',
+        body: { itemId, reason: null },
+      },
+    );
+    if (!res.ok)
+      return { ok: false, error: 'Не удалось добавить в стоп-лист.' };
   } else {
-    const res = await apiFetchInternal<void>(`/internal/v1/catalog/stop-list/${itemId}`, { method: 'DELETE' });
-    if (!res.ok) return { ok: false, error: 'Не удалось убрать из стоп-листа.' };
+    const res = await apiFetchInternal<void>(
+      `/internal/v1/catalog/stop-list/${itemId}`,
+      { method: 'DELETE' },
+    );
+    if (!res.ok)
+      return { ok: false, error: 'Не удалось убрать из стоп-листа.' };
   }
   revalidatePath('/dashboard/menu', 'layout');
   return { ok: true, error: null };
@@ -790,14 +820,14 @@ export async function toggleStopListAction(
 
 ## State of the Art
 
-| Old Approach | Current Approach | When Changed | Impact |
-|---|---|---|---|
-| Single-photo `imageS3Key` column | `photos JSONB[]` array | 4a (2026-05-31) | Schema forward-compatible for multi-photo v2; UI ships single-photo |
-| `menu_variants.priceDelta` | `menu_item_sizes.price` (absolute) | 4a (2026-05-31) | UI labels "Цена" not "Доплата"; aligns with iiko |
-| Combined modifier/group entity | Separate `menu_modifier_groups` + `menu_modifier_options` | 4a (2026-05-31) | Two-surface UX possible; reusable groups |
-| Immediate publish | Delayed-publish (5s window) | 4a (2026-05-31) | Sonner countdown UX possible; backend `DelayedPublishService` owns timer |
-| `useActionState` for forms | `react-hook-form` for editors with auto-save | 4b (this phase) | Subscription-based change detection enables debounced auto-save |
-| Form re-emit on every keystroke | `watch(callback)` subscription | n/a — best practice | No re-renders on parent; only side-effect fires |
+| Old Approach                     | Current Approach                                          | When Changed        | Impact                                                                   |
+| -------------------------------- | --------------------------------------------------------- | ------------------- | ------------------------------------------------------------------------ |
+| Single-photo `imageS3Key` column | `photos JSONB[]` array                                    | 4a (2026-05-31)     | Schema forward-compatible for multi-photo v2; UI ships single-photo      |
+| `menu_variants.priceDelta`       | `menu_item_sizes.price` (absolute)                        | 4a (2026-05-31)     | UI labels "Цена" not "Доплата"; aligns with iiko                         |
+| Combined modifier/group entity   | Separate `menu_modifier_groups` + `menu_modifier_options` | 4a (2026-05-31)     | Two-surface UX possible; reusable groups                                 |
+| Immediate publish                | Delayed-publish (5s window)                               | 4a (2026-05-31)     | Sonner countdown UX possible; backend `DelayedPublishService` owns timer |
+| `useActionState` for forms       | `react-hook-form` for editors with auto-save              | 4b (this phase)     | Subscription-based change detection enables debounced auto-save          |
+| Form re-emit on every keystroke  | `watch(callback)` subscription                            | n/a — best practice | No re-renders on parent; only side-effect fires                          |
 
 **Deprecated/outdated:**
 
@@ -808,59 +838,51 @@ export async function toggleStopListAction(
 
 > Each `[ASSUMED]` claim needs user/planner confirmation before becoming a locked decision.
 
-| # | Claim | Section | Risk if Wrong |
-|---|---|---|---|
-| A1 | Backend addendum (GET endpoints + presign-PUT + draft-diff + category status) is acceptable scope inside Phase 4b | Standard Stack + Architecture | If user wants strictly frontend-only 4b, the plan needs a Phase 4c interleave first. **HIGH risk — must confirm.** |
-| A2 | `react-hook-form@7.76.1` + `@hookform/resolvers@5.4.0` are the slopcheck-clean canonical choices | Package Legitimacy Audit | Misidentified package = supply-chain risk. Mitigated by long provenance + planner human-verify gate. |
-| A3 | Categories need a `status` column to support D-09 "archived" badge — Option A in Pitfall #6 | Pitfall 6 | Wrong choice = either over-engineering (Option A when nobody archives categories) or rebuild (Option C dropped, then user asks for it) |
-| A4 | Sonner's `id`-based in-place replace works in 2.0.7 as documented | Pattern 2 | If Sonner 2.x changed behavior, countdown shows two toasts. Mitigated by Wave-0 smoke test. |
-| A5 | `apiFetchInternal` needs hardening (timeout + retry) inside 4b scope | Pitfall 7 | If deferred to a hardening phase, 4b ships violating `apps/CLAUDE.md` rules. Recommend folding in. |
-| A6 | Server actions can drive RHF auto-save without `useTransition`/`useActionState` because we own the result reporting | Pattern 1 | If React 19 stale-closure rules trip in production, indicator may lie about save state |
-| A7 | Tenant default-locale lookup exists at the api boundary (so UI doesn't have to manage it for `LocalizedText` writes) | Pitfall 9 | Verify in api: where does tenant default-locale come from? If unset, admin needs a fallback constant (e.g., `'ru'`) and the planner must surface this. |
-| A8 | Item `status === 'paused'` is computed from "row exists in `menu_stop_list`" at the read API — not a column on `menu_items` | UI-SPEC §Status badge | Confirmed via 4a `loadPublishedMenu` (filters out stop-listed); admin needs the same join for items-list status column. |
-| A9 | Bucket CORS for direct-PUT from admin is acceptable infra change in 4b | Pitfall 2 | Without it, presign-PUT fails at runtime; lands as a backend addendum. |
-| A10 | The "Modified" badge state (item edited after publish) is derivable as `updated_at > tenants.menu_first_published_at` AND `status === 'published'` — no new column needed | UI-SPEC §Status semantics | If not computable, schema needs a `last_published_at` per-item — planner must verify |
+| #   | Claim                                                                                                                                                                     | Section                       | Risk if Wrong                                                                                                                                          |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A1  | Backend addendum (GET endpoints + presign-PUT + draft-diff + category status) is acceptable scope inside Phase 4b                                                         | Standard Stack + Architecture | If user wants strictly frontend-only 4b, the plan needs a Phase 4c interleave first. **HIGH risk — must confirm.**                                     |
+| A2  | `react-hook-form@7.76.1` + `@hookform/resolvers@5.4.0` are the slopcheck-clean canonical choices                                                                          | Package Legitimacy Audit      | Misidentified package = supply-chain risk. Mitigated by long provenance + planner human-verify gate.                                                   |
+| A3  | Categories need a `status` column to support D-09 "archived" badge — Option A in Pitfall #6                                                                               | Pitfall 6                     | Wrong choice = either over-engineering (Option A when nobody archives categories) or rebuild (Option C dropped, then user asks for it)                 |
+| A4  | Sonner's `id`-based in-place replace works in 2.0.7 as documented                                                                                                         | Pattern 2                     | If Sonner 2.x changed behavior, countdown shows two toasts. Mitigated by Wave-0 smoke test.                                                            |
+| A5  | `apiFetchInternal` needs hardening (timeout + retry) inside 4b scope                                                                                                      | Pitfall 7                     | If deferred to a hardening phase, 4b ships violating `apps/CLAUDE.md` rules. Recommend folding in.                                                     |
+| A6  | Server actions can drive RHF auto-save without `useTransition`/`useActionState` because we own the result reporting                                                       | Pattern 1                     | If React 19 stale-closure rules trip in production, indicator may lie about save state                                                                 |
+| A7  | Tenant default-locale lookup exists at the api boundary (so UI doesn't have to manage it for `LocalizedText` writes)                                                      | Pitfall 9                     | Verify in api: where does tenant default-locale come from? If unset, admin needs a fallback constant (e.g., `'ru'`) and the planner must surface this. |
+| A8  | Item `status === 'paused'` is computed from "row exists in `menu_stop_list`" at the read API — not a column on `menu_items`                                               | UI-SPEC §Status badge         | Confirmed via 4a `loadPublishedMenu` (filters out stop-listed); admin needs the same join for items-list status column.                                |
+| A9  | Bucket CORS for direct-PUT from admin is acceptable infra change in 4b                                                                                                    | Pitfall 2                     | Without it, presign-PUT fails at runtime; lands as a backend addendum.                                                                                 |
+| A10 | The "Modified" badge state (item edited after publish) is derivable as `updated_at > tenants.menu_first_published_at` AND `status === 'published'` — no new column needed | UI-SPEC §Status semantics     | If not computable, schema needs a `last_published_at` per-item — planner must verify                                                                   |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All five questions resolved during planning (2026-05-31). Each "Recommendation" is now the binding decision baked into PLAN.md files (Plans 02, 06, 07, 09). RESOLVED markers added per gate Dimension 11.
 
 1. **Default locale source.** Is it `tenants.defaultLocale`, BA org metadata, or `request.brand.locale`? Server actions need it to wrap plain-string UI inputs into `LocalizedText`. (A7)
-   - What we know: D-05 single-locale, `LocalizedText` DTO stays.
-   - What's unclear: where the active locale comes from at server-action time.
-   - Recommendation: Planner reads `apps/api/src/contexts/tenancy/...` for tenant-default-locale + adds helper to `apps/admin/lib/me.ts` if not already exposed.
+   - **RESOLVED:** Pin a `DEFAULT_LOCALE = 'ru'` constant in `apps/admin/lib/menu/localized.ts`. Server actions wrap plain-string UI inputs into `LocalizedText` via this constant. Backend tenant-default-locale lookup is deferred to v2 / multilingual editor; 4b is single-locale Russian per D-05.
 
 2. **`Modified` badge computation.** Is `updated_at > menu_first_published_at` sufficient, or does the spec want per-item "last_published_at"?
-   - What we know: 4a tracks tenant-level first-publish.
-   - What's unclear: whether per-item republish tracking exists.
-   - Recommendation: For 4b, compute as `status === 'published' AND updated_at > tenants.menu_first_published_at`. If wrong-positives appear (e.g., right after first publish many items show modified), planner adds a per-item `last_published_at` column in a 4b backend addendum.
+   - **RESOLVED:** Compute as `status === 'published' AND updated_at > tenants.menu_first_published_at`. No per-item `last_published_at` column added in 4b. If false-positives surface after first paying customer, planner adds the column in a v2 backend addendum (deferred — see CONTEXT `<deferred>`).
 
-3. **`/internal/v1/catalog/items` list shape.** Should it return embedded sizes + modifier-group IDs, or thin rows? Single endpoint vs. multiple.
-   - What we know: UI-SPEC table shows price + status + photo[0] + category-with-parent-prefix.
-   - What's unclear: whether the items-list page wants size-cardinality info ("от N₽ if sizes exist") inline or just base price.
-   - Recommendation: Return thin rows + a `hasSizes: boolean` flag for the "от" label. Editor reads sizes via a separate fetch on `[id]/page.tsx`.
+3. **`/internal/v1/catalog/items` list shape.** Should it return embedded sizes + modifier-group IDs, or thin rows?
+   - **RESOLVED:** Return thin rows + a `hasSizes: boolean` flag for the "от" price label. Item editor reads sizes via a separate fetch on `[id]/page.tsx`. Plan 02 (`listItems` service) implements thin shape; Plan 06 (items list page) renders "от N₽" when `hasSizes=true`.
 
-4. **Stop-list `stoppedAt` exposure.** UI-SPEC needs ">24h" stale warning. Does `menu_stop_list.created_at` ship in the GET response?
-   - What we know: Schema has timestamps (`timestampsColumns`).
-   - What's unclear: whether the public/internal DTO surfaces it.
-   - Recommendation: Confirm in backend addendum; if not exposed, surface `stoppedAt` in the new `GET /internal/v1/catalog/stop-list` response.
+4. **Stop-list `stoppedAt` exposure.** Does `menu_stop_list.created_at` ship in the GET response?
+   - **RESOLVED:** New `GET /internal/v1/catalog/stop-list` response (Plan 02) surfaces `stoppedAt` per row (alias of `created_at`). Plan 09 renders ">24h stale" warning when `Date.now() - stoppedAt > 24h`.
 
 5. **Draft-diff scope.** Does diff include modifier-groups and categories, or only items?
-   - What we know: UI-SPEC §Sticky Publish Bar "diff list items grouped by entity type".
-   - What's unclear: which entity types are actually publishable. Currently `publish` only snapshots items (4a behavior).
-   - Recommendation: Diff covers items first; modifier-groups + categories iff they have a publish lifecycle. Planner verifies in 4a `loadPublishedMenu` to see what's actually snapshotted.
+   - **RESOLVED:** Items only for 4b. `GET /internal/v1/catalog/draft-diff` returns only item-level draft changes (matches 4a `publish` snapshot scope). Modifier-groups and categories iterate via auto-save without a publish lifecycle in MVP-1. Sticky publish bar copy reflects this (single entity type in the list).
 
 ## Environment Availability
 
-| Dependency | Required By | Available | Version | Fallback |
-|---|---|---|---|---|
-| Node.js | All admin work | ✓ | 22.x (>= 22.22.1 enforced) | — |
-| pnpm | All admin work | ✓ | 9.15.0 | — |
-| Docker Desktop (Postgres + MinIO + Redis + NATS) | Dev e2e + manual photo upload smoke | ✓ (per project setup) | — | — |
-| MinIO (S3-compatible dev) | Photo upload presign-PUT smoke test | ✓ in dev stack | per `infra/docker/docker-compose.dev.yml` | Production uses AWS S3 / Cloudflare R2 (per ADR-0016) |
-| `@aws-sdk/s3-request-presigner` | New `presignPut` method on existing adapter | ✓ Already installed | 3.1053.0 in repo (latest 3.1057.0 — bump optional) | — |
-| `transliteration` | server-side slug derivation | ✓ Already installed (4a-01) | 2.6.1 | — |
-| `react-hook-form` | item editor auto-save | ✗ NOT INSTALLED | — | Wave 0 install |
-| `@hookform/resolvers` | RHF + zod bridge | ✗ NOT INSTALLED | — | Wave 0 install |
-| shadcn primitives: badge, table, tabs, switch, form, select, dialog, progress, textarea | All editor surfaces | ✗ NOT INSTALLED | — | Wave 0: `pnpm dlx shadcn@latest add ...` |
+| Dependency                                                                              | Required By                                 | Available                   | Version                                            | Fallback                                              |
+| --------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------- | -------------------------------------------------- | ----------------------------------------------------- |
+| Node.js                                                                                 | All admin work                              | ✓                           | 22.x (>= 22.22.1 enforced)                         | —                                                     |
+| pnpm                                                                                    | All admin work                              | ✓                           | 9.15.0                                             | —                                                     |
+| Docker Desktop (Postgres + MinIO + Redis + NATS)                                        | Dev e2e + manual photo upload smoke         | ✓ (per project setup)       | —                                                  | —                                                     |
+| MinIO (S3-compatible dev)                                                               | Photo upload presign-PUT smoke test         | ✓ in dev stack              | per `infra/docker/docker-compose.dev.yml`          | Production uses AWS S3 / Cloudflare R2 (per ADR-0016) |
+| `@aws-sdk/s3-request-presigner`                                                         | New `presignPut` method on existing adapter | ✓ Already installed         | 3.1053.0 in repo (latest 3.1057.0 — bump optional) | —                                                     |
+| `transliteration`                                                                       | server-side slug derivation                 | ✓ Already installed (4a-01) | 2.6.1                                              | —                                                     |
+| `react-hook-form`                                                                       | item editor auto-save                       | ✗ NOT INSTALLED             | —                                                  | Wave 0 install                                        |
+| `@hookform/resolvers`                                                                   | RHF + zod bridge                            | ✗ NOT INSTALLED             | —                                                  | Wave 0 install                                        |
+| shadcn primitives: badge, table, tabs, switch, form, select, dialog, progress, textarea | All editor surfaces                         | ✗ NOT INSTALLED             | —                                                  | Wave 0: `pnpm dlx shadcn@latest add ...`              |
 
 **Missing dependencies with no fallback:** none — every missing dep has a Wave 0 install step.
 **Missing dependencies with fallback:** none.
@@ -871,33 +893,33 @@ export async function toggleStopListAction(
 
 ### Test Framework
 
-| Property | Value |
-|---|---|
-| Framework | Vitest 2.1.8 (unit) + Playwright 1.60.0 (e2e) |
-| Config files | `apps/admin/vitest.config.ts`, `apps/admin/playwright.config.ts` |
-| Quick run command | `pnpm --filter @resto/admin exec vitest run <path>` |
+| Property           | Value                                                                          |
+| ------------------ | ------------------------------------------------------------------------------ |
+| Framework          | Vitest 2.1.8 (unit) + Playwright 1.60.0 (e2e)                                  |
+| Config files       | `apps/admin/vitest.config.ts`, `apps/admin/playwright.config.ts`               |
+| Quick run command  | `pnpm --filter @resto/admin exec vitest run <path>`                            |
 | Full suite command | `pnpm --filter @resto/admin exec vitest run && pnpm --filter @resto/admin e2e` |
 
 ### Phase Requirements → Test Map
 
-| Req ID | Behavior | Test Type | Automated Command | File Exists? |
-|---|---|---|---|---|
-| CAT-01 | Operator creates a category; appears in list | unit (RTL) + e2e | `pnpm --filter @resto/admin exec vitest run app/dashboard/.../categories/category-form-client.spec.tsx` | ❌ Wave 0 |
-| CAT-01 | Operator edits category name; auto-save fires after debounce | unit (RTL with fake timers) | as above + new spec | ❌ Wave 0 |
-| CAT-01 | Operator archives category; AlertDialog confirmation | e2e | `pnpm --filter @resto/admin e2e tests/catalog/categories.spec.ts` | ❌ Wave 0 |
-| CAT-02 | Item editor renders all fields; auto-save triggers POST /items | unit (RTL with mocked server action) | new spec | ❌ Wave 0 |
-| CAT-02 | Item editor switching tabs preserves form state | unit | as above | ❌ Wave 0 |
-| CAT-03 | Photo drop zone accepts file; presigned PUT URL fetched; direct PUT fires | unit (RTL + msw) + e2e (against MinIO) | new spec; new playwright | ❌ Wave 0 |
-| CAT-04 | Modifier-group editor lists options; add-option fires upsert | unit | new spec | ❌ Wave 0 |
-| CAT-04 | Item's Modifiers tab adds existing group from sheet picker | unit | new spec | ❌ Wave 0 |
-| CAT-05 | Sizes tab adds a row; Default radio enforces single-active | unit | new spec | ❌ Wave 0 |
-| CAT-07 | Stop-list switch toggle calls POST/DELETE; sonner notice appears | unit | new spec | ❌ Wave 0 |
-| CAT-07 | "Today's 86" dashboard widget renders count from `/stop-list` | unit | new spec | ❌ Wave 0 |
-| CAT-08 | Sticky publish bar reads draft-diff; shows count | unit (server-component test) | new spec | ❌ Wave 0 |
-| CAT-08 | Click Publish → POST `/publish` → Sonner countdown appears | e2e | new playwright | ❌ Wave 0 |
-| CAT-08 | Click Undo within 5s → DELETE `/publish` → success toast | e2e | as above | ❌ Wave 0 |
-| CAT-08 | Re-click protection: button disabled during active countdown | unit | new spec | ❌ Wave 0 |
-| Backend addendum | New GET endpoints return expected shape | api e2e | `pnpm --filter @resto/api exec vitest run test/e2e/catalog.e2e.spec.ts` | partial — extend existing file |
+| Req ID           | Behavior                                                                  | Test Type                              | Automated Command                                                                                       | File Exists?                   |
+| ---------------- | ------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------ |
+| CAT-01           | Operator creates a category; appears in list                              | unit (RTL) + e2e                       | `pnpm --filter @resto/admin exec vitest run app/dashboard/.../categories/category-form-client.spec.tsx` | ❌ Wave 0                      |
+| CAT-01           | Operator edits category name; auto-save fires after debounce              | unit (RTL with fake timers)            | as above + new spec                                                                                     | ❌ Wave 0                      |
+| CAT-01           | Operator archives category; AlertDialog confirmation                      | e2e                                    | `pnpm --filter @resto/admin e2e tests/catalog/categories.spec.ts`                                       | ❌ Wave 0                      |
+| CAT-02           | Item editor renders all fields; auto-save triggers POST /items            | unit (RTL with mocked server action)   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-02           | Item editor switching tabs preserves form state                           | unit                                   | as above                                                                                                | ❌ Wave 0                      |
+| CAT-03           | Photo drop zone accepts file; presigned PUT URL fetched; direct PUT fires | unit (RTL + msw) + e2e (against MinIO) | new spec; new playwright                                                                                | ❌ Wave 0                      |
+| CAT-04           | Modifier-group editor lists options; add-option fires upsert              | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-04           | Item's Modifiers tab adds existing group from sheet picker                | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-05           | Sizes tab adds a row; Default radio enforces single-active                | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-07           | Stop-list switch toggle calls POST/DELETE; sonner notice appears          | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-07           | "Today's 86" dashboard widget renders count from `/stop-list`             | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-08           | Sticky publish bar reads draft-diff; shows count                          | unit (server-component test)           | new spec                                                                                                | ❌ Wave 0                      |
+| CAT-08           | Click Publish → POST `/publish` → Sonner countdown appears                | e2e                                    | new playwright                                                                                          | ❌ Wave 0                      |
+| CAT-08           | Click Undo within 5s → DELETE `/publish` → success toast                  | e2e                                    | as above                                                                                                | ❌ Wave 0                      |
+| CAT-08           | Re-click protection: button disabled during active countdown              | unit                                   | new spec                                                                                                | ❌ Wave 0                      |
+| Backend addendum | New GET endpoints return expected shape                                   | api e2e                                | `pnpm --filter @resto/api exec vitest run test/e2e/catalog.e2e.spec.ts`                                 | partial — extend existing file |
 
 ### Sampling Rate
 
@@ -919,30 +941,30 @@ export async function toggleStopListAction(
 
 ### Applicable ASVS Categories
 
-| ASVS Category | Applies | Standard Control |
-|---|---|---|
-| V2 Authentication | yes | Inherits BA session via `apiFetch`; catalog mutations use server-only `INTERNAL_API_TOKEN` via `apiFetchInternal` (no client exposure) |
-| V3 Session Management | yes | `apps/CLAUDE.md` cookie triad enforced (already in `apiFetch.setForwardedCookie`) — no new cookies in 4b |
-| V4 Access Control | yes | InternalTokenGuard on catalog routes; **`PermissionsGuard` NOT YET wired** for catalog (gap acknowledged in Pitfall #3) |
-| V5 Input Validation | yes | Zod everywhere (4a DTOs + new client schemas); max-length enforced (CAT-09 source of truth) |
-| V6 Cryptography | no | Photo upload uses AWS SDK presigner (already audited); no hand-rolled crypto in 4b |
-| V11 Business Logic | yes | Delayed-publish 5s window enforced server-side (`DelayedPublishService`); admin UI is hint-only — backend is authoritative |
-| V12 File and Resources | yes | Direct-PUT photo upload requires Content-Type allowlist + size cap in `presignPut` (Pitfall #2) |
-| V13 API and Web Service | yes | OpenAPI drift gate (`pnpm openapi:check`) covers new endpoints; `@resto/api-client` types regenerated |
+| ASVS Category           | Applies | Standard Control                                                                                                                       |
+| ----------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| V2 Authentication       | yes     | Inherits BA session via `apiFetch`; catalog mutations use server-only `INTERNAL_API_TOKEN` via `apiFetchInternal` (no client exposure) |
+| V3 Session Management   | yes     | `apps/CLAUDE.md` cookie triad enforced (already in `apiFetch.setForwardedCookie`) — no new cookies in 4b                               |
+| V4 Access Control       | yes     | InternalTokenGuard on catalog routes; **`PermissionsGuard` NOT YET wired** for catalog (gap acknowledged in Pitfall #3)                |
+| V5 Input Validation     | yes     | Zod everywhere (4a DTOs + new client schemas); max-length enforced (CAT-09 source of truth)                                            |
+| V6 Cryptography         | no      | Photo upload uses AWS SDK presigner (already audited); no hand-rolled crypto in 4b                                                     |
+| V11 Business Logic      | yes     | Delayed-publish 5s window enforced server-side (`DelayedPublishService`); admin UI is hint-only — backend is authoritative             |
+| V12 File and Resources  | yes     | Direct-PUT photo upload requires Content-Type allowlist + size cap in `presignPut` (Pitfall #2)                                        |
+| V13 API and Web Service | yes     | OpenAPI drift gate (`pnpm openapi:check`) covers new endpoints; `@resto/api-client` types regenerated                                  |
 
 ### Known Threat Patterns for Next.js 15 + NestJS
 
-| Pattern | STRIDE | Standard Mitigation |
-|---|---|---|
-| XSS via `LocalizedText` admin input → public menu | Tampering | Plain string render only (no `dangerouslySetInnerHTML`); React auto-escapes; existing pattern |
-| SSRF via photo upload URL injection | Spoofing | `presignPut` returns server-generated URL; admin never accepts a URL from operator |
-| CSRF on catalog mutations | Tampering | `INTERNAL_API_TOKEN` is server-only; no browser→api CSRF surface for catalog routes |
-| Direct-PUT to wrong bucket / overwrite arbitrary key | Tampering | `presignPut` server-generates the `s3Key` (UUID-prefixed); operator cannot influence |
-| Oversized photo upload | DoS | `presignPut` enforces `sizeBytes ≤ 5 MiB`; AWS SigV4 binds the size into the signed URL |
-| Replay of presigned PUT URL | Spoofing | TTL ≤ 5 min on the URL; even with replay, key is server-chosen so no collision risk |
-| Open redirect via `next=` on catalog deep-link | Tampering | No new `next=` params in 4b — verify; existing rule in `apps/CLAUDE.md` |
-| Auto-save flooding (operator types fast) | DoS | 1.5s client debounce + server rate-limit on `/internal/v1/catalog/items` (rate-limit guard already exists per 4a Threat Flags) |
-| Stop-list flood (operator toggles repeatedly) | DoS | Existing app-level rate-limit per 4a T-04a-07-05 |
+| Pattern                                              | STRIDE    | Standard Mitigation                                                                                                            |
+| ---------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| XSS via `LocalizedText` admin input → public menu    | Tampering | Plain string render only (no `dangerouslySetInnerHTML`); React auto-escapes; existing pattern                                  |
+| SSRF via photo upload URL injection                  | Spoofing  | `presignPut` returns server-generated URL; admin never accepts a URL from operator                                             |
+| CSRF on catalog mutations                            | Tampering | `INTERNAL_API_TOKEN` is server-only; no browser→api CSRF surface for catalog routes                                            |
+| Direct-PUT to wrong bucket / overwrite arbitrary key | Tampering | `presignPut` server-generates the `s3Key` (UUID-prefixed); operator cannot influence                                           |
+| Oversized photo upload                               | DoS       | `presignPut` enforces `sizeBytes ≤ 5 MiB`; AWS SigV4 binds the size into the signed URL                                        |
+| Replay of presigned PUT URL                          | Spoofing  | TTL ≤ 5 min on the URL; even with replay, key is server-chosen so no collision risk                                            |
+| Open redirect via `next=` on catalog deep-link       | Tampering | No new `next=` params in 4b — verify; existing rule in `apps/CLAUDE.md`                                                        |
+| Auto-save flooding (operator types fast)             | DoS       | 1.5s client debounce + server rate-limit on `/internal/v1/catalog/items` (rate-limit guard already exists per 4a Threat Flags) |
+| Stop-list flood (operator toggles repeatedly)        | DoS       | Existing app-level rate-limit per 4a T-04a-07-05                                                                               |
 
 ## Sources
 

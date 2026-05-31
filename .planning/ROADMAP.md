@@ -211,7 +211,38 @@ Plans:
 4. Stop-list as inline switch in Items row + "Today's 86" widget on Dashboard with "Reset all" button; stale-stop-list warning surface at >24h (per Skeptic MED); manual reset only
 5. "Preview as customer" link from admin to `apps/qr-menu` route for the active tenant — closes the Phase-04 activation gap (per Growth Marketer HIGH-1)
 6. Badge copy uses `Paused` / `Стоп` (not `86'd` — per Growth Marketer MED-1); `destructive` variant reserved for archive, not paused
-   **Plans**: TBD
+   **Plans**: 9 plans
+
+Plans:
+**Wave 0**
+
+- [ ] 04b-01-PLAN.md — Foundation: install react-hook-form + @hookform/resolvers + 9 shadcn primitives; harden apiFetchInternal with AbortSignal.timeout + retry-on-idempotent-5xx + PATCH (D-4b-07 prerequisites)
+
+**Wave 1** _(after Wave 0)_
+
+- [ ] 04b-02-PLAN.md — Backend addendum: migration 0042 (menu_categories.status) + 9 application services + 7 GET + 2 PATCH archive endpoints + OpenAPI regen + drift gate + [BLOCKING] db:migrate (CAT-01, CAT-02, CAT-04, CAT-05, CAT-07, CAT-08)
+
+**Wave 2** _(after Wave 1)_
+
+- [ ] 04b-03-PLAN.md — Backend addendum: S3 presignPut + ImageUrlPort extension + POST /photo-upload-url + MinIO dev CORS + Terraform stub for prod + manual MinIO smoke probe (CAT-03)
+
+**Wave 3** _(after Waves 1+2 — frontend foundation; sidebar/sticky-bar runs parallel with categories)_
+
+- [ ] 04b-04-PLAN.md — Sidebar Menu group + /dashboard/menu layout + StickyPublishBar (RSC + client island) + Sonner countdown toast (id 'publish-countdown') + schedule/cancel publish actions + StatusBadge + AutoSaveIndicator shared primitives (CAT-08)
+- [ ] 04b-05-PLAN.md — Categories CRUD: page + form (Sheet) + indented CategorySelect + 3 server actions (upsert / archive AlertDialog / reorder ↑↓) + shared CategoryFormSchema + refineCategoryDepth + LocalizedText boundary helpers (CAT-01)
+
+**Wave 4** _(after Wave 3 — items list extends zod-schemas from Plan 05)_
+
+- [ ] 04b-06-PLAN.md — Items list: page + filter bar + table with stop-list switch + archive AlertDialog + 2 server actions (toggle-stop-list / archive-item) (CAT-02, CAT-07)
+
+**Wave 5** _(after Wave 4 — item editor + stop-list page reuse items table primitives; both extend zod-schemas)_
+
+- [ ] 04b-07-PLAN.md — Item editor: RSC + tabs shell + Detail tab (RHF + zodResolver + useDebouncedAutosave hook with request-id guard) + Sizes tab (per-row blur save) + PhotoUploadClient (presigned PUT direct-to-S3) + BJU row + 3 server actions (CAT-02, CAT-03, CAT-05)
+- [ ] 04b-09-PLAN.md — Stop-list page + "Today's 86" dashboard widget + reset-all server action (looped DELETEs with partial-success report) + >24h stale warning + dashboard integration (CAT-07 dedicated surface)
+
+**Wave 6** _(after Wave 5 — Modifiers tab integrates into the item editor shell from Plan 07)_
+
+- [ ] 04b-08-PLAN.md — Modifier groups two-surface model: list + group editor (RHF auto-save) + inline options list (per-row blur save) + Item editor Модификаторы tab (chip picker + Sheet + quick-create Dialog) + 3 server actions (CAT-04)
    **UI hint**: yes (mandatory ui-phase pass before discuss-phase)
    **Persona reviewers**: persona-product-strategist, persona-growth-marketer (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
