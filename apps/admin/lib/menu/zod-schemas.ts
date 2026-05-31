@@ -36,3 +36,34 @@ export const refineCategoryDepth = (
       });
     }
   });
+
+/**
+ * Plan 04b-06 Task 2 — items list status filter coercion (D-03).
+ *
+ * URL query param → typed enum. The sentinel `'all-except-archived'` is
+ * the default (D-03: hide archived unless the operator explicitly opts in
+ * via the status filter). Unknown values fall back to the default rather
+ * than throwing — operators bookmark URLs and we don't want a typo or a
+ * stale link to crash the page.
+ */
+export type ItemListStatusFilter =
+  | 'all-except-archived'
+  | 'draft'
+  | 'published'
+  | 'paused'
+  | 'archived';
+
+const KNOWN_STATUS_FILTERS: ReadonlySet<ItemListStatusFilter> = new Set<ItemListStatusFilter>([
+  'all-except-archived',
+  'draft',
+  'published',
+  'paused',
+  'archived',
+]);
+
+export const coerceStatusFilter = (raw: string | undefined): ItemListStatusFilter => {
+  if (raw && KNOWN_STATUS_FILTERS.has(raw as ItemListStatusFilter)) {
+    return raw as ItemListStatusFilter;
+  }
+  return 'all-except-archived';
+};

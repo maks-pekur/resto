@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { CategoryFormSchema, refineCategoryDepth } from '@/lib/menu/zod-schemas';
+import {
+  CategoryFormSchema,
+  refineCategoryDepth,
+  coerceStatusFilter,
+} from '@/lib/menu/zod-schemas';
 
 describe('CategoryFormSchema (D-4b-07)', () => {
   it('accepts a valid input shape', () => {
@@ -89,5 +93,23 @@ describe('refineCategoryDepth (D-4b-01 — depth ≤ 2)', () => {
       expect(issue?.path).toEqual(['parentId']);
       expect(issue?.message).toMatch(/Уровень вложенности ограничен двумя/u);
     }
+  });
+});
+
+describe('coerceStatusFilter (Plan 04b-06 Task 2)', () => {
+  it("defaults to 'all-except-archived' on undefined", () => {
+    expect(coerceStatusFilter(undefined)).toBe('all-except-archived');
+  });
+
+  it("defaults to 'all-except-archived' on an unknown value", () => {
+    expect(coerceStatusFilter('unknown')).toBe('all-except-archived');
+  });
+
+  it('passes through known status values', () => {
+    expect(coerceStatusFilter('draft')).toBe('draft');
+    expect(coerceStatusFilter('published')).toBe('published');
+    expect(coerceStatusFilter('paused')).toBe('paused');
+    expect(coerceStatusFilter('archived')).toBe('archived');
+    expect(coerceStatusFilter('all-except-archived')).toBe('all-except-archived');
   });
 });
