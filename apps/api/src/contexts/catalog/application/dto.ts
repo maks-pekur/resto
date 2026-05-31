@@ -253,3 +253,35 @@ export const DraftDiffResponseSchema = z.object({
 });
 export type DraftDiffResponse = z.infer<typeof DraftDiffResponseSchema>;
 export class DraftDiffResponseDto extends createZodDto(DraftDiffResponseSchema) {}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Phase 4b CAT-03 — direct-PUT photo upload (presigned URL handshake).
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Server-side allowlist for browser direct-PUT. Only formats the qr-menu
+ * renderer is willing to embed (RES-92 / RESEARCH.md Pattern 4). Adding a
+ * new format requires a parallel update to the public read path so the
+ * S3-key extension matches.
+ */
+export const PhotoUploadContentTypeSchema = z.enum(['image/jpeg', 'image/png', 'image/webp']);
+
+// 5 MiB cap — large enough for any restaurant photo at web-render quality,
+// small enough that one malicious PUT cannot exhaust the bucket budget.
+// SigV4 binds Content-Length into the signed URL so the browser cannot lie
+// after the fact.
+const MAX_PHOTO_BYTES = 5_242_880;
+
+export const PhotoUploadUrlInputSchema = z.object({
+  contentType: PhotoUploadContentTypeSchema,
+  sizeBytes: z.number().int().positive().max(MAX_PHOTO_BYTES),
+});
+export type PhotoUploadUrlInput = z.infer<typeof PhotoUploadUrlInputSchema>;
+export class PhotoUploadUrlInputDto extends createZodDto(PhotoUploadUrlInputSchema) {}
+
+export const PhotoUploadUrlResponseSchema = z.object({
+  uploadUrl: z.string().url(),
+  s3Key: z.string().min(1).max(1024),
+});
+export type PhotoUploadUrlResponse = z.infer<typeof PhotoUploadUrlResponseSchema>;
+export class PhotoUploadUrlResponseDto extends createZodDto(PhotoUploadUrlResponseSchema) {}

@@ -8,6 +8,7 @@ import { GetDraftDiffService } from './application/get-draft-diff.service';
 import { GetItemService } from './application/get-item.service';
 import { GetMenuItemService } from './application/get-menu-item.service';
 import { GetModifierGroupService } from './application/get-modifier-group.service';
+import { GetPhotoUploadUrlService } from './application/get-photo-upload-url.service';
 import { GetPublishedMenuService } from './application/get-published-menu.service';
 import { GetStopListService } from './application/get-stop-list.service';
 import { ListCategoriesService } from './application/list-categories.service';
@@ -52,6 +53,8 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     // Phase 4b archive services (D-4b-07).
     ArchiveCategoryService,
     ArchiveItemService,
+    // Phase 4b CAT-03 photo upload service.
+    GetPhotoUploadUrlService,
     // Existing services.
     GetPublishedMenuService,
     GetMenuItemService,

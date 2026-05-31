@@ -388,6 +388,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/v1/catalog/photo-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InternalCatalogController_photoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/v1/catalog/publish": {
         parameters: {
             query?: never;
@@ -853,6 +869,16 @@ export interface components {
             itemId: string;
             /** @default null */
             reason: string | null;
+        };
+        PhotoUploadUrlInputDto: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp";
+            sizeBytes: number;
+        };
+        PhotoUploadUrlResponseDto: {
+            /** Format: uri */
+            uploadUrl: string;
+            s3Key: string;
         };
         PublishScheduledResponseDto: {
             scheduled: boolean;
@@ -1957,6 +1983,37 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_photoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoUploadUrlInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoUploadUrlResponseDto"];
+                };
+            };
             401: {
                 headers: {
                     [name: string]: unknown;

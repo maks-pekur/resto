@@ -683,6 +683,31 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
+  /internal/v1/catalog/photo-upload-url:
+    post:
+      operationId: InternalCatalogController_photoUploadUrl
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhotoUploadUrlInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PhotoUploadUrlResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
   /internal/v1/catalog/publish:
     post:
       operationId: InternalCatalogController_publishMenu
@@ -1790,6 +1815,37 @@ components:
           default: null
       required:
         - itemId
+    PhotoUploadUrlInputDto:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+        sizeBytes:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 5242880
+          exclusiveMaximum: false
+      required:
+        - contentType
+        - sizeBytes
+    PhotoUploadUrlResponseDto:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        s3Key:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      required:
+        - uploadUrl
+        - s3Key
     PublishScheduledResponseDto:
       type: object
       properties:

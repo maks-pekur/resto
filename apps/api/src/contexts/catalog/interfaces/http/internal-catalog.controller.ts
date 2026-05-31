@@ -27,6 +27,8 @@ import {
   ItemListResponseDto,
   ModifierGroupDetailResponseDto,
   ModifierGroupListResponseDto,
+  PhotoUploadUrlInputDto,
+  PhotoUploadUrlResponseDto,
   StopItemInputDto,
   StopListResponseDto,
   UpsertCategoryInputDto,
@@ -41,6 +43,7 @@ import { DelayedPublishService } from '../../application/delayed-publish.service
 import { GetDraftDiffService } from '../../application/get-draft-diff.service';
 import { GetItemService } from '../../application/get-item.service';
 import { GetModifierGroupService } from '../../application/get-modifier-group.service';
+import { GetPhotoUploadUrlService } from '../../application/get-photo-upload-url.service';
 import { GetStopListService } from '../../application/get-stop-list.service';
 import { ListCategoriesService } from '../../application/list-categories.service';
 import { ListItemsService } from '../../application/list-items.service';
@@ -114,6 +117,9 @@ export class InternalCatalogController {
     @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
     @Inject(ArchiveCategoryService) private readonly archiveCategoryService: ArchiveCategoryService,
     @Inject(ArchiveItemService) private readonly archiveItemService: ArchiveItemService,
+    // Phase 4b CAT-03 photo upload handshake.
+    @Inject(GetPhotoUploadUrlService)
+    private readonly getPhotoUploadUrlService: GetPhotoUploadUrlService,
   ) {}
 
   @Post('categories')
@@ -193,6 +199,29 @@ export class InternalCatalogController {
   }
 
   /**
+   * Phase 4b CAT-03: presigned PUT handshake for browser direct-upload.
+   *
+   * Returns `{ uploadUrl, s3Key }` — the browser PUTs the photo bytes
+   * straight to S3 with the same `Content-Type` header (SigV4 binds it
+   * into the signature). The operator never picks the key; the service
+   * derives a tenant-scoped UUID prefix so an attacker cannot overwrite
+   * cross-tenant objects (T-04b-03-02 Tampering mitigation).
+   *
+   * Allowlist + size cap (5 MiB) enforced at the DTO boundary; TTL is
+   * 5 min per OWASP V12.
+   */
+  @Post('photo-upload-url')
+  @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: PhotoUploadUrlInputDto })
+  @ApiOkResponse({ type: PhotoUploadUrlResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  photoUploadUrl(
+    @Body(new RestoZodValidationPipe(PhotoUploadUrlInputDto)) input: PhotoUploadUrlInputDto,
+  ): Promise<PhotoUploadUrlResponseDto> {
+    return wrap(() => this.getPhotoUploadUrlService.execute(input));
+  }
+
+  /**
    * CAT-06: schedule a delayed publish. DelayedPublishService installs a
    * 5-second in-memory timer per tenant; calling this endpoint a second
    * time within the window auto-cancels the prior pending timer.
@@ -243,9 +272,7 @@ export class InternalCatalogController {
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
-    return wrap(() =>
-      this.listCategoriesService.execute({ parentId: parentId ?? null }),
-    );
+    return wrap(() => this.listCategoriesService.execute({ parentId: parentId ?? null }));
   }
 
   @Get('items')
@@ -300,9 +327,7 @@ export class InternalCatalogController {
   @ApiOkResponse({ type: ModifierGroupListResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   listModifierGroups(): Promise<ModifierGroupListResponseDto> {
-    return wrap(() =>
-      this.listModifierGroupsService.execute(),
-    );
+    return wrap(() => this.listModifierGroupsService.execute());
   }
 
   @Get('modifier-groups/:id')
@@ -310,9 +335,7 @@ export class InternalCatalogController {
   @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   getModifierGroup(@Param('id') id: string): Promise<ModifierGroupDetailResponseDto> {
-    return wrap(() =>
-      this.getModifierGroupService.execute({ id }),
-    );
+    return wrap(() => this.getModifierGroupService.execute({ id }));
   }
 
   @Get('stop-list')
