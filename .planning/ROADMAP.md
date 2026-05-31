@@ -228,7 +228,7 @@ Plans:
 
 **Wave 3** _(after Waves 1+2 — frontend foundation; sidebar/sticky-bar runs parallel with categories)_
 
-- [ ] 04b-04-PLAN.md — Sidebar Menu group + /dashboard/menu layout + StickyPublishBar (RSC + client island) + Sonner countdown toast (id 'publish-countdown') + schedule/cancel publish actions + StatusBadge + AutoSaveIndicator shared primitives (CAT-08)
+- [x] 04b-04-PLAN.md — Sidebar Menu group + /dashboard/menu layout + StickyPublishBar (RSC + client island) + Sonner countdown toast (id 'publish-countdown') + schedule/cancel publish actions + StatusBadge + AutoSaveIndicator shared primitives (CAT-08)
 - [ ] 04b-05-PLAN.md — Categories CRUD: page + form (Sheet) + indented CategorySelect + 3 server actions (upsert / archive AlertDialog / reorder ↑↓) + shared CategoryFormSchema + refineCategoryDepth + LocalizedText boundary helpers (CAT-01)
 
 **Wave 4** _(after Wave 3 — items list extends zod-schemas from Plan 05)_
@@ -485,7 +485,7 @@ Notes:
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
-| 4b. Catalog Admin UI                          | 2/9            | In Progress   |            |
+| 4b. Catalog Admin UI                          | 4/9            | In Progress   |            |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |

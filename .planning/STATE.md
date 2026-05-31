@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
 stopped_at: Completed 04b-03-PLAN.md
-last_updated: '2026-05-31T14:35:10.559Z'
+last_updated: '2026-05-31T14:54:45.900Z'
 last_activity: 2026-05-31
 progress:
   total_phases: 18
   completed_phases: 4
   total_plans: 32
-  completed_plans: 26
+  completed_plans: 27
   percent: 22
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 04b (catalog-admin-ui) — EXECUTING
-Plan: 4 of 9
+Plan: 5 of 9
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [████████░░] 81%
+Progress: [████████░░] 84%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -72,6 +72,7 @@ _Updated after each plan completion_
 | Phase 04b-catalog-admin-ui P01 | 15min | 3 tasks | 13 files |
 | Phase 04b P02 | ~40min | 3 tasks | 26 files |
 | Phase 04b-catalog-admin-ui P03 | ~55min | 4 tasks | 14 files |
+| Phase 04b P04 | 11min | - tasks | - files |
 
 ## Accumulated Context
 
@@ -99,6 +100,11 @@ Recent decisions affecting current work:
 - [Phase ?]: 04b-02: draft-diff scope is items-only for MVP-1 (Open Question #5 resolved); cap 100 rows with truncatedCount sentinel
 - [Phase ?]: 04b-02: migration 0042 idempotent — ADD COLUMN IF NOT EXISTS + DO-block-guarded CHECK constraint + backfill UPDATE that only flips status='draft' rows
 - [Phase ?]: Plan 04b-03 Task 4 (manual browser smoke probe) deferred to Plan 04b-07 (photo-upload-client.tsx) — e2e (7/7) + curl OPTIONS preflight already cover the contract; first real-browser PUT happens naturally in 04b-07.
+- [Phase ?]: 04b-04 Sidebar Меню group: 4 sub-routes, scope brand, collapsed-by-default per D-01
+- [Phase ?]: 04b-04 StatusBadge variants per UI-SPEC: draft outline / modified outline+amber / published default / paused secondary (GM MED-1) / archived ghost+muted
+- [Phase ?]: 04b-04 Sonner constant id 'publish-countdown' threads through every publish-flow toast (count-up → success/info/error replace-in-place)
+- [Phase ?]: 04b-04 PublishCountdownToast uses Date.now() baseline (not tick counting) + ref-guarded onElapse to fire exactly once at 5s boundary
+- [Phase ?]: 04b-04 StickyPublishBar mounted only at /dashboard/menu/\* route-group layout — not the global dashboard layout
 
 ### Pending Todos
 
@@ -136,6 +142,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T14:35:05.659Z
+Last session: 2026-05-31T14:54:36.256Z
 Stopped at: Completed 04b-03-PLAN.md
 Resume file:
+None
