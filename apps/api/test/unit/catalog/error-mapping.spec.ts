@@ -4,6 +4,9 @@ import {
   CatalogPublishConflictError,
   MenuCategoryNotFoundError,
   MenuItemNotFoundError,
+  MenuItemSizeNotFoundError,
+  MenuModifierGroupNotFoundError,
+  StopListItemNotFoundError,
 } from '../../../src/contexts/catalog/domain/errors';
 import { mapCatalogError } from '../../../src/contexts/catalog/interfaces/http/error-mapping';
 
@@ -30,6 +33,30 @@ describe('mapCatalogError', () => {
     expect((mapped as ConflictException).getResponse()).toMatchObject({
       code: 'catalog.publish_conflict',
       message: 'version contention',
+    });
+  });
+
+  it('maps MenuModifierGroupNotFoundError to 404 with code catalog.modifier_group_not_found', () => {
+    const mapped = mapCatalogError(new MenuModifierGroupNotFoundError('mg-1'));
+    expect(mapped).toBeInstanceOf(NotFoundException);
+    expect((mapped as NotFoundException).getResponse()).toMatchObject({
+      code: 'catalog.modifier_group_not_found',
+    });
+  });
+
+  it('maps MenuItemSizeNotFoundError to 404 with code catalog.item_size_not_found', () => {
+    const mapped = mapCatalogError(new MenuItemSizeNotFoundError('sz-1'));
+    expect(mapped).toBeInstanceOf(NotFoundException);
+    expect((mapped as NotFoundException).getResponse()).toMatchObject({
+      code: 'catalog.item_size_not_found',
+    });
+  });
+
+  it('maps StopListItemNotFoundError to 404 with code catalog.stop_list_item_not_found', () => {
+    const mapped = mapCatalogError(new StopListItemNotFoundError('item-1'));
+    expect(mapped).toBeInstanceOf(NotFoundException);
+    expect((mapped as NotFoundException).getResponse()).toMatchObject({
+      code: 'catalog.stop_list_item_not_found',
     });
   });
 
