@@ -5,8 +5,8 @@ const consoleWarnMock = vi.fn();
 
 vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 
-const { notifyListSignupAction, __resetNotifyListThrottleForTests } =
-  await import('../lib/actions/notify-list-signup');
+const { notifyListSignupAction } = await import('../lib/actions/notify-list-signup');
+const { __resetNotifyListThrottleForTests } = await import('../lib/actions/notify-list-throttle');
 
 const buildForm = (over: Record<string, string> = {}): FormData => {
   const fd = new FormData();
