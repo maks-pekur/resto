@@ -42,6 +42,8 @@ export const menuCategories = pgTable(
     name: jsonb('name').$type<LocalizedText>().notNull(),
     description: jsonb('description').$type<LocalizedText>(),
     sortOrder: integer('sort_order').notNull().default(0),
+    // D-4b-07: status enables same badge surface as menu_items + archive flow.
+    status: text('status').notNull().default('draft'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -59,6 +61,7 @@ export const menuCategories = pgTable(
     uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    check('menu_categories_status_chk', sql`${table.status} IN ('draft', 'published', 'archived')`),
     tenantParentUniqueIndex('menu_categories', { id: table.id, tenantId: table.tenantId }),
   ],
 );

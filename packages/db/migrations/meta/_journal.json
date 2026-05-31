@@ -295,6 +295,13 @@
       "when": 1779841700000,
       "tag": "0041_tenancy_erase_phase4a_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1779841800000,
+      "tag": "0042_catalog_phase4b_categories_status",
+      "breakpoints": true
     }
   ]
 }
