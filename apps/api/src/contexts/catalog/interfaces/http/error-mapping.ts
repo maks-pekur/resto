@@ -36,12 +36,12 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
       });
     case 'MenuModifierGroupNotFoundError':
       return new NotFoundException({
-        code: 'catalog.menu_modifier_group_not_found',
+        code: 'catalog.modifier_group_not_found',
         message: err.message,
       });
     case 'MenuItemSizeNotFoundError':
       return new NotFoundException({
-        code: 'catalog.menu_item_size_not_found',
+        code: 'catalog.item_size_not_found',
         message: err.message,
       });
     case 'StopListItemNotFoundError':

@@ -153,17 +153,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Regenerate docs/api/openapi.yaml
-        run: pnpm exec nx run api:openapi:emit
-      - name: Regenerate packages/api-client types
-        run: pnpm exec nx run api-client:gen
-      - name: Fail if the committed artefacts are stale
-        run: |
-          if ! git diff --quiet -- docs/api/openapi.yaml packages/api-client/src/generated/; then
-            echo "::error::OpenAPI spec or api-client types are stale. Run 'pnpm exec nx run api:openapi:emit && pnpm exec nx run api-client:gen' locally and commit the result."
-            git --no-pager diff -- docs/api/openapi.yaml packages/api-client/src/generated/
-            exit 1
-          fi
+      - name: pnpm openapi:check (D-4a-08 drift gate)
+        # The root-level `pnpm openapi:check` script (tools/openapi-check.ts)
+        # regenerates docs/api/openapi.yaml + packages/api-client/src/generated/
+        # and asserts no diff against the committed artefacts. Local devs run
+        # the same single command to reproduce a CI drift failure.
+        run: pnpm openapi:check
 
   # docker-api job intentionally removed at ADR-0021 adoption.
   # Reason: pre-revenue MVP, no production deploy exists yet; a green Docker

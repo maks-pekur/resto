@@ -307,49 +307,96 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     input: UpsertItemRow,
   ): Promise<{ id: string; slugChanged?: { oldSlug: string } }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      // Detect slug change for alias insertion: read the existing item's slug
-      // BEFORE the upsert when an id is supplied.
+      // Drizzle's `$inferInsert` wants a mutable array; clone from readonly.
+      const photos: MenuItemPhoto[] = [...input.photos];
+
+      // Two upsert keys exist: (a) id (when supplied — operator edits an
+      // existing item, slug may change) and (b) (tenant_id, slug) for new
+      // creates and re-imports. Using (tenant_id, slug) as the on-conflict
+      // target when the id is also supplied breaks the slug-rename path
+      // (D-4a-04): the conflict target wouldn't match the new slug, so
+      // Postgres would try a fresh INSERT and fail on the id primary-key
+      // constraint. Split the two paths.
       let oldSlug: string | null = null;
+      let rowId: string;
+
       if (input.id) {
+        // Path A — explicit id supplied: UPDATE WHERE id = input.id.
         const existing = await scoped
           .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
           .limit(1);
         oldSlug = existing[0]?.slug ?? null;
-      }
 
-      // Drizzle's `$inferInsert` wants a mutable array; clone from readonly.
-      const photos: MenuItemPhoto[] = [...input.photos];
-
-      const [row] = await scoped
-        .insertInto(schema.menuItems, {
-          ...(input.id ? { id: input.id } : {}),
-          brandId: input.brandId ?? null,
-          categoryId: input.categoryId,
-          slug: input.slug,
-          name: input.name,
-          description: input.description,
-          basePrice: input.basePrice,
-          currency: input.currency,
-          photos,
-          allergens: input.allergens ? [...input.allergens] : null,
-          // Drizzle `numeric` columns accept strings; decimals come back as
-          // strings on read for full-fidelity round-trip.
-          proteins: input.proteins === null ? null : input.proteins.toString(),
-          fats: input.fats === null ? null : input.fats.toString(),
-          carbs: input.carbs === null ? null : input.carbs.toString(),
-          kcal: input.kcal,
-          nutritionEstimated: input.nutritionEstimated,
-          source: input.source,
-          needsReview: input.needsReview,
-          sourceExternalId: input.sourceExternalId,
-          status: input.status,
-          sortOrder: input.sortOrder,
-        })
-        .onConflictDoUpdate({
-          target: [schema.menuItems.tenantId, schema.menuItems.slug],
-          set: {
+        if (existing.length === 0) {
+          // Operator supplied an id that doesn't exist yet — fall through to
+          // the insert path (treat as a "create with stable id" — useful for
+          // CSV imports where the operator provides the deterministic uuid).
+          const [row] = await scoped
+            .insertInto(schema.menuItems, {
+              id: input.id,
+              brandId: input.brandId ?? null,
+              categoryId: input.categoryId,
+              slug: input.slug,
+              name: input.name,
+              description: input.description,
+              basePrice: input.basePrice,
+              currency: input.currency,
+              photos,
+              allergens: input.allergens ? [...input.allergens] : null,
+              proteins: input.proteins === null ? null : input.proteins.toString(),
+              fats: input.fats === null ? null : input.fats.toString(),
+              carbs: input.carbs === null ? null : input.carbs.toString(),
+              kcal: input.kcal,
+              nutritionEstimated: input.nutritionEstimated,
+              source: input.source,
+              needsReview: input.needsReview,
+              sourceExternalId: input.sourceExternalId,
+              status: input.status,
+              sortOrder: input.sortOrder,
+            })
+            .returning({ id: schema.menuItems.id });
+          if (!row) throw new Error('upsertItem: insert returned no row');
+          rowId = row.id;
+        } else {
+          const [row] = await scoped
+            .updateTable(
+              schema.menuItems,
+              {
+                brandId: input.brandId ?? null,
+                categoryId: input.categoryId,
+                slug: input.slug,
+                name: input.name,
+                description: input.description,
+                basePrice: input.basePrice,
+                currency: input.currency,
+                photos,
+                allergens: input.allergens ? [...input.allergens] : null,
+                proteins: input.proteins === null ? null : input.proteins.toString(),
+                fats: input.fats === null ? null : input.fats.toString(),
+                carbs: input.carbs === null ? null : input.carbs.toString(),
+                kcal: input.kcal,
+                nutritionEstimated: input.nutritionEstimated,
+                source: input.source,
+                needsReview: input.needsReview,
+                sourceExternalId: input.sourceExternalId,
+                status: input.status,
+                sortOrder: input.sortOrder,
+                updatedAt: new Date(),
+              },
+              eq(schema.menuItems.id, input.id),
+            )
+            .returning({ id: schema.menuItems.id });
+          if (!row) throw new Error('upsertItem: update returned no row');
+          rowId = row.id;
+        }
+      } else {
+        // Path B — no id: INSERT … ON CONFLICT (tenant_id, slug) DO UPDATE
+        // (slug is the natural key for re-imports of the same source row).
+        const [row] = await scoped
+          .insertInto(schema.menuItems, {
             brandId: input.brandId ?? null,
             categoryId: input.categoryId,
+            slug: input.slug,
             name: input.name,
             description: input.description,
             basePrice: input.basePrice,
@@ -366,24 +413,48 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             sourceExternalId: input.sourceExternalId,
             status: input.status,
             sortOrder: input.sortOrder,
-            updatedAt: new Date(),
-          },
-        })
-        .returning({ id: schema.menuItems.id });
-      if (!row) throw new Error('upsertItem: insert returned no row');
+          })
+          .onConflictDoUpdate({
+            target: [schema.menuItems.tenantId, schema.menuItems.slug],
+            set: {
+              brandId: input.brandId ?? null,
+              categoryId: input.categoryId,
+              name: input.name,
+              description: input.description,
+              basePrice: input.basePrice,
+              currency: input.currency,
+              photos,
+              allergens: input.allergens ? [...input.allergens] : null,
+              proteins: input.proteins === null ? null : input.proteins.toString(),
+              fats: input.fats === null ? null : input.fats.toString(),
+              carbs: input.carbs === null ? null : input.carbs.toString(),
+              kcal: input.kcal,
+              nutritionEstimated: input.nutritionEstimated,
+              source: input.source,
+              needsReview: input.needsReview,
+              sourceExternalId: input.sourceExternalId,
+              status: input.status,
+              sortOrder: input.sortOrder,
+              updatedAt: new Date(),
+            },
+          })
+          .returning({ id: schema.menuItems.id });
+        if (!row) throw new Error('upsertItem: insert returned no row');
+        rowId = row.id;
+      }
 
       if (oldSlug !== null && oldSlug !== input.slug) {
         // D-4a-04: slug change → alias the prior slug. Idempotent via
         // onConflictDoNothing — old slug may already exist from a rename cycle.
         await scoped
           .insertInto(schema.menuItemSlugAliases, {
-            itemId: row.id,
+            itemId: rowId,
             alias: oldSlug,
           })
           .onConflictDoNothing();
-        return { id: row.id, slugChanged: { oldSlug } };
+        return { id: rowId, slugChanged: { oldSlug } };
       }
-      return { id: row.id };
+      return { id: rowId };
     });
   }
 

@@ -59,6 +59,17 @@ export class DelayedPublishService implements OnModuleDestroy {
     };
   }
 
+  /**
+   * Controller-facing Undo: cancel the pending timer for `tenantId` if one
+   * exists. Returns `true` when a timer was active and cleared, `false` if
+   * no pending publish is scheduled (already executed, never scheduled).
+   */
+  cancelPending(tenantId: string): boolean {
+    if (!this.#pending.has(tenantId)) return false;
+    this.#cancel(tenantId);
+    return true;
+  }
+
   onModuleDestroy(): void {
     // Pitfall 1: pending timers die with the process. Clear refs so the
     // Node event loop can exit cleanly during graceful shutdown.

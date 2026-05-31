@@ -18,6 +18,7 @@
     "test:e2e": "nx run-many -t e2e",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "openapi:check": "tsx tools/openapi-check.ts",
     "dev:up": "docker compose -f infra/docker/docker-compose.dev.yml up -d",
     "dev:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",

@@ -403,7 +403,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetailsDto"
         "409":
-          description: email or slug already taken
+          description: slug exhausted (rare)
           content:
             application/json:
               schema:
@@ -498,16 +498,16 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
-  /internal/v1/catalog/modifiers:
+  /internal/v1/catalog/modifier-groups:
     post:
-      operationId: InternalCatalogController_modifier
+      operationId: InternalCatalogController_modifierGroup
       parameters: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/UpsertModifierInputDto"
+              $ref: "#/components/schemas/UpsertModifierGroupInputDto"
       responses:
         "200":
           description: ""
@@ -515,6 +515,94 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IdResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/modifier-options:
+    post:
+      operationId: InternalCatalogController_modifierOption
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertModifierOptionInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/item-sizes:
+    post:
+      operationId: InternalCatalogController_itemSize
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertItemSizeInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/stop-list:
+    post:
+      operationId: InternalCatalogController_stopListAdd
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StopItemInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+  /internal/v1/catalog/stop-list/{itemId}:
+    delete:
+      operationId: InternalCatalogController_stopListRemove
+      parameters: []
+      responses:
         "401":
           description: ""
           content:
@@ -533,7 +621,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublishResponseDto"
+                $ref: "#/components/schemas/PublishScheduledResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
+    delete:
+      operationId: InternalCatalogController_cancelPublishMenu
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishCancelResponseDto"
         "401":
           description: ""
           content:
@@ -642,6 +748,8 @@ components:
         detail:
           type: string
         instance:
+          type: string
+        code:
           type: string
         correlationId:
           type: string
@@ -823,31 +931,12 @@ components:
     SignUpResponseDto:
       type: object
       properties:
-        tenant:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-            slug:
-              type: string
-            displayName:
-              type: string
-            status:
-              type: string
-            primaryDomain:
-              type: string
-          required:
-            - id
-            - slug
-            - displayName
-            - status
-            - primaryDomain
-        userId:
+        status:
           type: string
+          enum:
+            - pending_verification
       required:
-        - tenant
-        - userId
+        - status
     PublishedMenuDto:
       type: object
       properties:
@@ -955,6 +1044,36 @@ components:
                 type: string
                 format: uri
                 nullable: true
+              photos:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    s3Key:
+                      type: string
+                    sortOrder:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                    alt:
+                      type: string
+                    width:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: true
+                    height:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: true
+                    isPrimary:
+                      type: boolean
+                    url:
+                      type: string
+                      format: uri
+                  required:
+                    - s3Key
+                    - sortOrder
+                    - url
               allergens:
                 type: array
                 items:
@@ -963,7 +1082,21 @@ components:
                 type: integer
                 minimum: 0
                 exclusiveMinimum: false
-              variants:
+              proteins:
+                type: string
+                nullable: true
+              fats:
+                type: string
+                nullable: true
+              carbs:
+                type: string
+                nullable: true
+              kcal:
+                type: integer
+                nullable: true
+              nutritionEstimated:
+                type: boolean
+              sizes:
                 type: array
                 items:
                   type: object
@@ -975,7 +1108,7 @@ components:
                       type: object
                       additionalProperties:
                         type: string
-                    priceDelta:
+                    price:
                       type: string
                     isDefault:
                       type: boolean
@@ -986,10 +1119,10 @@ components:
                   required:
                     - id
                     - name
-                    - priceDelta
+                    - price
                     - isDefault
                     - sortOrder
-              modifierIds:
+              modifierGroupIds:
                 type: array
                 items:
                   type: string
@@ -1003,11 +1136,17 @@ components:
               - basePrice
               - currency
               - imageUrl
+              - photos
               - allergens
               - sortOrder
-              - variants
-              - modifierIds
-        modifiers:
+              - proteins
+              - fats
+              - carbs
+              - kcal
+              - nutritionEstimated
+              - sizes
+              - modifierGroupIds
+        modifierGroups:
           type: array
           items:
             type: object
@@ -1042,6 +1181,14 @@ components:
                         type: string
                     priceDelta:
                       type: string
+                    defaultAmount:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                    freeAmount:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
                     sortOrder:
                       type: integer
                       minimum: 0
@@ -1050,6 +1197,8 @@ components:
                     - id
                     - name
                     - priceDelta
+                    - defaultAmount
+                    - freeAmount
                     - sortOrder
             required:
               - id
@@ -1065,7 +1214,7 @@ components:
         - brand
         - categories
         - items
-        - modifiers
+        - modifierGroups
     PublishedMenuItemDto:
       type: object
       properties:
@@ -1095,6 +1244,36 @@ components:
           type: string
           format: uri
           nullable: true
+        photos:
+          type: array
+          items:
+            type: object
+            properties:
+              s3Key:
+                type: string
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              alt:
+                type: string
+              width:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              height:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              isPrimary:
+                type: boolean
+              url:
+                type: string
+                format: uri
+            required:
+              - s3Key
+              - sortOrder
+              - url
         allergens:
           type: array
           items:
@@ -1103,7 +1282,21 @@ components:
           type: integer
           minimum: 0
           exclusiveMinimum: false
-        variants:
+        proteins:
+          type: string
+          nullable: true
+        fats:
+          type: string
+          nullable: true
+        carbs:
+          type: string
+          nullable: true
+        kcal:
+          type: integer
+          nullable: true
+        nutritionEstimated:
+          type: boolean
+        sizes:
           type: array
           items:
             type: object
@@ -1115,7 +1308,7 @@ components:
                 type: object
                 additionalProperties:
                   type: string
-              priceDelta:
+              price:
                 type: string
               isDefault:
                 type: boolean
@@ -1126,10 +1319,10 @@ components:
             required:
               - id
               - name
-              - priceDelta
+              - price
               - isDefault
               - sortOrder
-        modifierIds:
+        modifierGroupIds:
           type: array
           items:
             type: string
@@ -1143,10 +1336,16 @@ components:
         - basePrice
         - currency
         - imageUrl
+        - photos
         - allergens
         - sortOrder
-        - variants
-        - modifierIds
+        - proteins
+        - fats
+        - carbs
+        - kcal
+        - nutritionEstimated
+        - sizes
+        - modifierGroupIds
     UpsertCategoryInputDto:
       type: object
       properties:
@@ -1158,6 +1357,11 @@ components:
           minLength: 1
           maxLength: 120
           pattern: ^[a-z0-9][a-z0-9-]*$
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          default: null
         name:
           type: object
           additionalProperties:
@@ -1176,7 +1380,6 @@ components:
           exclusiveMinimum: false
           default: 0
       required:
-        - slug
         - name
         - description
     IdResponseDto:
@@ -1219,16 +1422,95 @@ components:
         currency:
           type: string
           pattern: ^[A-Z]{3}$
-        imageS3Key:
-          type: string
-          minLength: 1
-          nullable: true
-          default: null
+        photos:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            properties:
+              s3Key:
+                type: string
+                minLength: 1
+                maxLength: 1024
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              alt:
+                type: string
+                maxLength: 255
+              width:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              height:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              isPrimary:
+                type: boolean
+            required:
+              - s3Key
+              - sortOrder
+          default: []
         allergens:
           type: array
+          maxItems: 50
           items:
             type: string
             minLength: 1
+            maxLength: 100
+          nullable: true
+          default: null
+        proteins:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        fats:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        carbs:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        kcal:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 32000
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        nutritionEstimated:
+          type: boolean
+          default: false
+        source:
+          type: string
+          enum:
+            - manual
+            - ai_generated
+            - imported_iiko
+            - imported_csv
+          default: manual
+        needsReview:
+          type: boolean
+          default: false
+        sourceExternalId:
+          type: string
+          maxLength: 255
           nullable: true
           default: null
         status:
@@ -1245,12 +1527,11 @@ components:
           default: 0
       required:
         - categoryId
-        - slug
         - name
         - description
         - basePrice
         - currency
-    UpsertModifierInputDto:
+    UpsertModifierGroupInputDto:
       type: object
       properties:
         id:
@@ -1276,16 +1557,100 @@ components:
           default: false
       required:
         - name
-    PublishResponseDto:
+    UpsertModifierOptionInputDto:
       type: object
       properties:
-        tenantId:
+        id:
           type: string
           format: uuid
-        version:
+        modifierGroupId:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        priceDelta:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        defaultAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        freeAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+      required:
+        - modifierGroupId
+        - name
+        - priceDelta
+    UpsertItemSizeInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        menuItemId:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        price:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        isDefault:
+          type: boolean
+          default: false
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+      required:
+        - menuItemId
+        - name
+        - price
+    StopItemInputDto:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          maxLength: 500
+          nullable: true
+          default: null
+      required:
+        - itemId
+    PublishScheduledResponseDto:
+      type: object
+      properties:
+        scheduled:
+          type: boolean
+        cancelAfterMs:
           type: integer
           minimum: 0
           exclusiveMinimum: false
       required:
-        - tenantId
-        - version
+        - scheduled
+        - cancelAfterMs
+    PublishCancelResponseDto:
+      type: object
+      properties:
+        cancelled:
+          type: boolean
+      required:
+        - cancelled

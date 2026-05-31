@@ -284,6 +284,244 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(rows[0]?.id).toBe(tenantA);
   });
 
+  /*
+   * ── Plan 04a-07 cross-tenant matrix for new entities ──
+   *
+   * 5 tables added in Phase 04a need the same cross-tenant invariants as
+   * `menu_categories` / `menu_items`:
+   *   • menu_stop_list           (D-4a-10)
+   *   • menu_item_slug_aliases   (D-4a-04)
+   *   • menu_item_sizes          (renamed from menu_variants)
+   *   • menu_modifier_groups     (renamed from menu_modifiers)
+   *   • menu_item_modifier_groups (renamed junction)
+   *
+   * For each: tenant A inserts a row, tenant B's SELECT returns zero rows
+   * (RLS denies visibility), and tenant B's INSERT with tenant A's
+   * parent ids errors (composite FK rejects since the child must declare
+   * tenant_id matching its parent).
+   *
+   * `menu_modifier_options` rides on `menu_modifier_groups` (same composite-
+   * FK shape) and is covered by the modifier-group's matrix indirectly.
+   */
+  describe('Plan 04a-07: cross-tenant matrix for renamed + new tables', () => {
+    let aItemId: string;
+    let aModifierGroupId: string;
+
+    beforeAll(async () => {
+      await pg.db.withoutTenant('seed items for plan 04a-07 cross-tenant matrix', async (tx) => {
+        const [aCat] = await tx
+          .insert(schema.menuCategories)
+          .values({ tenantId: tenantA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
+          .returning({ id: schema.menuCategories.id });
+        const [bCat] = await tx
+          .insert(schema.menuCategories)
+          .values({ tenantId: tenantB, slug: 'iso-b-cat', name: { en: 'IsoB' } })
+          .returning({ id: schema.menuCategories.id });
+        if (!aCat || !bCat) throw new Error('Cross-tenant seed: category create failed.');
+
+        const [aItem] = await tx
+          .insert(schema.menuItems)
+          .values({
+            tenantId: tenantA,
+            categoryId: aCat.id,
+            slug: 'iso-a-item',
+            name: { en: 'IsoAItem' },
+            basePrice: '1.00',
+            currency: 'USD',
+          })
+          .returning({ id: schema.menuItems.id });
+        // Tenant B is seeded with its own item so the schema integrity
+        // checks (cross-tenant matrix) exercise a populated table on both
+        // sides — even though the assertions only inspect tenant A's row.
+        await tx.insert(schema.menuItems).values({
+          tenantId: tenantB,
+          categoryId: bCat.id,
+          slug: 'iso-b-item',
+          name: { en: 'IsoBItem' },
+          basePrice: '1.00',
+          currency: 'USD',
+        });
+        if (!aItem) throw new Error('Cross-tenant seed: item create failed.');
+        aItemId = aItem.id;
+
+        const [aGroup] = await tx
+          .insert(schema.menuModifierGroups)
+          .values({
+            tenantId: tenantA,
+            name: { en: 'IsoAGroup' },
+            minSelectable: 0,
+            maxSelectable: 1,
+            isRequired: false,
+          })
+          .returning({ id: schema.menuModifierGroups.id });
+        if (!aGroup) throw new Error('Cross-tenant seed: modifier group create failed.');
+        aModifierGroupId = aGroup.id;
+      });
+
+      // Insert tenant-A rows into the 5 new tables via tenant-A context so
+      // RLS/ScopedTx is the path of record.
+      await runInTenantContext({ tenantId: tenantA }, () =>
+        pg.db.withTenant(async (tx) => {
+          await tx.insert(schema.menuStopList).values({
+            tenantId: tenantA,
+            itemId: aItemId,
+            brandId: null,
+            reason: 'iso fixture',
+            stoppedByUserId: null,
+          });
+          await tx.insert(schema.menuItemSlugAliases).values({
+            tenantId: tenantA,
+            itemId: aItemId,
+            alias: 'iso-a-alias',
+          });
+          await tx.insert(schema.menuItemSizes).values({
+            tenantId: tenantA,
+            menuItemId: aItemId,
+            name: { en: 'Large' },
+            price: '2.00',
+            isDefault: false,
+            sortOrder: 0,
+          });
+          await tx.insert(schema.menuItemModifierGroups).values({
+            tenantId: tenantA,
+            menuItemId: aItemId,
+            modifierGroupId: aModifierGroupId,
+            sortOrder: 0,
+          });
+        }),
+      );
+    }, 60_000);
+
+    it('menu_stop_list: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuStopList)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_stop_list: tenant B INSERT with tenant A item_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuStopList).values({
+            tenantId: tenantB,
+            itemId: aItemId,
+            brandId: null,
+            reason: null,
+            stoppedByUserId: null,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_item_slug_aliases: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuItemSlugAliases)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_item_slug_aliases: tenant B INSERT with tenant A item_id is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuItemSlugAliases).values({
+            tenantId: tenantB,
+            itemId: aItemId,
+            alias: 'b-tries-a',
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_item_sizes: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuItemSizes)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_item_sizes: tenant B INSERT with tenant A menu_item_id is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuItemSizes).values({
+            tenantId: tenantB,
+            menuItemId: aItemId,
+            name: { en: 'sneaky' },
+            price: '1.00',
+            isDefault: false,
+            sortOrder: 0,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_modifier_groups: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.menuModifierGroups)
+            .where(sql`${schema.menuModifierGroups.id} = ${aModifierGroupId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_modifier_groups: tenant B INSERT with tenant A id is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuModifierGroups).values({
+            id: aModifierGroupId,
+            tenantId: tenantB,
+            name: { en: 'sneaky' },
+            minSelectable: 0,
+            maxSelectable: 1,
+            isRequired: false,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_item_modifier_groups: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuItemModifierGroups)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_item_modifier_groups: tenant B INSERT with tenant A ids is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuItemModifierGroups).values({
+            tenantId: tenantB,
+            menuItemId: aItemId,
+            modifierGroupId: aModifierGroupId,
+            sortOrder: 0,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+  });
+
   it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
     const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
       tx
