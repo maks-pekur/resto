@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { LayoutDashboard, Settings2, Store } from 'lucide-react';
+import { LayoutDashboard, Settings2, Store, UtensilsCrossed } from 'lucide-react';
 
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { BrandTabSync } from '@/components/brand-tab-sync';
@@ -28,6 +28,19 @@ const navMain: NavMainItem[] = [
     url: '/dashboard',
     icon: Store,
     scope: 'tenant',
+  },
+  {
+    title: 'Меню',
+    url: '/dashboard/menu/items',
+    icon: UtensilsCrossed,
+    scope: 'brand',
+    isActive: false,
+    items: [
+      { title: 'Категории', url: '/dashboard/menu/categories' },
+      { title: 'Блюда', url: '/dashboard/menu/items' },
+      { title: 'Модификаторы', url: '/dashboard/menu/modifier-groups' },
+      { title: 'Стоп-лист', url: '/dashboard/menu/stop-list' },
+    ],
   },
   {
     title: 'Settings',
