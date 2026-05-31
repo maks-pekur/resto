@@ -131,6 +131,14 @@ suite('GET /v1/menu — brand object in response', () => {
         displayName: string;
         theme: { logoUrl: string | null; primaryColor: string | null; font: string | null } | null;
       } | null;
+      items: {
+        slug: string;
+        imageUrl: string | null;
+        photos: { s3Key: string; url: string; sortOrder: number }[];
+        proteins: string | null;
+        sizes: unknown[];
+      }[];
+      modifierGroups: unknown[];
     }>();
     expect(body.brand).toEqual({
       id: brandId,
@@ -138,6 +146,11 @@ suite('GET /v1/menu — brand object in response', () => {
       displayName: 'RES-154 Brand',
       theme: { logoUrl: 'https://cdn.example/r154.png', primaryColor: '#FF5733', font: 'Inter' },
     });
+    // D-4a-09: public DTO carries the new fields automatically.
+    expect(body).toHaveProperty('modifierGroups');
+    expect(body.items[0]).toHaveProperty('photos');
+    expect(body.items[0]).toHaveProperty('sizes');
+    expect(body.items[0]).toHaveProperty('proteins');
   }, 60_000);
 
   it('returns brand: null when the request resolves a tenant without a brand', async () => {

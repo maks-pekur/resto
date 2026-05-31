@@ -21,18 +21,15 @@ export const ItemDetail = ({ item, onBack }: Props) => (
     <p className="item__price" aria-label={`${item.basePrice} ${item.currency}`}>
       <span>{item.basePrice}</span> <span>{item.currency}</span>
     </p>
-    {item.variants.length > 0 && (
+    {item.sizes.length > 0 && (
       <ul className="item__variants">
-        {item.variants.map((variant) => (
-          <li key={variant.id} className={variant.isDefault ? 'is-default' : undefined}>
-            <span>{localized(variant.name)}</span>
-            {variant.priceDelta !== '0' && (
-              <span>
-                {variant.priceDelta.startsWith('-') ? '' : '+'}
-                {variant.priceDelta} {item.currency}
-              </span>
-            )}
-            {variant.isDefault && <em> · {t('item.variant.default')}</em>}
+        {item.sizes.map((size) => (
+          <li key={size.id} className={size.isDefault ? 'is-default' : undefined}>
+            <span>{localized(size.name)}</span>
+            <span>
+              {size.price} {item.currency}
+            </span>
+            {size.isDefault && <em> · {t('item.variant.default')}</em>}
           </li>
         ))}
       </ul>
