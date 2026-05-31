@@ -23,7 +23,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 1: Tenancy Hardening** - Close all enterprise/GDPR/security gaps in the existing tenancy and identity contexts before any net-new product surface is built _(shipped 2026-05-26)_
 - [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
 - [x] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_ (completed 2026-05-30)
-- [ ] **Phase 4a: Catalog Schema + API** - Foundational menu domain redesign aligned with iiko nomenclature model; Drizzle schema migration, DTO updates, `/v1/menu` DTO extension, draft/publish snapshot + revert capability — backend only, no admin UI _(split from Phase 4 on 2026-05-30 — CTO HIGH-2 + Skeptic HIGH-4)_
+- [x] **Phase 4a: Catalog Schema + API** - Foundational menu domain redesign aligned with iiko nomenclature model; Drizzle schema migration, DTO updates, `/v1/menu` DTO extension, draft/publish snapshot + revert capability — backend only, no admin UI _(split from Phase 4 on 2026-05-30 — CTO HIGH-2 + Skeptic HIGH-4)_ (completed 2026-05-31)
 - [ ] **Phase 4b: Catalog Admin UI** - Full CRUD admin UX on top of finalized catalog schema; categories, items, modifiers, modifier groups, sizes, stop-list, photos, draft/publish flow — designed via `/gsd:ui-phase` then `/gsd:discuss-phase` before planning _(split from Phase 4 on 2026-05-30 — labor-intensive UI work isolated per user request)_
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
@@ -194,7 +194,7 @@ Plans:
 
 **Wave 7** _(after Wave 6)_
 
-- [ ] 04A-07-PLAN.md — Controllers (modifier-groups/options/item-sizes/stop-list POST + DELETE, publish + DELETE publish for undo); error mapping for 3 new errors; downstream consumer refactors (qr-menu types, e2e specs imageS3Key → photos, tenant-isolation cross-tenant matrix for 5 new entities); regen docs/api/openapi.yaml + packages/api-client; pnpm openapi:check script + CI workflow gate (CAT-02/04/05/06; D-4a-08/09)
+- [x] 04A-07-PLAN.md — Controllers (modifier-groups/options/item-sizes/stop-list POST + DELETE, publish + DELETE publish for undo); error mapping for 3 new errors; downstream consumer refactors (qr-menu types, e2e specs imageS3Key → photos, tenant-isolation cross-tenant matrix for 5 new entities); regen docs/api/openapi.yaml + packages/api-client; pnpm openapi:check script + CI workflow gate (CAT-02/04/05/06; D-4a-08/09)
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
@@ -453,7 +453,7 @@ Notes:
 | 1. Tenancy Hardening                          | 6/6            | ✓ Done        | 2026-05-26 |
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
-| 4a. Catalog Schema + API                      | 6/7            | In Progress   |            |
+| 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 0/?            | Not started   | -          |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
