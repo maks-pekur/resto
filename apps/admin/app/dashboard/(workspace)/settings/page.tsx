@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { DangerZoneCard } from '@/components/danger-zone-card';
 import { apiFetch } from '@/lib/api-server';
 import { TwoFactorSection } from './two-factor-enable-client';
@@ -30,9 +29,6 @@ export default async function SettingsPage() {
 
   return (
     <>
-      <div className="px-4 lg:px-6">
-        <TenantBreadcrumb trail="Settings" />
-      </div>
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <TwoFactorSection twoFactorEnabled={me.data.twoFactorEnabled === true} />
         <DangerZoneCard

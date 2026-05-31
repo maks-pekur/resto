@@ -95,14 +95,6 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     expect(screen.queryByText('Снэки')).not.toBeInTheDocument();
   });
 
-  it('"Показать архив" toggle reveals archived rows', () => {
-    render(<CategoriesTableClient categories={baseCategories} />);
-    const toggle = screen.getByRole('button', { name: /Показать архив/u });
-    fireEvent.click(toggle);
-    expect(screen.getByText('Снэки')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Скрыть архив/u })).toBeInTheDocument();
-  });
-
   it('hides ↑ on the first parent row and ↓ on the last visible parent row', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);

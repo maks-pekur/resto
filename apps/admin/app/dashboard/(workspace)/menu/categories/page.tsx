@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { EmptyState } from '@/components/empty-state';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
@@ -35,9 +34,6 @@ export default async function CategoriesPage(): Promise<React.ReactElement> {
 
   return (
     <>
-      <div className="px-4 lg:px-6">
-        <TenantBreadcrumb trail="Меню › Категории" />
-      </div>
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {res.status === 403 ? (
           <EmptyState

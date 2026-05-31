@@ -1,5 +1,4 @@
 import { redirect } from 'next/navigation';
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { apiFetch } from '@/lib/api-server';
 import { InviteForm } from './invite-form-client';
 
@@ -17,9 +16,6 @@ export default async function TeamPage() {
 
   return (
     <>
-      <div className="px-4 lg:px-6">
-        <TenantBreadcrumb trail="Team" />
-      </div>
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <section className="bg-card space-y-4 rounded-lg border p-6 shadow-sm">
           <div className="space-y-1">

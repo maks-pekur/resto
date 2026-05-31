@@ -23,9 +23,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { StatusBadge } from '@/components/menu/status-badge';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import type { Status } from '@/lib/menu/types';
 import { archiveCategoryAction } from './archive-category-action';
 import { reorderCategoryAction } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
@@ -82,15 +80,14 @@ const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRo
 export function CategoriesTableClient({
   categories,
 }: CategoriesTableClientProps): React.ReactElement {
-  const [showArchived, setShowArchived] = React.useState(false);
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
   const [, startTransition] = React.useTransition();
 
   const visible = React.useMemo(
-    () => (showArchived ? categories : categories.filter((c) => c.status !== 'archived')),
-    [categories, showArchived],
+    () => categories.filter((c) => c.status !== 'archived'),
+    [categories],
   );
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
@@ -112,16 +109,7 @@ export function CategoriesTableClient({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setShowArchived((v) => !v);
-          }}
-        >
-          {showArchived ? 'Скрыть архив' : 'Показать архив'}
-        </Button>
+      <div className="flex items-center justify-end">
         <Button
           size="sm"
           onClick={() => {
@@ -155,7 +143,6 @@ export function CategoriesTableClient({
               <TableHead>Название</TableHead>
               <TableHead>Родитель</TableHead>
               <TableHead className="w-24">Позиция</TableHead>
-              <TableHead className="w-32">Статус</TableHead>
               <TableHead className="w-24 text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
@@ -166,7 +153,6 @@ export function CategoriesTableClient({
                 ? categories.find((c) => c.id === category.parentId)
                 : null;
               const parentName = parent ? fromLocalizedText(parent.name) : '—';
-              const status = category.status as Status;
               return (
                 <TableRow key={category.id} data-testid={`category-row-${category.id}`}>
                   <TableCell>
@@ -202,9 +188,6 @@ export function CategoriesTableClient({
                   </TableCell>
                   <TableCell>{parentName}</TableCell>
                   <TableCell>{category.sortOrder}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={status} />
-                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button

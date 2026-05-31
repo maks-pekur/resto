@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
 import { apiFetch } from '@/lib/api-server';
@@ -111,8 +110,7 @@ export default async function ItemsPage(props: ItemsPageProps): Promise<React.Re
 
   return (
     <>
-      <div className="flex items-center justify-between gap-2 px-4 lg:px-6">
-        <TenantBreadcrumb trail="Меню › Блюда" />
+      <div className="flex items-center justify-end gap-2 px-4 lg:px-6">
         <Link href="/dashboard/menu/items/new">
           <Button size="sm">+ Добавить блюдо</Button>
         </Link>
