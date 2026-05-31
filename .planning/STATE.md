@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
 stopped_at: Completed 04b-03-PLAN.md
-last_updated: '2026-05-31T14:54:45.900Z'
+last_updated: '2026-05-31T16:30:32.801Z'
 last_activity: 2026-05-31
 progress:
   total_phases: 18
   completed_phases: 4
   total_plans: 32
-  completed_plans: 27
+  completed_plans: 28
   percent: 22
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 04b (catalog-admin-ui) — EXECUTING
-Plan: 5 of 9
+Plan: 6 of 9
 Status: Ready to execute
 Last activity: 2026-05-31
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 88%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -73,6 +73,7 @@ _Updated after each plan completion_
 | Phase 04b P02 | ~40min | 3 tasks | 26 files |
 | Phase 04b-catalog-admin-ui P03 | ~55min | 4 tasks | 14 files |
 | Phase 04b P04 | 11min | - tasks | - files |
+| Phase 04b-catalog-admin-ui P05 | 78min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,10 @@ Recent decisions affecting current work:
 - [Phase ?]: 04b-04 Sonner constant id 'publish-countdown' threads through every publish-flow toast (count-up → success/info/error replace-in-place)
 - [Phase ?]: 04b-04 PublishCountdownToast uses Date.now() baseline (not tick counting) + ref-guarded onElapse to fire exactly once at 5s boundary
 - [Phase ?]: 04b-04 StickyPublishBar mounted only at /dashboard/menu/\* route-group layout — not the global dashboard layout
+- [Phase ?]: Plan 04b-05: CategorySelect ships with parent-picker + item-picker modes; parent-picker disables already-child options to enforce depth ≤ 2 (D-4b-01 belt-and-suspenders with refineCategoryDepth Zod refine)
+- [Phase ?]: Plan 04b-05: DEFAULT_LOCALE='ru' pinned in apps/admin/lib/menu/localized.ts (Open Question #1 RESOLVED; v2 multilingual editor replaces with tenant-default lookup)
+- [Phase ?]: Plan 04b-05: Reorder via two sequential upsert POSTs (Plan 02 didn't add a batch endpoint; T-04b-05-04 accepted)
+- [Phase ?]: Plan 04b-05 deviation: added ResizeObserver polyfill in apps/admin/test/setup.ts (JSDOM lacks it; Radix popper crashes leaked across spec files)
 
 ### Pending Todos
 
@@ -142,7 +147,7 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T14:54:36.256Z
+Last session: 2026-05-31T16:29:59.754Z
 Stopped at: Completed 04b-03-PLAN.md
 Resume file:
 None
