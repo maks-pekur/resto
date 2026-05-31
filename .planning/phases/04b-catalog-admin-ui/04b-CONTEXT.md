@@ -21,7 +21,7 @@
 **Out of scope:**
 
 - Customer-facing surfaces (`apps/qr-menu` polish → Phase 6; `apps/website` → Phase 5).
-- Schema or API changes (locked in 4a; if 4b discovers a gap, surface as deferred — do NOT extend schema in 4b).
+- ~~Schema or API changes~~ — **overridden by D-4b-07 post-research (2026-05-31).** The original clause stood only while we believed 4a delivered a complete HTTP surface; research showed it did not. The schema/API changes folded into 4b are narrowly enumerated in D-4b-07 — no other backend work is permitted in 4b.
 - AI assistant in admin (MVP-2).
 - Multi-photo gallery, multilingual editor, bulk operations, recipe/ТТК, auto-reset cron, reason-on-stop-list, confirm modal on publish (all deferred per parent CONTEXT).
 
@@ -74,6 +74,25 @@
   - Pre-paying-customer "celebration toast" has no audience.
   - Activation funnel tracking (Phase 13/14) is far future; backend already emits `MenuFirstPublishedV1` so the data lands regardless of UI.
   - Re-evaluate at Phase 5 when there's a real storefront to preview.
+
+- **D-4b-07 (Scope expansion — backend addendum folded into 4b, decided 2026-05-31 post-research):** RESEARCH found Phase 4a delivered a **write-only** HTTP surface on `internal-catalog.controller.ts`. The admin UI cannot render lists, edit forms, draft-diff, or upload photos without backend addenda. The original CONTEXT clause "if 4b discovers a gap, surface as deferred — do NOT extend schema in 4b" is hereby **overridden** for this specific scope expansion (user decision, 2026-05-31). 4b now ships:
+  - **7 new GET endpoints** on `internal-catalog.controller.ts`: `GET /categories` (with parent_id filter + sortOrder), `GET /items` (with category/status filter + pagination), `GET /items/:id`, `GET /modifier-groups`, `GET /modifier-groups/:id`, `GET /stop-list`, `GET /draft-diff`.
+  - **2 new PATCH endpoints:** `PATCH /categories/:id/archive`, `PATCH /items/:id/archive` (soft-archive via `status: 'archived'`).
+  - **1 new POST endpoint:** `POST /photo-upload-url` returning a presigned PUT URL.
+  - **1 schema migration:** add `menu_categories.status` column (enum `draft|published|archived`, default `draft`) — UI needs it for the same status badges as items + the archive flow. Backfill existing rows to `published`.
+  - **1 adapter method:** `S3SignedImageUrlAdapter.presignPut(key, contentType, contentLength, expiresIn)` — `ImageUrlPort` extension.
+  - **1 infra concern:** S3 / MinIO / R2 bucket CORS allows `PUT` from the admin origin (verified once in MinIO for dev, configured in Terraform stub for prod). Planner injects this as a `[BLOCKING]` infra task.
+  - **OpenAPI regen + drift gate green** after every backend change. Generated `@resto/api-client` is the source of truth for frontend types.
+  - **`apiFetchInternal` hardening:** add `AbortSignal.timeout(<budget>)` per `apps/CLAUDE.md` rule, plus retry-with-jitter on 5xx (1 retry, max). Currently unhardened.
+  - **Net-new dependencies (Wave 0):** `react-hook-form`, `@hookform/resolvers`, shadcn `form` primitive — not yet installed. Auto-save (D-4b-02) depends on this.
+
+  **Why fold instead of insert phase 4a-bis:** the gaps are small (~7 GETs + 1 migration + 1 adapter method) and tightly coupled to UI work; inserting a phase would force two re-discuss / re-plan cycles. Net delay 1–2 days inside 4b vs. ~1 week for a separate phase.
+
+  **Phase wave structure (set by D-4b-07, enforced by planner):**
+  - Wave 0: install deps + harden `apiFetchInternal` + shadcn `form` primitive
+  - Wave 1: backend addendum (GETs + migration + archive PATCHes + OpenAPI regen + drift gate)
+  - Wave 2: backend addendum (presignPut + photo-upload endpoint + bucket CORS infra task)
+  - Wave 3+: frontend (sidebar/layout → categories → items table → item editor → modifier groups → stop-list)
 
 ### Inherited persona decisions (held — no challenge in 04b session)
 
