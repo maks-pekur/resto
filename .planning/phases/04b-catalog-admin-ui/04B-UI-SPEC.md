@@ -60,6 +60,8 @@ Exceptions:
 - Touch target minimum: 44px (`min-h-11`) — stop-list switch column, action icon buttons in table rows.
 - Sticky publish bar: `h-14` (56px) — enough room for copy + two buttons without feeling cramped.
 
+These are layout-height constraints (touch target, sticky bar height), not spacing tokens — do not use them for gap/padding/margin.
+
 ---
 
 ## Typography
@@ -69,11 +71,11 @@ Inherits the Tailwind 4 + shadcn neutral system font stack. No additional font i
 | Role    | Size | Weight         | Line Height | Tailwind class                         | Usage                                                                                           |
 | ------- | ---- | -------------- | ----------- | -------------------------------------- | ----------------------------------------------------------------------------------------------- |
 | Body    | 14px | 400 (regular)  | 1.5         | `text-sm`                              | Table cell text, form helper text, description fields                                           |
-| Label   | 14px | 500 (medium)   | 1.25        | `text-sm font-medium`                  | Form labels, table column headers, tab labels                                                   |
+| Label   | 14px | 600 (semibold) | 1.25        | `text-sm font-semibold`                | Form labels, table column headers, tab labels                                                   |
 | Heading | 18px | 600 (semibold) | 1.3         | `text-lg font-semibold tracking-tight` | Page section headings, editor card titles — matches existing `settings/page.tsx` pattern        |
 | Display | 20px | 600 (semibold) | 1.2         | `text-xl font-semibold`                | Page-level titles (h1 in breadcrumb area) — matches `<TenantBreadcrumb>` trail text conventions |
 
-Heading hierarchy enforced: page uses `<h1>` via breadcrumb trail, section cards use `<h2>` (`text-lg font-semibold`), inline sub-sections use `<h3>` (`text-sm font-medium`).
+Heading hierarchy enforced: page uses `<h1>` via breadcrumb trail, section cards use `<h2>` (`text-lg font-semibold`), inline sub-sections use `<h3>` (`text-sm font-semibold`).
 
 ---
 
@@ -88,7 +90,7 @@ Color tokens are the existing `globals.css` oklch variables — no new tokens re
 | Accent (10%)    | `--primary`           | `#1a1a1a` (neutral near-black)         | Primary action buttons only — `Publish`, `Save`, primary CTA |
 | Destructive     | `--destructive`       | `oklch(0.577 0.245 27.325)` ~`#dc2626` | Archive confirmation button only                             |
 
-**Accent reserved for:** the `Publish` button in the sticky publish bar, the primary submit button in category / item / modifier group editors, and the `+ Add` buttons that open a new entity form. Nothing else.
+**Accent reserved for:** the `Опубликовать меню` button in the sticky publish bar, the primary submit button in category / item / modifier group editors, and the `+ Add` buttons that open a new entity form. Nothing else.
 
 ### Status badge color semantics
 
@@ -338,13 +340,13 @@ Background: `bg-card border-t border-border shadow-lg` — light mode white with
 
 Content (flex row, `items-center px-6 gap-4`):
 
-- `<span className="text-sm font-medium">N неопубликованных изменений</span>` (N = count from api draft-diff)
+- `<span className="text-sm font-semibold">N неопубликованных изменений</span>` (N = count from api draft-diff)
 - `<Button variant="ghost" size="sm" onClick={toggleDiffList}>Показать ▾</Button>` — expands inline diff list above the bar (animated, `max-h-0 → max-h-64 overflow-auto`)
-- Right side flush: `<Button variant="default" size="sm">Опубликовать</Button>`
+- Right side flush: `<Button variant="default" size="sm">Опубликовать меню</Button>`
 
 When diff count is 0: bar is hidden (`display: none` / conditional render).
 
-When a publish is in flight (5s timer active): `Опубликовать` button is `disabled` with `Tooltip` content `"Публикация через 5с — нажмите Отменить"`.
+When a publish is in flight (5s timer active): `Опубликовать меню` button is `disabled` with `Tooltip` content `"Публикация через 5с — нажмите Отменить"`.
 
 Diff list items (expanded): grouped by entity type. Each item: `[EntityTypeIcon] Название (статус-badge)`. Max height 256px with scroll. No pagination in the list.
 
@@ -352,7 +354,7 @@ Diff list items (expanded): grouped by entity type. Each item: `[EntityTypeIcon]
 
 ## Delayed-Publish Toast Spec (D-4b-03)
 
-Triggered by: click `Опубликовать` → success response from `POST /internal/v1/catalog/publish`.
+Triggered by: click `Опубликовать меню` → success response from `POST /internal/v1/catalog/publish`.
 
 Custom Sonner toast content:
 
@@ -387,7 +389,7 @@ All copy is Russian. Voice: calm, direct, no exclamation marks, operator-respect
 | Modifier groups list               | `+ Создать группу`                      |
 | Modifier group editor — add option | `+ Добавить вариант`                    |
 | Stop-list                          | `Сбросить всё` (recovery, not creation) |
-| Sticky publish bar                 | `Опубликовать`                          |
+| Sticky publish bar                 | `Опубликовать меню`                     |
 
 ### Empty states
 
@@ -448,7 +450,7 @@ Additionally, Zod schema client-side: `parent_id` field carries `.refine()` that
 
 ### Publish flow (D-4b-03)
 
-1. Operator clicks `Опубликовать` in sticky bar.
+1. Operator clicks `Опубликовать меню` in sticky bar.
 2. Button goes `disabled` + shows spinner (1 frame before POST response).
 3. POST `/internal/v1/catalog/publish` fires.
 4. On 2xx: sticky bar button stays disabled + shows `"Публикация через 5с"` text. Sonner custom countdown toast appears bottom-right.
@@ -476,6 +478,7 @@ New item: `/dashboard/menu/items/new` → server action creates a stub item with
 - AlertDialog: uses Radix AlertDialog primitive — focus trap + `aria-describedby` + `aria-labelledby` handled automatically.
 - Table: `<table>` with `<thead>`, `<th scope="col">`, `<td>` — do not use `role="grid"` on a data table.
 - Photo drop zone: `<label>` wrapping the visual zone with `htmlFor` matching the hidden `<input type="file">`. Zone has `role="button" tabIndex={0}` with keyboard handler for Enter/Space to open file dialog.
+- DropdownMenu trigger in the Actions column of every table (Items, Categories, Modifier Groups) must carry `aria-label="Действия с {name}"` where `{name}` is the row's display name (category name, item name, modifier group name). If the row name is not available in context, fall back to `aria-label="Действия"`.
 
 ---
 
