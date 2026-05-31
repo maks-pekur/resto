@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 09
 type: execute
 wave: 5
-depends_on: ["04b-01", "04b-02", "04b-04", "04b-06"]
+depends_on: ['04b-01', '04b-02', '04b-04', '04b-06']
 files_modified:
   - apps/admin/app/dashboard/(workspace)/menu/stop-list/page.tsx
   - apps/admin/app/dashboard/(workspace)/menu/stop-list/stop-list-table-client.tsx
@@ -14,41 +14,41 @@ autonomous: false
 requirements: [CAT-07]
 must_haves:
   truths:
-    - "Stop-list page lives at /dashboard/menu/stop-list with two sections: Сегодня (count widget + Сбросить всё) + table of paused items (UI-SPEC §Stop-list page)"
+    - 'Stop-list page lives at /dashboard/menu/stop-list with two sections: Сегодня (count widget + Сбросить всё) + table of paused items (UI-SPEC §Stop-list page)'
     - "'Today's 86' dashboard widget mounted on /dashboard renders count of currently-paused items + Сбросить всё button (D-12)"
-    - "Reset all is manual only — no confirm modal; button variant outline (recovery, not destructive) per UI-SPEC §Destructive actions row 4 + D-13"
-    - "Reset all loops DELETE /internal/v1/catalog/stop-list/:itemId for each paused item (current 4a backend has no batch reset endpoint; loop client-side via server action)"
-    - "Stop-list table reuses stop-list switch from Plan 06 items-table; toggle off re-publishes item"
+    - 'Reset all is manual only — no confirm modal; button variant outline (recovery, not destructive) per UI-SPEC §Destructive actions row 4 + D-13'
+    - 'Reset all loops DELETE /internal/v1/catalog/stop-list/:itemId for each paused item (current 4a backend has no batch reset endpoint; loop client-side via server action)'
+    - 'Stop-list table reuses stop-list switch from Plan 06 items-table; toggle off re-publishes item'
     - "Stale warning '>24h': below the Стоп badge on each row, inline text-amber 'Остановлено Xч' when stoppedAt > 24h ago (D-13, UI-SPEC §Stop-list page)"
-    - "Empty state: Стоп-лист пуст / Все позиции в меню сейчас доступны для заказа. (UI-SPEC §Empty states)"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
-    - "Stop-list reset is manual only — no auto-reset cron (D-13)"
+    - 'Empty state: Стоп-лист пуст / Все позиции в меню сейчас доступны для заказа. (UI-SPEC §Empty states)'
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
+    - 'Stop-list reset is manual only — no auto-reset cron (D-13)'
     - "D-11: Stop-list ≠ Archive — stop-list toggle publishes immediately (runtime state, no draft/publish dance), unlike archive which sets status='archived' in draft and requires Publish"
   artifacts:
-    - path: "apps/admin/app/dashboard/(workspace)/menu/stop-list/page.tsx"
-      provides: "Stop-list RSC page"
-      contains: "/internal/v1/catalog/stop-list"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/stop-list/reset-stop-list-action.ts"
-      provides: "Reset-all server action"
-      contains: "use server"
-    - path: "apps/admin/components/menu/todays-86-widget.tsx"
-      provides: "Dashboard widget shown on /dashboard"
-      contains: "Стоп-лист сегодня"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/stop-list/page.tsx'
+      provides: 'Stop-list RSC page'
+      contains: '/internal/v1/catalog/stop-list'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/stop-list/reset-stop-list-action.ts'
+      provides: 'Reset-all server action'
+      contains: 'use server'
+    - path: 'apps/admin/components/menu/todays-86-widget.tsx'
+      provides: 'Dashboard widget shown on /dashboard'
+      contains: 'Стоп-лист сегодня'
   key_links:
-    - from: "stop-list/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/stop-list"
-      pattern: "/internal/v1/catalog/stop-list"
-    - from: "reset-stop-list-action.ts"
-      to: "apiFetchInternal"
-      via: "DELETE /internal/v1/catalog/stop-list/:itemId (looped)"
+    - from: 'stop-list/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/stop-list'
+      pattern: '/internal/v1/catalog/stop-list'
+    - from: 'reset-stop-list-action.ts'
+      to: 'apiFetchInternal'
+      via: 'DELETE /internal/v1/catalog/stop-list/:itemId (looped)'
       pattern: "method: 'DELETE'"
-    - from: "apps/admin/app/dashboard/(workspace)/page.tsx"
-      to: "todays-86-widget.tsx"
-      via: "Server component import"
-      pattern: "TodaysWidget"
+    - from: 'apps/admin/app/dashboard/(workspace)/page.tsx'
+      to: 'todays-86-widget.tsx'
+      via: 'Server component import'
+      pattern: 'TodaysWidget'
 ---
 
 <objective>
@@ -75,14 +75,15 @@ Output: Stop-list RSC + table client + reset-all server action + dashboard widge
 <!-- Backend Plan 02 live: -->
 
 GET /internal/v1/catalog/stop-list → StopListResponseDto:
+
 ```typescript
 type StopListItem = {
-  id: string;            // item id
+  id: string; // item id
   name: Record<string, string>;
   categoryName: Record<string, string>;
   parentCategoryName: Record<string, string> | null;
   photoUrl: string | null;
-  stoppedAt: string;     // ISO timestamp
+  stoppedAt: string; // ISO timestamp
 };
 type StopListResponse = StopListItem[];
 ```
@@ -179,21 +180,23 @@ Stale warning rule (D-13 + UI-SPEC §Stop-list page): if `Date.now() - new Date(
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                                               | Description                                 |
+| ---------------------------------------------------------------------- | ------------------------------------------- |
 | Admin server action → api /internal/v1/catalog/stop-list (loop DELETE) | apiFetchInternal carries INTERNAL_API_TOKEN |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-09-01 | DoS | Reset-all loop overwhelms api | accept | Stop-list is typically <20 items in MVP-1; sequential loop is acceptable; existing api rate-limit covers excess |
-| T-04b-09-02 | Tampering | CSRF on reset-all server action | mitigate | Next.js 15 server actions ship built-in CSRF token |
-| T-04b-09-03 | Information Disclosure | INTERNAL_API_TOKEN in client bundle | mitigate | resetStopListAction is 'use server'; client island only invokes the action |
-| T-04b-09-04 | Repudiation | Reset-all partial failure not surfaced | mitigate | Returns `failedIds`; UI shows "X возобновлены, Y не удалось" toast |
-| T-04b-09-05 | Tampering | Operator bypassing manual reset via auto-cron expectation | accept | D-13 explicitly defers auto-reset; UI documents "manual only" through the absence of a schedule UI |
+| Threat ID   | Category               | Component                                                 | Disposition | Mitigation Plan                                                                                                 |
+| ----------- | ---------------------- | --------------------------------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| T-04b-09-01 | DoS                    | Reset-all loop overwhelms api                             | accept      | Stop-list is typically <20 items in MVP-1; sequential loop is acceptable; existing api rate-limit covers excess |
+| T-04b-09-02 | Tampering              | CSRF on reset-all server action                           | mitigate    | Next.js 15 server actions ship built-in CSRF token                                                              |
+| T-04b-09-03 | Information Disclosure | INTERNAL_API_TOKEN in client bundle                       | mitigate    | resetStopListAction is 'use server'; client island only invokes the action                                      |
+| T-04b-09-04 | Repudiation            | Reset-all partial failure not surfaced                    | mitigate    | Returns `failedIds`; UI shows "X возобновлены, Y не удалось" toast                                              |
+| T-04b-09-05 | Tampering              | Operator bypassing manual reset via auto-cron expectation | accept      | D-13 explicitly defers auto-reset; UI documents "manual only" through the absence of a schedule UI              |
+
 </threat_model>
 
 <verification>
@@ -206,6 +209,7 @@ Stale warning rule (D-13 + UI-SPEC §Stop-list page): if `Date.now() - new Date(
 </verification>
 
 <success_criteria>
+
 1. Stop-list page lists paused items with stale warning + toggle-back switch
 2. Today widget renders on both stop-list page and dashboard
 3. Reset-all server action loops DELETEs + returns partial-failure report
@@ -213,7 +217,7 @@ Stale warning rule (D-13 + UI-SPEC §Stop-list page): if `Date.now() - new Date(
 5. Dashboard page integrates TodaysWidget without breaking existing cards
 6. Russian copy matches UI-SPEC verbatim
 7. All specs pass
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-09-SUMMARY.md` when done.

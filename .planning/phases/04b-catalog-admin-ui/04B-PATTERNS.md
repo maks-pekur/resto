@@ -10,66 +10,66 @@
 
 ### Wave 0 — Dependency install + infra hardening
 
-| New/Modified File                            | Role                | Data Flow        | Closest Analog                                | Match Quality |
-| -------------------------------------------- | ------------------- | ---------------- | --------------------------------------------- | ------------- |
-| `apps/admin/package.json` (deps)             | config              | n/a              | `apps/admin/package.json` (self)              | exact         |
-| `apps/admin/components/ui/form.tsx`          | shadcn primitive    | n/a              | `apps/admin/components/ui/sonner.tsx`         | role-match    |
-| `apps/admin/lib/api-server-internal.ts`      | server-fetch helper | request-response | `apps/admin/lib/api-server.ts`                | exact         |
+| New/Modified File                       | Role                | Data Flow        | Closest Analog                        | Match Quality |
+| --------------------------------------- | ------------------- | ---------------- | ------------------------------------- | ------------- |
+| `apps/admin/package.json` (deps)        | config              | n/a              | `apps/admin/package.json` (self)      | exact         |
+| `apps/admin/components/ui/form.tsx`     | shadcn primitive    | n/a              | `apps/admin/components/ui/sonner.tsx` | role-match    |
+| `apps/admin/lib/api-server-internal.ts` | server-fetch helper | request-response | `apps/admin/lib/api-server.ts`        | exact         |
 
 ### Wave 1 + 2 — Backend addendum (catalog GETs + archive + presign-PUT + migration)
 
-| New/Modified File                                                                              | Role                  | Data Flow        | Closest Analog                                                                            | Match Quality |
-| ---------------------------------------------------------------------------------------------- | --------------------- | ---------------- | ----------------------------------------------------------------------------------------- | ------------- |
-| `apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts` (extend)        | NestJS controller     | request-response | self (extend the 9 existing POST/DELETE endpoints)                                        | exact         |
-| `apps/api/src/contexts/catalog/application/list-categories.service.ts`                         | application service   | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts`                 | role-match    |
-| `apps/api/src/contexts/catalog/application/list-items.service.ts`                              | application service   | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts`                 | role-match    |
-| `apps/api/src/contexts/catalog/application/get-item.service.ts`                                | application service   | request-response | `apps/api/src/contexts/catalog/application/get-menu-item.service.ts`                      | exact         |
-| `apps/api/src/contexts/catalog/application/list-modifier-groups.service.ts`                    | application service   | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts`                 | role-match    |
-| `apps/api/src/contexts/catalog/application/get-modifier-group.service.ts`                      | application service   | request-response | `apps/api/src/contexts/catalog/application/get-menu-item.service.ts`                      | exact         |
-| `apps/api/src/contexts/catalog/application/get-stop-list.service.ts`                           | application service   | request-response | `apps/api/src/contexts/catalog/application/stop-list.service.ts`                          | role-match    |
-| `apps/api/src/contexts/catalog/application/get-draft-diff.service.ts`                          | application service   | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts`                 | role-match    |
-| `apps/api/src/contexts/catalog/application/archive-category.service.ts`                        | application service   | CRUD             | `apps/api/src/contexts/catalog/application/upsert-category.service.ts`                    | exact         |
-| `apps/api/src/contexts/catalog/application/archive-item.service.ts`                            | application service   | CRUD             | `apps/api/src/contexts/catalog/application/upsert-item.service.ts`                        | exact         |
-| `apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts` (extend)         | adapter (S3)          | request-response | self (extend `presignGet` with `presignPut`)                                              | exact         |
-| `apps/api/src/contexts/catalog/domain/ports.ts` (extend `ImageUrlPort`)                        | port interface        | n/a              | self (extend)                                                                             | exact         |
-| `apps/api/src/contexts/catalog/interfaces/http/error-mapping.ts` (extend if archive errors)    | error mapping         | request-response | self (extend)                                                                             | exact         |
-| `apps/api/src/contexts/catalog/application/dto.ts` (extend with list/detail DTOs)              | Zod DTO schema        | request-response | self (extend)                                                                             | exact         |
-| `apps/api/src/contexts/catalog/catalog.module.ts` (register new services)                      | NestJS module         | n/a              | self (extend providers array)                                                             | exact         |
-| `packages/db/migrations/0042_catalog_phase4b_categories_status.sql`                            | SQL migration         | batch            | `packages/db/migrations/0029_catalog_phase4a_menu_items_extend.sql`                       | exact         |
-| `packages/db/src/schema/menu.ts` (add `status` to `menuCategories`)                            | Drizzle schema        | n/a              | self (extend)                                                                             | exact         |
-| `packages/db/migrations/meta/_journal.json`                                                    | migration journal     | n/a              | self (append)                                                                             | exact         |
-| `docs/api/openapi.yaml` + `packages/api-client/src/generated/api.ts`                           | generated artifacts   | n/a              | re-emit via `pnpm openapi:check`                                                          | exact         |
+| New/Modified File                                                                           | Role                | Data Flow        | Closest Analog                                                            | Match Quality |
+| ------------------------------------------------------------------------------------------- | ------------------- | ---------------- | ------------------------------------------------------------------------- | ------------- |
+| `apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts` (extend)     | NestJS controller   | request-response | self (extend the 9 existing POST/DELETE endpoints)                        | exact         |
+| `apps/api/src/contexts/catalog/application/list-categories.service.ts`                      | application service | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts` | role-match    |
+| `apps/api/src/contexts/catalog/application/list-items.service.ts`                           | application service | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts` | role-match    |
+| `apps/api/src/contexts/catalog/application/get-item.service.ts`                             | application service | request-response | `apps/api/src/contexts/catalog/application/get-menu-item.service.ts`      | exact         |
+| `apps/api/src/contexts/catalog/application/list-modifier-groups.service.ts`                 | application service | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts` | role-match    |
+| `apps/api/src/contexts/catalog/application/get-modifier-group.service.ts`                   | application service | request-response | `apps/api/src/contexts/catalog/application/get-menu-item.service.ts`      | exact         |
+| `apps/api/src/contexts/catalog/application/get-stop-list.service.ts`                        | application service | request-response | `apps/api/src/contexts/catalog/application/stop-list.service.ts`          | role-match    |
+| `apps/api/src/contexts/catalog/application/get-draft-diff.service.ts`                       | application service | request-response | `apps/api/src/contexts/catalog/application/get-published-menu.service.ts` | role-match    |
+| `apps/api/src/contexts/catalog/application/archive-category.service.ts`                     | application service | CRUD             | `apps/api/src/contexts/catalog/application/upsert-category.service.ts`    | exact         |
+| `apps/api/src/contexts/catalog/application/archive-item.service.ts`                         | application service | CRUD             | `apps/api/src/contexts/catalog/application/upsert-item.service.ts`        | exact         |
+| `apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts` (extend)      | adapter (S3)        | request-response | self (extend `presignGet` with `presignPut`)                              | exact         |
+| `apps/api/src/contexts/catalog/domain/ports.ts` (extend `ImageUrlPort`)                     | port interface      | n/a              | self (extend)                                                             | exact         |
+| `apps/api/src/contexts/catalog/interfaces/http/error-mapping.ts` (extend if archive errors) | error mapping       | request-response | self (extend)                                                             | exact         |
+| `apps/api/src/contexts/catalog/application/dto.ts` (extend with list/detail DTOs)           | Zod DTO schema      | request-response | self (extend)                                                             | exact         |
+| `apps/api/src/contexts/catalog/catalog.module.ts` (register new services)                   | NestJS module       | n/a              | self (extend providers array)                                             | exact         |
+| `packages/db/migrations/0042_catalog_phase4b_categories_status.sql`                         | SQL migration       | batch            | `packages/db/migrations/0029_catalog_phase4a_menu_items_extend.sql`       | exact         |
+| `packages/db/src/schema/menu.ts` (add `status` to `menuCategories`)                         | Drizzle schema      | n/a              | self (extend)                                                             | exact         |
+| `packages/db/migrations/meta/_journal.json`                                                 | migration journal   | n/a              | self (append)                                                             | exact         |
+| `docs/api/openapi.yaml` + `packages/api-client/src/generated/api.ts`                        | generated artifacts | n/a              | re-emit via `pnpm openapi:check`                                          | exact         |
 
 ### Wave 3+ — Frontend (Next.js admin pages, actions, client components)
 
-| New/Modified File                                                                                                                  | Role             | Data Flow        | Closest Analog                                                                            | Match Quality |
-| ---------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------- | ----------------------------------------------------------------------------------------- | ------------- |
-| `apps/admin/components/app-sidebar.tsx` (extend `navMain`)                                                                         | client component | n/a              | self (add new `Menu` group following `NavMainItem.items` pattern)                          | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/layout.tsx`                                                                              | RSC layout       | request-response | `apps/admin/app/dashboard/(workspace)/layout.tsx`                                          | role-match    |
-| `apps/admin/app/dashboard/(workspace)/menu/categories/page.tsx`                                                                     | RSC page         | request-response | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                  | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/categories/category-form-client.tsx`                                                     | client component | request-response | `apps/admin/app/dashboard/(workspace)/settings/invite-form-client.tsx` + RHF (new)         | role-match    |
-| `apps/admin/app/dashboard/(workspace)/menu/categories/{create,update,archive,reorder}-category-action.ts`                          | server action    | CRUD             | `apps/admin/app/dashboard/(workspace)/settings/invite-action.ts`                          | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/items/page.tsx`                                                                          | RSC page         | request-response | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                  | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx`                                                                     | RSC page         | request-response | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                  | role-match    |
-| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-client.tsx`                                                       | client component | request-response | `apps/admin/app/(onboarding)/onboarding/brand/brand-form-client.tsx` (debounce pattern)    | role-match    |
-| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/{upsert-item,archive-item,toggle-stop-list,upsert-item-size}-action.ts`     | server action    | CRUD             | `apps/admin/app/dashboard/(workspace)/settings/actions.ts` (scheduleOffboardingAction)    | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-client.tsx`                                                      | client component | file-I/O         | net-new (no in-repo analog)                                                               | no analog     |
-| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-url-action.ts`                                                   | server action    | request-response | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                                | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/page.tsx`                                                                | RSC page         | request-response | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                  | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/page.tsx` + `modifier-group-editor-client.tsx`                     | RSC + client     | request-response | item editor pair                                                                         | role-match    |
-| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/{upsert-modifier-group,upsert-modifier-option}-action.ts`         | server action    | CRUD             | `apps/admin/app/dashboard/(workspace)/settings/invite-action.ts`                          | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/stop-list/page.tsx`                                                                      | RSC page         | request-response | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                  | exact         |
-| `apps/admin/app/dashboard/(workspace)/menu/stop-list/reset-stop-list-action.ts`                                                    | server action    | CRUD (batch)     | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                                | role-match    |
-| `apps/admin/components/menu/sticky-publish-bar.tsx` (+ client island)                                                              | client component | event-driven     | net-new (no in-repo analog for Sonner+countdown)                                          | no analog     |
-| `apps/admin/components/menu/publish-countdown-toast.tsx`                                                                            | client component | event-driven     | net-new (Sonner `toast.custom` pattern from RESEARCH.md Pattern 2)                         | no analog     |
-| `apps/admin/components/menu/auto-save-indicator.tsx`                                                                                | client component | event-driven     | inline pattern from `apps/admin/app/(onboarding)/.../brand-form-client.tsx` (slug hint)    | role-match    |
-| `apps/admin/components/menu/status-badge.tsx`                                                                                      | client component | n/a (presentation)| `apps/admin/components/empty-state.tsx` (variant prop pattern)                            | role-match    |
-| `apps/admin/components/menu/category-select.tsx`                                                                                    | client component | request-response | net-new (indented shadcn Select)                                                          | no analog     |
-| `apps/admin/components/menu/bju-row.tsx`                                                                                            | client component | n/a (presentation)| inline form row pattern                                                                  | no analog     |
-| `apps/admin/components/menu/todays-86-widget.tsx`                                                                                  | RSC + client     | request-response | `apps/admin/components/setup-checklist-card.tsx` (RSC card + counters)                     | role-match    |
-| `apps/admin/lib/menu/use-auto-save.ts`                                                                                              | client hook      | event-driven     | RESEARCH.md Pattern 1 (community RHF watch+debounce)                                       | no analog     |
-| `apps/admin/lib/menu/{schedule-publish,cancel-publish}-action.ts`                                                                  | server action    | request-response | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                                | exact         |
-| `apps/admin/lib/menu/zod-schemas.ts`                                                                                                | Zod schema       | n/a              | `apps/admin/lib/actions/create-brand.ts` (CreateBrandFormSchema)                          | role-match    |
+| New/Modified File                                                                                                             | Role             | Data Flow          | Closest Analog                                                                          | Match Quality |
+| ----------------------------------------------------------------------------------------------------------------------------- | ---------------- | ------------------ | --------------------------------------------------------------------------------------- | ------------- |
+| `apps/admin/components/app-sidebar.tsx` (extend `navMain`)                                                                    | client component | n/a                | self (add new `Menu` group following `NavMainItem.items` pattern)                       | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/layout.tsx`                                                                        | RSC layout       | request-response   | `apps/admin/app/dashboard/(workspace)/layout.tsx`                                       | role-match    |
+| `apps/admin/app/dashboard/(workspace)/menu/categories/page.tsx`                                                               | RSC page         | request-response   | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/categories/category-form-client.tsx`                                               | client component | request-response   | `apps/admin/app/dashboard/(workspace)/settings/invite-form-client.tsx` + RHF (new)      | role-match    |
+| `apps/admin/app/dashboard/(workspace)/menu/categories/{create,update,archive,reorder}-category-action.ts`                     | server action    | CRUD               | `apps/admin/app/dashboard/(workspace)/settings/invite-action.ts`                        | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/items/page.tsx`                                                                    | RSC page         | request-response   | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx`                                                               | RSC page         | request-response   | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                | role-match    |
+| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-client.tsx`                                                 | client component | request-response   | `apps/admin/app/(onboarding)/onboarding/brand/brand-form-client.tsx` (debounce pattern) | role-match    |
+| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/{upsert-item,archive-item,toggle-stop-list,upsert-item-size}-action.ts` | server action    | CRUD               | `apps/admin/app/dashboard/(workspace)/settings/actions.ts` (scheduleOffboardingAction)  | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-client.tsx`                                                | client component | file-I/O           | net-new (no in-repo analog)                                                             | no analog     |
+| `apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-url-action.ts`                                             | server action    | request-response   | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                              | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/page.tsx`                                                          | RSC page         | request-response   | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/page.tsx` + `modifier-group-editor-client.tsx`                | RSC + client     | request-response   | item editor pair                                                                        | role-match    |
+| `apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/{upsert-modifier-group,upsert-modifier-option}-action.ts`     | server action    | CRUD               | `apps/admin/app/dashboard/(workspace)/settings/invite-action.ts`                        | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/stop-list/page.tsx`                                                                | RSC page         | request-response   | `apps/admin/app/dashboard/(workspace)/settings/page.tsx`                                | exact         |
+| `apps/admin/app/dashboard/(workspace)/menu/stop-list/reset-stop-list-action.ts`                                               | server action    | CRUD (batch)       | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                              | role-match    |
+| `apps/admin/components/menu/sticky-publish-bar.tsx` (+ client island)                                                         | client component | event-driven       | net-new (no in-repo analog for Sonner+countdown)                                        | no analog     |
+| `apps/admin/components/menu/publish-countdown-toast.tsx`                                                                      | client component | event-driven       | net-new (Sonner `toast.custom` pattern from RESEARCH.md Pattern 2)                      | no analog     |
+| `apps/admin/components/menu/auto-save-indicator.tsx`                                                                          | client component | event-driven       | inline pattern from `apps/admin/app/(onboarding)/.../brand-form-client.tsx` (slug hint) | role-match    |
+| `apps/admin/components/menu/status-badge.tsx`                                                                                 | client component | n/a (presentation) | `apps/admin/components/empty-state.tsx` (variant prop pattern)                          | role-match    |
+| `apps/admin/components/menu/category-select.tsx`                                                                              | client component | request-response   | net-new (indented shadcn Select)                                                        | no analog     |
+| `apps/admin/components/menu/bju-row.tsx`                                                                                      | client component | n/a (presentation) | inline form row pattern                                                                 | no analog     |
+| `apps/admin/components/menu/todays-86-widget.tsx`                                                                             | RSC + client     | request-response   | `apps/admin/components/setup-checklist-card.tsx` (RSC card + counters)                  | role-match    |
+| `apps/admin/lib/menu/use-auto-save.ts`                                                                                        | client hook      | event-driven       | RESEARCH.md Pattern 1 (community RHF watch+debounce)                                    | no analog     |
+| `apps/admin/lib/menu/{schedule-publish,cancel-publish}-action.ts`                                                             | server action    | request-response   | `apps/admin/app/dashboard/(workspace)/settings/actions.ts`                              | exact         |
+| `apps/admin/lib/menu/zod-schemas.ts`                                                                                          | Zod schema       | n/a                | `apps/admin/lib/actions/create-brand.ts` (CreateBrandFormSchema)                        | role-match    |
 
 ---
 
@@ -86,8 +86,10 @@ const TIMEOUT_GET_MS = 10_000;
 const TIMEOUT_MUTATION_MS = 30_000;
 const RETRY_BACKOFF_MS = 500;
 
-const isRetryableServerError = (status: number): boolean => status >= 500 && status <= 504;
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const isRetryableServerError = (status: number): boolean =>
+  status >= 500 && status <= 504;
+const sleep = (ms: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, ms));
 
 const executeWithRetry = async (
   input: string,
@@ -96,8 +98,15 @@ const executeWithRetry = async (
 ): Promise<Response> => {
   const maxAttempts = opts.isGet ? 2 : 1;
   for (let attempt = 1; ; attempt += 1) {
-    const res = await fetch(input, { ...init, signal: AbortSignal.timeout(opts.timeoutMs) });
-    if (!opts.isGet || !isRetryableServerError(res.status) || attempt >= maxAttempts) {
+    const res = await fetch(input, {
+      ...init,
+      signal: AbortSignal.timeout(opts.timeoutMs),
+    });
+    if (
+      !opts.isGet ||
+      !isRetryableServerError(res.status) ||
+      attempt >= maxAttempts
+    ) {
       return res;
     }
     await sleep(RETRY_BACKOFF_MS);
@@ -131,9 +140,24 @@ interface InternalRequestOptions {
 
 ```typescript
 import {
-  Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Param, Post, Query, UseGuards,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  Post,
+  Query,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiBody, ApiOkResponse, ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
+import {
+  ApiBody,
+  ApiOkResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+} from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
@@ -229,7 +253,9 @@ export class GetPublishedMenuService {
 ```typescript
 @Injectable()
 export class UpsertCategoryService {
-  constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}
+  constructor(
+    @Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository,
+  ) {}
 
   async execute(input: UpsertCategoryInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
@@ -343,10 +369,20 @@ Mirror the existing `menuItems.status` definition (line 115).
 **Pattern (insert after the `Settings` entry, line 38)**:
 
 ```typescript
-import { LayoutDashboard, Settings2, Store, UtensilsCrossed } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Settings2,
+  Store,
+  UtensilsCrossed,
+} from 'lucide-react';
 // ...
 const navMain: NavMainItem[] = [
-  { title: 'Dashboard', url: '/dashboard', icon: LayoutDashboard, scope: 'any' },
+  {
+    title: 'Dashboard',
+    url: '/dashboard',
+    icon: LayoutDashboard,
+    scope: 'any',
+  },
   { title: 'Brands', url: '/dashboard', icon: Store, scope: 'tenant' },
   {
     title: 'Меню',
@@ -361,7 +397,12 @@ const navMain: NavMainItem[] = [
       { title: 'Стоп-лист', url: '/dashboard/menu/stop-list' },
     ],
   },
-  { title: 'Settings', url: '/dashboard/settings', icon: Settings2, scope: 'tenant' },
+  {
+    title: 'Settings',
+    url: '/dashboard/settings',
+    icon: Settings2,
+    scope: 'tenant',
+  },
 ];
 ```
 
@@ -434,7 +475,9 @@ if (!me.ok || me.data?.kind !== 'operator' || !me.data.tenantId) {
   redirect('/login');
 }
 // New catalog reads go through apiFetchInternal — InternalTokenGuard not BA session:
-const categoriesRes = await apiFetchInternal<CategoryListResponse>('/internal/v1/catalog/categories');
+const categoriesRes = await apiFetchInternal<CategoryListResponse>(
+  '/internal/v1/catalog/categories',
+);
 ```
 
 **Empty state pattern (verbatim from items/categories/modifier-groups when count = 0)**:
@@ -448,7 +491,7 @@ import { Button } from '@/components/ui/button';
   title="Категории не добавлены"
   description="Добавьте первую категорию, чтобы сгруппировать блюда в меню."
   action={<Button>Создать категорию</Button>}
-/>
+/>;
 ```
 
 The component is already at `apps/admin/components/empty-state.tsx` (lines 1-55).
@@ -467,7 +510,12 @@ import { revalidatePath } from 'next/cache';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 
-interface ProblemDetails { type?: string; detail?: string; message?: string; code?: string; }
+interface ProblemDetails {
+  type?: string;
+  detail?: string;
+  message?: string;
+  code?: string;
+}
 
 export interface UpsertItemActionState {
   readonly error: string | null;
@@ -481,13 +529,21 @@ export async function upsertItemAction(
   // (1) Validate input with Zod (mirror create-brand.ts lines 49-56).
   const parsed = ItemEditorFormSchema.safeParse(payload);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? 'Validation failed.', savedAt: null };
+    return {
+      error: parsed.error.issues[0]?.message ?? 'Validation failed.',
+      savedAt: null,
+    };
   }
   // (2) Call apiFetchInternal — InternalTokenGuard not BA session.
-  const res = await apiFetchInternal<{ id: string }>('/internal/v1/catalog/items', {
-    method: 'POST',
-    body: { /* map ItemEditorForm → UpsertItemInputDto */ },
-  });
+  const res = await apiFetchInternal<{ id: string }>(
+    '/internal/v1/catalog/items',
+    {
+      method: 'POST',
+      body: {
+        /* map ItemEditorForm → UpsertItemInputDto */
+      },
+    },
+  );
   if (!res.ok) {
     return { error: `Не удалось сохранить (${res.status}).`, savedAt: null };
   }
@@ -500,8 +556,10 @@ export async function upsertItemAction(
 
 ```typescript
 const friendly = (status: number, body: ProblemDetails | null): string => {
-  if (status === 409 && body?.code === 'catalog.menu_category_not_found') return 'Категория не найдена.';
-  if (status === 400) return body?.message ?? body?.detail ?? 'Проверьте поля формы.';
+  if (status === 409 && body?.code === 'catalog.menu_category_not_found')
+    return 'Категория не найдена.';
+  if (status === 400)
+    return body?.message ?? body?.detail ?? 'Проверьте поля формы.';
   if (status >= 500) return 'Серверная ошибка. Попробуйте ещё раз.';
   return body?.detail ?? `Запрос не выполнен (${status.toString()}).`;
 };
@@ -521,12 +579,18 @@ import { useActionState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { createCategoryAction, type CreateCategoryActionState } from './create-category-action';
+import {
+  createCategoryAction,
+  type CreateCategoryActionState,
+} from './create-category-action';
 
 const initial: CreateCategoryActionState = { error: null, success: null };
 
 export const CategoryForm = () => {
-  const [state, action, pending] = useActionState(createCategoryAction, initial);
+  const [state, action, pending] = useActionState(
+    createCategoryAction,
+    initial,
+  );
   return (
     <form action={action} className="space-y-4" noValidate>
       <div className="space-y-2">
@@ -534,7 +598,9 @@ export const CategoryForm = () => {
         <Input id="cat-name" name="name" required maxLength={255} />
       </div>
       {state.error ? (
-        <p role="alert" className="text-destructive text-sm">{state.error}</p>
+        <p role="alert" className="text-destructive text-sm">
+          {state.error}
+        </p>
       ) : null}
       <Button type="submit" disabled={pending}>
         {pending ? 'Сохраняем…' : 'Создать'}
@@ -550,15 +616,29 @@ export const CategoryForm = () => {
 'use client';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormControl,
+  FormMessage,
+} from '@/components/ui/form';
 import { useDebouncedAutosave } from '@/lib/menu/use-auto-save';
-import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
+import {
+  ItemEditorFormSchema,
+  type ItemEditorForm,
+} from '@/lib/menu/zod-schemas';
 
 const form = useForm<ItemEditorForm>({
   resolver: zodResolver(ItemEditorFormSchema),
   defaultValues: initialValues,
 });
-useDebouncedAutosave(form, async (values) => upsertItemAction(itemId, values), setSaveState);
+useDebouncedAutosave(
+  form,
+  async (values) => upsertItemAction(itemId, values),
+  setSaveState,
+);
 ```
 
 **Debounce pattern proven in this repo** (`apps/admin/app/(onboarding)/onboarding/brand/brand-form-client.tsx` lines 61-97) — the `setTimeout(handle, DEBOUNCE_MS)` + `requestId.current` race-id pattern (Pitfall #5 prevention) is already exercised; mirror it for the auto-save concurrency guard.
@@ -589,12 +669,21 @@ useDebouncedAutosave(form, async (values) => upsertItemAction(itemId, values), s
   htmlFor="photo-input"
   className="rounded-lg border-2 border-dashed border-input bg-muted/40 w-full h-48 flex flex-col items-center justify-center gap-2"
   onDragOver={(e) => e.preventDefault()}
-  onDrop={(e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]); }}
+  onDrop={(e) => {
+    e.preventDefault();
+    handleFile(e.dataTransfer.files[0]);
+  }}
 >
-  <input id="photo-input" type="file" accept="image/*" className="sr-only" onChange={(e) => handleFile(e.target.files?.[0])} />
+  <input
+    id="photo-input"
+    type="file"
+    accept="image/*"
+    className="sr-only"
+    onChange={(e) => handleFile(e.target.files?.[0])}
+  />
   <ImageIcon className="size-8 text-muted-foreground" />
   <p className="text-sm text-muted-foreground">Нажмите или перетащите фото</p>
-</label>
+</label>;
 ```
 
 ---
@@ -635,8 +724,18 @@ toast.success('Опубликовано', { id, duration: 3_000 });
 import { Badge } from '@/components/ui/badge'; // installed via shadcn add in Wave 0
 type Status = 'draft' | 'modified' | 'published' | 'paused' | 'archived';
 
-const variantFor = (s: Status): { variant: 'outline' | 'default' | 'secondary' | 'ghost'; className?: string } => {
-  if (s === 'modified') return { variant: 'outline', className: 'border-amber-500 text-amber-700 dark:border-amber-400 dark:text-amber-400' };
+const variantFor = (
+  s: Status,
+): {
+  variant: 'outline' | 'default' | 'secondary' | 'ghost';
+  className?: string;
+} => {
+  if (s === 'modified')
+    return {
+      variant: 'outline',
+      className:
+        'border-amber-500 text-amber-700 dark:border-amber-400 dark:text-amber-400',
+    };
   if (s === 'paused') return { variant: 'secondary' };
   if (s === 'archived') return { variant: 'ghost' };
   if (s === 'published') return { variant: 'default' };
@@ -645,7 +744,15 @@ const variantFor = (s: Status): { variant: 'outline' | 'default' | 'secondary' |
 
 export const StatusBadge = ({ status }: { readonly status: Status }) => {
   const cfg = variantFor(status);
-  return <Badge variant={cfg.variant} className={cfg.className} aria-label={`Статус: ${labelFor(status)}`}>{labelFor(status)}</Badge>;
+  return (
+    <Badge
+      variant={cfg.variant}
+      className={cfg.className}
+      aria-label={`Статус: ${labelFor(status)}`}
+    >
+      {labelFor(status)}
+    </Badge>
+  );
 };
 ```
 
@@ -668,15 +775,25 @@ type SaveState =
 export const AutoSaveIndicator = ({ state }: { readonly state: SaveState }) => {
   if (state.kind === 'idle') return null;
   if (state.kind === 'saving') {
-    return <p className="text-xs text-muted-foreground" aria-live="polite">Сохранение…</p>;
+    return (
+      <p className="text-xs text-muted-foreground" aria-live="polite">
+        Сохранение…
+      </p>
+    );
   }
   if (state.kind === 'saved') {
-    return <p className="text-xs text-muted-foreground" aria-live="polite">Сохранено {formatAge(state.at)}</p>;
+    return (
+      <p className="text-xs text-muted-foreground" aria-live="polite">
+        Сохранено {formatAge(state.at)}
+      </p>
+    );
   }
   return (
     <p className="text-xs text-destructive" aria-live="polite">
       Не сохранено —{' '}
-      <button type="button" className="underline" onClick={state.retry}>повторить</button>
+      <button type="button" className="underline" onClick={state.retry}>
+        повторить
+      </button>
     </p>
   );
 };
@@ -723,7 +840,8 @@ export const refineCategoryDepth = (
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['parentId'],
-        message: 'Уровень вложенности ограничен двумя — родитель уже является подкатегорией.',
+        message:
+          'Уровень вложенности ограничен двумя — родитель уже является подкатегорией.',
       });
     }
   });
@@ -826,14 +944,14 @@ const brandId = getBrandId() ?? null;
 
 Files with no close in-repo match. The planner should reference `RESEARCH.md` patterns + `UI-SPEC.md` directly:
 
-| File                                                          | Role             | Data Flow     | Reason                                                                |
-| ------------------------------------------------------------- | ---------------- | ------------- | --------------------------------------------------------------------- |
-| `apps/admin/components/menu/sticky-publish-bar.tsx`           | client component | event-driven  | No prior sticky bar / fixed-position component in admin               |
-| `apps/admin/components/menu/publish-countdown-toast.tsx`      | client component | event-driven  | No prior Sonner-custom-content + interval pattern                     |
-| `apps/admin/components/menu/category-select.tsx`              | client component | request-resp. | No prior indented shadcn `Select` pattern (depth-2 dropdown)          |
-| `apps/admin/components/menu/bju-row.tsx`                      | client component | n/a           | Form-row presentation; not a shared cross-app pattern                 |
-| `apps/admin/app/.../items/[id]/photo-upload-client.tsx`       | client component | file-I/O      | No prior browser-direct-to-S3 PUT pattern in admin                    |
-| `apps/admin/lib/menu/use-auto-save.ts`                        | client hook      | event-driven  | No prior RHF + debounce + race-id pattern (proxied via brand-form-client.tsx slug-availability debounce — same idea, different mechanism) |
+| File                                                     | Role             | Data Flow     | Reason                                                                                                                                    |
+| -------------------------------------------------------- | ---------------- | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/admin/components/menu/sticky-publish-bar.tsx`      | client component | event-driven  | No prior sticky bar / fixed-position component in admin                                                                                   |
+| `apps/admin/components/menu/publish-countdown-toast.tsx` | client component | event-driven  | No prior Sonner-custom-content + interval pattern                                                                                         |
+| `apps/admin/components/menu/category-select.tsx`         | client component | request-resp. | No prior indented shadcn `Select` pattern (depth-2 dropdown)                                                                              |
+| `apps/admin/components/menu/bju-row.tsx`                 | client component | n/a           | Form-row presentation; not a shared cross-app pattern                                                                                     |
+| `apps/admin/app/.../items/[id]/photo-upload-client.tsx`  | client component | file-I/O      | No prior browser-direct-to-S3 PUT pattern in admin                                                                                        |
+| `apps/admin/lib/menu/use-auto-save.ts`                   | client hook      | event-driven  | No prior RHF + debounce + race-id pattern (proxied via brand-form-client.tsx slug-availability debounce — same idea, different mechanism) |
 
 **Planner action:** for each, use RESEARCH.md Patterns 1-5 + UI-SPEC.md sections referenced in the table.
 
@@ -843,7 +961,7 @@ Files with no close in-repo match. The planner should reference `RESEARCH.md` pa
 
 **Analog search scope:** `apps/admin/**`, `apps/api/src/contexts/catalog/**`, `packages/db/{src,migrations}/**`, `apps/admin/components/ui/**`, `.planning/phases/04a-catalog-schema-api/**`.
 
-**Files scanned:** 35 (controllers, services, DTOs, schemas, migrations, sidebar, layouts, form clients, action files, S3 adapter, env, api-server* helpers, empty-state, sonner Toaster mount, RESEARCH/UI-SPEC/CONTEXT for 4b, 04A-07-SUMMARY for endpoint surface).
+**Files scanned:** 35 (controllers, services, DTOs, schemas, migrations, sidebar, layouts, form clients, action files, S3 adapter, env, api-server\* helpers, empty-state, sonner Toaster mount, RESEARCH/UI-SPEC/CONTEXT for 4b, 04A-07-SUMMARY for endpoint surface).
 
 **Pattern extraction date:** 2026-05-31
 

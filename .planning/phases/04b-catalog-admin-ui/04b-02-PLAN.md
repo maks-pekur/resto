@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 02
 type: execute
 wave: 1
-depends_on: ["04b-01"]
+depends_on: ['04b-01']
 files_modified:
   - packages/db/src/schema/menu.ts
   - packages/db/migrations/0042_catalog_phase4b_categories_status.sql
@@ -30,45 +30,45 @@ requirements: [CAT-01, CAT-02, CAT-04, CAT-05, CAT-07, CAT-08]
 must_haves:
   truths:
     - "GET /internal/v1/catalog/categories returns the tenant's categories (with parentId filter) sorted by sortOrder"
-    - "GET /internal/v1/catalog/items returns paginated items with optional status + categoryId filters"
-    - "GET /internal/v1/catalog/items/:id returns one item with embedded sizes + modifierGroupIds"
+    - 'GET /internal/v1/catalog/items returns paginated items with optional status + categoryId filters'
+    - 'GET /internal/v1/catalog/items/:id returns one item with embedded sizes + modifierGroupIds'
     - "GET /internal/v1/catalog/modifier-groups returns the tenant's modifier groups with option-count and usage-count"
-    - "GET /internal/v1/catalog/modifier-groups/:id returns one group with embedded options"
-    - "GET /internal/v1/catalog/stop-list returns paused items with stoppedAt timestamps (for >24h stale-warning UI)"
-    - "GET /internal/v1/catalog/draft-diff returns { unpublishedCount, items[] } scoped to entities awaiting publish"
+    - 'GET /internal/v1/catalog/modifier-groups/:id returns one group with embedded options'
+    - 'GET /internal/v1/catalog/stop-list returns paused items with stoppedAt timestamps (for >24h stale-warning UI)'
+    - 'GET /internal/v1/catalog/draft-diff returns { unpublishedCount, items[] } scoped to entities awaiting publish'
     - "PATCH /internal/v1/catalog/categories/:id/archive sets status='archived' (returns 204)"
     - "PATCH /internal/v1/catalog/items/:id/archive sets status='archived' (returns 204)"
     - "menu_categories.status column exists (enum draft/published/archived, default 'draft'); existing rows backfilled to 'published'"
-    - "All catalog reads + mutations go through ScopedTx (Postgres RLS double-enforcement per ADR-0020 I-1)"
+    - 'All catalog reads + mutations go through ScopedTx (Postgres RLS double-enforcement per ADR-0020 I-1)'
     - "Hard deletes are forbidden in the database — archive uses status='archived' (D-4b-07)"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); InternalTokenGuard remains the route guard"
-    - "OpenAPI drift gate (pnpm openapi:check) is green after regen"
-    - "Russian copy is canonical for all user-facing strings (D-05) — no api copy changes here, but error codes stay stable"
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); InternalTokenGuard remains the route guard'
+    - 'OpenAPI drift gate (pnpm openapi:check) is green after regen'
+    - 'Russian copy is canonical for all user-facing strings (D-05) — no api copy changes here, but error codes stay stable'
   artifacts:
-    - path: "packages/db/migrations/0042_catalog_phase4b_categories_status.sql"
-      provides: "menu_categories.status column DDL"
-      contains: "ALTER TABLE menu_categories ADD COLUMN status"
-    - path: "packages/db/src/schema/menu.ts"
-      provides: "Drizzle status column on menuCategories"
-      contains: "status: text"
-    - path: "apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts"
-      provides: "7 GET endpoints + 2 PATCH archive endpoints"
+    - path: 'packages/db/migrations/0042_catalog_phase4b_categories_status.sql'
+      provides: 'menu_categories.status column DDL'
+      contains: 'ALTER TABLE menu_categories ADD COLUMN status'
+    - path: 'packages/db/src/schema/menu.ts'
+      provides: 'Drizzle status column on menuCategories'
+      contains: 'status: text'
+    - path: 'apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts'
+      provides: '7 GET endpoints + 2 PATCH archive endpoints'
       contains: "@Get('categories')"
-    - path: "apps/api/src/contexts/catalog/application/get-draft-diff.service.ts"
-      provides: "Draft-diff query feeding the sticky publish bar"
-      exports: ["GetDraftDiffService"]
+    - path: 'apps/api/src/contexts/catalog/application/get-draft-diff.service.ts'
+      provides: 'Draft-diff query feeding the sticky publish bar'
+      exports: ['GetDraftDiffService']
   key_links:
-    - from: "internal-catalog.controller.ts"
-      to: "list-*.service.ts and archive-*.service.ts"
-      via: "Constructor @Inject"
+    - from: 'internal-catalog.controller.ts'
+      to: 'list-*.service.ts and archive-*.service.ts'
+      via: 'Constructor @Inject'
       pattern: "@Inject\\(.*Service\\)"
-    - from: "list-*.service.ts and archive-*.service.ts"
-      to: "CATALOG_REPOSITORY"
-      via: "Repository port injection"
+    - from: 'list-*.service.ts and archive-*.service.ts'
+      to: 'CATALOG_REPOSITORY'
+      via: 'Repository port injection'
       pattern: "@Inject\\(CATALOG_REPOSITORY\\)"
-    - from: "internal-catalog.controller.ts"
-      to: "error-mapping.ts"
-      via: "wrapWith(mapCatalogError)"
+    - from: 'internal-catalog.controller.ts'
+      to: 'error-mapping.ts'
+      via: 'wrapWith(mapCatalogError)'
       pattern: "wrapWith\\(mapCatalogError\\)"
 ---
 
@@ -99,6 +99,7 @@ Output: 9 new HTTP methods, 9 new application services, 1 SQL migration, 1 Drizz
 <!-- Existing controller shape — extend, do not rewrite. Source: apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts -->
 
 Class-level decorators (preserve):
+
 ```typescript
 @ApiTags('catalog/internal')
 @Public()
@@ -108,6 +109,7 @@ export class InternalCatalogController
 ```
 
 Existing POST shape to mirror for new endpoints:
+
 ```typescript
 @Post('categories')
 @HttpCode(HttpStatus.OK)
@@ -115,12 +117,14 @@ category(@Body(new RestoZodValidationPipe(UpsertCategoryInputDto)) input): Promi
 ```
 
 New GET endpoint shape:
+
 ```typescript
 @Get('categories')
 listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto>
 ```
 
 New PATCH archive shape:
+
 ```typescript
 @Patch('categories/:id/archive')
 @HttpCode(HttpStatus.NO_CONTENT)
@@ -128,11 +132,16 @@ archiveCategory(@Param('id') id: string): Promise<void>
 ```
 
 Application service skeleton (mirror UpsertCategoryService):
+
 ```typescript
 @Injectable()
 export class ListCategoriesService {
-  constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}
-  async execute(input: { parentId: string | null }): Promise<CategoryListItemDto[]> {
+  constructor(
+    @Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository,
+  ) {}
+  async execute(input: {
+    parentId: string | null;
+  }): Promise<CategoryListItemDto[]> {
     const ctx = requireTenantContext();
     // repo call inside ScopedTx — RLS double-enforcement per ADR-0020 I-1
   }
@@ -140,6 +149,7 @@ export class ListCategoriesService {
 ```
 
 Migration analog (verbatim DDL idioms from packages/db/migrations/0029_catalog_phase4a_menu_items_extend.sql):
+
 ```sql
 ALTER TABLE menu_categories ADD COLUMN status text NOT NULL DEFAULT 'draft';
 --> statement-breakpoint
@@ -148,6 +158,7 @@ ALTER TABLE menu_categories ADD CONSTRAINT menu_categories_status_chk CHECK (sta
 UPDATE menu_categories SET status = 'published';
 --> statement-breakpoint
 ```
+
 </interfaces>
 </context>
 
@@ -287,24 +298,26 @@ UPDATE menu_categories SET status = 'published';
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
-| Admin server actions → api `/internal/v1/catalog/*` | INTERNAL_API_TOKEN bearer; InternalTokenGuard enforces |
-| api application services → Postgres | ScopedTx + RLS double-enforcement per ADR-0020 I-1 |
-| Public `/v1/menu` (unchanged in 4b) → published catalog only | RLS isolates tenants |
+| Boundary                                                     | Description                                            |
+| ------------------------------------------------------------ | ------------------------------------------------------ |
+| Admin server actions → api `/internal/v1/catalog/*`          | INTERNAL_API_TOKEN bearer; InternalTokenGuard enforces |
+| api application services → Postgres                          | ScopedTx + RLS double-enforcement per ADR-0020 I-1     |
+| Public `/v1/menu` (unchanged in 4b) → published catalog only | RLS isolates tenants                                   |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-02-01 | Information Disclosure | Cross-tenant data leak via new GET endpoints | mitigate | Every list/get service calls `requireTenantContext()` + `db.withTenant(tenantId, ...)`; Postgres RLS double-enforces; Task 2 e2e spec asserts cross-tenant requests return 0 results / 404 |
-| T-04b-02-02 | Tampering | Hard-delete bypassing audit trail | mitigate | Archive services set `status='archived'` — no DELETE on menu_categories or menu_items; `resto_app` role lacks DELETE on these tables (existing) |
-| T-04b-02-03 | Elevation of Privilege | Unauthorized archive via missing guard | mitigate | New PATCH endpoints inherit class-level `@UseGuards(InternalTokenGuard)` — same gate as POST endpoints |
-| T-04b-02-04 | DoS | draft-diff query O(N) on 500-item tenant | mitigate | Cap result at 100 rows + truncatedCount sentinel; query uses existing `menu_items_tenant_status_sort_idx` index; Pitfall #8 in RESEARCH.md |
-| T-04b-02-05 | Tampering | Drift between OpenAPI artifact and live controller | mitigate | `pnpm openapi:check` re-runs after every controller change; CI workflow gate enforces (Pattern S7) |
-| T-04b-02-06 | DoS | Auto-save flood from admin (Wave 3+) hitting POST /items | mitigate | Existing app-level rate-limit per 4a T-04a-07-05 covers this; 1.5s client debounce reduces load |
+| Threat ID   | Category               | Component                                                | Disposition | Mitigation Plan                                                                                                                                                                            |
+| ----------- | ---------------------- | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| T-04b-02-01 | Information Disclosure | Cross-tenant data leak via new GET endpoints             | mitigate    | Every list/get service calls `requireTenantContext()` + `db.withTenant(tenantId, ...)`; Postgres RLS double-enforces; Task 2 e2e spec asserts cross-tenant requests return 0 results / 404 |
+| T-04b-02-02 | Tampering              | Hard-delete bypassing audit trail                        | mitigate    | Archive services set `status='archived'` — no DELETE on menu_categories or menu_items; `resto_app` role lacks DELETE on these tables (existing)                                            |
+| T-04b-02-03 | Elevation of Privilege | Unauthorized archive via missing guard                   | mitigate    | New PATCH endpoints inherit class-level `@UseGuards(InternalTokenGuard)` — same gate as POST endpoints                                                                                     |
+| T-04b-02-04 | DoS                    | draft-diff query O(N) on 500-item tenant                 | mitigate    | Cap result at 100 rows + truncatedCount sentinel; query uses existing `menu_items_tenant_status_sort_idx` index; Pitfall #8 in RESEARCH.md                                                 |
+| T-04b-02-05 | Tampering              | Drift between OpenAPI artifact and live controller       | mitigate    | `pnpm openapi:check` re-runs after every controller change; CI workflow gate enforces (Pattern S7)                                                                                         |
+| T-04b-02-06 | DoS                    | Auto-save flood from admin (Wave 3+) hitting POST /items | mitigate    | Existing app-level rate-limit per 4a T-04a-07-05 covers this; 1.5s client debounce reduces load                                                                                            |
+
 </threat_model>
 
 <verification>
@@ -317,6 +330,7 @@ UPDATE menu_categories SET status = 'published';
 </verification>
 
 <success_criteria>
+
 1. menu_categories.status column exists with check constraint draft|published|archived
 2. 9 new HTTP methods present on InternalCatalogController with correct decorators
 3. 9 new application services exist and pass behavior spec
@@ -324,7 +338,7 @@ UPDATE menu_categories SET status = 'published';
 5. OpenAPI artifacts regenerated; drift gate green
 6. Migration applied to dev database (Task 4 blocking)
 7. Cross-tenant e2e isolation passes for all new endpoints
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-02-SUMMARY.md` when done.

@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 04
 type: execute
 wave: 3
-depends_on: ["04b-01", "04b-02"]
+depends_on: ['04b-01', '04b-02']
 files_modified:
   - apps/admin/components/app-sidebar.tsx
   - apps/admin/app/dashboard/(workspace)/menu/layout.tsx
@@ -21,59 +21,59 @@ requirements: [CAT-08]
 must_haves:
   truths:
     - "Sidebar Menu group is collapsed by default, scope: 'brand'; sub-routes Категории / Блюда / Модификаторы / Стоп-лист (D-01, D-4b-01)"
-    - "StickyPublishBar mounts in /dashboard/menu route-group layout only (not global dashboard layout)"
-    - "Sticky bar reads draft-diff from GET /internal/v1/catalog/draft-diff via apiFetchInternal in a server component"
+    - 'StickyPublishBar mounts in /dashboard/menu route-group layout only (not global dashboard layout)'
+    - 'Sticky bar reads draft-diff from GET /internal/v1/catalog/draft-diff via apiFetchInternal in a server component'
     - "Click 'Опубликовать меню' → POST /internal/v1/catalog/publish → Sonner countdown toast with id 'publish-countdown' (D-4b-03)"
     - "Sonner countdown toast shows linear progress bar + 'Отменить' button; 5s timer client-side; 100ms tick (UI-SPEC §Delayed-Publish Toast Spec)"
     - "Undo within 5s → DELETE /internal/v1/catalog/publish → toast replaced with 'Публикация отменена' (same id)"
     - "5s elapsed → toast replaced with 'Опубликовано' (3s auto-dismiss, same id)"
     - "DELETE returning 'already published' → info toast 'Уже опубликовано — окно отмены истекло' (D-4b-03)"
     - "Re-click protection: 'Опубликовать меню' button is disabled while a countdown is active (D-4b-03)"
-    - "Diff count = 0 → sticky bar hidden (UI-SPEC §Sticky Publish Bar Spec)"
-    - "StatusBadge component supports draft|modified|published|paused|archived with the variants defined in UI-SPEC §Status badge color semantics"
-    - "AutoSaveIndicator component supports idle|saving|saved|failed states with Russian copy per UI-SPEC §Auto-Save Indicator Spec"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
-    - "Category tree depth is capped at 2 (D-4b-01) — enforced in downstream plans, surfaced via StatusBadge variant choice (no archived-cascading here)"
+    - 'Diff count = 0 → sticky bar hidden (UI-SPEC §Sticky Publish Bar Spec)'
+    - 'StatusBadge component supports draft|modified|published|paused|archived with the variants defined in UI-SPEC §Status badge color semantics'
+    - 'AutoSaveIndicator component supports idle|saving|saved|failed states with Russian copy per UI-SPEC §Auto-Save Indicator Spec'
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
+    - 'Category tree depth is capped at 2 (D-4b-01) — enforced in downstream plans, surfaced via StatusBadge variant choice (no archived-cascading here)'
   artifacts:
-    - path: "apps/admin/components/app-sidebar.tsx"
-      provides: "Menu group + 4 sub-routes"
-      contains: "Меню"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/layout.tsx"
-      provides: "Route-group layout mounting sticky publish bar"
-      contains: "StickyPublishBar"
-    - path: "apps/admin/components/menu/sticky-publish-bar.tsx"
-      provides: "RSC entry that reads draft-diff"
-      contains: "apiFetchInternal"
-    - path: "apps/admin/components/menu/sticky-publish-bar-client.tsx"
-      provides: "Client island with Sonner countdown lifecycle"
-      contains: "use client"
-    - path: "apps/admin/components/menu/publish-countdown-toast.tsx"
-      provides: "Sonner toast.custom content with countdown + Undo"
-      contains: "publish-countdown"
-    - path: "apps/admin/components/menu/status-badge.tsx"
-      provides: "Status badge component (5 variants per UI-SPEC)"
-      contains: "modified"
-    - path: "apps/admin/components/menu/auto-save-indicator.tsx"
-      provides: "Auto-save state UI used by item editor in Plan 06"
-      contains: "Сохранение"
+    - path: 'apps/admin/components/app-sidebar.tsx'
+      provides: 'Menu group + 4 sub-routes'
+      contains: 'Меню'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/layout.tsx'
+      provides: 'Route-group layout mounting sticky publish bar'
+      contains: 'StickyPublishBar'
+    - path: 'apps/admin/components/menu/sticky-publish-bar.tsx'
+      provides: 'RSC entry that reads draft-diff'
+      contains: 'apiFetchInternal'
+    - path: 'apps/admin/components/menu/sticky-publish-bar-client.tsx'
+      provides: 'Client island with Sonner countdown lifecycle'
+      contains: 'use client'
+    - path: 'apps/admin/components/menu/publish-countdown-toast.tsx'
+      provides: 'Sonner toast.custom content with countdown + Undo'
+      contains: 'publish-countdown'
+    - path: 'apps/admin/components/menu/status-badge.tsx'
+      provides: 'Status badge component (5 variants per UI-SPEC)'
+      contains: 'modified'
+    - path: 'apps/admin/components/menu/auto-save-indicator.tsx'
+      provides: 'Auto-save state UI used by item editor in Plan 06'
+      contains: 'Сохранение'
   key_links:
-    - from: "apps/admin/components/app-sidebar.tsx"
-      to: "apps/admin/components/nav-main.tsx"
-      via: "navMain array — adds Menu group with items[]"
-      pattern: "Меню"
-    - from: "apps/admin/app/dashboard/(workspace)/menu/layout.tsx"
-      to: "apiFetchInternal"
-      via: "Server-side fetch of draft-diff"
-      pattern: "apiFetchInternal.*draft-diff"
-    - from: "apps/admin/lib/menu/schedule-publish-action.ts"
-      to: "apiFetchInternal"
-      via: "POST /internal/v1/catalog/publish"
+    - from: 'apps/admin/components/app-sidebar.tsx'
+      to: 'apps/admin/components/nav-main.tsx'
+      via: 'navMain array — adds Menu group with items[]'
+      pattern: 'Меню'
+    - from: 'apps/admin/app/dashboard/(workspace)/menu/layout.tsx'
+      to: 'apiFetchInternal'
+      via: 'Server-side fetch of draft-diff'
+      pattern: 'apiFetchInternal.*draft-diff'
+    - from: 'apps/admin/lib/menu/schedule-publish-action.ts'
+      to: 'apiFetchInternal'
+      via: 'POST /internal/v1/catalog/publish'
       pattern: "method: 'POST'"
-    - from: "apps/admin/lib/menu/cancel-publish-action.ts"
-      to: "apiFetchInternal"
-      via: "DELETE /internal/v1/catalog/publish"
+    - from: 'apps/admin/lib/menu/cancel-publish-action.ts'
+      to: 'apiFetchInternal'
+      via: 'DELETE /internal/v1/catalog/publish'
       pattern: "method: 'DELETE'"
 ---
 
@@ -103,6 +103,7 @@ Output: Sidebar extension, layout, sticky bar (server + client islands), countdo
 <!-- Existing sidebar shape: apps/admin/components/app-sidebar.tsx + nav-main.tsx (collapsible group with items[]) -->
 
 NavMainItem with sub-items pattern (from nav-main.tsx lines 66-95):
+
 ```typescript
 {
   title: 'Меню',
@@ -120,6 +121,7 @@ NavMainItem with sub-items pattern (from nav-main.tsx lines 66-95):
 ```
 
 Draft-diff response shape (matches Plan 02 backend DraftDiffResponseDto):
+
 ```typescript
 interface DraftDiff {
   readonly unpublishedCount: number;
@@ -134,6 +136,7 @@ interface DraftDiff {
 ```
 
 Sonner constant id pattern (RESEARCH.md Pattern 2 + UI-SPEC §Delayed-Publish Toast Spec):
+
 ```typescript
 const TOAST_ID = 'publish-countdown' as const;
 // publish kicks off countdown:
@@ -149,6 +152,7 @@ toast.error('Не удалось опубликовать — проверьте
 ```
 
 AutoSaveIndicator state union (UI-SPEC §Auto-Save Indicator Spec):
+
 ```typescript
 type SaveState =
   | { kind: 'idle' }
@@ -315,6 +319,7 @@ StatusBadge variant table (UI-SPEC §Status badge color semantics):
     - `apps/admin/lib/menu/pluralize-changes.spec.ts` covering 0, 1, 2, 5, 11, 21, 22, 25
     - `apps/admin/components/menu/publish-countdown-toast.spec.tsx` (RTL + `vi.useFakeTimers()`): asserts onElapse fires exactly once after 5000ms; asserts onCancel fires when ghost button clicked; asserts countdown text updates with fake timer advance
     - `apps/admin/components/menu/sticky-publish-bar-client.spec.tsx` (RTL): mocks schedulePublishAction + cancelPublishAction + Sonner; asserts publish click → toast.custom called with id 'publish-countdown'; asserts undo click → toast.success/info called with same id; asserts disabled button + tooltip text during countdown; asserts unpublishedCount === 0 renders null
+
   </action>
   <verify>
     <automated>pnpm --filter @resto/admin exec vitest run lib/menu/pluralize-changes.spec.ts components/menu/publish-countdown-toast.spec.tsx components/menu/sticky-publish-bar-client.spec.tsx --no-coverage</automated>
@@ -327,23 +332,25 @@ StatusBadge variant table (UI-SPEC §Status badge color semantics):
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
-| Admin browser → admin server action | Next.js 15 server actions are CSRF-protected by framework (built-in token, ADR-relevant) |
-| Admin server action → api `/internal/v1/catalog/publish` | apiFetchInternal carries INTERNAL_API_TOKEN; server-only |
+| Boundary                                                 | Description                                                                              |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| Admin browser → admin server action                      | Next.js 15 server actions are CSRF-protected by framework (built-in token, ADR-relevant) |
+| Admin server action → api `/internal/v1/catalog/publish` | apiFetchInternal carries INTERNAL_API_TOKEN; server-only                                 |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-04-01 | Tampering | CSRF on publish/cancel server actions | mitigate | Next.js 15 server actions ship with built-in CSRF token (framework-level); no manual mitigation needed (RESEARCH.md Security Domain V4) |
-| T-04b-04-02 | Information Disclosure | INTERNAL_API_TOKEN leaking to client bundle | mitigate | Server actions are 'use server'; `apiFetchInternal` carries `import 'server-only'`; never imported into client component (RESEARCH.md Pitfall #3) |
-| T-04b-04-03 | DoS | Operator clicks Publish repeatedly during countdown | mitigate | `isPublishing` local state disables button + Tooltip explains (D-4b-03 re-click protection); backend DelayedPublishService can cancel-and-reschedule, but UI hides it to prevent toast-spam |
-| T-04b-04-04 | Repudiation | Sticky bar diff count stale after mutation | mitigate | schedulePublishAction + cancelPublishAction call `revalidatePath('/dashboard/menu', 'layout')` per Pitfall #4 |
-| T-04b-04-05 | Spoofing | Sonner toast id collision producing duplicate countdowns | mitigate | Constant `id = 'publish-countdown'` threaded through every toast.* call (RESEARCH.md Pitfall #3) |
-| T-04b-04-06 | DoS | draft-diff fetch hangs admin RSC render | mitigate | apiFetchInternal carries AbortSignal.timeout(10s) for GET per Plan 01 |
+| Threat ID   | Category               | Component                                                | Disposition | Mitigation Plan                                                                                                                                                                             |
+| ----------- | ---------------------- | -------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-04-01 | Tampering              | CSRF on publish/cancel server actions                    | mitigate    | Next.js 15 server actions ship with built-in CSRF token (framework-level); no manual mitigation needed (RESEARCH.md Security Domain V4)                                                     |
+| T-04b-04-02 | Information Disclosure | INTERNAL_API_TOKEN leaking to client bundle              | mitigate    | Server actions are 'use server'; `apiFetchInternal` carries `import 'server-only'`; never imported into client component (RESEARCH.md Pitfall #3)                                           |
+| T-04b-04-03 | DoS                    | Operator clicks Publish repeatedly during countdown      | mitigate    | `isPublishing` local state disables button + Tooltip explains (D-4b-03 re-click protection); backend DelayedPublishService can cancel-and-reschedule, but UI hides it to prevent toast-spam |
+| T-04b-04-04 | Repudiation            | Sticky bar diff count stale after mutation               | mitigate    | schedulePublishAction + cancelPublishAction call `revalidatePath('/dashboard/menu', 'layout')` per Pitfall #4                                                                               |
+| T-04b-04-05 | Spoofing               | Sonner toast id collision producing duplicate countdowns | mitigate    | Constant `id = 'publish-countdown'` threaded through every toast.\* call (RESEARCH.md Pitfall #3)                                                                                           |
+| T-04b-04-06 | DoS                    | draft-diff fetch hangs admin RSC render                  | mitigate    | apiFetchInternal carries AbortSignal.timeout(10s) for GET per Plan 01                                                                                                                       |
+
 </threat_model>
 
 <verification>
@@ -357,16 +364,17 @@ StatusBadge variant table (UI-SPEC §Status badge color semantics):
 </verification>
 
 <success_criteria>
+
 1. Sidebar Menu group added with 4 sub-routes; collapsed-by-default; scope: 'brand'
 2. /dashboard/menu route-group layout exists and reads draft-diff via apiFetchInternal
-3. StickyPublishBar mounts on every /dashboard/menu/* route; hidden when count === 0
+3. StickyPublishBar mounts on every /dashboard/menu/\* route; hidden when count === 0
 4. schedulePublishAction + cancelPublishAction revalidate the layout segment
 5. Sonner toast id is constant 'publish-countdown' across publish/cancel/elapse/error
 6. Disabled button + Tooltip during active countdown
 7. StatusBadge component used by downstream plans
 8. AutoSaveIndicator + formatAge available for item editor (Plan 06)
 9. Unit specs pass for sidebar group, format-age, plurals, toast, sticky bar client
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-04-SUMMARY.md` when done.

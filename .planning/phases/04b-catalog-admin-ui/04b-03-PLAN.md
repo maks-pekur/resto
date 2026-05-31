@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 03
 type: execute
 wave: 2
-depends_on: ["04b-02"]
+depends_on: ['04b-02']
 files_modified:
   - apps/api/src/contexts/catalog/domain/ports.ts
   - apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts
@@ -19,52 +19,52 @@ autonomous: false
 requirements: [CAT-03]
 user_setup:
   - service: AWS S3 / Cloudflare R2 (production)
-    why: "Production photo upload bucket must allow PUT from admin origin (browser direct-PUT)"
+    why: 'Production photo upload bucket must allow PUT from admin origin (browser direct-PUT)'
     env_vars: []
     dashboard_config:
-      - task: "After Terraform stub merges, deployer applies the bucket CORS policy via terraform apply (or manually configures S3 bucket CORS in AWS console)"
-        location: "AWS S3 / R2 console — bucket → Permissions → CORS"
+      - task: 'After Terraform stub merges, deployer applies the bucket CORS policy via terraform apply (or manually configures S3 bucket CORS in AWS console)'
+        location: 'AWS S3 / R2 console — bucket → Permissions → CORS'
 must_haves:
   truths:
-    - "S3SignedImageUrlAdapter.presignPut(key, contentType, contentLength, expiresIn) returns a presigned PUT URL"
-    - "ImageUrlPort interface includes presignPut alongside presignGet"
-    - "POST /internal/v1/catalog/photo-upload-url returns { uploadUrl, s3Key } for a given { contentType, sizeBytes }"
-    - "Server-side allowlist: contentType ∈ {image/jpeg, image/png, image/webp}; sizeBytes ≤ 5_242_880 (5 MiB)"
-    - "Presigned URL TTL ≤ 5 minutes (300s) — short-lived per OWASP V12 file upload"
-    - "Generated s3Key is server-chosen UUID-prefixed; operator cannot influence (T-04b-03-03 Tampering mitigation)"
-    - "MinIO dev bucket CORS allows PUT from ADMIN_WEB_URL origin (Pitfall #2)"
-    - "Terraform stub for prod bucket CORS exists in infra/terraform/ — apply gated by user setup checklist"
-    - "Round-trip e2e test against MinIO uploads a real file via presigned PUT and verifies the object exists"
-    - "All catalog mutations (including photo-upload-url POST) go through apiFetchInternal (server-only)"
+    - 'S3SignedImageUrlAdapter.presignPut(key, contentType, contentLength, expiresIn) returns a presigned PUT URL'
+    - 'ImageUrlPort interface includes presignPut alongside presignGet'
+    - 'POST /internal/v1/catalog/photo-upload-url returns { uploadUrl, s3Key } for a given { contentType, sizeBytes }'
+    - 'Server-side allowlist: contentType ∈ {image/jpeg, image/png, image/webp}; sizeBytes ≤ 5_242_880 (5 MiB)'
+    - 'Presigned URL TTL ≤ 5 minutes (300s) — short-lived per OWASP V12 file upload'
+    - 'Generated s3Key is server-chosen UUID-prefixed; operator cannot influence (T-04b-03-03 Tampering mitigation)'
+    - 'MinIO dev bucket CORS allows PUT from ADMIN_WEB_URL origin (Pitfall #2)'
+    - 'Terraform stub for prod bucket CORS exists in infra/terraform/ — apply gated by user setup checklist'
+    - 'Round-trip e2e test against MinIO uploads a real file via presigned PUT and verifies the object exists'
+    - 'All catalog mutations (including photo-upload-url POST) go through apiFetchInternal (server-only)'
   artifacts:
-    - path: "apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts"
-      provides: "presignPut method on S3 adapter"
-      contains: "presignPut"
-    - path: "apps/api/src/contexts/catalog/application/get-photo-upload-url.service.ts"
-      provides: "Service generating server-chosen s3Key + calling presignPut"
-      exports: ["GetPhotoUploadUrlService"]
-    - path: "apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts"
-      provides: "POST /photo-upload-url endpoint"
+    - path: 'apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts'
+      provides: 'presignPut method on S3 adapter'
+      contains: 'presignPut'
+    - path: 'apps/api/src/contexts/catalog/application/get-photo-upload-url.service.ts'
+      provides: 'Service generating server-chosen s3Key + calling presignPut'
+      exports: ['GetPhotoUploadUrlService']
+    - path: 'apps/api/src/contexts/catalog/interfaces/http/internal-catalog.controller.ts'
+      provides: 'POST /photo-upload-url endpoint'
       contains: "@Post('photo-upload-url')"
-    - path: "infra/docker/minio-init.sh"
-      provides: "MinIO dev bucket CORS for PUT from admin origin"
-      contains: "PUT"
-    - path: "infra/terraform/buckets-cors.tf"
-      provides: "Production bucket CORS Terraform stub"
-      contains: "allowed_methods"
+    - path: 'infra/docker/minio-init.sh'
+      provides: 'MinIO dev bucket CORS for PUT from admin origin'
+      contains: 'PUT'
+    - path: 'infra/terraform/buckets-cors.tf'
+      provides: 'Production bucket CORS Terraform stub'
+      contains: 'allowed_methods'
   key_links:
-    - from: "internal-catalog.controller.ts"
-      to: "GetPhotoUploadUrlService"
-      via: "@Inject"
-      pattern: "GetPhotoUploadUrlService"
-    - from: "GetPhotoUploadUrlService"
-      to: "ImageUrlPort.presignPut"
-      via: "Symbol token injection"
-      pattern: "IMAGE_URL_PORT"
-    - from: "S3SignedImageUrlAdapter"
-      to: "@aws-sdk/s3-request-presigner"
-      via: "getSignedUrl + PutObjectCommand"
-      pattern: "PutObjectCommand"
+    - from: 'internal-catalog.controller.ts'
+      to: 'GetPhotoUploadUrlService'
+      via: '@Inject'
+      pattern: 'GetPhotoUploadUrlService'
+    - from: 'GetPhotoUploadUrlService'
+      to: 'ImageUrlPort.presignPut'
+      via: 'Symbol token injection'
+      pattern: 'IMAGE_URL_PORT'
+    - from: 'S3SignedImageUrlAdapter'
+      to: '@aws-sdk/s3-request-presigner'
+      via: 'getSignedUrl + PutObjectCommand'
+      pattern: 'PutObjectCommand'
 ---
 
 <objective>
@@ -92,6 +92,7 @@ Output: 1 adapter method, 1 port extension, 1 application service, 1 controller 
 <!-- Existing adapter to extend: apps/api/src/contexts/catalog/infrastructure/s3-signed-image-url.adapter.ts -->
 
 Existing presignGet (lines 49-60) — mirror its error-handling shape, but DO NOT swallow PUT errors silently (PUT failure must propagate so caller can surface error to UI):
+
 ```typescript
 async presignGet(s3Key: string, ttlSeconds: number): Promise<string> {
   try {
@@ -108,6 +109,7 @@ async presignGet(s3Key: string, ttlSeconds: number): Promise<string> {
 ```
 
 New presignPut shape:
+
 ```typescript
 async presignPut(
   s3Key: string,
@@ -118,6 +120,7 @@ async presignPut(
 ```
 
 Existing ImageUrlPort (apps/api/src/contexts/catalog/domain/ports.ts):
+
 ```typescript
 export interface ImageUrlPort {
   presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
@@ -125,20 +128,26 @@ export interface ImageUrlPort {
 ```
 
 GetPhotoUploadUrlService skeleton:
+
 ```typescript
 @Injectable()
 export class GetPhotoUploadUrlService {
   constructor(@Inject(IMAGE_URL_PORT) private readonly images: ImageUrlPort) {}
-  async execute(input: { contentType: string; sizeBytes: number }): Promise<{ uploadUrl: string; s3Key: string }>;
+  async execute(input: {
+    contentType: string;
+    sizeBytes: number;
+  }): Promise<{ uploadUrl: string; s3Key: string }>;
 }
 ```
 
 Controller endpoint shape:
+
 ```typescript
 @Post('photo-upload-url')
 @HttpCode(HttpStatus.OK)
 photoUploadUrl(@Body(new RestoZodValidationPipe(PhotoUploadUrlInputDto)) input): Promise<PhotoUploadUrlResponseDto>
 ```
+
 </interfaces>
 </context>
 
@@ -286,24 +295,26 @@ photoUploadUrl(@Body(new RestoZodValidationPipe(PhotoUploadUrlInputDto)) input):
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
-| Browser → S3 (direct PUT) | Operator's browser uploads photo bytes directly to S3 using a presigned URL |
-| Admin server action → api `/internal/v1/catalog/photo-upload-url` | Server-only fetch carries INTERNAL_API_TOKEN |
+| Boundary                                                          | Description                                                                 |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Browser → S3 (direct PUT)                                         | Operator's browser uploads photo bytes directly to S3 using a presigned URL |
+| Admin server action → api `/internal/v1/catalog/photo-upload-url` | Server-only fetch carries INTERNAL_API_TOKEN                                |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-03-01 | Spoofing | SSRF via operator-supplied upload URL | mitigate | presignPut returns server-generated URL; admin never accepts a URL from operator (RESEARCH.md Security Domain) |
-| T-04b-03-02 | Tampering | Direct-PUT to wrong bucket / overwrite arbitrary key | mitigate | s3Key is server-generated `tenant/${tenantId}/menu-items/${uuid}`; operator cannot influence (Task 2 service) |
-| T-04b-03-03 | DoS | Oversized photo upload | mitigate | presignPut enforces sizeBytes ≤ 5 MiB; AWS SigV4 binds the content-length into the signed URL (Task 1 + 2) |
-| T-04b-03-04 | Spoofing | Replay of presigned PUT URL | mitigate | TTL ≤ 5 min (300s); even with replay, key is server-chosen so no collision risk (Task 2) |
-| T-04b-03-05 | Tampering | Content-Type mismatch silently succeeding | mitigate | SigV4 binds Content-Type into signature; mismatch returns 403 from S3; allowlist {jpeg, png, webp} enforced at presign time (Task 2 Zod) |
-| T-04b-03-06 | Information Disclosure | CORS misconfiguration leaking bucket to attacker origin | mitigate | MinIO + Terraform stub allow PUT/GET only from `ADMIN_WEB_URL`; no `*` wildcard (Tasks 3, 5) |
-| T-04b-03-07 | Repudiation | Bucket CORS not applied in production | mitigate | Task 5 Terraform stub + user_setup frontmatter surface the manual apply step to the deployer |
+| Threat ID   | Category               | Component                                               | Disposition | Mitigation Plan                                                                                                                          |
+| ----------- | ---------------------- | ------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-03-01 | Spoofing               | SSRF via operator-supplied upload URL                   | mitigate    | presignPut returns server-generated URL; admin never accepts a URL from operator (RESEARCH.md Security Domain)                           |
+| T-04b-03-02 | Tampering              | Direct-PUT to wrong bucket / overwrite arbitrary key    | mitigate    | s3Key is server-generated `tenant/${tenantId}/menu-items/${uuid}`; operator cannot influence (Task 2 service)                            |
+| T-04b-03-03 | DoS                    | Oversized photo upload                                  | mitigate    | presignPut enforces sizeBytes ≤ 5 MiB; AWS SigV4 binds the content-length into the signed URL (Task 1 + 2)                               |
+| T-04b-03-04 | Spoofing               | Replay of presigned PUT URL                             | mitigate    | TTL ≤ 5 min (300s); even with replay, key is server-chosen so no collision risk (Task 2)                                                 |
+| T-04b-03-05 | Tampering              | Content-Type mismatch silently succeeding               | mitigate    | SigV4 binds Content-Type into signature; mismatch returns 403 from S3; allowlist {jpeg, png, webp} enforced at presign time (Task 2 Zod) |
+| T-04b-03-06 | Information Disclosure | CORS misconfiguration leaking bucket to attacker origin | mitigate    | MinIO + Terraform stub allow PUT/GET only from `ADMIN_WEB_URL`; no `*` wildcard (Tasks 3, 5)                                             |
+| T-04b-03-07 | Repudiation            | Bucket CORS not applied in production                   | mitigate    | Task 5 Terraform stub + user_setup frontmatter surface the manual apply step to the deployer                                             |
+
 </threat_model>
 
 <verification>
@@ -316,6 +327,7 @@ photoUploadUrl(@Body(new RestoZodValidationPipe(PhotoUploadUrlInputDto)) input):
 </verification>
 
 <success_criteria>
+
 1. ImageUrlPort interface extended with presignPut
 2. S3 adapter implements presignPut; unit spec passes
 3. POST /photo-upload-url endpoint live with allowlist + size cap
@@ -323,7 +335,7 @@ photoUploadUrl(@Body(new RestoZodValidationPipe(PhotoUploadUrlInputDto)) input):
 5. MinIO dev CORS allows PUT from admin origin (manual probe passes)
 6. Terraform stub exists for prod bucket CORS apply
 7. OpenAPI artifacts updated; drift gate green
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-03-SUMMARY.md` when done.

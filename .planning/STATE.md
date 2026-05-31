@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: MVP-1 — Standalone Platform
 status: executing
 stopped_at: Phase 4b UI-SPEC approved
-last_updated: "2026-05-31T10:00:35.359Z"
+last_updated: '2026-05-31T10:00:35.359Z'
 last_activity: 2026-05-31 -- Phase 04b planning complete
 progress:
   total_phases: 18

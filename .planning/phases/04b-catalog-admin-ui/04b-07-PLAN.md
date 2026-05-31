@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 07
 type: execute
 wave: 5
-depends_on: ["04b-01", "04b-02", "04b-03", "04b-04", "04b-05", "04b-06"]
+depends_on: ['04b-01', '04b-02', '04b-03', '04b-04', '04b-05', '04b-06']
 files_modified:
   - apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx
   - apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-shell-client.tsx
@@ -20,59 +20,59 @@ autonomous: false
 requirements: [CAT-02, CAT-03, CAT-05]
 must_haves:
   truths:
-    - "Item editor lives at /dashboard/menu/items/[id] and /dashboard/menu/items/new (D-04 full-page editor)"
-    - "Editor uses tabs: Детали (Detail) / Размеры (Sizes) / Модификаторы (Modifiers — Plan 08 mounts the Modifiers tab content)"
-    - "Detail tab uses react-hook-form + zodResolver(ItemEditorFormSchema); auto-save on blur / 1.5s debounce per D-4b-02"
-    - "AutoSaveIndicator (from Plan 04) shows Сохранение… / Сохранено Xс назад / Не сохранено — повторить (UI-SPEC §Auto-Save Indicator Spec)"
-    - "Auto-save concurrency guard: monotonic requestId; only latest request transitions indicator state (Pitfall #5)"
-    - "Single-photo upload via native HTML5 input + dragover/drop; calls photoUploadUrlAction → browser PUTs directly to S3 → upsertItemAction with photos[0] (D-07, CAT-03)"
-    - "Photo upload allowlist: image/jpeg, image/png, image/webp; size cap 5 MiB; mismatched type or size shows Russian inline error"
+    - 'Item editor lives at /dashboard/menu/items/[id] and /dashboard/menu/items/new (D-04 full-page editor)'
+    - 'Editor uses tabs: Детали (Detail) / Размеры (Sizes) / Модификаторы (Modifiers — Plan 08 mounts the Modifiers tab content)'
+    - 'Detail tab uses react-hook-form + zodResolver(ItemEditorFormSchema); auto-save on blur / 1.5s debounce per D-4b-02'
+    - 'AutoSaveIndicator (from Plan 04) shows Сохранение… / Сохранено Xс назад / Не сохранено — повторить (UI-SPEC §Auto-Save Indicator Spec)'
+    - 'Auto-save concurrency guard: monotonic requestId; only latest request transitions indicator state (Pitfall #5)'
+    - 'Single-photo upload via native HTML5 input + dragover/drop; calls photoUploadUrlAction → browser PUTs directly to S3 → upsertItemAction with photos[0] (D-07, CAT-03)'
+    - 'Photo upload allowlist: image/jpeg, image/png, image/webp; size cap 5 MiB; mismatched type or size shows Russian inline error'
     - "Sizes tab: inline rows [Name] [Price (absolute, in tenant currency)] [Default radio] [× remove] + 'Добавить размер'; auto-save inherits per D-4b-04"
     - "Absolute price semantics for sizes — label 'Цена' not 'Доплата' (D-4b-04 confirms 4a rename)"
-    - "БЖУ row: 4 inputs Б Ж У ккал per 100g + AI-оценка badge when nutrition_estimated=true (D-06, UI-SPEC §БЖУ section)"
+    - 'БЖУ row: 4 inputs Б Ж У ккал per 100g + AI-оценка badge when nutrition_estimated=true (D-06, UI-SPEC §БЖУ section)'
     - "Hidden 'Добавить ещё фото' button shown as disabled with v2 Tooltip (D-07, UI-SPEC §Photo Upload Spec)"
-    - "Category selector in Detail tab uses CategorySelect in item-picker mode (Plan 05)"
-    - "Slug helper text under name field shows server-derived slug (display-only — UI does not transliterate)"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
+    - 'Category selector in Detail tab uses CategorySelect in item-picker mode (Plan 05)'
+    - 'Slug helper text under name field shows server-derived slug (display-only — UI does not transliterate)'
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
     - "Hard deletes are forbidden — sizes 'remove' soft-deletes via API (existing 4a behavior)"
   artifacts:
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx"
-      provides: "RSC item editor (fetches /items/:id + categories list)"
-      contains: "apiFetchInternal"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-shell-client.tsx"
-      provides: "Tabs container + AutoSaveIndicator wiring"
-      contains: "TabsList"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-detail-tab-client.tsx"
-      provides: "RHF form for Detail tab; auto-save"
-      contains: "react-hook-form"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-client.tsx"
-      provides: "Native file input + presigned PUT direct-to-S3"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx'
+      provides: 'RSC item editor (fetches /items/:id + categories list)'
+      contains: 'apiFetchInternal'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-shell-client.tsx'
+      provides: 'Tabs container + AutoSaveIndicator wiring'
+      contains: 'TabsList'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-detail-tab-client.tsx'
+      provides: 'RHF form for Detail tab; auto-save'
+      contains: 'react-hook-form'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/[id]/photo-upload-client.tsx'
+      provides: 'Native file input + presigned PUT direct-to-S3'
       contains: "method: 'PUT'"
-    - path: "apps/admin/lib/menu/use-auto-save.ts"
-      provides: "Custom hook: RHF watch+debounce → server action with request-id concurrency guard"
-      exports: ["useDebouncedAutosave"]
-    - path: "apps/admin/components/menu/bju-row.tsx"
-      provides: "БЖУ 4-input row with AI-оценка badge"
-      contains: "ккал"
+    - path: 'apps/admin/lib/menu/use-auto-save.ts'
+      provides: 'Custom hook: RHF watch+debounce → server action with request-id concurrency guard'
+      exports: ['useDebouncedAutosave']
+    - path: 'apps/admin/components/menu/bju-row.tsx'
+      provides: 'БЖУ 4-input row with AI-оценка badge'
+      contains: 'ккал'
   key_links:
-    - from: "items/[id]/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/items/:id + GET /categories"
-      pattern: "/internal/v1/catalog/items/"
-    - from: "item-detail-tab-client.tsx"
-      to: "useDebouncedAutosave"
-      via: "watch+debounce → upsertItemAction"
-      pattern: "useDebouncedAutosave"
-    - from: "photo-upload-client.tsx"
-      to: "browser direct-PUT to S3"
+    - from: 'items/[id]/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/items/:id + GET /categories'
+      pattern: '/internal/v1/catalog/items/'
+    - from: 'item-detail-tab-client.tsx'
+      to: 'useDebouncedAutosave'
+      via: 'watch+debounce → upsertItemAction'
+      pattern: 'useDebouncedAutosave'
+    - from: 'photo-upload-client.tsx'
+      to: 'browser direct-PUT to S3'
       via: "fetch(uploadUrl, { method: 'PUT' })"
       pattern: "method: 'PUT'"
-    - from: "photo-upload-url-action.ts"
-      to: "apiFetchInternal"
-      via: "POST /internal/v1/catalog/photo-upload-url (Plan 03)"
-      pattern: "photo-upload-url"
+    - from: 'photo-upload-url-action.ts'
+      to: 'apiFetchInternal'
+      via: 'POST /internal/v1/catalog/photo-upload-url (Plan 03)'
+      pattern: 'photo-upload-url'
 ---
 
 <objective>
@@ -101,22 +101,36 @@ Output: 1 RSC route, 1 tabs shell, 2 tab client components, 3 server actions, 1 
 <!-- Backend (Plan 02 live): -->
 
 GET /internal/v1/catalog/items/:id → ItemDetailResponseDto:
+
 ```typescript
 type ItemDetail = {
   id: string;
   name: Record<string, string>;
   description: Record<string, string> | null;
   categoryId: string;
-  basePrice: string;  // numeric → string
+  basePrice: string; // numeric → string
   currency: string;
   allergens: string[];
-  proteins: number | null; fats: number | null; carbs: number | null; kcal: number | null;
+  proteins: number | null;
+  fats: number | null;
+  carbs: number | null;
+  kcal: number | null;
   nutritionEstimated: boolean;
   source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
-  photos: Array<{ s3Key: string; sortOrder: number; isPrimary: boolean; url?: string }>;
+  photos: Array<{
+    s3Key: string;
+    sortOrder: number;
+    isPrimary: boolean;
+    url?: string;
+  }>;
   slug: string;
   status: 'draft' | 'published' | 'archived';
-  sizes: Array<{ id: string; name: Record<string, string>; price: string; isDefault: boolean }>;
+  sizes: Array<{
+    id: string;
+    name: Record<string, string>;
+    price: string;
+    isDefault: boolean;
+  }>;
   modifierGroupIds: string[];
 };
 ```
@@ -127,6 +141,7 @@ DELETE /internal/v1/catalog/item-sizes/:id — soft-delete (existing).
 POST /internal/v1/catalog/photo-upload-url (Plan 03) → { uploadUrl, s3Key }.
 
 Auto-save hook (RESEARCH.md Pattern 1, extended with request-id guard per Pitfall #5):
+
 ```typescript
 export const useDebouncedAutosave = <TForm extends FieldValues>(
   form: UseFormReturn<TForm>,
@@ -134,6 +149,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
   onState: (s: SaveState) => void,
 ): void;
 ```
+
 </interfaces>
 </context>
 
@@ -173,6 +189,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
     Tests:
     - `apps/admin/lib/menu/zod-schemas.spec.ts` (extend existing): assert ItemEditorFormSchema accepts a complete payload; rejects name=''; rejects basePrice=-1; accepts proteins=null; rejects kcal=32001
     - `apps/admin/lib/menu/use-auto-save.spec.tsx` (new — uses RTL + RHF testing utilities + vi.useFakeTimers): assert (a) field change triggers onPersist after 1500ms exactly once; (b) two rapid changes within 1500ms result in one onPersist call (debounce); (c) when persist returns ok → onState transitions to 'saved'; (d) when persist returns !ok → onState transitions to 'failed'; (e) when a newer save starts before an older save resolves, only the newer save's onState transition is honored; (f) cleanup runs on unmount (no stale timer fires)
+
   </action>
   <verify>
     <automated>pnpm --filter @resto/admin exec vitest run lib/menu/zod-schemas.spec.ts lib/menu/use-auto-save.spec.tsx --no-coverage</automated>
@@ -292,6 +309,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
     - `bju-row.spec.tsx`: assert 4 inputs render with correct labels; assert nutritionEstimated=true shows AI-оценка badge; assert empty input → onChange(null)
     - `[id]/page.spec.tsx`: assert RSC for id='new' renders editor with empty defaults; assert id=valid renders prefilled
     - `item-detail-tab-client.spec.tsx`: assert form prefilled; assert field change after 1500ms calls upsertItemAction; assert onFirstSave triggered for new items (mock router.replace)
+
   </action>
   <verify>
     <automated>pnpm --filter @resto/admin exec vitest run components/menu/bju-row.spec.tsx app/dashboard/\\(workspace\\)/menu/items/\\[id\\]/page.spec.tsx app/dashboard/\\(workspace\\)/menu/items/\\[id\\]/item-detail-tab-client.spec.tsx --no-coverage</automated>
@@ -382,26 +400,28 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
-| Browser → S3 (direct PUT) | Operator's browser uploads photo bytes using presigned URL (Plan 03 endpoint) |
-| Admin server actions → api `/internal/v1/catalog/items` and `/item-sizes` | apiFetchInternal carries INTERNAL_API_TOKEN |
-| RHF form watch → server action | Form values flow client → server boundary on every debounce fire |
+| Boundary                                                                  | Description                                                                   |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Browser → S3 (direct PUT)                                                 | Operator's browser uploads photo bytes using presigned URL (Plan 03 endpoint) |
+| Admin server actions → api `/internal/v1/catalog/items` and `/item-sizes` | apiFetchInternal carries INTERNAL_API_TOKEN                                   |
+| RHF form watch → server action                                            | Form values flow client → server boundary on every debounce fire              |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-07-01 | Information Disclosure | INTERNAL_API_TOKEN in client bundle | mitigate | photoUploadUrlAction is 'use server'; client only sees `uploadUrl, s3Key` — never the api token |
-| T-04b-07-02 | Tampering | Browser PUT to wrong key | mitigate | s3Key is server-generated tenant-scoped (Plan 03 Task 2); browser receives both uploadUrl + s3Key from server action, cannot influence key derivation |
-| T-04b-07-03 | DoS | Auto-save spam from operator typing fast | mitigate | 1500ms debounce + request-id guard prevents reorderings; existing api rate-limit covers spam (RESEARCH.md Security Domain) |
-| T-04b-07-04 | Repudiation | Older save overwriting newer indicator state | mitigate | useDebouncedAutosave request-id guard (Task 1, Pitfall #5) |
-| T-04b-07-05 | Tampering | XSS via LocalizedText input → admin render | mitigate | React auto-escapes; no dangerouslySetInnerHTML anywhere in editor; ItemEditorFormSchema max-lengths enforced (CAT-09) |
-| T-04b-07-06 | Tampering | Operator uploads non-image file by extension trick | mitigate | Client validates MIME type via `file.type`; server validates via Plan 03 Zod enum; SigV4 binds Content-Type into presigned URL (Pitfall #2) |
-| T-04b-07-07 | DoS | Photo upload hanging admin tab | mitigate | PUT fetch carries AbortSignal.timeout(60_000) — 60s for upload |
-| T-04b-07-08 | Information Disclosure | Object URL leaking after preview discarded | mitigate | useEffect cleanup calls URL.revokeObjectURL on unmount or replace |
+| Threat ID   | Category               | Component                                          | Disposition | Mitigation Plan                                                                                                                                       |
+| ----------- | ---------------------- | -------------------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-07-01 | Information Disclosure | INTERNAL_API_TOKEN in client bundle                | mitigate    | photoUploadUrlAction is 'use server'; client only sees `uploadUrl, s3Key` — never the api token                                                       |
+| T-04b-07-02 | Tampering              | Browser PUT to wrong key                           | mitigate    | s3Key is server-generated tenant-scoped (Plan 03 Task 2); browser receives both uploadUrl + s3Key from server action, cannot influence key derivation |
+| T-04b-07-03 | DoS                    | Auto-save spam from operator typing fast           | mitigate    | 1500ms debounce + request-id guard prevents reorderings; existing api rate-limit covers spam (RESEARCH.md Security Domain)                            |
+| T-04b-07-04 | Repudiation            | Older save overwriting newer indicator state       | mitigate    | useDebouncedAutosave request-id guard (Task 1, Pitfall #5)                                                                                            |
+| T-04b-07-05 | Tampering              | XSS via LocalizedText input → admin render         | mitigate    | React auto-escapes; no dangerouslySetInnerHTML anywhere in editor; ItemEditorFormSchema max-lengths enforced (CAT-09)                                 |
+| T-04b-07-06 | Tampering              | Operator uploads non-image file by extension trick | mitigate    | Client validates MIME type via `file.type`; server validates via Plan 03 Zod enum; SigV4 binds Content-Type into presigned URL (Pitfall #2)           |
+| T-04b-07-07 | DoS                    | Photo upload hanging admin tab                     | mitigate    | PUT fetch carries AbortSignal.timeout(60_000) — 60s for upload                                                                                        |
+| T-04b-07-08 | Information Disclosure | Object URL leaking after preview discarded         | mitigate    | useEffect cleanup calls URL.revokeObjectURL on unmount or replace                                                                                     |
+
 </threat_model>
 
 <verification>
@@ -416,6 +436,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
 </verification>
 
 <success_criteria>
+
 1. Item editor full page with tabs Детали / Размеры / Модификаторы (Plan 08 fills last)
 2. ItemEditorFormSchema + SizeFormSchema + useDebouncedAutosave hook with race-id guard
 3. Detail tab auto-saves on 1500ms blur/debounce per D-4b-02
@@ -424,7 +445,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
 6. BJU row renders 4 inputs + "на 100 г" + AI-оценка badge per UI-SPEC
 7. New-item URL flip after first auto-save
 8. All specs pass
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-07-SUMMARY.md` when done.

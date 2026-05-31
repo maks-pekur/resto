@@ -21,30 +21,30 @@ requirements: []
 enables_requirements: [CAT-01, CAT-02, CAT-03, CAT-04, CAT-05, CAT-07, CAT-08]
 must_haves:
   truths:
-    - "react-hook-form 7.76.x and @hookform/resolvers 5.4.x are installed under apps/admin"
-    - "shadcn primitives badge, table, tabs, switch, form, select, dialog, progress, textarea exist under apps/admin/components/ui/"
-    - "apiFetchInternal enforces AbortSignal.timeout (10s GET / 30s mutation) and one retry on idempotent GET 5xx"
-    - "apiFetchInternal never reaches a client boundary (server-only import preserved)"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
+    - 'react-hook-form 7.76.x and @hookform/resolvers 5.4.x are installed under apps/admin'
+    - 'shadcn primitives badge, table, tabs, switch, form, select, dialog, progress, textarea exist under apps/admin/components/ui/'
+    - 'apiFetchInternal enforces AbortSignal.timeout (10s GET / 30s mutation) and one retry on idempotent GET 5xx'
+    - 'apiFetchInternal never reaches a client boundary (server-only import preserved)'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
   artifacts:
-    - path: "apps/admin/package.json"
-      provides: "react-hook-form + @hookform/resolvers dependencies"
-      contains: "react-hook-form"
-    - path: "apps/admin/lib/api-server-internal.ts"
-      provides: "hardened apiFetchInternal with timeout + retry"
-      contains: "AbortSignal.timeout"
-    - path: "apps/admin/components/ui/form.tsx"
-      provides: "shadcn form primitive wrapping react-hook-form"
-      contains: "FormField"
+    - path: 'apps/admin/package.json'
+      provides: 'react-hook-form + @hookform/resolvers dependencies'
+      contains: 'react-hook-form'
+    - path: 'apps/admin/lib/api-server-internal.ts'
+      provides: 'hardened apiFetchInternal with timeout + retry'
+      contains: 'AbortSignal.timeout'
+    - path: 'apps/admin/components/ui/form.tsx'
+      provides: 'shadcn form primitive wrapping react-hook-form'
+      contains: 'FormField'
   key_links:
-    - from: "apps/admin/lib/api-server-internal.ts"
-      to: "apps/admin/lib/env.ts"
-      via: "internalApiToken() import"
-      pattern: "internalApiToken"
-    - from: "apps/admin/components/ui/form.tsx"
-      to: "react-hook-form"
-      via: "useFormContext"
-      pattern: "react-hook-form"
+    - from: 'apps/admin/lib/api-server-internal.ts'
+      to: 'apps/admin/lib/env.ts'
+      via: 'internalApiToken() import'
+      pattern: 'internalApiToken'
+    - from: 'apps/admin/components/ui/form.tsx'
+      to: 'react-hook-form'
+      via: 'useFormContext'
+      pattern: 'react-hook-form'
 ---
 
 <objective>
@@ -73,13 +73,16 @@ Output: an installed dependency set; a hardened helper; 9 shadcn primitive files
 <!-- Hardened pattern to mirror — extracted from apps/admin/lib/api-server.ts (Wave-0 source of truth). -->
 
 From apps/admin/lib/api-server.ts (lines 8-42):
+
 ```typescript
 const TIMEOUT_GET_MS = 10_000;
 const TIMEOUT_MUTATION_MS = 30_000;
 const RETRY_BACKOFF_MS = 500;
 
-const isRetryableServerError = (status: number): boolean => status >= 500 && status <= 504;
-const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+const isRetryableServerError = (status: number): boolean =>
+  status >= 500 && status <= 504;
+const sleep = (ms: number): Promise<void> =>
+  new Promise((r) => setTimeout(r, ms));
 
 const executeWithRetry = async (
   input: string,
@@ -88,8 +91,15 @@ const executeWithRetry = async (
 ): Promise<Response> => {
   const maxAttempts = opts.isGet ? 2 : 1;
   for (let attempt = 1; ; attempt += 1) {
-    const res = await fetch(input, { ...init, signal: AbortSignal.timeout(opts.timeoutMs) });
-    if (!opts.isGet || !isRetryableServerError(res.status) || attempt >= maxAttempts) {
+    const res = await fetch(input, {
+      ...init,
+      signal: AbortSignal.timeout(opts.timeoutMs),
+    });
+    if (
+      !opts.isGet ||
+      !isRetryableServerError(res.status) ||
+      attempt >= maxAttempts
+    ) {
       return res;
     }
     await sleep(RETRY_BACKOFF_MS);
@@ -98,6 +108,7 @@ const executeWithRetry = async (
 ```
 
 Existing apps/admin/lib/api-server-internal.ts shape (to extend):
+
 ```typescript
 export interface InternalApiResponse<T> {
   readonly status: number;
@@ -189,21 +200,23 @@ Extend `InternalRequestOptions.method` to include `'PATCH'` (Wave 1 archive endp
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                    | Description                                                            |
+| ------------------------------------------- | ---------------------------------------------------------------------- |
 | Admin server actions → api `/internal/v1/*` | INTERNAL_API_TOKEN bearer crosses this boundary; must stay server-only |
-| Wave-0 deps → admin runtime | Net-new npm packages enter the dependency graph |
+| Wave-0 deps → admin runtime                 | Net-new npm packages enter the dependency graph                        |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-01-01 | Tampering | npm install of react-hook-form, @hookform/resolvers | mitigate | Task 1 blocking-human checkpoint verifies npm registry provenance; both packages are `[ASSUMED]` per slopcheck-unavailable protocol; install only after approval |
-| T-04b-01-02 | DoS | apiFetchInternal hanging on slow upstream | mitigate | Task 3 adds AbortSignal.timeout (10s GET / 30s mutation) per apps/CLAUDE.md mandate |
-| T-04b-01-03 | Information Disclosure | INTERNAL_API_TOKEN leaking to client bundle | mitigate | `import 'server-only'` preserved at top of apps/admin/lib/api-server-internal.ts; never imported from a client component (verified by Next.js build error if violated) |
-| T-04b-01-SC | Tampering | npm installs (this wave installs 2 runtime deps + 9 shadcn copies) | mitigate | slopcheck + blocking human checkpoint for [ASSUMED] packages (Task 1) |
+| Threat ID   | Category               | Component                                                          | Disposition | Mitigation Plan                                                                                                                                                        |
+| ----------- | ---------------------- | ------------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-01-01 | Tampering              | npm install of react-hook-form, @hookform/resolvers                | mitigate    | Task 1 blocking-human checkpoint verifies npm registry provenance; both packages are `[ASSUMED]` per slopcheck-unavailable protocol; install only after approval       |
+| T-04b-01-02 | DoS                    | apiFetchInternal hanging on slow upstream                          | mitigate    | Task 3 adds AbortSignal.timeout (10s GET / 30s mutation) per apps/CLAUDE.md mandate                                                                                    |
+| T-04b-01-03 | Information Disclosure | INTERNAL_API_TOKEN leaking to client bundle                        | mitigate    | `import 'server-only'` preserved at top of apps/admin/lib/api-server-internal.ts; never imported from a client component (verified by Next.js build error if violated) |
+| T-04b-01-SC | Tampering              | npm installs (this wave installs 2 runtime deps + 9 shadcn copies) | mitigate    | slopcheck + blocking human checkpoint for [ASSUMED] packages (Task 1)                                                                                                  |
+
 </threat_model>
 
 <verification>
@@ -214,13 +227,14 @@ Extend `InternalRequestOptions.method` to include `'PATCH'` (Wave 1 archive endp
 </verification>
 
 <success_criteria>
+
 1. Two new runtime deps installed; admin app type-checks
 2. Nine shadcn primitives present under `apps/admin/components/ui/`
 3. `apiFetchInternal` enforces AbortSignal.timeout on every call (test asserts)
 4. `apiFetchInternal` retries idempotent GET 5xx exactly once (test asserts)
 5. `apiFetchInternal` mutations (POST/PATCH/DELETE) never retry on 5xx (test asserts)
 6. `apiFetchInternal` method type includes `'PATCH'`
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-01-SUMMARY.md` when done.

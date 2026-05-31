@@ -243,8 +243,8 @@ Plans:
 **Wave 6** _(after Wave 5 — Modifiers tab integrates into the item editor shell from Plan 07)_
 
 - [ ] 04b-08-PLAN.md — Modifier groups two-surface model: list + group editor (RHF auto-save) + inline options list (per-row blur save) + Item editor Модификаторы tab (chip picker + Sheet + quick-create Dialog) + 3 server actions (CAT-04)
-   **UI hint**: yes (mandatory ui-phase pass before discuss-phase)
-   **Persona reviewers**: persona-product-strategist, persona-growth-marketer (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
+      **UI hint**: yes (mandatory ui-phase pass before discuss-phase)
+      **Persona reviewers**: persona-product-strategist, persona-growth-marketer (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
 ### Phase 5: Customer Site
 

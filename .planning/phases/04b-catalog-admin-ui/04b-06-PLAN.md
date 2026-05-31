@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 06
 type: execute
 wave: 4
-depends_on: ["04b-01", "04b-02", "04b-04", "04b-05"]
+depends_on: ['04b-01', '04b-02', '04b-04', '04b-05']
 files_modified:
   - apps/admin/app/dashboard/(workspace)/menu/items/page.tsx
   - apps/admin/app/dashboard/(workspace)/menu/items/items-table-client.tsx
@@ -15,48 +15,48 @@ autonomous: false
 requirements: [CAT-02, CAT-07]
 must_haves:
   truths:
-    - "Operator sees all items at /dashboard/menu/items as a compact table with 48px thumbnail + name + category + price + status + stop-list switch + actions (D-02)"
-    - "Default filter excludes archived items (D-03)"
-    - "Operator can filter by category (indented dropdown — Plan 05 CategorySelect in item-picker mode) and status; search input filters by name"
+    - 'Operator sees all items at /dashboard/menu/items as a compact table with 48px thumbnail + name + category + price + status + stop-list switch + actions (D-02)'
+    - 'Default filter excludes archived items (D-03)'
+    - 'Operator can filter by category (indented dropdown — Plan 05 CategorySelect in item-picker mode) and status; search input filters by name'
     - "Stop-list switch in items row is an inline toggle — click = instant publish (no confirm modal, D-12); toast 'Блюдо добавлено в стоп-лист' / 'Блюдо возобновлено' (UI-SPEC §Stop-list switch)"
-    - "Toggle error: switch snaps back to previous state + Sonner error toast (UI-SPEC §Stop-list switch)"
-    - "Row click → navigate to /dashboard/menu/items/[id] (full-page editor — Plan 07 handles)"
+    - 'Toggle error: switch snaps back to previous state + Sonner error toast (UI-SPEC §Stop-list switch)'
+    - 'Row click → navigate to /dashboard/menu/items/[id] (full-page editor — Plan 07 handles)'
     - "Archive action via DropdownMenu → AlertDialog confirm; archive sets status='archived' (D-09 archive variant)"
     - "Status badges per row use the shared StatusBadge component (Plan 04); 'modified' detection: status='published' AND updated_at > tenants.menu_first_published_at (computed in backend Plan 02)"
     - "Price column shows 'от {basePrice}₽' when item has sizes; else plain basePrice (Open Question #3 — backend returns hasSizes flag)"
-    - "Category cell shows parent → child prefix when child (UI-SPEC §Items table category column)"
-    - "Pagination: 50 items per page; offset-based via search params; URL preserves filter + page state (?status=&category=&q=&page=)"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
+    - 'Category cell shows parent → child prefix when child (UI-SPEC §Items table category column)'
+    - 'Pagination: 50 items per page; offset-based via search params; URL preserves filter + page state (?status=&category=&q=&page=)'
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
   artifacts:
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/page.tsx"
-      provides: "RSC items list with filters + pagination"
-      contains: "apiFetchInternal"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/items-table-client.tsx"
-      provides: "Client-side row interactions (stop-list toggle, actions menu, AlertDialog)"
-      contains: "use client"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/items-filter-bar-client.tsx"
-      provides: "Search + category + status filters"
-      contains: "Поиск блюд"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/toggle-stop-list-action.ts"
-      provides: "POST/DELETE stop-list server action"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/page.tsx'
+      provides: 'RSC items list with filters + pagination'
+      contains: 'apiFetchInternal'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/items-table-client.tsx'
+      provides: 'Client-side row interactions (stop-list toggle, actions menu, AlertDialog)'
+      contains: 'use client'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/items-filter-bar-client.tsx'
+      provides: 'Search + category + status filters'
+      contains: 'Поиск блюд'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/toggle-stop-list-action.ts'
+      provides: 'POST/DELETE stop-list server action'
       contains: "method: 'POST'"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/archive-item-action.ts"
-      provides: "PATCH archive item server action"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/archive-item-action.ts'
+      provides: 'PATCH archive item server action'
       contains: "method: 'PATCH'"
   key_links:
-    - from: "items/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/items + GET /internal/v1/catalog/categories"
-      pattern: "/internal/v1/catalog/items"
-    - from: "toggle-stop-list-action.ts"
-      to: "apiFetchInternal"
-      via: "POST/DELETE /internal/v1/catalog/stop-list"
-      pattern: "stop-list"
-    - from: "archive-item-action.ts"
-      to: "apiFetchInternal"
-      via: "PATCH /internal/v1/catalog/items/:id/archive"
+    - from: 'items/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/items + GET /internal/v1/catalog/categories'
+      pattern: '/internal/v1/catalog/items'
+    - from: 'toggle-stop-list-action.ts'
+      to: 'apiFetchInternal'
+      via: 'POST/DELETE /internal/v1/catalog/stop-list'
+      pattern: 'stop-list'
+    - from: 'archive-item-action.ts'
+      to: 'apiFetchInternal'
+      via: 'PATCH /internal/v1/catalog/items/:id/archive'
       pattern: "method: 'PATCH'"
 ---
 
@@ -84,21 +84,27 @@ Output: Items RSC page; client filter bar + table with stop-list switch + archiv
 <!-- Backend from Plan 02 (live): -->
 
 GET /internal/v1/catalog/items?status=&categoryId=&q=&limit=50&offset=0 → ItemListResponseDto:
+
 ```typescript
 type ItemListItem = {
   id: string;
-  name: Record<string, string>;  // LocalizedText
+  name: Record<string, string>; // LocalizedText
   categoryId: string;
   categoryName: Record<string, string>;
   parentCategoryName: Record<string, string> | null;
-  photoUrl: string | null;  // presignGet URL for photos[0] (existing api behavior)
-  basePrice: string;  // Drizzle numeric → string; coerce client-side
+  photoUrl: string | null; // presignGet URL for photos[0] (existing api behavior)
+  basePrice: string; // Drizzle numeric → string; coerce client-side
   currency: string;
   status: 'draft' | 'published' | 'modified' | 'paused' | 'archived';
   hasSizes: boolean;
-  stoppedAt: string | null;  // ISO timestamp if currently stop-listed
+  stoppedAt: string | null; // ISO timestamp if currently stop-listed
 };
-type ItemListResponse = { items: ItemListItem[]; total: number; limit: number; offset: number };
+type ItemListResponse = {
+  items: ItemListItem[];
+  total: number;
+  limit: number;
+  offset: number;
+};
 ```
 
 POST /internal/v1/catalog/stop-list — body `{ itemId: string; reason: null }` (Plan 02; reason kept null per D-13).
@@ -107,12 +113,13 @@ DELETE /internal/v1/catalog/stop-list/:itemId — returns 204.
 PATCH /internal/v1/catalog/items/:id/archive — empty body; returns 204.
 
 URL search params (operator-friendly, bookmarkable):
+
 - `?status=published` (default: all-except-archived; sentinel value "all-including-archived" exposes archived)
 - `?category=<uuid>`
 - `?q=<plain string>`
 - `?page=<n>` (1-based)
-</interfaces>
-</context>
+  </interfaces>
+  </context>
 
 <tasks>
 
@@ -224,6 +231,7 @@ URL search params (operator-friendly, bookmarkable):
     - `items-filter-bar-client.spec.tsx`: assert search debounce pushes URL after 300ms; assert category/status select push immediately
     - `items-table-client.spec.tsx`: assert stop-list switch click calls action with next='paused'; assert error snaps state back + shows toast; assert archive Action opens AlertDialog with UI-SPEC copy; assert row click routes to editor; assert pagination buttons disabled at boundaries
     - `items/page.spec.tsx`: assert RSC builds correct query string from search params; assert apiFetchInternal called with the constructed URL
+
   </action>
   <verify>
     <automated>pnpm --filter @resto/admin exec vitest run app/dashboard/\\(workspace\\)/menu/items/items-filter-bar-client.spec.tsx app/dashboard/\\(workspace\\)/menu/items/items-table-client.spec.tsx app/dashboard/\\(workspace\\)/menu/items/page.spec.tsx --no-coverage</automated>
@@ -236,22 +244,24 @@ URL search params (operator-friendly, bookmarkable):
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                                                             | Description                                              |
+| ------------------------------------------------------------------------------------ | -------------------------------------------------------- |
 | Admin server actions → api `/internal/v1/catalog/stop-list` and `/items/:id/archive` | apiFetchInternal carries INTERNAL_API_TOKEN; server-only |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-06-01 | Tampering | CSRF on toggle/archive server actions | mitigate | Next.js 15 server actions ship built-in CSRF token |
-| T-04b-06-02 | Information Disclosure | INTERNAL_API_TOKEN in client bundle | mitigate | 'use server' actions + server-only apiFetchInternal preserved |
-| T-04b-06-03 | DoS | Operator spam-toggles stop-list | mitigate | Existing app-level rate-limit per 4a T-04a-07-05; local 'pending' state disables Switch during in-flight request |
-| T-04b-06-04 | Tampering | URL query-param injection (XSS via q) | mitigate | React auto-escapes text in cells; q is rendered only inside controlled Input value; backend Plan 02 LIKE-escapes |
-| T-04b-06-05 | Repudiation | Sticky bar count stale after toggle | mitigate | toggleStopListAction + archiveItemAction call revalidatePath('/dashboard/menu', 'layout') |
-| T-04b-06-06 | Tampering | Operator constructs ?status=archived URL to view archived | accept | Archived view is the intended exposure; archived items are not destructive — this is a UI filter, not an authorization boundary |
+| Threat ID   | Category               | Component                                                 | Disposition | Mitigation Plan                                                                                                                 |
+| ----------- | ---------------------- | --------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-06-01 | Tampering              | CSRF on toggle/archive server actions                     | mitigate    | Next.js 15 server actions ship built-in CSRF token                                                                              |
+| T-04b-06-02 | Information Disclosure | INTERNAL_API_TOKEN in client bundle                       | mitigate    | 'use server' actions + server-only apiFetchInternal preserved                                                                   |
+| T-04b-06-03 | DoS                    | Operator spam-toggles stop-list                           | mitigate    | Existing app-level rate-limit per 4a T-04a-07-05; local 'pending' state disables Switch during in-flight request                |
+| T-04b-06-04 | Tampering              | URL query-param injection (XSS via q)                     | mitigate    | React auto-escapes text in cells; q is rendered only inside controlled Input value; backend Plan 02 LIKE-escapes                |
+| T-04b-06-05 | Repudiation            | Sticky bar count stale after toggle                       | mitigate    | toggleStopListAction + archiveItemAction call revalidatePath('/dashboard/menu', 'layout')                                       |
+| T-04b-06-06 | Tampering              | Operator constructs ?status=archived URL to view archived | accept      | Archived view is the intended exposure; archived items are not destructive — this is a UI filter, not an authorization boundary |
+
 </threat_model>
 
 <verification>
@@ -264,6 +274,7 @@ URL search params (operator-friendly, bookmarkable):
 </verification>
 
 <success_criteria>
+
 1. Items page renders backend data with photo + price + status + stop-list switch + actions
 2. Filter bar pushes URL state for category/status/q/page
 3. toggleStopListAction handles POST/DELETE branches + revalidates layout
@@ -271,7 +282,7 @@ URL search params (operator-friendly, bookmarkable):
 5. AlertDialog confirms archive with UI-SPEC copy verbatim
 6. Pagination supports 50-per-page with boundary disabling
 7. RTL + RSC specs pass
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-06-SUMMARY.md` when done.

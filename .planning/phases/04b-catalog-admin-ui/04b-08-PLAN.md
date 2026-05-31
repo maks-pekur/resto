@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 08
 type: execute
 wave: 6
-depends_on: ["04b-01", "04b-02", "04b-04", "04b-05", "04b-06", "04b-07"]
+depends_on: ['04b-01', '04b-02', '04b-04', '04b-05', '04b-06', '04b-07']
 files_modified:
   - apps/admin/app/dashboard/(workspace)/menu/modifier-groups/page.tsx
   - apps/admin/app/dashboard/(workspace)/menu/modifier-groups/modifier-groups-table-client.tsx
@@ -22,46 +22,46 @@ autonomous: false
 requirements: [CAT-04]
 must_haves:
   truths:
-    - "Operator sees modifier groups at /dashboard/menu/modifier-groups as a table with name + min/max + option count + usage count + actions (UI-SPEC §Modifier groups list page)"
-    - "Operator opens a group editor at /dashboard/menu/modifier-groups/[id] with two sections: Основное (name, min, max) + Варианты (inline options table)"
-    - "Each option row carries name, priceDelta (наценка), default_amount (По ум.), free_amount (Бесп.) per iiko alignment (UI-SPEC §Modifier group editor page + D-4b-05)"
-    - "Item editor Модификаторы tab uses chip-picker: assigned groups appear as chips with × remove; + Добавить группу opens Sheet listing available groups (D-4b-05 two-surface model)"
-    - "Sheet inside item editor: searchable list of groups for the current brand; each group has + Добавить action button; + Создать новую группу link redirects to top-level editor (UI-SPEC §Modifiers tab layout)"
-    - "Group form uses RHF + zodResolver — same pattern as item editor; auto-save on 1500ms debounce (per D-4b-02 since modifier group editor is the same surface category as item editor)"
-    - "Modifier options edit inline (no auto-save — per-row blur fires upsert mirror of sizes tab in Plan 07)"
-    - "Item↔modifier-group assignment: chip add/remove fires upsertItemModifierGroupsAction({ itemId, modifierGroupIds: [...] }) → POST /internal/v1/catalog/items with full modifierGroupIds array"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
+    - 'Operator sees modifier groups at /dashboard/menu/modifier-groups as a table with name + min/max + option count + usage count + actions (UI-SPEC §Modifier groups list page)'
+    - 'Operator opens a group editor at /dashboard/menu/modifier-groups/[id] with two sections: Основное (name, min, max) + Варианты (inline options table)'
+    - 'Each option row carries name, priceDelta (наценка), default_amount (По ум.), free_amount (Бесп.) per iiko alignment (UI-SPEC §Modifier group editor page + D-4b-05)'
+    - 'Item editor Модификаторы tab uses chip-picker: assigned groups appear as chips with × remove; + Добавить группу opens Sheet listing available groups (D-4b-05 two-surface model)'
+    - 'Sheet inside item editor: searchable list of groups for the current brand; each group has + Добавить action button; + Создать новую группу link redirects to top-level editor (UI-SPEC §Modifiers tab layout)'
+    - 'Group form uses RHF + zodResolver — same pattern as item editor; auto-save on 1500ms debounce (per D-4b-02 since modifier group editor is the same surface category as item editor)'
+    - 'Modifier options edit inline (no auto-save — per-row blur fires upsert mirror of sizes tab in Plan 07)'
+    - 'Item↔modifier-group assignment: chip add/remove fires upsertItemModifierGroupsAction({ itemId, modifierGroupIds: [...] }) → POST /internal/v1/catalog/items with full modifierGroupIds array'
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
   artifacts:
-    - path: "apps/admin/app/dashboard/(workspace)/menu/modifier-groups/page.tsx"
-      provides: "Modifier groups list RSC"
-      contains: "apiFetchInternal"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/page.tsx"
-      provides: "Group editor RSC"
-      contains: "/internal/v1/catalog/modifier-groups/"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/modifier-group-form-client.tsx"
-      provides: "RHF group form with auto-save"
-      contains: "useDebouncedAutosave"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/modifier-options-list-client.tsx"
-      provides: "Inline options editor (per-row save on blur)"
-      contains: "По ум."
-    - path: "apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-modifiers-tab-client.tsx"
-      provides: "Item editor Modifiers tab — chip picker + Sheet"
-      contains: "+ Добавить группу"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/modifier-groups/page.tsx'
+      provides: 'Modifier groups list RSC'
+      contains: 'apiFetchInternal'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/page.tsx'
+      provides: 'Group editor RSC'
+      contains: '/internal/v1/catalog/modifier-groups/'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/modifier-group-form-client.tsx'
+      provides: 'RHF group form with auto-save'
+      contains: 'useDebouncedAutosave'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/modifier-groups/[id]/modifier-options-list-client.tsx'
+      provides: 'Inline options editor (per-row save on blur)'
+      contains: 'По ум.'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-modifiers-tab-client.tsx'
+      provides: 'Item editor Modifiers tab — chip picker + Sheet'
+      contains: '+ Добавить группу'
   key_links:
-    - from: "modifier-groups/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/modifier-groups"
-      pattern: "/internal/v1/catalog/modifier-groups"
-    - from: "modifier-groups/[id]/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/modifier-groups/:id"
-      pattern: "/internal/v1/catalog/modifier-groups/"
-    - from: "item-modifiers-tab-client.tsx"
-      to: "upsertItemModifierGroupsAction"
-      via: "POST /internal/v1/catalog/items"
-      pattern: "modifierGroupIds"
+    - from: 'modifier-groups/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/modifier-groups'
+      pattern: '/internal/v1/catalog/modifier-groups'
+    - from: 'modifier-groups/[id]/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/modifier-groups/:id'
+      pattern: '/internal/v1/catalog/modifier-groups/'
+    - from: 'item-modifiers-tab-client.tsx'
+      to: 'upsertItemModifierGroupsAction'
+      via: 'POST /internal/v1/catalog/items'
+      pattern: 'modifierGroupIds'
 ---
 
 <objective>
@@ -88,6 +88,7 @@ Output: Modifier groups list, group editor with options, item-editor Modifiers t
 <!-- Backend (Plan 02 + 4a-07 live): -->
 
 GET /internal/v1/catalog/modifier-groups → ModifierGroupListResponseDto:
+
 ```typescript
 type ModifierGroupListItem = {
   id: string;
@@ -101,12 +102,13 @@ type ModifierGroupListItem = {
 ```
 
 GET /internal/v1/catalog/modifier-groups/:id → ModifierGroupDetailResponseDto:
+
 ```typescript
 type ModifierGroupDetail = ModifierGroupListItem & {
   options: Array<{
     id: string;
     name: Record<string, string>;
-    priceDelta: string;  // numeric → string
+    priceDelta: string; // numeric → string
     defaultAmount: number;
     freeAmount: number;
     sortOrder: number;
@@ -271,22 +273,24 @@ Item-editor assignment shape: full item POST includes `modifierGroupIds: string[
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                                                                           | Description                                 |
+| -------------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | Admin server actions → api `/internal/v1/catalog/modifier-groups` + `/modifier-options` + `/items` | apiFetchInternal carries INTERNAL_API_TOKEN |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-08-01 | Tampering | CSRF on group/option/assignment server actions | mitigate | Next.js 15 server actions ship built-in CSRF token |
-| T-04b-08-02 | Information Disclosure | INTERNAL_API_TOKEN in client bundle | mitigate | All actions are 'use server'; apiFetchInternal carries server-only import |
-| T-04b-08-03 | Tampering | Operator assigns modifier group from another tenant | mitigate | Backend Plan 02 list-modifier-groups uses ScopedTx; admin only displays groups within tenant scope; upsertItemAction (Plan 07) re-validates against ScopedTx on the api side |
-| T-04b-08-04 | DoS | Quick-add flood from operator clicking + Добавить repeatedly | mitigate | Existing api rate-limit; chip-add button disabled (aria-disabled) when group is already assigned |
-| T-04b-08-05 | Repudiation | Sticky bar count stale after group/option mutations | mitigate | All actions call revalidatePath('/dashboard/menu', 'layout') |
-| T-04b-08-06 | Tampering | XSS via group name | mitigate | React auto-escapes; name has max 255 via ModifierGroupFormSchema |
+| Threat ID   | Category               | Component                                                    | Disposition | Mitigation Plan                                                                                                                                                              |
+| ----------- | ---------------------- | ------------------------------------------------------------ | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-08-01 | Tampering              | CSRF on group/option/assignment server actions               | mitigate    | Next.js 15 server actions ship built-in CSRF token                                                                                                                           |
+| T-04b-08-02 | Information Disclosure | INTERNAL_API_TOKEN in client bundle                          | mitigate    | All actions are 'use server'; apiFetchInternal carries server-only import                                                                                                    |
+| T-04b-08-03 | Tampering              | Operator assigns modifier group from another tenant          | mitigate    | Backend Plan 02 list-modifier-groups uses ScopedTx; admin only displays groups within tenant scope; upsertItemAction (Plan 07) re-validates against ScopedTx on the api side |
+| T-04b-08-04 | DoS                    | Quick-add flood from operator clicking + Добавить repeatedly | mitigate    | Existing api rate-limit; chip-add button disabled (aria-disabled) when group is already assigned                                                                             |
+| T-04b-08-05 | Repudiation            | Sticky bar count stale after group/option mutations          | mitigate    | All actions call revalidatePath('/dashboard/menu', 'layout')                                                                                                                 |
+| T-04b-08-06 | Tampering              | XSS via group name                                           | mitigate    | React auto-escapes; name has max 255 via ModifierGroupFormSchema                                                                                                             |
+
 </threat_model>
 
 <verification>
@@ -297,6 +301,7 @@ Item-editor assignment shape: full item POST includes `modifierGroupIds: string[
 </verification>
 
 <success_criteria>
+
 1. ModifierGroupFormSchema + ModifierOptionFormSchema + 3 server actions
 2. Modifier groups list page renders correctly
 3. Group editor uses RHF + auto-save (group meta) + per-row save (options); URL flip for new groups
@@ -304,7 +309,7 @@ Item-editor assignment shape: full item POST includes `modifierGroupIds: string[
 5. Specs pass for list, editor, options, item-modifiers tab
 6. Backend option-delete absence handled gracefully (× remove omitted; documented)
 7. Backend modifier-group-archive absence documented (no archive button in this plan)
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-08-SUMMARY.md` when done.

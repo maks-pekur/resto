@@ -3,7 +3,7 @@ phase: 04b-catalog-admin-ui
 plan: 05
 type: execute
 wave: 3
-depends_on: ["04b-01", "04b-02", "04b-04"]
+depends_on: ['04b-01', '04b-02', '04b-04']
 files_modified:
   - apps/admin/app/dashboard/(workspace)/menu/categories/page.tsx
   - apps/admin/app/dashboard/(workspace)/menu/categories/category-form-client.tsx
@@ -18,51 +18,51 @@ autonomous: false
 requirements: [CAT-01]
 must_haves:
   truths:
-    - "Operator can list categories at /dashboard/menu/categories"
-    - "Operator can create a category (name, parentId optional, sortOrder)"
-    - "Operator can edit a category name + parent + sortOrder"
+    - 'Operator can list categories at /dashboard/menu/categories'
+    - 'Operator can create a category (name, parentId optional, sortOrder)'
+    - 'Operator can edit a category name + parent + sortOrder'
     - "Operator can archive a category via AlertDialog confirmation; archive sets status='archived' (D-4b-07)"
-    - "Operator can reorder categories via up/down buttons (drag-drop deferred per D-4b-01)"
-    - "Category tree depth is capped at 2 (D-4b-01) — enforced via Zod refine AND UI disable-state on Parent Select"
+    - 'Operator can reorder categories via up/down buttons (drag-drop deferred per D-4b-01)'
+    - 'Category tree depth is capped at 2 (D-4b-01) — enforced via Zod refine AND UI disable-state on Parent Select'
     - "Hard deletes are forbidden in the database — soft-archive via status='archived' (D-4b-07)"
-    - "All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component"
-    - "Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff"
-    - "Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)"
+    - 'All catalog mutations go through apiFetchInternal (server-only, holds INTERNAL_API_TOKEN); never expose this in a client component'
+    - 'Every server action revalidates /dashboard/menu layout to refresh the sticky publish bar diff'
+    - 'Russian copy is canonical for all user-facing strings (D-05 single-locale MVP-1)'
     - "Indented dropdown displays parents flush + children prefixed with '↳' (RESEARCH.md Pattern 5)"
-    - "Status badges on categories use the same 5-variant StatusBadge as items (Plan 04 component)"
+    - 'Status badges on categories use the same 5-variant StatusBadge as items (Plan 04 component)'
   artifacts:
-    - path: "apps/admin/app/dashboard/(workspace)/menu/categories/page.tsx"
-      provides: "RSC list page for categories"
-      contains: "apiFetchInternal"
-    - path: "apps/admin/app/dashboard/(workspace)/menu/categories/category-form-client.tsx"
-      provides: "Create/edit form (server-action driven via useActionState)"
-      contains: "use client"
-    - path: "apps/admin/components/menu/category-select.tsx"
-      provides: "Indented Select component with depth-2 disable-state"
-      contains: "↳"
-    - path: "apps/admin/lib/menu/zod-schemas.ts"
-      provides: "CategoryFormSchema + refineCategoryDepth"
-      contains: "refineCategoryDepth"
-    - path: "apps/admin/lib/menu/localized.ts"
-      provides: "toLocalizedText + fromLocalizedText boundary helpers"
-      contains: "toLocalizedText"
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/categories/page.tsx'
+      provides: 'RSC list page for categories'
+      contains: 'apiFetchInternal'
+    - path: 'apps/admin/app/dashboard/(workspace)/menu/categories/category-form-client.tsx'
+      provides: 'Create/edit form (server-action driven via useActionState)'
+      contains: 'use client'
+    - path: 'apps/admin/components/menu/category-select.tsx'
+      provides: 'Indented Select component with depth-2 disable-state'
+      contains: '↳'
+    - path: 'apps/admin/lib/menu/zod-schemas.ts'
+      provides: 'CategoryFormSchema + refineCategoryDepth'
+      contains: 'refineCategoryDepth'
+    - path: 'apps/admin/lib/menu/localized.ts'
+      provides: 'toLocalizedText + fromLocalizedText boundary helpers'
+      contains: 'toLocalizedText'
   key_links:
-    - from: "categories/page.tsx"
-      to: "apiFetchInternal"
-      via: "GET /internal/v1/catalog/categories"
-      pattern: "/internal/v1/catalog/categories"
-    - from: "upsert-category-action.ts"
-      to: "apiFetchInternal"
-      via: "POST /internal/v1/catalog/categories"
+    - from: 'categories/page.tsx'
+      to: 'apiFetchInternal'
+      via: 'GET /internal/v1/catalog/categories'
+      pattern: '/internal/v1/catalog/categories'
+    - from: 'upsert-category-action.ts'
+      to: 'apiFetchInternal'
+      via: 'POST /internal/v1/catalog/categories'
       pattern: "method: 'POST'"
-    - from: "archive-category-action.ts"
-      to: "apiFetchInternal"
-      via: "PATCH /internal/v1/catalog/categories/:id/archive"
+    - from: 'archive-category-action.ts'
+      to: 'apiFetchInternal'
+      via: 'PATCH /internal/v1/catalog/categories/:id/archive'
       pattern: "method: 'PATCH'"
-    - from: "category-form-client.tsx"
-      to: "CategorySelect"
-      via: "Parent picker"
-      pattern: "CategorySelect"
+    - from: 'category-form-client.tsx'
+      to: 'CategorySelect'
+      via: 'Parent picker'
+      pattern: 'CategorySelect'
 ---
 
 <objective>
@@ -91,6 +91,7 @@ Output: Categories RSC page; client table with archive + reorder; create/edit fo
 <!-- Backend interface from Plan 02 (now live): -->
 
 GET /internal/v1/catalog/categories?parentId=<id|none> → CategoryListResponseDto:
+
 ```typescript
 type CategoryListItem = {
   id: string;
@@ -103,10 +104,11 @@ type CategoryListResponse = CategoryListItem[];
 ```
 
 POST /internal/v1/catalog/categories — body matches existing UpsertCategoryInputDto from 4a:
+
 ```typescript
 type UpsertCategoryInput = {
-  id?: string;  // omit for create; supply for update
-  name: { [locale: string]: string };  // LocalizedText
+  id?: string; // omit for create; supply for update
+  name: { [locale: string]: string }; // LocalizedText
   parentId: string | null;
   sortOrder: number;
 };
@@ -115,14 +117,20 @@ type UpsertCategoryInput = {
 PATCH /internal/v1/catalog/categories/:id/archive — empty body; returns 204.
 
 Indented dropdown (RESEARCH.md Pattern 5):
+
 ```tsx
 <Select onValueChange={onChange} value={value}>
-  <SelectTrigger><SelectValue placeholder="Выберите категорию" /></SelectTrigger>
+  <SelectTrigger>
+    <SelectValue placeholder="Выберите категорию" />
+  </SelectTrigger>
   <SelectContent>
     {categories.map((c) => (
-      <SelectItem key={c.id} value={c.id}
+      <SelectItem
+        key={c.id}
+        value={c.id}
         disabled={c.parentId !== null && fieldIsParentSelector}
-        className={c.parentId === null ? '' : 'pl-8'}>
+        className={c.parentId === null ? '' : 'pl-8'}
+      >
         {c.parentId === null ? c.name : `↳ ${c.name}`}
       </SelectItem>
     ))}
@@ -131,10 +139,12 @@ Indented dropdown (RESEARCH.md Pattern 5):
 ```
 
 Localized boundary helpers (RESEARCH.md Pitfall #9):
+
 ```typescript
 toLocalizedText(plain: string, locale: string): Record<string, string>;
 fromLocalizedText(value: Record<string, string>, locale: string): string;
 ```
+
 </interfaces>
 </context>
 
@@ -303,6 +313,7 @@ fromLocalizedText(value: Record<string, string>, locale: string): string;
     - `categories/page.spec.tsx`: stub apiFetchInternal → assert table renders with parent + child indentation
     - `categories/categories-table-client.spec.tsx`: assert archive button opens AlertDialog with UI-SPEC copy; assert reorder buttons hidden at boundaries; assert showArchived toggle filters rows
     - `categories/category-form-client.spec.tsx`: assert form submission calls action with toLocalizedText payload; assert validation error renders inline; assert Sheet closes on success
+
   </action>
   <verify>
     <automated>pnpm --filter @resto/admin exec vitest run app/dashboard/\\(workspace\\)/menu/categories/page.spec.tsx app/dashboard/\\(workspace\\)/menu/categories/categories-table-client.spec.tsx app/dashboard/\\(workspace\\)/menu/categories/category-form-client.spec.tsx --no-coverage</automated>
@@ -315,22 +326,24 @@ fromLocalizedText(value: Record<string, string>, locale: string): string;
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                                                     | Description                                              |
+| ------------------------------------------------------------ | -------------------------------------------------------- |
 | Admin server actions → api `/internal/v1/catalog/categories` | apiFetchInternal carries INTERNAL_API_TOKEN; server-only |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-04b-05-01 | Tampering | Operator constructs depth-3+ tree via API | mitigate | Zod refineCategoryDepth on the form payload AND disable-state on Parent Select per D-4b-01 (both belt + suspenders) |
-| T-04b-05-02 | Tampering | Bypassing soft-archive via direct API call | accept | Backend has no DELETE on menu_categories (per ADR-0020 + Plan 02); only PATCH archive endpoint exists |
-| T-04b-05-03 | Information Disclosure | LocalizedText leaking other-locale data into single-locale UI | mitigate | fromLocalizedText fallback chain prefers ru; if absent, falls back to en or first non-empty value (no leak risk, but consistent display) |
-| T-04b-05-04 | DoS | Reorder action firing two POST calls with no batch | accept | Categories are <100 per tenant in MVP-1; two POSTs is acceptable load |
-| T-04b-05-05 | Tampering | CSRF on server actions | mitigate | Next.js 15 server actions ship built-in CSRF token |
-| T-04b-05-06 | Repudiation | Sticky bar count stale after upsert | mitigate | All three server actions call revalidatePath('/dashboard/menu', 'layout') per Pattern S8 |
+| Threat ID   | Category               | Component                                                     | Disposition | Mitigation Plan                                                                                                                          |
+| ----------- | ---------------------- | ------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| T-04b-05-01 | Tampering              | Operator constructs depth-3+ tree via API                     | mitigate    | Zod refineCategoryDepth on the form payload AND disable-state on Parent Select per D-4b-01 (both belt + suspenders)                      |
+| T-04b-05-02 | Tampering              | Bypassing soft-archive via direct API call                    | accept      | Backend has no DELETE on menu_categories (per ADR-0020 + Plan 02); only PATCH archive endpoint exists                                    |
+| T-04b-05-03 | Information Disclosure | LocalizedText leaking other-locale data into single-locale UI | mitigate    | fromLocalizedText fallback chain prefers ru; if absent, falls back to en or first non-empty value (no leak risk, but consistent display) |
+| T-04b-05-04 | DoS                    | Reorder action firing two POST calls with no batch            | accept      | Categories are <100 per tenant in MVP-1; two POSTs is acceptable load                                                                    |
+| T-04b-05-05 | Tampering              | CSRF on server actions                                        | mitigate    | Next.js 15 server actions ship built-in CSRF token                                                                                       |
+| T-04b-05-06 | Repudiation            | Sticky bar count stale after upsert                           | mitigate    | All three server actions call revalidatePath('/dashboard/menu', 'layout') per Pattern S8                                                 |
+
 </threat_model>
 
 <verification>
@@ -344,13 +357,14 @@ fromLocalizedText(value: Record<string, string>, locale: string): string;
 </verification>
 
 <success_criteria>
+
 1. CategoryFormSchema + refineCategoryDepth + toLocalizedText + fromLocalizedText available for downstream plans
 2. CategorySelect component renders indented options + disable-state for parent-picker mode
 3. 3 server actions (upsert, archive, reorder) revalidate layout
 4. Categories page renders tree with archive AlertDialog + reorder buttons
 5. Russian copy matches UI-SPEC §Destructive actions row 1 verbatim
 6. All RTL + unit specs pass
-</success_criteria>
+   </success_criteria>
 
 <output>
 Create `.planning/phases/04b-catalog-admin-ui/04b-05-SUMMARY.md` when done.
