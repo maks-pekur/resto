@@ -1,6 +1,5 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
@@ -103,6 +102,5 @@ export async function reorderCategoryAction(
       success: false,
     };
   }
-  revalidatePath('/dashboard/menu', 'layout');
   return { error: null, success: true };
 }
