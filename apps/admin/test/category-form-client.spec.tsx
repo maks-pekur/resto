@@ -76,7 +76,6 @@ describe('CategoryFormClient (Plan 04b-05 Task 3)', () => {
     render(<CategoryFormClient mode="create" allCategories={allCategories} onClose={vi.fn()} />);
     expect(screen.getByLabelText('Название')).toBeInTheDocument();
     expect(screen.getByText('Родительская категория')).toBeInTheDocument();
-    expect(screen.getByLabelText('Порядок сортировки')).toBeInTheDocument();
   });
 
   it('prefills the form when mode="edit" with the LocalizedText ru value', () => {

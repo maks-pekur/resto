@@ -95,12 +95,10 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     expect(screen.queryByText('Снэки')).not.toBeInTheDocument();
   });
 
-  it('hides ↑ on the first parent row and ↓ on the last visible parent row', () => {
+  it('rows are draggable for reorder', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
     const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
-    expect(napitkiRow.querySelector('[aria-label="Переместить выше"]')).toBeNull();
-    const dessertRow = screen.getByTestId(`category-row-${PARENT_B}`);
-    expect(dessertRow.querySelector('[aria-label="Переместить ниже"]')).toBeNull();
+    expect(napitkiRow).toHaveAttribute('draggable', 'true');
   });
 
   it('opens the archive AlertDialog with the UI-SPEC §Destructive actions row-1 copy', () => {
@@ -124,20 +122,6 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     fireEvent.click(screen.getByRole('button', { name: /Архивировать Напитки/u }));
     fireEvent.click(screen.getByRole('button', { name: 'Архивировать' }));
     expect(archiveMock).toHaveBeenCalledWith({ error: null, success: false }, { id: PARENT_A });
-  });
-
-  it('clicking ↓ on a row calls reorderCategoryAction(id, "down")', () => {
-    render(<CategoriesTableClient categories={baseCategories} />);
-    const napitkiRow = screen.getByTestId(`category-row-${PARENT_A}`);
-    const downBtn = napitkiRow.querySelector('[aria-label="Переместить ниже"]');
-    expect(downBtn).not.toBeNull();
-    if (downBtn) {
-      fireEvent.click(downBtn);
-    }
-    expect(reorderMock).toHaveBeenCalledWith(
-      { error: null, success: false },
-      { id: PARENT_A, direction: 'down' },
-    );
   });
 
   it('renders the empty state when the input list is empty', () => {

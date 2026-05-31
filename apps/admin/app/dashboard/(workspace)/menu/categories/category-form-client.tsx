@@ -72,16 +72,7 @@ export function CategoryFormClient({
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="cat-sort">Порядок сортировки</Label>
-        <Input
-          id="cat-sort"
-          name="sortOrder"
-          type="number"
-          min={0}
-          defaultValue={category?.sortOrder ?? 0}
-        />
-      </div>
+      <input type="hidden" name="sortOrder" value={category?.sortOrder ?? 0} />
 
       {state.error ? (
         <p role="alert" className="text-destructive text-sm">

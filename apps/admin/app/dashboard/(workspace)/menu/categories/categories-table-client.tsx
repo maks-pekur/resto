@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown, ChevronUp, Pencil, Trash2 } from 'lucide-react';
+import { GripVertical, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
 import {
@@ -83,6 +83,8 @@ export function CategoriesTableClient({
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
+  const [draggingId, setDraggingId] = React.useState<string | null>(null);
+  const [dragOverId, setDragOverId] = React.useState<string | null>(null);
   const [, startTransition] = React.useTransition();
 
   const visible = React.useMemo(
@@ -92,9 +94,27 @@ export function CategoriesTableClient({
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
 
-  const handleReorder = (id: string, direction: 'up' | 'down'): void => {
-    startTransition(() => {
-      void reorderCategoryAction({ error: null, success: false }, { id, direction });
+  const handleDrop = (targetId: string): void => {
+    if (!draggingId || draggingId === targetId) {
+      setDraggingId(null);
+      setDragOverId(null);
+      return;
+    }
+    const dragged = categories.find((c) => c.id === draggingId);
+    const target = categories.find((c) => c.id === targetId);
+    setDraggingId(null);
+    setDragOverId(null);
+    if (!dragged || dragged.parentId !== target?.parentId) return;
+    const siblings = rows.map((r) => r.category).filter((c) => c.parentId === dragged.parentId);
+    const fromIdx = siblings.findIndex((c) => c.id === dragged.id);
+    const toIdx = siblings.findIndex((c) => c.id === target.id);
+    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+    const direction = fromIdx < toIdx ? 'down' : 'up';
+    const steps = Math.abs(toIdx - fromIdx);
+    startTransition(async () => {
+      for (let i = 0; i < steps; i += 1) {
+        await reorderCategoryAction({ error: null, success: false }, { id: dragged.id, direction });
+      }
     });
   };
 
@@ -139,55 +159,67 @@ export function CategoriesTableClient({
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-20">Порядок</TableHead>
+              <TableHead className="w-10"></TableHead>
               <TableHead>Название</TableHead>
               <TableHead>Родитель</TableHead>
-              <TableHead className="w-24">Позиция</TableHead>
               <TableHead className="w-24 text-right">Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {rows.map(({ category, isChild, canMoveUp, canMoveDown }) => {
+            {rows.map(({ category, isChild }) => {
               const displayName = fromLocalizedText(category.name);
               const parent = category.parentId
                 ? categories.find((c) => c.id === category.parentId)
                 : null;
               const parentName = parent ? fromLocalizedText(parent.name) : '—';
+              const isDragging = draggingId === category.id;
+              const isDragOver = dragOverId === category.id && draggingId !== category.id;
               return (
-                <TableRow key={category.id} data-testid={`category-row-${category.id}`}>
-                  <TableCell>
-                    <div className="flex gap-1">
-                      {canMoveUp ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Переместить выше"
-                          onClick={() => {
-                            handleReorder(category.id, 'up');
-                          }}
-                        >
-                          <ChevronUp className="size-4" />
-                        </Button>
-                      ) : null}
-                      {canMoveDown ? (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          aria-label="Переместить ниже"
-                          onClick={() => {
-                            handleReorder(category.id, 'down');
-                          }}
-                        >
-                          <ChevronDown className="size-4" />
-                        </Button>
-                      ) : null}
-                    </div>
+                <TableRow
+                  key={category.id}
+                  data-testid={`category-row-${category.id}`}
+                  draggable
+                  onDragStart={(e) => {
+                    setDraggingId(category.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', category.id);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    if (draggingId && draggingId !== category.id) {
+                      const dragged = categories.find((c) => c.id === draggingId);
+                      if (dragged?.parentId === category.parentId) {
+                        setDragOverId(category.id);
+                      }
+                    }
+                  }}
+                  onDragLeave={() => {
+                    if (dragOverId === category.id) setDragOverId(null);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDrop(category.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggingId(null);
+                    setDragOverId(null);
+                  }}
+                  className={
+                    isDragging
+                      ? 'opacity-50'
+                      : isDragOver
+                        ? 'bg-accent/40 border-primary border-t-2'
+                        : undefined
+                  }
+                >
+                  <TableCell className="cursor-grab text-muted-foreground">
+                    <GripVertical className="size-4" />
                   </TableCell>
                   <TableCell className={isChild ? 'pl-8' : ''}>
                     {isChild ? `↳ ${displayName}` : displayName}
                   </TableCell>
                   <TableCell>{parentName}</TableCell>
-                  <TableCell>{category.sortOrder}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
