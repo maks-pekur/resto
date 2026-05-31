@@ -32,6 +32,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
   const brands = brandsRes.ok && brandsRes.data ? brandsRes.data.brands : [];
   const canViewAllBrands = brandsRes.ok && brandsRes.data ? brandsRes.data.canViewAllBrands : false;
 
+  if (brandsRes.ok && brands.length === 0) {
+    redirect('/onboarding/brand');
+  }
+
   return (
     <SidebarProvider>
       <AppSidebar
