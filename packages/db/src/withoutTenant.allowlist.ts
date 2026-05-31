@@ -69,6 +69,12 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // no ALS binding applies to scheduled NestJS cron jobs.
   'apps/api/src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
   'apps/api/src/infrastructure/jobs/verification-retention-scheduler.service.ts',
+
+  // CAT-10 / D-4a-07 / Phase 4a Plan 06: catalog Redis cache adapter falls
+  // back to `nextval('menu_versions_seq')` when Redis is unavailable. The
+  // sequence is platform-level (global) so no tenant binds; the operation
+  // is the documented degrade path for the menu-version port.
+  'apps/api/src/contexts/catalog/infrastructure/redis-catalog-cache.adapter.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];

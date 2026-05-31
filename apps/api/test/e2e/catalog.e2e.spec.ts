@@ -86,7 +86,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
         name: { en: 'Margherita' },
         basePrice: '12.50',
         currency: 'USD',
-        imageS3Key: 'menu/margherita.webp',
+        photos: [{ s3Key: 'menu/margherita.webp', sortOrder: 0 }],
         status: 'published',
       },
     });

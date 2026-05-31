@@ -1,4 +1,5 @@
 import type { TenantId } from '@resto/domain';
+import type { MenuItemPhoto } from '@resto/db';
 import type { PublishedMenu, PublishedMenuItem } from './published-menu';
 
 /**
@@ -14,8 +15,28 @@ export interface CatalogRepository {
   ): Promise<PublishedMenu>;
   findPublishedItem(itemId: string, brandId?: string | null): Promise<PublishedMenuItem | null>;
   upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }>;
-  upsertItem(input: UpsertItemRow): Promise<{ id: string }>;
-  upsertModifier(input: UpsertModifierRow): Promise<{ id: string }>;
+  upsertItem(input: UpsertItemRow): Promise<{ id: string; slugChanged?: { oldSlug: string } }>;
+  upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }>;
+  upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }>;
+  upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }>;
+  addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
+  removeFromStopList(input: {
+    itemId: string;
+  }): Promise<{ removed: boolean; itemSlug: string | null }>;
+  getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
+  /**
+   * Atomically: bump `tenants.menu_first_published_at` to NOW() if it is
+   * currently NULL, and append the appropriate outbox event in the same
+   * transaction. Returns whether the row was a first-publish or a
+   * republish. Called from the publish path (delayed-publish 5s timer
+   * callback or the ALS-bound HTTP wrapper). `tenantId` is passed
+   * explicitly because the setTimeout callback escapes the ALS frame
+   * (ADR-0020 I-6).
+   */
+  finalizeMenuPublish(input: { tenantId: TenantId; version: number }): Promise<{
+    isFirstPublish: boolean;
+  }>;
+  insertSlugAlias(input: { itemId: string; alias: string }): Promise<void>;
 }
 
 export const CATALOG_REPOSITORY = Symbol('CATALOG_REPOSITORY');
@@ -36,10 +57,15 @@ export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
  * Cache adapter for the public read path. Keyed by `(tenantId, version)`;
  * a publish bumps the version, so old cache entries become unreachable
  * (Redis TTL eventually evicts them).
+ *
+ * `invalidate` lets non-publish writes (e.g. stop-list toggles) flush the
+ * current-version cache entry without bumping the version — see D-4a-10 /
+ * RESEARCH.md Pattern 2 Option B.
  */
 export interface CatalogCachePort {
   get(tenantId: TenantId, version: number, brandId?: string | null): Promise<PublishedMenu | null>;
   set(menu: PublishedMenu, ttlSeconds: number, brandId?: string | null): Promise<void>;
+  invalidate(tenantId: TenantId, version: number, brandId?: string | null): Promise<void>;
 }
 
 export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
@@ -65,6 +91,7 @@ export interface UpsertCategoryRow {
   readonly id?: string;
   readonly tenantId: string;
   readonly brandId?: string | null;
+  readonly parentId?: string | null;
   readonly slug: string;
   readonly name: Record<string, string>;
   readonly description: Record<string, string> | null;
@@ -81,13 +108,21 @@ export interface UpsertItemRow {
   readonly description: Record<string, string> | null;
   readonly basePrice: string;
   readonly currency: string;
-  readonly imageS3Key: string | null;
+  readonly photos: readonly MenuItemPhoto[];
   readonly allergens: readonly string[] | null;
+  readonly proteins: number | null;
+  readonly fats: number | null;
+  readonly carbs: number | null;
+  readonly kcal: number | null;
+  readonly nutritionEstimated: boolean;
+  readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
+  readonly needsReview: boolean;
+  readonly sourceExternalId: string | null;
   readonly status: 'draft' | 'published' | 'archived';
   readonly sortOrder: number;
 }
 
-export interface UpsertModifierRow {
+export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
   readonly brandId?: string | null;
@@ -95,4 +130,35 @@ export interface UpsertModifierRow {
   readonly minSelectable: number;
   readonly maxSelectable: number;
   readonly isRequired: boolean;
+}
+
+export interface UpsertModifierOptionRow {
+  readonly id?: string;
+  readonly tenantId: string;
+  readonly brandId?: string | null;
+  readonly modifierGroupId: string;
+  readonly name: Record<string, string>;
+  readonly priceDelta: string;
+  readonly defaultAmount: number;
+  readonly freeAmount: number;
+  readonly sortOrder: number;
+}
+
+export interface UpsertItemSizeRow {
+  readonly id?: string;
+  readonly tenantId: string;
+  readonly brandId?: string | null;
+  readonly menuItemId: string;
+  readonly name: Record<string, string>;
+  readonly price: string;
+  readonly isDefault: boolean;
+  readonly sortOrder: number;
+}
+
+export interface StopListInsertRow {
+  readonly itemId: string;
+  readonly tenantId: string;
+  readonly brandId?: string | null;
+  readonly reason: string | null;
+  readonly stoppedByUserId: string | null;
 }

@@ -13,7 +13,7 @@ import {
 import { PublishMenuService } from '../../application/publish-menu.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
-import { UpsertModifierService } from '../../application/upsert-modifier.service';
+import { UpsertModifierGroupService } from '../../application/upsert-modifier-group.service';
 import { Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { mapCatalogError } from './error-mapping';
@@ -47,7 +47,8 @@ export class InternalCatalogController {
   constructor(
     @Inject(UpsertCategoryService) private readonly upsertCategory: UpsertCategoryService,
     @Inject(UpsertItemService) private readonly upsertItem: UpsertItemService,
-    @Inject(UpsertModifierService) private readonly upsertModifier: UpsertModifierService,
+    @Inject(UpsertModifierGroupService)
+    private readonly upsertModifierGroup: UpsertModifierGroupService,
     @Inject(PublishMenuService) private readonly publish: PublishMenuService,
   ) {}
 
@@ -82,7 +83,7 @@ export class InternalCatalogController {
     @Body(new RestoZodValidationPipe(UpsertModifierGroupInputDto))
     input: UpsertModifierGroupInputDto,
   ): Promise<IdResponseDto> {
-    return wrap(() => this.upsertModifier.execute(input));
+    return wrap(() => this.upsertModifierGroup.execute(input));
   }
 
   @Post('publish')

@@ -19,19 +19,32 @@ const buildItem = (): PublishedMenuItem => ({
   basePrice: '12.50' as PublishedMenuItem['basePrice'],
   currency: Currency.parse('USD'),
   imageUrl: null,
+  photos: [],
   allergens: [],
   sortOrder: 0,
-  variants: [],
-  modifierIds: [],
+  proteins: null,
+  fats: null,
+  carbs: null,
+  kcal: null,
+  nutritionEstimated: false,
+  sizes: [],
+  modifierGroupIds: [],
 });
 
-const buildRepo = (): CatalogRepository => ({
-  loadPublishedMenu: vi.fn(),
-  findPublishedItem: vi.fn(),
-  upsertCategory: vi.fn(),
-  upsertItem: vi.fn(),
-  upsertModifier: vi.fn(),
-});
+const buildRepo = (): CatalogRepository =>
+  ({
+    loadPublishedMenu: vi.fn(),
+    findPublishedItem: vi.fn(),
+    upsertCategory: vi.fn(),
+    upsertItem: vi.fn(),
+    upsertModifierGroup: vi.fn(),
+    upsertModifierOption: vi.fn(),
+    upsertItemSize: vi.fn(),
+    addToStopList: vi.fn(),
+    removeFromStopList: vi.fn(),
+    getMenuFirstPublishedAt: vi.fn(),
+    insertSlugAlias: vi.fn(),
+  }) as unknown as CatalogRepository;
 
 describe('GetMenuItemService', () => {
   let repo: CatalogRepository;

@@ -131,6 +131,9 @@ export default [
       // have no HTTP request / ALS tenant context. See withoutTenant.allowlist.ts.
       'src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
       'src/infrastructure/jobs/verification-retention-scheduler.service.ts',
+      // CAT-10 / D-4a-07 / Phase 4a Plan 06: Redis nextval fallback for
+      // menu-version when Redis is unavailable. See withoutTenant.allowlist.ts.
+      'src/contexts/catalog/infrastructure/redis-catalog-cache.adapter.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
