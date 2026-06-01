@@ -2,6 +2,15 @@
 
 import * as React from 'react';
 import { ImageIcon } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { photoUploadUrlAction } from './photo-upload-url-action';
+
+const ALLOWED_TYPES: ReadonlySet<string> = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const MAX_SIZE_BYTES = 5 * 1024 * 1024;
+const PUT_TIMEOUT_MS = 60_000;
+const ALLOWLIST_ERROR = 'Только JPG, PNG или WEBP до 5 МБ.';
 
 export interface PhotoUploadClientProps {
   readonly itemId: string;
@@ -10,17 +19,167 @@ export interface PhotoUploadClientProps {
   readonly onUploaded: (s3Key: string) => void;
 }
 
-// Task 4 of Plan 04b-07 replaces this scaffold with the full presigned-PUT flow.
-export function PhotoUploadClient(_: PhotoUploadClientProps): React.ReactElement {
+type UploadState =
+  | { readonly kind: 'idle' }
+  | { readonly kind: 'requesting' }
+  | { readonly kind: 'uploading' }
+  | { readonly kind: 'error'; readonly message: string };
+
+export function PhotoUploadClient({
+  itemId: _itemId,
+  currentS3Key,
+  currentPhotoUrl,
+  onUploaded,
+}: PhotoUploadClientProps): React.ReactElement {
+  const inputRef = React.useRef<HTMLInputElement | null>(null);
+  const [state, setState] = React.useState<UploadState>({ kind: 'idle' });
+  const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
+  const [committedUrl, setCommittedUrl] = React.useState<string | null>(currentPhotoUrl ?? null);
+
+  React.useEffect(() => {
+    setCommittedUrl(currentPhotoUrl ?? null);
+  }, [currentPhotoUrl]);
+
+  React.useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const openFileDialog = (): void => {
+    inputRef.current?.click();
+  };
+
+  const handleFile = async (file: File): Promise<void> => {
+    if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_SIZE_BYTES) {
+      setState({ kind: 'error', message: ALLOWLIST_ERROR });
+      return;
+    }
+    setState({ kind: 'requesting' });
+    const urlRes = await photoUploadUrlAction(file.type, file.size);
+    if (!urlRes.ok) {
+      setState({ kind: 'error', message: urlRes.error });
+      return;
+    }
+    setState({ kind: 'uploading' });
+    try {
+      const putRes = await fetch(urlRes.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'content-type': file.type },
+        signal: AbortSignal.timeout(PUT_TIMEOUT_MS),
+      });
+      if (!putRes.ok) {
+        setState({ kind: 'error', message: 'Не удалось загрузить фото. Попробуйте ещё раз.' });
+        return;
+      }
+    } catch {
+      setState({ kind: 'error', message: 'Не удалось загрузить фото. Попробуйте ещё раз.' });
+      return;
+    }
+    const newPreview = URL.createObjectURL(file);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(newPreview);
+    setCommittedUrl(null);
+    setState({ kind: 'idle' });
+    onUploaded(urlRes.s3Key);
+  };
+
+  const onDrop = (event: React.DragEvent<HTMLLabelElement>): void => {
+    event.preventDefault();
+    const file = event.dataTransfer.files[0];
+    if (file) void handleFile(file);
+  };
+
+  const onInputChange = (event: React.ChangeEvent<HTMLInputElement>): void => {
+    const file = event.target.files?.[0];
+    if (file) void handleFile(file);
+    event.target.value = '';
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLLabelElement>): void => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      openFileDialog();
+    }
+  };
+
+  const visiblePhoto = previewUrl ?? committedUrl;
+  const hasPhoto = Boolean(visiblePhoto) || Boolean(currentS3Key && !previewUrl);
+  const inputId = React.useId();
+  const isBusy = state.kind === 'requesting' || state.kind === 'uploading';
+  const busyLabel = state.kind === 'requesting' ? 'Запрашиваем доступ…' : 'Загружаем…';
+
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-disabled="true"
-      className="flex h-48 w-full flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-input bg-muted/40 text-muted-foreground"
-    >
-      <ImageIcon className="size-6" aria-hidden="true" />
-      <span className="text-sm">Загрузка фото — в Task 4</span>
+    <div className="flex flex-col gap-2">
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="sr-only"
+        onChange={onInputChange}
+        aria-label="Файл фото"
+      />
+      <label
+        htmlFor={inputId}
+        role="button"
+        tabIndex={0}
+        aria-label={hasPhoto ? 'Заменить фото' : 'Загрузить фото'}
+        onDragOver={(e) => {
+          e.preventDefault();
+        }}
+        onDrop={onDrop}
+        onKeyDown={onKeyDown}
+        className="group relative flex h-48 w-full cursor-pointer flex-col items-center justify-center gap-2 overflow-hidden rounded-lg border-2 border-dashed border-input bg-muted/40 text-muted-foreground transition-colors hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+      >
+        {visiblePhoto ? (
+          <img
+            src={visiblePhoto}
+            alt="Фото блюда"
+            className="absolute inset-0 size-full object-cover"
+          />
+        ) : (
+          <>
+            <ImageIcon className="size-6" aria-hidden="true" />
+            <span className="text-sm">Нажмите или перетащите фото</span>
+            <span className="text-xs">JPG, PNG, WEBP до 5 МБ</span>
+          </>
+        )}
+        {hasPhoto ? (
+          <span className="pointer-events-none absolute right-2 bottom-2 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground opacity-0 transition-opacity group-hover:opacity-100">
+            Изменить фото
+          </span>
+        ) : null}
+      </label>
+
+      {isBusy ? (
+        <div className="space-y-1">
+          <Progress className="h-1" />
+          <p className="text-xs text-muted-foreground" aria-live="polite">
+            {busyLabel}
+          </p>
+        </div>
+      ) : null}
+
+      {state.kind === 'error' ? (
+        <p className="text-xs text-destructive" aria-live="assertive">
+          {state.message}
+        </p>
+      ) : null}
+
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span tabIndex={0}>
+              <Button type="button" variant="ghost" size="sm" disabled className="text-xs">
+                + Добавить ещё фото
+              </Button>
+            </span>
+          </TooltipTrigger>
+          <TooltipContent>Несколько фото — в следующей версии</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }
