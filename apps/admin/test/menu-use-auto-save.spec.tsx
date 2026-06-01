@@ -15,6 +15,8 @@ interface MountedForm {
   unmount: () => void;
 }
 
+const noop = (): void => undefined;
+
 const mountForm = (
   onPersist: (values: Probe) => Promise<{ ok: boolean }>,
   onState: (s: SaveState) => void,
@@ -50,15 +52,15 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it('fires onPersist exactly once 1500ms after a single field change', async () => {
-    const onPersist = vi.fn(async () => ({ ok: true }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: true }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('Капучино');
     });
 
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(1499);
     });
     expect(onPersist).not.toHaveBeenCalled();
@@ -72,17 +74,17 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it('debounces two rapid changes into one onPersist call', async () => {
-    const onPersist = vi.fn(async () => ({ ok: true }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: true }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('Кап');
     });
-    await act(async () => {
+    act(() => {
       vi.advanceTimersByTime(500);
     });
-    await act(async () => {
+    act(() => {
       form.setName('Капучино');
     });
     await act(async () => {
@@ -95,11 +97,11 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it("transitions onState to 'saved' when persist resolves ok", async () => {
-    const onPersist = vi.fn(async () => ({ ok: true }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: true }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('A');
     });
     await act(async () => {
@@ -113,11 +115,11 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it("transitions onState to 'failed' when persist resolves not-ok", async () => {
-    const onPersist = vi.fn(async () => ({ ok: false }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: false }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('A');
     });
     await act(async () => {
@@ -131,8 +133,8 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it('discards older save response when a newer save is already in flight (Pitfall #5)', async () => {
-    let resolveFirst: (value: { ok: boolean }) => void = () => {};
-    let resolveSecond: (value: { ok: boolean }) => void = () => {};
+    let resolveFirst: (value: { ok: boolean }) => void = noop;
+    let resolveSecond: (value: { ok: boolean }) => void = noop;
     const onPersist = vi
       .fn<(values: Probe) => Promise<{ ok: boolean }>>()
       .mockImplementationOnce(
@@ -150,14 +152,14 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
     const onState = vi.fn<(s: SaveState) => void>();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('A');
     });
     await act(async () => {
       vi.advanceTimersByTime(1500);
       await Promise.resolve();
     });
-    await act(async () => {
+    act(() => {
       form.setName('AB');
     });
     await act(async () => {
@@ -182,11 +184,11 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it('cleans up the pending timer on unmount (no stale onPersist fire)', async () => {
-    const onPersist = vi.fn(async () => ({ ok: true }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: true }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
-    await act(async () => {
+    act(() => {
       form.setName('A');
     });
     form.unmount();
@@ -199,7 +201,7 @@ describe('useDebouncedAutosave (Plan 04b-07 Task 1)', () => {
   });
 
   it('does not fire onPersist on programmatic resets (type !== "change")', async () => {
-    const onPersist = vi.fn(async () => ({ ok: true }));
+    const onPersist = vi.fn(() => Promise.resolve({ ok: true }));
     const onState = vi.fn();
     const form = mountForm(onPersist, onState);
 
