@@ -163,6 +163,21 @@ html {
   }
 }
 
+/*
+ * Sidebar rounding pass — match black-builder's generous corners across
+ * menu buttons, sub-buttons, group labels, badges, and actions.
+ * Defined here (rather than inside `components/ui/sidebar.tsx`) so the
+ * shadcn-managed file stays a clean upgrade target.
+ */
+[data-slot='sidebar-menu-button'],
+[data-slot='sidebar-menu-sub-button'],
+[data-slot='sidebar-menu-action'],
+[data-slot='sidebar-menu-badge'],
+[data-slot='sidebar-menu-skeleton'],
+[data-slot='sidebar-group-label'] {
+  border-radius: var(--radius-lg);
+}
+
 /* Animated conic-gradient border for /login card (ported from black-builder) */
 .login-card {
   position: relative;
