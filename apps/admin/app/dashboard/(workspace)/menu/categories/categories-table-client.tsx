@@ -29,7 +29,8 @@ import {
 } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import { reorderCategoryAction } from './reorder-category-action';
+import { showError } from '@/lib/ui/toast-helpers';
+import { reorderCategoriesAction } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
 import type { CategoryListItemApi } from './page';
 
@@ -167,6 +168,7 @@ export function CategoriesTableClient({
     const toIdx = siblings.findIndex((c) => c.id === target.id);
     if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
 
+    const previousCategories = localCategories;
     const reordered = arrayMove(siblings, fromIdx, toIdx);
     const newSortOrders = new Map(reordered.map((c, i) => [c.id, i * 10]));
     setLocalCategories((prev) =>
@@ -176,11 +178,15 @@ export function CategoriesTableClient({
       }),
     );
 
-    const direction = fromIdx < toIdx ? 'down' : 'up';
-    const steps = Math.abs(toIdx - fromIdx);
+    const orderedIds = reordered.map((c) => c.id);
     startTransition(async () => {
-      for (let i = 0; i < steps; i += 1) {
-        await reorderCategoryAction({ error: null, success: false }, { id: dragged.id, direction });
+      const res = await reorderCategoriesAction(
+        { error: null, success: false },
+        { parentId: dragged.parentId, orderedIds },
+      );
+      if (!res.success) {
+        setLocalCategories(previousCategories);
+        showError(res.error);
       }
     });
   };

@@ -39,6 +39,11 @@ export interface CatalogRepository {
   archiveCategory(id: string): Promise<{ found: boolean }>;
   archiveItem(id: string): Promise<{ found: boolean }>;
 
+  reorderCategoriesByParent(input: {
+    parentId: string | null;
+    orderedIds: readonly string[];
+  }): Promise<{ updated: number }>;
+
   getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
   // tenantId is passed explicitly because the setTimeout callback escapes the ALS frame (ADR-0020 I-6).
   finalizeMenuPublish(input: { tenantId: TenantId; version: number }): Promise<{

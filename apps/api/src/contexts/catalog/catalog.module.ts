@@ -15,6 +15,7 @@ import { ListCategoriesService } from './application/list-categories.service';
 import { ListItemsService } from './application/list-items.service';
 import { ListModifierGroupsService } from './application/list-modifier-groups.service';
 import { PublishMenuService } from './application/publish-menu.service';
+import { ReorderCategoriesService } from './application/reorder-categories.service';
 import { StopListService } from './application/stop-list.service';
 import { UpsertCategoryService } from './application/upsert-category.service';
 import { UpsertItemService } from './application/upsert-item.service';
@@ -55,6 +56,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     GetPublishedMenuService,
     GetMenuItemService,
     UpsertCategoryService,
+    ReorderCategoriesService,
     UpsertItemService,
     UpsertItemSizeService,
     UpsertModifierGroupService,

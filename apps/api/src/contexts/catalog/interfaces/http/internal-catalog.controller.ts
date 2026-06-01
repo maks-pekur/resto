@@ -29,6 +29,8 @@ import {
   ModifierGroupListResponseDto,
   PhotoUploadUrlInputDto,
   PhotoUploadUrlResponseDto,
+  ReorderCategoriesInputDto,
+  ReorderCategoriesResponseDto,
   StopItemInputDto,
   StopListResponseDto,
   UpsertCategoryInputDto,
@@ -48,6 +50,7 @@ import { GetStopListService } from '../../application/get-stop-list.service';
 import { ListCategoriesService } from '../../application/list-categories.service';
 import { ListItemsService } from '../../application/list-items.service';
 import { ListModifierGroupsService } from '../../application/list-modifier-groups.service';
+import { ReorderCategoriesService } from '../../application/reorder-categories.service';
 import { StopListService } from '../../application/stop-list.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
@@ -107,6 +110,8 @@ export class InternalCatalogController {
     @Inject(ArchiveItemService) private readonly archiveItemService: ArchiveItemService,
     @Inject(GetPhotoUploadUrlService)
     private readonly getPhotoUploadUrlService: GetPhotoUploadUrlService,
+    @Inject(ReorderCategoriesService)
+    private readonly reorderCategoriesService: ReorderCategoriesService,
   ) {}
 
   @Post('categories')
@@ -118,6 +123,18 @@ export class InternalCatalogController {
     @Body(new RestoZodValidationPipe(UpsertCategoryInputDto)) input: UpsertCategoryInputDto,
   ): Promise<IdResponseDto> {
     return wrap(() => this.upsertCategory.execute(input));
+  }
+
+  @Post('categories/reorder')
+  @HttpCode(HttpStatus.OK)
+  @ApiBody({ type: ReorderCategoriesInputDto })
+  @ApiOkResponse({ type: ReorderCategoriesResponseDto })
+  @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
+  reorderCategories(
+    @Body(new RestoZodValidationPipe(ReorderCategoriesInputDto))
+    input: ReorderCategoriesInputDto,
+  ): Promise<ReorderCategoriesResponseDto> {
+    return wrap(() => this.reorderCategoriesService.execute(input));
   }
 
   @Post('items')

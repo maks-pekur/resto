@@ -710,6 +710,35 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async reorderCategoriesByParent(input: {
+    parentId: string | null;
+    orderedIds: readonly string[];
+  }): Promise<{ updated: number }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const where =
+        input.parentId === null
+          ? isNull(schema.menuCategories.parentId)
+          : eq(schema.menuCategories.parentId, input.parentId);
+      const siblings = await scoped.selectFrom(schema.menuCategories, where);
+      const validIds = new Set(siblings.map((s) => s.id));
+      const updatedAt = new Date();
+      let updated = 0;
+      for (let i = 0; i < input.orderedIds.length; i += 1) {
+        const id = input.orderedIds[i];
+        if (id === undefined || !validIds.has(id)) continue;
+        await scoped
+          .updateTable(
+            schema.menuCategories,
+            { sortOrder: i * 10, updatedAt },
+            eq(schema.menuCategories.id, id),
+          )
+          .execute();
+        updated += 1;
+      }
+      return { updated };
+    });
+  }
+
   async listItems(input: {
     status: ItemStatusFilter;
     categoryId: string | null;
