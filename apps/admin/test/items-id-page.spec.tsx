@@ -46,7 +46,9 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
   });
 
   it("renders the shell with itemId='new' and no initialItem for /items/new", async () => {
-    apiFetchInternalMock.mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
+    apiFetchInternalMock
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } })
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: 'new' }) });
     render(ui);
     expect(screen.getByTestId('itemId').textContent).toBe('new');
@@ -80,6 +82,7 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
           modifierGroupIds: [],
         },
       })
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } })
       .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: ITEM_ID }) });
     render(ui);
@@ -92,6 +95,7 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
     const ITEM_ID = '11111111-1111-4111-8111-111111111111';
     apiFetchInternalMock
       .mockResolvedValueOnce({ ok: false, status: 404, data: null })
+      .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } })
       .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: ITEM_ID }) });
     render(ui);

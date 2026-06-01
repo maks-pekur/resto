@@ -22,6 +22,16 @@ interface CategoryListApi {
   readonly items: readonly CategoryRowApi[];
 }
 
+interface ModifierGroupListItemApi {
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly optionCount: number;
+}
+
+interface ModifierGroupListApi {
+  readonly items: readonly ModifierGroupListItemApi[];
+}
+
 interface ItemEditorPageProps {
   readonly params: Promise<{ readonly id: string }>;
 }
@@ -39,11 +49,12 @@ export default async function ItemEditorPage(
   const params = await props.params;
   const isNew = params.id === 'new';
 
-  const [itemRes, categoriesRes] = await Promise.all([
+  const [itemRes, categoriesRes, modifierGroupsRes] = await Promise.all([
     isNew
       ? Promise.resolve(null)
       : apiFetchInternal<ItemDetailApi>(`/internal/v1/catalog/items/${params.id}`),
     apiFetchInternal<CategoryListApi>('/internal/v1/catalog/categories'),
+    apiFetchInternal<ModifierGroupListApi>('/internal/v1/catalog/modifier-groups'),
   ]);
 
   if (!isNew && itemRes && (itemRes.status === 404 || !itemRes.ok || !itemRes.data)) {
@@ -64,6 +75,11 @@ export default async function ItemEditorPage(
     parentId: c.parentId,
     name: fromLocalizedText(c.name),
   }));
+  const availableModifierGroups = (modifierGroupsRes.data?.items ?? []).map((g) => ({
+    id: g.id,
+    name: fromLocalizedText(g.name),
+    optionCount: g.optionCount,
+  }));
 
   return (
     <ItemEditorShellClient
@@ -71,6 +87,7 @@ export default async function ItemEditorPage(
       categories={categories}
       itemId={params.id}
       defaultCurrency={item?.currency ?? DEFAULT_CURRENCY}
+      availableModifierGroups={availableModifierGroups}
     />
   );
 }

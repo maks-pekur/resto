@@ -8,7 +8,7 @@ import type { SaveState } from '@/lib/menu/types';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { ItemDetailTabClient } from './item-detail-tab-client';
 import { ItemSizesTabClient } from './item-sizes-tab-client';
-import { ItemModifiersTabClient } from './item-modifiers-tab-client';
+import { ItemModifiersTabClient, type AvailableGroup } from './item-modifiers-tab-client';
 import type { CategoryOption, ItemDetailApi, ItemSizeApi } from './types';
 
 export interface ItemEditorShellClientProps {
@@ -16,6 +16,7 @@ export interface ItemEditorShellClientProps {
   readonly categories: readonly CategoryOption[];
   readonly itemId: string;
   readonly defaultCurrency: string;
+  readonly availableModifierGroups: readonly AvailableGroup[];
 }
 
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
@@ -53,6 +54,7 @@ export function ItemEditorShellClient({
   categories,
   itemId,
   defaultCurrency,
+  availableModifierGroups,
 }: ItemEditorShellClientProps): React.ReactElement {
   const [currentItemId, setCurrentItemId] = React.useState(itemId);
   const [currentPhotoS3Key, setCurrentPhotoS3Key] = React.useState<string | null>(
@@ -115,6 +117,7 @@ export function ItemEditorShellClient({
           <ItemModifiersTabClient
             itemId={currentItemId}
             initialModifierGroupIds={initialItem?.modifierGroupIds ?? []}
+            availableGroups={availableModifierGroups}
           />
         </TabsContent>
       </Tabs>
