@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { AutoSaveIndicator } from '@/components/menu/auto-save-indicator';
-import { TenantBreadcrumb } from '@/components/tenant-breadcrumb';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import type { SaveState } from '@/lib/menu/types';
@@ -72,12 +71,9 @@ export function ItemEditorShellClient({
     [initialItem, defaultCurrency],
   );
 
-  const displayName = initialItem ? fromLocalizedText(initialItem.name) : 'Новое блюдо';
-
   return (
     <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-      <div className="flex items-start justify-between gap-4">
-        <TenantBreadcrumb trail={`Меню › Блюда › ${displayName}`} />
+      <div className="flex items-start justify-end gap-4">
         <AutoSaveIndicator state={saveState} />
       </div>
 
