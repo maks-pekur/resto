@@ -78,12 +78,20 @@ function SortableCategoryRow({
       data-testid={`category-row-${category.id}`}
       className={cn(
         'transition-colors duration-200',
+        isChild && 'border-b-0',
         isPendingNestTarget && 'bg-accent ring-2 ring-primary ring-inset',
       )}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
         opacity: isDragging ? 0.4 : 1,
+        ...(isChild && {
+          backgroundImage:
+            'linear-gradient(to right, transparent 0, transparent 16px, var(--border) 16px, var(--border) 100%)',
+          backgroundPosition: 'bottom',
+          backgroundSize: '100% 1px',
+          backgroundRepeat: 'no-repeat',
+        }),
       }}
     >
       <TableCell
