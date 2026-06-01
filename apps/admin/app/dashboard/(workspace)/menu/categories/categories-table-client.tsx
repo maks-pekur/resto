@@ -328,6 +328,7 @@ export function CategoriesTableClient({
           id="categories-dnd"
           sensors={sensors}
           collisionDetection={closestCenter}
+          autoScroll={false}
           onDragStart={handleDragStart}
           onDragOver={handleDragOver}
           onDragCancel={handleDragCancel}
