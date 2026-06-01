@@ -87,17 +87,21 @@ function SortableCategoryRow({
       }}
     >
       <TableCell
-        className="cursor-grab"
+        className={cn(
+          'cursor-grab',
+          isChild &&
+            'relative before:absolute before:inset-y-0 before:left-4 before:w-px before:bg-border',
+        )}
         style={{ paddingLeft: isChild ? `${INDENT_WIDTH_PX}px` : undefined }}
         {...attributes}
         {...listeners}
       >
         <div className="flex items-center gap-2">
           <GripVertical className="size-4 text-muted-foreground shrink-0" />
-          <span>{displayName}</span>
+          <span className={cn(isChild && 'text-sm text-muted-foreground')}>{displayName}</span>
         </div>
       </TableCell>
-      <TableCell>{parentName}</TableCell>
+      <TableCell className="text-center">{parentName}</TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-1">
           <Button
@@ -266,7 +270,35 @@ export function CategoriesTableClient({
     const draggedCat = visible.find((c) => c.id === draggedId);
     if (!draggedCat) return;
 
-    const newParentId = nestTarget ?? draggedCat.parentId;
+    let newParentId: string | null;
+    if (nestTarget !== null) {
+      newParentId = nestTarget;
+    } else {
+      const fromIdx = rows.findIndex((r) => r.category.id === draggedId);
+      const toIdx = rows.findIndex((r) => r.category.id === overIdRaw);
+      const projectedRows = arrayMove(rows.slice(), fromIdx, toIdx);
+      const projectedIdx = projectedRows.findIndex((r) => r.category.id === draggedId);
+      const previousRow = projectedIdx > 0 ? (projectedRows[projectedIdx - 1] ?? null) : null;
+      if (!previousRow) {
+        newParentId = null;
+      } else if (previousRow.isChild) {
+        newParentId = previousRow.category.parentId;
+      } else {
+        newParentId = null;
+      }
+    }
+
+    if (newParentId !== null && newParentId !== draggedCat.parentId) {
+      const draggedHasChildren = visible.some((c) => c.parentId === draggedId);
+      if (draggedHasChildren) {
+        showError(
+          null,
+          'Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.',
+        );
+        return;
+      }
+    }
+
     if (draggedId === overIdRaw && newParentId === draggedCat.parentId) return;
 
     const { moves, nextLocalUpdates } = computeReorder(
@@ -342,7 +374,7 @@ export function CategoriesTableClient({
               <TableHeader>
                 <TableRow>
                   <TableHead>Название</TableHead>
-                  <TableHead>Родитель</TableHead>
+                  <TableHead className="text-center">Родитель</TableHead>
                   <TableHead className="w-24 text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
