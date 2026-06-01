@@ -214,7 +214,12 @@ export function CategoriesTableClient({
           }
         />
       ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext
+          id="categories-dnd"
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
           <SortableContext
             items={rows.map((r) => r.category.id)}
             strategy={verticalListSortingStrategy}
