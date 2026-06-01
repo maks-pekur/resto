@@ -6,7 +6,7 @@ import {
   DndContext,
   type DragCancelEvent,
   type DragEndEvent,
-  type DragMoveEvent,
+  type DragOverEvent,
   type DragStartEvent,
   PointerSensor,
   closestCenter,
@@ -32,12 +32,14 @@ import {
 } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { fromLocalizedText } from '@/lib/menu/localized';
+import { cn } from '@/lib/utils';
 import { showError } from '@/lib/ui/toast-helpers';
 import { reorderCategoriesAction, type CategoryMoveInput } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
 import type { CategoryListItemApi } from './page';
 
 const INDENT_WIDTH_PX = 32;
+const HOLD_TO_NEST_MS = 600;
 
 export interface CategoriesTableClientProps {
   readonly categories: readonly CategoryListItemApi[];
@@ -56,7 +58,7 @@ interface SortableCategoryRowProps {
   readonly isChild: boolean;
   readonly parentName: string;
   readonly onEdit: () => void;
-  readonly depthOverride?: 0 | 1;
+  readonly isPendingNestTarget: boolean;
 }
 
 function SortableCategoryRow({
@@ -64,17 +66,20 @@ function SortableCategoryRow({
   isChild,
   parentName,
   onEdit,
-  depthOverride,
+  isPendingNestTarget,
 }: SortableCategoryRowProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
   const displayName = fromLocalizedText(category.name);
-  const effectiveDepth = depthOverride ?? (isChild ? 1 : 0);
   return (
     <TableRow
       ref={setNodeRef}
       data-testid={`category-row-${category.id}`}
+      className={cn(
+        'transition-colors duration-200',
+        isPendingNestTarget && 'bg-accent ring-2 ring-primary ring-inset',
+      )}
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
@@ -84,7 +89,7 @@ function SortableCategoryRow({
       <TableCell className="cursor-grab text-muted-foreground" {...attributes} {...listeners}>
         <GripVertical className="size-4" />
       </TableCell>
-      <TableCell style={{ paddingLeft: effectiveDepth >= 1 ? `${INDENT_WIDTH_PX}px` : undefined }}>
+      <TableCell style={{ paddingLeft: isChild ? `${INDENT_WIDTH_PX}px` : undefined }}>
         {displayName}
       </TableCell>
       <TableCell>{parentName}</TableCell>
@@ -120,44 +125,6 @@ const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRo
       .sort(compareSiblings)
       .map((child) => ({ category: child, isChild: true })),
   ]);
-};
-
-interface DropProjection {
-  readonly newParentId: string | null;
-  readonly depth: 0 | 1;
-  readonly valid: boolean;
-}
-
-const projectDrop = (
-  rows: readonly RenderRow[],
-  draggedId: string,
-  overId: string,
-  offsetLeft: number,
-): DropProjection => {
-  const fromIdx = rows.findIndex((r) => r.category.id === draggedId);
-  const toIdx = rows.findIndex((r) => r.category.id === overId);
-  const dragged = rows[fromIdx];
-  if (fromIdx < 0 || toIdx < 0 || !dragged) {
-    return { newParentId: null, depth: 0, valid: false };
-  }
-  const newRows = arrayMove(rows.slice(), fromIdx, toIdx);
-  const newIdx = newRows.findIndex((r) => r.category.id === draggedId);
-  const previousRow = newIdx > 0 ? (newRows[newIdx - 1] ?? null) : null;
-
-  const currentDepth = dragged.isChild ? 1 : 0;
-  const dragDepth = Math.round(offsetLeft / INDENT_WIDTH_PX);
-  const projectedDepth = Math.max(0, Math.min(1, currentDepth + dragDepth));
-
-  let newParentId: string | null = null;
-  let depth: 0 | 1 = 0;
-  if (previousRow && projectedDepth >= 1) {
-    newParentId = previousRow.isChild ? previousRow.category.parentId : previousRow.category.id;
-    depth = 1;
-  }
-
-  const draggedHasChildren = rows.some((r) => r.category.parentId === draggedId);
-  const valid = newParentId === null || !draggedHasChildren;
-  return { newParentId, depth, valid };
 };
 
 const computeReorder = (
@@ -199,6 +166,22 @@ const computeReorder = (
   return { moves, nextLocalUpdates };
 };
 
+const isNestEligible = (
+  visibleCats: readonly CategoryListItemApi[],
+  draggedId: string,
+  targetId: string,
+): boolean => {
+  if (draggedId === targetId) return false;
+  const dragged = visibleCats.find((c) => c.id === draggedId);
+  const target = visibleCats.find((c) => c.id === targetId);
+  if (!dragged || !target) return false;
+  if (target.parentId !== null) return false;
+  if (dragged.parentId === target.id) return false;
+  const draggedHasChildren = visibleCats.some((c) => c.parentId === draggedId);
+  if (draggedHasChildren) return false;
+  return true;
+};
+
 export function CategoriesTableClient({
   categories,
 }: CategoriesTableClientProps): React.ReactElement {
@@ -206,10 +189,11 @@ export function CategoriesTableClient({
   const [createOpen, setCreateOpen] = React.useState(false);
   const [localCategories, setLocalCategories] = React.useState(categories);
   const [activeId, setActiveId] = React.useState<string | null>(null);
-  const [overId, setOverId] = React.useState<string | null>(null);
-  const [offsetLeft, setOffsetLeft] = React.useState(0);
+  const [pendingNestParentId, setPendingNestParentId] = React.useState<string | null>(null);
   const [, startTransition] = React.useTransition();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const holdTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const currentOverIdRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     setLocalCategories(categories);
@@ -222,26 +206,43 @@ export function CategoriesTableClient({
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
 
-  const dragProjection: DropProjection | null = React.useMemo(() => {
-    if (!activeId || !overId) return null;
-    return projectDrop(rows, activeId, overId, offsetLeft);
-  }, [activeId, overId, offsetLeft, rows]);
+  const cancelHoldTimer = (): void => {
+    if (holdTimerRef.current !== null) {
+      clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+  };
 
   const resetDragState = (): void => {
+    cancelHoldTimer();
     setActiveId(null);
-    setOverId(null);
-    setOffsetLeft(0);
+    setPendingNestParentId(null);
+    currentOverIdRef.current = null;
   };
 
   const handleDragStart = (event: DragStartEvent): void => {
     setActiveId(String(event.active.id));
-    setOverId(String(event.active.id));
-    setOffsetLeft(0);
+    setPendingNestParentId(null);
+    currentOverIdRef.current = null;
   };
 
-  const handleDragMove = (event: DragMoveEvent): void => {
-    setOffsetLeft(event.delta.x);
-    if (event.over) setOverId(String(event.over.id));
+  const handleDragOver = (event: DragOverEvent): void => {
+    const draggedId = String(event.active.id);
+    const newOverId = event.over ? String(event.over.id) : null;
+    if (newOverId === currentOverIdRef.current) return;
+    currentOverIdRef.current = newOverId;
+    cancelHoldTimer();
+    setPendingNestParentId(null);
+
+    if (!newOverId) return;
+    if (!isNestEligible(visible, draggedId, newOverId)) return;
+
+    holdTimerRef.current = setTimeout(() => {
+      if (currentOverIdRef.current === newOverId) {
+        setPendingNestParentId(newOverId);
+      }
+      holdTimerRef.current = null;
+    }, HOLD_TO_NEST_MS);
   };
 
   const handleDragCancel = (_event: DragCancelEvent): void => {
@@ -250,23 +251,19 @@ export function CategoriesTableClient({
 
   const handleDragEnd = (event: DragEndEvent): void => {
     const { active, over } = event;
-    const projection = dragProjection;
+    const nestTarget = pendingNestParentId;
     resetDragState();
 
     if (!over) return;
     const draggedId = String(active.id);
     const overIdRaw = String(over.id);
-    if (draggedId === overIdRaw && offsetLeft === 0) return;
 
-    if (projection && !projection.valid) {
-      showError(
-        null,
-        'Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.',
-      );
-      return;
-    }
+    const draggedCat = visible.find((c) => c.id === draggedId);
+    if (!draggedCat) return;
 
-    const newParentId = projection ? projection.newParentId : null;
+    const newParentId = nestTarget ?? draggedCat.parentId;
+    if (draggedId === overIdRaw && newParentId === draggedCat.parentId) return;
+
     const { moves, nextLocalUpdates } = computeReorder(
       visible,
       rows,
@@ -327,7 +324,7 @@ export function CategoriesTableClient({
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragStart={handleDragStart}
-          onDragMove={handleDragMove}
+          onDragOver={handleDragOver}
           onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
@@ -345,27 +342,28 @@ export function CategoriesTableClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map(({ category, isChild }) => {
-                  const isActive = category.id === activeId;
-                  return (
-                    <SortableCategoryRow
-                      key={category.id}
-                      category={category}
-                      isChild={isChild}
-                      parentName={
-                        category.parentId
-                          ? fromLocalizedText(
-                              categories.find((c) => c.id === category.parentId)?.name ?? {},
-                            )
-                          : '—'
-                      }
-                      onEdit={() => {
-                        setEditingId(category.id);
-                      }}
-                      depthOverride={isActive && dragProjection ? dragProjection.depth : undefined}
-                    />
-                  );
-                })}
+                {rows.map(({ category, isChild }) => (
+                  <SortableCategoryRow
+                    key={category.id}
+                    category={category}
+                    isChild={isChild}
+                    parentName={
+                      category.parentId
+                        ? fromLocalizedText(
+                            categories.find((c) => c.id === category.parentId)?.name ?? {},
+                          )
+                        : '—'
+                    }
+                    onEdit={() => {
+                      setEditingId(category.id);
+                    }}
+                    isPendingNestTarget={
+                      pendingNestParentId !== null &&
+                      category.id === pendingNestParentId &&
+                      activeId !== category.id
+                    }
+                  />
+                ))}
               </TableBody>
             </Table>
           </SortableContext>
