@@ -70,3 +70,25 @@ export const SizeFormSchema = z.object({
 });
 
 export type SizeForm = z.infer<typeof SizeFormSchema>;
+
+export const ModifierGroupFormSchema = z
+  .object({
+    name: z.string().trim().min(1).max(255),
+    minSelectable: z.number().int().min(0).max(99),
+    maxSelectable: z.number().int().min(0).max(99),
+  })
+  .refine((m) => m.maxSelectable === 0 || m.maxSelectable >= m.minSelectable, {
+    message: 'Максимум должен быть больше или равен минимуму, либо 0 (без ограничений).',
+    path: ['maxSelectable'],
+  });
+
+export type ModifierGroupForm = z.infer<typeof ModifierGroupFormSchema>;
+
+export const ModifierOptionFormSchema = z.object({
+  name: z.string().trim().min(1).max(255),
+  priceDelta: z.number().min(0),
+  defaultAmount: z.number().int().min(0),
+  freeAmount: z.number().int().min(0),
+});
+
+export type ModifierOptionForm = z.infer<typeof ModifierOptionFormSchema>;
