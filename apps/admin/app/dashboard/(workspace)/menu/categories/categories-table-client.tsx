@@ -86,11 +86,16 @@ function SortableCategoryRow({
         opacity: isDragging ? 0.4 : 1,
       }}
     >
-      <TableCell className="cursor-grab text-muted-foreground" {...attributes} {...listeners}>
-        <GripVertical className="size-4" />
-      </TableCell>
-      <TableCell style={{ paddingLeft: isChild ? `${INDENT_WIDTH_PX}px` : undefined }}>
-        {displayName}
+      <TableCell
+        className="cursor-grab"
+        style={{ paddingLeft: isChild ? `${INDENT_WIDTH_PX}px` : undefined }}
+        {...attributes}
+        {...listeners}
+      >
+        <div className="flex items-center gap-2">
+          <GripVertical className="size-4 text-muted-foreground shrink-0" />
+          <span>{displayName}</span>
+        </div>
       </TableCell>
       <TableCell>{parentName}</TableCell>
       <TableCell className="text-right">
@@ -335,7 +340,6 @@ export function CategoriesTableClient({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10"></TableHead>
                   <TableHead>Название</TableHead>
                   <TableHead>Родитель</TableHead>
                   <TableHead className="w-24 text-right">Действия</TableHead>
