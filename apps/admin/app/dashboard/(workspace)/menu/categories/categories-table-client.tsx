@@ -41,9 +41,10 @@ export interface CategoriesTableClientProps {
 interface RenderRow {
   readonly category: CategoryListItemApi;
   readonly isChild: boolean;
-  readonly canMoveUp: boolean;
-  readonly canMoveDown: boolean;
 }
+
+const compareSiblings = (a: CategoryListItemApi, b: CategoryListItemApi): number =>
+  a.sortOrder - b.sortOrder || a.id.localeCompare(b.id);
 
 interface SortableCategoryRowProps {
   readonly category: CategoryListItemApi;
@@ -96,9 +97,7 @@ function SortableCategoryRow({
 }
 
 const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRow[] => {
-  const parents = categories
-    .filter((c) => c.parentId === null)
-    .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  const parents = categories.filter((c) => c.parentId === null).sort(compareSiblings);
   const childrenByParent = new Map<string, CategoryListItemApi[]>();
   for (const c of categories) {
     if (c.parentId !== null) {
@@ -107,29 +106,12 @@ const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRo
       childrenByParent.set(c.parentId, list);
     }
   }
-  for (const list of childrenByParent.values()) {
-    list.sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
-  }
-
-  const rows: RenderRow[] = [];
-  parents.forEach((parent, parentIdx) => {
-    rows.push({
-      category: parent,
-      isChild: false,
-      canMoveUp: parentIdx > 0,
-      canMoveDown: parentIdx < parents.length - 1,
-    });
-    const children = childrenByParent.get(parent.id) ?? [];
-    children.forEach((child, childIdx) => {
-      rows.push({
-        category: child,
-        isChild: true,
-        canMoveUp: childIdx > 0,
-        canMoveDown: childIdx < children.length - 1,
-      });
-    });
-  });
-  return rows;
+  return parents.flatMap((parent) => [
+    { category: parent, isChild: false },
+    ...(childrenByParent.get(parent.id) ?? [])
+      .sort(compareSiblings)
+      .map((child) => ({ category: child, isChild: true })),
+  ]);
 };
 
 export function CategoriesTableClient({
@@ -163,7 +145,7 @@ export function CategoriesTableClient({
 
     const siblings = localCategories
       .filter((c) => c.parentId === dragged.parentId && c.status !== 'archived')
-      .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+      .sort(compareSiblings);
     const fromIdx = siblings.findIndex((c) => c.id === dragged.id);
     const toIdx = siblings.findIndex((c) => c.id === target.id);
     if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
