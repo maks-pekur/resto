@@ -3,9 +3,15 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upsertItemSizeActionMock = vi.fn();
+const showSuccessMock = vi.fn();
+const showErrorMock = vi.fn();
 
 vi.mock('../app/dashboard/(workspace)/menu/items/[id]/upsert-item-size-action', () => ({
   upsertItemSizeAction: upsertItemSizeActionMock,
+}));
+vi.mock('@/lib/ui/toast-helpers', () => ({
+  showSuccess: showSuccessMock,
+  showError: showErrorMock,
 }));
 
 const { ItemSizesTabClient } =
@@ -15,7 +21,7 @@ const ITEM_ID = '11111111-1111-4111-8111-111111111111';
 const SIZE_ID_M = '22222222-2222-4222-8222-222222222222';
 const SIZE_ID_L = '33333333-3333-4333-8333-333333333333';
 
-describe('ItemSizesTabClient (Plan 04b-07 Task 5)', () => {
+describe('ItemSizesTabClient (Plan 04b-07 Task 5, explicit save)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -29,59 +35,65 @@ describe('ItemSizesTabClient (Plan 04b-07 Task 5)', () => {
     expect(screen.getByText(/Нет размеров — блюдо использует базовую цену\./u)).toBeInTheDocument();
   });
 
-  it("shows a 'save item first' helper and a disabled add button for new items", () => {
+  it("shows a 'save item first' description and disables both buttons for new items", () => {
     render(<ItemSizesTabClient itemId="new" sizes={[]} onSizesChange={() => undefined} />);
     expect(
-      screen.getByText(/Сначала введите название блюда — оно сохранится автоматически\./u),
+      screen.getByText(/Сначала сохраните блюдо — потом можно добавлять размеры\./u),
     ).toBeInTheDocument();
-    expect(screen.getByText('+ Добавить размер')).toBeDisabled();
+    expect(screen.getByRole('button', { name: '+ Добавить размер' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Сохранить размеры' })).toBeDisabled();
   });
 
   it('appends a new editable row when "+ Добавить размер" is clicked', () => {
     render(<ItemSizesTabClient itemId={ITEM_ID} sizes={[]} onSizesChange={() => undefined} />);
-    fireEvent.click(screen.getByText('+ Добавить размер'));
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить размер' }));
     expect(screen.getByPlaceholderText('Название')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Цена')).toBeInTheDocument();
   });
 
-  it('persists a row via upsertItemSizeAction on name blur', async () => {
-    upsertItemSizeActionMock.mockResolvedValue({ ok: true, id: SIZE_ID_M });
-    render(<ItemSizesTabClient itemId={ITEM_ID} sizes={[]} onSizesChange={() => undefined} />);
-
-    fireEvent.click(screen.getByText('+ Добавить размер'));
-    const nameInput = screen.getByPlaceholderText('Название');
-    await act(async () => {
-      fireEvent.change(nameInput, { target: { value: 'Средняя' } });
-      fireEvent.blur(nameInput);
-      await Promise.resolve();
-    });
-
-    expect(upsertItemSizeActionMock).toHaveBeenCalledWith(
-      ITEM_ID,
-      expect.objectContaining({ name: 'Средняя' }),
-    );
-  });
-
-  it('removes a draft row immediately without calling the api when it has no sizeId', () => {
-    render(<ItemSizesTabClient itemId={ITEM_ID} sizes={[]} onSizesChange={() => undefined} />);
-    fireEvent.click(screen.getByText('+ Добавить размер'));
-    fireEvent.click(screen.getByLabelText('Удалить размер'));
-    expect(screen.queryByPlaceholderText('Название')).not.toBeInTheDocument();
-    expect(upsertItemSizeActionMock).not.toHaveBeenCalled();
-  });
-
-  it('DELETEs via api when removing an existing-row size', async () => {
-    upsertItemSizeActionMock.mockResolvedValue({ ok: true });
-    const onSizesChange = vi.fn();
+  it('disables Сохранить размеры until local rows diverge from props', () => {
     render(
       <ItemSizesTabClient
         itemId={ITEM_ID}
         sizes={[{ id: SIZE_ID_M, name: { ru: 'Средняя' }, price: '5.00', isDefault: false }]}
-        onSizesChange={onSizesChange}
+        onSizesChange={() => undefined}
       />,
     );
+    expect(screen.getByRole('button', { name: 'Сохранить размеры' })).toBeDisabled();
+    fireEvent.change(screen.getByDisplayValue('Средняя'), { target: { value: 'Большая' } });
+    expect(screen.getByRole('button', { name: 'Сохранить размеры' })).not.toBeDisabled();
+  });
+
+  it('persists rows via per-row upsert on Сохранить размеры and toasts success', async () => {
+    upsertItemSizeActionMock.mockResolvedValue({ ok: true, id: SIZE_ID_M });
+    render(<ItemSizesTabClient itemId={ITEM_ID} sizes={[]} onSizesChange={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить размер' }));
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Средняя' } });
+
     await act(async () => {
-      fireEvent.click(screen.getByLabelText('Удалить размер'));
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить размеры' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(upsertItemSizeActionMock).toHaveBeenCalledWith(
+      ITEM_ID,
+      expect.objectContaining({ name: 'Средняя' }),
+    );
+    expect(showSuccessMock).toHaveBeenCalled();
+  });
+
+  it('issues DELETE for rows removed locally', async () => {
+    upsertItemSizeActionMock.mockResolvedValue({ ok: true });
+    render(
+      <ItemSizesTabClient
+        itemId={ITEM_ID}
+        sizes={[{ id: SIZE_ID_M, name: { ru: 'Средняя' }, price: '5.00', isDefault: false }]}
+        onSizesChange={() => undefined}
+      />,
+    );
+    fireEvent.click(screen.getByLabelText('Удалить размер'));
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить размеры' }));
+      await Promise.resolve();
       await Promise.resolve();
     });
     expect(upsertItemSizeActionMock).toHaveBeenCalledWith(
@@ -89,13 +101,24 @@ describe('ItemSizesTabClient (Plan 04b-07 Task 5)', () => {
       expect.objectContaining({ sizeId: SIZE_ID_M }),
       true,
     );
+  });
+
+  it('toasts an error when at least one row fails to save', async () => {
+    upsertItemSizeActionMock.mockResolvedValue({ ok: false, error: 'boom' });
+    render(<ItemSizesTabClient itemId={ITEM_ID} sizes={[]} onSizesChange={() => undefined} />);
+    fireEvent.click(screen.getByRole('button', { name: '+ Добавить размер' }));
+    fireEvent.change(screen.getByPlaceholderText('Название'), { target: { value: 'Большая' } });
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Сохранить размеры' }));
+      await Promise.resolve();
+      await Promise.resolve();
+    });
     await waitFor(() => {
-      expect(onSizesChange).toHaveBeenCalledWith([]);
+      expect(showErrorMock).toHaveBeenCalled();
     });
   });
 
-  it('fires two upserts when the default radio is moved between rows', async () => {
-    upsertItemSizeActionMock.mockResolvedValue({ ok: true });
+  it('swaps the default radio between rows in local state without firing the api', () => {
     render(
       <ItemSizesTabClient
         itemId={ITEM_ID}
@@ -106,16 +129,11 @@ describe('ItemSizesTabClient (Plan 04b-07 Task 5)', () => {
         onSizesChange={() => undefined}
       />,
     );
-
     const radios = screen.getAllByLabelText('По умолчанию');
-    expect(radios.length).toBe(2);
-    const secondRadio = radios[1];
-    if (!secondRadio) throw new Error('expected second radio');
-    await act(async () => {
-      fireEvent.click(secondRadio);
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-    expect(upsertItemSizeActionMock).toHaveBeenCalledTimes(2);
+    const second = radios[1];
+    if (!second) throw new Error('expected second radio');
+    fireEvent.click(second);
+    expect(upsertItemSizeActionMock).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Сохранить размеры' })).not.toBeDisabled();
   });
 });

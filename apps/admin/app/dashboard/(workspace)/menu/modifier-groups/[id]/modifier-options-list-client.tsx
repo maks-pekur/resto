@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { fromLocalizedText } from '@/lib/menu/localized';
+import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierOptionAction } from './upsert-modifier-option-action';
 
 export interface ModifierOptionApi {
@@ -40,52 +41,36 @@ const rowFromApi = (o: ModifierOptionApi): RowDraft => ({
   freeAmount: o.freeAmount,
 });
 
+const rowsEqual = (a: RowDraft, b: ModifierOptionApi): boolean =>
+  a.name === fromLocalizedText(b.name) &&
+  a.priceDelta.toFixed(2) === Number.parseFloat(b.priceDelta).toFixed(2) &&
+  a.defaultAmount === b.defaultAmount &&
+  a.freeAmount === b.freeAmount;
+
 export function ModifierOptionsListClient({
   groupId,
   options,
   onOptionsChange,
 }: ModifierOptionsListClientProps): React.ReactElement {
   const [rows, setRows] = React.useState<RowDraft[]>(() => options.map(rowFromApi));
+  const [pending, setPending] = React.useState(false);
   const isNewGroup = groupId === 'new';
 
   React.useEffect(() => {
     setRows(options.map(rowFromApi));
   }, [options]);
 
+  const isDirty = React.useMemo(() => {
+    if (rows.length !== options.length) return true;
+    return rows.some((row) => {
+      const original = options.find((o) => o.id === row.optionId);
+      if (!original) return true;
+      return !rowsEqual(row, original);
+    });
+  }, [rows, options]);
+
   const updateRow = (localKey: string, patch: Partial<RowDraft>): void => {
     setRows((prev) => prev.map((r) => (r.localKey === localKey ? { ...r, ...patch } : r)));
-  };
-
-  const persistRow = async (row: RowDraft): Promise<void> => {
-    if (isNewGroup || !row.name.trim()) return;
-    const res = await upsertModifierOptionAction({
-      groupId,
-      ...(row.optionId ? { optionId: row.optionId } : {}),
-      values: {
-        name: row.name,
-        priceDelta: row.priceDelta,
-        defaultAmount: row.defaultAmount,
-        freeAmount: row.freeAmount,
-      },
-    });
-    if (res.ok && !row.optionId) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.localKey === row.localKey ? { ...r, optionId: res.id, localKey: res.id } : r,
-        ),
-      );
-      onOptionsChange([
-        ...options,
-        {
-          id: res.id,
-          name: { ru: row.name },
-          priceDelta: row.priceDelta.toFixed(2),
-          defaultAmount: row.defaultAmount,
-          freeAmount: row.freeAmount,
-          sortOrder: options.length,
-        },
-      ]);
-    }
   };
 
   const onAddRow = (): void => {
@@ -103,15 +88,55 @@ export function ModifierOptionsListClient({
     ]);
   };
 
+  const onSave = async (): Promise<void> => {
+    if (pending || isNewGroup) return;
+    setPending(true);
+
+    const failures: string[] = [];
+    for (const row of rows) {
+      if (!row.name.trim()) continue;
+      const original = row.optionId ? options.find((o) => o.id === row.optionId) : null;
+      if (original && rowsEqual(row, original)) continue;
+      const res = await upsertModifierOptionAction({
+        groupId,
+        ...(row.optionId ? { optionId: row.optionId } : {}),
+        values: {
+          name: row.name,
+          priceDelta: row.priceDelta,
+          defaultAmount: row.defaultAmount,
+          freeAmount: row.freeAmount,
+        },
+      });
+      if (!res.ok) failures.push(row.name);
+    }
+
+    setPending(false);
+    if (failures.length > 0) {
+      showError(`Не удалось сохранить: ${failures.join(', ')}`, 'Часть вариантов не сохранилась.');
+      return;
+    }
+    showSuccess('Варианты сохранены', { duration: 1500 });
+    onOptionsChange(
+      rows.map((r, idx) => ({
+        id: r.optionId ?? r.localKey,
+        name: { ru: r.name },
+        priceDelta: r.priceDelta.toFixed(2),
+        defaultAmount: r.defaultAmount,
+        freeAmount: r.freeAmount,
+        sortOrder: idx,
+      })),
+    );
+  };
+
   return (
     <TooltipProvider>
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Нет вариантов — добавьте первый, чтобы группа что-то предлагала.
           </p>
         ) : (
-          <div className="space-y-2">
+          <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[1fr_100px_80px_80px] gap-2 px-1 text-xs text-muted-foreground">
               <span>Название</span>
               <span>Наценка</span>
@@ -139,9 +164,6 @@ export function ModifierOptionsListClient({
                   onChange={(e) => {
                     updateRow(row.localKey, { name: e.target.value });
                   }}
-                  onBlur={() => {
-                    void persistRow({ ...row, name: row.name });
-                  }}
                 />
                 <Input
                   type="number"
@@ -153,9 +175,6 @@ export function ModifierOptionsListClient({
                     const n = Number.parseFloat(e.target.value);
                     updateRow(row.localKey, { priceDelta: Number.isFinite(n) ? n : 0 });
                   }}
-                  onBlur={() => {
-                    void persistRow({ ...row });
-                  }}
                 />
                 <Input
                   type="number"
@@ -165,9 +184,6 @@ export function ModifierOptionsListClient({
                   onChange={(e) => {
                     const n = Number.parseInt(e.target.value, 10);
                     updateRow(row.localKey, { defaultAmount: Number.isFinite(n) ? n : 0 });
-                  }}
-                  onBlur={() => {
-                    void persistRow({ ...row });
                   }}
                 />
                 <Input
@@ -179,24 +195,33 @@ export function ModifierOptionsListClient({
                     const n = Number.parseInt(e.target.value, 10);
                     updateRow(row.localKey, { freeAmount: Number.isFinite(n) ? n : 0 });
                   }}
-                  onBlur={() => {
-                    void persistRow({ ...row });
-                  }}
                 />
               </div>
             ))}
           </div>
         )}
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={onAddRow}
-          disabled={isNewGroup}
-          title={isNewGroup ? 'Сначала сохраните название группы' : undefined}
-        >
-          + Добавить вариант
-        </Button>
+        <div className="flex items-center justify-between gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onAddRow}
+            disabled={isNewGroup}
+            title={isNewGroup ? 'Сначала сохраните название группы' : undefined}
+          >
+            + Добавить вариант
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              void onSave();
+            }}
+            disabled={pending || isNewGroup || !isDirty}
+          >
+            {pending ? 'Сохраняем…' : 'Сохранить варианты'}
+          </Button>
+        </div>
         {isNewGroup ? (
           <p className="text-xs text-muted-foreground">
             Сначала сохраните название группы — оно сохранится автоматически.

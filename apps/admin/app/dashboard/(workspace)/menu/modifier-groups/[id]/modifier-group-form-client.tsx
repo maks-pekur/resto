@@ -4,85 +4,90 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { useDebouncedAutosave } from '@/lib/menu/use-auto-save';
 import { ModifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
-import type { SaveState } from '@/lib/menu/types';
+import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierGroupAction } from '../upsert-modifier-group-action';
 
 export interface ModifierGroupFormClientProps {
   readonly initialValues: ModifierGroupForm;
   readonly groupId: string;
-  readonly onFirstSave: (newId: string) => void;
-  readonly onSaveState: (state: SaveState) => void;
+  readonly onSaved: (savedId: string) => void;
 }
 
 export function ModifierGroupFormClient({
   initialValues,
   groupId,
-  onFirstSave,
-  onSaveState,
+  onSaved,
 }: ModifierGroupFormClientProps): React.ReactElement {
   const router = useRouter();
+  const [pending, setPending] = React.useState(false);
   const form = useForm<ModifierGroupForm>({
     resolver: zodResolver(ModifierGroupFormSchema),
     defaultValues: initialValues,
     mode: 'onChange',
   });
 
-  useDebouncedAutosave<ModifierGroupForm>(
-    form,
-    async (values) => {
-      const res = await upsertModifierGroupAction({
-        ...(groupId !== 'new' ? { groupId } : {}),
-        values,
-      });
-      if (res.ok && groupId === 'new') {
-        onFirstSave(res.id);
-        router.replace(`/dashboard/menu/modifier-groups/${res.id}`);
-      }
-      return { ok: res.ok };
-    },
-    onSaveState,
-  );
+  const isNew = groupId === 'new';
+  const isDirty = form.formState.isDirty;
+  const canSubmit = isNew ? true : isDirty;
+
+  const onSubmit = form.handleSubmit(async (values) => {
+    setPending(true);
+    const res = await upsertModifierGroupAction({
+      ...(isNew ? {} : { groupId }),
+      values,
+    });
+    setPending(false);
+    if (!res.ok) {
+      showError(res.error, 'Не удалось сохранить группу.');
+      return;
+    }
+    showSuccess(isNew ? 'Группа создана' : 'Сохранено', { duration: 1500 });
+    onSaved(res.id);
+    if (isNew) {
+      router.replace(`/dashboard/menu/modifier-groups/${res.id}`);
+    } else {
+      form.reset(values);
+    }
+  });
 
   return (
-    <Form {...form}>
-      <form
-        className="grid gap-4 md:grid-cols-[1fr_8rem_8rem]"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Название</FormLabel>
-              <FormControl>
-                <Input maxLength={255} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="minSelectable"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Мин</FormLabel>
-              <FormControl>
+    <form
+      onSubmit={(e) => {
+        void onSubmit(e);
+      }}
+      className="flex flex-col gap-6"
+    >
+      <FieldGroup>
+        <div className="grid gap-4 md:grid-cols-[1fr_8rem_8rem]">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.error ? true : undefined}>
+                <FieldLabel htmlFor={field.name}>Название</FieldLabel>
                 <Input
+                  id={field.name}
+                  maxLength={255}
+                  aria-invalid={fieldState.error ? true : undefined}
+                  {...field}
+                />
+                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+              </Field>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="minSelectable"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.error ? true : undefined}>
+                <FieldLabel htmlFor={field.name}>Мин</FieldLabel>
+                <Input
+                  id={field.name}
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -96,19 +101,18 @@ export function ModifierGroupFormClient({
                     field.onChange(Number.isFinite(n) ? n : 0);
                   }}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="maxSelectable"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Макс</FormLabel>
-              <FormControl>
+                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+              </Field>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="maxSelectable"
+            render={({ field, fieldState }) => (
+              <Field data-invalid={fieldState.error ? true : undefined}>
+                <FieldLabel htmlFor={field.name}>Макс</FieldLabel>
                 <Input
+                  id={field.name}
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -122,12 +126,17 @@ export function ModifierGroupFormClient({
                     field.onChange(Number.isFinite(n) ? n : 0);
                   }}
                 />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </form>
-    </Form>
+                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+              </Field>
+            )}
+          />
+        </div>
+      </FieldGroup>
+      <div className="flex justify-end">
+        <Button type="submit" disabled={pending || !canSubmit}>
+          {pending ? 'Сохраняем…' : isNew ? 'Создать группу' : 'Сохранить'}
+        </Button>
+      </div>
+    </form>
   );
 }

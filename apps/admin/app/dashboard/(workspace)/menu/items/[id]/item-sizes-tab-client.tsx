@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { fromLocalizedText } from '@/lib/menu/localized';
+import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemSizeAction } from './upsert-item-size-action';
 import type { ItemSizeApi } from './types';
 
@@ -31,7 +32,10 @@ const rowFromApi = (s: ItemSizeApi): RowDraft => ({
   isDefault: s.isDefault,
 });
 
-const stubName = (s3Key: string): Record<string, string> => ({ ru: s3Key });
+const rowsEqual = (a: RowDraft, b: ItemSizeApi): boolean =>
+  a.name === fromLocalizedText(b.name) &&
+  a.price.toFixed(2) === Number.parseFloat(b.price).toFixed(2) &&
+  a.isDefault === b.isDefault;
 
 export function ItemSizesTabClient({
   itemId,
@@ -39,49 +43,25 @@ export function ItemSizesTabClient({
   onSizesChange,
 }: ItemSizesTabClientProps): React.ReactElement {
   const [rows, setRows] = React.useState<RowDraft[]>(() => sizes.map(rowFromApi));
+  const [pending, setPending] = React.useState(false);
+
+  const isNewItem = itemId === 'new';
 
   React.useEffect(() => {
     setRows(sizes.map(rowFromApi));
   }, [sizes]);
 
-  const isNewItem = itemId === 'new';
+  const isDirty = React.useMemo(() => {
+    if (rows.length !== sizes.length) return true;
+    return rows.some((row) => {
+      const original = sizes.find((s) => s.id === row.sizeId);
+      if (!original) return true;
+      return !rowsEqual(row, original);
+    });
+  }, [rows, sizes]);
 
   const updateRow = (localKey: string, patch: Partial<RowDraft>): void => {
     setRows((prev) => prev.map((r) => (r.localKey === localKey ? { ...r, ...patch } : r)));
-  };
-
-  const persistRow = async (row: RowDraft): Promise<void> => {
-    if (isNewItem || !row.name.trim()) return;
-    const payload: {
-      sizeId?: string;
-      name: string;
-      price: number;
-      isDefault: boolean;
-    } = {
-      name: row.name,
-      price: row.price,
-      isDefault: row.isDefault,
-    };
-    if (row.sizeId) payload.sizeId = row.sizeId;
-    const res = await upsertItemSizeAction(itemId, payload);
-    if (res.ok && res.id && !row.sizeId) {
-      setRows((prev) =>
-        prev.map((r) =>
-          r.localKey === row.localKey
-            ? { ...r, sizeId: res.id ?? null, localKey: res.id ?? r.localKey }
-            : r,
-        ),
-      );
-      onSizesChange([
-        ...sizes,
-        {
-          id: res.id,
-          name: stubName(row.name),
-          price: row.price.toFixed(2),
-          isDefault: row.isDefault,
-        },
-      ]);
-    }
   };
 
   const onAddRow = (): void => {
@@ -98,32 +78,64 @@ export function ItemSizesTabClient({
     ]);
   };
 
-  const onRemoveRow = async (row: RowDraft): Promise<void> => {
-    if (!row.sizeId) {
-      setRows((prev) => prev.filter((r) => r.localKey !== row.localKey));
-      return;
-    }
-    const res = await upsertItemSizeAction(
-      itemId,
-      { sizeId: row.sizeId, name: row.name, price: row.price, isDefault: row.isDefault },
-      true,
-    );
-    if (res.ok) {
-      setRows((prev) => prev.filter((r) => r.localKey !== row.localKey));
-      onSizesChange(sizes.filter((s) => s.id !== row.sizeId));
-    }
+  const onRemoveRow = (localKey: string): void => {
+    setRows((prev) => prev.filter((r) => r.localKey !== localKey));
   };
 
-  const onToggleDefault = async (row: RowDraft): Promise<void> => {
-    if (row.isDefault) return;
-    const previousDefault = rows.find((r) => r.isDefault && r.localKey !== row.localKey) ?? null;
-    setRows((prev) => prev.map((r) => ({ ...r, isDefault: r.localKey === row.localKey })));
-    const updated: RowDraft = { ...row, isDefault: true };
-    await persistRow(updated);
-    if (previousDefault) {
-      const cleared: RowDraft = { ...previousDefault, isDefault: false };
-      await persistRow(cleared);
+  const onSetDefault = (localKey: string): void => {
+    setRows((prev) => prev.map((r) => ({ ...r, isDefault: r.localKey === localKey })));
+  };
+
+  const onSave = async (): Promise<void> => {
+    if (pending || isNewItem) return;
+    setPending(true);
+
+    const localIds = new Set(rows.map((r) => r.sizeId).filter((id): id is string => id !== null));
+    const removed = sizes.filter((s) => !localIds.has(s.id));
+
+    const failures: string[] = [];
+
+    for (const row of rows) {
+      if (!row.name.trim()) continue;
+      const original = row.sizeId ? sizes.find((s) => s.id === row.sizeId) : null;
+      if (original && rowsEqual(row, original)) continue;
+      const res = await upsertItemSizeAction(itemId, {
+        ...(row.sizeId ? { sizeId: row.sizeId } : {}),
+        name: row.name,
+        price: row.price,
+        isDefault: row.isDefault,
+      });
+      if (!res.ok) failures.push(row.name);
     }
+
+    for (const size of removed) {
+      const res = await upsertItemSizeAction(
+        itemId,
+        {
+          sizeId: size.id,
+          name: fromLocalizedText(size.name),
+          price: Number.parseFloat(size.price),
+          isDefault: size.isDefault,
+        },
+        true,
+      );
+      if (!res.ok) failures.push(fromLocalizedText(size.name));
+    }
+
+    setPending(false);
+    if (failures.length > 0) {
+      showError(`Не удалось сохранить: ${failures.join(', ')}`, 'Часть размеров не сохранилась.');
+      return;
+    }
+    showSuccess('Размеры сохранены', { duration: 1500 });
+    onSizesChange(
+      rows.map((r) => ({
+        id: r.sizeId ?? r.localKey,
+        name: { ru: r.name },
+        price: r.price.toFixed(2),
+        isDefault: r.isDefault,
+      })),
+    );
   };
 
   return (
@@ -132,7 +144,7 @@ export function ItemSizesTabClient({
         <CardTitle>Размеры</CardTitle>
         <CardDescription>
           {isNewItem
-            ? 'Сначала введите название блюда — оно сохранится автоматически.'
+            ? 'Сначала сохраните блюдо — потом можно добавлять размеры.'
             : 'Цена за размер заменяет базовую. Один размер можно отметить «По умолчанию».'}
         </CardDescription>
       </CardHeader>
@@ -155,9 +167,6 @@ export function ItemSizesTabClient({
                   onChange={(e) => {
                     updateRow(row.localKey, { name: e.target.value });
                   }}
-                  onBlur={() => {
-                    void persistRow({ ...row, name: row.name });
-                  }}
                 />
                 <Input
                   type="number"
@@ -169,9 +178,6 @@ export function ItemSizesTabClient({
                     const n = Number.parseFloat(e.target.value);
                     updateRow(row.localKey, { price: Number.isFinite(n) ? n : 0 });
                   }}
-                  onBlur={() => {
-                    void persistRow({ ...row });
-                  }}
                 />
                 <label className="flex items-center justify-center gap-1 text-xs">
                   <input
@@ -180,7 +186,7 @@ export function ItemSizesTabClient({
                     checked={row.isDefault}
                     aria-label="По умолчанию"
                     onChange={() => {
-                      void onToggleDefault(row);
+                      onSetDefault(row.localKey);
                     }}
                   />
                   <span className="text-muted-foreground">По&nbsp;умолч.</span>
@@ -191,7 +197,7 @@ export function ItemSizesTabClient({
                   size="icon"
                   aria-label="Удалить размер"
                   onClick={() => {
-                    void onRemoveRow(row);
+                    onRemoveRow(row.localKey);
                   }}
                 >
                   <X className="size-4" aria-hidden="true" />
@@ -200,9 +206,19 @@ export function ItemSizesTabClient({
             ))}
           </div>
         ) : null}
-        <div>
+        <div className="flex items-center justify-between gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onAddRow} disabled={isNewItem}>
             + Добавить размер
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => {
+              void onSave();
+            }}
+            disabled={pending || isNewItem || !isDirty}
+          >
+            {pending ? 'Сохраняем…' : 'Сохранить размеры'}
           </Button>
         </div>
       </CardContent>

@@ -1,9 +1,11 @@
 import * as React from 'react';
-import { act, fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const upsertItemActionMock = vi.fn();
 const routerReplaceMock = vi.fn();
+const showSuccessMock = vi.fn();
+const showErrorMock = vi.fn();
 
 vi.mock('../app/dashboard/(workspace)/menu/items/[id]/upsert-item-action', () => ({
   upsertItemAction: upsertItemActionMock,
@@ -15,6 +17,11 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('../app/dashboard/(workspace)/menu/items/[id]/photo-upload-client', () => ({
   PhotoUploadClient: () => <div data-testid="photo-upload" />,
+}));
+
+vi.mock('@/lib/ui/toast-helpers', () => ({
+  showSuccess: showSuccessMock,
+  showError: showErrorMock,
 }));
 
 const { ItemDetailTabClient } =
@@ -40,20 +47,19 @@ const defaultProps = {
   categories: [{ id: CATEGORY_ID, name: 'Кофе', parentId: null }],
   currentPhotoS3Key: null,
   currentPhotoUrl: null,
+  initialPhotoS3Key: null,
   onPhotoChange: vi.fn(),
-  onFirstSave: vi.fn(),
-  onSaveState: vi.fn(),
+  onSaved: vi.fn(),
   slug: 'kapuchino',
 };
 
-describe('ItemDetailTabClient (Plan 04b-07 Task 3)', () => {
+describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
   beforeEach(() => {
-    vi.useFakeTimers();
     vi.clearAllMocks();
   });
 
   afterEach(() => {
-    vi.useRealTimers();
+    vi.restoreAllMocks();
   });
 
   it('renders the form prefilled with initialValues', () => {
@@ -64,40 +70,69 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3)', () => {
     expect(screen.getByText('kapuchino')).toBeInTheDocument();
   });
 
-  it('fires upsertItemAction 1500ms after a name field edit', async () => {
+  it('shows "Создать блюдо" for new items and "Сохранить" for existing', () => {
+    const { rerender } = render(<ItemDetailTabClient {...defaultProps} currentItemId="new" />);
+    expect(screen.getByRole('button', { name: 'Создать блюдо' })).toBeInTheDocument();
+
+    rerender(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
+  });
+
+  it('disables "Сохранить" for existing items until the form is dirty', () => {
+    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+  });
+
+  it('enables "Сохранить" once a field changes and calls upsertItemAction on submit', async () => {
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
     render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
 
-    const nameInput = screen.getByDisplayValue('Капучино');
-    act(() => {
-      fireEvent.input(nameInput, { target: { value: 'Латте' } });
+    fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
+    const saveBtn = screen.getByRole('button', { name: 'Сохранить' });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
     });
+
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      fireEvent.click(saveBtn);
       await Promise.resolve();
       await Promise.resolve();
     });
 
     expect(upsertItemActionMock).toHaveBeenCalledTimes(1);
     expect(upsertItemActionMock.mock.calls[0]?.[0]).toBe(ITEM_ID);
+    expect(showSuccessMock).toHaveBeenCalled();
   });
 
-  it('flips URL via router.replace and onFirstSave when a new-item save returns an id', async () => {
-    const onFirstSave = vi.fn();
+  it('flips URL via router.replace and calls onSaved when a new-item create succeeds', async () => {
+    const onSaved = vi.fn();
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
-    render(<ItemDetailTabClient {...defaultProps} currentItemId="new" onFirstSave={onFirstSave} />);
+    render(<ItemDetailTabClient {...defaultProps} currentItemId="new" onSaved={onSaved} />);
 
-    const nameInput = screen.getByDisplayValue('Капучино');
-    act(() => {
-      fireEvent.input(nameInput, { target: { value: 'Латте' } });
+    const createBtn = screen.getByRole('button', { name: 'Создать блюдо' });
+    await act(async () => {
+      fireEvent.click(createBtn);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(onSaved).toHaveBeenCalledWith(ITEM_ID);
+    expect(routerReplaceMock).toHaveBeenCalledWith(`/dashboard/menu/items/${ITEM_ID}`);
+  });
+
+  it('surfaces a toast and keeps the form dirty when the server rejects the save', async () => {
+    upsertItemActionMock.mockResolvedValue({ ok: false, error: 'Ошибка серверa' });
+    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
+    const saveBtn = screen.getByRole('button', { name: 'Сохранить' });
+    await waitFor(() => {
+      expect(saveBtn).not.toBeDisabled();
     });
     await act(async () => {
-      vi.advanceTimersByTime(1500);
+      fireEvent.click(saveBtn);
       await Promise.resolve();
       await Promise.resolve();
     });
-
-    expect(onFirstSave).toHaveBeenCalledWith(ITEM_ID);
-    expect(routerReplaceMock).toHaveBeenCalledWith(`/dashboard/menu/items/${ITEM_ID}`);
+    expect(showErrorMock).toHaveBeenCalled();
   });
 });

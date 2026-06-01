@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { AutoSaveIndicator } from '@/components/menu/auto-save-indicator';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import type { SaveState } from '@/lib/menu/types';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { ItemDetailTabClient } from './item-detail-tab-client';
 import { ItemSizesTabClient } from './item-sizes-tab-client';
@@ -57,13 +55,13 @@ export function ItemEditorShellClient({
   availableModifierGroups,
 }: ItemEditorShellClientProps): React.ReactElement {
   const [currentItemId, setCurrentItemId] = React.useState(itemId);
+  const initialPhotoS3Key = initialItem?.photos[0]?.s3Key ?? null;
   const [currentPhotoS3Key, setCurrentPhotoS3Key] = React.useState<string | null>(
-    initialItem?.photos[0]?.s3Key ?? null,
+    initialPhotoS3Key,
   );
   const [currentPhotoUrl, setCurrentPhotoUrl] = React.useState<string | null>(
     initialItem?.photos[0]?.url ?? null,
   );
-  const [saveState, setSaveState] = React.useState<SaveState>({ kind: 'idle' });
   const [currentSizes, setCurrentSizes] = React.useState<readonly ItemSizeApi[]>(
     initialItem?.sizes ?? [],
   );
@@ -75,10 +73,6 @@ export function ItemEditorShellClient({
 
   return (
     <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-      <div className="flex items-start justify-end gap-4">
-        <AutoSaveIndicator state={saveState} />
-      </div>
-
       <Tabs defaultValue="detail" className="flex-1">
         <TabsList>
           <TabsTrigger value="detail">Детали</TabsTrigger>
@@ -97,10 +91,10 @@ export function ItemEditorShellClient({
               setCurrentPhotoUrl(null);
             }}
             currentItemId={currentItemId}
-            onFirstSave={(newId) => {
-              setCurrentItemId(newId);
+            initialPhotoS3Key={initialPhotoS3Key}
+            onSaved={(savedId) => {
+              setCurrentItemId(savedId);
             }}
-            onSaveState={setSaveState}
             slug={initialItem?.slug ?? ''}
           />
         </TabsContent>

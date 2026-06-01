@@ -1,10 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { AutoSaveIndicator } from '@/components/menu/auto-save-indicator';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import type { SaveState } from '@/lib/menu/types';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
 import { ModifierGroupFormClient } from './modifier-group-form-client';
 import { ModifierOptionsListClient, type ModifierOptionApi } from './modifier-options-list-client';
@@ -39,7 +37,6 @@ export function GroupEditorShellClient({
   groupId,
 }: GroupEditorShellClientProps): React.ReactElement {
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
-  const [saveState, setSaveState] = React.useState<SaveState>({ kind: 'idle' });
   const [currentOptions, setCurrentOptions] = React.useState<readonly ModifierOptionApi[]>(
     initialGroup?.options ?? [],
   );
@@ -51,20 +48,19 @@ export function GroupEditorShellClient({
 
   return (
     <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
-      <div className="flex items-start justify-end gap-4">
-        <AutoSaveIndicator state={saveState} />
-      </div>
-
       <Card>
         <CardHeader>
           <CardTitle>Основное</CardTitle>
+          <CardDescription>
+            Параметры группы: название и количество выбираемых вариантов (макс. 0 — без
+            ограничений).
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <ModifierGroupFormClient
             initialValues={initialValues}
             groupId={currentGroupId}
-            onFirstSave={setCurrentGroupId}
-            onSaveState={setSaveState}
+            onSaved={setCurrentGroupId}
           />
         </CardContent>
       </Card>
@@ -72,6 +68,7 @@ export function GroupEditorShellClient({
       <Card>
         <CardHeader>
           <CardTitle>Варианты</CardTitle>
+          <CardDescription>Список опций и их цены — сохраняются одной кнопкой.</CardDescription>
         </CardHeader>
         <CardContent>
           <ModifierOptionsListClient
