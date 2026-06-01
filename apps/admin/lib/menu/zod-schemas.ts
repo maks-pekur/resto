@@ -51,22 +51,22 @@ export const ItemEditorFormSchema = z.object({
   name: z.string().trim().min(1).max(255),
   description: z.string().max(4096).nullable(),
   categoryId: z.string().uuid(),
-  basePrice: z.coerce.number().min(0),
+  basePrice: z.number().min(0),
   currency: z.string().regex(/^[A-Z]{3}$/u),
   allergens: z.array(z.string().min(1).max(100)).max(50),
-  proteins: z.coerce.number().min(0).max(999.99).nullable(),
-  fats: z.coerce.number().min(0).max(999.99).nullable(),
-  carbs: z.coerce.number().min(0).max(999.99).nullable(),
-  kcal: z.coerce.number().int().min(0).max(32000).nullable(),
-  nutritionEstimated: z.boolean().default(false),
+  proteins: z.number().min(0).max(999.99).nullable(),
+  fats: z.number().min(0).max(999.99).nullable(),
+  carbs: z.number().min(0).max(999.99).nullable(),
+  kcal: z.number().int().min(0).max(32000).nullable(),
+  nutritionEstimated: z.boolean(),
 });
 
 export type ItemEditorForm = z.infer<typeof ItemEditorFormSchema>;
 
 export const SizeFormSchema = z.object({
   name: z.string().trim().min(1).max(100),
-  price: z.coerce.number().min(0),
-  isDefault: z.boolean().default(false),
+  price: z.number().min(0),
+  isDefault: z.boolean(),
 });
 
 export type SizeForm = z.infer<typeof SizeFormSchema>;

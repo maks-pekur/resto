@@ -144,10 +144,9 @@ describe('ItemEditorFormSchema (Plan 04b-07 Task 1, mirrors CAT-09 caps)', () =>
     expect(res.success).toBe(false);
   });
 
-  it('coerces a stringified basePrice into a number', () => {
+  it('rejects a stringified basePrice (form layer parses before submit)', () => {
     const res = ItemEditorFormSchema.safeParse({ ...validPayload, basePrice: '4.50' });
-    expect(res.success).toBe(true);
-    if (res.success) expect(res.data.basePrice).toBe(4.5);
+    expect(res.success).toBe(false);
   });
 });
 
@@ -167,10 +166,9 @@ describe('SizeFormSchema (Plan 04b-07 Task 1)', () => {
     expect(res.success).toBe(false);
   });
 
-  it('defaults isDefault to false when omitted', () => {
+  it('requires isDefault to be set explicitly (no default)', () => {
     const res = SizeFormSchema.safeParse({ name: 'Средняя', price: 5 });
-    expect(res.success).toBe(true);
-    if (res.success) expect(res.data.isDefault).toBe(false);
+    expect(res.success).toBe(false);
   });
 });
 
