@@ -233,12 +233,12 @@ Plans:
 
 **Wave 4** _(after Wave 3 — items list extends zod-schemas from Plan 05)_
 
-- [ ] 04b-06-PLAN.md — Items list: page + filter bar + table with stop-list switch + archive AlertDialog + 2 server actions (toggle-stop-list / archive-item) (CAT-02, CAT-07)
+- [x] 04b-06-PLAN.md — Items list: page + filter bar + table with stop-list switch + archive AlertDialog + 2 server actions (toggle-stop-list / archive-item) (CAT-02, CAT-07)
 
 **Wave 5** _(after Wave 4 — item editor + stop-list page reuse items table primitives; both extend zod-schemas)_
 
-- [ ] 04b-07-PLAN.md — Item editor: RSC + tabs shell + Detail tab (RHF + zodResolver + useDebouncedAutosave hook with request-id guard) + Sizes tab (per-row blur save) + PhotoUploadClient (presigned PUT direct-to-S3) + BJU row + 3 server actions (CAT-02, CAT-03, CAT-05)
-- [ ] 04b-09-PLAN.md — Stop-list page + "Today's 86" dashboard widget + reset-all server action (looped DELETEs with partial-success report) + >24h stale warning + dashboard integration (CAT-07 dedicated surface)
+- [x] 04b-07-PLAN.md — Item editor: RSC + tabs shell + Detail tab (RHF + zodResolver + useDebouncedAutosave hook with request-id guard) + Sizes tab (per-row blur save) + PhotoUploadClient (presigned PUT direct-to-S3) + BJU row + 3 server actions (CAT-02, CAT-03, CAT-05)
+- [x] 04b-09-PLAN.md — Stop-list page + "Today's 86" dashboard widget + reset-all server action (looped DELETEs with partial-success report) + >24h stale warning + dashboard integration (CAT-07 dedicated surface)
 
 **Wave 6** _(after Wave 5 — Modifiers tab integrates into the item editor shell from Plan 07)_
 
@@ -485,7 +485,7 @@ Notes:
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
-| 4b. Catalog Admin UI                          | 5/9            | In Progress   |            |
+| 4b. Catalog Admin UI                          | 8/9            | In Progress   |            |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
