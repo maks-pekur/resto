@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { toast } from 'sonner';
+import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -44,9 +45,9 @@ export function StickyPublishBarClient({
   const handleCancel = async (): Promise<void> => {
     const res = await cancelPublishAction();
     if (!res.ok) {
-      toast.error('Could not cancel publication — please try again.', { id: TOAST_ID });
+      showError(null, 'Could not cancel publication — please try again.', { id: TOAST_ID });
     } else if (res.cancelled) {
-      toast.success('Публикация отменена', { id: TOAST_ID });
+      showSuccess('Публикация отменена', { id: TOAST_ID });
     } else {
       toast.info('Уже опубликовано — окно отмены истекло', { id: TOAST_ID });
     }
@@ -54,7 +55,7 @@ export function StickyPublishBarClient({
   };
 
   const handleElapse = (): void => {
-    toast.success('Опубликовано', { id: TOAST_ID, duration: SUCCESS_AUTO_DISMISS_MS });
+    showSuccess('Опубликовано', { id: TOAST_ID, duration: SUCCESS_AUTO_DISMISS_MS });
     setIsPublishing(false);
   };
 
@@ -62,7 +63,7 @@ export function StickyPublishBarClient({
     setIsPublishing(true);
     const res = await schedulePublishAction();
     if (!res.ok) {
-      toast.error(res.error, { id: TOAST_ID });
+      showError(res.error, undefined, { id: TOAST_ID });
       setIsPublishing(false);
       return;
     }

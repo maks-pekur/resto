@@ -4,7 +4,7 @@ import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { MoreHorizontal, ImageIcon } from 'lucide-react';
-import { toast } from 'sonner';
+import { showError, showSuccess, toastFromResult } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
 import { Switch } from '@/components/ui/switch';
@@ -92,9 +92,7 @@ export function ItemsTableClient({
     setArchiveTarget(null);
     startTransition(async () => {
       const res = await archiveItemAction({ error: null, success: false }, { id });
-      if (res.error) {
-        toast.error(res.error);
-      }
+      toastFromResult(res);
     });
   };
 
@@ -119,14 +117,12 @@ export function ItemsTableClient({
         return copy;
       });
       if (res.ok) {
-        if (next === 'paused') {
-          toast.success('Блюдо добавлено в стоп-лист', { duration: 1500 });
-        } else {
-          toast.success('Блюдо возобновлено', { duration: 1500 });
-        }
+        showSuccess(next === 'paused' ? 'Блюдо добавлено в стоп-лист' : 'Блюдо возобновлено', {
+          duration: 1500,
+        });
       } else {
         setOptimistic((prev) => ({ ...prev, [item.id]: undefined }));
-        toast.error(res.error ?? 'Could not update the stop list. Please try again.');
+        showError(res.error, 'Could not update the stop list. Please try again.');
       }
     });
   };

@@ -28,11 +28,22 @@ export const showError = (
   fallback: string = DEFAULT_ERROR,
   opts?: ToastOptions,
 ): void => {
-  toast.error(message ?? fallback, toToastOptions(opts));
+  const toastOpts = toToastOptions(opts);
+  const text = message ?? fallback;
+  if (toastOpts) {
+    toast.error(text, toastOpts);
+  } else {
+    toast.error(text);
+  }
 };
 
 export const showSuccess = (message: string, opts?: ToastOptions): void => {
-  toast.success(message, toToastOptions(opts));
+  const toastOpts = toToastOptions(opts);
+  if (toastOpts) {
+    toast.success(message, toastOpts);
+  } else {
+    toast.success(message);
+  }
 };
 
 const isOk = (result: ActionResultLike): boolean => {
