@@ -19,7 +19,7 @@ export interface CatalogRepository {
     itemId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
 
-  listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]>;
+  listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
   listItems(input: {
     status: ItemStatusFilter;
     categoryId: string | null;

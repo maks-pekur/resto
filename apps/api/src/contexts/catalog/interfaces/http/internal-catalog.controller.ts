@@ -247,7 +247,10 @@ export class InternalCatalogController {
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
-    return wrap(() => this.listCategoriesService.execute({ parentId: parentId ?? null }));
+    // No query param → all categories (admin tree view). Empty string → top-level only. UUID → children of that parent.
+    const filter: string | null | undefined =
+      parentId === undefined ? undefined : parentId === '' ? null : parentId;
+    return wrap(() => this.listCategoriesService.execute({ parentId: filter }));
   }
 
   @Get('items')

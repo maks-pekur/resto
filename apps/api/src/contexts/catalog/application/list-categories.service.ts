@@ -7,7 +7,7 @@ import type { CategoryListResponse } from './dto';
 export class ListCategoriesService {
   constructor(@Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository) {}
 
-  async execute(input: { parentId: string | null }): Promise<CategoryListResponse> {
+  async execute(input: { parentId: string | null | undefined }): Promise<CategoryListResponse> {
     requireTenantContext();
     const rows = await this.repo.listCategoriesByParent(input.parentId);
     return {

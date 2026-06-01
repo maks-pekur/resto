@@ -689,12 +689,14 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listCategoriesByParent(parentId: string | null): Promise<CategoryListRow[]> {
+  async listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const where =
-        parentId === null
-          ? isNull(schema.menuCategories.parentId)
-          : eq(schema.menuCategories.parentId, parentId);
+        parentId === undefined
+          ? undefined
+          : parentId === null
+            ? isNull(schema.menuCategories.parentId)
+            : eq(schema.menuCategories.parentId, parentId);
       const rows = await scoped
         .selectFrom(schema.menuCategories, where)
         .orderBy(asc(schema.menuCategories.sortOrder), asc(schema.menuCategories.slug));
