@@ -37,6 +37,7 @@ import {
   type UpsertModifierGroupRow,
   type UpsertModifierOptionRow,
 } from '../domain/ports';
+import { CategoryNestingDepthError, MenuCategoryNotFoundError } from '../domain/errors';
 import type {
   PublishedMenu,
   PublishedMenuBrand,
@@ -712,27 +713,52 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async reorderCategoriesByParent(input: {
-    parentId: string | null;
-    orderedIds: readonly string[];
+  async applyCategoryMoves(input: {
+    moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const where =
-        input.parentId === null
-          ? isNull(schema.menuCategories.parentId)
-          : eq(schema.menuCategories.parentId, input.parentId);
-      const siblings = await scoped.selectFrom(schema.menuCategories, where);
-      const validIds = new Set(siblings.map((s) => s.id));
+      const all = await scoped.selectFrom(schema.menuCategories);
+      const byId = new Map(all.map((c) => [c.id, c]));
+      const childrenOf = new Map<string, number>();
+      for (const c of all) {
+        if (c.parentId !== null) {
+          childrenOf.set(c.parentId, (childrenOf.get(c.parentId) ?? 0) + 1);
+        }
+      }
+
+      for (const move of input.moves) {
+        const current = byId.get(move.id);
+        if (!current) {
+          throw new MenuCategoryNotFoundError(move.id);
+        }
+        if (move.parentId !== null) {
+          const parent = byId.get(move.parentId);
+          if (!parent) {
+            throw new MenuCategoryNotFoundError(move.parentId);
+          }
+          if (parent.parentId !== null) {
+            throw new CategoryNestingDepthError(
+              move.id,
+              `Cannot nest category "${move.id}" under "${move.parentId}": parent is itself a child (depth would exceed 2).`,
+            );
+          }
+          if ((childrenOf.get(move.id) ?? 0) > 0) {
+            throw new CategoryNestingDepthError(
+              move.id,
+              `Cannot nest category "${move.id}": it has its own subcategories (would create depth-3 grandchildren).`,
+            );
+          }
+        }
+      }
+
       const updatedAt = new Date();
       let updated = 0;
-      for (let i = 0; i < input.orderedIds.length; i += 1) {
-        const id = input.orderedIds[i];
-        if (id === undefined || !validIds.has(id)) continue;
+      for (const move of input.moves) {
         await scoped
           .updateTable(
             schema.menuCategories,
-            { sortOrder: i * 10, updatedAt },
-            eq(schema.menuCategories.id, id),
+            { parentId: move.parentId, sortOrder: move.sortOrder, updatedAt },
+            eq(schema.menuCategories.id, move.id),
           )
           .execute();
         updated += 1;

@@ -64,15 +64,13 @@ export function CategorySelect({
           if (disabledOption) {
             return (
               <SelectItem key={c.id} value={c.id} disabled aria-disabled="true" className="pl-8">
-                <span className="text-muted-foreground">
-                  ↳ {c.name} (уже является подкатегорией)
-                </span>
+                <span className="text-muted-foreground">{c.name} (уже является подкатегорией)</span>
               </SelectItem>
             );
           }
           return (
             <SelectItem key={c.id} value={c.id} className={isChild ? 'pl-8' : ''}>
-              {isChild ? `↳ ${c.name}` : c.name}
+              {c.name}
             </SelectItem>
           );
         })}

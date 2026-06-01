@@ -63,6 +63,17 @@ export class MenuItemAlreadyArchivedError extends Error {
   }
 }
 
+export class CategoryNestingDepthError extends Error {
+  readonly kind = 'CategoryNestingDepthError' as const;
+  constructor(
+    public readonly categoryId: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = 'CategoryNestingDepthError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
@@ -71,4 +82,5 @@ export type CatalogDomainError =
   | MenuItemSizeNotFoundError
   | StopListItemNotFoundError
   | MenuCategoryAlreadyArchivedError
-  | MenuItemAlreadyArchivedError;
+  | MenuItemAlreadyArchivedError
+  | CategoryNestingDepthError;

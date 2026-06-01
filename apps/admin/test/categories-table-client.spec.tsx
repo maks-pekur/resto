@@ -82,11 +82,11 @@ describe('CategoriesTableClient (Plan 04b-05 Task 3)', () => {
     vi.clearAllMocks();
   });
 
-  it('renders parent rows then their children indented with the ↳ prefix', () => {
+  it('renders parent rows then their children (children indented via pl-8, no arrow prefix)', () => {
     render(<CategoriesTableClient categories={baseCategories} />);
     expect(screen.getAllByText('Напитки').length).toBeGreaterThan(0);
-    expect(screen.getByText('↳ Кофе')).toBeInTheDocument();
-    expect(screen.getByText('↳ Чай')).toBeInTheDocument();
+    expect(screen.getByText('Кофе')).toBeInTheDocument();
+    expect(screen.getByText('Чай')).toBeInTheDocument();
     expect(screen.getByText('Десерты')).toBeInTheDocument();
   });
 

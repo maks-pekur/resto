@@ -102,7 +102,7 @@ describe('CategorySelect (D-4b-01, RESEARCH.md Pattern 5)', () => {
     expect(screen.getByText(/— Без родителя —/u)).toBeInTheDocument();
   });
 
-  it('item-picker mode renders all options with ↳ prefix on children', () => {
+  it('item-picker mode renders all options (children indented via pl-8, no arrow prefix)', () => {
     render(
       <CategorySelect
         categories={baseCategories}
@@ -112,7 +112,7 @@ describe('CategorySelect (D-4b-01, RESEARCH.md Pattern 5)', () => {
       />,
     );
     expect(screen.getByText('Напитки')).toBeInTheDocument();
-    expect(screen.getByText('↳ Кофе')).toBeInTheDocument();
+    expect(screen.getByText('Кофе')).toBeInTheDocument();
     expect(screen.queryByText(/— Без родителя —/u)).not.toBeInTheDocument();
   });
 

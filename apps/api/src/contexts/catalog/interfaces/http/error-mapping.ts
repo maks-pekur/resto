@@ -1,6 +1,12 @@
-import { ConflictException, NotFoundException, type HttpException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  type HttpException,
+} from '@nestjs/common';
 import {
   CatalogPublishConflictError,
+  CategoryNestingDepthError,
   MenuCategoryAlreadyArchivedError,
   MenuCategoryNotFoundError,
   MenuItemAlreadyArchivedError,
@@ -19,7 +25,8 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof MenuItemSizeNotFoundError ||
   err instanceof StopListItemNotFoundError ||
   err instanceof MenuCategoryAlreadyArchivedError ||
-  err instanceof MenuItemAlreadyArchivedError;
+  err instanceof MenuItemAlreadyArchivedError ||
+  err instanceof CategoryNestingDepthError;
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -61,6 +68,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'MenuItemAlreadyArchivedError':
       return new ConflictException({
         code: 'catalog.menu_item_already_archived',
+        message: err.message,
+      });
+    case 'CategoryNestingDepthError':
+      return new BadRequestException({
+        code: 'catalog.category_nesting_depth',
         message: err.message,
       });
     default: {

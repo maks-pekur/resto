@@ -8,20 +8,26 @@ export interface ReorderCategoriesActionState {
   readonly success: boolean;
 }
 
+export interface CategoryMoveInput {
+  readonly id: string;
+  readonly parentId: string | null;
+  readonly sortOrder: number;
+}
+
 interface ReorderResponse {
   readonly updated: number;
 }
 
 export async function reorderCategoriesAction(
   _prev: ReorderCategoriesActionState,
-  input: { readonly parentId: string | null; readonly orderedIds: readonly string[] },
+  input: { readonly moves: readonly CategoryMoveInput[] },
 ): Promise<ReorderCategoriesActionState> {
-  if (input.orderedIds.length === 0) {
+  if (input.moves.length === 0) {
     return { error: null, success: true };
   }
   const res = await apiFetchInternal<ReorderResponse>('/internal/v1/catalog/categories/reorder', {
     method: 'POST',
-    body: { parentId: input.parentId, orderedIds: input.orderedIds },
+    body: { moves: input.moves },
   });
   if (!res.ok) {
     return {

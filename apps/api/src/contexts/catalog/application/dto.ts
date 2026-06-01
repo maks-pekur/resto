@@ -29,9 +29,15 @@ export const UpsertCategoryInputSchema = z.object({
 export type UpsertCategoryInput = z.infer<typeof UpsertCategoryInputSchema>;
 export class UpsertCategoryInputDto extends createZodDto(UpsertCategoryInputSchema) {}
 
+export const CategoryMoveSchema = z.object({
+  id: z.string().uuid(),
+  parentId: z.string().uuid().nullable(),
+  sortOrder: z.number().int().nonnegative(),
+});
+export type CategoryMove = z.infer<typeof CategoryMoveSchema>;
+
 export const ReorderCategoriesInputSchema = z.object({
-  parentId: z.string().uuid().nullable().default(null),
-  orderedIds: z.array(z.string().uuid()).min(1).max(500),
+  moves: z.array(CategoryMoveSchema).min(1).max(500),
 });
 export type ReorderCategoriesInput = z.infer<typeof ReorderCategoriesInputSchema>;
 export class ReorderCategoriesInputDto extends createZodDto(ReorderCategoriesInputSchema) {}

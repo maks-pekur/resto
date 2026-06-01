@@ -4,7 +4,10 @@ import * as React from 'react';
 import { GripVertical, Pencil } from 'lucide-react';
 import {
   DndContext,
+  type DragCancelEvent,
   type DragEndEvent,
+  type DragMoveEvent,
+  type DragStartEvent,
   PointerSensor,
   closestCenter,
   useSensor,
@@ -30,9 +33,11 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { showError } from '@/lib/ui/toast-helpers';
-import { reorderCategoriesAction } from './reorder-category-action';
+import { reorderCategoriesAction, type CategoryMoveInput } from './reorder-category-action';
 import { CategoryFormClient } from './category-form-client';
 import type { CategoryListItemApi } from './page';
+
+const INDENT_WIDTH_PX = 32;
 
 export interface CategoriesTableClientProps {
   readonly categories: readonly CategoryListItemApi[];
@@ -51,6 +56,7 @@ interface SortableCategoryRowProps {
   readonly isChild: boolean;
   readonly parentName: string;
   readonly onEdit: () => void;
+  readonly depthOverride?: 0 | 1;
 }
 
 function SortableCategoryRow({
@@ -58,11 +64,13 @@ function SortableCategoryRow({
   isChild,
   parentName,
   onEdit,
+  depthOverride,
 }: SortableCategoryRowProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
   const displayName = fromLocalizedText(category.name);
+  const effectiveDepth = depthOverride ?? (isChild ? 1 : 0);
   return (
     <TableRow
       ref={setNodeRef}
@@ -76,8 +84,8 @@ function SortableCategoryRow({
       <TableCell className="cursor-grab text-muted-foreground" {...attributes} {...listeners}>
         <GripVertical className="size-4" />
       </TableCell>
-      <TableCell className={isChild ? 'pl-8' : ''}>
-        {isChild ? `↳ ${displayName}` : displayName}
+      <TableCell style={{ paddingLeft: effectiveDepth >= 1 ? `${INDENT_WIDTH_PX}px` : undefined }}>
+        {displayName}
       </TableCell>
       <TableCell>{parentName}</TableCell>
       <TableCell className="text-right">
@@ -114,12 +122,92 @@ const buildIndentedRows = (categories: readonly CategoryListItemApi[]): RenderRo
   ]);
 };
 
+interface DropProjection {
+  readonly newParentId: string | null;
+  readonly depth: 0 | 1;
+  readonly valid: boolean;
+}
+
+const projectDrop = (
+  rows: readonly RenderRow[],
+  draggedId: string,
+  overId: string,
+  offsetLeft: number,
+): DropProjection => {
+  const fromIdx = rows.findIndex((r) => r.category.id === draggedId);
+  const toIdx = rows.findIndex((r) => r.category.id === overId);
+  const dragged = rows[fromIdx];
+  if (fromIdx < 0 || toIdx < 0 || !dragged) {
+    return { newParentId: null, depth: 0, valid: false };
+  }
+  const newRows = arrayMove(rows.slice(), fromIdx, toIdx);
+  const newIdx = newRows.findIndex((r) => r.category.id === draggedId);
+  const previousRow = newIdx > 0 ? (newRows[newIdx - 1] ?? null) : null;
+
+  const currentDepth = dragged.isChild ? 1 : 0;
+  const dragDepth = Math.round(offsetLeft / INDENT_WIDTH_PX);
+  const projectedDepth = Math.max(0, Math.min(1, currentDepth + dragDepth));
+
+  let newParentId: string | null = null;
+  let depth: 0 | 1 = 0;
+  if (previousRow && projectedDepth >= 1) {
+    newParentId = previousRow.isChild ? previousRow.category.parentId : previousRow.category.id;
+    depth = 1;
+  }
+
+  const draggedHasChildren = rows.some((r) => r.category.parentId === draggedId);
+  const valid = newParentId === null || !draggedHasChildren;
+  return { newParentId, depth, valid };
+};
+
+const computeReorder = (
+  visibleCats: readonly CategoryListItemApi[],
+  currentRows: readonly RenderRow[],
+  draggedId: string,
+  overId: string,
+  newParentId: string | null,
+): {
+  moves: CategoryMoveInput[];
+  nextLocalUpdates: Map<string, { parentId: string | null; sortOrder: number }>;
+} => {
+  const fromIdx = currentRows.findIndex((r) => r.category.id === draggedId);
+  const toIdx = currentRows.findIndex((r) => r.category.id === overId);
+  const newRows = arrayMove(currentRows.slice(), fromIdx, toIdx);
+
+  const groups = new Map<string | null, string[]>();
+  for (const row of newRows) {
+    const id = row.category.id;
+    const effectiveParent = id === draggedId ? newParentId : row.category.parentId;
+    const list = groups.get(effectiveParent) ?? [];
+    list.push(id);
+    groups.set(effectiveParent, list);
+  }
+
+  const nextLocalUpdates = new Map<string, { parentId: string | null; sortOrder: number }>();
+  const moves: CategoryMoveInput[] = [];
+  for (const [pid, ids] of groups.entries()) {
+    ids.forEach((id, idx) => {
+      const newSort = idx * 10;
+      nextLocalUpdates.set(id, { parentId: pid, sortOrder: newSort });
+      const current = visibleCats.find((c) => c.id === id);
+      if (!current) return;
+      if (current.parentId !== pid || current.sortOrder !== newSort) {
+        moves.push({ id, parentId: pid, sortOrder: newSort });
+      }
+    });
+  }
+  return { moves, nextLocalUpdates };
+};
+
 export function CategoriesTableClient({
   categories,
 }: CategoriesTableClientProps): React.ReactElement {
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [localCategories, setLocalCategories] = React.useState(categories);
+  const [activeId, setActiveId] = React.useState<string | null>(null);
+  const [overId, setOverId] = React.useState<string | null>(null);
+  const [offsetLeft, setOffsetLeft] = React.useState(0);
   const [, startTransition] = React.useTransition();
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -134,38 +222,70 @@ export function CategoriesTableClient({
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
 
+  const dragProjection: DropProjection | null = React.useMemo(() => {
+    if (!activeId || !overId) return null;
+    return projectDrop(rows, activeId, overId, offsetLeft);
+  }, [activeId, overId, offsetLeft, rows]);
+
+  const resetDragState = (): void => {
+    setActiveId(null);
+    setOverId(null);
+    setOffsetLeft(0);
+  };
+
+  const handleDragStart = (event: DragStartEvent): void => {
+    setActiveId(String(event.active.id));
+    setOverId(String(event.active.id));
+    setOffsetLeft(0);
+  };
+
+  const handleDragMove = (event: DragMoveEvent): void => {
+    setOffsetLeft(event.delta.x);
+    if (event.over) setOverId(String(event.over.id));
+  };
+
+  const handleDragCancel = (_event: DragCancelEvent): void => {
+    resetDragState();
+  };
+
   const handleDragEnd = (event: DragEndEvent): void => {
     const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    const draggedId = String(active.id);
-    const targetId = String(over.id);
-    const dragged = localCategories.find((c) => c.id === draggedId);
-    const target = localCategories.find((c) => c.id === targetId);
-    if (!dragged || dragged.parentId !== target?.parentId) return;
+    const projection = dragProjection;
+    resetDragState();
 
-    const siblings = localCategories
-      .filter((c) => c.parentId === dragged.parentId && c.status !== 'archived')
-      .sort(compareSiblings);
-    const fromIdx = siblings.findIndex((c) => c.id === dragged.id);
-    const toIdx = siblings.findIndex((c) => c.id === target.id);
-    if (fromIdx < 0 || toIdx < 0 || fromIdx === toIdx) return;
+    if (!over) return;
+    const draggedId = String(active.id);
+    const overIdRaw = String(over.id);
+    if (draggedId === overIdRaw && offsetLeft === 0) return;
+
+    if (projection && !projection.valid) {
+      showError(
+        null,
+        'Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.',
+      );
+      return;
+    }
+
+    const newParentId = projection ? projection.newParentId : null;
+    const { moves, nextLocalUpdates } = computeReorder(
+      visible,
+      rows,
+      draggedId,
+      overIdRaw,
+      newParentId,
+    );
+    if (moves.length === 0) return;
 
     const previousCategories = localCategories;
-    const reordered = arrayMove(siblings, fromIdx, toIdx);
-    const newSortOrders = new Map(reordered.map((c, i) => [c.id, i * 10]));
     setLocalCategories((prev) =>
       prev.map((c) => {
-        const newSort = newSortOrders.get(c.id);
-        return newSort !== undefined ? { ...c, sortOrder: newSort } : c;
+        const update = nextLocalUpdates.get(c.id);
+        return update ? { ...c, parentId: update.parentId, sortOrder: update.sortOrder } : c;
       }),
     );
 
-    const orderedIds = reordered.map((c) => c.id);
     startTransition(async () => {
-      const res = await reorderCategoriesAction(
-        { error: null, success: false },
-        { parentId: dragged.parentId, orderedIds },
-      );
+      const res = await reorderCategoriesAction({ error: null, success: false }, { moves });
       if (!res.success) {
         setLocalCategories(previousCategories);
         showError(res.error);
@@ -206,6 +326,9 @@ export function CategoriesTableClient({
           id="categories-dnd"
           sensors={sensors}
           collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragMove={handleDragMove}
+          onDragCancel={handleDragCancel}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
@@ -222,23 +345,27 @@ export function CategoriesTableClient({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {rows.map(({ category, isChild }) => (
-                  <SortableCategoryRow
-                    key={category.id}
-                    category={category}
-                    isChild={isChild}
-                    parentName={
-                      category.parentId
-                        ? fromLocalizedText(
-                            categories.find((c) => c.id === category.parentId)?.name ?? {},
-                          )
-                        : '—'
-                    }
-                    onEdit={() => {
-                      setEditingId(category.id);
-                    }}
-                  />
-                ))}
+                {rows.map(({ category, isChild }) => {
+                  const isActive = category.id === activeId;
+                  return (
+                    <SortableCategoryRow
+                      key={category.id}
+                      category={category}
+                      isChild={isChild}
+                      parentName={
+                        category.parentId
+                          ? fromLocalizedText(
+                              categories.find((c) => c.id === category.parentId)?.name ?? {},
+                            )
+                          : '—'
+                      }
+                      onEdit={() => {
+                        setEditingId(category.id);
+                      }}
+                      depthOverride={isActive && dragProjection ? dragProjection.depth : undefined}
+                    />
+                  );
+                })}
               </TableBody>
             </Table>
           </SortableContext>

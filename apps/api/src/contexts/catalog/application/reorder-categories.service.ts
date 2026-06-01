@@ -9,9 +9,6 @@ export class ReorderCategoriesService {
 
   async execute(input: ReorderCategoriesInput): Promise<ReorderCategoriesResponse> {
     requireTenantContext();
-    return this.repo.reorderCategoriesByParent({
-      parentId: input.parentId,
-      orderedIds: input.orderedIds,
-    });
+    return this.repo.applyCategoryMoves({ moves: input.moves });
   }
 }

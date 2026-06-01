@@ -36,7 +36,7 @@ const buildRepo = (isFirstPublish: boolean): CatalogRepository =>
     computeDraftDiff: vi.fn(),
     archiveCategory: vi.fn(),
     archiveItem: vi.fn(),
-    reorderCategoriesByParent: vi.fn(),
+    applyCategoryMoves: vi.fn(),
   }) satisfies CatalogRepository;
 
 describe('PublishMenuService', () => {

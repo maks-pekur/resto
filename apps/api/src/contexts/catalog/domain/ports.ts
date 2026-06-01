@@ -39,9 +39,8 @@ export interface CatalogRepository {
   archiveCategory(id: string): Promise<{ found: boolean }>;
   archiveItem(id: string): Promise<{ found: boolean }>;
 
-  reorderCategoriesByParent(input: {
-    parentId: string | null;
-    orderedIds: readonly string[];
+  applyCategoryMoves(input: {
+    moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }>;
 
   getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
