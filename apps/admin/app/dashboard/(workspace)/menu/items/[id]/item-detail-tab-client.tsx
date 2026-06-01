@@ -4,15 +4,19 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+  Field,
+  FieldDescription,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+  FieldLegend,
+  FieldSet,
+} from '@/components/ui/field';
+import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { Textarea } from '@/components/ui/textarea';
 import { CategorySelect } from '@/components/menu/category-select';
 import { BjuRow, type BjuField } from '@/components/menu/bju-row';
@@ -79,155 +83,148 @@ export function ItemDetailTabClient({
   );
 
   return (
-    <Form {...form}>
-      <form
-        className="grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]"
-        onSubmit={(e) => {
-          e.preventDefault();
-        }}
-      >
-        <div className="space-y-4">
-          <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Название</FormLabel>
-                <FormControl>
-                  <Input maxLength={255} {...field} />
-                </FormControl>
-                <p className="text-xs text-muted-foreground">{slug || '—'}</p>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+    <form
+      className="grid gap-6 md:grid-cols-[minmax(0,1fr)_22rem]"
+      onSubmit={(e) => {
+        e.preventDefault();
+      }}
+    >
+      <FieldGroup>
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.error ? true : undefined}>
+              <FieldLabel htmlFor={field.name}>Название</FieldLabel>
+              <Input
+                id={field.name}
+                maxLength={255}
+                aria-invalid={fieldState.error ? true : undefined}
+                {...field}
+              />
+              <FieldDescription>{slug || 'Slug определится после сохранения'}</FieldDescription>
+              {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+            </Field>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="description"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Описание</FormLabel>
-                <FormControl>
-                  <Textarea
-                    maxLength={4096}
-                    value={field.value ?? ''}
-                    onChange={(e) => {
-                      field.onChange(e.target.value.length === 0 ? null : e.target.value);
-                    }}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.error ? true : undefined}>
+              <FieldLabel htmlFor={field.name}>Описание</FieldLabel>
+              <Textarea
+                id={field.name}
+                maxLength={4096}
+                rows={4}
+                aria-invalid={fieldState.error ? true : undefined}
+                value={field.value ?? ''}
+                onChange={(e) => {
+                  field.onChange(e.target.value.length === 0 ? null : e.target.value);
+                }}
+                onBlur={field.onBlur}
+                name={field.name}
+              />
+              {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+            </Field>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="categoryId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Категория</FormLabel>
-                <FormControl>
-                  <CategorySelect
-                    categories={categories}
-                    value={field.value || null}
-                    onChange={(v) => {
-                      field.onChange(v ?? '');
-                    }}
-                    mode="item-picker"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="categoryId"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.error ? true : undefined}>
+              <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
+              <CategorySelect
+                categories={categories}
+                value={field.value || null}
+                onChange={(v) => {
+                  field.onChange(v ?? '');
+                }}
+                mode="item-picker"
+              />
+              {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+            </Field>
+          )}
+        />
 
-          <div className="grid grid-cols-[8rem_1fr] items-end gap-3">
-            <FormField
-              control={form.control}
-              name="basePrice"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Цена</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      inputMode="decimal"
-                      name={field.name}
-                      onBlur={field.onBlur}
-                      ref={field.ref}
-                      value={field.value}
-                      onChange={(e) => {
-                        const n = Number.parseFloat(e.target.value);
-                        field.onChange(Number.isFinite(n) ? n : 0);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="currency"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="sr-only">Валюта</FormLabel>
-                  <FormControl>
-                    <Input
-                      readOnly
-                      aria-readonly="true"
-                      className="bg-muted text-muted-foreground"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
+        <FormField
+          control={form.control}
+          name="basePrice"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.error ? true : undefined}>
+              <FieldLabel htmlFor={field.name}>Цена</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id={field.name}
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  aria-invalid={fieldState.error ? true : undefined}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  value={field.value}
+                  onChange={(e) => {
+                    const n = Number.parseFloat(e.target.value);
+                    field.onChange(Number.isFinite(n) ? n : 0);
+                  }}
+                />
+                <InputGroupAddon align="inline-end">{form.watch('currency')}</InputGroupAddon>
+              </InputGroup>
+              {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+            </Field>
+          )}
+        />
 
+        <FieldSet>
+          <FieldLegend variant="label">Питание на 100 г</FieldLegend>
           <BjuRow
             proteins={form.watch('proteins')}
             fats={form.watch('fats')}
             carbs={form.watch('carbs')}
             kcal={form.watch('kcal')}
             nutritionEstimated={form.watch('nutritionEstimated')}
-            onChange={(field: BjuField, value: number | null) => {
-              form.setValue(field, value, { shouldDirty: true, shouldTouch: true });
+            onChange={(name: BjuField, value: number | null) => {
+              form.setValue(name, value, { shouldDirty: true, shouldTouch: true });
             }}
           />
+        </FieldSet>
 
-          <FormItem>
-            <FormLabel>Аллергены</FormLabel>
-            <FormControl>
-              <Input
-                value={allergensText}
-                placeholder="Молоко, орехи, глютен"
-                onChange={(e) => {
-                  setAllergensText(e.target.value);
-                  form.setValue('allergens', allergensFromForm(e.target.value), {
-                    shouldDirty: true,
-                    shouldTouch: true,
-                  });
-                }}
-              />
-            </FormControl>
-            <p className="text-xs text-muted-foreground">Через запятую</p>
-          </FormItem>
-        </div>
+        <Field>
+          <FieldLabel htmlFor="allergens">Аллергены</FieldLabel>
+          <Input
+            id="allergens"
+            value={allergensText}
+            placeholder="Молоко, орехи, глютен"
+            onChange={(e) => {
+              setAllergensText(e.target.value);
+              form.setValue('allergens', allergensFromForm(e.target.value), {
+                shouldDirty: true,
+                shouldTouch: true,
+              });
+            }}
+          />
+          <FieldDescription>Через запятую</FieldDescription>
+        </Field>
+      </FieldGroup>
 
-        <PhotoUploadClient
-          itemId={currentItemId}
-          currentS3Key={currentPhotoS3Key}
-          currentPhotoUrl={currentPhotoUrl}
-          onUploaded={onPhotoChange}
-        />
-      </form>
-    </Form>
+      <Card>
+        <CardHeader>
+          <CardTitle>Фото блюда</CardTitle>
+          <CardDescription>JPG, PNG, WEBP до 5 МБ</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PhotoUploadClient
+            itemId={currentItemId}
+            currentS3Key={currentPhotoS3Key}
+            currentPhotoUrl={currentPhotoUrl}
+            onUploaded={onPhotoChange}
+          />
+        </CardContent>
+      </Card>
+    </form>
   );
 }

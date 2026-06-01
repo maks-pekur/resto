@@ -29,12 +29,12 @@ describe('ItemSizesTabClient (Plan 04b-07 Task 5)', () => {
     expect(screen.getByText(/Нет размеров — блюдо использует базовую цену\./u)).toBeInTheDocument();
   });
 
-  it("shows a 'save item first' helper instead of the editor for new items", () => {
+  it("shows a 'save item first' helper and a disabled add button for new items", () => {
     render(<ItemSizesTabClient itemId="new" sizes={[]} onSizesChange={() => undefined} />);
     expect(
       screen.getByText(/Сначала введите название блюда — оно сохранится автоматически\./u),
     ).toBeInTheDocument();
-    expect(screen.queryByText('+ Добавить размер')).not.toBeInTheDocument();
+    expect(screen.getByText('+ Добавить размер')).toBeDisabled();
   });
 
   it('appends a new editable row when "+ Добавить размер" is clicked', () => {

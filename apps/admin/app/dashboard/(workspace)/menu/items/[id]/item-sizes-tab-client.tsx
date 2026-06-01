@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { upsertItemSizeAction } from './upsert-item-size-action';
@@ -125,89 +126,86 @@ export function ItemSizesTabClient({
     }
   };
 
-  if (rows.length === 0 && isNewItem) {
-    return (
-      <div className="rounded-lg border border-dashed border-input p-6 text-sm text-muted-foreground">
-        Сначала введите название блюда — оно сохранится автоматически.
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-3">
-      {rows.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          Нет размеров — блюдо использует базовую цену.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {rows.map((row) => (
-            <div
-              key={row.localKey}
-              className="grid grid-cols-[1fr_120px_80px_40px] items-center gap-2"
-            >
-              <Input
-                placeholder="Название"
-                value={row.name}
-                onChange={(e) => {
-                  updateRow(row.localKey, { name: e.target.value });
-                }}
-                onBlur={() => {
-                  void persistRow({ ...row, name: row.name });
-                }}
-              />
-              <Input
-                type="number"
-                step="0.01"
-                inputMode="decimal"
-                placeholder="Цена"
-                value={row.price}
-                onChange={(e) => {
-                  const n = Number.parseFloat(e.target.value);
-                  updateRow(row.localKey, { price: Number.isFinite(n) ? n : 0 });
-                }}
-                onBlur={() => {
-                  void persistRow({ ...row });
-                }}
-              />
-              <label className="flex items-center justify-center gap-1 text-xs">
-                <input
-                  type="radio"
-                  name="size-default"
-                  checked={row.isDefault}
-                  aria-label="По умолчанию"
-                  onChange={() => {
-                    void onToggleDefault(row);
+    <Card>
+      <CardHeader>
+        <CardTitle>Размеры</CardTitle>
+        <CardDescription>
+          {isNewItem
+            ? 'Сначала введите название блюда — оно сохранится автоматически.'
+            : 'Цена за размер заменяет базовую. Один размер можно отметить «По умолчанию».'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {!isNewItem && rows.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            Нет размеров — блюдо использует базовую цену.
+          </p>
+        ) : null}
+        {rows.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {rows.map((row) => (
+              <div
+                key={row.localKey}
+                className="grid grid-cols-[1fr_120px_80px_40px] items-center gap-2"
+              >
+                <Input
+                  placeholder="Название"
+                  value={row.name}
+                  onChange={(e) => {
+                    updateRow(row.localKey, { name: e.target.value });
+                  }}
+                  onBlur={() => {
+                    void persistRow({ ...row, name: row.name });
                   }}
                 />
-                <span className="text-muted-foreground">По&nbsp;умолч.</span>
-              </label>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                aria-label="Удалить размер"
-                onClick={() => {
-                  void onRemoveRow(row);
-                }}
-              >
-                <X className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
-          ))}
+                <Input
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Цена"
+                  value={row.price}
+                  onChange={(e) => {
+                    const n = Number.parseFloat(e.target.value);
+                    updateRow(row.localKey, { price: Number.isFinite(n) ? n : 0 });
+                  }}
+                  onBlur={() => {
+                    void persistRow({ ...row });
+                  }}
+                />
+                <label className="flex items-center justify-center gap-1 text-xs">
+                  <input
+                    type="radio"
+                    name="size-default"
+                    checked={row.isDefault}
+                    aria-label="По умолчанию"
+                    onChange={() => {
+                      void onToggleDefault(row);
+                    }}
+                  />
+                  <span className="text-muted-foreground">По&nbsp;умолч.</span>
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  aria-label="Удалить размер"
+                  onClick={() => {
+                    void onRemoveRow(row);
+                  }}
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <div>
+          <Button type="button" variant="outline" size="sm" onClick={onAddRow} disabled={isNewItem}>
+            + Добавить размер
+          </Button>
         </div>
-      )}
-
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={onAddRow}
-        disabled={isNewItem}
-        title={isNewItem ? 'Сначала сохраните блюдо' : undefined}
-      >
-        + Добавить размер
-      </Button>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

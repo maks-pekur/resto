@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import {
+  Item,
+  ItemActions,
+  ItemContent,
+  ItemDescription,
+  ItemGroup,
+  ItemTitle,
+} from '@/components/ui/item';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemModifierGroupsAction } from './upsert-item-modifier-groups-action';
@@ -110,16 +120,27 @@ export function ItemModifiersTabClient({
 
   if (isNewItem) {
     return (
-      <div className="rounded-lg border border-dashed border-input p-6 text-sm text-muted-foreground">
-        Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Модификаторы</CardTitle>
+          <CardDescription>
+            Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.
+          </CardDescription>
+        </CardHeader>
+      </Card>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <p className="mb-2 text-sm font-medium">Группы модификаторов для этого блюда</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>Группы модификаторов</CardTitle>
+        <CardDescription>
+          Прикрепите группы из библиотеки или создайте новую — варианты можно отредактировать в
+          самой группе.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
         {assignedGroups.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Нет прикреплённых групп — нажмите «+ Добавить группу».
@@ -148,20 +169,22 @@ export function ItemModifiersTabClient({
             ))}
           </div>
         )}
-      </div>
 
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        onClick={() => {
-          setSearch('');
-          setSheetOpen(true);
-        }}
-        disabled={pending}
-      >
-        + Добавить группу
-      </Button>
+        <div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSearch('');
+              setSheetOpen(true);
+            }}
+            disabled={pending}
+          >
+            + Добавить группу
+          </Button>
+        </div>
+      </CardContent>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="right" className="flex flex-col gap-4">
@@ -175,37 +198,36 @@ export function ItemModifiersTabClient({
               setSearch(e.target.value);
             }}
           />
-          <div className="flex-1 space-y-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto">
             {sheetGroups.length === 0 ? (
               <p className="text-sm text-muted-foreground">Ничего не найдено.</p>
             ) : (
-              sheetGroups.map((g) => {
-                const isAssigned = assignedIds.includes(g.id);
-                return (
-                  <div
-                    key={g.id}
-                    className="flex items-center justify-between rounded-md border px-3 py-2 text-sm"
-                  >
-                    <div className="flex flex-col">
-                      <span>{g.name}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {g.optionCount.toString()} вариантов
-                      </span>
-                    </div>
-                    <Button
-                      type="button"
-                      variant={isAssigned ? 'ghost' : 'outline'}
-                      size="sm"
-                      disabled={isAssigned || pending}
-                      onClick={() => {
-                        void onAdd(g.id);
-                      }}
-                    >
-                      {isAssigned ? 'Добавлено' : '+ Добавить'}
-                    </Button>
-                  </div>
-                );
-              })
+              <ItemGroup>
+                {sheetGroups.map((g) => {
+                  const isAssigned = assignedIds.includes(g.id);
+                  return (
+                    <Item key={g.id} variant="outline">
+                      <ItemContent>
+                        <ItemTitle>{g.name}</ItemTitle>
+                        <ItemDescription>{g.optionCount.toString()} вариантов</ItemDescription>
+                      </ItemContent>
+                      <ItemActions>
+                        <Button
+                          type="button"
+                          variant={isAssigned ? 'ghost' : 'outline'}
+                          size="sm"
+                          disabled={isAssigned || pending}
+                          onClick={() => {
+                            void onAdd(g.id);
+                          }}
+                        >
+                          {isAssigned ? 'Добавлено' : '+ Добавить'}
+                        </Button>
+                      </ItemActions>
+                    </Item>
+                  );
+                })}
+              </ItemGroup>
             )}
           </div>
           <Button
@@ -229,21 +251,23 @@ export function ItemModifiersTabClient({
               Эта группа сразу появится в библиотеке и будет доступна для прикрепления.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <label className="flex flex-col gap-1 text-sm">
-              <span className="font-medium">Название</span>
+          <FieldGroup>
+            <Field>
+              <FieldLabel htmlFor="new-mg-name">Название</FieldLabel>
               <Input
+                id="new-mg-name"
                 value={newName}
                 onChange={(e) => {
                   setNewName(e.target.value);
                 }}
                 maxLength={255}
               />
-            </label>
+            </Field>
             <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium">Мин</span>
+              <Field>
+                <FieldLabel htmlFor="new-mg-min">Мин</FieldLabel>
                 <Input
+                  id="new-mg-min"
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -254,10 +278,11 @@ export function ItemModifiersTabClient({
                     setNewMin(Number.isFinite(n) ? n : 0);
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-sm">
-                <span className="font-medium">Макс</span>
+              </Field>
+              <Field>
+                <FieldLabel htmlFor="new-mg-max">Макс</FieldLabel>
                 <Input
+                  id="new-mg-max"
                   type="number"
                   inputMode="numeric"
                   min={0}
@@ -268,9 +293,9 @@ export function ItemModifiersTabClient({
                     setNewMax(Number.isFinite(n) ? n : 0);
                   }}
                 />
-              </label>
+              </Field>
             </div>
-          </div>
+          </FieldGroup>
           <DialogFooter>
             <Button
               type="button"
@@ -294,6 +319,6 @@ export function ItemModifiersTabClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Card>
   );
 }
