@@ -82,7 +82,9 @@ export function ItemDetailTabClient({
     <Form {...form}>
       <form
         className="grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]"
-        onSubmit={(e) => e.preventDefault()}
+        onSubmit={(e) => {
+          e.preventDefault();
+        }}
       >
         <div className="space-y-4">
           <FormField
@@ -158,7 +160,7 @@ export function ItemDetailTabClient({
                       name={field.name}
                       onBlur={field.onBlur}
                       ref={field.ref}
-                      value={field.value ?? 0}
+                      value={field.value}
                       onChange={(e) => {
                         const n = Number.parseFloat(e.target.value);
                         field.onChange(Number.isFinite(n) ? n : 0);

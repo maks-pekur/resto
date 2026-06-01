@@ -48,7 +48,7 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
   it("renders the shell with itemId='new' and no initialItem for /items/new", async () => {
     apiFetchInternalMock.mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: 'new' }) });
-    render(ui as React.ReactElement);
+    render(ui);
     expect(screen.getByTestId('itemId').textContent).toBe('new');
     expect(screen.getByTestId('hasItem').textContent).toBe('no');
   });
@@ -82,7 +82,7 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
       })
       .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: ITEM_ID }) });
-    render(ui as React.ReactElement);
+    render(ui);
     expect(screen.getByTestId('itemId').textContent).toBe(ITEM_ID);
     expect(screen.getByTestId('hasItem').textContent).toBe('yes');
     expect(screen.getByTestId('currency').textContent).toBe('EUR');
@@ -94,7 +94,7 @@ describe('ItemEditorPage (Plan 04b-07 Task 3)', () => {
       .mockResolvedValueOnce({ ok: false, status: 404, data: null })
       .mockResolvedValueOnce({ ok: true, status: 200, data: { items: [] } });
     const ui = await ItemEditorPage({ params: Promise.resolve({ id: ITEM_ID }) });
-    render(ui as React.ReactElement);
+    render(ui);
     expect(screen.getByText('Блюдо не найдено')).toBeInTheDocument();
     expect(screen.queryByTestId('shell')).not.toBeInTheDocument();
   });

@@ -15,16 +15,13 @@ export interface BjuRowProps {
   readonly onChange: (field: BjuField, value: number | null) => void;
 }
 
-const fields: ReadonlyArray<{
-  readonly key: BjuField;
-  readonly label: string;
-  readonly step: string;
-}> = [
-  { key: 'proteins', label: 'Б', step: '0.1' },
-  { key: 'fats', label: 'Ж', step: '0.1' },
-  { key: 'carbs', label: 'У', step: '0.1' },
-  { key: 'kcal', label: 'ккал', step: '1' },
-];
+const fields: readonly { readonly key: BjuField; readonly label: string; readonly step: string }[] =
+  [
+    { key: 'proteins', label: 'Б', step: '0.1' },
+    { key: 'fats', label: 'Ж', step: '0.1' },
+    { key: 'carbs', label: 'У', step: '0.1' },
+    { key: 'kcal', label: 'ккал', step: '1' },
+  ];
 
 const parseValue = (raw: string, isInt: boolean): number | null => {
   if (raw.trim() === '') return null;

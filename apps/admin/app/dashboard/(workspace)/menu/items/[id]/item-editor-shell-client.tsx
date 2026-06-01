@@ -35,20 +35,19 @@ const emptyValues = (currency: string): ItemEditorForm => ({
   nutritionEstimated: false,
 });
 
-const valuesFromItem = (item: ItemDetailApi): ItemEditorForm =>
-  ({
-    name: fromLocalizedText(item.name),
-    description: item.description ? fromLocalizedText(item.description) : null,
-    categoryId: item.categoryId,
-    basePrice: Number.parseFloat(item.basePrice),
-    currency: item.currency,
-    allergens: [...item.allergens],
-    proteins: item.proteins,
-    fats: item.fats,
-    carbs: item.carbs,
-    kcal: item.kcal,
-    nutritionEstimated: item.nutritionEstimated,
-  }) as ItemEditorForm;
+const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
+  name: fromLocalizedText(item.name),
+  description: item.description ? fromLocalizedText(item.description) : null,
+  categoryId: item.categoryId,
+  basePrice: Number.parseFloat(item.basePrice),
+  currency: item.currency,
+  allergens: [...item.allergens],
+  proteins: item.proteins,
+  fats: item.fats,
+  carbs: item.carbs,
+  kcal: item.kcal,
+  nutritionEstimated: item.nutritionEstimated,
+});
 
 export function ItemEditorShellClient({
   initialItem,
