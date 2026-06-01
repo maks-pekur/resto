@@ -28,7 +28,7 @@ export default async function LoginPage({ searchParams }: PageProps) {
       <div className="fixed top-4 right-4 z-50">
         <ThemeToggle />
       </div>
-      <Card className="w-full max-w-sm">
+      <Card className="login-card w-full max-w-sm">
         <CardHeader>
           <CardTitle>Sign in to Resto</CardTitle>
           <CardDescription>Operator console — use your work email.</CardDescription>
