@@ -24,7 +24,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 2: Admin Shell** - Wire the existing Better Auth dev setup into a real operator sign-in + brand management UX (completed 2026-05-27)
 - [x] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_ (completed 2026-05-30)
 - [x] **Phase 4a: Catalog Schema + API** - Foundational menu domain redesign aligned with iiko nomenclature model; Drizzle schema migration, DTO updates, `/v1/menu` DTO extension, draft/publish snapshot + revert capability — backend only, no admin UI _(split from Phase 4 on 2026-05-30 — CTO HIGH-2 + Skeptic HIGH-4)_ (completed 2026-05-31)
-- [ ] **Phase 4b: Catalog Admin UI** - Full CRUD admin UX on top of finalized catalog schema; categories, items, modifiers, modifier groups, sizes, stop-list, photos, draft/publish flow — designed via `/gsd:ui-phase` then `/gsd:discuss-phase` before planning _(split from Phase 4 on 2026-05-30 — labor-intensive UI work isolated per user request)_
+- [x] **Phase 4b: Catalog Admin UI** - Full CRUD admin UX on top of finalized catalog schema; categories, items, modifiers, modifier groups, sizes, stop-list, photos, draft/publish flow — designed via `/gsd:ui-phase` then `/gsd:discuss-phase` before planning _(split from Phase 4 on 2026-05-30 — labor-intensive UI work isolated per user request)_ (completed 2026-06-01)
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
 - [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
@@ -242,7 +242,7 @@ Plans:
 
 **Wave 6** _(after Wave 5 — Modifiers tab integrates into the item editor shell from Plan 07)_
 
-- [ ] 04b-08-PLAN.md — Modifier groups two-surface model: list + group editor (RHF auto-save) + inline options list (per-row blur save) + Item editor Модификаторы tab (chip picker + Sheet + quick-create Dialog) + 3 server actions (CAT-04)
+- [x] 04b-08-PLAN.md — Modifier groups two-surface model: list + group editor (RHF auto-save) + inline options list (per-row blur save) + Item editor Модификаторы tab (chip picker + Sheet + quick-create Dialog) + 3 server actions (CAT-04)
       **UI hint**: yes (mandatory ui-phase pass before discuss-phase)
       **Persona reviewers**: persona-product-strategist, persona-growth-marketer (already reviewed parent Phase 4 → see `.planning/phases/04-catalog-admin/PERSONA-REVIEWS.md`)
 
@@ -485,7 +485,7 @@ Notes:
 | 2. Admin Shell                                | 5/5            | Complete      | 2026-05-27 |
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
-| 4b. Catalog Admin UI                          | 8/9            | In Progress   |            |
+| 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
