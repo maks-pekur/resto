@@ -491,6 +491,31 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog/internal
+  /internal/v1/catalog/categories/reorder:
+    post:
+      operationId: InternalCatalogController_reorderCategories
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderCategoriesInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReorderCategoriesResponseDto"
+        "401":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog/internal
   /internal/v1/catalog/items:
     post:
       operationId: InternalCatalogController_item
@@ -1570,6 +1595,42 @@ components:
           format: uuid
       required:
         - id
+    ReorderCategoriesInputDto:
+      type: object
+      properties:
+        moves:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              parentId:
+                type: string
+                format: uuid
+                nullable: true
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - parentId
+              - sortOrder
+      required:
+        - moves
+    ReorderCategoriesResponseDto:
+      type: object
+      properties:
+        updated:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - updated
     UpsertItemInputDto:
       type: object
       properties:
@@ -1640,6 +1701,25 @@ components:
             type: string
             minLength: 1
             maxLength: 100
+          nullable: true
+          default: null
+        ingredients:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          nullable: true
+          default: null
+        metaTitle:
+          type: string
+          maxLength: 70
+          nullable: true
+          default: null
+        metaDescription:
+          type: string
+          maxLength: 160
           nullable: true
           default: null
         proteins:
@@ -2074,6 +2154,17 @@ components:
           items:
             type: string
           nullable: true
+        ingredients:
+          type: array
+          items:
+            type: string
+          nullable: true
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
         proteins:
           type: number
           nullable: true
@@ -2153,6 +2244,9 @@ components:
         - currency
         - photos
         - allergens
+        - ingredients
+        - metaTitle
+        - metaDescription
         - proteins
         - fats
         - carbs

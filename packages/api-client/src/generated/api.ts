@@ -292,6 +292,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/v1/catalog/categories/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InternalCatalogController_reorderCategories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/v1/catalog/items": {
         parameters: {
             query?: never;
@@ -768,6 +784,18 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        ReorderCategoriesInputDto: {
+            moves: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                parentId: string | null;
+                sortOrder: number;
+            }[];
+        };
+        ReorderCategoriesResponseDto: {
+            updated: number;
+        };
         UpsertItemInputDto: {
             /** Format: uuid */
             id?: string;
@@ -794,6 +822,12 @@ export interface components {
             }[];
             /** @default null */
             allergens: string[] | null;
+            /** @default null */
+            ingredients: string[] | null;
+            /** @default null */
+            metaTitle: string | null;
+            /** @default null */
+            metaDescription: string | null;
             /** @default null */
             proteins: number | null;
             /** @default null */
@@ -961,6 +995,9 @@ export interface components {
                 isPrimary?: boolean;
             }[];
             allergens: string[] | null;
+            ingredients: string[] | null;
+            metaTitle: string | null;
+            metaDescription: string | null;
             proteins: number | null;
             fats: number | null;
             carbs: number | null;
@@ -1726,6 +1763,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_reorderCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderCategoriesInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReorderCategoriesResponseDto"];
                 };
             };
             401: {
