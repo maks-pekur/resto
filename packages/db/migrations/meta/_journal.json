@@ -302,6 +302,13 @@
       "when": 1779841800000,
       "tag": "0042_catalog_phase4b_categories_status",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1779841900000,
+      "tag": "0043_catalog_item_ingredients_seo",
+      "breakpoints": true
     }
   ]
 }
