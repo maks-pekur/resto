@@ -283,6 +283,7 @@
     "title": "Dashboard",
     "settingsTitle": "Settings",
     "teamTitle": "Team",
+    "teamInviteBtn": "Invite",
     "teamInviteTitle": "Invite a teammate",
     "teamInviteDescription": "Send an email invitation. Recipient gets a link valid for 48 hours.",
     "brandDomainsTitle": "Domains",

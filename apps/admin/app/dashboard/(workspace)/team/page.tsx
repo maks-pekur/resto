@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
+import { EmptyState } from '@/components/empty-state';
 import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
-import { InviteForm } from './invite-form-client';
+import { TeamInviteButton } from './team-invite-button-client';
 
 interface MeResponse {
   kind: string;
@@ -19,15 +20,16 @@ export default async function TeamPage() {
 
   return (
     <>
-      <PageHeading title={t('teamTitle')} />
+      <PageHeading
+        title={t('teamTitle')}
+        action={<TeamInviteButton inviterRole={me.data.baseRole} />}
+      />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <section className="bg-card space-y-4 rounded-lg border p-6 shadow-sm">
-          <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">{t('teamInviteTitle')}</h2>
-            <p className="text-muted-foreground text-sm">{t('teamInviteDescription')}</p>
-          </div>
-          <InviteForm inviterRole={me.data.baseRole} />
-        </section>
+        <EmptyState
+          variant="empty"
+          title={t('teamInviteTitle')}
+          description={t('teamInviteDescription')}
+        />
       </div>
     </>
   );

@@ -2,9 +2,8 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TodaysWidgetResetButton } from './todays-86-reset-button-client';
 
 export interface TodaysWidgetProps {
   readonly count: number;
@@ -24,11 +23,6 @@ export function TodaysWidget({ count }: TodaysWidgetProps): React.ReactElement {
         </div>
         <CardDescription>{isEmpty ? t('todayEmpty') : t('todayDescription')}</CardDescription>
       </CardHeader>
-      {isEmpty ? null : (
-        <CardContent>
-          <TodaysWidgetResetButton />
-        </CardContent>
-      )}
     </Card>
   );
 }

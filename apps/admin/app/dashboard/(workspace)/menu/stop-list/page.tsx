@@ -3,6 +3,7 @@ import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
 import { PageHeading } from '@/components/page-heading';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
+import { TodaysWidgetResetButton } from '@/components/menu/todays-86-reset-button-client';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { StopListTableClient, type StopListItemApi } from './stop-list-table-client';
@@ -28,7 +29,10 @@ export default async function StopListPage(): Promise<React.ReactElement> {
 
   return (
     <>
-      <PageHeading title={tNav('menuStopList')} />
+      <PageHeading
+        title={tNav('menuStopList')}
+        action={items.length > 0 ? <TodaysWidgetResetButton /> : undefined}
+      />
       <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
         <TodaysWidget count={items.length} />
         {items.length === 0 ? (
