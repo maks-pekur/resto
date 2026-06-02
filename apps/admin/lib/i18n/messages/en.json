@@ -87,9 +87,6 @@
       "pageLabel": "Page {page}"
     },
     "editor": {
-      "tabDetail": "Details",
-      "tabSizes": "Sizes",
-      "tabModifiers": "Modifiers",
       "name": "Name",
       "slugPlaceholder": "Slug appears after the first save",
       "description": "Description",

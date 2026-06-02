@@ -87,9 +87,6 @@
       "pageLabel": "Стр. {page}"
     },
     "editor": {
-      "tabDetail": "Детали",
-      "tabSizes": "Размеры",
-      "tabModifiers": "Модификаторы",
       "name": "Название",
       "slugPlaceholder": "Slug определится после сохранения",
       "description": "Описание",
