@@ -22,6 +22,9 @@ export interface ItemDetailApi {
   readonly basePrice: string;
   readonly currency: string;
   readonly allergens: readonly string[];
+  readonly ingredients: readonly string[] | null;
+  readonly metaTitle: string | null;
+  readonly metaDescription: string | null;
   readonly proteins: number | null;
   readonly fats: number | null;
   readonly carbs: number | null;

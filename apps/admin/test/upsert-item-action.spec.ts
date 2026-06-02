@@ -21,6 +21,9 @@ const validValues = {
   basePrice: 4.5,
   currency: 'EUR',
   allergens: ['молоко'],
+  ingredients: [],
+  metaTitle: null,
+  metaDescription: null,
   proteins: 3.2,
   fats: 4.1,
   carbs: 6.8,
@@ -103,5 +106,23 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
     await upsertItemAction(ITEM_ID, validValues, null);
     const body = lastCallBody();
     expect(body.id).toBe(ITEM_ID);
+  });
+
+  it('forwards ingredients + metaTitle + metaDescription to apiFetchInternal', async () => {
+    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    await upsertItemAction(
+      'new',
+      {
+        ...validValues,
+        ingredients: ['pasta', 'egg', 'pancetta'],
+        metaTitle: 'Carbonara — Trattoria',
+        metaDescription: 'Classic Roman pasta with pancetta and egg yolk.',
+      },
+      null,
+    );
+    const body = lastCallBody();
+    expect(body.ingredients).toEqual(['pasta', 'egg', 'pancetta']);
+    expect(body.metaTitle).toBe('Carbonara — Trattoria');
+    expect(body.metaDescription).toBe('Classic Roman pasta with pancetta and egg yolk.');
   });
 });
