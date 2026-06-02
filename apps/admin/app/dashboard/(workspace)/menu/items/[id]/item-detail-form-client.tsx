@@ -1,8 +1,7 @@
 'use client';
 
-// Render contract: this component is the SOLE owner of the RHF FormProvider for the item editor.
-// Child cards (ItemSizesCardClient, ItemModifierGroupsCardClient) rely on useFormContext() and MUST be
-// rendered as descendants of this component, never composed by the shell directly.
+// Sole owner of the RHF FormProvider for the item editor.
+// Child cards rely on useFormContext(); they must be descendants of this component, never composed by the shell.
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';

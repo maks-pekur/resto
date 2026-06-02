@@ -58,7 +58,6 @@ export function ItemModifierGroupsCardClient({
   const t = useTranslations('menu.modifiers');
   const tEditor = useTranslations('menu.editor');
   const tCommon = useTranslations('common');
-  const tCommonShared = useTranslations('common');
   const form = useFormContext<ItemEditorForm>();
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
@@ -150,7 +149,7 @@ export function ItemModifierGroupsCardClient({
           });
         }}
       />
-      <FieldDescription>{tCommonShared('comma')}</FieldDescription>
+      <FieldDescription>{tEditor('ingredientsHint')}</FieldDescription>
     </Field>
   );
 
