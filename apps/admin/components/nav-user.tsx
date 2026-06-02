@@ -3,10 +3,12 @@
 import Link from 'next/link';
 import { BadgeCheck, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useTranslations } from 'next-intl';
 
 import { signOutAction } from '@/lib/actions/sign-out';
 import type { OperatorSummary } from '@/lib/me';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { LocaleSwitcherItems } from '@/components/locale-switcher-items';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -33,6 +35,7 @@ const avatarInitial = (email: string): string => email.charAt(0).toUpperCase() |
 export function NavUser({ operator }: { operator: OperatorSummary }) {
   const { isMobile } = useSidebar();
   const { setTheme } = useTheme();
+  const t = useTranslations('nav.user');
   const initial = avatarInitial(operator.email);
   const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
 
@@ -77,13 +80,13 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
               <DropdownMenuItem asChild>
                 <Link href="/dashboard/settings">
                   <BadgeCheck />
-                  Account
+                  {t('accountItem')}
                 </Link>
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-              Theme
+              {t('themeLabel')}
             </DropdownMenuLabel>
             <DropdownMenuGroup>
               <DropdownMenuItem
@@ -92,7 +95,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
                 }}
               >
                 <Sun />
-                Light
+                {t('themeLight')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -100,7 +103,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
                 }}
               >
                 <Moon />
-                Dark
+                {t('themeDark')}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => {
@@ -108,15 +111,22 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
                 }}
               >
                 <Monitor />
-                System
+                {t('themeSystem')}
               </DropdownMenuItem>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
+              {t('languageLabel')}
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <LocaleSwitcherItems />
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <form action={signOutAction}>
                 <button type="submit" className="flex w-full items-center gap-2">
                   <LogOut className="size-4" />
-                  Log out
+                  {t('logout')}
                 </button>
               </form>
             </DropdownMenuItem>

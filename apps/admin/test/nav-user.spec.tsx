@@ -4,6 +4,9 @@ import { describe, expect, it, vi, afterEach } from 'vitest';
 vi.mock('@/lib/actions/sign-out', () => ({
   signOutAction: vi.fn(),
 }));
+vi.mock('@/lib/i18n/set-locale-action', () => ({
+  setLocaleAction: vi.fn(),
+}));
 vi.mock('next-themes', () => ({
   useTheme: () => ({ setTheme: vi.fn() }),
 }));
