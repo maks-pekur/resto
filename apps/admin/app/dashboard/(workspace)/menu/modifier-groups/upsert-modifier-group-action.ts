@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { ModifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
@@ -24,9 +25,10 @@ export async function upsertModifierGroupAction(
 ): Promise<UpsertModifierGroupActionResult> {
   const parsed = ModifierGroupFormSchema.safeParse(input.values);
   if (!parsed.success) {
+    const t = await getTranslations('menu.modifiers');
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? 'Проверьте поля группы.',
+      error: parsed.error.issues[0]?.message ?? t('validateGroup'),
     };
   }
 

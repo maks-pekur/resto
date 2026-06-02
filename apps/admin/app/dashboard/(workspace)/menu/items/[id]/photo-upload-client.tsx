@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -10,7 +11,6 @@ import { photoUploadUrlAction } from './photo-upload-url-action';
 const ALLOWED_TYPES: ReadonlySet<string> = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const PUT_TIMEOUT_MS = 60_000;
-const ALLOWLIST_ERROR = 'Только JPG, PNG или WEBP до 5 МБ.';
 
 export interface PhotoUploadClientProps {
   readonly itemId: string;
@@ -31,6 +31,7 @@ export function PhotoUploadClient({
   currentPhotoUrl,
   onUploaded,
 }: PhotoUploadClientProps): React.ReactElement {
+  const t = useTranslations('menu.editor');
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const [state, setState] = React.useState<UploadState>({ kind: 'idle' });
   const [previewUrl, setPreviewUrl] = React.useState<string | null>(null);
@@ -52,7 +53,7 @@ export function PhotoUploadClient({
 
   const handleFile = async (file: File): Promise<void> => {
     if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_SIZE_BYTES) {
-      setState({ kind: 'error', message: ALLOWLIST_ERROR });
+      setState({ kind: 'error', message: t('photoAllowlistError') });
       return;
     }
     setState({ kind: 'requesting' });
@@ -70,11 +71,11 @@ export function PhotoUploadClient({
         signal: AbortSignal.timeout(PUT_TIMEOUT_MS),
       });
       if (!putRes.ok) {
-        setState({ kind: 'error', message: 'Не удалось загрузить фото. Попробуйте ещё раз.' });
+        setState({ kind: 'error', message: t('photoUploadFailed') });
         return;
       }
     } catch {
-      setState({ kind: 'error', message: 'Не удалось загрузить фото. Попробуйте ещё раз.' });
+      setState({ kind: 'error', message: t('photoUploadFailed') });
       return;
     }
     const newPreview = URL.createObjectURL(file);
@@ -108,7 +109,7 @@ export function PhotoUploadClient({
   const hasPhoto = Boolean(visiblePhoto) || Boolean(currentS3Key && !previewUrl);
   const inputId = React.useId();
   const isBusy = state.kind === 'requesting' || state.kind === 'uploading';
-  const busyLabel = state.kind === 'requesting' ? 'Запрашиваем доступ…' : 'Загружаем…';
+  const busyLabel = state.kind === 'requesting' ? t('photoRequesting') : t('photoUploading');
 
   return (
     <div className="flex flex-col gap-2">
@@ -119,13 +120,13 @@ export function PhotoUploadClient({
         accept="image/jpeg,image/png,image/webp"
         className="sr-only"
         onChange={onInputChange}
-        aria-label="Файл фото"
+        aria-label={t('photoFileAriaLabel')}
       />
       <label
         htmlFor={inputId}
         role="button"
         tabIndex={0}
-        aria-label={hasPhoto ? 'Заменить фото' : 'Загрузить фото'}
+        aria-label={hasPhoto ? t('photoReplaceAriaLabel') : t('photoUploadAriaLabel')}
         onDragOver={(e) => {
           e.preventDefault();
         }}
@@ -136,19 +137,19 @@ export function PhotoUploadClient({
         {visiblePhoto ? (
           <img
             src={visiblePhoto}
-            alt="Фото блюда"
+            alt={t('photoAlt')}
             className="absolute inset-0 size-full object-cover"
           />
         ) : (
           <>
             <ImageIcon className="size-6" aria-hidden="true" />
-            <span className="text-sm">Нажмите или перетащите фото</span>
-            <span className="text-xs">JPG, PNG, WEBP до 5 МБ</span>
+            <span className="text-sm">{t('photoDropHint')}</span>
+            <span className="text-xs">{t('photoFormatsHint')}</span>
           </>
         )}
         {hasPhoto ? (
           <span className="pointer-events-none absolute right-2 bottom-2 rounded-md bg-background/80 px-2 py-1 text-xs text-foreground opacity-0 transition-opacity group-hover:opacity-100">
-            Изменить фото
+            {t('photoChange')}
           </span>
         ) : null}
       </label>
@@ -173,11 +174,11 @@ export function PhotoUploadClient({
           <TooltipTrigger asChild>
             <span tabIndex={0}>
               <Button type="button" variant="ghost" size="sm" disabled className="text-xs">
-                + Добавить ещё фото
+                {t('photoAddMore')}
               </Button>
             </span>
           </TooltipTrigger>
-          <TooltipContent>Несколько фото — в следующей версии</TooltipContent>
+          <TooltipContent>{t('photoMultiTooltip')}</TooltipContent>
         </Tooltip>
       </TooltipProvider>
     </div>

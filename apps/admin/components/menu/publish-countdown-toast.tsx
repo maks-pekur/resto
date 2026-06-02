@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 
@@ -18,6 +19,7 @@ export function PublishCountdownToast({
   onCancel,
   onElapse,
 }: PublishCountdownToastProps): React.ReactElement {
+  const t = useTranslations('menu.publishBar');
   const [elapsed, setElapsed] = React.useState(0);
   const elapsedFiredRef = React.useRef(false);
   const onElapseRef = React.useRef(onElapse);
@@ -46,10 +48,10 @@ export function PublishCountdownToast({
     <div className="w-[360px]">
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm" aria-live="polite">
-          Публикация через {remainingSec.toString()}с
+          {t('countdownLabel', { sec: remainingSec })}
         </span>
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
-          Отменить
+          {t('cancelBtn')}
         </Button>
       </div>
       <Progress value={progress} className="mt-2 h-1" />

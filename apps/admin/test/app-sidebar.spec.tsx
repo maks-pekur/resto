@@ -32,12 +32,12 @@ describe('AppSidebar (Phase 02 D-15 cleanup)', () => {
     cleanup();
   });
 
-  it('renders Dashboard, Меню, Team, and Settings nav items only', () => {
+  it('renders Дашборд, Меню, Команда, and Настройки nav items only', () => {
     renderSidebar();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Дашборд')).toBeInTheDocument();
     expect(screen.getByText('Меню')).toBeInTheDocument();
-    expect(screen.getByText('Team')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Команда')).toBeInTheDocument();
+    expect(screen.getByText('Настройки')).toBeInTheDocument();
     expect(screen.queryByText('Brands')).toBeNull();
   });
 

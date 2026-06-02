@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import {
   Select,
   SelectContent,
@@ -34,6 +35,7 @@ export function CategorySelect({
   disabled,
   placeholder,
 }: CategorySelectProps): React.ReactElement {
+  const t = useTranslations('menu.categories');
   const handleValueChange = (v: string): void => {
     if (v === NONE_VALUE) {
       onChange(null);
@@ -43,7 +45,7 @@ export function CategorySelect({
   };
 
   const fallbackPlaceholder =
-    mode === 'parent-picker' ? 'Выберите категорию' : 'Категория не выбрана';
+    mode === 'parent-picker' ? t('parentPickerPlaceholder') : t('itemPickerPlaceholder');
 
   return (
     <Select
@@ -56,7 +58,7 @@ export function CategorySelect({
       </SelectTrigger>
       <SelectContent>
         {mode === 'parent-picker' ? (
-          <SelectItem value={NONE_VALUE}>— Без родителя —</SelectItem>
+          <SelectItem value={NONE_VALUE}>{t('noneParentLabel')}</SelectItem>
         ) : null}
         {categories.map((c) => {
           const isChild = c.parentId !== null;
@@ -64,7 +66,9 @@ export function CategorySelect({
           if (disabledOption) {
             return (
               <SelectItem key={c.id} value={c.id} disabled aria-disabled="true" className="pl-8">
-                <span className="text-muted-foreground">{c.name} (уже является подкатегорией)</span>
+                <span className="text-muted-foreground">
+                  {t('childCannotBeParent', { name: c.name })}
+                </span>
               </SelectItem>
             );
           }

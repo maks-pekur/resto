@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,9 @@ export function ModifierGroupFormClient({
   onSaved,
 }: ModifierGroupFormClientProps): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('menu.modifierGroups');
+  const tMod = useTranslations('menu.modifiers');
+  const tCommon = useTranslations('common');
   const [pending, setPending] = React.useState(false);
   const form = useForm<ModifierGroupForm>({
     resolver: zodResolver(ModifierGroupFormSchema),
@@ -43,10 +47,10 @@ export function ModifierGroupFormClient({
     });
     setPending(false);
     if (!res.ok) {
-      showError(res.error, 'Не удалось сохранить группу.');
+      showError(res.error, t('groupSaveFailed'));
       return;
     }
-    showSuccess(isNew ? 'Группа создана' : 'Сохранено', { duration: 1500 });
+    showSuccess(isNew ? t('groupCreated') : tCommon('saved'), { duration: 1500 });
     onSaved(res.id);
     if (isNew) {
       router.replace(`/dashboard/menu/modifier-groups/${res.id}`);
@@ -69,7 +73,7 @@ export function ModifierGroupFormClient({
             name="name"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Название</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{tMod('nameLabel')}</FieldLabel>
                 <Input
                   id={field.name}
                   maxLength={255}
@@ -85,7 +89,7 @@ export function ModifierGroupFormClient({
             name="minSelectable"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Мин</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{tMod('minLabel')}</FieldLabel>
                 <Input
                   id={field.name}
                   type="number"
@@ -110,7 +114,7 @@ export function ModifierGroupFormClient({
             name="maxSelectable"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Макс</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{tMod('maxLabel')}</FieldLabel>
                 <Input
                   id={field.name}
                   type="number"
@@ -134,7 +138,7 @@ export function ModifierGroupFormClient({
       </FieldGroup>
       <div className="flex justify-end">
         <Button type="submit" disabled={pending || !canSubmit}>
-          {pending ? 'Сохраняем…' : isNew ? 'Создать группу' : 'Сохранить'}
+          {pending ? tCommon('saving') : isNew ? t('createGroupBtn') : tCommon('save')}
         </Button>
       </div>
     </form>

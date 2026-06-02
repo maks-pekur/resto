@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
@@ -36,6 +37,7 @@ export function GroupEditorShellClient({
   initialGroup,
   groupId,
 }: GroupEditorShellClientProps): React.ReactElement {
+  const t = useTranslations('menu.modifierGroups');
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
   const [currentOptions, setCurrentOptions] = React.useState<readonly ModifierOptionApi[]>(
     initialGroup?.options ?? [],
@@ -50,11 +52,8 @@ export function GroupEditorShellClient({
     <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
       <Card>
         <CardHeader>
-          <CardTitle>Основное</CardTitle>
-          <CardDescription>
-            Параметры группы: название и количество выбираемых вариантов (макс. 0 — без
-            ограничений).
-          </CardDescription>
+          <CardTitle>{t('groupMain')}</CardTitle>
+          <CardDescription>{t('groupMainDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ModifierGroupFormClient
@@ -67,8 +66,8 @@ export function GroupEditorShellClient({
 
       <Card>
         <CardHeader>
-          <CardTitle>Варианты</CardTitle>
-          <CardDescription>Список опций и их цены — сохраняются одной кнопкой.</CardDescription>
+          <CardTitle>{t('groupVariantsTitle')}</CardTitle>
+          <CardDescription>{t('groupVariantsDescription')}</CardDescription>
         </CardHeader>
         <CardContent>
           <ModifierOptionsListClient

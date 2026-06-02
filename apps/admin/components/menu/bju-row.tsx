@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
@@ -14,14 +15,6 @@ export interface BjuRowProps {
   readonly nutritionEstimated: boolean;
   readonly onChange: (field: BjuField, value: number | null) => void;
 }
-
-const fields: readonly { readonly key: BjuField; readonly label: string; readonly step: string }[] =
-  [
-    { key: 'proteins', label: 'Б', step: '0.1' },
-    { key: 'fats', label: 'Ж', step: '0.1' },
-    { key: 'carbs', label: 'У', step: '0.1' },
-    { key: 'kcal', label: 'ккал', step: '1' },
-  ];
 
 const parseValue = (raw: string, isInt: boolean): number | null => {
   if (raw.trim() === '') return null;
@@ -37,6 +30,17 @@ export function BjuRow({
   nutritionEstimated,
   onChange,
 }: BjuRowProps): React.ReactElement {
+  const t = useTranslations('menu.editor');
+  const fields: readonly {
+    readonly key: BjuField;
+    readonly label: string;
+    readonly step: string;
+  }[] = [
+    { key: 'proteins', label: t('nutritionProteinsShort'), step: '0.1' },
+    { key: 'fats', label: t('nutritionFatsShort'), step: '0.1' },
+    { key: 'carbs', label: t('nutritionCarbsShort'), step: '0.1' },
+    { key: 'kcal', label: t('nutritionKcalShort'), step: '1' },
+  ];
   const values: Record<BjuField, number | null> = { proteins, fats, carbs, kcal };
   return (
     <div className="space-y-1.5">
@@ -58,10 +62,10 @@ export function BjuRow({
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        на 100&nbsp;г
+        {t('nutritionPer100g')}
         {nutritionEstimated ? (
           <Badge variant="secondary" className="ml-2 text-xs">
-            AI-оценка
+            {t('nutritionAiBadge')}
           </Badge>
         ) : null}
       </p>

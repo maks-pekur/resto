@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/button';
@@ -59,6 +60,8 @@ export function ItemDetailTabClient({
   slug,
 }: ItemDetailTabClientProps): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('menu.editor');
+  const tCommon = useTranslations('common');
   const [pending, setPending] = React.useState(false);
   const form = useForm<ItemEditorForm>({
     resolver: zodResolver(ItemEditorFormSchema),
@@ -80,10 +83,10 @@ export function ItemDetailTabClient({
     const res = await upsertItemAction(currentItemId, values, currentPhotoS3Key);
     setPending(false);
     if (!res.ok) {
-      showError(res.error, 'Не удалось сохранить блюдо.');
+      showError(res.error, t('saveFailed'));
       return;
     }
-    showSuccess(isNew ? 'Блюдо создано' : 'Сохранено', { duration: 1500 });
+    showSuccess(isNew ? t('itemCreated') : tCommon('saved'), { duration: 1500 });
     onSaved(res.id);
     if (isNew) {
       router.replace(`/dashboard/menu/items/${res.id}`);
@@ -106,14 +109,14 @@ export function ItemDetailTabClient({
             name="name"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Название</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{t('name')}</FieldLabel>
                 <Input
                   id={field.name}
                   maxLength={255}
                   aria-invalid={fieldState.error ? true : undefined}
                   {...field}
                 />
-                <FieldDescription>{slug || 'Slug определится после сохранения'}</FieldDescription>
+                <FieldDescription>{slug || t('slugPlaceholder')}</FieldDescription>
                 {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
               </Field>
             )}
@@ -124,7 +127,7 @@ export function ItemDetailTabClient({
             name="description"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Описание</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
                 <Textarea
                   id={field.name}
                   maxLength={4096}
@@ -147,7 +150,7 @@ export function ItemDetailTabClient({
             name="categoryId"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Категория</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{t('category')}</FieldLabel>
                 <CategorySelect
                   categories={categories}
                   value={field.value || null}
@@ -166,7 +169,7 @@ export function ItemDetailTabClient({
             name="basePrice"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>Цена</FieldLabel>
+                <FieldLabel htmlFor={field.name}>{t('price')}</FieldLabel>
                 <InputGroup>
                   <InputGroupInput
                     id={field.name}
@@ -191,7 +194,7 @@ export function ItemDetailTabClient({
           />
 
           <FieldSet>
-            <FieldLegend variant="label">Питание на 100 г</FieldLegend>
+            <FieldLegend variant="label">{t('nutritionTitle')}</FieldLegend>
             <BjuRow
               proteins={form.watch('proteins')}
               fats={form.watch('fats')}
@@ -205,11 +208,11 @@ export function ItemDetailTabClient({
           </FieldSet>
 
           <Field>
-            <FieldLabel htmlFor="allergens">Аллергены</FieldLabel>
+            <FieldLabel htmlFor="allergens">{t('allergens')}</FieldLabel>
             <Input
               id="allergens"
               value={allergensText}
-              placeholder="Молоко, орехи, глютен"
+              placeholder={t('allergensPlaceholder')}
               onChange={(e) => {
                 setAllergensText(e.target.value);
                 form.setValue('allergens', allergensFromForm(e.target.value), {
@@ -218,14 +221,14 @@ export function ItemDetailTabClient({
                 });
               }}
             />
-            <FieldDescription>Через запятую</FieldDescription>
+            <FieldDescription>{tCommon('comma')}</FieldDescription>
           </Field>
         </FieldGroup>
 
         <Card>
           <CardHeader>
-            <CardTitle>Фото блюда</CardTitle>
-            <CardDescription>JPG, PNG, WEBP до 5 МБ</CardDescription>
+            <CardTitle>{t('photoTitle')}</CardTitle>
+            <CardDescription>{t('photoDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
             <PhotoUploadClient
@@ -240,7 +243,7 @@ export function ItemDetailTabClient({
 
       <div className="flex items-center justify-end gap-2 border-t pt-4">
         <Button type="submit" disabled={pending || !canSubmit}>
-          {pending ? 'Сохраняем…' : isNew ? 'Создать блюдо' : 'Сохранить'}
+          {pending ? tCommon('saving') : isNew ? t('createBtn') : tCommon('save')}
         </Button>
       </div>
     </form>

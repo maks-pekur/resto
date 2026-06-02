@@ -1,18 +1,13 @@
+'use client';
+
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import type { Status } from '@/lib/menu/types';
 
-// `paused` is secondary (GM MED-1: must NOT render destructive).
-const LABELS: Record<Status, string> = {
-  draft: 'Черновик',
-  modified: 'Изменено',
-  published: 'Опубликовано',
-  paused: 'Стоп',
-  archived: 'Архив',
-};
-
 type Variant = 'default' | 'secondary' | 'outline' | 'ghost';
 
+// `paused` is secondary (GM MED-1: must NOT render destructive).
 const VARIANTS: Record<Status, Variant> = {
   draft: 'outline',
   modified: 'outline',
@@ -31,10 +26,11 @@ export interface StatusBadgeProps {
 }
 
 export function StatusBadge({ status }: StatusBadgeProps): React.ReactElement {
-  const label = LABELS[status];
+  const t = useTranslations('menu.status');
+  const label = t(status);
   const extra = EXTRA_CLASS[status];
   return (
-    <Badge variant={VARIANTS[status]} className={extra} aria-label={`Статус: ${label}`}>
+    <Badge variant={VARIANTS[status]} className={extra} aria-label={t('ariaLabel', { label })}>
       {label}
     </Badge>
   );

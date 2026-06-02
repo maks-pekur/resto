@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useActionState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,8 @@ export function CategoryFormClient({
   allCategories,
   onClose,
 }: CategoryFormClientProps): React.ReactElement {
+  const t = useTranslations('menu.categories');
+  const tCommon = useTranslations('common');
   const [state, action, pending] = useActionState(upsertCategoryAction, INITIAL);
   const [parentId, setParentId] = React.useState<string | null>(category?.parentId ?? null);
 
@@ -54,7 +57,7 @@ export function CategoryFormClient({
 
       <FieldGroup>
         <Field>
-          <FieldLabel htmlFor="cat-name">Название</FieldLabel>
+          <FieldLabel htmlFor="cat-name">{t('name')}</FieldLabel>
           <Input
             id="cat-name"
             name="name"
@@ -65,16 +68,14 @@ export function CategoryFormClient({
         </Field>
 
         <Field>
-          <FieldLabel htmlFor="cat-parent">Родительская категория</FieldLabel>
+          <FieldLabel htmlFor="cat-parent">{t('parent')}</FieldLabel>
           <CategorySelect
             categories={selectOptions}
             value={parentId}
             onChange={setParentId}
             mode="parent-picker"
           />
-          <FieldDescription>
-            Оставьте пустым, чтобы создать категорию верхнего уровня.
-          </FieldDescription>
+          <FieldDescription>{t('parentHint')}</FieldDescription>
         </Field>
 
         {state.error ? <FieldError>{state.error}</FieldError> : null}
@@ -82,10 +83,10 @@ export function CategoryFormClient({
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="ghost" onClick={onClose}>
-          Отмена
+          {tCommon('cancel')}
         </Button>
         <Button type="submit" disabled={pending}>
-          {pending ? 'Сохраняем…' : mode === 'create' ? 'Создать' : 'Сохранить'}
+          {pending ? tCommon('saving') : mode === 'create' ? tCommon('create') : tCommon('save')}
         </Button>
       </div>
     </form>

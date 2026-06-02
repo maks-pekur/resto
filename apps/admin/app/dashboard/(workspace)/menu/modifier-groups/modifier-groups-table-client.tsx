@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -40,14 +41,15 @@ const formatMinMax = (min: number, max: number): string => {
 export function ModifierGroupsTableClient({
   items,
 }: ModifierGroupsTableClientProps): React.ReactElement {
+  const t = useTranslations('menu.modifierGroups');
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Название</TableHead>
-          <TableHead className="w-[100px]">Мин / Макс</TableHead>
-          <TableHead className="w-[120px]">Вариантов</TableHead>
-          <TableHead className="w-[160px]">Используется в</TableHead>
+          <TableHead>{t('tableName')}</TableHead>
+          <TableHead className="w-[100px]">{t('tableMinMax')}</TableHead>
+          <TableHead className="w-[120px]">{t('tableOptionCount')}</TableHead>
+          <TableHead className="w-[160px]">{t('tableUsageCount')}</TableHead>
           <TableHead className="w-[60px] text-right" />
         </TableRow>
       </TableHeader>
@@ -67,13 +69,15 @@ export function ModifierGroupsTableClient({
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" aria-label="Действия">
+                  <Button variant="ghost" size="icon" aria-label={t('actionsLabel')}>
                     <MoreHorizontal className="size-4" aria-hidden="true" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem asChild>
-                    <Link href={`/dashboard/menu/modifier-groups/${row.id}`}>Открыть</Link>
+                    <Link href={`/dashboard/menu/modifier-groups/${row.id}`}>
+                      {t('openAction')}
+                    </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

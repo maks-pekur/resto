@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 
 interface StopListItemApi {
@@ -17,11 +18,12 @@ export interface ResetStopListResult {
 export async function resetStopListAction(): Promise<ResetStopListResult> {
   const list = await apiFetchInternal<readonly StopListItemApi[]>('/internal/v1/catalog/stop-list');
   if (!list.ok || !list.data) {
+    const t = await getTranslations('menu.stopList');
     return {
       ok: false,
       resetCount: 0,
       failedIds: [],
-      error: 'Не удалось получить стоп-лист.',
+      error: t('resetFetchFailed'),
     };
   }
 

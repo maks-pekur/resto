@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,6 +43,8 @@ export function ItemSizesTabClient({
   sizes,
   onSizesChange,
 }: ItemSizesTabClientProps): React.ReactElement {
+  const t = useTranslations('menu.sizes');
+  const tCommon = useTranslations('common');
   const [rows, setRows] = React.useState<RowDraft[]>(() => sizes.map(rowFromApi));
   const [pending, setPending] = React.useState(false);
 
@@ -124,10 +127,10 @@ export function ItemSizesTabClient({
 
     setPending(false);
     if (failures.length > 0) {
-      showError(`Не удалось сохранить: ${failures.join(', ')}`, 'Часть размеров не сохранилась.');
+      showError(t('partialFailDetail', { names: failures.join(', ') }), t('partialFail'));
       return;
     }
-    showSuccess('Размеры сохранены', { duration: 1500 });
+    showSuccess(t('savedToast'), { duration: 1500 });
     onSizesChange(
       rows.map((r) => ({
         id: r.sizeId ?? r.localKey,
@@ -141,18 +144,12 @@ export function ItemSizesTabClient({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Размеры</CardTitle>
-        <CardDescription>
-          {isNewItem
-            ? 'Сначала сохраните блюдо — потом можно добавлять размеры.'
-            : 'Цена за размер заменяет базовую. Один размер можно отметить «По умолчанию».'}
-        </CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{isNewItem ? t('saveFirstHint') : t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {!isNewItem && rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Нет размеров — блюдо использует базовую цену.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
         ) : null}
         {rows.length > 0 ? (
           <div className="flex flex-col gap-2">
@@ -162,7 +159,7 @@ export function ItemSizesTabClient({
                 className="grid grid-cols-[1fr_120px_80px_40px] items-center gap-2"
               >
                 <Input
-                  placeholder="Название"
+                  placeholder={t('namePlaceholder')}
                   value={row.name}
                   onChange={(e) => {
                     updateRow(row.localKey, { name: e.target.value });
@@ -172,7 +169,7 @@ export function ItemSizesTabClient({
                   type="number"
                   step="0.01"
                   inputMode="decimal"
-                  placeholder="Цена"
+                  placeholder={t('pricePlaceholder')}
                   value={row.price}
                   onChange={(e) => {
                     const n = Number.parseFloat(e.target.value);
@@ -184,18 +181,18 @@ export function ItemSizesTabClient({
                     type="radio"
                     name="size-default"
                     checked={row.isDefault}
-                    aria-label="По умолчанию"
+                    aria-label={t('defaultRadioFull')}
                     onChange={() => {
                       onSetDefault(row.localKey);
                     }}
                   />
-                  <span className="text-muted-foreground">По&nbsp;умолч.</span>
+                  <span className="text-muted-foreground">{t('defaultRadioShort')}</span>
                 </label>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  aria-label="Удалить размер"
+                  aria-label={t('removeAriaLabel')}
                   onClick={() => {
                     onRemoveRow(row.localKey);
                   }}
@@ -208,7 +205,7 @@ export function ItemSizesTabClient({
         ) : null}
         <div className="flex items-center justify-between gap-2">
           <Button type="button" variant="outline" size="sm" onClick={onAddRow} disabled={isNewItem}>
-            + Добавить размер
+            {t('addRow')}
           </Button>
           <Button
             type="button"
@@ -218,7 +215,7 @@ export function ItemSizesTabClient({
             }}
             disabled={pending || isNewItem || !isDirty}
           >
-            {pending ? 'Сохраняем…' : 'Сохранить размеры'}
+            {pending ? tCommon('saving') : t('saveBtn')}
           </Button>
         </div>
       </CardContent>

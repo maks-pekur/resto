@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { ImageIcon } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import {
@@ -38,6 +39,8 @@ const buildCategoryPath = (item: StopListItemApi): string => {
 };
 
 export function StopListTableClient({ items }: StopListTableClientProps): React.ReactElement {
+  const t = useTranslations('menu.stopList');
+  const tItems = useTranslations('menu.items');
   const [pendingIds, setPendingIds] = React.useState<ReadonlySet<string>>(new Set());
   const [removedIds, setRemovedIds] = React.useState<ReadonlySet<string>>(new Set());
   const [, startTransition] = React.useTransition();
@@ -62,10 +65,10 @@ export function StopListTableClient({ items }: StopListTableClientProps): React.
           copy.add(item.id);
           return copy;
         });
-        showSuccess('Блюдо возобновлено', { duration: 1500 });
+        showSuccess(tItems('removedFromStopList'), { duration: 1500 });
         return;
       }
-      showError(res.error, 'Не удалось обновить стоп-лист.');
+      showError(res.error, tItems('stopListFailed'));
     });
   };
 
@@ -76,11 +79,11 @@ export function StopListTableClient({ items }: StopListTableClientProps): React.
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-[48px]" />
-          <TableHead>Название</TableHead>
-          <TableHead>Категория</TableHead>
-          <TableHead className="w-[160px]">Остановлено</TableHead>
-          <TableHead className="w-[80px] text-right">Стоп</TableHead>
+          <TableHead className="w-[48px]">{t('tablePhotoHeader')}</TableHead>
+          <TableHead>{t('tableNameHeader')}</TableHead>
+          <TableHead>{t('tableCategoryHeader')}</TableHead>
+          <TableHead className="w-[160px]">{t('tableStoppedAtHeader')}</TableHead>
+          <TableHead className="w-[80px] text-right">{t('tableStopHeader')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -111,7 +114,7 @@ export function StopListTableClient({ items }: StopListTableClientProps): React.
                 <span className="text-sm">{formatAge(stoppedAtMs, now)}</span>
                 {isStale ? (
                   <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
-                    Остановлено {formatDuration(msSince)}
+                    {t('staleWarning', { duration: formatDuration(msSince) })}
                   </p>
                 ) : null}
               </TableCell>
@@ -122,7 +125,7 @@ export function StopListTableClient({ items }: StopListTableClientProps): React.
                   onCheckedChange={() => {
                     onToggleOff(item);
                   }}
-                  aria-label={`Возобновить ${name}`}
+                  aria-label={t('resumeAriaLabel', { name })}
                 />
               </TableCell>
             </TableRow>

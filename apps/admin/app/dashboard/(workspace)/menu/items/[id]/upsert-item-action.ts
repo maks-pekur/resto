@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
@@ -21,7 +22,8 @@ export async function upsertItemAction(
 ): Promise<UpsertItemActionResult> {
   const parsed = ItemEditorFormSchema.safeParse(values);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Проверьте поля формы.' };
+    const t = await getTranslations('menu.editor');
+    return { ok: false, error: parsed.error.issues[0]?.message ?? t('validateForm') };
   }
 
   const payload: Record<string, unknown> = {

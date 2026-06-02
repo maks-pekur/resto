@@ -1,11 +1,13 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { resetStopListAction } from '@/app/dashboard/(workspace)/menu/stop-list/reset-stop-list-action';
 
 export function TodaysWidgetResetButton(): React.ReactElement {
+  const t = useTranslations('menu.stopList');
   const [, startTransition] = React.useTransition();
   const [pending, setPending] = React.useState(false);
 
@@ -16,16 +18,14 @@ export function TodaysWidgetResetButton(): React.ReactElement {
       const res = await resetStopListAction();
       setPending(false);
       if (res.ok) {
-        showSuccess('Стоп-лист сбросен');
+        showSuccess(t('resetSuccess'));
         return;
       }
       if (res.resetCount > 0 && res.failedIds.length > 0) {
-        showError(
-          `${res.resetCount.toString()} возобновлены, ${res.failedIds.length.toString()} не удалось`,
-        );
+        showError(t('resetPartial', { ok: res.resetCount, failed: res.failedIds.length }));
         return;
       }
-      showError(res.error, 'Не удалось сбросить стоп-лист.');
+      showError(res.error, t('resetFailed'));
     });
   };
 
@@ -36,9 +36,9 @@ export function TodaysWidgetResetButton(): React.ReactElement {
       size="sm"
       onClick={onClick}
       disabled={pending}
-      aria-label="Сбросить весь стоп-лист"
+      aria-label={t('resetAllAriaLabel')}
     >
-      Сбросить всё
+      {t('resetAllBtn')}
     </Button>
   );
 }

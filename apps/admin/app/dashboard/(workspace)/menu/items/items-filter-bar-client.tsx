@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -31,14 +32,6 @@ export interface ItemsFilterBarClientProps {
   };
 }
 
-const STATUS_LABEL: Record<ItemListStatusFilter, string> = {
-  'all-except-archived': 'Все кроме архива',
-  draft: 'Черновики',
-  published: 'Опубликованные',
-  paused: 'Стоп',
-  archived: 'Архив',
-};
-
 const buildUrl = (next: {
   readonly status: ItemListStatusFilter;
   readonly categoryId: string | null;
@@ -63,8 +56,17 @@ export function ItemsFilterBarClient({
   currentFilters,
 }: ItemsFilterBarClientProps): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('menu.items');
   // useSearchParams() opt-in keeps this segment dynamic so prefetched links don't serve stale filter state.
   useSearchParams();
+
+  const STATUS_LABEL: Record<ItemListStatusFilter, string> = {
+    'all-except-archived': t('filtersAll'),
+    draft: t('filtersDraft'),
+    published: t('filtersPublished'),
+    paused: t('filtersPaused'),
+    archived: t('filtersArchived'),
+  };
 
   const [localQ, setLocalQ] = React.useState(currentFilters.q);
   const requestId = React.useRef(0);
@@ -115,26 +117,26 @@ export function ItemsFilterBarClient({
     <div className="flex flex-wrap items-center gap-2">
       <Input
         type="search"
-        placeholder="Поиск блюд…"
+        placeholder={t('searchPlaceholder')}
         value={localQ}
         onChange={(e) => {
           setLocalQ(e.target.value);
         }}
-        aria-label="Поиск блюд"
+        aria-label={t('searchAriaLabel')}
         className="w-64"
       />
       <div className="w-56">
         <CategorySelect
           mode="item-picker"
           categories={[
-            { id: ALL_CATEGORIES_VALUE, name: 'Все категории', parentId: null },
+            { id: ALL_CATEGORIES_VALUE, name: t('allCategories'), parentId: null },
             ...categories,
           ]}
           value={currentFilters.categoryId ?? ALL_CATEGORIES_VALUE}
           onChange={(v) => {
             handleCategoryChange(v === ALL_CATEGORIES_VALUE ? null : v);
           }}
-          placeholder="Все категории"
+          placeholder={t('allCategories')}
         />
       </div>
       <Select value={currentFilters.status} onValueChange={handleStatusChange}>

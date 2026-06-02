@@ -1,5 +1,6 @@
 'use server';
 
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
@@ -19,11 +20,9 @@ export async function photoUploadUrlAction(
   contentType: string,
   sizeBytes: number,
 ): Promise<PhotoUploadUrlActionResult> {
-  if (!ALLOWED_TYPES.has(contentType)) {
-    return { ok: false, error: 'Только JPG, PNG или WEBP до 5 МБ.' };
-  }
-  if (sizeBytes > MAX_SIZE_BYTES) {
-    return { ok: false, error: 'Только JPG, PNG или WEBP до 5 МБ.' };
+  if (!ALLOWED_TYPES.has(contentType) || sizeBytes > MAX_SIZE_BYTES) {
+    const t = await getTranslations('menu.editor');
+    return { ok: false, error: t('photoAllowlistError') };
   }
 
   const res = await apiFetchInternal<PhotoUploadUrlResponse>(

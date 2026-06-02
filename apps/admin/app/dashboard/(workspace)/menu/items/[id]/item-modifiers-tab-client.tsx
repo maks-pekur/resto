@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +47,8 @@ export function ItemModifiersTabClient({
   availableGroups,
 }: ItemModifiersTabClientProps): React.ReactElement {
   const router = useRouter();
+  const t = useTranslations('menu.modifiers');
+  const tCommon = useTranslations('common');
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
   const [sheetOpen, setSheetOpen] = React.useState(false);
@@ -64,10 +67,10 @@ export function ItemModifiersTabClient({
     const res = await upsertItemModifierGroupsAction(itemId, nextIds);
     setPending(false);
     if (!res.ok) {
-      showError(res.error, 'Не удалось обновить модификаторы.');
+      showError(res.error, t('updateFailed'));
       return false;
     }
-    showSuccess('Сохранено', { duration: 1500 });
+    showSuccess(tCommon('saved'), { duration: 1500 });
     return true;
   };
 
@@ -92,7 +95,7 @@ export function ItemModifiersTabClient({
 
   const onSubmitNew = async (): Promise<void> => {
     if (!newName.trim()) {
-      showError('Введите название группы.', 'Введите название группы.');
+      showError(t('nameRequired'), t('nameRequired'));
       return;
     }
     setPending(true);
@@ -101,7 +104,7 @@ export function ItemModifiersTabClient({
     });
     setPending(false);
     if (!res.ok) {
-      showError(res.error, 'Не удалось создать группу.');
+      showError(res.error, t('createFailed'));
       return;
     }
     setCreateOpen(false);
@@ -122,10 +125,8 @@ export function ItemModifiersTabClient({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Модификаторы</CardTitle>
-          <CardDescription>
-            Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.
-          </CardDescription>
+          <CardTitle>{t('cardTitle')}</CardTitle>
+          <CardDescription>{t('newItemHint')}</CardDescription>
         </CardHeader>
       </Card>
     );
@@ -134,17 +135,12 @@ export function ItemModifiersTabClient({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Группы модификаторов</CardTitle>
-        <CardDescription>
-          Прикрепите группы из библиотеки или создайте новую — варианты можно отредактировать в
-          самой группе.
-        </CardDescription>
+        <CardTitle>{t('cardTitle')}</CardTitle>
+        <CardDescription>{t('cardDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {assignedGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Нет прикреплённых групп — нажмите «+ Добавить группу».
-          </p>
+          <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {assignedGroups.map((g) => (
@@ -156,7 +152,7 @@ export function ItemModifiersTabClient({
                 <span>{g.name}</span>
                 <button
                   type="button"
-                  aria-label={`Убрать группу ${g.name}`}
+                  aria-label={t('chipRemoveAriaLabel', { name: g.name })}
                   onClick={() => {
                     void onRemove(g.id);
                   }}
@@ -181,7 +177,7 @@ export function ItemModifiersTabClient({
             }}
             disabled={pending}
           >
-            + Добавить группу
+            {t('addGroupBtn')}
           </Button>
         </div>
       </CardContent>
@@ -189,10 +185,10 @@ export function ItemModifiersTabClient({
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
         <SheetContent side="right" className="flex flex-col gap-4">
           <SheetHeader>
-            <SheetTitle>Добавить группу модификаторов</SheetTitle>
+            <SheetTitle>{t('sheetTitle')}</SheetTitle>
           </SheetHeader>
           <Input
-            placeholder="Поиск"
+            placeholder={t('searchPlaceholder')}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -200,7 +196,7 @@ export function ItemModifiersTabClient({
           />
           <div className="flex-1 overflow-y-auto">
             {sheetGroups.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Ничего не найдено.</p>
+              <p className="text-sm text-muted-foreground">{t('sheetEmpty')}</p>
             ) : (
               <ItemGroup>
                 {sheetGroups.map((g) => {
@@ -209,7 +205,9 @@ export function ItemModifiersTabClient({
                     <Item key={g.id} variant="outline">
                       <ItemContent>
                         <ItemTitle>{g.name}</ItemTitle>
-                        <ItemDescription>{g.optionCount.toString()} вариантов</ItemDescription>
+                        <ItemDescription>
+                          {t('optionCount', { count: g.optionCount })}
+                        </ItemDescription>
                       </ItemContent>
                       <ItemActions>
                         <Button
@@ -221,7 +219,7 @@ export function ItemModifiersTabClient({
                             void onAdd(g.id);
                           }}
                         >
-                          {isAssigned ? 'Добавлено' : '+ Добавить'}
+                          {isAssigned ? t('alreadyAdded') : t('addToItem')}
                         </Button>
                       </ItemActions>
                     </Item>
@@ -238,7 +236,7 @@ export function ItemModifiersTabClient({
             }}
             className="justify-start px-0"
           >
-            + Создать новую группу
+            {t('createNewLink')}
           </Button>
         </SheetContent>
       </Sheet>
@@ -246,14 +244,12 @@ export function ItemModifiersTabClient({
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Создать группу модификаторов</DialogTitle>
-            <DialogDescription>
-              Эта группа сразу появится в библиотеке и будет доступна для прикрепления.
-            </DialogDescription>
+            <DialogTitle>{t('createDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('createDialogDescription')}</DialogDescription>
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="new-mg-name">Название</FieldLabel>
+              <FieldLabel htmlFor="new-mg-name">{t('nameLabel')}</FieldLabel>
               <Input
                 id="new-mg-name"
                 value={newName}
@@ -265,7 +261,7 @@ export function ItemModifiersTabClient({
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field>
-                <FieldLabel htmlFor="new-mg-min">Мин</FieldLabel>
+                <FieldLabel htmlFor="new-mg-min">{t('minLabel')}</FieldLabel>
                 <Input
                   id="new-mg-min"
                   type="number"
@@ -280,7 +276,7 @@ export function ItemModifiersTabClient({
                 />
               </Field>
               <Field>
-                <FieldLabel htmlFor="new-mg-max">Макс</FieldLabel>
+                <FieldLabel htmlFor="new-mg-max">{t('maxLabel')}</FieldLabel>
                 <Input
                   id="new-mg-max"
                   type="number"
@@ -305,7 +301,7 @@ export function ItemModifiersTabClient({
               }}
               disabled={pending}
             >
-              Отмена
+              {tCommon('cancel')}
             </Button>
             <Button
               type="button"
@@ -314,7 +310,7 @@ export function ItemModifiersTabClient({
               }}
               disabled={pending}
             >
-              Создать
+              {tCommon('create')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -52,6 +53,8 @@ export function ModifierOptionsListClient({
   options,
   onOptionsChange,
 }: ModifierOptionsListClientProps): React.ReactElement {
+  const t = useTranslations('menu.modifierGroups');
+  const tCommon = useTranslations('common');
   const [rows, setRows] = React.useState<RowDraft[]>(() => options.map(rowFromApi));
   const [pending, setPending] = React.useState(false);
   const isNewGroup = groupId === 'new';
@@ -112,10 +115,13 @@ export function ModifierOptionsListClient({
 
     setPending(false);
     if (failures.length > 0) {
-      showError(`Не удалось сохранить: ${failures.join(', ')}`, 'Часть вариантов не сохранилась.');
+      showError(
+        t('partialFailOptionsDetail', { names: failures.join(', ') }),
+        t('partialFailOptions'),
+      );
       return;
     }
-    showSuccess('Варианты сохранены', { duration: 1500 });
+    showSuccess(t('savedOptions'), { duration: 1500 });
     onOptionsChange(
       rows.map((r, idx) => ({
         id: r.optionId ?? r.localKey,
@@ -132,25 +138,23 @@ export function ModifierOptionsListClient({
     <TooltipProvider>
       <div className="flex flex-col gap-3">
         {rows.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Нет вариантов — добавьте первый, чтобы группа что-то предлагала.
-          </p>
+          <p className="text-sm text-muted-foreground">{t('variantsEmpty')}</p>
         ) : (
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[1fr_100px_80px_80px] gap-2 px-1 text-xs text-muted-foreground">
-              <span>Название</span>
-              <span>Наценка</span>
+              <span>{t('tableName')}</span>
+              <span>{t('headerPriceDelta')}</span>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="cursor-help">По ум.</span>
+                  <span className="cursor-help">{t('headerDefault')}</span>
                 </TooltipTrigger>
-                <TooltipContent>Сколько штук добавляется по умолчанию.</TooltipContent>
+                <TooltipContent>{t('tooltipDefault')}</TooltipContent>
               </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="cursor-help">Бесп.</span>
+                  <span className="cursor-help">{t('headerFree')}</span>
                 </TooltipTrigger>
-                <TooltipContent>Сколько штук включено в базовую цену блюда.</TooltipContent>
+                <TooltipContent>{t('tooltipFree')}</TooltipContent>
               </Tooltip>
             </div>
             {rows.map((row) => (
@@ -159,7 +163,7 @@ export function ModifierOptionsListClient({
                 className="grid grid-cols-[1fr_100px_80px_80px] items-center gap-2"
               >
                 <Input
-                  placeholder="Название"
+                  placeholder={t('namePlaceholder')}
                   value={row.name}
                   onChange={(e) => {
                     updateRow(row.localKey, { name: e.target.value });
@@ -207,9 +211,9 @@ export function ModifierOptionsListClient({
             size="sm"
             onClick={onAddRow}
             disabled={isNewGroup}
-            title={isNewGroup ? 'Сначала сохраните название группы' : undefined}
+            title={isNewGroup ? t('saveNameFirst') : undefined}
           >
-            + Добавить вариант
+            {t('addOption')}
           </Button>
           <Button
             type="button"
@@ -219,14 +223,10 @@ export function ModifierOptionsListClient({
             }}
             disabled={pending || isNewGroup || !isDirty}
           >
-            {pending ? 'Сохраняем…' : 'Сохранить варианты'}
+            {pending ? tCommon('saving') : t('saveOptions')}
           </Button>
         </div>
-        {isNewGroup ? (
-          <p className="text-xs text-muted-foreground">
-            Сначала сохраните название группы — оно сохранится автоматически.
-          </p>
-        ) : null}
+        {isNewGroup ? <p className="text-xs text-muted-foreground">{t('newGroupHint')}</p> : null}
       </div>
     </TooltipProvider>
   );

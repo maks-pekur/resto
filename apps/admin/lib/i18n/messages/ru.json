@@ -6,10 +6,15 @@
     "delete": "Удалить",
     "edit": "Редактировать",
     "back": "Назад",
+    "next": "Вперёд",
     "saving": "Сохраняем…",
     "saved": "Сохранено",
     "loading": "Загружаем…",
     "retry": "Повторить",
+    "savingAria": "Сохранение…",
+    "savedAt": "Сохранено {age}",
+    "notSavedRetry": "Не сохранено",
+    "retryLink": "повторить",
     "addPhoto": "Добавить ещё фото",
     "comma": "Через запятую",
     "tryAgain": "Попробуйте обновить страницу. Если проблема повторится, проверьте соединение.",
@@ -31,7 +36,20 @@
     "menuItems": "Блюда",
     "menuCategories": "Категории",
     "menuModifiers": "Модификаторы",
-    "menuStopList": "Стоп-лист"
+    "menuStopList": "Стоп-лист",
+    "team": "Команда",
+    "settings": "Настройки",
+    "user": {
+      "accountItem": "Аккаунт",
+      "themeLabel": "Тема",
+      "themeLight": "Светлая",
+      "themeDark": "Тёмная",
+      "themeSystem": "Системная",
+      "logout": "Выйти",
+      "languageLabel": "Язык",
+      "localeRu": "Русский",
+      "localeEn": "English"
+    }
   },
   "menu": {
     "items": {
@@ -42,7 +60,31 @@
       "createBtn": "Создать блюдо",
       "addedToStopList": "Блюдо добавлено в стоп-лист",
       "removedFromStopList": "Блюдо возобновлено",
-      "stopListFailed": "Не удалось обновить стоп-лист."
+      "stopListFailed": "Не удалось обновить стоп-лист.",
+      "filtersAll": "Все кроме архива",
+      "filtersDraft": "Черновики",
+      "filtersPublished": "Опубликованные",
+      "filtersPaused": "Стоп",
+      "filtersArchived": "Архив",
+      "fromPrice": "от {price} ₽",
+      "withCurrency": "{price} ₽",
+      "searchPlaceholder": "Поиск блюд…",
+      "searchAriaLabel": "Поиск блюд",
+      "allCategories": "Все категории",
+      "tableNameHeader": "Название",
+      "tablePriceHeader": "Цена",
+      "tableStatusHeader": "Статус",
+      "tableStopHeader": "Стоп",
+      "stopSwitchOff": "Убрать из стоп-листа",
+      "stopSwitchOn": "Добавить в стоп-лист",
+      "actionsAriaLabel": "Действия с блюдом {name}",
+      "rowOpenAriaLabel": "Открыть блюдо {name}",
+      "openAction": "Открыть",
+      "archiveAction": "Архивировать",
+      "archiveDialogTitle": "Архивировать блюдо?",
+      "archiveDialogDescription": "Блюдо «{name}» будет скрыто из меню. Действие обратимо — снимите архивацию в фильтре статусов.",
+      "totalLabel": "Всего: {total}",
+      "pageLabel": "Стр. {page}"
     },
     "editor": {
       "tabDetail": "Детали",
@@ -57,6 +99,11 @@
       "allergensPlaceholder": "Молоко, орехи, глютен",
       "nutritionTitle": "Питание на 100 г",
       "nutritionAiBadge": "AI-оценка",
+      "nutritionPer100g": "на 100 г",
+      "nutritionProteinsShort": "Б",
+      "nutritionFatsShort": "Ж",
+      "nutritionCarbsShort": "У",
+      "nutritionKcalShort": "ккал",
       "photoTitle": "Фото блюда",
       "photoDescription": "JPG, PNG, WEBP до 5 МБ",
       "photoDropHint": "Нажмите или перетащите фото",
@@ -67,12 +114,18 @@
       "photoRequesting": "Запрашиваем доступ…",
       "photoUploading": "Загружаем…",
       "photoUploadFailed": "Не удалось загрузить фото. Попробуйте ещё раз.",
+      "photoAlt": "Фото блюда",
+      "photoFileAriaLabel": "Файл фото",
+      "photoReplaceAriaLabel": "Заменить фото",
+      "photoUploadAriaLabel": "Загрузить фото",
+      "photoAddMore": "+ Добавить ещё фото",
       "itemCreated": "Блюдо создано",
       "saveFailed": "Не удалось сохранить блюдо.",
       "notFound": "Блюдо не найдено",
       "notFoundDescription": "Возможно, оно было удалено.",
       "saveBtn": "Сохранить",
-      "createBtn": "Создать блюдо"
+      "createBtn": "Создать блюдо",
+      "validateForm": "Проверьте поля формы."
     },
     "sizes": {
       "title": "Размеры",
@@ -88,7 +141,9 @@
       "saveBtn": "Сохранить размеры",
       "savedToast": "Размеры сохранены",
       "partialFail": "Часть размеров не сохранилась.",
-      "partialFailDetail": "Не удалось сохранить: {names}"
+      "partialFailDetail": "Не удалось сохранить: {names}",
+      "sizeIdMissing": "Размер не указан.",
+      "validateSize": "Проверьте поля размера."
     },
     "modifiers": {
       "newItemHint": "Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.",
@@ -106,11 +161,14 @@
       "createNewLink": "+ Создать новую группу",
       "createDialogTitle": "Создать группу модификаторов",
       "createDialogDescription": "Эта группа сразу появится в библиотеке и будет доступна для прикрепления.",
+      "nameLabel": "Название",
       "minLabel": "Мин",
       "maxLabel": "Макс",
       "nameRequired": "Введите название группы.",
       "createFailed": "Не удалось создать группу.",
-      "updateFailed": "Не удалось обновить модификаторы."
+      "updateFailed": "Не удалось обновить модификаторы.",
+      "validateGroup": "Проверьте поля группы.",
+      "validateOption": "Проверьте поля варианта."
     },
     "categories": {
       "addCategory": "+ Добавить категорию",
@@ -124,7 +182,14 @@
       "parentHint": "Оставьте пустым, чтобы создать категорию верхнего уровня.",
       "noneParentLabel": "— Без родителя —",
       "childCannotBeParent": "{name} (уже является подкатегорией)",
-      "depthLimit": "Уровень вложенности ограничен двумя — родитель уже является подкатегорией."
+      "parentPickerPlaceholder": "Выберите категорию",
+      "itemPickerPlaceholder": "Категория не выбрана",
+      "depthLimit": "Уровень вложенности ограничен двумя — родитель уже является подкатегорией.",
+      "tableNameHeader": "Название",
+      "tableParentHeader": "Родитель",
+      "tableActionsHeader": "Действия",
+      "editAriaLabel": "Редактировать {name}",
+      "nestWithChildrenError": "Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории."
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",
@@ -148,6 +213,9 @@
       "saveOptions": "Сохранить варианты",
       "savedOptions": "Варианты сохранены",
       "partialFailOptions": "Часть вариантов не сохранилась.",
+      "partialFailOptionsDetail": "Не удалось сохранить: {names}",
+      "namePlaceholder": "Название",
+      "saveNameFirst": "Сначала сохраните название группы",
       "headerPriceDelta": "Наценка",
       "headerDefault": "По ум.",
       "headerFree": "Бесп.",
@@ -176,20 +244,34 @@
       "resetAllAriaLabel": "Сбросить весь стоп-листа",
       "resetSuccess": "Стоп-лист сбросен",
       "resetPartial": "{ok} возобновлены, {failed} не удалось",
-      "resetFailed": "Не удалось сбросить стоп-лист."
+      "resetFailed": "Не удалось сбросить стоп-лист.",
+      "resetFetchFailed": "Не удалось получить стоп-лист."
+    },
+    "status": {
+      "draft": "Черновик",
+      "modified": "Изменено",
+      "published": "Опубликовано",
+      "paused": "Стоп",
+      "archived": "Архив",
+      "ariaLabel": "Статус: {label}"
     },
     "publishBar": {
       "publishBtn": "Опубликовать",
-      "publishedToast": "Опубликовано"
-    },
-    "items": {
-      "filtersAll": "Все",
-      "filtersDraft": "Черновики",
-      "filtersPublished": "Опубликованы",
-      "filtersPaused": "На стоп-листе",
-      "filtersArchived": "В архиве",
-      "fromPrice": "от {price} ₽",
-      "withCurrency": "{price} ₽"
+      "publishedToast": "Опубликовано",
+      "ariaRegion": "Управление публикацией",
+      "showDiff": "Показать",
+      "publishMenuBtn": "Опубликовать меню",
+      "publishingTooltip": "Публикация через 5с — нажмите Отменить",
+      "entityItem": "Блюдо",
+      "entityCategory": "Категория",
+      "entityModifierGroup": "Группа модификаторов",
+      "moreLine": "+ ещё {count}",
+      "cancelFailed": "Не удалось отменить публикацию. Попробуйте ещё раз.",
+      "cancelledToast": "Публикация отменена",
+      "alreadyPublishedToast": "Уже опубликовано — окно отмены истекло",
+      "unpublishedChanges": "{count, plural, one {# неопубликованное изменение} few {# неопубликованных изменения} many {# неопубликованных изменений} other {# неопубликованных изменений}}",
+      "countdownLabel": "Публикация через {sec}с",
+      "cancelBtn": "Отменить"
     }
   },
   "dashboard": {
@@ -197,7 +279,21 @@
     "brand": "Бренд",
     "addAccount": "Добавить аккаунт",
     "noBrands": "У вас пока нет брендов",
-    "noBrandsDescription": "Создайте первый бренд, чтобы начать."
+    "noBrandsDescription": "Создайте первый бренд, чтобы начать.",
+    "title": "Дашборд",
+    "settingsTitle": "Настройки",
+    "teamTitle": "Команда",
+    "teamInviteTitle": "Пригласить сотрудника",
+    "teamInviteDescription": "Отправьте e-mail приглашение. Ссылка действует 48 часов.",
+    "brandDomainsTitle": "Домены",
+    "brandDomainsDescription": "Кастомные домены брендов появятся в одном из следующих тикетов.",
+    "brandPayoutsTitle": "Выплаты",
+    "brandPayoutsDescription": "Подключение Stripe Connect появится в одном из следующих тикетов.",
+    "brandThemeTitle": "Тема бренда",
+    "editItemTitle": "Редактирование блюда",
+    "newItemTitle": "Новое блюдо",
+    "editGroupTitle": "Редактирование группы модификаторов",
+    "newGroupTitle": "Новая группа модификаторов"
   },
   "format": {
     "ago": "{n}{unit} назад",

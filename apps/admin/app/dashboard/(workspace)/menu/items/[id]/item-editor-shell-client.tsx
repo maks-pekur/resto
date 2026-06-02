@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
@@ -54,6 +55,7 @@ export function ItemEditorShellClient({
   defaultCurrency,
   availableModifierGroups,
 }: ItemEditorShellClientProps): React.ReactElement {
+  const t = useTranslations('menu.editor');
   const [currentItemId, setCurrentItemId] = React.useState(itemId);
   const initialPhotoS3Key = initialItem?.photos[0]?.s3Key ?? null;
   const [currentPhotoS3Key, setCurrentPhotoS3Key] = React.useState<string | null>(
@@ -75,9 +77,9 @@ export function ItemEditorShellClient({
     <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
       <Tabs defaultValue="detail" className="flex-1">
         <TabsList>
-          <TabsTrigger value="detail">Детали</TabsTrigger>
-          <TabsTrigger value="sizes">Размеры</TabsTrigger>
-          <TabsTrigger value="modifiers">Модификаторы</TabsTrigger>
+          <TabsTrigger value="detail">{t('tabDetail')}</TabsTrigger>
+          <TabsTrigger value="sizes">{t('tabSizes')}</TabsTrigger>
+          <TabsTrigger value="modifiers">{t('tabModifiers')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="detail" forceMount className="data-[state=inactive]:hidden">

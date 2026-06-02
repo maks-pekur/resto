@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { ModifierOptionFormSchema, type ModifierOptionForm } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
@@ -25,9 +26,10 @@ export async function upsertModifierOptionAction(
 ): Promise<UpsertModifierOptionActionResult> {
   const parsed = ModifierOptionFormSchema.safeParse(input.values);
   if (!parsed.success) {
+    const t = await getTranslations('menu.modifiers');
     return {
       ok: false,
-      error: parsed.error.issues[0]?.message ?? 'Проверьте поля варианта.',
+      error: parsed.error.issues[0]?.message ?? t('validateOption'),
     };
   }
 

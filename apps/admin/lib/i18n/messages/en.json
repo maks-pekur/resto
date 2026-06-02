@@ -6,10 +6,15 @@
     "delete": "Delete",
     "edit": "Edit",
     "back": "Back",
+    "next": "Next",
     "saving": "Saving…",
     "saved": "Saved",
     "loading": "Loading…",
     "retry": "Retry",
+    "savingAria": "Saving…",
+    "savedAt": "Saved {age}",
+    "notSavedRetry": "Not saved",
+    "retryLink": "retry",
     "addPhoto": "Add another photo",
     "comma": "Comma-separated",
     "tryAgain": "Please refresh the page. If the issue persists, check your connection.",
@@ -31,7 +36,20 @@
     "menuItems": "Items",
     "menuCategories": "Categories",
     "menuModifiers": "Modifiers",
-    "menuStopList": "Stop list"
+    "menuStopList": "Stop list",
+    "team": "Team",
+    "settings": "Settings",
+    "user": {
+      "accountItem": "Account",
+      "themeLabel": "Theme",
+      "themeLight": "Light",
+      "themeDark": "Dark",
+      "themeSystem": "System",
+      "logout": "Log out",
+      "languageLabel": "Language",
+      "localeRu": "Русский",
+      "localeEn": "English"
+    }
   },
   "menu": {
     "items": {
@@ -42,7 +60,31 @@
       "createBtn": "Create item",
       "addedToStopList": "Item added to the stop list",
       "removedFromStopList": "Item resumed",
-      "stopListFailed": "Couldn't update the stop list."
+      "stopListFailed": "Couldn't update the stop list.",
+      "filtersAll": "All except archived",
+      "filtersDraft": "Draft",
+      "filtersPublished": "Published",
+      "filtersPaused": "Stopped",
+      "filtersArchived": "Archived",
+      "fromPrice": "from {price} ₽",
+      "withCurrency": "{price} ₽",
+      "searchPlaceholder": "Search items…",
+      "searchAriaLabel": "Search items",
+      "allCategories": "All categories",
+      "tableNameHeader": "Name",
+      "tablePriceHeader": "Price",
+      "tableStatusHeader": "Status",
+      "tableStopHeader": "Stop",
+      "stopSwitchOff": "Remove from stop list",
+      "stopSwitchOn": "Add to stop list",
+      "actionsAriaLabel": "Actions for {name}",
+      "rowOpenAriaLabel": "Open item {name}",
+      "openAction": "Open",
+      "archiveAction": "Archive",
+      "archiveDialogTitle": "Archive this item?",
+      "archiveDialogDescription": "Item «{name}» will be hidden from the menu. Reversible — clear the archive filter to restore it.",
+      "totalLabel": "Total: {total}",
+      "pageLabel": "Page {page}"
     },
     "editor": {
       "tabDetail": "Details",
@@ -57,6 +99,11 @@
       "allergensPlaceholder": "Milk, nuts, gluten",
       "nutritionTitle": "Nutrition per 100 g",
       "nutritionAiBadge": "AI estimate",
+      "nutritionPer100g": "per 100 g",
+      "nutritionProteinsShort": "P",
+      "nutritionFatsShort": "F",
+      "nutritionCarbsShort": "C",
+      "nutritionKcalShort": "kcal",
       "photoTitle": "Item photo",
       "photoDescription": "JPG, PNG, WEBP up to 5 MB",
       "photoDropHint": "Click or drop a photo",
@@ -67,12 +114,18 @@
       "photoRequesting": "Requesting upload URL…",
       "photoUploading": "Uploading…",
       "photoUploadFailed": "Couldn't upload the photo. Please try again.",
+      "photoAlt": "Item photo",
+      "photoFileAriaLabel": "Photo file",
+      "photoReplaceAriaLabel": "Replace photo",
+      "photoUploadAriaLabel": "Upload photo",
+      "photoAddMore": "+ Add another photo",
       "itemCreated": "Item created",
       "saveFailed": "Couldn't save the item.",
       "notFound": "Item not found",
       "notFoundDescription": "It may have been deleted.",
       "saveBtn": "Save",
-      "createBtn": "Create item"
+      "createBtn": "Create item",
+      "validateForm": "Please check the form fields."
     },
     "sizes": {
       "title": "Sizes",
@@ -88,7 +141,9 @@
       "saveBtn": "Save sizes",
       "savedToast": "Sizes saved",
       "partialFail": "Some sizes didn't save.",
-      "partialFailDetail": "Couldn't save: {names}"
+      "partialFailDetail": "Couldn't save: {names}",
+      "sizeIdMissing": "Size id missing.",
+      "validateSize": "Please check the size fields."
     },
     "modifiers": {
       "newItemHint": "Save the item first — modifiers can be attached after the first save.",
@@ -106,11 +161,14 @@
       "createNewLink": "+ Create new group",
       "createDialogTitle": "Create modifier group",
       "createDialogDescription": "The group is added to the library and available to attach.",
+      "nameLabel": "Name",
       "minLabel": "Min",
       "maxLabel": "Max",
       "nameRequired": "Enter the group name.",
       "createFailed": "Couldn't create the group.",
-      "updateFailed": "Couldn't update modifiers."
+      "updateFailed": "Couldn't update modifiers.",
+      "validateGroup": "Please check the group fields.",
+      "validateOption": "Please check the option fields."
     },
     "categories": {
       "addCategory": "+ Add category",
@@ -124,7 +182,14 @@
       "parentHint": "Leave empty to create a top-level category.",
       "noneParentLabel": "— No parent —",
       "childCannotBeParent": "{name} (already a subcategory)",
-      "depthLimit": "Nesting limited to two levels — parent is already a subcategory."
+      "parentPickerPlaceholder": "Choose a category",
+      "itemPickerPlaceholder": "No category selected",
+      "depthLimit": "Nesting limited to two levels — parent is already a subcategory.",
+      "tableNameHeader": "Name",
+      "tableParentHeader": "Parent",
+      "tableActionsHeader": "Actions",
+      "editAriaLabel": "Edit {name}",
+      "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first."
     },
     "modifierGroups": {
       "createGroup": "+ Create group",
@@ -148,6 +213,9 @@
       "saveOptions": "Save options",
       "savedOptions": "Options saved",
       "partialFailOptions": "Some options didn't save.",
+      "partialFailOptionsDetail": "Couldn't save: {names}",
+      "namePlaceholder": "Name",
+      "saveNameFirst": "Save the group name first",
       "headerPriceDelta": "Price",
       "headerDefault": "Default",
       "headerFree": "Free",
@@ -176,20 +244,34 @@
       "resetAllAriaLabel": "Reset the whole stop list",
       "resetSuccess": "Stop list cleared",
       "resetPartial": "{ok} resumed, {failed} failed",
-      "resetFailed": "Couldn't reset the stop list."
+      "resetFailed": "Couldn't reset the stop list.",
+      "resetFetchFailed": "Couldn't load the stop list."
+    },
+    "status": {
+      "draft": "Draft",
+      "modified": "Modified",
+      "published": "Published",
+      "paused": "Stopped",
+      "archived": "Archived",
+      "ariaLabel": "Status: {label}"
     },
     "publishBar": {
       "publishBtn": "Publish",
-      "publishedToast": "Published"
-    },
-    "items": {
-      "filtersAll": "All",
-      "filtersDraft": "Draft",
-      "filtersPublished": "Published",
-      "filtersPaused": "Stop list",
-      "filtersArchived": "Archived",
-      "fromPrice": "from {price} ₽",
-      "withCurrency": "{price} ₽"
+      "publishedToast": "Published",
+      "ariaRegion": "Publication controls",
+      "showDiff": "Show",
+      "publishMenuBtn": "Publish menu",
+      "publishingTooltip": "Publishing in 5s — tap Cancel",
+      "entityItem": "Item",
+      "entityCategory": "Category",
+      "entityModifierGroup": "Modifier group",
+      "moreLine": "+ {count} more",
+      "cancelFailed": "Could not cancel publication — please try again.",
+      "cancelledToast": "Publication cancelled",
+      "alreadyPublishedToast": "Already published — cancel window expired",
+      "unpublishedChanges": "{count, plural, one {# unpublished change} other {# unpublished changes}}",
+      "countdownLabel": "Publishing in {sec}s",
+      "cancelBtn": "Cancel"
     }
   },
   "dashboard": {
@@ -197,7 +279,21 @@
     "brand": "Brand",
     "addAccount": "Add account",
     "noBrands": "You don't have any brands yet",
-    "noBrandsDescription": "Create your first brand to begin."
+    "noBrandsDescription": "Create your first brand to begin.",
+    "title": "Dashboard",
+    "settingsTitle": "Settings",
+    "teamTitle": "Team",
+    "teamInviteTitle": "Invite a teammate",
+    "teamInviteDescription": "Send an email invitation. Recipient gets a link valid for 48 hours.",
+    "brandDomainsTitle": "Domains",
+    "brandDomainsDescription": "Per-brand custom domains ship in a follow-up ticket.",
+    "brandPayoutsTitle": "Payouts",
+    "brandPayoutsDescription": "Stripe Connect onboarding ships in a follow-up ticket.",
+    "brandThemeTitle": "Brand theme",
+    "editItemTitle": "Edit item",
+    "newItemTitle": "New item",
+    "editGroupTitle": "Edit modifier group",
+    "newGroupTitle": "New modifier group"
   },
   "format": {
     "ago": "{n}{unit} ago",

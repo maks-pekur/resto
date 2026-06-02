@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { getTranslations } from 'next-intl/server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { SizeFormSchema } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
@@ -27,7 +28,10 @@ export async function upsertItemSizeAction(
   isDelete?: boolean,
 ): Promise<UpsertItemSizeActionResult> {
   if (isDelete) {
-    if (!values.sizeId) return { ok: false, error: 'Размер не указан.' };
+    if (!values.sizeId) {
+      const t = await getTranslations('menu.sizes');
+      return { ok: false, error: t('sizeIdMissing') };
+    }
     const res = await apiFetchInternal(`/internal/v1/catalog/item-sizes/${values.sizeId}`, {
       method: 'DELETE',
     });
@@ -48,7 +52,8 @@ export async function upsertItemSizeAction(
     isDefault: values.isDefault,
   });
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? 'Проверьте поля размера.' };
+    const t = await getTranslations('menu.sizes');
+    return { ok: false, error: parsed.error.issues[0]?.message ?? t('validateSize') };
   }
 
   const payload: Record<string, unknown> = {
