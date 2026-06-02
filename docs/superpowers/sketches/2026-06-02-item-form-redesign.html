@@ -1,0 +1,995 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RestOS · Item editor redesign · 2026-06-02</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        /* shadcn new-york × neutral, but pinned exactly so the mockup stands alone */
+        --color-bg: oklch(0.985 0 0);
+        --color-canvas: oklch(0.978 0.004 95);
+        --color-surface: oklch(1 0 0);
+        --color-border: oklch(0.918 0.004 95);
+        --color-border-strong: oklch(0.86 0.004 95);
+        --color-fg: oklch(0.165 0.004 95);
+        --color-fg-muted: oklch(0.5 0.006 95);
+        --color-fg-subtle: oklch(0.62 0.006 95);
+        --color-accent: oklch(0.165 0.004 95);
+        --color-accent-fg: oklch(0.985 0 0);
+        --color-ring: oklch(0.4 0.04 250 / 0.4);
+        --color-danger: oklch(0.55 0.18 25);
+        --color-success: oklch(0.52 0.13 155);
+        --color-warning: oklch(0.65 0.13 70);
+
+        --radius-card: 12px;
+        --radius-control: 8px;
+        --radius-chip: 6px;
+        --shadow-card: 0 1px 0 oklch(0 0 0 / 0.02), 0 1px 3px oklch(0 0 0 / 0.04);
+
+        --font-display: 'Fraunces', 'Times New Roman', serif;
+        --font-ui: 'Geist', system-ui, sans-serif;
+        --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+        --header-h: 56px;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        background: var(--color-canvas);
+        color: var(--color-fg);
+        font-family: var(--font-ui);
+        font-size: 14px;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      a {
+        color: inherit;
+      }
+
+      /* ─── topbar ─────────────────────────────────────────────────── */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        height: var(--header-h);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 24px;
+        background: oklch(1 0 0 / 0.86);
+        backdrop-filter: blur(14px);
+        border-bottom: 1px solid var(--color-border);
+      }
+      .topbar__crumbs {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--color-fg-muted);
+        font-size: 13px;
+      }
+      .topbar__crumbs strong {
+        color: var(--color-fg);
+        font-weight: 500;
+      }
+      .topbar__crumbs .sep {
+        color: var(--color-fg-subtle);
+      }
+      .topbar__user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 13px;
+        color: var(--color-fg-muted);
+      }
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, oklch(0.78 0.04 70), oklch(0.6 0.05 30));
+        color: oklch(1 0 0);
+        display: grid;
+        place-items: center;
+        font-weight: 500;
+        font-size: 12px;
+        letter-spacing: 0.02em;
+      }
+
+      /* ─── page heading ───────────────────────────────────────────── */
+      .heading {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 24px;
+        padding: 28px 28px 18px;
+      }
+      .heading__title {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-optical-sizing: auto;
+        font-variation-settings: 'opsz' 96;
+        font-size: 36px;
+        line-height: 1.05;
+        letter-spacing: -0.025em;
+        color: var(--color-fg);
+        margin: 0;
+      }
+      .heading__sub {
+        margin: 4px 0 0;
+        color: var(--color-fg-muted);
+        font-size: 13px;
+      }
+      .heading__sub code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        padding: 1px 6px;
+        border-radius: 4px;
+      }
+      .heading__actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .btn {
+        height: 36px;
+        padding: 0 14px;
+        border-radius: var(--radius-control);
+        font-family: var(--font-ui);
+        font-size: 13px;
+        font-weight: 500;
+        letter-spacing: -0.005em;
+        border: 1px solid transparent;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition:
+          background 120ms ease,
+          border-color 120ms ease,
+          color 120ms ease;
+      }
+      .btn--primary {
+        background: var(--color-accent);
+        color: var(--color-accent-fg);
+      }
+      .btn--primary:hover {
+        background: oklch(0.245 0.005 95);
+      }
+      .btn--ghost {
+        background: transparent;
+        color: var(--color-fg-muted);
+      }
+      .btn--ghost:hover {
+        color: var(--color-fg);
+        background: var(--color-bg);
+      }
+      .btn--outline {
+        background: var(--color-surface);
+        border-color: var(--color-border-strong);
+        color: var(--color-fg);
+      }
+      .btn--outline:hover {
+        background: var(--color-bg);
+      }
+      .btn--sm {
+        height: 30px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+      .btn--icon {
+        width: 30px;
+        padding: 0;
+        justify-content: center;
+      }
+
+      /* ─── shell grid ─────────────────────────────────────────────── */
+      .shell {
+        display: grid;
+        grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
+        gap: 24px;
+        padding: 0 28px 64px;
+      }
+      @media (max-width: 1024px) {
+        .shell {
+          grid-template-columns: 1fr;
+        }
+      }
+      .shell__main {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        min-width: 0;
+      }
+      .shell__aside {
+        align-self: start;
+        position: sticky;
+        top: calc(var(--header-h) + 16px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* ─── card ───────────────────────────────────────────────────── */
+      .card {
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-card);
+        box-shadow: var(--shadow-card);
+        overflow: hidden;
+      }
+      .card__head {
+        padding: 18px 22px 6px;
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 16px;
+      }
+      .card__index {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        color: var(--color-fg-subtle);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-right: 12px;
+        font-feature-settings: 'tnum';
+      }
+      .card__title {
+        margin: 0;
+        font-family: var(--font-ui);
+        font-size: 14.5px;
+        font-weight: 500;
+        letter-spacing: -0.01em;
+        color: var(--color-fg);
+      }
+      .card__hint {
+        font-size: 12.5px;
+        color: var(--color-fg-muted);
+        font-feature-settings: 'ss01';
+      }
+      .card__body {
+        padding: 14px 22px 22px;
+      }
+      .card__divider {
+        height: 1px;
+        background: var(--color-border);
+        margin: 16px -22px;
+      }
+
+      /* ─── form primitives ────────────────────────────────────────── */
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .field + .field {
+        margin-top: 16px;
+      }
+      .label {
+        font-size: 12.5px;
+        font-weight: 500;
+        color: var(--color-fg);
+        letter-spacing: -0.005em;
+      }
+      .help {
+        font-size: 12px;
+        color: var(--color-fg-muted);
+      }
+      .input,
+      .textarea,
+      .select {
+        font-family: inherit;
+        font-size: 14px;
+        color: var(--color-fg);
+        background: var(--color-surface);
+        border: 1px solid var(--color-border);
+        border-radius: var(--radius-control);
+        padding: 9px 12px;
+        outline: none;
+        transition:
+          border-color 120ms ease,
+          box-shadow 120ms ease;
+        width: 100%;
+      }
+      .input::placeholder,
+      .textarea::placeholder {
+        color: var(--color-fg-subtle);
+      }
+      .input:hover,
+      .textarea:hover,
+      .select:hover {
+        border-color: var(--color-border-strong);
+      }
+      .input:focus,
+      .textarea:focus,
+      .select:focus {
+        border-color: var(--color-fg);
+        box-shadow: 0 0 0 3px var(--color-ring);
+      }
+      .textarea {
+        min-height: 84px;
+        resize: vertical;
+        line-height: 1.45;
+      }
+      .input-group {
+        position: relative;
+        display: flex;
+        align-items: stretch;
+      }
+      .input-group .input {
+        padding-right: 60px;
+      }
+      .input-group__suffix {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--color-fg-muted);
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        pointer-events: none;
+      }
+      .row {
+        display: grid;
+        gap: 10px;
+      }
+      .row--bju {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+
+      /* ─── card #2 sizes ──────────────────────────────────────────── */
+      .sizes {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .size-row {
+        display: grid;
+        grid-template-columns: 1fr 110px 80px 32px;
+        gap: 8px;
+        align-items: center;
+        padding: 4px 0;
+      }
+      .size-row .radio {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 11.5px;
+        color: var(--color-fg-muted);
+        justify-content: center;
+      }
+      .size-row .x {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        color: var(--color-fg-subtle);
+        display: grid;
+        place-items: center;
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+      .size-row .x:hover {
+        background: var(--color-bg);
+        color: var(--color-fg);
+      }
+      .sizes__footer {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--color-border);
+      }
+
+      /* ─── card #3 modifier chips ─────────────────────────────────── */
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 4px 4px 10px;
+        border-radius: var(--radius-chip);
+        background: var(--color-bg);
+        border: 1px solid var(--color-border);
+        font-size: 12.5px;
+        color: var(--color-fg);
+      }
+      .chip__remove {
+        width: 20px;
+        height: 20px;
+        border-radius: 4px;
+        display: grid;
+        place-items: center;
+        color: var(--color-fg-subtle);
+        background: transparent;
+        border: 0;
+        cursor: pointer;
+      }
+      .chip__remove:hover {
+        background: var(--color-border);
+        color: var(--color-fg);
+      }
+
+      /* ─── card #4 BJU ────────────────────────────────────────────── */
+      .bju-cell {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .bju-cell__label {
+        font-family: var(--font-mono);
+        font-size: 10.5px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--color-fg-muted);
+      }
+      .ai-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        background: oklch(0.95 0.04 95);
+        border: 1px solid oklch(0.85 0.06 95);
+        color: oklch(0.32 0.05 70);
+        font-size: 11px;
+        font-weight: 500;
+        font-feature-settings: 'ss01';
+      }
+
+      /* ─── card #6 SEO previewbar ─────────────────────────────────── */
+      .seo-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+      }
+      .counter {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--color-fg-subtle);
+        font-feature-settings: 'tnum';
+      }
+      .counter.warn {
+        color: var(--color-warning);
+      }
+      .counter.danger {
+        color: var(--color-danger);
+      }
+
+      /* ─── aside cards ────────────────────────────────────────────── */
+      .photo {
+        aspect-ratio: 4 / 3;
+        background:
+          linear-gradient(135deg, oklch(0.78 0.06 65) 0%, oklch(0.58 0.1 30) 100%),
+          repeating-linear-gradient(45deg, transparent 0 6px, rgba(0, 0, 0, 0.03) 6px 12px);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+      .photo::after {
+        content: 'Капучино';
+        position: absolute;
+        bottom: 12px;
+        left: 14px;
+        color: oklch(1 0 0 / 0.85);
+        font-family: var(--font-display);
+        font-size: 16px;
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        text-shadow: 0 1px 2px oklch(0 0 0 / 0.4);
+      }
+      .photo-controls {
+        margin-top: 10px;
+        display: flex;
+        gap: 6px;
+      }
+      .status-line {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 11.5px;
+        font-weight: 500;
+        letter-spacing: 0.005em;
+      }
+      .badge--draft {
+        background: var(--color-bg);
+        border: 1px solid var(--color-border-strong);
+        color: var(--color-fg-muted);
+      }
+      .badge--published {
+        background: oklch(0.95 0.05 155);
+        border: 1px solid oklch(0.82 0.1 155);
+        color: oklch(0.32 0.09 155);
+      }
+      .badge--dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: currentColor;
+      }
+      .keyval {
+        display: grid;
+        grid-template-columns: 90px 1fr;
+        column-gap: 12px;
+        row-gap: 6px;
+        align-items: baseline;
+      }
+      .keyval dt {
+        color: var(--color-fg-muted);
+        font-size: 12px;
+      }
+      .keyval dd {
+        margin: 0;
+        font-family: var(--font-mono);
+        font-size: 12.5px;
+        color: var(--color-fg);
+        word-break: break-all;
+      }
+
+      /* ─── footnote ───────────────────────────────────────────────── */
+      .footnote {
+        max-width: 720px;
+        margin: 48px auto 0;
+        padding: 0 28px;
+        color: var(--color-fg-muted);
+        font-size: 12px;
+        line-height: 1.6;
+      }
+      .footnote h2 {
+        font-family: var(--font-display);
+        font-weight: 500;
+        font-size: 14px;
+        letter-spacing: -0.01em;
+        color: var(--color-fg);
+        margin: 0 0 6px;
+      }
+      .footnote ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .footnote code {
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+      }
+
+      /* ─── tiny svg helper ────────────────────────────────────────── */
+      svg {
+        display: inline-block;
+        vertical-align: middle;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__crumbs">
+        <span>Меню</span>
+        <span class="sep">/</span>
+        <span>Блюда</span>
+        <span class="sep">/</span>
+        <strong>Капучино</strong>
+      </div>
+      <div class="topbar__user">
+        <span>Кофейня «Молоко»</span>
+        <span class="avatar">МП</span>
+      </div>
+    </header>
+
+    <div class="heading">
+      <div>
+        <h1 class="heading__title">Капучино</h1>
+        <p class="heading__sub"><code>kapuchino</code> · Кофе</p>
+      </div>
+      <div class="heading__actions">
+        <button class="btn btn--ghost btn--sm">Отменить</button>
+        <button class="btn btn--primary">Сохранить</button>
+      </div>
+    </div>
+
+    <div class="shell">
+      <main class="shell__main">
+        <!-- Card ① Основное -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">01</span>
+              <h2 class="card__title">Основное</h2>
+            </div>
+          </header>
+          <div class="card__body">
+            <div class="field">
+              <label class="label" for="f-name">Название</label>
+              <input class="input" id="f-name" value="Капучино" />
+              <span class="help"
+                >URL:
+                <code
+                  style="
+                    font-family: var(--font-mono);
+                    font-size: 11.5px;
+                    color: var(--color-fg-muted);
+                  "
+                  >/menu/kapuchino</code
+                ></span
+              >
+            </div>
+            <div class="field">
+              <label class="label" for="f-desc">Описание</label>
+              <textarea class="textarea" id="f-desc">
+Эспрессо с шёлковым молочным микропеной — баланс между крепостью и нежностью.</textarea
+              >
+            </div>
+            <div class="field">
+              <label class="label" for="f-cat">Категория</label>
+              <select class="select" id="f-cat">
+                <option>Кофе</option>
+                <option>Чай</option>
+                <option>Десерты</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Card ② Цена и размеры -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">02</span>
+              <h2 class="card__title">Цена и размеры</h2>
+            </div>
+            <span class="card__hint">Размеры сохраняются отдельно</span>
+          </header>
+          <div class="card__body">
+            <div class="field">
+              <label class="label" for="f-price">Базовая цена</label>
+              <div class="input-group">
+                <input class="input" id="f-price" type="number" value="4.50" step="0.01" />
+                <span class="input-group__suffix">EUR</span>
+              </div>
+              <span class="help">Цена за размер заменяет базовую.</span>
+            </div>
+            <div class="card__divider"></div>
+            <div class="sizes">
+              <div class="size-row">
+                <input class="input" value="Средняя" />
+                <div class="input-group">
+                  <input class="input" type="number" value="4.50" step="0.01" />
+                  <span class="input-group__suffix">EUR</span>
+                </div>
+                <label class="radio"
+                  ><input type="radio" name="def" checked /> по&nbsp;умолч.</label
+                >
+                <button class="x" aria-label="Удалить размер">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div class="size-row">
+                <input class="input" value="Большая" />
+                <div class="input-group">
+                  <input class="input" type="number" value="5.50" step="0.01" />
+                  <span class="input-group__suffix">EUR</span>
+                </div>
+                <label class="radio"><input type="radio" name="def" /> по&nbsp;умолч.</label>
+                <button class="x" aria-label="Удалить размер">
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                  >
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div class="sizes__footer">
+              <button class="btn btn--outline btn--sm">+ Добавить размер</button>
+              <button class="btn btn--primary btn--sm">Сохранить размеры</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Card ③ Состав -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">03</span>
+              <h2 class="card__title">Состав</h2>
+            </div>
+            <span class="card__hint">Группы модификаторов сохраняются автоматически</span>
+          </header>
+          <div class="card__body">
+            <div class="field">
+              <label class="label">Группы модификаторов</label>
+              <div class="chips">
+                <span class="chip"
+                  >Молоко
+                  <button class="chip__remove" aria-label="Убрать">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+                <span class="chip"
+                  >Сиропы
+                  <button class="chip__remove" aria-label="Убрать">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+                <span class="chip"
+                  >Десертные добавки
+                  <button class="chip__remove" aria-label="Убрать">
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                    >
+                      <path d="M18 6 6 18M6 6l12 12" />
+                    </svg>
+                  </button>
+                </span>
+                <button class="btn btn--outline btn--sm" style="height: 28px; padding: 0 10px">
+                  + группа
+                </button>
+              </div>
+            </div>
+            <div class="card__divider"></div>
+            <div class="field">
+              <label class="label" for="f-ing">Ингредиенты</label>
+              <input
+                class="input"
+                id="f-ing"
+                value="эспрессо, молоко"
+                placeholder="кофе, молоко, какао"
+              />
+              <span class="help">Через запятую. Отображается в карточке блюда.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Card ④ Питание -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">04</span>
+              <h2 class="card__title">Питание (БЖУ)</h2>
+            </div>
+            <span class="ai-badge">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2 9 9l-7 3 7 3 3 7 3-7 7-3-7-3z" />
+              </svg>
+              оценка AI
+            </span>
+          </header>
+          <div class="card__body">
+            <div class="row row--bju">
+              <div class="bju-cell">
+                <span class="bju-cell__label">Белки</span>
+                <input class="input" type="number" value="3.2" step="0.1" />
+              </div>
+              <div class="bju-cell">
+                <span class="bju-cell__label">Жиры</span>
+                <input class="input" type="number" value="4.1" step="0.1" />
+              </div>
+              <div class="bju-cell">
+                <span class="bju-cell__label">Углеводы</span>
+                <input class="input" type="number" value="6.8" step="0.1" />
+              </div>
+              <div class="bju-cell">
+                <span class="bju-cell__label">ккал</span>
+                <input class="input" type="number" value="80" step="1" />
+              </div>
+            </div>
+            <p class="help" style="margin-top: 10px">Значения на 100 г.</p>
+          </div>
+        </section>
+
+        <!-- Card ⑤ Аллергены -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">05</span>
+              <h2 class="card__title">Аллергены</h2>
+            </div>
+          </header>
+          <div class="card__body">
+            <div class="field">
+              <label class="label" for="f-alg">Содержит</label>
+              <input class="input" id="f-alg" value="молоко" placeholder="молоко, орехи, глютен" />
+              <span class="help">Через запятую. Гость увидит обязательное предупреждение.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Card ⑥ SEO -->
+        <section class="card">
+          <header class="card__head">
+            <div style="display: flex; align-items: baseline">
+              <span class="card__index">06</span>
+              <h2 class="card__title">SEO</h2>
+            </div>
+            <span class="card__hint">Влияет на выдачу поисковика</span>
+          </header>
+          <div class="card__body">
+            <div class="field">
+              <div class="seo-meta">
+                <label class="label" for="f-mt">Meta title</label>
+                <span class="counter">38 / 70</span>
+              </div>
+              <input class="input" id="f-mt" value="Капучино — Кофейня «Молоко»" maxlength="70" />
+              <span class="help">До 70 символов — отображается в заголовке вкладки.</span>
+            </div>
+            <div class="field">
+              <div class="seo-meta">
+                <label class="label" for="f-md">Meta description</label>
+                <span class="counter">112 / 160</span>
+              </div>
+              <textarea class="textarea" id="f-md" maxlength="160">
+Эспрессо с шёлковой молочной пенкой — наш классический капучино, который согревает в любой день.</textarea
+              >
+              <span class="help"
+                >До 160 символов — короткое описание для поисковика и соцсетей.</span
+              >
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <aside class="shell__aside">
+        <!-- Photo card -->
+        <section class="card">
+          <header class="card__head">
+            <h2 class="card__title">Фото</h2>
+            <span class="card__hint">JPG, PNG, WEBP, до 5 МБ</span>
+          </header>
+          <div class="card__body">
+            <div class="photo"></div>
+            <div class="photo-controls">
+              <button class="btn btn--outline btn--sm" style="flex: 1">Заменить</button>
+              <button class="btn btn--ghost btn--sm btn--icon" aria-label="Удалить">
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path
+                    d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Status card -->
+        <section class="card">
+          <header class="card__head">
+            <h2 class="card__title">Статус</h2>
+          </header>
+          <div class="card__body">
+            <div class="status-line">
+              <span class="badge badge--published">
+                <span class="badge--dot"></span>
+                Опубликовано
+              </span>
+            </div>
+            <p class="help" style="margin-top: 10px">Управляется из списка блюд.</p>
+          </div>
+        </section>
+
+        <!-- Tech info card -->
+        <section class="card">
+          <header class="card__head">
+            <h2 class="card__title">Тех. информация</h2>
+          </header>
+          <div class="card__body">
+            <dl class="keyval">
+              <dt>Slug</dt>
+              <dd>kapuchino</dd>
+              <dt>ID</dt>
+              <dd>3f9a…b817</dd>
+              <dt>Создано</dt>
+              <dd style="font-family: var(--font-ui); color: var(--color-fg-muted)">
+                14 марта 2026
+              </dd>
+              <dt>Изменено</dt>
+              <dd style="font-family: var(--font-ui); color: var(--color-fg-muted)">2 июня 2026</dd>
+            </dl>
+          </div>
+        </section>
+      </aside>
+    </div>
+
+    <section class="footnote">
+      <h2>Заметки для реализации</h2>
+      <ul>
+        <li>
+          Шрифт макета: <code>Fraunces</code> (display) + <code>Geist</code> (UI) +
+          <code>Geist Mono</code> (tech). В проде остаётся то, что уже подключено в админке — макет
+          показывает <em>визуальный замысел</em>, а не финальный font-stack.
+        </li>
+        <li>
+          Номера карточек (01–06) — лёгкий типографический акцент: моно, uppercase, малый размер.
+          Помогают операторам ссылаться на разделы в обучении (<em>«заполни 03 — состав»</em>).
+        </li>
+        <li>
+          Сетка: <code>1.7fr / 1fr</code> на <code>lg+</code>, единый стек ниже. Aside
+          <code>position: sticky</code>, <code>self-start</code>.
+        </li>
+        <li>
+          Счётчики SEO (38 / 70, 112 / 160) — моноширинные, цвет меняется при подходе к лимиту
+          (<code>warn</code> &gt; 60, <code>danger</code> &gt;= лимит).
+        </li>
+        <li>
+          «AI-оценка» — мягкий тёплый чип в карточке БЖУ, чтобы оператор видел, что цифры
+          подставлены автоматически, и понимал, что их можно править.
+        </li>
+        <li>
+          Карточка статуса — read-only бейдж + хинт. Лента действий
+          <em>«опубликовать / архивировать»</em> остаётся в списке блюд, как договорились в спеке.
+        </li>
+      </ul>
+    </section>
+  </body>
+</html>
