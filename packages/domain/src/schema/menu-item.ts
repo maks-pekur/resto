@@ -29,6 +29,9 @@ export const MenuItem = z.object({
   imageS3Key: z.string().min(1).nullable(),
   /** Allergen tags (e.g. `gluten`, `dairy`, `nuts`). Mandatory disclosure when present. */
   allergens: z.array(z.string().min(1)).nullable(),
+  ingredients: z.array(z.string().min(1).max(100)).max(50).nullable(),
+  metaTitle: z.string().max(70).nullable(),
+  metaDescription: z.string().max(160).nullable(),
   status: MenuItemStatus,
   sortOrder: z.number().int().nonnegative(),
   ...timestampsShape,
