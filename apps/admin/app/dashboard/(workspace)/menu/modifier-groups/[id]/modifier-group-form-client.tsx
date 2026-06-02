@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
 import { Field, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -13,16 +12,26 @@ import { ModifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierGroupAction } from '../upsert-modifier-group-action';
 
+export interface ModifierGroupFormState {
+  readonly isNew: boolean;
+  readonly isDirty: boolean;
+  readonly isPending: boolean;
+}
+
 export interface ModifierGroupFormClientProps {
   readonly initialValues: ModifierGroupForm;
   readonly groupId: string;
   readonly onSaved: (savedId: string) => void;
+  readonly formId: string;
+  readonly onStateChange: (state: ModifierGroupFormState) => void;
 }
 
 export function ModifierGroupFormClient({
   initialValues,
   groupId,
   onSaved,
+  formId,
+  onStateChange,
 }: ModifierGroupFormClientProps): React.ReactElement {
   const router = useRouter();
   const t = useTranslations('menu.modifierGroups');
@@ -37,7 +46,10 @@ export function ModifierGroupFormClient({
 
   const isNew = groupId === 'new';
   const isDirty = form.formState.isDirty;
-  const canSubmit = isNew ? true : isDirty;
+
+  React.useEffect(() => {
+    onStateChange({ isNew, isDirty, isPending: pending });
+  }, [isNew, isDirty, pending, onStateChange]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setPending(true);
@@ -61,6 +73,7 @@ export function ModifierGroupFormClient({
 
   return (
     <form
+      id={formId}
       onSubmit={(e) => {
         void onSubmit(e);
       }}
@@ -136,11 +149,6 @@ export function ModifierGroupFormClient({
           />
         </div>
       </FieldGroup>
-      <div className="flex justify-end">
-        <Button type="submit" disabled={pending || !canSubmit}>
-          {pending ? tCommon('saving') : isNew ? t('createGroupBtn') : tCommon('save')}
-        </Button>
-      </div>
     </form>
   );
 }

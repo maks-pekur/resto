@@ -29,6 +29,7 @@ const { ItemDetailTabClient } =
 
 const CATEGORY_ID = '11111111-1111-4111-8111-111111111111';
 const ITEM_ID = '22222222-2222-4222-8222-222222222222';
+const FORM_ID = 'item-detail-form';
 
 const defaultProps = {
   initialValues: {
@@ -51,6 +52,14 @@ const defaultProps = {
   onPhotoChange: vi.fn(),
   onSaved: vi.fn(),
   slug: 'kapuchino',
+  formId: FORM_ID,
+  onStateChange: vi.fn(),
+};
+
+const submitForm = (): void => {
+  const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+  if (!form) throw new Error(`form#${FORM_ID} not in document`);
+  fireEvent.submit(form);
 };
 
 describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
@@ -70,31 +79,51 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
     expect(screen.getByText('kapuchino')).toBeInTheDocument();
   });
 
-  it('shows "Создать блюдо" for new items and "Сохранить" for existing', () => {
-    const { rerender } = render(<ItemDetailTabClient {...defaultProps} currentItemId="new" />);
-    expect(screen.getByRole('button', { name: 'Создать блюдо' })).toBeInTheDocument();
-
-    rerender(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
-    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
+  it('reports form state via onStateChange (isNew, isDirty, isPending)', async () => {
+    const onStateChange = vi.fn();
+    render(
+      <ItemDetailTabClient
+        {...defaultProps}
+        onStateChange={onStateChange}
+        currentItemId={ITEM_ID}
+      />,
+    );
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenLastCalledWith({
+        isNew: false,
+        isDirty: false,
+        isPending: false,
+      });
+    });
+    fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenLastCalledWith({
+        isNew: false,
+        isDirty: true,
+        isPending: false,
+      });
+    });
   });
 
-  it('disables "Сохранить" for existing items until the form is dirty', () => {
-    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
-    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+  it('reports isNew=true for currentItemId="new"', async () => {
+    const onStateChange = vi.fn();
+    render(
+      <ItemDetailTabClient {...defaultProps} onStateChange={onStateChange} currentItemId="new" />,
+    );
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({ isNew: true, isPending: false }),
+      );
+    });
   });
 
-  it('enables "Сохранить" once a field changes and calls upsertItemAction on submit', async () => {
+  it('calls upsertItemAction when the form is submitted externally via form id', async () => {
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
     render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
 
     fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
-    const saveBtn = screen.getByRole('button', { name: 'Сохранить' });
-    await waitFor(() => {
-      expect(saveBtn).not.toBeDisabled();
-    });
-
     await act(async () => {
-      fireEvent.click(saveBtn);
+      submitForm();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -109,9 +138,8 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
     render(<ItemDetailTabClient {...defaultProps} currentItemId="new" onSaved={onSaved} />);
 
-    const createBtn = screen.getByRole('button', { name: 'Создать блюдо' });
     await act(async () => {
-      fireEvent.click(createBtn);
+      submitForm();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -120,16 +148,12 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
     expect(routerReplaceMock).toHaveBeenCalledWith(`/dashboard/menu/items/${ITEM_ID}`);
   });
 
-  it('surfaces a toast and keeps the form dirty when the server rejects the save', async () => {
+  it('surfaces a toast when the server rejects the save', async () => {
     upsertItemActionMock.mockResolvedValue({ ok: false, error: 'Ошибка серверa' });
     render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
     fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
-    const saveBtn = screen.getByRole('button', { name: 'Сохранить' });
-    await waitFor(() => {
-      expect(saveBtn).not.toBeDisabled();
-    });
     await act(async () => {
-      fireEvent.click(saveBtn);
+      submitForm();
       await Promise.resolve();
       await Promise.resolve();
     });

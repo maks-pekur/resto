@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
-import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { fromLocalizedText } from '@/lib/menu/localized';
@@ -26,15 +25,11 @@ export default async function GroupEditorPage(
 
   const params = await props.params;
   const isNew = params.id === 'new';
-
   const tDash = await getTranslations('dashboard');
 
   if (isNew) {
     return (
-      <>
-        <PageHeading title={tDash('newGroupTitle')} />
-        <GroupEditorShellClient initialGroup={null} groupId="new" />
-      </>
+      <GroupEditorShellClient title={tDash('newGroupTitle')} initialGroup={null} groupId="new" />
     );
   }
 
@@ -56,9 +51,10 @@ export default async function GroupEditorPage(
 
   const groupName = fromLocalizedText(res.data.name);
   return (
-    <>
-      <PageHeading title={groupName || tDash('editGroupTitle')} />
-      <GroupEditorShellClient initialGroup={res.data} groupId={params.id} />
-    </>
+    <GroupEditorShellClient
+      title={groupName || tDash('editGroupTitle')}
+      initialGroup={res.data}
+      groupId={params.id}
+    />
   );
 }

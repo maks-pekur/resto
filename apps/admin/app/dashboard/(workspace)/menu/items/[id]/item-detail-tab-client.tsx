@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Field,
@@ -28,6 +27,12 @@ import { upsertItemAction } from './upsert-item-action';
 import { PhotoUploadClient } from './photo-upload-client';
 import type { CategoryOption } from './types';
 
+export interface ItemDetailFormState {
+  readonly isNew: boolean;
+  readonly isDirty: boolean;
+  readonly isPending: boolean;
+}
+
 export interface ItemDetailTabClientProps {
   readonly initialValues: ItemEditorForm;
   readonly categories: readonly CategoryOption[];
@@ -38,6 +43,8 @@ export interface ItemDetailTabClientProps {
   readonly currentItemId: string;
   readonly onSaved: (savedId: string) => void;
   readonly slug: string;
+  readonly formId: string;
+  readonly onStateChange: (state: ItemDetailFormState) => void;
 }
 
 const allergensFromForm = (raw: string): string[] =>
@@ -58,6 +65,8 @@ export function ItemDetailTabClient({
   currentItemId,
   onSaved,
   slug,
+  formId,
+  onStateChange,
 }: ItemDetailTabClientProps): React.ReactElement {
   const router = useRouter();
   const t = useTranslations('menu.editor');
@@ -76,7 +85,11 @@ export function ItemDetailTabClient({
   const isNew = currentItemId === 'new';
   const isFormDirty = form.formState.isDirty;
   const isPhotoDirty = currentPhotoS3Key !== initialPhotoS3Key;
-  const canSubmit = isNew ? true : isFormDirty || isPhotoDirty;
+  const isDirty = isFormDirty || isPhotoDirty;
+
+  React.useEffect(() => {
+    onStateChange({ isNew, isDirty, isPending: pending });
+  }, [isNew, isDirty, pending, onStateChange]);
 
   const onSubmit = form.handleSubmit(async (values) => {
     setPending(true);
@@ -97,6 +110,7 @@ export function ItemDetailTabClient({
 
   return (
     <form
+      id={formId}
       onSubmit={(e) => {
         void onSubmit(e);
       }}
@@ -239,12 +253,6 @@ export function ItemDetailTabClient({
             />
           </CardContent>
         </Card>
-      </div>
-
-      <div className="flex items-center justify-end gap-2 border-t pt-4">
-        <Button type="submit" disabled={pending || !canSubmit}>
-          {pending ? tCommon('saving') : isNew ? t('createBtn') : tCommon('save')}
-        </Button>
       </div>
     </form>
   );

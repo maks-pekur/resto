@@ -22,8 +22,15 @@ const { ModifierGroupFormClient } =
   await import('../app/dashboard/(workspace)/menu/modifier-groups/[id]/modifier-group-form-client');
 
 const GROUP_ID = '11111111-1111-4111-8111-111111111111';
+const FORM_ID = 'modifier-group-form';
 
 const initialValues = { name: 'Соусы', minSelectable: 0, maxSelectable: 3 };
+
+const submitForm = (): void => {
+  const form = document.getElementById(FORM_ID) as HTMLFormElement | null;
+  if (!form) throw new Error(`form#${FORM_ID} not in document`);
+  fireEvent.submit(form);
+};
 
 describe('ModifierGroupFormClient (Plan 04b-08 Task 3, explicit save)', () => {
   beforeEach(() => {
@@ -40,57 +47,73 @@ describe('ModifierGroupFormClient (Plan 04b-08 Task 3, explicit save)', () => {
         initialValues={initialValues}
         groupId={GROUP_ID}
         onSaved={() => undefined}
+        formId={FORM_ID}
+        onStateChange={() => undefined}
       />,
     );
     expect(screen.getByDisplayValue('Соусы')).toBeInTheDocument();
   });
 
-  it('shows "Создать группу" for new and "Сохранить" for existing', () => {
-    const { rerender } = render(
-      <ModifierGroupFormClient
-        initialValues={initialValues}
-        groupId="new"
-        onSaved={() => undefined}
-      />,
-    );
-    expect(screen.getByRole('button', { name: 'Создать группу' })).toBeInTheDocument();
-    rerender(
-      <ModifierGroupFormClient
-        initialValues={initialValues}
-        groupId={GROUP_ID}
-        onSaved={() => undefined}
-      />,
-    );
-    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeInTheDocument();
-  });
-
-  it('disables Save until the existing form becomes dirty', () => {
+  it('reports form state via onStateChange (isNew, isDirty, isPending)', async () => {
+    const onStateChange = vi.fn();
     render(
       <ModifierGroupFormClient
         initialValues={initialValues}
         groupId={GROUP_ID}
         onSaved={() => undefined}
+        formId={FORM_ID}
+        onStateChange={onStateChange}
       />,
     );
-    expect(screen.getByRole('button', { name: 'Сохранить' })).toBeDisabled();
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenLastCalledWith({
+        isNew: false,
+        isDirty: false,
+        isPending: false,
+      });
+    });
+    fireEvent.input(screen.getByDisplayValue('Соусы'), { target: { value: 'Сиропы' } });
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenLastCalledWith({
+        isNew: false,
+        isDirty: true,
+        isPending: false,
+      });
+    });
   });
 
-  it('calls upsertModifierGroupAction on submit and forwards the existing groupId', async () => {
+  it('reports isNew=true for groupId="new"', async () => {
+    const onStateChange = vi.fn();
+    render(
+      <ModifierGroupFormClient
+        initialValues={initialValues}
+        groupId="new"
+        onSaved={() => undefined}
+        formId={FORM_ID}
+        onStateChange={onStateChange}
+      />,
+    );
+    await waitFor(() => {
+      expect(onStateChange).toHaveBeenCalledWith(
+        expect.objectContaining({ isNew: true, isPending: false }),
+      );
+    });
+  });
+
+  it('calls upsertModifierGroupAction when the form is submitted externally', async () => {
     upsertModifierGroupActionMock.mockResolvedValue({ ok: true, id: GROUP_ID });
     render(
       <ModifierGroupFormClient
         initialValues={initialValues}
         groupId={GROUP_ID}
         onSaved={() => undefined}
+        formId={FORM_ID}
+        onStateChange={() => undefined}
       />,
     );
     fireEvent.input(screen.getByDisplayValue('Соусы'), { target: { value: 'Сиропы' } });
-    const btn = screen.getByRole('button', { name: 'Сохранить' });
-    await waitFor(() => {
-      expect(btn).not.toBeDisabled();
-    });
     await act(async () => {
-      fireEvent.click(btn);
+      submitForm();
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -105,10 +128,16 @@ describe('ModifierGroupFormClient (Plan 04b-08 Task 3, explicit save)', () => {
     const onSaved = vi.fn();
     upsertModifierGroupActionMock.mockResolvedValue({ ok: true, id: GROUP_ID });
     render(
-      <ModifierGroupFormClient initialValues={initialValues} groupId="new" onSaved={onSaved} />,
+      <ModifierGroupFormClient
+        initialValues={initialValues}
+        groupId="new"
+        onSaved={onSaved}
+        formId={FORM_ID}
+        onStateChange={() => undefined}
+      />,
     );
     await act(async () => {
-      fireEvent.click(screen.getByRole('button', { name: 'Создать группу' }));
+      submitForm();
       await Promise.resolve();
       await Promise.resolve();
     });

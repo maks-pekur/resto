@@ -1,7 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
-import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { fromLocalizedText } from '@/lib/menu/localized';
@@ -85,15 +84,13 @@ export default async function ItemEditorPage(
   const title = isNew ? tDash('newItemTitle') : itemName || tDash('editItemTitle');
 
   return (
-    <>
-      <PageHeading title={title} />
-      <ItemEditorShellClient
-        initialItem={item}
-        categories={categories}
-        itemId={params.id}
-        defaultCurrency={item?.currency ?? DEFAULT_CURRENCY}
-        availableModifierGroups={availableModifierGroups}
-      />
-    </>
+    <ItemEditorShellClient
+      title={title}
+      initialItem={item}
+      categories={categories}
+      itemId={params.id}
+      defaultCurrency={item?.currency ?? DEFAULT_CURRENCY}
+      availableModifierGroups={availableModifierGroups}
+    />
   );
 }

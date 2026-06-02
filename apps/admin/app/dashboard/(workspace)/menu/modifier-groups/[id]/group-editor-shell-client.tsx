@@ -2,10 +2,12 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageHeading } from '@/components/page-heading';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
-import { ModifierGroupFormClient } from './modifier-group-form-client';
+import { ModifierGroupFormClient, type ModifierGroupFormState } from './modifier-group-form-client';
 import { ModifierOptionsListClient, type ModifierOptionApi } from './modifier-options-list-client';
 
 export interface ModifierGroupDetailApi {
@@ -17,9 +19,12 @@ export interface ModifierGroupDetailApi {
 }
 
 export interface GroupEditorShellClientProps {
+  readonly title: string;
   readonly initialGroup: ModifierGroupDetailApi | null;
   readonly groupId: string;
 }
+
+const FORM_ID = 'modifier-group-form';
 
 const emptyValues = (): ModifierGroupForm => ({
   name: '',
@@ -34,49 +39,78 @@ const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
 });
 
 export function GroupEditorShellClient({
+  title,
   initialGroup,
   groupId,
 }: GroupEditorShellClientProps): React.ReactElement {
   const t = useTranslations('menu.modifierGroups');
+  const tCommon = useTranslations('common');
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
   const [currentOptions, setCurrentOptions] = React.useState<readonly ModifierOptionApi[]>(
     initialGroup?.options ?? [],
   );
+  const [formState, setFormState] = React.useState<ModifierGroupFormState>({
+    isNew: groupId === 'new',
+    isDirty: false,
+    isPending: false,
+  });
 
   const initialValues = React.useMemo(
     () => (initialGroup ? valuesFromGroup(initialGroup) : emptyValues()),
     [initialGroup],
   );
 
-  return (
-    <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('groupMain')}</CardTitle>
-          <CardDescription>{t('groupMainDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ModifierGroupFormClient
-            initialValues={initialValues}
-            groupId={currentGroupId}
-            onSaved={setCurrentGroupId}
-          />
-        </CardContent>
-      </Card>
+  const handleStateChange = React.useCallback((next: ModifierGroupFormState) => {
+    setFormState(next);
+  }, []);
 
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('groupVariantsTitle')}</CardTitle>
-          <CardDescription>{t('groupVariantsDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ModifierOptionsListClient
-            groupId={currentGroupId}
-            options={currentOptions}
-            onOptionsChange={setCurrentOptions}
-          />
-        </CardContent>
-      </Card>
-    </div>
+  const canSubmit = formState.isNew || formState.isDirty;
+  const saveLabel = formState.isPending
+    ? tCommon('saving')
+    : formState.isNew
+      ? t('createGroupBtn')
+      : tCommon('save');
+
+  const saveButton = (
+    <Button type="submit" form={FORM_ID} size="sm" disabled={formState.isPending || !canSubmit}>
+      {saveLabel}
+    </Button>
+  );
+
+  return (
+    <>
+      <PageHeading title={title} action={saveButton} />
+      <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('groupMain')}</CardTitle>
+            <CardDescription>{t('groupMainDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ModifierGroupFormClient
+              initialValues={initialValues}
+              groupId={currentGroupId}
+              onSaved={setCurrentGroupId}
+              formId={FORM_ID}
+              onStateChange={handleStateChange}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('groupVariantsTitle')}</CardTitle>
+            <CardDescription>{t('groupVariantsDescription')}</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ModifierOptionsListClient
+              groupId={currentGroupId}
+              options={currentOptions}
+              onOptionsChange={setCurrentOptions}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    </>
   );
 }
