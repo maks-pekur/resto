@@ -4,12 +4,11 @@ import * as React from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { PageHeading } from '@/components/page-heading';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
-import { ItemDetailTabClient, type ItemDetailFormState } from './item-detail-tab-client';
-import { ItemSizesTabClient } from './item-sizes-tab-client';
-import { ItemModifiersTabClient, type AvailableGroup } from './item-modifiers-tab-client';
+import { ItemDetailFormClient, type ItemDetailFormState } from './item-detail-form-client';
+import { ItemAsideClient } from './item-aside-client';
+import type { AvailableGroup } from './item-modifier-groups-card-client';
 import type { CategoryOption, ItemDetailApi, ItemSizeApi } from './types';
 
 export interface ItemEditorShellClientProps {
@@ -21,7 +20,7 @@ export interface ItemEditorShellClientProps {
   readonly availableModifierGroups: readonly AvailableGroup[];
 }
 
-const DETAIL_FORM_ID = 'item-detail-form';
+const ITEM_FORM_ID = 'item-form';
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
 const emptyValues = (currency: string): ItemEditorForm => ({
@@ -104,7 +103,7 @@ export function ItemEditorShellClient({
   const saveButton = (
     <Button
       type="submit"
-      form={DETAIL_FORM_ID}
+      form={ITEM_FORM_ID}
       size="sm"
       disabled={detailState.isPending || !canSubmitDetail}
     >
@@ -115,51 +114,41 @@ export function ItemEditorShellClient({
   return (
     <>
       <PageHeading title={title} action={saveButton} />
-      <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <Tabs defaultValue="detail" className="flex-1">
-          <TabsList>
-            <TabsTrigger value="detail">{t('tabDetail')}</TabsTrigger>
-            <TabsTrigger value="sizes">{t('tabSizes')}</TabsTrigger>
-            <TabsTrigger value="modifiers">{t('tabModifiers')}</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="detail" forceMount className="data-[state=inactive]:hidden">
-            <ItemDetailTabClient
+      <div className="flex flex-1 flex-col px-4 lg:px-6">
+        <div className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
+          <div className="flex flex-col gap-6">
+            <ItemDetailFormClient
               initialValues={initialValues}
               categories={categories}
+              currentItemId={currentItemId}
+              initialItemSizes={currentSizes}
+              onSizesChange={setCurrentSizes}
+              availableModifierGroups={availableModifierGroups}
+              initialModifierGroupIds={initialItem?.modifierGroupIds ?? []}
+              onSaved={(savedId) => {
+                setCurrentItemId(savedId);
+              }}
+              slug={initialItem?.slug ?? ''}
+              formId={ITEM_FORM_ID}
+              onStateChange={handleDetailStateChange}
+              currentPhotoS3Key={currentPhotoS3Key}
+              initialPhotoS3Key={initialPhotoS3Key}
+            />
+          </div>
+          <aside className="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:self-start">
+            <ItemAsideClient
+              itemId={currentItemId}
               currentPhotoS3Key={currentPhotoS3Key}
               currentPhotoUrl={currentPhotoUrl}
               onPhotoChange={(s3Key) => {
                 setCurrentPhotoS3Key(s3Key);
                 setCurrentPhotoUrl(null);
               }}
-              currentItemId={currentItemId}
-              initialPhotoS3Key={initialPhotoS3Key}
-              onSaved={(savedId) => {
-                setCurrentItemId(savedId);
-              }}
+              status={initialItem?.status ?? 'draft'}
               slug={initialItem?.slug ?? ''}
-              formId={DETAIL_FORM_ID}
-              onStateChange={handleDetailStateChange}
             />
-          </TabsContent>
-
-          <TabsContent value="sizes" forceMount className="data-[state=inactive]:hidden">
-            <ItemSizesTabClient
-              itemId={currentItemId}
-              sizes={currentSizes}
-              onSizesChange={setCurrentSizes}
-            />
-          </TabsContent>
-
-          <TabsContent value="modifiers" forceMount className="data-[state=inactive]:hidden">
-            <ItemModifiersTabClient
-              itemId={currentItemId}
-              initialModifierGroupIds={initialItem?.modifierGroupIds ?? []}
-              availableGroups={availableModifierGroups}
-            />
-          </TabsContent>
-        </Tabs>
+          </aside>
+        </div>
       </div>
     </>
   );

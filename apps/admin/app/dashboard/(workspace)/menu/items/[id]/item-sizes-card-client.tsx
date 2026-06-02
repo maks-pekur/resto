@@ -2,16 +2,21 @@
 
 import * as React from 'react';
 import { useTranslations } from 'next-intl';
+import { useFormContext } from 'react-hook-form';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Field, FieldError, FieldLabel } from '@/components/ui/field';
+import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
+import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { upsertItemSizeAction } from './upsert-item-size-action';
 import type { ItemSizeApi } from './types';
 
-export interface ItemSizesTabClientProps {
+export interface ItemSizesCardClientProps {
   readonly itemId: string;
   readonly sizes: readonly ItemSizeApi[];
   readonly onSizesChange: (sizes: readonly ItemSizeApi[]) => void;
@@ -38,12 +43,14 @@ const rowsEqual = (a: RowDraft, b: ItemSizeApi): boolean =>
   a.price.toFixed(2) === Number.parseFloat(b.price).toFixed(2) &&
   a.isDefault === b.isDefault;
 
-export function ItemSizesTabClient({
+export function ItemSizesCardClient({
   itemId,
   sizes,
   onSizesChange,
-}: ItemSizesTabClientProps): React.ReactElement {
+}: ItemSizesCardClientProps): React.ReactElement {
+  const form = useFormContext<ItemEditorForm>();
   const t = useTranslations('menu.sizes');
+  const tEditor = useTranslations('menu.editor');
   const tCommon = useTranslations('common');
   const [rows, setRows] = React.useState<RowDraft[]>(() => sizes.map(rowFromApi));
   const [pending, setPending] = React.useState(false);
@@ -144,10 +151,39 @@ export function ItemSizesTabClient({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('title')}</CardTitle>
+        <CardTitle>{tEditor('priceSectionTitle')}</CardTitle>
         <CardDescription>{isNewItem ? t('saveFirstHint') : t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        <FormField
+          control={form.control}
+          name="basePrice"
+          render={({ field, fieldState }) => (
+            <Field data-invalid={fieldState.error ? true : undefined}>
+              <FieldLabel htmlFor={field.name}>{tEditor('price')}</FieldLabel>
+              <InputGroup>
+                <InputGroupInput
+                  id={field.name}
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  aria-invalid={fieldState.error ? true : undefined}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  value={field.value}
+                  onChange={(e) => {
+                    const n = Number.parseFloat(e.target.value);
+                    field.onChange(Number.isFinite(n) ? n : 0);
+                  }}
+                />
+                <InputGroupAddon align="inline-end">{form.watch('currency')}</InputGroupAddon>
+              </InputGroup>
+              {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
+            </Field>
+          )}
+        />
+        <hr className="border-border" />
         {!isNewItem && rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
         ) : null}

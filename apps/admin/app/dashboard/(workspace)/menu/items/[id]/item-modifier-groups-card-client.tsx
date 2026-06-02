@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { useFormContext } from 'react-hook-form';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +15,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
   Item,
@@ -25,6 +26,7 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemModifierGroupsAction } from './upsert-item-modifier-groups-action';
 import { upsertModifierGroupAction } from '../../modifier-groups/upsert-modifier-group-action';
@@ -35,26 +37,38 @@ export interface AvailableGroup {
   readonly optionCount: number;
 }
 
-export interface ItemModifiersTabClientProps {
+export interface ItemModifierGroupsCardClientProps {
   readonly itemId: string;
   readonly initialModifierGroupIds: readonly string[];
   readonly availableGroups: readonly AvailableGroup[];
 }
 
-export function ItemModifiersTabClient({
+const commaListFromInput = (raw: string): string[] =>
+  raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
+
+export function ItemModifierGroupsCardClient({
   itemId,
   initialModifierGroupIds,
   availableGroups,
-}: ItemModifiersTabClientProps): React.ReactElement {
+}: ItemModifierGroupsCardClientProps): React.ReactElement {
   const router = useRouter();
   const t = useTranslations('menu.modifiers');
+  const tEditor = useTranslations('menu.editor');
   const tCommon = useTranslations('common');
+  const tCommonShared = useTranslations('common');
+  const form = useFormContext<ItemEditorForm>();
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
   const [pending, setPending] = React.useState(false);
+  const [ingredientsText, setIngredientsText] = React.useState(
+    form.getValues('ingredients').join(', '),
+  );
 
   const [newName, setNewName] = React.useState('');
   const [newMin, setNewMin] = React.useState(0);
@@ -121,13 +135,33 @@ export function ItemModifiersTabClient({
     g.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
 
+  const ingredientsField = (
+    <Field>
+      <FieldLabel htmlFor="ingredients">{tEditor('ingredientsLabel')}</FieldLabel>
+      <Input
+        id="ingredients"
+        value={ingredientsText}
+        placeholder={tEditor('ingredientsPlaceholder')}
+        onChange={(e) => {
+          setIngredientsText(e.target.value);
+          form.setValue('ingredients', commaListFromInput(e.target.value), {
+            shouldDirty: true,
+            shouldTouch: true,
+          });
+        }}
+      />
+      <FieldDescription>{tCommonShared('comma')}</FieldDescription>
+    </Field>
+  );
+
   if (isNewItem) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{t('cardTitle')}</CardTitle>
+          <CardTitle>{tEditor('compositionSectionTitle')}</CardTitle>
           <CardDescription>{t('newItemHint')}</CardDescription>
         </CardHeader>
+        <CardContent>{ingredientsField}</CardContent>
       </Card>
     );
   }
@@ -135,7 +169,7 @@ export function ItemModifiersTabClient({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('cardTitle')}</CardTitle>
+        <CardTitle>{tEditor('compositionSectionTitle')}</CardTitle>
         <CardDescription>{t('cardDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -180,6 +214,9 @@ export function ItemModifiersTabClient({
             {t('addGroupBtn')}
           </Button>
         </div>
+
+        <hr className="border-border" />
+        {ingredientsField}
       </CardContent>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>

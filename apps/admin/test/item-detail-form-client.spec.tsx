@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 
 const upsertItemActionMock = vi.fn();
 const routerReplaceMock = vi.fn();
@@ -15,8 +16,12 @@ vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: routerReplaceMock, push: vi.fn(), back: vi.fn() }),
 }));
 
-vi.mock('../app/dashboard/(workspace)/menu/items/[id]/photo-upload-client', () => ({
-  PhotoUploadClient: () => <div data-testid="photo-upload" />,
+vi.mock('../app/dashboard/(workspace)/menu/items/[id]/item-sizes-card-client', () => ({
+  ItemSizesCardClient: () => <div data-testid="sizes-card" />,
+}));
+
+vi.mock('../app/dashboard/(workspace)/menu/items/[id]/item-modifier-groups-card-client', () => ({
+  ItemModifierGroupsCardClient: () => <div data-testid="modifier-groups-card" />,
 }));
 
 vi.mock('@/lib/ui/toast-helpers', () => ({
@@ -24,12 +29,12 @@ vi.mock('@/lib/ui/toast-helpers', () => ({
   showError: showErrorMock,
 }));
 
-const { ItemDetailTabClient } =
-  await import('../app/dashboard/(workspace)/menu/items/[id]/item-detail-tab-client');
+const { ItemDetailFormClient } =
+  await import('../app/dashboard/(workspace)/menu/items/[id]/item-detail-form-client');
 
 const CATEGORY_ID = '11111111-1111-4111-8111-111111111111';
 const ITEM_ID = '22222222-2222-4222-8222-222222222222';
-const FORM_ID = 'item-detail-form';
+const FORM_ID = 'item-form';
 
 const defaultProps = {
   initialValues: {
@@ -49,14 +54,17 @@ const defaultProps = {
     nutritionEstimated: false,
   },
   categories: [{ id: CATEGORY_ID, name: 'Кофе', parentId: null }],
-  currentPhotoS3Key: null,
-  currentPhotoUrl: null,
-  initialPhotoS3Key: null,
-  onPhotoChange: vi.fn(),
+  currentItemId: ITEM_ID,
+  initialItemSizes: [],
+  onSizesChange: vi.fn(),
+  availableModifierGroups: [],
+  initialModifierGroupIds: [],
   onSaved: vi.fn(),
   slug: 'kapuchino',
   formId: FORM_ID,
   onStateChange: vi.fn(),
+  initialPhotoS3Key: null as string | null,
+  currentPhotoS3Key: null as string | null,
 };
 
 const submitForm = (): void => {
@@ -65,7 +73,7 @@ const submitForm = (): void => {
   fireEvent.submit(form);
 };
 
-describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
+describe('ItemDetailFormClient (Plan 04b-07 Task 3, explicit save)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -75,7 +83,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
   });
 
   it('renders the form prefilled with initialValues', () => {
-    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    render(<ItemDetailFormClient {...defaultProps} />);
     expect(screen.getByDisplayValue('Капучино')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Кофейный напиток')).toBeInTheDocument();
     expect(screen.getByDisplayValue('молоко')).toBeInTheDocument();
@@ -84,13 +92,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
 
   it('reports form state via onStateChange (isNew, isDirty, isPending)', async () => {
     const onStateChange = vi.fn();
-    render(
-      <ItemDetailTabClient
-        {...defaultProps}
-        onStateChange={onStateChange}
-        currentItemId={ITEM_ID}
-      />,
-    );
+    render(<ItemDetailFormClient {...defaultProps} onStateChange={onStateChange} />);
     await waitFor(() => {
       expect(onStateChange).toHaveBeenLastCalledWith({
         isNew: false,
@@ -111,7 +113,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
   it('reports isNew=true for currentItemId="new"', async () => {
     const onStateChange = vi.fn();
     render(
-      <ItemDetailTabClient {...defaultProps} onStateChange={onStateChange} currentItemId="new" />,
+      <ItemDetailFormClient {...defaultProps} onStateChange={onStateChange} currentItemId="new" />,
     );
     await waitFor(() => {
       expect(onStateChange).toHaveBeenCalledWith(
@@ -122,7 +124,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
 
   it('calls upsertItemAction when the form is submitted externally via form id', async () => {
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
-    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    render(<ItemDetailFormClient {...defaultProps} />);
 
     fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
     await act(async () => {
@@ -139,7 +141,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
   it('flips URL via router.replace and calls onSaved when a new-item create succeeds', async () => {
     const onSaved = vi.fn();
     upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
-    render(<ItemDetailTabClient {...defaultProps} currentItemId="new" onSaved={onSaved} />);
+    render(<ItemDetailFormClient {...defaultProps} currentItemId="new" onSaved={onSaved} />);
 
     await act(async () => {
       submitForm();
@@ -153,7 +155,7 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
 
   it('surfaces a toast when the server rejects the save', async () => {
     upsertItemActionMock.mockResolvedValue({ ok: false, error: 'Ошибка серверa' });
-    render(<ItemDetailTabClient {...defaultProps} currentItemId={ITEM_ID} />);
+    render(<ItemDetailFormClient {...defaultProps} />);
     fireEvent.input(screen.getByDisplayValue('Капучино'), { target: { value: 'Латте' } });
     await act(async () => {
       submitForm();
@@ -161,5 +163,50 @@ describe('ItemDetailTabClient (Plan 04b-07 Task 3, explicit save)', () => {
       await Promise.resolve();
     });
     expect(showErrorMock).toHaveBeenCalled();
+  });
+
+  it('round-trips ingredients into upsertItemAction', async () => {
+    upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
+    render(
+      <ItemDetailFormClient
+        {...defaultProps}
+        initialValues={{ ...defaultProps.initialValues, ingredients: ['курица', 'томат'] }}
+      />,
+    );
+    await act(async () => {
+      submitForm();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const ingredientsValues = upsertItemActionMock.mock.calls[0]?.[1] as ItemEditorForm | undefined;
+    expect(ingredientsValues?.ingredients).toEqual(['курица', 'томат']);
+  });
+
+  it('round-trips metaTitle and metaDescription into upsertItemAction', async () => {
+    upsertItemActionMock.mockResolvedValue({ ok: true, id: ITEM_ID });
+    render(
+      <ItemDetailFormClient
+        {...defaultProps}
+        initialValues={{
+          ...defaultProps.initialValues,
+          metaTitle: 'Капучино — Кофейня',
+          metaDescription: 'Кофе с молоком, классика.',
+        }}
+      />,
+    );
+    await act(async () => {
+      submitForm();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    const seoValues = upsertItemActionMock.mock.calls[0]?.[1] as ItemEditorForm | undefined;
+    expect(seoValues?.metaTitle).toBe('Капучино — Кофейня');
+    expect(seoValues?.metaDescription).toBe('Кофе с молоком, классика.');
+  });
+
+  it('renders the SEO card with metaTitle and metaDescription inputs', () => {
+    render(<ItemDetailFormClient {...defaultProps} />);
+    expect(screen.getByLabelText(/Meta title/u)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Meta description/u)).toBeInTheDocument();
   });
 });
