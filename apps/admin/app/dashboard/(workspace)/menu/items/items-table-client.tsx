@@ -3,6 +3,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { MoreHorizontal, ImageIcon } from 'lucide-react';
 import { showError, showSuccess, toastFromResult } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
@@ -46,13 +47,10 @@ export interface ItemsTableClientProps {
 
 type OptimisticState = Record<string, 'paused' | 'published' | undefined>;
 
-const formatPrice = (basePrice: string, hasSizes: boolean): string => {
-  const trimmed = basePrice.endsWith('.00')
-    ? basePrice.slice(0, -3)
-    : basePrice.endsWith('.0')
-      ? basePrice.slice(0, -2)
-      : basePrice;
-  return hasSizes ? `от ${trimmed} ₽` : `${trimmed} ₽`;
+const trimPrice = (basePrice: string): string => {
+  if (basePrice.endsWith('.00')) return basePrice.slice(0, -3);
+  if (basePrice.endsWith('.0')) return basePrice.slice(0, -2);
+  return basePrice;
 };
 
 const buildCategoryPath = (item: ItemListItemApi): string => {
@@ -69,6 +67,12 @@ export function ItemsTableClient({
 }: ItemsTableClientProps): React.ReactElement {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const t = useTranslations('menu.items');
+  const tCommon = useTranslations('common');
+  const formatPrice = (basePrice: string, hasSizes: boolean): string => {
+    const trimmed = trimPrice(basePrice);
+    return hasSizes ? t('fromPrice', { price: trimmed }) : t('withCurrency', { price: trimmed });
+  };
   const [optimistic, setOptimistic] = React.useState<OptimisticState>({});
   const [pendingIds, setPendingIds] = React.useState<ReadonlySet<string>>(new Set());
   const [archiveTarget, setArchiveTarget] = React.useState<ItemListItemApi | null>(null);
@@ -117,12 +121,12 @@ export function ItemsTableClient({
         return copy;
       });
       if (res.ok) {
-        showSuccess(next === 'paused' ? 'Блюдо добавлено в стоп-лист' : 'Блюдо возобновлено', {
+        showSuccess(next === 'paused' ? t('addedToStopList') : t('removedFromStopList'), {
           duration: 1500,
         });
       } else {
         setOptimistic((prev) => ({ ...prev, [item.id]: undefined }));
-        showError(res.error, 'Could not update the stop list. Please try again.');
+        showError(res.error, t('stopListFailed'));
       }
     });
   };
@@ -131,11 +135,11 @@ export function ItemsTableClient({
     return (
       <EmptyState
         variant="empty"
-        title="Блюд пока нет"
-        description="Добавьте первое блюдо, чтобы начать заполнять меню."
+        title={t('empty')}
+        description={t('emptyDescription')}
         action={
           <Link href="/dashboard/menu/items/new">
-            <Button>+ Добавить блюдо</Button>
+            <Button>{t('addItem')}</Button>
           </Link>
         }
       />
@@ -148,10 +152,10 @@ export function ItemsTableClient({
         <TableHeader>
           <TableRow>
             <TableHead className="w-[48px]" />
-            <TableHead>Название</TableHead>
-            <TableHead className="w-[100px]">Цена</TableHead>
-            <TableHead className="w-[120px]">Статус</TableHead>
-            <TableHead className="w-[80px]">Стоп</TableHead>
+            <TableHead>{t('tableNameHeader')}</TableHead>
+            <TableHead className="w-[100px]">{t('tablePriceHeader')}</TableHead>
+            <TableHead className="w-[120px]">{t('tableStatusHeader')}</TableHead>
+            <TableHead className="w-[80px]">{t('tableStopHeader')}</TableHead>
             <TableHead className="w-[60px] text-right" />
           </TableRow>
         </TableHeader>
@@ -162,10 +166,30 @@ export function ItemsTableClient({
             const effectiveStatus: Status = optimistic[item.id] ?? item.status;
             const isOnStopList = effectiveStatus === 'paused';
             const isPending = pendingIds.has(item.id);
-            const switchLabel = isOnStopList ? 'Убрать из стоп-листа' : 'Добавить в стоп-лист';
+            const switchLabel = isOnStopList ? t('stopSwitchOff') : t('stopSwitchOn');
 
+            const openItem = (): void => {
+              router.push(`/dashboard/menu/items/${item.id}`);
+            };
+            const stopPropagation = (e: React.SyntheticEvent): void => {
+              e.stopPropagation();
+            };
             return (
-              <TableRow key={item.id} className="h-12" data-testid={`item-row-${item.id}`}>
+              <TableRow
+                key={item.id}
+                className="h-12 cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
+                data-testid={`item-row-${item.id}`}
+                role="button"
+                tabIndex={0}
+                aria-label={t('rowOpenAriaLabel', { name })}
+                onClick={openItem}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    openItem();
+                  }
+                }}
+              >
                 <TableCell>
                   {item.photoUrl ? (
                     // S3 presigned URLs; next/image would proxy each one and add latency.
@@ -180,19 +204,14 @@ export function ItemsTableClient({
                   )}
                 </TableCell>
                 <TableCell>
-                  <Link
-                    href={`/dashboard/menu/items/${item.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {name}
-                  </Link>
+                  <span className="font-medium">{name}</span>
                   <div className="text-xs text-muted-foreground">{categoryPath}</div>
                 </TableCell>
                 <TableCell>{formatPrice(item.basePrice, item.hasSizes)}</TableCell>
                 <TableCell>
                   <StatusBadge status={effectiveStatus} />
                 </TableCell>
-                <TableCell>
+                <TableCell onClick={stopPropagation}>
                   <div className={isPending ? 'pointer-events-none opacity-50' : ''}>
                     <Switch
                       checked={isOnStopList}
@@ -204,12 +223,12 @@ export function ItemsTableClient({
                     />
                   </div>
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-right" onClick={stopPropagation}>
                   <div className="relative inline-block">
                     <Button
                       variant="ghost"
                       size="icon"
-                      aria-label={`Действия с блюдом ${name}`}
+                      aria-label={t('actionsAriaLabel', { name })}
                       aria-haspopup="menu"
                       aria-expanded={openMenuId === item.id}
                       onClick={() => {
@@ -232,7 +251,7 @@ export function ItemsTableClient({
                             router.push(`/dashboard/menu/items/${item.id}`);
                           }}
                         >
-                          Открыть
+                          {t('openAction')}
                         </button>
                         <button
                           type="button"
@@ -243,7 +262,7 @@ export function ItemsTableClient({
                             setArchiveTarget(item);
                           }}
                         >
-                          Архивировать
+                          {t('archiveAction')}
                         </button>
                       </div>
                     ) : null}
@@ -256,7 +275,9 @@ export function ItemsTableClient({
       </Table>
 
       <div className="flex items-center justify-between pt-2">
-        <div className="text-sm text-muted-foreground">Всего: {totalCount}</div>
+        <div className="text-sm text-muted-foreground">
+          {t('totalLabel', { total: totalCount })}
+        </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -266,9 +287,9 @@ export function ItemsTableClient({
               if (canGoBack) router.push(buildPageUrl(page - 1));
             }}
           >
-            Назад
+            {tCommon('back')}
           </Button>
-          <span className="text-sm text-muted-foreground">Стр. {page}</span>
+          <span className="text-sm text-muted-foreground">{t('pageLabel', { page })}</span>
           <Button
             variant="outline"
             size="sm"
@@ -277,7 +298,7 @@ export function ItemsTableClient({
               if (canGoForward) router.push(buildPageUrl(page + 1));
             }}
           >
-            Вперёд
+            {tCommon('next')}
           </Button>
         </div>
       </div>
@@ -290,17 +311,19 @@ export function ItemsTableClient({
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Архивировать блюдо?</AlertDialogTitle>
+            <AlertDialogTitle>{t('archiveDialogTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
               {archiveTarget
-                ? `Блюдо «${fromLocalizedText(archiveTarget.name)}» будет скрыто из меню. Действие обратимо — снимите архивацию в фильтре статусов.`
+                ? t('archiveDialogDescription', {
+                    name: fromLocalizedText(archiveTarget.name),
+                  })
                 : ''}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
             <AlertDialogAction variant="destructive" onClick={handleArchiveConfirm}>
-              Архивировать
+              {t('archiveAction')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

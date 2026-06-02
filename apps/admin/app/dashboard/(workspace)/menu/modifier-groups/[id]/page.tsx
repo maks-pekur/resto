@@ -1,7 +1,10 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
+import { fromLocalizedText } from '@/lib/menu/localized';
 import { GroupEditorShellClient, type ModifierGroupDetailApi } from './group-editor-shell-client';
 
 interface MeResponse {
@@ -24,24 +27,38 @@ export default async function GroupEditorPage(
   const params = await props.params;
   const isNew = params.id === 'new';
 
+  const tDash = await getTranslations('dashboard');
+
   if (isNew) {
-    return <GroupEditorShellClient initialGroup={null} groupId="new" />;
+    return (
+      <>
+        <PageHeading title={tDash('newGroupTitle')} />
+        <GroupEditorShellClient initialGroup={null} groupId="new" />
+      </>
+    );
   }
 
   const res = await apiFetchInternal<ModifierGroupDetailApi>(
     `/internal/v1/catalog/modifier-groups/${params.id}`,
   );
   if (res.status === 404 || !res.ok || !res.data) {
+    const t = await getTranslations('menu.modifierGroups');
     return (
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <EmptyState
           variant="empty"
-          title="Группа не найдена"
-          description="Возможно, она была удалена."
+          title={t('groupNotFound')}
+          description={t('groupNotFoundDescription')}
         />
       </div>
     );
   }
 
-  return <GroupEditorShellClient initialGroup={res.data} groupId={params.id} />;
+  const groupName = fromLocalizedText(res.data.name);
+  return (
+    <>
+      <PageHeading title={groupName || tDash('editGroupTitle')} />
+      <GroupEditorShellClient initialGroup={res.data} groupId={params.id} />
+    </>
+  );
 }

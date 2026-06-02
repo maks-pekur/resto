@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useTranslations } from 'next-intl';
 import { GripVertical, Pencil } from 'lucide-react';
 import {
   DndContext,
@@ -68,6 +69,7 @@ function SortableCategoryRow({
   onEdit,
   isPendingNestTarget,
 }: SortableCategoryRowProps): React.ReactElement {
+  const t = useTranslations('menu.categories');
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
@@ -115,7 +117,7 @@ function SortableCategoryRow({
           <Button
             variant="ghost"
             size="icon"
-            aria-label={`Редактировать ${displayName}`}
+            aria-label={t('editAriaLabel', { name: displayName })}
             onClick={onEdit}
           >
             <Pencil className="size-4" />
@@ -202,8 +204,8 @@ const isNestEligible = (
 export function CategoriesTableClient({
   categories,
 }: CategoriesTableClientProps): React.ReactElement {
+  const t = useTranslations('menu.categories');
   const [editingId, setEditingId] = React.useState<string | null>(null);
-  const [createOpen, setCreateOpen] = React.useState(false);
   const [localCategories, setLocalCategories] = React.useState(categories);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pendingNestParentId, setPendingNestParentId] = React.useState<string | null>(null);
@@ -299,10 +301,7 @@ export function CategoriesTableClient({
     if (newParentId !== null && newParentId !== draggedCat.parentId) {
       const draggedHasChildren = visible.some((c) => c.parentId === draggedId);
       if (draggedHasChildren) {
-        showError(
-          null,
-          'Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.',
-        );
+        showError(null, t('nestWithChildrenError'));
         return;
       }
     }
@@ -337,32 +336,8 @@ export function CategoriesTableClient({
 
   return (
     <>
-      <div className="flex items-center justify-end">
-        <Button
-          size="sm"
-          onClick={() => {
-            setCreateOpen(true);
-          }}
-        >
-          + Добавить категорию
-        </Button>
-      </div>
-
       {rows.length === 0 ? (
-        <EmptyState
-          variant="empty"
-          title="Категории не добавлены"
-          description="Добавьте первую категорию, чтобы сгруппировать блюда в меню."
-          action={
-            <Button
-              onClick={() => {
-                setCreateOpen(true);
-              }}
-            >
-              + Добавить категорию
-            </Button>
-          }
-        />
+        <EmptyState variant="empty" title={t('empty')} description={t('emptyDescription')} />
       ) : (
         <DndContext
           id="categories-dnd"
@@ -381,9 +356,9 @@ export function CategoriesTableClient({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Название</TableHead>
-                  <TableHead className="text-center">Родитель</TableHead>
-                  <TableHead className="w-24 text-right">Действия</TableHead>
+                  <TableHead>{t('tableNameHeader')}</TableHead>
+                  <TableHead className="text-center">{t('tableParentHeader')}</TableHead>
+                  <TableHead className="w-24 text-right">{t('tableActionsHeader')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -415,23 +390,6 @@ export function CategoriesTableClient({
         </DndContext>
       )}
 
-      <Sheet open={createOpen} onOpenChange={setCreateOpen}>
-        <SheetContent side="right">
-          <SheetHeader>
-            <SheetTitle>Новая категория</SheetTitle>
-          </SheetHeader>
-          <div className="px-4 pb-4">
-            <CategoryFormClient
-              mode="create"
-              allCategories={categories}
-              onClose={() => {
-                setCreateOpen(false);
-              }}
-            />
-          </div>
-        </SheetContent>
-      </Sheet>
-
       <Sheet
         open={editing !== null}
         onOpenChange={(open) => {
@@ -440,7 +398,7 @@ export function CategoriesTableClient({
       >
         <SheetContent side="right">
           <SheetHeader>
-            <SheetTitle>Редактирование категории</SheetTitle>
+            <SheetTitle>{t('editSheetTitle')}</SheetTitle>
           </SheetHeader>
           <div className="px-4 pb-4">
             {editing ? (

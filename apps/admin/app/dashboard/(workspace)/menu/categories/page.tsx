@@ -1,8 +1,11 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { CategoriesTableClient } from './categories-table-client';
+import { CreateCategoryButton } from './create-category-button-client';
 
 interface MeResponse {
   readonly kind?: string;
@@ -25,6 +28,10 @@ interface CategoryListResponseApi {
 }
 
 export default async function CategoriesPage(): Promise<React.ReactElement> {
+  const tCat = await getTranslations('menu.categories');
+  const tAuth = await getTranslations('auth');
+  const tCommon = await getTranslations('common');
+  const tNav = await getTranslations('nav');
   const me = await apiFetch<MeResponse>('/v1/me');
   if (!me.ok || me.data?.kind !== 'operator' || !me.data.tenantId) {
     redirect('/login');
@@ -32,20 +39,26 @@ export default async function CategoriesPage(): Promise<React.ReactElement> {
 
   const res = await apiFetchInternal<CategoryListResponseApi>('/internal/v1/catalog/categories');
 
+  const categoryItems = res.data?.items ?? [];
+
   return (
     <>
+      <PageHeading
+        title={tNav('menuCategories')}
+        action={<CreateCategoryButton allCategories={categoryItems} />}
+      />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {res.status === 403 ? (
           <EmptyState
             variant="forbidden"
-            title="Нет доступа"
-            description="У вас нет прав для управления меню. Обратитесь к владельцу аккаунта."
+            title={tAuth('noAccess')}
+            description={tAuth('noAccessDescription')}
           />
         ) : !res.ok || !res.data ? (
           <EmptyState
             variant="empty"
-            title="Не удалось загрузить категории"
-            description="Попробуйте обновить страницу. Если проблема повторится, проверьте соединение."
+            title={tCat('loadFailed')}
+            description={tCommon('tryAgain')}
           />
         ) : (
           <CategoriesTableClient categories={res.data.items} />

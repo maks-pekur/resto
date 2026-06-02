@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/page-heading';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
@@ -12,6 +14,8 @@ interface MeResponse {
 }
 
 export default async function StopListPage(): Promise<React.ReactElement> {
+  const t = await getTranslations('menu.stopList');
+  const tNav = await getTranslations('nav');
   const me = await apiFetch<MeResponse>('/v1/me');
   if (!me.ok || me.data?.kind !== 'operator' || !me.data.tenantId) {
     redirect('/login');
@@ -23,17 +27,16 @@ export default async function StopListPage(): Promise<React.ReactElement> {
   const items = stopListRes.data ?? [];
 
   return (
-    <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
-      <TodaysWidget count={items.length} />
-      {items.length === 0 ? (
-        <EmptyState
-          variant="empty"
-          title="Стоп-лист пуст"
-          description="Все позиции в меню сейчас доступны для заказа."
-        />
-      ) : (
-        <StopListTableClient items={items} />
-      )}
-    </div>
+    <>
+      <PageHeading title={tNav('menuStopList')} />
+      <div className="flex flex-1 flex-col gap-6 px-4 lg:px-6">
+        <TodaysWidget count={items.length} />
+        {items.length === 0 ? (
+          <EmptyState variant="empty" title={t('title')} description={t('titleDescription')} />
+        ) : (
+          <StopListTableClient items={items} />
+        )}
+      </div>
+    </>
   );
 }

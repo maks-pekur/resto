@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { fromLocalizedText } from '@/lib/menu/localized';
@@ -58,13 +60,10 @@ export default async function ItemEditorPage(
   ]);
 
   if (!isNew && itemRes && (itemRes.status === 404 || !itemRes.ok || !itemRes.data)) {
+    const t = await getTranslations('menu.editor');
     return (
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <EmptyState
-          variant="empty"
-          title="Блюдо не найдено"
-          description="Возможно, оно было удалено."
-        />
+        <EmptyState variant="empty" title={t('notFound')} description={t('notFoundDescription')} />
       </div>
     );
   }
@@ -81,13 +80,20 @@ export default async function ItemEditorPage(
     optionCount: g.optionCount,
   }));
 
+  const tDash = await getTranslations('dashboard');
+  const itemName = item ? fromLocalizedText(item.name) : '';
+  const title = isNew ? tDash('newItemTitle') : itemName || tDash('editItemTitle');
+
   return (
-    <ItemEditorShellClient
-      initialItem={item}
-      categories={categories}
-      itemId={params.id}
-      defaultCurrency={item?.currency ?? DEFAULT_CURRENCY}
-      availableModifierGroups={availableModifierGroups}
-    />
+    <>
+      <PageHeading title={title} />
+      <ItemEditorShellClient
+        initialItem={item}
+        categories={categories}
+        itemId={params.id}
+        defaultCurrency={item?.currency ?? DEFAULT_CURRENCY}
+        availableModifierGroups={availableModifierGroups}
+      />
+    </>
   );
 }

@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { DangerZoneCard } from '@/components/danger-zone-card';
+import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { TwoFactorSection } from './two-factor-enable-client';
 
@@ -18,6 +20,7 @@ interface TenantResponse {
 }
 
 export default async function SettingsPage() {
+  const t = await getTranslations('dashboard');
   const me = await apiFetch<MeResponse>('/v1/me');
   if (!me.ok || me.data?.kind !== 'operator' || !me.data.tenantId) {
     redirect('/login');
@@ -29,6 +32,7 @@ export default async function SettingsPage() {
 
   return (
     <>
+      <PageHeading title={t('settingsTitle')} />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <TwoFactorSection twoFactorEnabled={me.data.twoFactorEnabled === true} />
         <DangerZoneCard

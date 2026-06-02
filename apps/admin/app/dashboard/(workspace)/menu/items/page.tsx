@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/page-heading';
 import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { coerceStatusFilter, type ItemListStatusFilter } from '@/lib/menu/zod-schemas';
@@ -76,6 +78,10 @@ interface ItemsPageProps {
 }
 
 export default async function ItemsPage(props: ItemsPageProps): Promise<React.ReactElement> {
+  const tItems = await getTranslations('menu.items');
+  const tAuth = await getTranslations('auth');
+  const tCommon = await getTranslations('common');
+  const tNav = await getTranslations('nav');
   const me = await apiFetch<MeResponse>('/v1/me');
   if (!me.ok || me.data?.kind !== 'operator' || !me.data.tenantId) {
     redirect('/login');
@@ -110,23 +116,26 @@ export default async function ItemsPage(props: ItemsPageProps): Promise<React.Re
 
   return (
     <>
-      <div className="flex items-center justify-end gap-2 px-4 lg:px-6">
-        <Link href="/dashboard/menu/items/new">
-          <Button size="sm">+ Добавить блюдо</Button>
-        </Link>
-      </div>
+      <PageHeading
+        title={tNav('menuItems')}
+        action={
+          <Link href="/dashboard/menu/items/new">
+            <Button size="sm">{tItems('addItem')}</Button>
+          </Link>
+        }
+      />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {itemsRes.status === 403 ? (
           <EmptyState
             variant="forbidden"
-            title="Нет доступа"
-            description="У вас нет прав для управления меню. Обратитесь к владельцу аккаунта."
+            title={tAuth('noAccess')}
+            description={tAuth('noAccessDescription')}
           />
         ) : !itemsRes.ok ? (
           <EmptyState
             variant="empty"
-            title="Не удалось загрузить блюда"
-            description="Попробуйте обновить страницу. Если проблема повторится, проверьте соединение."
+            title={tItems('loadFailed')}
+            description={tCommon('tryAgain')}
           />
         ) : (
           <>
@@ -137,11 +146,11 @@ export default async function ItemsPage(props: ItemsPageProps): Promise<React.Re
             {items.length === 0 && noFiltersApplied ? (
               <EmptyState
                 variant="empty"
-                title="Блюд пока нет"
-                description="Добавьте первое блюдо, чтобы начать заполнять меню."
+                title={tItems('empty')}
+                description={tItems('emptyDescription')}
                 action={
                   <Link href="/dashboard/menu/items/new">
-                    <Button>+ Добавить блюдо</Button>
+                    <Button>{tItems('addItem')}</Button>
                   </Link>
                 }
               />
