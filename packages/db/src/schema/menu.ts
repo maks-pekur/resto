@@ -87,7 +87,6 @@ export const menuItems = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     allergens: text('allergens').array(),
-    // SEO + composition fields shipped with the item editor redesign (2026-06-02).
     ingredients: text('ingredients').array(),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
