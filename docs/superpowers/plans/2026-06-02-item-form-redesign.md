@@ -70,7 +70,7 @@
 - Modify: `packages/db/src/schema/menu.ts`
 - Create: `packages/db/migrations/0043_catalog_item_ingredients_seo.sql` (generated)
 
-- [ ] **Step 1: Edit schema to add new columns to `menuItems`**
+- [x] **Step 1: Edit schema to add new columns to `menuItems`**
 
 In `packages/db/src/schema/menu.ts`, inside the `menuItems` `pgTable` definition, add three columns next to `allergens` (around line 89):
 
@@ -86,19 +86,19 @@ proteins: numeric('proteins', { precision: 5, scale: 2 }),
 
 (All three nullable, no defaults, no NOT NULL — additive, matches `allergens`.)
 
-- [ ] **Step 2: Generate migration SQL**
+- [x] **Step 2: Generate migration SQL**
 
 Run: `pnpm db:generate`
 
 Expected: a new file `packages/db/migrations/0043_<auto-suffix>.sql` containing three `ALTER TABLE menu_items ADD COLUMN` statements (`ingredients`, `meta_title`, `meta_description`). Drizzle picks the suffix — if it doesn't match `0043_catalog_item_ingredients_seo`, rename the file AND its entry in `packages/db/migrations/meta/_journal.json` accordingly. Verify the SQL is purely additive (no `NOT NULL`, no `DROP`, no `DEFAULT` populated).
 
-- [ ] **Step 3: Apply the migration locally**
+- [x] **Step 3: Apply the migration locally**
 
 Run: `pnpm db:migrate`
 
 Expected: migration applies cleanly; no errors. (Run from repo root; requires `DATABASE_ADMIN_URL` in env or the dev fallback.)
 
-- [ ] **Step 4: Smoke verify columns exist**
+- [x] **Step 4: Smoke verify columns exist**
 
 Run:
 
@@ -108,7 +108,7 @@ psql "$DATABASE_URL" -c "\d menu_items" | grep -E "(ingredients|meta_title|meta_
 
 Expected: three matching rows, all nullable.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/db/src/schema/menu.ts packages/db/migrations/0043_*.sql packages/db/migrations/meta/_journal.json packages/db/migrations/meta/0043_snapshot.json
@@ -123,7 +123,7 @@ git commit -m "feat(db): add ingredients + SEO columns to menu_items"
 
 - Modify: `packages/domain/src/schema/menu-item.ts`
 
-- [ ] **Step 1: Add three fields to the `MenuItem` Zod schema**
+- [x] **Step 1: Add three fields to the `MenuItem` Zod schema**
 
 In `packages/domain/src/schema/menu-item.ts`, extend the `z.object({...})` block (after the `allergens` field, before `status`):
 
@@ -136,13 +136,13 @@ metaDescription: z.string().max(160).nullable(),
 status: MenuItemStatus,
 ```
 
-- [ ] **Step 2: Run typecheck for the domain package**
+- [x] **Step 2: Run typecheck for the domain package**
 
 Run: `pnpm -F @resto/domain typecheck` (or `pnpm -F @resto/domain build`)
 
 Expected: PASS — `z.infer<typeof MenuItem>` now includes the new fields.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add packages/domain/src/schema/menu-item.ts
@@ -158,7 +158,7 @@ git commit -m "feat(domain): extend MenuItem with ingredients + SEO fields"
 - Modify: `apps/api/src/contexts/catalog/application/dto.ts`
 - Modify: `apps/api/src/contexts/catalog/domain/ports.ts`
 
-- [ ] **Step 1: Write the failing test (extend upsert-item spec)**
+- [x] **Step 1: Write the failing test (extend upsert-item spec)**
 
 In `apps/api/test/unit/catalog/upsert-item.service.spec.ts`, extend `baseInput` (the const around line 25):
 
@@ -218,13 +218,13 @@ expect(repo.upsertItem).toHaveBeenCalledWith({
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm -F api test -- upsert-item.service.spec`
 
 Expected: FAIL — either type error (`ingredients` not in `UpsertItemInput`) or assertion mismatch.
 
-- [ ] **Step 3: Extend `UpsertItemInputSchema` and `ItemDetailResponseSchema`**
+- [x] **Step 3: Extend `UpsertItemInputSchema` and `ItemDetailResponseSchema`**
 
 In `apps/api/src/contexts/catalog/application/dto.ts`, modify `UpsertItemInputSchema` — add three fields between `allergens` and `proteins` (around line 60):
 
@@ -246,7 +246,7 @@ And modify `ItemDetailResponseSchema` — add the same three fields between `all
   proteins: z.number().nullable(),
 ```
 
-- [ ] **Step 4: Extend `UpsertItemRow` and `ItemDetailRow` in ports.ts**
+- [x] **Step 4: Extend `UpsertItemRow` and `ItemDetailRow` in ports.ts**
 
 In `apps/api/src/contexts/catalog/domain/ports.ts`:
 
@@ -270,7 +270,7 @@ For `ItemDetailRow` (between `allergens` and `proteins`, around line 206):
   readonly proteins: number | null;
 ```
 
-- [ ] **Step 5: Commit (test still fails — service code change comes next)**
+- [x] **Step 5: Commit (test still fails — service code change comes next)**
 
 ```bash
 git add apps/api/src/contexts/catalog/application/dto.ts apps/api/src/contexts/catalog/domain/ports.ts apps/api/test/unit/catalog/upsert-item.service.spec.ts
@@ -285,7 +285,7 @@ git commit -m "feat(api): add ingredients + SEO fields to catalog DTOs and ports
 
 - Modify: `apps/api/src/contexts/catalog/application/upsert-item.service.ts`
 
-- [ ] **Step 1: Forward fields into repo call**
+- [x] **Step 1: Forward fields into repo call**
 
 In `apps/api/src/contexts/catalog/application/upsert-item.service.ts`, extend the `this.repo.upsertItem({...})` call to include the three new fields, immediately after `allergens`:
 
@@ -298,13 +298,13 @@ In `apps/api/src/contexts/catalog/application/upsert-item.service.ts`, extend th
       proteins: input.proteins,
 ```
 
-- [ ] **Step 2: Run upsert-item spec — expect it to pass**
+- [x] **Step 2: Run upsert-item spec — expect it to pass**
 
 Run: `pnpm -F api test -- upsert-item.service.spec`
 
 Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/api/src/contexts/catalog/application/upsert-item.service.ts
@@ -319,7 +319,7 @@ git commit -m "feat(api): upsert-item service forwards new fields to repo"
 
 - Modify: `apps/api/src/contexts/catalog/infrastructure/catalog-drizzle.repository.ts`
 
-- [ ] **Step 1: Add fields to the three write paths in `upsertItem`**
+- [x] **Step 1: Add fields to the three write paths in `upsertItem`**
 
 In `catalog-drizzle.repository.ts`, find the three places that pass column values into `insertInto(schema.menuItems, ...)` / `updateTable(schema.menuItems, ...)` / `onConflictDoUpdate({ set: ... })` (around lines 330–434). Each block currently includes `allergens`. Add immediately after `allergens` in **all three blocks**:
 
@@ -333,7 +333,7 @@ In `catalog-drizzle.repository.ts`, find the three places that pass column value
 
 (The `set:` block inside `onConflictDoUpdate` also needs the same three additions.)
 
-- [ ] **Step 2: Add fields to `getItemById` SELECT projection**
+- [x] **Step 2: Add fields to `getItemById` SELECT projection**
 
 Find `getItemById` (around line 875). In the `return { ... }` mapper, add immediately after `allergens`:
 
@@ -345,19 +345,19 @@ Find `getItemById` (around line 875). In the `return { ... }` mapper, add immedi
         proteins: r.proteins === null ? null : Number(r.proteins),
 ```
 
-- [ ] **Step 3: Typecheck the API**
+- [x] **Step 3: Typecheck the API**
 
 Run: `pnpm -F api typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 4: Run full catalog unit test suite**
+- [x] **Step 4: Run full catalog unit test suite**
 
 Run: `pnpm -F api test -- catalog/`
 
 Expected: all PASS. (The upsert-item spec is the only one with new assertions; others should be unaffected.)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/api/src/contexts/catalog/infrastructure/catalog-drizzle.repository.ts
@@ -372,7 +372,7 @@ git commit -m "feat(api): catalog repository persists + reads ingredients/SEO co
 
 - Modify: `apps/api/src/contexts/catalog/application/get-item.service.ts`
 
-- [ ] **Step 1: Map fields from row into response**
+- [x] **Step 1: Map fields from row into response**
 
 In `apps/api/src/contexts/catalog/application/get-item.service.ts`, extend the `return { ... }` (around line 31) immediately after `allergens`:
 
@@ -384,13 +384,13 @@ In `apps/api/src/contexts/catalog/application/get-item.service.ts`, extend the `
       proteins: row.proteins,
 ```
 
-- [ ] **Step 2: Run get-menu-item / get-item spec**
+- [x] **Step 2: Run get-menu-item / get-item spec**
 
 Run: `pnpm -F api test -- catalog/`
 
 Expected: PASS.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add apps/api/src/contexts/catalog/application/get-item.service.ts
@@ -406,25 +406,25 @@ git commit -m "feat(api): get-item service returns ingredients + SEO fields"
 - Modify: `docs/api/openapi.yaml` (generated)
 - Modify: `packages/api-client/src/generated/api.ts` (generated)
 
-- [ ] **Step 1: Regenerate OpenAPI YAML**
+- [x] **Step 1: Regenerate OpenAPI YAML**
 
 Run: `pnpm -F api openapi:emit`
 
 Expected: `docs/api/openapi.yaml` updated. Verify diff includes the three new fields under both `UpsertItemInputDto` and `ItemDetailResponseDto` component schemas.
 
-- [ ] **Step 2: Regenerate api-client types**
+- [x] **Step 2: Regenerate api-client types**
 
 Run: `pnpm -F @resto/api-client gen`
 
 Expected: `packages/api-client/src/generated/api.ts` updated with the three new fields in the relevant request/response shapes.
 
-- [ ] **Step 3: Run openapi-check (consistency guard)**
+- [x] **Step 3: Run openapi-check (consistency guard)**
 
 Run: `pnpm openapi:check`
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add docs/api/openapi.yaml packages/api-client/src/generated/api.ts
@@ -442,7 +442,7 @@ git commit -m "chore(api): regen openapi.yaml + api-client after catalog DTO upd
 - Modify: `apps/admin/lib/i18n/messages/ru.json`
 - Modify: `apps/admin/lib/i18n/messages/en.json`
 
-- [ ] **Step 1: Extend `ItemEditorFormSchema`**
+- [x] **Step 1: Extend `ItemEditorFormSchema`**
 
 In `apps/admin/lib/menu/zod-schemas.ts`, modify `ItemEditorFormSchema` (around line 50). The form value of `ingredients` is the parsed array (the UI keeps a separate raw-string local state, same pattern as `allergens`). Add fields after `allergens`:
 
@@ -465,7 +465,7 @@ export const ItemEditorFormSchema = z.object({
 });
 ```
 
-- [ ] **Step 2: Extend `ItemDetailApi`**
+- [x] **Step 2: Extend `ItemDetailApi`**
 
 In `apps/admin/app/dashboard/(workspace)/menu/items/[id]/types.ts`, add three fields to `ItemDetailApi` (after `allergens`):
 
@@ -477,7 +477,7 @@ In `apps/admin/app/dashboard/(workspace)/menu/items/[id]/types.ts`, add three fi
   readonly proteins: number | null;
 ```
 
-- [ ] **Step 3: Add i18n keys (Russian)**
+- [x] **Step 3: Add i18n keys (Russian)**
 
 In `apps/admin/lib/i18n/messages/ru.json`, inside `menu.editor` (after `validateForm` around line 128), add:
 
@@ -499,7 +499,7 @@ In `apps/admin/lib/i18n/messages/ru.json`, inside `menu.editor` (after `validate
       "slugLabel": "Slug"
 ```
 
-- [ ] **Step 4: Add i18n keys (English)**
+- [x] **Step 4: Add i18n keys (English)**
 
 In `apps/admin/lib/i18n/messages/en.json`, mirror the same keys under `menu.editor`:
 
@@ -520,13 +520,13 @@ In `apps/admin/lib/i18n/messages/en.json`, mirror the same keys under `menu.edit
       "slugLabel": "Slug"
 ```
 
-- [ ] **Step 5: Typecheck admin**
+- [x] **Step 5: Typecheck admin**
 
 Run: `pnpm -F admin typecheck`
 
 Expected: PASS. (Existing admin files still reference `ItemEditorForm` without `ingredients` etc; TS will start complaining once consumers read those fields — but the schema add is itself fine.)
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin/lib/menu/zod-schemas.ts apps/admin/app/dashboard/(workspace)/menu/items/[id]/types.ts apps/admin/lib/i18n/messages/ru.json apps/admin/lib/i18n/messages/en.json
@@ -541,7 +541,7 @@ git commit -m "feat(admin): extend item editor schema + i18n with ingredients + 
 
 - Modify: `apps/admin/app/dashboard/(workspace)/menu/items/[id]/upsert-item-action.ts`
 
-- [ ] **Step 1: Write the failing test (extend upsert-item-action spec)**
+- [x] **Step 1: Write the failing test (extend upsert-item-action spec)**
 
 In `apps/admin/test/upsert-item-action.spec.ts`, find an existing happy-path test that builds a `values` object. Add an assertion (or add a new test) that the payload sent to `apiFetchInternal` includes the three new fields:
 
@@ -581,13 +581,13 @@ it('forwards ingredients + metaTitle + metaDescription to apiFetchInternal', asy
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm -F admin test -- upsert-item-action`
 
 Expected: FAIL — payload does not contain the new fields.
 
-- [ ] **Step 3: Forward fields in the action**
+- [x] **Step 3: Forward fields in the action**
 
 In `apps/admin/app/dashboard/(workspace)/menu/items/[id]/upsert-item-action.ts`, modify the `payload` object (around line 29). Add three lines immediately after `allergens`:
 
@@ -616,13 +616,13 @@ const payload: Record<string, unknown> = {
 };
 ```
 
-- [ ] **Step 4: Run test to verify it passes**
+- [x] **Step 4: Run test to verify it passes**
 
 Run: `pnpm -F admin test -- upsert-item-action`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/(workspace)/menu/items/[id]/upsert-item-action.ts apps/admin/test/upsert-item-action.spec.ts
@@ -637,7 +637,7 @@ git commit -m "feat(admin): upsert-item action forwards ingredients + SEO fields
 
 - Modify: `apps/admin/app/dashboard/(workspace)/menu/items/[id]/page.tsx`
 
-- [ ] **Step 1: No change needed in `page.tsx` body**
+- [x] **Step 1: No change needed in `page.tsx` body**
 
 The page already passes `initialItem={item}` (the entire `ItemDetailApi`) to `ItemEditorShellClient`. Once `ItemDetailApi` includes the three new fields (Task 8 Step 2) and the API actually returns them (Tasks 5–6), the shell's `valuesFromItem` mapper picks them up automatically — but `valuesFromItem` lives inside the shell and needs the explicit mapping (Task 13). No edits to `page.tsx` itself.
 
@@ -652,7 +652,7 @@ Mark this task complete with no file change — but verify by running `pnpm -F a
 - Create: `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-aside-client.tsx`
 - Create: `apps/admin/test/item-aside-client.spec.tsx`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `apps/admin/test/item-aside-client.spec.tsx`:
 
@@ -734,13 +734,13 @@ describe('ItemAsideClient', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `pnpm -F admin test -- item-aside-client`
 
 Expected: FAIL — `ItemAsideClient` not found.
 
-- [ ] **Step 3: Implement `ItemAsideClient`**
+- [x] **Step 3: Implement `ItemAsideClient`**
 
 Create `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-aside-client.tsx`:
 
@@ -832,7 +832,7 @@ export function ItemAsideClient({
 
 Note: `menu.status.draft|published|archived` keys must already exist in i18n. If not, add them to both `ru.json` and `en.json` as part of Task 8.
 
-- [ ] **Step 4: Verify `menu.status` namespace exists**
+- [x] **Step 4: Verify `menu.status` namespace exists**
 
 Run: `grep -n "\"status\":" apps/admin/lib/i18n/messages/ru.json | head -3`
 
@@ -848,13 +848,13 @@ If `menu.status.draft|published|archived` is missing, add this block under `menu
 
 (English: `Draft`, `Published`, `Archived`.)
 
-- [ ] **Step 5: Run test to verify it passes**
+- [x] **Step 5: Run test to verify it passes**
 
 Run: `pnpm -F admin test -- item-aside-client`
 
 Expected: PASS (4/4).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-aside-client.tsx apps/admin/test/item-aside-client.spec.tsx apps/admin/lib/i18n/messages/ru.json apps/admin/lib/i18n/messages/en.json
@@ -871,7 +871,7 @@ git commit -m "feat(admin): item editor aside (photo + status + tech info)"
 - Rename: `apps/admin/test/item-sizes-tab-client.spec.tsx` → `item-sizes-card-client.spec.tsx`
 - Modify: both newly renamed files
 
-- [ ] **Step 1: Rename source + test via git**
+- [x] **Step 1: Rename source + test via git**
 
 Run:
 
@@ -880,7 +880,7 @@ git mv apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-sizes-tab-c
 git mv apps/admin/test/item-sizes-tab-client.spec.tsx apps/admin/test/item-sizes-card-client.spec.tsx
 ```
 
-- [ ] **Step 2: Update test for renamed component + new behavior**
+- [x] **Step 2: Update test for renamed component + new behavior**
 
 In `apps/admin/test/item-sizes-card-client.spec.tsx`:
 
@@ -929,13 +929,13 @@ it('renders the base price input inside the card without triggering the main for
 });
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `pnpm -F admin test -- item-sizes-card-client`
 
 Expected: FAIL — `ItemSizesCardClient` is still exported as `ItemSizesTabClient`, no base price input rendered.
 
-- [ ] **Step 4: Reshape `item-sizes-card-client.tsx`**
+- [x] **Step 4: Reshape `item-sizes-card-client.tsx`**
 
 In `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-sizes-card-client.tsx`:
 
@@ -1020,13 +1020,13 @@ e. Update `<CardTitle>` to use the editor title (Price + sizes):
 
 The existing `<CardDescription>` (saveFirstHint / description) and the existing rows/save button logic stay unchanged.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm -F admin test -- item-sizes-card-client`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-sizes-card-client.tsx apps/admin/test/item-sizes-card-client.spec.tsx
@@ -1043,14 +1043,14 @@ git commit -m "refactor(admin): reshape item sizes tab into card with basePrice 
 - Rename: `item-modifiers-tab-client.spec.tsx` → `item-modifier-groups-card-client.spec.tsx`
 - Modify: both newly renamed files
 
-- [ ] **Step 1: Rename source + test via git**
+- [x] **Step 1: Rename source + test via git**
 
 ```bash
 git mv apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-modifiers-tab-client.tsx apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-modifier-groups-card-client.tsx
 git mv apps/admin/test/item-modifiers-tab-client.spec.tsx apps/admin/test/item-modifier-groups-card-client.spec.tsx
 ```
 
-- [ ] **Step 2: Update test for renamed component + new ingredients behavior**
+- [x] **Step 2: Update test for renamed component + new ingredients behavior**
 
 In `apps/admin/test/item-modifier-groups-card-client.spec.tsx`:
 
@@ -1101,13 +1101,13 @@ it('renders the ingredients input but typing into it does not trigger auto-sync'
 });
 ```
 
-- [ ] **Step 3: Run tests to verify failure**
+- [x] **Step 3: Run tests to verify failure**
 
 Run: `pnpm -F admin test -- item-modifier-groups-card-client`
 
 Expected: FAIL — component name mismatch + missing ingredients input.
 
-- [ ] **Step 4: Reshape `item-modifier-groups-card-client.tsx`**
+- [x] **Step 4: Reshape `item-modifier-groups-card-client.tsx`**
 
 In `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-modifier-groups-card-client.tsx`:
 
@@ -1191,13 +1191,13 @@ e. In the main return (the non-new branch), update the card title and append `in
 </CardContent>
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm -F admin test -- item-modifier-groups-card-client`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-modifier-groups-card-client.tsx apps/admin/test/item-modifier-groups-card-client.spec.tsx
@@ -1214,14 +1214,14 @@ git commit -m "refactor(admin): reshape modifiers tab into composition card with
 - Rename: `item-detail-tab-client.spec.tsx` → `item-detail-form-client.spec.tsx`
 - Modify: both newly renamed files
 
-- [ ] **Step 1: Rename via git**
+- [x] **Step 1: Rename via git**
 
 ```bash
 git mv apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-detail-tab-client.tsx apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-detail-form-client.tsx
 git mv apps/admin/test/item-detail-tab-client.spec.tsx apps/admin/test/item-detail-form-client.spec.tsx
 ```
 
-- [ ] **Step 2: Update test (rename + add round-trip cases)**
+- [x] **Step 2: Update test (rename + add round-trip cases)**
 
 In `apps/admin/test/item-detail-form-client.spec.tsx`:
 
@@ -1349,13 +1349,13 @@ it('renders the SEO card with metaTitle and metaDescription inputs', () => {
 });
 ```
 
-- [ ] **Step 3: Run tests to verify failure**
+- [x] **Step 3: Run tests to verify failure**
 
 Run: `pnpm -F admin test -- item-detail-form-client`
 
 Expected: FAIL — component name mismatch, missing SEO inputs, missing FormProvider wrapping child cards.
 
-- [ ] **Step 4: Rewrite `item-detail-form-client.tsx`**
+- [x] **Step 4: Rewrite `item-detail-form-client.tsx`**
 
 Replace the body of `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-detail-form-client.tsx` with:
 
@@ -1743,13 +1743,13 @@ function ItemSeoCard(): React.ReactElement {
 }
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `pnpm -F admin test -- item-detail-form-client`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-detail-form-client.tsx apps/admin/test/item-detail-form-client.spec.tsx
@@ -1764,7 +1764,7 @@ git commit -m "refactor(admin): rewrite item detail tab as 6-card form-provider 
 
 - Modify: `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-shell-client.tsx`
 
-- [ ] **Step 1: Rewrite shell**
+- [x] **Step 1: Rewrite shell**
 
 Replace the body of `apps/admin/app/dashboard/(workspace)/menu/items/[id]/item-editor-shell-client.tsx` with:
 
@@ -1933,25 +1933,25 @@ export function ItemEditorShellClient({
 }
 ```
 
-- [ ] **Step 2: Verify `--header-height` CSS variable exists**
+- [x] **Step 2: Verify `--header-height` CSS variable exists**
 
 Run: `grep -rn "header-height" apps/admin/app/globals.css apps/admin/styles 2>/dev/null`
 
 If the variable is not defined, fall back to a hard value: replace `calc(var(--header-height)+1rem)` with `4.5rem` (typical sticky header offset). Confirm with the user before changing if uncertain.
 
-- [ ] **Step 3: Typecheck**
+- [x] **Step 3: Typecheck**
 
 Run: `pnpm -F admin typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 4: Run all item-editor admin tests**
+- [x] **Step 4: Run all item-editor admin tests**
 
 Run: `pnpm -F admin test -- "(item-detail-form-client|item-sizes-card-client|item-modifier-groups-card-client|item-aside-client|items-id-page|items-page|upsert-item-action)"`
 
 Expected: PASS. If `items-id-page.spec.tsx` references the old shell internals (Tabs etc.), update its expectations there too — it likely only checks server-side fetch wiring, but verify.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add apps/admin/app/dashboard/\(workspace\)/menu/items/\[id\]/item-editor-shell-client.tsx
@@ -1967,13 +1967,13 @@ git commit -m "refactor(admin): drop tabs, render item editor as 2-column grid w
 - Modify: `apps/admin/lib/i18n/messages/ru.json`
 - Modify: `apps/admin/lib/i18n/messages/en.json`
 
-- [ ] **Step 1: Verify nobody still references `tabDetail` / `tabSizes` / `tabModifiers`**
+- [x] **Step 1: Verify nobody still references `tabDetail` / `tabSizes` / `tabModifiers`**
 
 Run: `grep -rn "tabDetail\|tabSizes\|tabModifiers" apps/admin/ 2>/dev/null`
 
 Expected: only the JSON files themselves (no `.tsx` references).
 
-- [ ] **Step 2: Remove the three tab keys from both message files**
+- [x] **Step 2: Remove the three tab keys from both message files**
 
 Edit `apps/admin/lib/i18n/messages/ru.json` — remove these three lines from `menu.editor`:
 
@@ -1985,13 +1985,13 @@ Edit `apps/admin/lib/i18n/messages/ru.json` — remove these three lines from `m
 
 Same for `en.json`.
 
-- [ ] **Step 3: Run admin test suite**
+- [x] **Step 3: Run admin test suite**
 
 Run: `pnpm -F admin test`
 
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add apps/admin/lib/i18n/messages/ru.json apps/admin/lib/i18n/messages/en.json
@@ -2004,19 +2004,19 @@ git commit -m "chore(admin): remove unused tab i18n keys from item editor"
 
 **Files:** none
 
-- [ ] **Step 1: Full typecheck across workspace**
+- [x] **Step 1: Full typecheck across workspace**
 
 Run: `pnpm typecheck`
 
 Expected: PASS.
 
-- [ ] **Step 2: Full test suite — admin + api + db**
+- [x] **Step 2: Full test suite — admin + api + db**
 
 Run: `pnpm -F admin test && pnpm -F api test && pnpm -F @resto/db test`
 
 Expected: all PASS.
 
-- [ ] **Step 3: Lint**
+- [x] **Step 3: Lint**
 
 Run: `pnpm lint`
 
@@ -2045,7 +2045,7 @@ Open `http://localhost:3000/dashboard/menu/items/new` and confirm:
 
 If any check fails, stop and fix — do not proceed to commit.
 
-- [ ] **Step 5: No commit (verification only)**
+- [x] **Step 5: No commit (verification only)**
 
 Verification produces no artifacts; no commit needed. If fixes were needed, those went into the relevant task's commit.
 
@@ -2053,7 +2053,7 @@ Verification produces no artifacts; no commit needed. If fixes were needed, thos
 
 ## Task 18: Push branch
 
-- [ ] **Step 1: Confirm branch + push**
+- [x] **Step 1: Confirm branch + push**
 
 Confirm the branch name was decided at start (per user's task workflow). Run:
 
