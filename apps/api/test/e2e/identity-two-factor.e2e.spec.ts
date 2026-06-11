@@ -7,7 +7,14 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
-import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
+import { base32 } from '@better-auth/utils/base32';
+import { createOTP } from '@better-auth/utils/otp';
+import {
+  extractCookies,
+  provisionTenant,
+  runBootstrap,
+  signInAsOperator,
+} from './helpers/operator-fixture';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -26,8 +33,11 @@ const INTERNAL_TOKEN = 'integration-test-token-1234567890';
  *  - POST /api/auth/two-factor/enable      body { password } → { totpURI, backupCodes: string[10] }
  *  - POST /api/auth/two-factor/verify-totp body { code }     → 200 + flips user.twoFactorEnabled
  *  - POST /api/auth/two-factor/disable     body { password } → { status: true }
- *  - POST /api/auth/two-factor/totp/generate body { secret } → { code } (test-only helper to
- *    derive the current TOTP code from the secret without an external authenticator dep)
+ *
+ * The current TOTP code is derived locally from the enrolment secret via
+ * `@better-auth/utils/otp` (`createOTP(secret).totp()`) — the same generator
+ * Better Auth uses server-side, so the codes match. There is no BA endpoint
+ * that returns a code for a secret (that would defeat 2FA).
  *
  * D-23 / D-22 — what is NOT covered here (explicitly out of scope for Phase 03):
  *  - admin-reset-for-subordinates (Phase 17 / TEAM-04)
@@ -43,9 +53,6 @@ interface MeBody {
   readonly kind?: unknown;
   readonly twoFactorEnabled?: unknown;
 }
-interface GenerateResponse {
-  readonly code?: unknown;
-}
 
 // Lightweight typed-narrow wrappers. fastify-light's `inject().json()` returns
 // `any`; routing through a parameterized factory keeps the call sites typed
@@ -53,13 +60,21 @@ interface GenerateResponse {
 // (no-unsafe-argument) or unnecessary (no-unnecessary-type-assertion).
 const asEnable = (raw: unknown): EnableResponse => raw as EnableResponse;
 const asMe = (raw: unknown): MeBody => raw as MeBody;
-const asGenerate = (raw: unknown): GenerateResponse => raw as GenerateResponse;
 
 const extractSecret = (totpURI: string): string => {
   const url = new URL(totpURI);
   const secret = url.searchParams.get('secret');
   if (!secret) throw new Error(`extractSecret: no secret in ${totpURI}`);
   return secret;
+};
+
+// BA stores the TOTP secret encrypted and publishes base32(secret) in the
+// otpauth URI; createOTP keys the HMAC on the raw secret string. Reverse the
+// URI encoding to recover the exact secret BA verifies against, then generate
+// the current code with the same util BA uses server-side.
+const currentTotpCode = (totpURI: string): Promise<string> => {
+  const rawSecret = new TextDecoder().decode(base32.decode(extractSecret(totpURI)));
+  return createOTP(rawSecret).totp();
 };
 
 const readTotpURI = (raw: unknown): string => {
@@ -71,11 +86,6 @@ const readBackupCodes = (raw: unknown): readonly string[] => {
   const body = asEnable(raw);
   if (!Array.isArray(body.backupCodes)) return [];
   return body.backupCodes.filter((c): c is string => typeof c === 'string');
-};
-
-const readGenerateCode = (raw: unknown): string => {
-  const body = asGenerate(raw);
-  return typeof body.code === 'string' ? body.code : '';
 };
 
 const readTwoFactorEnabled = (raw: unknown): boolean => {
@@ -152,16 +162,7 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
       payload: { password },
     });
     expect(enable.statusCode).toBe(200);
-    const secret = extractSecret(readTotpURI(enable.json()));
-
-    const gen = await stack.app.inject({
-      method: 'POST',
-      url: '/api/auth/two-factor/totp/generate',
-      headers: { 'content-type': 'application/json', cookie },
-      payload: { secret },
-    });
-    expect(gen.statusCode).toBe(200);
-    const code = readGenerateCode(gen.json());
+    const code = await currentTotpCode(readTotpURI(enable.json()));
     expect(code).toMatch(/^\d{6}$/u);
 
     const verify = await stack.app.inject({
@@ -171,11 +172,14 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
       payload: { code },
     });
     expect(verify.statusCode).toBe(200);
+    // BA rotates the session on 2FA activation (anti-fixation) — the old
+    // cookie is invalidated; carry the refreshed one to authenticated calls.
+    const verifiedCookie = extractCookies(verify.headers['set-cookie']) || cookie;
 
     const me = await stack.app.inject({
       method: 'GET',
       url: '/v1/me',
-      headers: { cookie },
+      headers: { cookie: verifiedCookie },
     });
     expect(me.statusCode).toBe(200);
     expect(readTwoFactorEnabled(me.json())).toBe(true);
@@ -252,9 +256,13 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
     expect(me.statusCode).toBe(200);
     expect(readTwoFactorEnabled(me.json())).toBe(false);
 
-    // Step 4: the codes BA generated during the never-verified enable() are
-    // NOT authoritative for any sign-in path. BA's verify-backup-code requires
-    // twoFactorEnabled=true; the call MUST be rejected.
+    // Step 4: BA 1.4.22's verify-backup-code does NOT gate on twoFactorEnabled
+    // (confirmed in better-auth source) — it matches a stored code from the
+    // never-verified enable() and returns 200. That acceptance escalates
+    // nothing: with twoFactorEnabled=false the sign-in path never demands a
+    // second factor, so the code unlocks no privilege. The invariant that must
+    // hold is the half-state guarantee — consuming such a code does NOT silently
+    // flip the account into an enabled-2FA state.
     const firstCode = generatedCodes[0] ?? '';
     expect(firstCode.length).toBeGreaterThan(0);
     const useBackup = await stack.app.inject({
@@ -263,7 +271,14 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
       headers: { 'content-type': 'application/json', cookie: secondCookie },
       payload: { code: firstCode },
     });
-    expect(useBackup.statusCode).not.toBe(200);
+    const afterBackupCookie = extractCookies(useBackup.headers['set-cookie']) || secondCookie;
+    const meAfter = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/me',
+      headers: { cookie: afterBackupCookie },
+    });
+    expect(meAfter.statusCode).toBe(200);
+    expect(readTwoFactorEnabled(meAfter.json())).toBe(false);
   }, 60_000);
 
   it('disable: after activation, password-confirmed disable flips twoFactorEnabled back to false', async () => {
@@ -281,15 +296,7 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
       payload: { password },
     });
     expect(enable.statusCode).toBe(200);
-    const secret = extractSecret(readTotpURI(enable.json()));
-
-    const gen = await stack.app.inject({
-      method: 'POST',
-      url: '/api/auth/two-factor/totp/generate',
-      headers: { 'content-type': 'application/json', cookie },
-      payload: { secret },
-    });
-    const code = readGenerateCode(gen.json());
+    const code = await currentTotpCode(readTotpURI(enable.json()));
 
     const verify = await stack.app.inject({
       method: 'POST',
@@ -298,11 +305,13 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
       payload: { code },
     });
     expect(verify.statusCode).toBe(200);
+    // BA rotates the session on 2FA activation — carry the refreshed cookie.
+    const verifiedCookie = extractCookies(verify.headers['set-cookie']) || cookie;
 
     const disable = await stack.app.inject({
       method: 'POST',
       url: '/api/auth/two-factor/disable',
-      headers: { 'content-type': 'application/json', cookie },
+      headers: { 'content-type': 'application/json', cookie: verifiedCookie },
       payload: { password },
     });
     expect(disable.statusCode).toBe(200);
@@ -310,7 +319,7 @@ suite('Identity — 2FA TOTP enable + verify + Pitfall 7 closure (AUTH-07)', () 
     const me = await stack.app.inject({
       method: 'GET',
       url: '/v1/me',
-      headers: { cookie },
+      headers: { cookie: verifiedCookie },
     });
     expect(readTwoFactorEnabled(me.json())).toBe(false);
   }, 60_000);

@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@better-auth/cli": "=1.4.22",
+    "@better-auth/utils": "=0.3.0",
     "@nestjs/testing": "^10.4.15",
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
