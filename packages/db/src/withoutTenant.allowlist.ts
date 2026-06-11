@@ -64,12 +64,6 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // allowlist entry covers the genuine pre-org-bind branch only.
   'apps/api/src/contexts/identity/infrastructure/email/resend.adapter.ts',
 
-  // D-21 / Phase 3 / Plan 05: GDPR daily sweep on invitation + verification
-  // tables. BA-owned auth tables swept cross-tenant by the retention scheduler;
-  // no ALS binding applies to scheduled NestJS cron jobs.
-  'apps/api/src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
-  'apps/api/src/infrastructure/jobs/verification-retention-scheduler.service.ts',
-
   // CAT-10 / D-4a-07 / Phase 4a Plan 06: catalog Redis cache adapter falls
   // back to `nextval('menu_versions_seq')` when Redis is unavailable. The
   // sequence is platform-level (global) so no tenant binds; the operation

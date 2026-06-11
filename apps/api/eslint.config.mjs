@@ -127,10 +127,6 @@ export default [
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
       // for the matching entry.
       'src/contexts/identity/infrastructure/email/resend.adapter.ts',
-      // D-21 / Phase 3 / Plan 05: GDPR retention sweep schedulers. Cron jobs
-      // have no HTTP request / ALS tenant context. See withoutTenant.allowlist.ts.
-      'src/infrastructure/jobs/invitation-retention-scheduler.service.ts',
-      'src/infrastructure/jobs/verification-retention-scheduler.service.ts',
       // CAT-10 / D-4a-07 / Phase 4a Plan 06: Redis nextval fallback for
       // menu-version when Redis is unavailable. See withoutTenant.allowlist.ts.
       'src/contexts/catalog/infrastructure/redis-catalog-cache.adapter.ts',

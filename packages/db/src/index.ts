@@ -42,5 +42,6 @@ export { provisionAppRole, RESTO_APP_ROLE } from './roles';
 export { provisionAuthRole, RESTO_AUTH_ROLE } from './auth-role';
 export { TenantScopedRepository } from './repository-base';
 export { deleteInboxProcessedOlderThan } from './inbox-retention';
+export { WITHOUT_TENANT_ALLOWLIST, type WithoutTenantAllowedFile } from './withoutTenant.allowlist';
 export type { LocalizedText } from './schema/_types';
 export type { MenuItemPhoto } from './schema/menu';
