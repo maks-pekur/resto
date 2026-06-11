@@ -61,6 +61,12 @@ generated/
 .claude/PROJECT-MAP.md
 CLAUDE.md
 **/CLAUDE.md
+AGENTS.md
+**/AGENTS.md
+
+# Local agent tooling state
+.claire/
+.superpowers/
 
 # GSD planning artifacts — committed as source of truth (reset 2026-05-24)
 SPEC.md
