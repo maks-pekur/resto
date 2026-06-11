@@ -4,13 +4,15 @@
 
 RestOS is a brownfield multi-tenant restaurant SaaS pivoting to **AI-driven positioning** (decided 2026-05-27 — see `.planning/notes/ai-driven-pivot.md`). The roadmap is staged across three milestones:
 
-| Milestone | Scope                                                                                                                                  | Gate                                                         | Target     |
-| --------- | -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ | ---------- |
-| **MVP-1** | Standalone non-AI platform: admin + auth + catalog + customer site + qr-menu + ordering + payments + ops + content/SEO + onboarding    | First paying restaurant takes paid orders end-to-end via web | Q1 2027    |
-| **MVP-2** | AI agent platform + 3 surfaces (admin assistant, guest chat, AI onboarding constructor)                                                | Restaurant uses AI daily; onboarding <30 min via AI          | Q2–Q3 2027 |
-| **MVP-3** | Telegram channel as 4th delivery surface; iiko adapter as B2B GTM channel; other POS adapters as the partnership motion validates them | Active iiko partnership pipeline; measurable Telegram volume | Q4 2027+   |
+| Milestone | Scope                                                                                                                                                                                                       | Gate                                                           | Target     |
+| --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ---------- |
+| **MVP-1** | Revenue spine only: admin + auth + catalog + customer site + qr-menu + ordering + production deploy + payments + admin order intake                                                                         | First paying restaurant takes paid orders end-to-end via web   | Q1 2027    |
+| **MVP-2** | Operational completeness (delivery zones, promo, CRM, analytics, finance, content/SEO, self-serve onboarding) **+** AI agent platform + 3 surfaces (admin assistant, guest chat, AI onboarding constructor) | Restaurant runs daily ops + uses AI; onboarding <30 min via AI | Q2–Q3 2027 |
+| **MVP-3** | Telegram channel as 4th delivery surface; iiko adapter as B2B GTM channel; other POS adapters as the partnership motion validates them                                                                      | Active iiko partnership pipeline; measurable Telegram volume   | Q4 2027+   |
 
 MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planning/seeds/mvp3-channels-iiko.md`. Detailed planning happens when their trigger conditions activate (`/gsd-new-milestone`).
+
+**Scope rebalance (2026-06-12):** MVP-1 cut to the revenue spine after a CTO review flagged scope-vs-velocity as the top risk. Phases **9 (Delivery Zones), 11 (Promo), 12 (CRM), 13 (Analytics), 14 (Finance), 15 (Content & SEO), 16 (Self-serve Onboarding)** moved to MVP-2 under a new "Operational Completeness" track — nothing deleted, all phase detail preserved verbatim. A new **Phase 7.5 (Production Deploy)** was added before Payments (Stripe webhooks need a public URL; the CTO review flagged the non-existent prod deploy as HIGH). **Phase 10 (Admin Order Intake)** stays in MVP-1 — the operator must see paid orders — with its delivery-zone validation deferred until Phase 9 ships in MVP-2.
 
 ## MVP-1: Standalone Platform — Phases
 
@@ -28,15 +30,12 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
 - [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
+- [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: managed Postgres (the 3-role schema is already designed), managed object storage (R2/S3), pragmatic hosting (Fly/Railway/ECS — not full k8s), CD on top of the existing CI, runtime secret injection _(added 2026-06-12 scope rebalance — CTO review HIGH: no prod deploy existed)_
 - [ ] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF)
-- [ ] **Phase 9: Delivery Zones** - Polygon-based delivery zone editor, fee/threshold config, in-zone check at checkout with Redis geocode cache
-- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); requires zones to exist for delivery validation
-- [ ] **Phase 11: Promo & Discounts** - Single + bulk promo codes, automatic discounts, admin UX (pure discount engine already shipped in Phase 7)
-- [ ] **Phase 12: CRM** - Customer record, order history, GDPR delete-on-request _(open question for Phase 12 discuss: include MVP-2-ready customer profile fields to avoid retrofit?)_
-- [ ] **Phase 13: Analytics** - Revenue / AOV / order count / conversion rate dashboard for operators
-- [ ] **Phase 14: Finance** - Order list with filters + export, refunds, VAT, RestOS commission line
-- [ ] **Phase 15: Content & SEO** - Tenant theming, content pages, per-city SEO landing pages, sitemap
-- [ ] **Phase 16: Self-serve Onboarding (non-AI)** - End-to-end signup-to-published-menu wizard threading all prior phases together. MVP-2 supersedes this with the AI onboarding constructor.
+- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
+
+> **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
+
 - [ ] **Phase 17: Operator Self-service Polish (post-MVP-1)** - Full `/dashboard/team` page (member list, pending invitations, revoke, role-change), AUTH-07 full 2FA UX (lost-device admin reset for subordinates, recovery-code regeneration), closes BLOCKED row in `audit-gap.md` via `auth.api.updateMemberRole` + `identity.role_changed.v1` envelope. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner, OR Better Auth ≥ 1.5 ships `databaseHooks.member.update.after` _(scope split via Phase 3 persona review 2026-05-29 — CTO HIGH-1 + Skeptic HIGH-4)_
 
 ## MVP-1 Phase Details
@@ -294,6 +293,22 @@ Plans:
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
+### Phase 7.5: Production Deploy
+
+**Goal**: Stand up the first real production environment so the MVP-1 spine is actually shippable and Stripe webhooks (Phase 8) have a public HTTPS URL to call. Pragmatic over ideal — managed services, not a full k8s build-out _(added 2026-06-12 scope rebalance — closes the CTO review HIGH finding that no production deploy existed; `infra/k8s` and `infra/terraform` were stubs)_
+**Depends on**: Phase 7 (a deployable surface — admin + catalog + ordering — exists)
+**Requirements**: infra phase, no product requirement IDs
+**Success Criteria** (what must be TRUE):
+
+1. `apps/api` + `apps/admin` (+ `apps/website` / `apps/qr-menu` as they land) run in a managed production environment reachable over HTTPS on a real domain; the 3-role Postgres schema (`resto_app` / `resto_auth` / admin-migration role) is provisioned on managed Postgres
+2. Object storage (R2/S3) is wired for menu media; secrets are injected at runtime (platform secret store / Vault), never baked into images or committed
+3. CD deploys on merge to `main` on top of the existing nx-affected CI; database migrations run as a pre-rollout step (`pnpm db:migrate`)
+4. Boot-time preflight assertions (`assertProdGuardrails`, RLS-bypass checks) pass in the real prod environment — the process refuses to start on misconfiguration
+5. A public HTTPS endpoint exists for Stripe webhooks before Phase 8 begins; a smoke check confirms an external request reaches the API and a tenant menu renders end-to-end
+   **Plans**: TBD
+   **UI hint**: no
+   **Persona reviewers**: persona-cto, persona-investor
+
 ### Phase 8: Payments (Stripe Connect)
 
 **Goal**: Replace `NoopStripeConnectAdapter` with a real Stripe Connect Express implementation — account onboarding, payment intent routing, webhook handling, refund flow, pending-KYC UX state, outbox leader health probe, order confirmation page, and guest notification emails
@@ -310,6 +325,47 @@ Plans:
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
+### Phase 10: Admin Order Intake
+
+**Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
+**Depends on**: Phase 7, Phase 8 _(Phase 9 Delivery Zones moved to MVP-2 in the 2026-06-12 rebalance; the delivery-zone enforcement in criterion 1 activates only once Phase 9 ships)_
+**Requirements**: ORDINT-01, ORDINT-02, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-09, ORDINT-10
+**Success Criteria** (what must be TRUE):
+
+1. New orders appear in the admin feed in real time via Server-Sent Events without a page refresh; incoming orders are visually flagged; pickup orders work end-to-end, and delivery orders are accepted without polygon enforcement until Phase 9 (Delivery Zones) ships in MVP-2
+2. Operator accepts or rejects an incoming order; rejection auto-triggers a refund via Stripe
+3. Operator transitions an accepted order through `accepted → preparing → ready → completed`
+4. Operator cancels an order with a reason; if the order was paid, auto-refund is triggered; operator can filter orders by status, date, and channel; operator sees full order details (items, modifiers, customer info, delivery address, total breakdown)
+5. Graceful shutdown closes all active SSE connections with a `retry:` event so clients auto-reconnect; public `GET /v1/orders/:id/status` endpoint returns current order state for guest-facing confirmation page polling
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+
+### Phase 17: Operator Self-service Polish (post-MVP-1)
+
+**Goal**: Ship full operator self-service UX deferred from Phase 3 once first paying customer reveals a real need. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner. (The "BA ≥ 1.5 hook" trigger from the prior draft was removed — research confirmed the hook already exists in BA 1.4.22 as `organizationHooks.afterUpdateMemberRole`, and Phase 3 wires it.) Until trigger fires, all Phase 17 items are non-blocking for MVP-1 close.
+**Depends on**: Phase 3 (security-core auth must already be in prod), Phase 4 (catalog admin — operator must already have something to manage before /dashboard/team is meaningful)
+**Requirements**: TEAM-01, TEAM-02, TEAM-03, TEAM-04, TEAM-05
+**Success Criteria** (what must be TRUE):
+
+1. New `/dashboard/team` page (renamed from "staff" to avoid collision with the `staff` role) renders the member list with email + role + status; operator with `staff:invite` permission sees an "Invite member" affordance
+2. Operator with `staff:remove` permission sees pending-invitations table and can revoke a pending invite before its 48h TTL expires
+3. Owner / admin can change a member's role in place; mutation goes through `auth.api.updateMemberRole(...)` (BA server-side API — preserves permission graph + session invalidation); the audit envelope already fires from Phase 3's wired `organizationHooks.afterUpdateMemberRole` (no controller-side emit needed), so Phase 17 / TEAM-03 ships UI only; e2e test pins that an `admin`-tier operator cannot promote themselves to `owner`
+4. Owner / admin can reset 2FA for subordinates from `/dashboard/team` (lost-device flow); reset emits audit row; for the owner role itself, the documented recovery remains manual founder-side via runbook (the 2FA-equals-email regression of an owner email-recovery loop stays out of scope)
+5. Operator can regenerate 2FA recovery codes from `/dashboard/settings`; previous codes are invalidated atomically and the new set is shown once with copy-to-clipboard + saved-confirmation gate (same UX shape as Phase 3 enable flow)
+
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic
+
+## MVP-2: Operational Completeness + AI Agent Platform (placeholder)
+
+> Trigger: MVP-1 closed; first paying customer onboarded; standalone platform stable in prod >30 days. Detailed scope in `.planning/seeds/mvp2-ai-platform.md`. Phase numbering assigned at `/gsd-new-milestone` activation time.
+
+### Track A — Operational Completeness
+
+> Planned in MVP-1, moved here intact in the 2026-06-12 scope rebalance (revenue-spine cut). They run before / alongside the AI track once MVP-1 closes. Phase numbers are preserved from the original MVP-1 plan; nothing deleted.
+
 ### Phase 9: Delivery Zones
 
 **Goal**: Give operators a polygon-based delivery zone editor with per-zone fee and threshold configuration, enforce in-zone checks at site checkout via geocoding, and add a Redis geocode cache to survive Nominatim rate limits
@@ -324,22 +380,6 @@ Plans:
    **Plans**: TBD
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
-
-### Phase 10: Admin Order Intake
-
-**Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
-**Depends on**: Phase 7, Phase 8, Phase 9
-**Requirements**: ORDINT-01, ORDINT-02, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-09, ORDINT-10
-**Success Criteria** (what must be TRUE):
-
-1. New orders appear in the admin feed in real time via Server-Sent Events without a page refresh; incoming orders are visually flagged; delivery zone validation is enforced for all delivery orders (zones exist from Phase 9)
-2. Operator accepts or rejects an incoming order; rejection auto-triggers a refund via Stripe
-3. Operator transitions an accepted order through `accepted → preparing → ready → completed`
-4. Operator cancels an order with a reason; if the order was paid, auto-refund is triggered; operator can filter orders by status, date, and channel; operator sees full order details (items, modifiers, customer info, delivery address, total breakdown)
-5. Graceful shutdown closes all active SSE connections with a `retry:` event so clients auto-reconnect; public `GET /v1/orders/:id/status` endpoint returns current order state for guest-facing confirmation page polling
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
 ### Phase 11: Promo & Discounts
 
@@ -431,26 +471,7 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
 
-### Phase 17: Operator Self-service Polish (post-MVP-1)
-
-**Goal**: Ship full operator self-service UX deferred from Phase 3 once first paying customer reveals a real need. Activation trigger: first paying tenant adds a 2nd member with role ≠ owner. (The "BA ≥ 1.5 hook" trigger from the prior draft was removed — research confirmed the hook already exists in BA 1.4.22 as `organizationHooks.afterUpdateMemberRole`, and Phase 3 wires it.) Until trigger fires, all Phase 17 items are non-blocking for MVP-1 close.
-**Depends on**: Phase 3 (security-core auth must already be in prod), Phase 4 (catalog admin — operator must already have something to manage before /dashboard/team is meaningful)
-**Requirements**: TEAM-01, TEAM-02, TEAM-03, TEAM-04, TEAM-05
-**Success Criteria** (what must be TRUE):
-
-1. New `/dashboard/team` page (renamed from "staff" to avoid collision with the `staff` role) renders the member list with email + role + status; operator with `staff:invite` permission sees an "Invite member" affordance
-2. Operator with `staff:remove` permission sees pending-invitations table and can revoke a pending invite before its 48h TTL expires
-3. Owner / admin can change a member's role in place; mutation goes through `auth.api.updateMemberRole(...)` (BA server-side API — preserves permission graph + session invalidation); the audit envelope already fires from Phase 3's wired `organizationHooks.afterUpdateMemberRole` (no controller-side emit needed), so Phase 17 / TEAM-03 ships UI only; e2e test pins that an `admin`-tier operator cannot promote themselves to `owner`
-4. Owner / admin can reset 2FA for subordinates from `/dashboard/team` (lost-device flow); reset emits audit row; for the owner role itself, the documented recovery remains manual founder-side via runbook (the 2FA-equals-email regression of an owner email-recovery loop stays out of scope)
-5. Operator can regenerate 2FA recovery codes from `/dashboard/settings`; previous codes are invalidated atomically and the new set is shown once with copy-to-clipboard + saved-confirmation gate (same UX shape as Phase 3 enable flow)
-
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic
-
-## MVP-2: AI Agent Platform + 3 Surfaces (placeholder)
-
-> Trigger: MVP-1 closed; first paying customer onboarded; standalone platform stable in prod >30 days. Detailed scope in `.planning/seeds/mvp2-ai-platform.md`. Phase numbering assigned at `/gsd-new-milestone` activation time.
+### Track B — AI Agent Platform + 3 Surfaces
 
 - [ ] **MVP-2 Phase A: AI agent platform foundation** — LLM gateway (Anthropic primary, fallback TBD), per-tenant RAG knowledge base, per-customer profile/memory, conversation/thread storage, tool registry honoring `ScopedTx` + RBAC, NATS event subscriptions, eval harness
 - [ ] **MVP-2 Phase B: AI admin assistant** — agentic chat in `apps/admin`; tools: read analytics, edit menu, suggest promos, generate reports, draft emails; operator approval gate on destructive actions
@@ -470,12 +491,13 @@ Open architectural questions to resolve before MVP-2 activation: vector store ch
 ## Progress
 
 **Execution Order:**
-MVP-1 phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7 → 8 → 9 → 10 → 11 → 12 → 13 → 14 → 15 → 16. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant OR BA ≥ 1.5 hook). MVP-2/3 phases are sequenced at their respective `/gsd-new-milestone` activations.
+MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
 
 Notes:
 
 - Phase 5 (Customer Site) precedes Phase 6 (QR-Menu Customer) per 2026-05-27 AI-driven pivot decision — web shopfront is the primary customer surface and the surface AI guest chat (MVP-2) will be embedded on.
-- Phase 9 (Delivery Zones) precedes Phase 10 (Admin Order Intake) so zone validation exists before live delivery orders are accepted through the operator intake feed.
+- Phase 7.5 (Production Deploy) lands before Phase 8 (Payments) — Stripe webhooks need a public HTTPS URL.
+- Phase 9 (Delivery Zones) moved to MVP-2; until it ships, Phase 10 (Admin Order Intake) accepts delivery orders without polygon enforcement (pickup unaffected).
 
 ### MVP-1 Phase Status
 
@@ -489,13 +511,9 @@ Notes:
 | 5. Customer Site                              | 0/?            | Not started   | -          |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
+| 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
-| 9. Delivery Zones                             | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
-| 11. Promo & Discounts                         | 0/?            | Not started   | -          |
-| 12. CRM                                       | 0/?            | Not started   | -          |
-| 13. Analytics                                 | 0/?            | Not started   | -          |
-| 14. Finance                                   | 0/?            | Not started   | -          |
-| 15. Content & SEO                             | 0/?            | Not started   | -          |
-| 16. Self-serve Onboarding                     | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
+
+_Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._

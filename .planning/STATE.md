@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: context exhaustion at 75% (2026-05-31)
-last_updated: '2026-06-01T17:45:00.000Z'
-last_activity: 2026-06-01 -- Phase 04b wave 6 (plan 08) completed
+last_updated: '2026-06-12T00:00:00.000Z'
+last_activity: 2026-06-12 -- MVP-1 rescoped to revenue spine; Phases 9,11-16 moved to MVP-2
 progress:
-  total_phases: 18
-  completed_phases: 4
+  total_phases: 11
+  completed_phases: 5
   total_plans: 32
   completed_plans: 32
-  percent: 24
+  percent: 45
 ---
 
 # Project State
@@ -21,17 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 04b — catalog-admin-ui
-**Milestone structure (2026-05-27):** MVP-1 standalone platform (Q1 2027) → MVP-2 AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See `.planning/notes/ai-driven-pivot.md` and seeds.
+**Current focus:** Phase 5 — Customer Site (next in MVP-1 spine)
+**Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 04b (catalog-admin-ui) — ALL PLANS DELIVERED
-Plan: 9 of 9 (every plan has SUMMARY.md)
-Status: Phase 04b execution complete — ready for /gsd-verify-work
-Last activity: 2026-06-01 -- Phase 04b wave 6 (plan 08) completed
+Phase: 4b complete + verified (typecheck/lint/168 unit green; catalog e2e 16/16). MVP-1 rescoped to revenue spine 2026-06-12.
+Next: Phase 5 — Customer Site
+Status: 5 of 11 MVP-1 spine phases done; Phases 9,11-16 moved to MVP-2 (nothing deleted)
+Last activity: 2026-06-12 -- ROADMAP rescope (revenue-spine cut) + Phase 7.5 Production Deploy added
 
-Progress: [██████████] 100%
+Progress: [████░░░░░] 45% (MVP-1 spine)
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
