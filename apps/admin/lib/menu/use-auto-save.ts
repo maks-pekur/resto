@@ -35,7 +35,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
       void form.handleSubmit(async (values) => {
         let res: PersistResult;
         try {
-          res = await onPersistRef.current(values as TForm);
+          res = await onPersistRef.current(values);
         } catch {
           res = { ok: false };
         }

@@ -37,7 +37,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import postgres, { type Sql } from 'postgres';
-import { runInTenantContext, schema } from '../../src/index';
+import { runInTenantContext } from '../../src/index';
 import { isDockerAvailable, startPostgres, stopPostgres, type TestPg } from '../setup';
 
 const dockerOk = isDockerAvailable();

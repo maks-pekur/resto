@@ -259,13 +259,12 @@ export class ResendEmailAdapter implements EmailAdapterPort {
       // timers across retries and turning into an unhandled rejection at
       // process shutdown. Clear the timer in `finally` so node releases it
       // as soon as either branch wins.
-      let timeoutId: NodeJS.Timeout | null = null;
+      let timeoutId: NodeJS.Timeout | undefined;
       try {
         const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(
-            () => reject(new Error(`Resend send timed out after ${String(SEND_TIMEOUT_MS)}ms`)),
-            SEND_TIMEOUT_MS,
-          );
+          timeoutId = setTimeout(() => {
+            reject(new Error(`Resend send timed out after ${String(SEND_TIMEOUT_MS)}ms`));
+          }, SEND_TIMEOUT_MS);
         });
         try {
           result = await Promise.race([
@@ -282,7 +281,7 @@ export class ResendEmailAdapter implements EmailAdapterPort {
             timeoutPromise,
           ]);
         } finally {
-          if (timeoutId !== null) clearTimeout(timeoutId);
+          if (timeoutId !== undefined) clearTimeout(timeoutId);
         }
       } catch (err) {
         lastNetworkError = err instanceof Error ? err : new Error(String(err));

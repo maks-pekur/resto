@@ -16,7 +16,6 @@ export const log = (event: string, fields: Record<string, unknown> = {}): void =
 };
 
 export const logWarn = (event: string, fields: Record<string, unknown> = {}): void => {
-  // eslint-disable-next-line no-console
   console.warn(
     JSON.stringify({
       time: new Date().toISOString(),
@@ -29,7 +28,6 @@ export const logWarn = (event: string, fields: Record<string, unknown> = {}): vo
 };
 
 export const logError = (event: string, fields: Record<string, unknown> = {}): void => {
-  // eslint-disable-next-line no-console
   console.error(
     JSON.stringify({
       time: new Date().toISOString(),

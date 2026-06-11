@@ -56,8 +56,8 @@ const statementsEqual = (
   expected: Statement,
   actual: Statement,
 ): { equal: boolean; diff: string[] } => {
-  const expKeys = sortedKeys(expected as Record<string, unknown>);
-  const actKeys = sortedKeys(actual as Record<string, unknown>);
+  const expKeys = sortedKeys(expected);
+  const actKeys = sortedKeys(actual);
   const diff: string[] = [];
   if (expKeys.join(',') !== actKeys.join(',')) {
     diff.push(
@@ -90,8 +90,8 @@ const statementsEqual = (
  * of truth that BA receives.
  */
 export const assertSystemRolesPresent = (): void => {
-  const expectedSlugs = sortedKeys(SYSTEM_ROLES as Record<string, unknown>);
-  const actualSlugs = sortedKeys(REGISTERED_ROLES as Record<string, unknown>);
+  const expectedSlugs = sortedKeys(SYSTEM_ROLES);
+  const actualSlugs = sortedKeys(REGISTERED_ROLES);
   const allDiffs: string[] = [];
   const actualSnapshot: Record<string, Statement> = {};
 
@@ -103,7 +103,8 @@ export const assertSystemRolesPresent = (): void => {
 
   for (const slug of expectedSlugs as SystemRoleSlug[]) {
     const expected = SYSTEM_ROLES[slug] as Statement;
-    const registered = REGISTERED_ROLES[slug as SystemRoleSlug];
+    const registered = REGISTERED_ROLES[slug];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- REGISTERED_ROLES is typed complete, but a dropped BA registration is a real boot-time failure mode; this guard protects the registered.statements access below
     if (!registered) {
       allDiffs.push(`${slug}: not registered with BA`);
       continue;

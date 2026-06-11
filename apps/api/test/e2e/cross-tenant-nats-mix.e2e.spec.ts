@@ -91,7 +91,7 @@ suite(
     let publisher: NatsJetStreamPublisher;
     let subscriber: NatsJetStreamSubscriber;
     let subscription: EventSubscription;
-    const observations: Array<{ envelopeId: string; envelopeTenantId: string }> = [];
+    const observations: { envelopeId: string; envelopeTenantId: string }[] = [];
 
     beforeAll(async () => {
       stack = await startRealStack({ natsEnabledInApp: false });
@@ -144,7 +144,7 @@ suite(
     });
 
     it(`routes each of ${ENVELOPES.toString()} interleaved A/B envelopes with its own tenantId via runDeduped`, async () => {
-      const published: Array<{ id: string; tenantId: string }> = [];
+      const published: { id: string; tenantId: string }[] = [];
 
       // Publish 100 envelopes interleaved A/B/A/B/...; 10 in flight at
       // once via Promise.all to maximise interleaving inside JetStream.

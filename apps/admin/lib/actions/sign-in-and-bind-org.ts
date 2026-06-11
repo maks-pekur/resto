@@ -60,7 +60,7 @@ export const signInAndBindOrg = async (input: {
   if (!orgList.ok) {
     return { ok: false, error: 'org_list_failed' };
   }
-  const orgs = Array.isArray(orgList.data) ? orgList.data : [];
+  const orgs: readonly OrgSummary[] = Array.isArray(orgList.data) ? orgList.data : [];
   if (orgs.length !== 1) {
     // Zero (legit pre-provisioning state) or multi-org (picker needed) —
     // both leave the session signed-in-but-unbound. Caller decides UX.
