@@ -60,7 +60,7 @@ Phase 6 extends the existing display-only `apps/qr-menu` (Vite + React SPA) into
 
 The single most important discovery is that **QRM-09 (stop-listed items visibly disabled) requires a backend change**. The current `/v1/menu` implementation in `GetPublishedMenuService` → `catalog-drizzle.repository.ts:loadPublishedMenu` **filters out** stop-listed items before building the DTO — they do not appear in the response at all. Phase 5 (`apps/website`) shipped `MenuItemCard` with an `unavailable` prop but never passes it because the data does not exist. To show items as "disabled" in qr-menu, the backend must include stopped items with an `isStopListed: true` field on `MenuItemDto`, and the qr-menu front-end renders them disabled. This requires a coordinated backend + frontend change as a single plan.
 
-The `@resto/cart` package follows the exact pattern of `@resto/ui` and `@resto/api-client`: `package.json` (private, `type: module`, `main`/`types`/`exports` pointing to `src/index.ts`), `tsconfig.json` extending `@resto/config-typescript/react.json`, `project.json` with Nx `lint`/`typecheck` targets, and a `peerDependencies` declaration for React. The website's `store/cart.ts` moves verbatim into the package with one addition: `table: string | null` and `setTable`. The 9 import sites in `apps/website` that currently reference `@/store/cart` are re-pointed to `@resto/cart`.
+The `@resto/cart` package follows the exact pattern of `@resto/ui` and `@resto/api-client`: `package.json` (private, `type: module`, `main`/`types`/`exports` pointing to `src/index.ts`), `tsconfig.json` extending `@resto/config-typescript/react.json`, `project.json` with Nx `lint`/`typecheck` targets, and a `peerDependencies` declaration for React. The website's `store/cart.ts` moves verbatim into the package with one addition: `table: string | null` and `setTable`. The import sites in `apps/website` that currently reference `@/store/cart` are re-pointed to `@resto/cart` (discover all at execution time via grep — do not hard-code the count).
 
 **Primary recommendation:** Plan five waves — (1) `@resto/cart` package creation + website re-point, (2) backend `isStopListed` extension + `@resto/api-client` regen, (3) qr-menu cart UI + modifier selection, (4) table binding + locale switcher, (5) source map hardening + bundle test extension.
 
@@ -273,17 +273,10 @@ interface CartState {
 
 [VERIFIED: codebase — extends existing `apps/website/store/cart.ts`]
 
-**Website re-point:** 9 import sites in `apps/website` need `@/store/cart` → `@resto/cart`:
+**Website re-point:** All `@/store/cart` (and relative `../store/cart`) import sites in `apps/website` need re-pointing to `@resto/cart`. Discover the full list at execution time via grep — do NOT hard-code the count (PATTERNS.md observed 8 files; RESEARCH originally noted 9 — the action MUST grep-discover and re-point every match rather than depend on the exact number):
 
-```
-apps/website/test/cart-store.spec.ts       (../store/cart → @resto/cart)
-apps/website/hooks/use-cart-store.ts       (@/store/cart → @resto/cart)
-apps/website/components/checkout/checkout-form.tsx
-apps/website/components/menu/menu-page-client.tsx
-apps/website/components/checkout/order-summary.tsx
-apps/website/components/menu/item-modal.tsx
-apps/website/components/menu/cart-drawer.tsx
-apps/website/components/menu/cart-line-item.tsx
+```bash
+grep -rl -e "@/store/cart" -e "\.\./store/cart" apps/website/{components,hooks,store,test}
 ```
 
 Also add `"@resto/cart": "workspace:*"` to `apps/website/package.json` dependencies and remove local `store/cart.ts`.
@@ -445,7 +438,7 @@ it('.map files exist but are not referenced from JS (hidden maps)', () => {
 });
 ```
 
-**Note on what "not publicly served" means in QRM-12:** The requirement is that `.map` files not be _publicly accessible_ — but this is a server configuration concern, not a bundle concern. In a Vite SPA, `dist/assets/` is served statically. The bundle test can assert (1) no inline `sourceMappingURL` comment (so browsers don't auto-load maps), and (2) maps exist as files (for error monitoring tooling to find). A real "not served" guarantee requires CDN/nginx config to block `*.map` requests — that is Phase 7.5 (production deploy) territory. The bundle test covers the QRM-12 intent at build time. [ASSUMED — interpretation of "not publicly served" in QRM-12]
+**Note on what "not publicly served" means in QRM-12:** The requirement is that `.map` files not be _publicly accessible_ — but this is a server configuration concern, not a bundle concern. In a Vite SPA, `dist/assets/` is served statically. The bundle test can assert (1) no inline `sourceMappingURL` comment (so browsers don't auto-load maps), and (2) maps exist as files (for error monitoring tooling to find). A real "not served" guarantee requires CDN/nginx config to block `*.map` requests — that is **Phase 7.5 (production deploy) territory** and is tracked as an explicit deferral: `apps/CLAUDE.md` ("Source maps + production hygiene") REQUIRES customer-facing apps to strip `.map` from the deploy artifact and upload via Sentry/equivalent. Phase 6 keeps the hidden maps (needed for the future Sentry upload) and asserts no inline reference; the residual ".map present in dist" risk is owned by Phase 7.5's PLAN (see plan 06-05 threat T-06-11). The bundle test covers the QRM-12 build-time intent. [ASSUMED — interpretation of "not publicly served" in QRM-12]
 
 ### Pattern 7: Branded Header (QRM-01)
 
@@ -694,26 +687,30 @@ const itemsRows = allItemsRows.filter((r) => !stoppedItemIds.has(r.id));
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`modifierGroupIds` lookup in ItemDetail — prop vs context**
    - What we know: `ItemDetail` receives only `item: MenuItemDto`; modifier groups are on `menu.modifierGroups`
    - What's unclear: best way to pass them (prop drilling vs React context vs store)
    - Recommendation: Pass as `groups: readonly MenuModifierGroupDto[]` prop (pre-resolved at App level). Simple; no over-engineering for a 2-group typical case.
+   - **RESOLVED:** plan 06-03 Task 3 pre-resolves groups in App.tsx via `state.menu.modifierGroups.filter((g) => item.modifierGroupIds.includes(g.id))` (filter-and-verify guards Pitfall 4) and passes them as a `groups: readonly MenuModifierGroupDto[]` prop to ItemDetail — the recommended prop approach.
 
 2. **Cart drawer trigger in the Vite SPA — overlay vs page push**
    - What we know: existing routing is URL-path based (menu / item); no dialog system
    - What's unclear: should cart be a URL route (`/cart`), a slide-over div, or a modal
    - Recommendation: CSS-only slide-over (position fixed, transform translateX). No JS overlay library. Matches D-04 "keep qr-menu's own lean Vite styling."
+   - **RESOLVED:** plan 06-04 Task 1 builds CartDrawer as a CSS-only slide-over (`position:fixed` + `transform: translateX` via `.cart-drawer` / `.cart-drawer__panel` / `.cart-drawer--open`, backdrop click closes), open-state held in App.tsx useState — no routing/overlay library, per the recommendation and D-04.
 
 3. **Locale switcher placement**
    - What we know: existing UI has no header component; menu title is inside `MenuView`
    - Recommendation: Add a `<Header>` component to `MenuView` (or App.tsx) that renders brand name + locale switcher buttons (EN / RU text links).
+   - **RESOLVED:** plan 06-03 Task 2 adds the branded `<header className="menu__header">` to MenuView; plan 06-04 Task 3 mounts `<LocaleSwitcher>` (en/ru buttons) in that header next to the brand name — matching the recommendation.
 
 4. **`?table=` persistence across page navigations within the SPA**
    - What we know: sessionStorage persists the table; URL changes within the SPA remove `?table=` from the URL bar
    - What's unclear: does the QR URL need `?table=` visible at all times
    - Recommendation: Store in sessionStorage only; no need to re-append to every URL push. The table is set once on first mount.
+   - **RESOLVED:** plan 06-04 Task 2 reads `?table=` once in a mount useEffect → `setTable` (persisted to sessionStorage via the existing Zustand persist config); the value is never re-appended to in-SPA URL pushes — sessionStorage-only persistence per the recommendation.
 
 ---
 
@@ -754,7 +751,7 @@ This phase is purely frontend + minor backend addition. All tools confirmed pres
 - `apps/website/store/cart.ts` — store shape + actions confirmed; `table` field absent
 - `apps/qr-menu/test/bundle-no-dev-leak.spec.ts` — existing bundle test infrastructure confirmed
 - `packages/ui/package.json`, `packages/ui/tsconfig.json` — package creation template confirmed
-- `apps/website/package.json` — zustand 5.0.14 confirmed; 9 import sites enumerated
+- `apps/website/package.json` — zustand 5.0.14 confirmed; import sites enumerated
 - `apps/qr-menu/vite.config.ts` — `sourcemap: true` confirmed (needs change to `'hidden'`)
 - `.planning/config.json` — `nyquist_validation: false` confirmed (Validation Architecture section omitted)
 

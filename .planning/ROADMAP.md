@@ -295,9 +295,14 @@ Plans:
 3. Guest's table number is auto-bound from the `?table=` QR param or can be entered manually
 4. Multi-language switcher works (locale from URL > cookie > Accept-Language)
 5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+   **Plans**: 5 plans
+   - [ ] 06-01-PLAN.md — Extract @resto/cart shared package (+ table/setTable) and re-point apps/website
+   - [ ] 06-02-PLAN.md — Expose isStopListed through /v1/menu (domain → controller → OpenAPI → api-client) + wire website flag
+   - [ ] 06-03-PLAN.md — qr-menu: switch to @resto/api-client/public, branded header, item detail modifiers + live price + add-to-cart
+   - [ ] 06-04-PLAN.md — qr-menu: cart drawer + quantity/remove, table binding, stop-list disabled, en/ru locale switcher
+   - [ ] 06-05-PLAN.md — qr-menu: hidden source maps + bundle test (QRM-11/12) + noindex shell
+         **UI hint**: yes
+         **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
 ### Phase 7: Ordering
 
