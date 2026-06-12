@@ -8,5 +8,7 @@
   "item.back": "Назад в меню",
   "item.priceFrom": "от {price} {currency}",
   "item.allergens": "Аллергены",
-  "item.variant.default": "по умолчанию"
+  "item.variant.default": "по умолчанию",
+  "item.addToCart": "В корзину",
+  "cart.open": "Корзина"
 }

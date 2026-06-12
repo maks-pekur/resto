@@ -8,5 +8,7 @@
   "item.back": "Back to menu",
   "item.priceFrom": "from {price} {currency}",
   "item.allergens": "Allergens",
-  "item.variant.default": "default"
+  "item.variant.default": "default",
+  "item.addToCart": "Add to cart",
+  "cart.open": "Cart"
 }

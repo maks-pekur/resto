@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchMenu, MenuNotFoundError } from './api/client';
-import type { MenuDto } from './api/types';
+import type { MenuDto } from '@resto/api-client/public';
 import { ItemDetail } from './components/ItemDetail';
 import { MenuView } from './components/MenuView';
 import { NotFound } from './components/NotFound';
@@ -47,6 +47,14 @@ export const App = () => {
   }, []);
 
   useEffect(() => {
+    if (state.kind !== 'ready') return;
+    const primaryColor = state.menu.brand?.theme?.primaryColor;
+    if (primaryColor) {
+      document.documentElement.style.setProperty('--resto-accent', primaryColor);
+    }
+  }, [state]);
+
+  useEffect(() => {
     const onPopState = (): void => {
       setRoute(parsePath(window.location.pathname));
     };
@@ -64,6 +72,11 @@ export const App = () => {
   const navigateToMenu = (): void => {
     window.history.pushState(null, '', '/');
     setRoute({ kind: 'menu' });
+  };
+
+  const [, setCartOpen] = useState(false);
+  const openCart = (): void => {
+    setCartOpen(true);
   };
 
   if (state.kind === 'loading') {
@@ -86,7 +99,8 @@ export const App = () => {
   if (route.kind === 'item') {
     const item = state.menu.items.find((i) => i.id === route.id);
     if (!item) return <NotFound />;
-    return <ItemDetail item={item} onBack={navigateToMenu} />;
+    const groups = state.menu.modifierGroups.filter((g) => item.modifierGroupIds.includes(g.id));
+    return <ItemDetail item={item} groups={groups} onBack={navigateToMenu} />;
   }
-  return <MenuView menu={state.menu} onSelectItem={navigateToItem} />;
+  return <MenuView menu={state.menu} onSelectItem={navigateToItem} onOpenCart={openCart} />;
 };

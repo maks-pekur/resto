@@ -32,9 +32,13 @@ interface CartState {
 }
 
 export function parseMinorUnits(value: string): number {
-  const [whole = '0', frac = ''] = value.split('.');
+  const trimmed = value.trim();
+  const negative = trimmed.startsWith('-');
+  const unsigned = negative ? trimmed.slice(1) : trimmed;
+  const [whole = '0', frac = ''] = unsigned.split('.');
   const fracPadded = frac.padEnd(2, '0').slice(0, 2);
-  return parseInt(whole, 10) * 100 + parseInt(fracPadded, 10);
+  const minor = parseInt(whole, 10) * 100 + parseInt(fracPadded, 10);
+  return negative ? -minor : minor;
 }
 
 export function formatMinorUnits(minor: number): string {

@@ -1,4 +1,4 @@
-import type { MenuItemDto } from '../api/types';
+import type { MenuItemDto } from '@resto/api-client/public';
 import { localized, t } from '../i18n';
 
 interface Props {

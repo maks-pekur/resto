@@ -6,6 +6,8 @@
   "license": "UNLICENSED",
   "type": "module",
   "dependencies": {
+    "@resto/api-client": "workspace:*",
+    "@resto/cart": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

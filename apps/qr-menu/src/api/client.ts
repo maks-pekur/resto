@@ -1,4 +1,4 @@
-import type { MenuDto } from './types';
+import type { MenuDto } from '@resto/api-client/public';
 
 const API_URL: string = (import.meta.env as Record<string, string | undefined>).VITE_API_URL ?? '';
 // `import.meta.env.DEV` is a static boolean Vite inlines at build time.

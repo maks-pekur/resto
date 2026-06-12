@@ -1,18 +1,14 @@
-import type { MenuDto, MenuItemDto } from '../api/types';
+import type { MenuDto, MenuItemDto } from '@resto/api-client/public';
 import { localized, t } from '../i18n';
 import { MenuItemCard } from './MenuItemCard';
 
 interface Props {
   readonly menu: MenuDto;
   readonly onSelectItem: (id: string) => void;
+  readonly onOpenCart: () => void;
 }
 
-/**
- * Top-level menu view: categories rendered as sections, each section's
- * items as a grid of cards. Empty menus get a friendly state instead of
- * a blank screen.
- */
-export const MenuView = ({ menu, onSelectItem }: Props) => {
+export const MenuView = ({ menu, onSelectItem, onOpenCart }: Props) => {
   const itemsByCategory = new Map<string, MenuItemDto[]>();
   for (const item of menu.items) {
     const list = itemsByCategory.get(item.categoryId);
@@ -34,7 +30,21 @@ export const MenuView = ({ menu, onSelectItem }: Props) => {
 
   return (
     <main className="menu">
-      <h1 className="menu__title">{t('menu.title')}</h1>
+      <header className="menu__header">
+        <div className="menu__brand">
+          {menu.brand?.theme?.logoUrl ? (
+            <img
+              className="menu__logo"
+              src={menu.brand.theme.logoUrl}
+              alt={menu.brand.displayName}
+            />
+          ) : null}
+          <h1 className="menu__title">{menu.brand ? menu.brand.displayName : t('menu.title')}</h1>
+        </div>
+        <button type="button" className="cart-trigger" onClick={onOpenCart}>
+          {t('cart.open')}
+        </button>
+      </header>
       {menu.categories.map((category) => {
         const items = itemsByCategory.get(category.id) ?? [];
         if (items.length === 0) return null;
