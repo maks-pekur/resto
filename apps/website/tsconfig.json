@@ -1,0 +1,14 @@
+{
+  "extends": "@resto/config-typescript/nextjs.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": ".",
+    "paths": {
+      "@/*": ["./*"]
+    },
+    "types": ["node"],
+    "exactOptionalPropertyTypes": false
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["node_modules", ".next", "dist"]
+}
