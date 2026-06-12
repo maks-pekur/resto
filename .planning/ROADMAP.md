@@ -275,7 +275,7 @@ Plans:
 **Wave 4** _(after Wave 3 — parallel: cart and content pages have no file overlap)_
 
 - [x] 05-04-PLAN.md — Cart: Zustand store (ORD-03-compatible, sessionStorage) + DeliveryPickupBanner + CartDrawer + promo stub + wire add-to-cart + header badge (SITE-03, SITE-05)
-- [ ] 05-06-PLAN.md — Seeded content pages About/Delivery/Contact/FAQ (plain-text, split-on-newline) + per-page SEO (SITE-10)
+- [x] 05-06-PLAN.md — Seeded content pages About/Delivery/Contact/FAQ (plain-text, split-on-newline) + per-page SEO (SITE-10)
 
 **Wave 5** _(after Wave 4)_
 
@@ -530,7 +530,7 @@ Notes:
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
-| 5. Customer Site                              | 4/6            | In Progress   |            |
+| 5. Customer Site                              | 5/6            | In Progress   |            |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
