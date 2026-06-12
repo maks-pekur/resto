@@ -1,7 +1,8 @@
 ---
 phase: 5
 slug: customer-site
-status: draft
+status: approved
+reviewed_at: 2026-06-12
 shadcn_initialized: true
 preset: new-york / neutral / css-variables / rsc / tsx / lucide
 created: 2026-06-12
@@ -371,10 +372,16 @@ No third-party registries declared for Phase 5. All components are either from t
 - [ ] Dimension 5 Spacing: PASS
 - [ ] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** APPROVED by gsd-ui-checker 2026-06-12 — 3 PASS, 3 FLAG (non-blocking), 0 BLOCK.
+
+## Checker Recommendations (non-blocking — fold into planning)
+
+- **Copywriting:** promo "Apply" button → "Apply Code" (verb+noun convention). Element is a 50%-opacity stub until Phase 11, so low risk.
+- **Visuals:** declare the primary focal point of the menu page (e.g. "menu item card grid is the primary visual anchor"); add `aria-label="Remove {item name} from cart"` to the `×` remove button in CartLineItem (missing from the a11y contract).
+- **Typography:** Label 14px vs Body 16px differ by 2px — acceptable only if Label always pairs with muted foreground; verify muted foreground at 14px meets 4.5:1 contrast on white before implementation, else bump Label to 13px.
 
 ---
 
 _Phase: 5-customer-site_
 _UI-SPEC created: 2026-06-12_
-_Status: draft — awaiting gsd-ui-checker verification_
+_Status: approved — gsd-ui-checker verified 2026-06-12 (3 FLAG, non-blocking)_
