@@ -527,6 +527,34 @@ importers:
         specifier: ^2.1.8
         version: 2.1.9(@types/node@25.8.0)(jsdom@25.0.1)(lightningcss@1.32.0)
 
+  packages/ui:
+    dependencies:
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+    devDependencies:
+      '@resto/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@resto/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      eslint:
+        specifier: ^10.4.0
+        version: 10.4.0(jiti@2.6.1)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   tools/scripts:
     dependencies:
       '@nestjs/common':
