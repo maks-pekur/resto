@@ -297,7 +297,7 @@ Plans:
 5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
    **Plans**: 5 plans
    - [x] 06-01-PLAN.md — Extract @resto/cart shared package (+ table/setTable) and re-point apps/website
-   - [ ] 06-02-PLAN.md — Expose isStopListed through /v1/menu (domain → controller → OpenAPI → api-client) + wire website flag
+   - [x] 06-02-PLAN.md — Expose isStopListed through /v1/menu (domain → controller → OpenAPI → api-client) + wire website flag
    - [ ] 06-03-PLAN.md — qr-menu: switch to @resto/api-client/public, branded header, item detail modifiers + live price + add-to-cart
    - [ ] 06-04-PLAN.md — qr-menu: cart drawer + quantity/remove, table binding, stop-list disabled, en/ru locale switcher
    - [ ] 06-05-PLAN.md — qr-menu: hidden source maps + bundle test (QRM-11/12) + noindex shell
@@ -536,7 +536,7 @@ Notes:
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
-| 6. QR-Menu Customer                           | 1/5            | In Progress   |            |
+| 6. QR-Menu Customer                           | 2/5            | In Progress   |            |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
