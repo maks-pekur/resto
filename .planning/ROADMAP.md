@@ -266,7 +266,7 @@ Plans:
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 05-02-PLAN.md — Tenant + locale middleware (subdomain/custom-domain + prod-safe dev ?tenant=), server-only /v1/menu client, env schema, i18n (en default), RSC layout with per-tenant theme injection (SITE-02, SITE-09)
+- [x] 05-02-PLAN.md — Tenant + locale middleware (subdomain/custom-domain + prod-safe dev ?tenant=), server-only /v1/menu client, env schema, i18n (en default), RSC layout with per-tenant theme injection (SITE-02, SITE-09)
 
 **Wave 3** _(after Wave 2)_
 
@@ -530,7 +530,7 @@ Notes:
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
-| 5. Customer Site                              | 1/6            | In Progress   |            |
+| 5. Customer Site                              | 2/6            | In Progress   |            |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |

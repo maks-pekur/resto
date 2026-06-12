@@ -107,14 +107,14 @@
 > `apps/website` from `.gitkeep` to working multi-tenant restaurant site (delivery / pickup orders). Phase 6 delivers the scaffold through cart entry; checkout cutover happens in Phase 8.
 
 - [x] **SITE-01**: `apps/website` scaffolded (Next.js 15 App Router with RSC, matches `apps/admin` stack)
-- [ ] **SITE-02**: Site renders the published menu for the resolved tenant (subdomain → tenant resolution)
+- [x] **SITE-02**: Site renders the published menu for the resolved tenant (subdomain → tenant resolution)
 - [ ] **SITE-03**: Guest chooses delivery or pickup mode
 - [ ] **SITE-04**: For delivery, guest enters address (geocoded), sees zone validity check inline
 - [ ] **SITE-05**: Guest sees cart, promo code field renders (non-functional until Phase 11), total breakdown (subtotal + delivery; modifiers and discounts wire in via Phase 7/8/11)
 - [ ] **SITE-06**: Guest provides contact info (name, phone) with optional account creation
 - [ ] **SITE-07**: Guest chooses order time (ASAP / scheduled interval)
 - [ ] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
-- [ ] **SITE-09**: Site supports per-tenant subdomain (`<slug>.resto.app`) and custom domain (`tenant_domains` table)
+- [x] **SITE-09**: Site supports per-tenant subdomain (`<slug>.resto.app`) and custom domain (`tenant_domains` table)
 - [ ] **SITE-10**: Operator-editable content pages (About / Delivery / Contact / FAQ)
 
 ### Ordering (`ORD`)
@@ -445,13 +445,13 @@
 | QRM-11      | Phase 5       | Pending  |
 | QRM-12      | Phase 5       | Pending  |
 | SITE-01     | Phase 6       | Complete |
-| SITE-02     | Phase 6       | Pending  |
+| SITE-02     | Phase 6       | Complete |
 | SITE-03     | Phase 6       | Pending  |
 | SITE-04     | Phase 6       | Pending  |
 | SITE-05     | Phase 6       | Pending  |
 | SITE-06     | Phase 6       | Pending  |
 | SITE-07     | Phase 6       | Pending  |
-| SITE-09     | Phase 6       | Pending  |
+| SITE-09     | Phase 6       | Complete |
 | SITE-10     | Phase 6       | Pending  |
 | ORD-01      | Phase 7       | Pending  |
 | ORD-02      | Phase 7       | Pending  |
