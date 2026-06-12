@@ -4,23 +4,21 @@ import { localized, t } from '../i18n';
 interface Props {
   readonly item: MenuItemDto;
   readonly onSelect: (id: string) => void;
+  readonly isStopListed?: boolean;
 }
 
-/**
- * Single menu-item tile. Lazy-loads the image; the placeholder keeps
- * layout stable while the photo arrives, which matters for LCP on slow
- * cellular connections.
- */
-export const MenuItemCard = ({ item, onSelect }: Props) => {
+export const MenuItemCard = ({ item, onSelect, isStopListed = false }: Props) => {
   const onActivate = (): void => {
+    if (isStopListed) return;
     onSelect(item.id);
   };
   return (
     <button
       type="button"
-      className="menu-item"
+      className={['menu-item', isStopListed ? 'menu-item--disabled' : ''].join(' ').trim()}
       onClick={onActivate}
       aria-label={localized(item.name)}
+      aria-disabled={isStopListed ? 'true' : undefined}
     >
       {item.imageUrl ? (
         <img
@@ -38,9 +36,13 @@ export const MenuItemCard = ({ item, onSelect }: Props) => {
         {item.description && (
           <p className="menu-item__description">{localized(item.description)}</p>
         )}
-        <p className="menu-item__price" aria-label={`${item.basePrice} ${item.currency}`}>
-          {t('item.priceFrom', { price: item.basePrice, currency: item.currency })}
-        </p>
+        {isStopListed ? (
+          <p className="menu-item__unavailable">{t('item.unavailable')}</p>
+        ) : (
+          <p className="menu-item__price" aria-label={`${item.basePrice} ${item.currency}`}>
+            {t('item.priceFrom', { price: item.basePrice, currency: item.currency })}
+          </p>
+        )}
       </div>
     </button>
   );

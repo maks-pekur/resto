@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useCartStore } from '@resto/cart';
 import { fetchMenu, MenuNotFoundError } from './api/client';
 import type { MenuDto } from '@resto/api-client/public';
 import { ItemDetail } from './components/ItemDetail';
 import { MenuView } from './components/MenuView';
 import { NotFound } from './components/NotFound';
+import { sanitizeTable } from './components/TableBanner';
 import { t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
@@ -74,10 +76,16 @@ export const App = () => {
     setRoute({ kind: 'menu' });
   };
 
-  const [, setCartOpen] = useState(false);
-  const openCart = (): void => {
-    setCartOpen(true);
-  };
+  const [cartOpen, setCartOpen] = useState(false);
+
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get('table');
+    if (raw == null) return;
+    const sanitized = sanitizeTable(raw);
+    if (sanitized) {
+      useCartStore.getState().setTable(sanitized);
+    }
+  }, []);
 
   if (state.kind === 'loading') {
     return (
@@ -102,5 +110,17 @@ export const App = () => {
     const groups = state.menu.modifierGroups.filter((g) => item.modifierGroupIds.includes(g.id));
     return <ItemDetail item={item} groups={groups} onBack={navigateToMenu} />;
   }
-  return <MenuView menu={state.menu} onSelectItem={navigateToItem} onOpenCart={openCart} />;
+  return (
+    <MenuView
+      menu={state.menu}
+      onSelectItem={navigateToItem}
+      cartOpen={cartOpen}
+      onOpenCart={() => {
+        setCartOpen(true);
+      }}
+      onCloseCart={() => {
+        setCartOpen(false);
+      }}
+    />
+  );
 };

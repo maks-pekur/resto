@@ -10,5 +10,20 @@
   "item.allergens": "Allergens",
   "item.variant.default": "default",
   "item.addToCart": "Add to cart",
-  "cart.open": "Cart"
+  "item.unavailable": "Unavailable today",
+  "item.qtyDecrease": "Decrease quantity of {name}",
+  "item.qtyIncrease": "Increase quantity of {name}",
+  "item.remove": "Remove {name} from cart",
+  "cart.open": "Cart",
+  "cart.title": "Your cart",
+  "cart.empty": "Your cart is empty.",
+  "cart.subtotal": "Subtotal",
+  "cart.clear": "Clear cart",
+  "cart.close": "Close",
+  "cart.table": "Table {table}",
+  "table.current": "Table {table}",
+  "table.change": "Change",
+  "table.prompt": "Enter your table number",
+  "table.confirm": "Confirm",
+  "locale.label": "Language"
 }

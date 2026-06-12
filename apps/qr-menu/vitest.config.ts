@@ -9,4 +9,7 @@ export default defineConfig({
     setupFiles: ['./test/setup.ts'],
     include: ['test/**/*.{spec,test}.{ts,tsx}', 'src/**/*.{spec,test}.{ts,tsx}'],
   },
+  resolve: {
+    dedupe: ['react', 'react-dom'],
+  },
 });

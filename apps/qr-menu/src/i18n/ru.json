@@ -10,5 +10,20 @@
   "item.allergens": "Аллергены",
   "item.variant.default": "по умолчанию",
   "item.addToCart": "В корзину",
-  "cart.open": "Корзина"
+  "item.unavailable": "Сегодня недоступно",
+  "item.qtyDecrease": "Уменьшить количество {name}",
+  "item.qtyIncrease": "Увеличить количество {name}",
+  "item.remove": "Удалить {name} из корзины",
+  "cart.open": "Корзина",
+  "cart.title": "Ваша корзина",
+  "cart.empty": "Ваша корзина пуста.",
+  "cart.subtotal": "Итого",
+  "cart.clear": "Очистить корзину",
+  "cart.close": "Закрыть",
+  "cart.table": "Стол {table}",
+  "table.current": "Стол {table}",
+  "table.change": "Изменить",
+  "table.prompt": "Введите номер стола",
+  "table.confirm": "Подтвердить",
+  "locale.label": "Язык"
 }

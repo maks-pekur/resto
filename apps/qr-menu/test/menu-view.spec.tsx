@@ -37,18 +37,27 @@ const buildMenu = (): MenuDto => ({
   modifierGroups: [],
 });
 
+const renderMenu = (menu: MenuDto, onSelectItem = vi.fn()) =>
+  render(
+    <MenuView
+      menu={menu}
+      onSelectItem={onSelectItem}
+      cartOpen={false}
+      onOpenCart={vi.fn()}
+      onCloseCart={vi.fn()}
+    />,
+  );
+
 describe('MenuView', () => {
   it('renders categories and item names', () => {
-    render(<MenuView menu={buildMenu()} onSelectItem={vi.fn()} onOpenCart={vi.fn()} />);
+    renderMenu(buildMenu());
     expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 2, name: /Pizza/ })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Margherita/ })).toBeInTheDocument();
   });
 
   it('renders an item card with its price and photo', () => {
-    const { container } = render(
-      <MenuView menu={buildMenu()} onSelectItem={vi.fn()} onOpenCart={vi.fn()} />,
-    );
+    const { container } = renderMenu(buildMenu());
     expect(screen.getByText(/12\.50/)).toBeInTheDocument();
     expect(container.querySelector('img.menu-item__image')).toHaveAttribute(
       'src',
@@ -58,14 +67,14 @@ describe('MenuView', () => {
 
   it('invokes onSelectItem when an item is activated', () => {
     const onSelect = vi.fn();
-    render(<MenuView menu={buildMenu()} onSelectItem={onSelect} onOpenCart={vi.fn()} />);
+    renderMenu(buildMenu(), onSelect);
     screen.getByRole('button', { name: /Margherita/ }).click();
     expect(onSelect).toHaveBeenCalledWith('item-1');
   });
 
   it('renders an empty state when there are no items', () => {
     const empty: MenuDto = { ...buildMenu(), items: [], categories: [] };
-    render(<MenuView menu={empty} onSelectItem={vi.fn()} onOpenCart={vi.fn()} />);
+    renderMenu(empty);
     expect(screen.getByText(/menu is empty|empty right now/i)).toBeInTheDocument();
   });
 });

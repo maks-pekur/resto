@@ -1,14 +1,22 @@
 import type { MenuDto, MenuItemDto } from '@resto/api-client/public';
+import { useCartStore, selectItemCount } from '@resto/cart';
 import { localized, t } from '../i18n';
 import { MenuItemCard } from './MenuItemCard';
+import { TableBanner } from './TableBanner';
+import { LocaleSwitcher } from './LocaleSwitcher';
+import { CartDrawer } from './CartDrawer';
 
 interface Props {
   readonly menu: MenuDto;
   readonly onSelectItem: (id: string) => void;
+  readonly cartOpen: boolean;
   readonly onOpenCart: () => void;
+  readonly onCloseCart: () => void;
 }
 
-export const MenuView = ({ menu, onSelectItem, onOpenCart }: Props) => {
+export const MenuView = ({ menu, onSelectItem, cartOpen, onOpenCart, onCloseCart }: Props) => {
+  const itemCount = useCartStore(selectItemCount);
+
   const itemsByCategory = new Map<string, MenuItemDto[]>();
   for (const item of menu.items) {
     const list = itemsByCategory.get(item.categoryId);
@@ -41,10 +49,17 @@ export const MenuView = ({ menu, onSelectItem, onOpenCart }: Props) => {
           ) : null}
           <h1 className="menu__title">{menu.brand ? menu.brand.displayName : t('menu.title')}</h1>
         </div>
-        <button type="button" className="cart-trigger" onClick={onOpenCart}>
-          {t('cart.open')}
-        </button>
+        <div className="menu__actions">
+          <LocaleSwitcher />
+          <button type="button" className="cart-trigger" onClick={onOpenCart}>
+            {t('cart.open')}
+            {itemCount > 0 && <span className="cart-trigger__badge">{itemCount}</span>}
+          </button>
+        </div>
       </header>
+
+      <TableBanner />
+
       {menu.categories.map((category) => {
         const items = itemsByCategory.get(category.id) ?? [];
         if (items.length === 0) return null;
@@ -58,13 +73,19 @@ export const MenuView = ({ menu, onSelectItem, onOpenCart }: Props) => {
             <ul className="menu__items">
               {items.map((item) => (
                 <li key={item.id}>
-                  <MenuItemCard item={item} onSelect={onSelectItem} />
+                  <MenuItemCard
+                    item={item}
+                    onSelect={onSelectItem}
+                    isStopListed={item.isStopListed}
+                  />
                 </li>
               ))}
             </ul>
           </section>
         );
       })}
+
+      <CartDrawer open={cartOpen} onClose={onCloseCart} currency={menu.currency} />
     </main>
   );
 };

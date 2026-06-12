@@ -5,7 +5,16 @@ const RESOURCES: Record<string, Record<string, string>> = { en, ru };
 
 export type Locale = keyof typeof RESOURCES;
 
+const isLocale = (value: string | undefined): value is Locale =>
+  value != null && value in RESOURCES;
+
 const detectLocale = (): Locale => {
+  if (typeof window !== 'undefined') {
+    const fromPath = /^\/(en|ru)(?:\/|$)/.exec(window.location.pathname)?.[1];
+    if (isLocale(fromPath)) return fromPath;
+    const fromCookie = /(?:^|;\s*)locale=([^;]+)/.exec(document.cookie)?.[1];
+    if (isLocale(fromCookie)) return fromCookie;
+  }
   const candidates: string[] =
     typeof navigator !== 'undefined' ? [navigator.language, ...navigator.languages] : ['en'];
   for (const candidate of candidates) {
