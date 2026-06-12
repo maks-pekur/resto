@@ -817,7 +817,7 @@ const DEV_DEFAULTS = {
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **packages/ui initialization: when and how?**
    - What we know: `packages/ui` exists as an empty directory. `packages/api-client` has a `package.json` that serves as a template.

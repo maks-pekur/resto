@@ -257,9 +257,31 @@ Plans:
 3. Guest sees cart with promo code field (non-functional placeholder until Phase 11) and a total breakdown showing subtotal; delivery fee, modifiers, and discounts wire in via Phase 7/8/11
 4. Guest provides contact info and the checkout button is visible but disabled with a "coming soon" state until Phase 8 completes; no real payment flow is initiated in this phase
 5. Operator-editable content pages (About, Delivery, Contact, FAQ) are accessible from the site
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+   **Plans**: 6 plans
+
+Plans:
+**Wave 1**
+
+- [ ] 05-01-PLAN.md — Scaffold apps/website (Next.js App Router + RSC, admin stack) + init @resto/ui + canonical MenuDto types in @resto/api-client (SITE-01) [package legitimacy gate]
+
+**Wave 2** _(after Wave 1)_
+
+- [ ] 05-02-PLAN.md — Tenant + locale middleware (subdomain/custom-domain + prod-safe dev ?tenant=), server-only /v1/menu client, env schema, i18n (en default), RSC layout with per-tenant theme injection (SITE-02, SITE-09)
+
+**Wave 3** _(after Wave 2)_
+
+- [ ] 05-03-PLAN.md — Menu render: RSC page + tenant gating (not-found/suspended/error) + TenantHeader + MenuItemCard grid + ItemModal (modifiers + live price) + CategoryNav (SITE-02)
+
+**Wave 4** _(after Wave 3 — parallel: cart and content pages have no file overlap)_
+
+- [ ] 05-04-PLAN.md — Cart: Zustand store (ORD-03-compatible, sessionStorage) + DeliveryPickupBanner + CartDrawer + promo stub + wire add-to-cart + header badge (SITE-03, SITE-05)
+- [ ] 05-06-PLAN.md — Seeded content pages About/Delivery/Contact/FAQ (plain-text, split-on-newline) + per-page SEO (SITE-10)
+
+**Wave 5** _(after Wave 4)_
+
+- [ ] 05-05-PLAN.md — Single-page checkout: address+zone stub + contact form (RHF) + ASAP/scheduled time + order summary + disabled "coming soon" pay button (SITE-04, SITE-06, SITE-07)
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
 ### Phase 6: QR-Menu Customer
 
