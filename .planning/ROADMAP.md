@@ -27,7 +27,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 3: Auth Completion (Security Core)** - Close production-readiness gaps in auth so real operators can be onboarded: email adapter (Resend + MailHog + in-memory), invitations, password reset, email verification, secure cookies, NATS DLQ, RBAC role seeding; minimal invite UX in settings. Full operator self-service UX (team management page + 2FA lost-device flow) deferred to Phase 17 _(scope split via persona review 2026-05-29 — CTO HIGH-1)_ (completed 2026-05-30)
 - [x] **Phase 4a: Catalog Schema + API** - Foundational menu domain redesign aligned with iiko nomenclature model; Drizzle schema migration, DTO updates, `/v1/menu` DTO extension, draft/publish snapshot + revert capability — backend only, no admin UI _(split from Phase 4 on 2026-05-30 — CTO HIGH-2 + Skeptic HIGH-4)_ (completed 2026-05-31)
 - [x] **Phase 4b: Catalog Admin UI** - Full CRUD admin UX on top of finalized catalog schema; categories, items, modifiers, modifier groups, sizes, stop-list, photos, draft/publish flow — designed via `/gsd:ui-phase` then `/gsd:discuss-phase` before planning _(split from Phase 4 on 2026-05-30 — labor-intensive UI work isolated per user request)_ (completed 2026-06-01)
-- [ ] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_
+- [x] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_ (completed 2026-06-12)
 - [ ] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding)
 - [ ] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11)
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: managed Postgres (the 3-role schema is already designed), managed object storage (R2/S3), pragmatic hosting (Fly/Railway/ECS — not full k8s), CD on top of the existing CI, runtime secret injection _(added 2026-06-12 scope rebalance — CTO review HIGH: no prod deploy existed)_
@@ -279,7 +279,7 @@ Plans:
 
 **Wave 5** _(after Wave 4)_
 
-- [ ] 05-05-PLAN.md — Single-page checkout: address+zone stub + contact form (RHF) + ASAP/scheduled time + order summary + disabled "coming soon" pay button (SITE-04, SITE-06, SITE-07)
+- [x] 05-05-PLAN.md — Single-page checkout: address+zone stub + contact form (RHF) + ASAP/scheduled time + order summary + disabled "coming soon" pay button (SITE-04, SITE-06, SITE-07)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
 
@@ -530,7 +530,7 @@ Notes:
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
-| 5. Customer Site                              | 5/6            | In Progress   |            |
+| 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
