@@ -106,7 +106,7 @@
 
 > `apps/website` from `.gitkeep` to working multi-tenant restaurant site (delivery / pickup orders). Phase 6 delivers the scaffold through cart entry; checkout cutover happens in Phase 8.
 
-- [ ] **SITE-01**: `apps/website` scaffolded (Next.js 15 App Router with RSC, matches `apps/admin` stack)
+- [x] **SITE-01**: `apps/website` scaffolded (Next.js 15 App Router with RSC, matches `apps/admin` stack)
 - [ ] **SITE-02**: Site renders the published menu for the resolved tenant (subdomain → tenant resolution)
 - [ ] **SITE-03**: Guest chooses delivery or pickup mode
 - [ ] **SITE-04**: For delivery, guest enters address (geocoded), sees zone validity check inline
@@ -444,7 +444,7 @@
 | QRM-10      | Phase 5       | Pending  |
 | QRM-11      | Phase 5       | Pending  |
 | QRM-12      | Phase 5       | Pending  |
-| SITE-01     | Phase 6       | Pending  |
+| SITE-01     | Phase 6       | Complete |
 | SITE-02     | Phase 6       | Pending  |
 | SITE-03     | Phase 6       | Pending  |
 | SITE-04     | Phase 6       | Pending  |

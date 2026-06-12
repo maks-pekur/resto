@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 UI-SPEC approved — ready for /gsd-plan-phase 5
-last_updated: '2026-06-12T11:52:08.349Z'
-last_activity: 2026-06-12 -- Phase 5 ui-phase complete; UI-SPEC verified + approved
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: '2026-06-12T12:52:15.905Z'
+last_activity: 2026-06-12
 progress:
-  total_phases: 11
+  total_phases: 19
   completed_phases: 5
-  total_plans: 32
-  completed_plans: 32
-  percent: 45
+  total_plans: 38
+  completed_plans: 33
+  percent: 26
 ---
 
 # Project State
@@ -21,17 +21,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 5 — Customer Site (next in MVP-1 spine)
+**Current focus:** Phase 05 — customer-site
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 4b complete + verified (typecheck/lint/168 unit green; catalog e2e 16/16). MVP-1 rescoped to revenue spine 2026-06-12.
+Phase: 05 (customer-site) — EXECUTING
+Plan: 2 of 6
 Next: Phase 5 — Customer Site
-Status: 5 of 11 MVP-1 spine phases done; Phases 9,11-16 moved to MVP-2 (nothing deleted)
-Last activity: 2026-06-12 -- ROADMAP rescope (revenue-spine cut) + Phase 7.5 Production Deploy added
+Status: Ready to execute
+Last activity: 2026-06-12
 
-Progress: [████░░░░░] 45% (MVP-1 spine)
+Progress: [█████████░] 87%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -74,6 +75,7 @@ _Updated after each plan completion_
 | Phase 04b-catalog-admin-ui P03 | ~55min | 4 tasks | 14 files |
 | Phase 04b P04 | 11min | - tasks | - files |
 | Phase 04b-catalog-admin-ui P05 | 78min | 3 tasks | 10 files |
+| Phase 05-customer-site P05-01 | 20min | 3 tasks | 20 files |
 
 ## Accumulated Context
 
@@ -147,6 +149,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-12T11:52:08.341Z
+Last session: 2026-06-12T12:52:15.896Z
 Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-customer-site/05-UI-SPEC.md
+Resume file: None

@@ -262,7 +262,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 05-01-PLAN.md — Scaffold apps/website (Next.js App Router + RSC, admin stack) + init @resto/ui + canonical MenuDto types in @resto/api-client (SITE-01) [package legitimacy gate]
+- [x] 05-01-PLAN.md — Scaffold apps/website (Next.js App Router + RSC, admin stack) + init @resto/ui + canonical MenuDto types in @resto/api-client (SITE-01) [package legitimacy gate]
 
 **Wave 2** _(after Wave 1)_
 
@@ -530,7 +530,7 @@ Notes:
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
-| 5. Customer Site                              | 0/?            | Not started   | -          |
+| 5. Customer Site                              | 1/6            | In Progress   |            |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
