@@ -1,0 +1,55 @@
+{
+  "cart": {
+    "empty": "Your cart is empty",
+    "emptyBody": "Browse the menu and add items to get started.",
+    "triggerEmpty": "Your cart is empty",
+    "triggerItems": "{n} item",
+    "triggerItemsPlural": "{n} items",
+    "addToCart": "Add to cart",
+    "goToCheckout": "Go to checkout",
+    "removeItem": "Remove item",
+    "clearCart": "Clear cart",
+    "clearCartHeading": "Clear your cart?",
+    "clearCartBody": "All items will be removed.",
+    "clearCartConfirm": "Clear cart",
+    "clearCartCancel": "Keep items",
+    "removedFromCart": "Removed from cart",
+    "undo": "Undo",
+    "addedToCart": "Added to cart"
+  },
+  "menu": {
+    "emptyHeading": "Menu unavailable",
+    "emptyBody": "This restaurant hasn't published their menu yet. Check back soon.",
+    "unavailableToday": "Unavailable today"
+  },
+  "checkout": {
+    "placeOrder": "Place order",
+    "addressPlaceholder": "Enter your delivery address",
+    "zoneValid": "We deliver to this area",
+    "zoneInvalid": "We don't deliver to this address yet. Try pickup instead.",
+    "promoPlaceholder": "Promo code",
+    "promoApply": "Apply",
+    "promoHelper": "Promo codes will be available soon.",
+    "orderTimeAsap": "As soon as possible",
+    "orderTimeScheduled": "Schedule for later",
+    "contactNamePlaceholder": "Your name",
+    "contactPhonePlaceholder": "Phone number",
+    "paymentComingSoon": "Payment processing coming soon",
+    "deliveryMode": "Delivery",
+    "pickupMode": "Pickup",
+    "modePrompt": "How would you like to receive your order?"
+  },
+  "content": {
+    "aboutHeading": "About {restaurantName}",
+    "deliveryHeading": "Delivery Information",
+    "contactHeading": "Contact Us",
+    "faqHeading": "Frequently Asked Questions"
+  },
+  "errors": {
+    "tenantNotFound": "Restaurant not found",
+    "tenantNotFoundBody": "This restaurant isn't on RestOS yet. If you followed a link, it may have changed.",
+    "tenantSuspended": "This restaurant is temporarily unavailable.",
+    "errorBoundaryHeading": "Something went wrong",
+    "errorBoundaryBody": "We're having trouble loading the menu. Try refreshing the page."
+  }
+}

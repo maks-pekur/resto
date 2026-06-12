@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { Toaster } from '@/components/ui/sonner';
+import { fetchMenuPublic } from '@/lib/api-client';
+import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
 import './globals.css';
 
 const inter = Inter({
@@ -23,12 +26,30 @@ export const viewport: Viewport = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const locale = await getLocale();
   const messages = await getMessages();
+
+  const tenantSlug = await getTenantSlugFromHeaders();
+
+  let primaryColor: string | null = null;
+  if (tenantSlug) {
+    try {
+      const menu = await fetchMenuPublic(tenantSlug);
+      primaryColor = menu.brand?.theme?.primaryColor ?? null;
+    } catch {
+      // cold Redis / not-found / suspended — render default theme
+    }
+  }
+
+  const themeStyle = primaryColor
+    ? ({ '--primary': primaryColor } as React.CSSProperties)
+    : undefined;
+
   return (
-    <html lang={locale} suppressHydrationWarning className={inter.variable}>
+    <html lang={locale} suppressHydrationWarning className={inter.variable} style={themeStyle}>
       <head />
       <body className="bg-background text-foreground min-h-screen antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
           {children}
+          <Toaster />
         </NextIntlClientProvider>
       </body>
     </html>
