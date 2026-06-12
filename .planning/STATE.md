@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 5 complete + verified (9/9 SITE reqs) — next Phase 6
-last_updated: '2026-06-12T13:04:34.630Z'
-last_activity: 2026-06-12 -- Phase 5 (Customer Site) executed + verified, all 6 plans shipped
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: '2026-06-12T17:34:31.556Z'
+last_activity: 2026-06-12 -- Phase 06 execution started
 progress:
-  total_phases: 11
+  total_phases: 19
   completed_phases: 6
-  total_plans: 38
+  total_plans: 43
   completed_plans: 38
-  percent: 55
+  percent: 32
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 6 — QR-Menu Customer (next in MVP-1 spine; Phase 5 complete)
+**Current focus:** Phase 06 — qr-menu-customer
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 05 (customer-site) — COMPLETE + VERIFIED (9/9 SITE reqs; 47 website tests, build green)
-Plan: 6 of 6 (all SUMMARY.md present; 05-VERIFICATION.md passed)
+Phase: 06 (qr-menu-customer) — EXECUTING
+Plan: 1 of 5
 Next: Phase 6 — QR-Menu Customer (reuses /v1/menu + the cart/menu patterns from Phase 5)
-Status: Phase 5 shipped; 6 of 11 MVP-1 spine phases done
-Last activity: 2026-06-12 -- Phase 5 executed + verified
+Status: Executing Phase 06
+Last activity: 2026-06-12 -- Phase 06 execution started
 
 Progress: [█████████░] 89%
 
