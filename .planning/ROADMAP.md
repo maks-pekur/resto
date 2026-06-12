@@ -270,7 +270,7 @@ Plans:
 
 **Wave 3** _(after Wave 2)_
 
-- [ ] 05-03-PLAN.md — Menu render: RSC page + tenant gating (not-found/suspended/error) + TenantHeader + MenuItemCard grid + ItemModal (modifiers + live price) + CategoryNav (SITE-02)
+- [x] 05-03-PLAN.md — Menu render: RSC page + tenant gating (not-found/suspended/error) + TenantHeader + MenuItemCard grid + ItemModal (modifiers + live price) + CategoryNav (SITE-02)
 
 **Wave 4** _(after Wave 3 — parallel: cart and content pages have no file overlap)_
 
@@ -530,7 +530,7 @@ Notes:
 | 3. Auth Completion (Security Core)            | 5/5            | Complete      | 2026-05-30 |
 | 4a. Catalog Schema + API                      | 7/7            | Complete      | 2026-05-31 |
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
-| 5. Customer Site                              | 2/6            | In Progress   |            |
+| 5. Customer Site                              | 3/6            | In Progress   |            |
 | 6. QR-Menu Customer                           | 0/?            | Not started   | -          |
 | 7. Ordering                                   | 0/?            | Not started   | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
