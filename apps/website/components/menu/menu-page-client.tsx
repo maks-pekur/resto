@@ -2,11 +2,16 @@
 
 import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 import type { MenuDto, MenuItemDto } from '@resto/api-client/public';
 import { TenantHeader } from '@/components/layout/tenant-header';
 import { CategoryNav } from '@/components/menu/category-nav';
 import { MenuItemCard } from '@/components/menu/menu-item-card';
 import { ItemModal } from '@/components/menu/item-modal';
+import { DeliveryPickupBanner } from '@/components/menu/delivery-pickup-banner';
+import { CartDrawer } from '@/components/menu/cart-drawer';
+import { useCartStore, selectItemCount } from '@/store/cart';
+import { useHasHydrated } from '@/hooks/use-cart-store';
 import { localized } from '@/lib/i18n/localized';
 
 interface MenuPageClientProps {
@@ -16,9 +21,16 @@ interface MenuPageClientProps {
 export function MenuPageClient({ menu }: MenuPageClientProps) {
   const locale = useLocale();
   const t = useTranslations('menu');
+  const tCart = useTranslations('cart');
 
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [cartOpen, setCartOpen] = useState(false);
+
+  const addItem = useCartStore((s) => s.addItem);
+  const itemCount = useCartStore(selectItemCount);
+  const hasHydrated = useHasHydrated();
+  const displayCount = hasHydrated ? itemCount : 0;
 
   const selectedItem: MenuItemDto | null =
     selectedItemId != null ? (menu.items.find((it) => it.id === selectedItemId) ?? null) : null;
@@ -53,9 +65,15 @@ export function MenuPageClient({ menu }: MenuPageClientProps) {
 
   return (
     <>
-      <TenantHeader brand={menu.brand} />
+      <TenantHeader
+        brand={menu.brand}
+        cartItemCount={displayCount}
+        onOpenCart={() => {
+          setCartOpen(true);
+        }}
+      />
 
-      {/* Mount point for DeliveryPickupBanner (05-04) — insert as first child here */}
+      <DeliveryPickupBanner />
 
       <CategoryNav categories={populatedCategories} />
 
@@ -97,7 +115,7 @@ export function MenuPageClient({ menu }: MenuPageClientProps) {
         )}
       </main>
 
-      {/* Mount point for CartDrawer (05-04) — insert as sibling here */}
+      <CartDrawer open={cartOpen} onOpenChange={setCartOpen} currency={menu.currency} />
 
       <ItemModal
         item={selectedItem}
@@ -105,7 +123,10 @@ export function MenuPageClient({ menu }: MenuPageClientProps) {
         currency={menu.currency}
         open={modalOpen}
         onClose={handleCloseModal}
-        onAddToCart={(_lineItem) => undefined}
+        onAddToCart={(lineItem) => {
+          addItem(lineItem);
+          toast(tCart('addedToCart'));
+        }}
       />
     </>
   );

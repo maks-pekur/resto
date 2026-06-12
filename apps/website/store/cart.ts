@@ -2,10 +2,11 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface CartModifier {
-  readonly modifierGroupId: string;
   readonly optionId: string;
   readonly name: string;
   readonly priceDelta: string;
+  readonly modifierGroupId?: string;
+  readonly amount?: number;
 }
 
 export interface CartLineItem {

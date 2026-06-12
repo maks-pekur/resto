@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { localized } from '@/lib/i18n/localized';
-import type { CartLineItem, CartModifier } from '@/store/cart-types';
+import type { CartLineItem, CartModifier } from '@/store/cart';
 
 interface ItemModalProps {
   item: MenuItemDto | null;
