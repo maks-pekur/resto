@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: context exhaustion at 75% (2026-05-31)
+stopped_at: Phase 5 context gathered (2026-06-12)
 last_updated: '2026-06-12T00:00:00.000Z'
-last_activity: 2026-06-12 -- MVP-1 rescoped to revenue spine; Phases 9,11-16 moved to MVP-2
+last_activity: 2026-06-12 -- Phase 5 discuss-phase complete; CONTEXT.md ready for plan-phase
 progress:
   total_phases: 11
   completed_phases: 5
@@ -147,7 +147,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-05-31T22:01:18.699Z
-Stopped at: context exhaustion at 75% (2026-05-31)
-Resume file:
-None
+Last session: 2026-06-12 -- Phase 5 discuss-phase
+Stopped at: Phase 5 context gathered — ready for /gsd-plan-phase 5
+Resume file: .planning/phases/05-customer-site/05-CONTEXT.md
