@@ -117,7 +117,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       ]);
 
       const stoppedItemIds = new Set(stopListRows.map((r) => r.itemId));
-      const itemsRows = allItemsRows.filter((r) => !stoppedItemIds.has(r.id));
 
       const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
         scoped.selectFrom(schema.menuItemSizes),
@@ -141,7 +140,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const optionsByModifierGroup = groupBy(optionsRows, (r) => r.modifierGroupId);
 
       const items = await Promise.all(
-        itemsRows.map<Promise<PublishedMenuItem>>(async (r) => {
+        allItemsRows.map<Promise<PublishedMenuItem>>(async (r) => {
           const photos = await this.signPhotos(r.photos);
           return {
             id: MenuItemId.parse(r.id),
@@ -170,6 +169,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
               MenuModifierId.parse(m.modifierGroupId),
             ),
+            isStopListed: stoppedItemIds.has(r.id),
           };
         }),
       );
@@ -276,6 +276,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: v.sortOrder,
         })),
         modifierGroupIds: links.map((m) => MenuModifierId.parse(m.modifierGroupId)),
+        isStopListed: false,
       };
     });
   }

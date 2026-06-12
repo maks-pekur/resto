@@ -55,6 +55,7 @@ export interface MenuItemDto {
   sortOrder: number;
   sizes: readonly MenuItemSizeDto[];
   modifierGroupIds: readonly string[];
+  isStopListed: boolean;
 }
 
 export interface MenuCategoryDto {

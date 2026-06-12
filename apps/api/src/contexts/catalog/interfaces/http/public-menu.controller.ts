@@ -52,6 +52,7 @@ const PublishedMenuItemSchema = z.object({
   nutritionEstimated: z.boolean(),
   sizes: z.array(PublishedMenuItemSizeSchema),
   modifierGroupIds: z.array(z.string().uuid()),
+  isStopListed: z.boolean(),
 });
 
 const PublishedMenuCategorySchema = z.object({

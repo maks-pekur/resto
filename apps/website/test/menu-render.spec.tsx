@@ -36,6 +36,7 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      isStopListed: false,
     },
     {
       id: 'item-2',
@@ -56,6 +57,7 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      isStopListed: false,
     },
   ],
   modifierGroups: [],

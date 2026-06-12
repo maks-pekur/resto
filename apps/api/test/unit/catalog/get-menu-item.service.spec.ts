@@ -29,6 +29,7 @@ const buildItem = (): PublishedMenuItem => ({
   nutritionEstimated: false,
   sizes: [],
   modifierGroupIds: [],
+  isStopListed: false,
 });
 
 const buildRepo = (): CatalogRepository =>
