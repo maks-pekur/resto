@@ -1,6 +1,6 @@
 'use client';
 
-import { useCartStore, selectSubtotal, type CartLineItem } from '@/store/cart';
+import { useCartStore, selectSubtotal, type CartLineItem } from '@resto/cart';
 
 function parseMinorUnits(value: string): number {
   const [whole = '0', frac = ''] = value.split('.');

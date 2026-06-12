@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useCartStore, selectSubtotal, selectItemCount } from '../store/cart';
-import type { CartLineItem } from '../store/cart';
+import { useCartStore, selectSubtotal, selectItemCount } from '@resto/cart';
+import type { CartLineItem } from '@resto/cart';
 
 function makeItem(
   overrides: Partial<Omit<CartLineItem, 'quantity'>> = {},

@@ -22,20 +22,22 @@ export interface CartLineItem {
 interface CartState {
   readonly mode: 'delivery' | 'pickup' | null;
   readonly items: CartLineItem[];
+  readonly table: string | null;
   setMode: (mode: 'delivery' | 'pickup') => void;
+  setTable: (table: string | null) => void;
   addItem: (item: Omit<CartLineItem, 'quantity'>) => void;
   updateQuantity: (itemId: string, sizeId: string | null, delta: number) => void;
   removeItem: (itemId: string, sizeId: string | null) => void;
   clearCart: () => void;
 }
 
-function parseMinorUnits(value: string): number {
+export function parseMinorUnits(value: string): number {
   const [whole = '0', frac = ''] = value.split('.');
   const fracPadded = frac.padEnd(2, '0').slice(0, 2);
   return parseInt(whole, 10) * 100 + parseInt(fracPadded, 10);
 }
 
-function formatMinorUnits(minor: number): string {
+export function formatMinorUnits(minor: number): string {
   const whole = Math.floor(minor / 100);
   const frac = Math.abs(minor % 100)
     .toString()
@@ -64,7 +66,9 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       mode: null,
       items: [],
+      table: null,
       setMode: (mode) => set({ mode }),
+      setTable: (table) => set({ table }),
       addItem: (newItem) =>
         set((state) => {
           const existing = state.items.find(

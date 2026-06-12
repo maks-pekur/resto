@@ -10,7 +10,7 @@ import { MenuItemCard } from '@/components/menu/menu-item-card';
 import { ItemModal } from '@/components/menu/item-modal';
 import { DeliveryPickupBanner } from '@/components/menu/delivery-pickup-banner';
 import { CartDrawer } from '@/components/menu/cart-drawer';
-import { useCartStore, selectItemCount } from '@/store/cart';
+import { useCartStore, selectItemCount } from '@resto/cart';
 import { useHasHydrated } from '@/hooks/use-cart-store';
 import { localized } from '@/lib/i18n/localized';
 

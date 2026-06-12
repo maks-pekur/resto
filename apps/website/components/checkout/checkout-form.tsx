@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useCartStore } from '@/store/cart';
+import { useCartStore } from '@resto/cart';
 import {
   createCheckoutSchema,
   type CheckoutForm as CheckoutFormValues,

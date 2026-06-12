@@ -4,8 +4,8 @@ import { Minus, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useCartStore, selectSubtotal } from '@/hooks/use-cart-store';
-import type { CartLineItem as CartLineItemType } from '@/store/cart';
-import { selectItemCount } from '@/store/cart';
+import type { CartLineItem as CartLineItemType } from '@resto/cart';
+import { selectItemCount } from '@resto/cart';
 
 function parseMinorUnits(value: string): number {
   const [whole = '0', frac = ''] = value.split('.');

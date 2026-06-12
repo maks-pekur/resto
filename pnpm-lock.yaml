@@ -370,6 +370,9 @@ importers:
       '@resto/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@resto/cart':
+        specifier: workspace:^
+        version: link:../../packages/cart
       '@resto/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -482,6 +485,25 @@ importers:
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@6.0.3)
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
+  packages/cart:
+    dependencies:
+      react:
+        specifier: ^18.0.0 || ^19.0.0
+        version: 19.2.5
+      zustand:
+        specifier: ^5.0.14
+        version: 5.0.14(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
+    devDependencies:
+      '@resto/config-eslint':
+        specifier: workspace:*
+        version: link:../config-eslint
+      '@resto/config-typescript':
+        specifier: workspace:*
+        version: link:../config-typescript
       typescript:
         specifier: ^6.0.3
         version: 6.0.3

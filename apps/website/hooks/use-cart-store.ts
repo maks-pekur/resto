@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useCartStore, selectSubtotal, selectItemCount } from '@/store/cart';
+import { useCartStore, selectSubtotal, selectItemCount } from '@resto/cart';
 
 export { useCartStore, selectSubtotal, selectItemCount };
 

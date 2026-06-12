@@ -18,7 +18,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { CartLineItem } from '@/components/menu/cart-line-item';
-import { useCartStore, selectSubtotal } from '@/store/cart';
+import { useCartStore, selectSubtotal } from '@resto/cart';
 
 interface CartDrawerProps {
   open: boolean;
