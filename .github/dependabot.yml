@@ -20,6 +20,32 @@ updates:
       types:
         patterns:
           - "@types/*"
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    # Framework majors are deferred to the pre-launch Fastify 5 / NestJS 11 /
+    # better-auth 1.6 migration (see .planning/notes/dependency-cve-deferral.md).
+    # Minor/patch updates — including security backports — still flow through.
+    ignore:
+      - dependency-name: "fastify"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@fastify/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@nestjs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "better-auth"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vite"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitejs/*"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "testcontainers"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@testcontainers/*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
