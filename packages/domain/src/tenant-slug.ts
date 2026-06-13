@@ -1,46 +1,7 @@
 import { z } from 'zod';
+import { RESERVED_SLUGS, RESERVED_SLUG_SET } from './reserved-slugs';
 
-/**
- * Reserved tenant slugs.
- *
- * Tenants are addressed at `<slug>.menu.resto.app` (and parallel
- * subdomains for the admin, qr-menu, and tenant website). These names
- * collide with platform-owned subdomains or are confusing enough that we
- * never let a tenant claim them — even if the slug-format rule would
- * otherwise allow it.
- *
- * Matched case-insensitively (slugs are lowercase by construction; this
- * is defence in depth in case a request bypasses the schema).
- */
-export const TENANT_RESERVED_SLUGS: readonly string[] = [
-  'admin',
-  'api',
-  'app',
-  'apps',
-  'assets',
-  'auth',
-  'blog',
-  'cdn',
-  'dashboard',
-  'docs',
-  'help',
-  'login',
-  'mail',
-  'menu',
-  'public',
-  'resto',
-  'root',
-  'signup',
-  'static',
-  'status',
-  'support',
-  'system',
-  'webhook',
-  'webhooks',
-  'www',
-];
-
-const RESERVED_SET = new Set(TENANT_RESERVED_SLUGS.map((s) => s.toLowerCase()));
+export const TENANT_RESERVED_SLUGS = RESERVED_SLUGS;
 
 /**
  * Tenant slug. Stricter than the generic `Slug`:
@@ -48,7 +9,8 @@ const RESERVED_SET = new Set(TENANT_RESERVED_SLUGS.map((s) => s.toLowerCase()));
  * - 3..64 characters (matches the db `tenants_slug_format_chk`)
  * - starts and ends with an alphanumeric character (no edge hyphens)
  * - lowercase ASCII letters, digits, and hyphens only
- * - not a reserved platform name (see `TENANT_RESERVED_SLUGS`)
+ * - not a reserved platform name (see `RESERVED_SLUGS`)
+ * - not a punycode/IDN label (xn-- prefix; RFC 3490 homograph defence)
  *
  * The reserved-list check is enforced here rather than at the database
  * because it is policy, not a structural invariant — the list will grow
@@ -63,5 +25,6 @@ export const TenantSlug = z
   // in normal use, but a request that bypasses the regex (e.g. internal callers
   // constructing a TenantSlug from a header) still gets rejected on `Admin` /
   // `ADMIN` etc. Defence in depth, per packages/domain/CLAUDE.md.
-  .refine((v) => !RESERVED_SET.has(v.toLowerCase()), 'is a reserved platform slug');
+  .refine((v) => !RESERVED_SLUG_SET.has(v.toLowerCase()), 'is a reserved platform slug')
+  .refine((v) => !v.startsWith('xn--'), 'must not be a punycode/IDN (xn--) label');
 export type TenantSlug = z.infer<typeof TenantSlug>;

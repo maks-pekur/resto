@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RESERVED_SLUG_SET } from './reserved-slugs';
 
 const BRAND_SLUG_RE = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/u;
 
@@ -16,6 +17,12 @@ export const BrandSlugValue = z
   .refine((value) => BRAND_SLUG_RE.test(value), {
     message:
       'Brand slug must be lowercase alphanumeric with hyphens, 3–64 chars, not starting or ending with a hyphen.',
+  })
+  .refine((value) => !RESERVED_SLUG_SET.has(value), {
+    message: 'Brand slug is a reserved platform name.',
+  })
+  .refine((value) => !value.startsWith('xn--'), {
+    message: 'Brand slug must not be a punycode/IDN (xn--) label.',
   });
 export type BrandSlugValue = z.infer<typeof BrandSlugValue>;
 

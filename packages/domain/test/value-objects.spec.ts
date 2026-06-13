@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest';
 import {
+  BrandSlug,
   Currency,
   LocalizedText,
   Money,
   MoneyAmount,
   PriceDelta,
+  RESERVED_SLUGS,
   Slug,
-  TENANT_RESERVED_SLUGS,
   TenantSlug,
 } from '../src';
 
@@ -95,8 +96,28 @@ describe('TenantSlug', () => {
   );
 
   it('rejects reserved slugs', () => {
-    for (const reserved of TENANT_RESERVED_SLUGS) {
+    for (const reserved of RESERVED_SLUGS) {
       expect(() => TenantSlug.parse(reserved)).toThrow();
     }
+  });
+
+  it('rejects punycode / IDN (xn--) slugs', () => {
+    expect(() => TenantSlug.parse('xn--pple-43d')).toThrow();
+  });
+});
+
+describe('BrandSlug', () => {
+  it('rejects reserved platform slugs', () => {
+    for (const s of ['admin', 'api', 'app', 'cdn', 'status', 'www']) {
+      expect(BrandSlug.safeParse(s).success).toBe(false);
+    }
+  });
+
+  it('rejects punycode / IDN (xn--) slugs', () => {
+    expect(BrandSlug.safeParse('xn--pple-43d').success).toBe(false);
+  });
+
+  it('accepts a normal brand slug', () => {
+    expect(BrandSlug.safeParse('cafe-roma').success).toBe(true);
   });
 });
