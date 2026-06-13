@@ -9,34 +9,32 @@ LCP under 1.5s on a throttled 4G profile.
 - **Routing.** No router dependency in the bundle. `window.location`
   drives a tiny client-side router (`/` for the full menu, `/items/:id`
   for the deep-linked detail view).
-- **Tenant resolution.** In production the app is served from
-  `<slug>.menu.resto.app` and the api answers same-origin — the
-  fetcher uses a relative path. In development the api lives on
-  `:3000` and the dev server on `:3003`; set `VITE_API_URL` and
-  optionally `VITE_TENANT_SLUG` (overrides the host with an
-  `X-Tenant-Slug` header).
+- **Brand resolution.** The brand (and its tenant) is resolved from the
+  subdomain. The app is served from `<brand-slug>.menu.<domain>` and
+  fetches the api **same-origin** with a relative `/v1` path, so the api
+  resolves the brand from the request `Host`. In dev the Vite server
+  proxies `/v1` to the api on `:3000` with `changeOrigin: false`,
+  preserving the brand `Host`. See `docs/dev-subdomains.md`.
 - **i18n.** JSON resources for `en` and `ru` under `src/i18n/`.
   Locale auto-detected from `navigator.languages` with English
   fallback. `localized(text)` picks the best string from a
   `LocalizedText` map; `t(key, replacements)` for static copy.
-- **Theming.** CSS variables on `:root` (`--resto-accent`,
-  `--resto-bg`, etc.). Per-tenant overrides land when the api
-  exposes tenant theme tokens — for MVP-1 the design is one
-  consistent skin.
+- **Theming.** Base tokens come from `@resto/config-tailwind`
+  (`tokens.css`: `--primary`, `--background`, `--radius`, …). A tenant's
+  `brand.theme.primaryColor` overrides `--primary` at runtime via
+  `buildTenantThemeVars` after the menu loads.
 
 ## Dev
 
 ```bash
-# Run the api on :3000 with a tenant provisioned as `cafe-roma`
-pnpm dev:up
-pnpm --filter @resto/api exec tsx src/main.ts
-
-# Run the qr-menu against it
-VITE_API_URL=http://localhost:3000 VITE_TENANT_SLUG=cafe-roma \
-  pnpm exec nx run qr-menu:serve
+pnpm dev:up                          # infra (Postgres/Redis/NATS/…)
+pnpm exec nx serve api               # api on :3000
+pnpm exec nx run qr-menu:serve       # qr-menu on :3003
 ```
 
-Open `http://localhost:3003/`.
+Open `http://<brand-slug>.menu.lvh.me:3003/` (e.g.
+`http://dovezuka.menu.lvh.me:3003/`) — `*.lvh.me` resolves to 127.0.0.1,
+and the brand resolves from the subdomain. See `docs/dev-subdomains.md`.
 
 ## Build
 
