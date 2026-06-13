@@ -31,12 +31,13 @@ import {
 import { CatalogDrizzleRepository } from './infrastructure/catalog-drizzle.repository';
 import { RedisCatalogCacheAdapter } from './infrastructure/redis-catalog-cache.adapter';
 import { S3SignedImageUrlAdapter } from './infrastructure/s3-signed-image-url.adapter';
+import { CatalogController } from './interfaces/http/catalog.controller';
 import { InternalCatalogController } from './interfaces/http/internal-catalog.controller';
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
 @Module({
   imports: [TenancyModule],
-  controllers: [PublicMenuController, InternalCatalogController],
+  controllers: [PublicMenuController, InternalCatalogController, CatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },
     RedisCatalogCacheAdapter,
