@@ -1,14 +1,5 @@
-/* Tiny, no-framework CSS. Tokens via CSS variables so per-tenant
- * theming (RES-82's deferred slice) can override at the :root level. */
-:root {
-  --resto-bg: #f7f5f2;
-  --resto-fg: #111;
-  --resto-muted: #555;
-  --resto-accent: #c1272d;
-  --resto-card-bg: #fff;
-  --resto-radius: 12px;
-  --resto-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
+/* Tokens come from @resto/config-tailwind/tokens.css (imported in main.tsx).
+ * Tenant themes override --primary at runtime (see App.tsx). */
 
 * {
   box-sizing: border-box;
@@ -19,9 +10,9 @@ body,
 #root {
   margin: 0;
   padding: 0;
-  background: var(--resto-bg);
-  color: var(--resto-fg);
-  font-family: var(--resto-font);
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
   font-size: 16px;
   line-height: 1.5;
 }
@@ -59,9 +50,9 @@ body,
   display: flex;
   gap: 12px;
   width: 100%;
-  background: var(--resto-card-bg);
+  background: var(--card);
   border: none;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
   padding: 8px;
   text-align: left;
   cursor: pointer;
@@ -69,7 +60,7 @@ body,
   color: inherit;
 }
 .menu-item:focus-visible {
-  outline: 2px solid var(--resto-accent);
+  outline: 2px solid var(--primary);
   outline-offset: 2px;
 }
 .menu-item__image {
@@ -93,12 +84,12 @@ body,
 }
 .menu-item__description {
   margin: 0 0 8px;
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   font-size: 0.875rem;
 }
 .menu-item__price {
   margin: 0;
-  color: var(--resto-accent);
+  color: var(--primary);
   font-weight: 600;
 }
 
@@ -106,7 +97,7 @@ body,
   background: transparent;
   border: none;
   font: inherit;
-  color: var(--resto-accent);
+  color: var(--primary);
   padding: 8px 0;
   cursor: pointer;
 }
@@ -114,7 +105,7 @@ body,
   width: 100%;
   max-height: 320px;
   object-fit: cover;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
 }
 .item__name {
   margin: 12px 0 8px;
@@ -122,7 +113,7 @@ body,
 .item__price {
   font-size: 1.25rem;
   font-weight: 700;
-  color: var(--resto-accent);
+  color: var(--primary);
 }
 .item__variants {
   list-style: none;
@@ -158,13 +149,13 @@ body,
 .menu__logo {
   height: 40px;
   width: auto;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
 }
 .cart-trigger {
-  background: var(--resto-accent);
-  color: var(--resto-card-bg);
+  background: var(--primary);
+  color: var(--card);
   border: none;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
   padding: 8px 16px;
   font: inherit;
   font-weight: 600;
@@ -178,8 +169,8 @@ body,
   margin: 16px 0;
 }
 .item-modifier-group {
-  border: 1px solid color-mix(in srgb, var(--resto-muted) 25%, transparent);
-  border-radius: var(--resto-radius);
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 25%, transparent);
+  border-radius: var(--radius);
   padding: 12px;
 }
 .item-modifier-group legend {
@@ -195,7 +186,7 @@ body,
 }
 .item-modifier-option span:last-child {
   margin-left: auto;
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
 }
 .item-live-price {
   font-size: 20px;
@@ -205,10 +196,10 @@ body,
 .item-add-btn {
   display: block;
   width: 100%;
-  background: var(--resto-accent);
-  color: var(--resto-card-bg);
+  background: var(--primary);
+  color: var(--card);
   border: none;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
   padding: 14px;
   font: inherit;
   font-weight: 600;
@@ -229,8 +220,8 @@ body,
   min-width: 20px;
   padding: 0 6px;
   border-radius: 10px;
-  background: var(--resto-card-bg);
-  color: var(--resto-accent);
+  background: var(--card);
+  color: var(--primary);
   font-size: 13px;
   font-weight: 700;
   text-align: center;
@@ -242,17 +233,17 @@ body,
 }
 .locale-btn {
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--resto-muted) 35%, transparent);
-  border-radius: var(--resto-radius);
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-radius: var(--radius);
   padding: 6px 10px;
   font: inherit;
-  color: var(--resto-fg);
+  color: var(--foreground);
   cursor: pointer;
 }
 .locale-btn--active {
-  background: var(--resto-accent);
-  color: var(--resto-card-bg);
-  border-color: var(--resto-accent);
+  background: var(--primary);
+  color: var(--card);
+  border-color: var(--primary);
 }
 
 .table-banner {
@@ -262,25 +253,25 @@ body,
   flex-wrap: wrap;
   margin-bottom: 16px;
   padding: 10px 14px;
-  background: var(--resto-card-bg);
-  border-radius: var(--resto-radius);
+  background: var(--card);
+  border-radius: var(--radius);
 }
 .table-banner--entry label {
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
 }
 .table-banner input {
   flex: 1;
   min-width: 120px;
   padding: 8px;
-  border: 1px solid color-mix(in srgb, var(--resto-muted) 35%, transparent);
-  border-radius: var(--resto-radius);
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-radius: var(--radius);
   font: inherit;
 }
 .table-banner button {
-  background: var(--resto-accent);
-  color: var(--resto-card-bg);
+  background: var(--primary);
+  color: var(--card);
   border: none;
-  border-radius: var(--resto-radius);
+  border-radius: var(--radius);
   padding: 8px 14px;
   font: inherit;
   cursor: pointer;
@@ -292,7 +283,7 @@ body,
   pointer-events: none;
 }
 .menu-item__unavailable {
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   font-weight: 600;
 }
 
@@ -315,7 +306,7 @@ body,
   right: 0;
   height: 100%;
   width: min(420px, 100%);
-  background: var(--resto-bg);
+  background: var(--background);
   box-shadow: -8px 0 24px rgba(0, 0, 0, 0.15);
   transform: translateX(100%);
   transition: transform 0.25s ease;
@@ -343,11 +334,11 @@ body,
   background: transparent;
   border: none;
   font: inherit;
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   cursor: pointer;
 }
 .cart-drawer__empty {
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   text-align: center;
   padding: 32px 0;
 }
@@ -358,12 +349,12 @@ body,
   flex: 1;
 }
 .cart-drawer__footer {
-  border-top: 1px solid color-mix(in srgb, var(--resto-muted) 20%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--muted-foreground) 20%, transparent);
   padding-top: 16px;
   margin-top: 16px;
 }
 .cart-drawer__table {
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   margin: 0 0 8px;
 }
 .cart-drawer__subtotal {
@@ -376,9 +367,9 @@ body,
 .cart-drawer__clear {
   width: 100%;
   background: transparent;
-  border: 1px solid var(--resto-accent);
-  color: var(--resto-accent);
-  border-radius: var(--resto-radius);
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  border-radius: var(--radius);
   padding: 10px;
   font: inherit;
   cursor: pointer;
@@ -389,7 +380,7 @@ body,
   align-items: center;
   gap: 8px;
   padding: 10px 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--resto-muted) 15%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--muted-foreground) 15%, transparent);
 }
 .cart-line-item__info {
   flex: 1;
@@ -402,7 +393,7 @@ body,
 .cart-line-item__modifiers {
   margin: 2px 0 0;
   font-size: 13px;
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
 }
 .cart-line-item__qty {
   display: flex;
@@ -412,9 +403,9 @@ body,
 .cart-line-item__qty button {
   width: 32px;
   height: 32px;
-  border: 1px solid color-mix(in srgb, var(--resto-muted) 35%, transparent);
-  border-radius: var(--resto-radius);
-  background: var(--resto-card-bg);
+  border: 1px solid color-mix(in srgb, var(--muted-foreground) 35%, transparent);
+  border-radius: var(--radius);
+  background: var(--card);
   font: inherit;
   cursor: pointer;
 }
@@ -425,7 +416,7 @@ body,
 .cart-line-item__remove {
   background: transparent;
   border: none;
-  color: var(--resto-muted);
+  color: var(--muted-foreground);
   font: inherit;
   cursor: pointer;
 }

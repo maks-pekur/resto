@@ -321,6 +321,9 @@ importers:
       '@resto/cart':
         specifier: workspace:*
         version: link:../../packages/cart
+      '@resto/config-tailwind':
+        specifier: workspace:*
+        version: link:../../packages/config-tailwind
       react:
         specifier: ^19.0.0
         version: 19.2.5

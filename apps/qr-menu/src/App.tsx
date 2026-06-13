@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@resto/cart';
+import { buildTenantThemeVars } from '@resto/config-tailwind';
 import { fetchMenu, MenuNotFoundError } from './api/client';
 import type { MenuDto } from '@resto/api-client/public';
 import { ItemDetail } from './components/ItemDetail';
@@ -50,9 +51,11 @@ export const App = () => {
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
-    const primaryColor = state.menu.brand?.theme?.primaryColor;
-    if (primaryColor) {
-      document.documentElement.style.setProperty('--resto-accent', primaryColor);
+    const theme = state.menu.brand?.theme;
+    if (!theme) return;
+    const vars = buildTenantThemeVars(theme);
+    for (const [name, value] of Object.entries(vars)) {
+      document.documentElement.style.setProperty(name, value);
     }
   }, [state]);
 
