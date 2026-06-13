@@ -1,15 +1,12 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { fetchMenuPublic, TenantNotFoundError, TenantSuspendedError } from '@/lib/api-client';
-import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
 import { TenantHeader } from '@/components/layout/tenant-header';
 import { CheckoutForm } from '@/components/checkout/checkout-form';
 
 export async function generateMetadata(): Promise<Metadata> {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) return {};
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     const brandName = menu.brand?.displayName ?? 'Restaurant';
     return { title: `Checkout — ${brandName}`, robots: { index: false } };
   } catch {
@@ -18,10 +15,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CheckoutPage() {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) notFound();
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     return (
       <>
         <TenantHeader brand={menu.brand} />

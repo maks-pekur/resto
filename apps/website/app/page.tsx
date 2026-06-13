@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { fetchMenuPublic, TenantNotFoundError, TenantSuspendedError } from '@/lib/api-client';
-import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
 import { MenuPageClient } from '@/components/menu/menu-page-client';
 
 function SuspendedState() {
@@ -15,11 +14,8 @@ function SuspendedState() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) return {};
-
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     const brandName = menu.brand?.displayName ?? 'Restaurant';
     const logoUrl = menu.brand?.theme?.logoUrl ?? undefined;
 
@@ -39,11 +35,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function MenuPage() {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) notFound();
-
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     return <MenuPageClient menu={menu} />;
   } catch (err) {
     if (err instanceof TenantNotFoundError) notFound();

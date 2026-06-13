@@ -43,63 +43,6 @@ describe('middleware', () => {
     vi.resetModules();
   });
 
-  describe('tenant resolution — production security invariant', () => {
-    it('PROD GUARD: ?tenant=evil query param yields NO x-tenant-slug when NODE_ENV=production', async () => {
-      vi.stubEnv('NODE_ENV', 'production');
-      const prodMiddleware = await loadMiddleware();
-
-      const req = buildRequest('/?tenant=evil', { host: 'localhost:3002' });
-      const response = prodMiddleware(req);
-      const slugHeader = response.headers.get('x-middleware-request-x-tenant-slug');
-      expect(slugHeader).toBeNull();
-    });
-  });
-
-  describe('tenant resolution — dev mode', () => {
-    beforeEach(() => {
-      vi.stubEnv('NODE_ENV', 'development');
-    });
-
-    it('injects x-tenant-slug from ?tenant= query param in dev', async () => {
-      const devMiddleware = await loadMiddleware();
-      const req = buildRequest('/?tenant=demo', { host: 'localhost:3002' });
-      const response = devMiddleware(req);
-      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBe('demo');
-    });
-  });
-
-  describe('tenant resolution — subdomain / custom domain', () => {
-    let mw: Awaited<ReturnType<typeof loadMiddleware>>;
-
-    beforeEach(async () => {
-      mw = await loadMiddleware();
-    });
-
-    it('extracts subdomain slug from 3-label hostname (acme.resto.app → acme)', () => {
-      const req = buildRequest('/', { host: 'acme.resto.app' });
-      const response = mw(req);
-      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBe('acme');
-    });
-
-    it('does NOT extract slug for www subdomain (www.resto.app → no slug)', () => {
-      const req = buildRequest('/', { host: 'www.resto.app' });
-      const response = mw(req);
-      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBeNull();
-    });
-
-    it('forwards full hostname for 2-label custom domain (restaurant.com → restaurant.com)', () => {
-      const req = buildRequest('http://restaurant.com/', { host: 'restaurant.com' });
-      const response = mw(req);
-      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBe('restaurant.com');
-    });
-
-    it('yields no x-tenant-slug when host has no labels beyond bare localhost', () => {
-      const req = buildRequest('http://localhost:3002/', { host: 'localhost' });
-      const response = mw(req);
-      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBeNull();
-    });
-  });
-
   describe('locale resolution', () => {
     let mw: Awaited<ReturnType<typeof loadMiddleware>>;
 
@@ -139,6 +82,12 @@ describe('middleware', () => {
       });
       const response = mw(req);
       expect(response.cookies.get('NEXT_LOCALE')?.value).toBe('en');
+    });
+
+    it('does not inject x-tenant-slug for any host', () => {
+      const req = buildRequest('/', { host: 'acme.resto.app' });
+      const response = mw(req);
+      expect(response.headers.get('x-middleware-request-x-tenant-slug')).toBeNull();
     });
   });
 

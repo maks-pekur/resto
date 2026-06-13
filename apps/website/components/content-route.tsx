@@ -1,16 +1,13 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { fetchMenuPublic, TenantNotFoundError, TenantSuspendedError } from '@/lib/api-client';
-import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
 import { TenantHeader } from '@/components/layout/tenant-header';
 import { ContentPage } from '@/components/content-page';
 import { getSeededContent, type ContentPageKey } from '@/lib/content';
 
 export async function contentMetadata(label: string): Promise<Metadata> {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) return {};
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     const brandName = menu.brand?.displayName ?? 'Restaurant';
     return { title: `${label} — ${brandName}`, robots: { index: true, follow: true } };
   } catch {
@@ -19,10 +16,8 @@ export async function contentMetadata(label: string): Promise<Metadata> {
 }
 
 export async function ContentRouteServer({ pageKey }: { pageKey: ContentPageKey }) {
-  const slug = await getTenantSlugFromHeaders();
-  if (!slug) notFound();
   try {
-    const menu = await fetchMenuPublic(slug);
+    const menu = await fetchMenuPublic();
     const brandName = menu.brand?.displayName ?? 'Restaurant';
     const { heading, body } = getSeededContent(pageKey, brandName);
     return (

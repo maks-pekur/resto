@@ -5,7 +5,6 @@ import { getLocale, getMessages } from 'next-intl/server';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
 import { Toaster } from '@/components/ui/sonner';
 import { fetchMenuPublic } from '@/lib/api-client';
-import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
 import './globals.css';
 
 const inter = Inter({
@@ -28,16 +27,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const locale = await getLocale();
   const messages = await getMessages();
 
-  const tenantSlug = await getTenantSlugFromHeaders();
-
   let theme: { primaryColor?: string | null } | null = null;
-  if (tenantSlug) {
-    try {
-      const menu = await fetchMenuPublic(tenantSlug);
-      theme = menu.brand?.theme ?? null;
-    } catch {
-      // cold Redis / not-found / suspended — render default theme
-    }
+  try {
+    const menu = await fetchMenuPublic();
+    theme = menu.brand?.theme ?? null;
+  } catch {
+    // unresolved host / cold Redis / suspended — render default theme
   }
 
   const themeStyle = theme ? (buildTenantThemeVars(theme) as React.CSSProperties) : undefined;
