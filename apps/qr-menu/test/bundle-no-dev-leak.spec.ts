@@ -25,7 +25,7 @@ describe('qr-menu prod bundle', () => {
     execSync('pnpm --filter @resto/qr-menu build', {
       cwd: resolve(projectRoot, '..', '..'),
       stdio: 'inherit',
-      env: { ...process.env, VITE_TENANT_SLUG: '' },
+      env: { ...process.env, NODE_ENV: 'production', VITE_TENANT_SLUG: '' },
     });
     const bundle = readBundleJs();
     for (const needle of ['VITE_TENANT_SLUG', 'x-tenant-slug']) {
@@ -38,7 +38,7 @@ describe('qr-menu prod bundle', () => {
     execSync('pnpm --filter @resto/qr-menu build', {
       cwd: resolve(projectRoot, '..', '..'),
       stdio: 'inherit',
-      env: { ...process.env, VITE_TENANT_SLUG: SLUG_FIXTURE },
+      env: { ...process.env, NODE_ENV: 'production', VITE_TENANT_SLUG: SLUG_FIXTURE },
     });
     const bundle = readBundleJs();
     // The fixture value itself MUST be tree-shaken — its presence in the
@@ -48,5 +48,14 @@ describe('qr-menu prod bundle', () => {
     for (const needle of ['VITE_TENANT_SLUG', 'x-tenant-slug', SLUG_FIXTURE]) {
       expect(bundle, `bundle must not contain "${needle}"`).not.toContain(needle);
     }
+  }, 60_000);
+
+  it('ships hidden source maps (maps emitted, no inline sourceMappingURL)', () => {
+    const mapFiles = readdirSync(distAssets).filter((f) => f.endsWith('.map'));
+    const bundle = readBundleJs();
+    expect(mapFiles.length, 'hidden source maps: .map files must exist').toBeGreaterThan(0);
+    expect(bundle, 'hidden source maps: no inline sourceMappingURL comment allowed').not.toContain(
+      'sourceMappingURL',
+    );
   }, 60_000);
 });

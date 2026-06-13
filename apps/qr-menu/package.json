@@ -5,6 +5,9 @@
   "description": "Customer-facing QR-menu — Vite + React, no SSR; loads on the tenant subdomain.",
   "license": "UNLICENSED",
   "type": "module",
+  "scripts": {
+    "build": "vite build"
+  },
   "dependencies": {
     "@resto/api-client": "workspace:*",
     "@resto/cart": "workspace:*",
