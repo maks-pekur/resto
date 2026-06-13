@@ -59,6 +59,35 @@ describe('TenantAndBrandResolverService', () => {
       expect(await service.resolveByCustomerHost('order.zburger.com')).toBeNull();
     });
 
+    it('returns null when brand is suspended (custom domain path)', async () => {
+      vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(buildBrand({ status: 'suspended' }));
+      expect(await service.resolveByCustomerHost('order.zburger.com')).toBeNull();
+    });
+
+    it('returns null when brand is archived (custom domain path)', async () => {
+      vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(buildBrand({ status: 'archived' }));
+      expect(await service.resolveByCustomerHost('order.zburger.com')).toBeNull();
+    });
+
+    it('returns null when brand is suspended (slug path)', async () => {
+      vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(null);
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand({ status: 'suspended' }));
+      expect(await service.resolveByCustomerHost('z-burger.menu.resto.app')).toBeNull();
+    });
+
+    it('returns null when brand is archived (slug path)', async () => {
+      vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(null);
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand({ status: 'archived' }));
+      expect(await service.resolveByCustomerHost('z-burger.menu.resto.app')).toBeNull();
+    });
+
+    it('resolves brand from host with a trailing FQDN dot', async () => {
+      vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(null);
+      vi.mocked(repo.findBySlug).mockResolvedValueOnce(buildBrand());
+      const result = await service.resolveByCustomerHost('z-burger.menu.resto.app.');
+      expect(result).toEqual({ tenantId, brandId, brandSlug: 'z-burger' });
+    });
+
     it('returns null when slug is malformed', async () => {
       vi.mocked(repo.findByDomainHost).mockResolvedValueOnce(null);
       expect(await service.resolveByCustomerHost('BAD!.menu.resto.app')).toBeNull();

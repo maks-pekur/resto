@@ -21,11 +21,11 @@ export class TenantAndBrandResolverService {
 
   async resolveByCustomerHost(host: string | undefined): Promise<ResolvedCustomerContext | null> {
     if (!host) return null;
-    const hostname = host.split(':')[0]?.toLowerCase();
+    const hostname = host.split(':')[0]?.toLowerCase().replace(/\.$/, '');
     if (!hostname) return null;
 
     const byDomain = await this.brands.findByDomainHost(hostname);
-    if (byDomain && byDomain.status !== 'erased') {
+    if (byDomain?.status === 'active') {
       return {
         tenantId: byDomain.tenantId,
         brandId: byDomain.id,
@@ -42,7 +42,7 @@ export class TenantAndBrandResolverService {
     if (!slug.success) return null;
 
     const bySlug = await this.brands.findBySlug(slug.data);
-    if (!bySlug || bySlug.status === 'erased') return null;
+    if (bySlug?.status !== 'active') return null;
     return {
       tenantId: bySlug.tenantId,
       brandId: bySlug.id,
