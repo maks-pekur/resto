@@ -207,12 +207,6 @@
 - Why fragile: The `packages/CLAUDE.md` documents it as "OpenFeature client with the configured provider (Unleash self-hosted)." Nothing is implemented. Any code that attempts to import from `@resto/feature-flags` will fail at build time.
 - Safe modification: Either scaffold a minimal always-off stub or remove the package from `pnpm-workspace.yaml` and `tsconfig.base.json` paths until it is needed.
 
-**`website`, `landing`, and `mobile` apps are empty placeholders:**
-
-- Files: `apps/website/.gitkeep`, `apps/landing/.gitkeep`, `apps/mobile/.gitkeep`
-- Why fragile: Nx module-boundary rules reference `scope:website`, `scope:landing`, `scope:mobile` tags that have no corresponding `project.json`. If a developer accidentally imports from these empty packages, the Nx graph silently omits them.
-- Safe modification: No action required until these apps are scaffolded. Document as known-empty in `apps/CLAUDE.md`.
-
 ## Scaling Limits
 
 **`INTERNAL_API_TOKEN` is a flat shared secret with no per-caller identity:**

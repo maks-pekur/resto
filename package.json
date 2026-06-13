@@ -2,7 +2,7 @@
   "name": "resto",
   "version": "0.0.0",
   "private": true,
-  "description": "Multi-tenant SaaS platform for restaurants — admin, website, QR-menu, mobile.",
+  "description": "Multi-tenant SaaS platform for restaurants — admin, website, QR-menu.",
   "license": "UNLICENSED",
   "packageManager": "pnpm@9.15.0",
   "engines": {

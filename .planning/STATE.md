@@ -87,7 +87,7 @@ Recent decisions affecting current work:
 
 - Init: Horizontal-layer ordering locked (TEN → ADM → AUTH → CAT → QRM → SITE → ORD → PAY → DELV → ORDINT → PROMO → CRM → ANL → FIN → CONT → ONB)
 - Init: Phase 2 (Admin Shell) before Phase 3 (Auth Completion) — admin shell rides existing dev wire; auth completion closes prod-readiness gaps once UX exists
-- Init: MVP-1 customer surface = Admin + QR-menu + Site (no Staff app, no mobile, no Telegram MA)
+- Init: MVP-1 customer surface = Admin + QR-menu + Site (no Staff app, no Telegram MA)
 - Init: Stripe Connect Express for restaurant↔guest payments; SaaS billing stays manual until volume justifies
 - 2026-05-24 (persona review): Phase 9 ↔ Phase 10 swapped — Delivery Zones now Phase 9, Admin Order Intake now Phase 10; zone validation must exist before live delivery orders are accepted
 - 2026-05-24 (persona review): Phase 6 re-scoped as rendering/routing stub — checkout button disabled, SITE-08 (order confirmation) moved to Phase 8
@@ -138,7 +138,6 @@ Items acknowledged and carried forward:
 | v2       | Tips & service (TIPS-01..04)                    | Deferred | Init                      |
 | v2       | Reviews (REV-01..04)                            | Deferred | Init                      |
 | v2       | Staff app (STAFF-01..05)                        | Deferred | Init                      |
-| v2       | Mobile customer app (MOB-01..04)                | Deferred | Init                      |
 | v2       | Telegram Mini App (TG-01..02)                   | Deferred | Init                      |
 | v2       | POS integrations (POS-01..03)                   | Deferred | Init                      |
 | v2       | External delivery aggregators (AGGR-01..04)     | Deferred | Init                      |

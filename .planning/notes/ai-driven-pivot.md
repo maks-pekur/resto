@@ -111,7 +111,6 @@ MVP-2). QR-menu remains in MVP-1 but after the site is live and proven.
 
 ## Things explicitly OUT of scope for now
 
-- Mobile native app (operator or guest)
 - Staff app (front-of-house tablet for waiters/kitchen)
 - Multi-language LLM tuning beyond ru/en
 - Voice-mode AI (text-only at MVP-2)

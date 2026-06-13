@@ -164,7 +164,7 @@ const resolvePrimaryTenantId = async (
  *   - Email + password (no email verification yet — Phase F).
  *   - Organization plugin with system roles + dynamicAccessControl.
  *   - 2FA (TOTP) plugin enabled (operator MFA opt-in).
- *   - Bearer plugin (mobile bearer-token transport, exercised in Phase D).
+ *   - Bearer plugin (bearer-token transport for non-cookie clients, exercised in Phase D).
  *
  * Out of scope:
  *   - phoneNumber plugin — Phase D wires it with proper signUpOnVerification.

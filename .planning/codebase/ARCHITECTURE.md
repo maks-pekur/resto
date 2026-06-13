@@ -10,8 +10,7 @@
 ┌────────────────────────────────────────────────────────────────────────┐
 │                          Client Applications                            │
 │                                                                         │
-│  apps/admin (Next.js 15 RSC)  apps/qr-menu (Vite+React)  apps/mobile  │
-│  apps/website  apps/landing                                             │
+│  apps/admin (Next.js 15 RSC)  apps/qr-menu (Vite+React)  apps/website    │
 └──────────────┬──────────────────────────┬──────────────────────────────┘
                │ HTTP (server actions,    │ HTTP (fetch, AbortSignal)
                │ apiFetch wrapper)        │

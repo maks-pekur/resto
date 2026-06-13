@@ -3,7 +3,7 @@
 Single source of truth for the **business** types in Resto. Pure
 TypeScript + Zod, zero framework imports, zero dependency on persistence.
 Apps and other packages import shapes from here so a `MenuItem` means the
-same thing in the api, the qr-menu, the future admin, mobile, and tenant
+same thing in the api, the qr-menu, the future admin, and tenant
 website.
 
 ## Layout

@@ -273,7 +273,7 @@
 
 - **MKT-01**: Email campaigns to segments
 - **MKT-02**: Push campaigns (segment + trigger based)
-- **MKT-03**: Stories on site and mobile
+- **MKT-03**: Stories on site
 - **MKT-04**: Banners (homepage, category pages)
 - **MKT-05**: Cart upsell ("frequently bought with")
 - **MKT-06**: Client-side event tracking (page view, add-to-cart, checkout initiation) for full conversion funnel — requires event collection infra (PostHog or custom schema); deferred from ANL-04 redefinition
@@ -306,13 +306,6 @@
 - **STAFF-03**: Manager view — shift overview, reports, manual stop-list
 - **STAFF-04**: Courier view — assigned orders, route, delivery status, new-order push
 - **STAFF-05**: Role-based auth, multi-location operator switching
-
-### Mobile Customer App (`MOB`)
-
-- **MOB-01**: React Native iOS + Android (single codebase)
-- **MOB-02**: Same site flow + push notifications for order status
-- **MOB-03**: Loyalty points, history, addresses, profile in mobile
-- **MOB-04**: Auth via phone / email / social / Telegram
 
 ### Telegram Mini App (`TG`)
 

@@ -313,6 +313,6 @@ Phase 16 depends on all 15 prior phases. Its requirements (ONB-01 through ONB-05
 
 6. **Hard deletes forbidden at `resto_app` level.** Correct architectural invariant. Soft-delete-only with scheduled erasure is the right GDPR posture and it is locked at the DB privilege level, not just the application level.
 
-7. **MVP-1 surface = Admin + QR-menu + Site, no mobile, no Telegram MA.** The deferred surfaces are genuinely non-critical for first-customer value. Mobile web ordering via `apps/website` is sufficient. Telegram MA is a growth feature, not a table-stakes requirement.
+7. **MVP-1 surface = Admin + QR-menu + Site, no Telegram MA.** The deferred surfaces are genuinely non-critical for first-customer value. Ordering from a mobile browser via `apps/website` is sufficient. Telegram MA is a growth feature, not a table-stakes requirement.
 
 8. **Phase 12 (CRM) before Phase 13 (Analytics).** CRM data (customer records, order history) feeds Analytics. Getting the customer record layer right before building dashboards over it is the correct sequence.

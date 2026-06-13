@@ -32,9 +32,7 @@ RestOS/                            # Monorepo root
 │   │       ├── api/               # API client + types
 │   │       ├── components/        # UI components (MenuView, ItemDetail, etc.)
 │   │       └── i18n/              # Locale strings
-│   ├── website/                   # Next.js multi-tenant restaurant sites (scaffolded)
-│   ├── mobile/                    # Expo React Native (scaffolded)
-│   └── landing/                   # SaaS marketing landing (scaffolded)
+│   └── website/                   # Next.js multi-tenant restaurant sites
 │
 ├── packages/                      # Shared libraries
 │   ├── domain/                    # Pure TS domain types + Zod schemas (no infra imports)
