@@ -19,7 +19,7 @@
     "@resto/config-typescript": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "eslint": "^10.4.0",
+    "eslint": "^10.5.0",
     "typescript": "^6.0.3"
   }
 }
