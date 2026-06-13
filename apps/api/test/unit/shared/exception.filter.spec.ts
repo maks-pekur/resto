@@ -72,6 +72,14 @@ describe('ProblemDetailsFilter', () => {
     expect(JSON.stringify(problem)).not.toContain('tenants_slug_uq');
   });
 
+  it('redacts the title field on 5xx so the exception message does not leak', () => {
+    const { problem } = runFilter(
+      new HttpException('Better Auth bootstrap failed: upstream secret token', 502),
+    );
+    expect(problem.title).toBe('Internal Server Error');
+    expect(JSON.stringify(problem)).not.toContain('upstream secret token');
+  });
+
   it('preserves the detail field on 4xx', () => {
     const { problem } = runFilter(new BadRequestException('field x is required'));
     expect(problem.detail).toBe('field x is required');

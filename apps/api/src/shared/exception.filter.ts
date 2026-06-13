@@ -77,6 +77,12 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     }
 
     const traceId = trace.getActiveSpan()?.spanContext().traceId;
+
+    const isServerError = status >= HttpStatus.INTERNAL_SERVER_ERROR;
+    if (isServerError) {
+      title = 'Internal Server Error';
+    }
+
     // Stable `type` URI: prefer the explicit error code (e.g.
     // `auth.tenant_mismatch`) when callers provide it; fall back to the
     // slugified title for legacy and stdlib exceptions. Clients branch
@@ -93,7 +99,6 @@ export class ProblemDetailsFilter implements ExceptionFilter {
     // shipping that to the client leaks schema details and PII. The
     // original detail still lands in the log line below, correlated by
     // `correlationId` and `traceId` so on-call can pivot.
-    const isServerError = status >= HttpStatus.INTERNAL_SERVER_ERROR;
     if (detail !== undefined) {
       problem.detail = isServerError
         ? 'Internal server error — see correlationId in logs.'
