@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { IMAGE_URL_PORT } from '../../src/contexts/catalog/domain/ports';
@@ -7,6 +9,7 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
+import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -16,21 +19,24 @@ if (!dockerOk) {
 }
 
 const INTERNAL_TOKEN = 'integration-test-token-1234567890';
+const PASSWORD = 'Sup3r-Secret-Pw!';
 
-const provisionTenant = async (
+interface AuthedTenant {
+  id: string;
+  slug: string;
+  authed: { cookie: string; 'x-tenant-id': string };
+}
+
+const setupAuthedTenant = async (
   app: NestFastifyApplication,
-  body: { slug: string; displayName: string },
-): Promise<{ id: string; primaryDomain: string }> => {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/internal/v1/tenants',
-    headers: { 'x-internal-token': INTERNAL_TOKEN },
-    payload: { ...body, defaultCurrency: 'USD', locale: 'en' },
-  });
-  if (res.statusCode !== 201) {
-    throw new Error(`provisionTenant failed: ${res.statusCode.toString()} ${res.body}`);
-  }
-  return res.json();
+  label: string,
+): Promise<AuthedTenant> => {
+  const slug = `${label}-${randomUUID().slice(0, 8)}`;
+  const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
+  const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+  await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
+  const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
+  return { id: tenant.id, slug, authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id } };
 };
 
 const recorded: {
@@ -40,11 +46,18 @@ const recorded: {
   ttl: number;
 }[] = [];
 
-suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT handshake', () => {
+suite('POST /v1/catalog/photo-upload-url — CAT-03 presigned PUT handshake', () => {
   let stack: RealStack;
+  let tenantA: AuthedTenant;
+  let tenantB: AuthedTenant;
   let tenantAId: string;
 
   beforeAll(async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
+    process.env.RATE_LIMIT_INTERNAL_PER_MIN = '10000';
+
     stack = await startRealStack({
       natsEnabledInApp: false,
       overrideProviders: [
@@ -68,12 +81,9 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
         },
       ],
     });
-    const tenantA = await provisionTenant(stack.app, {
-      slug: 'photo-a',
-      displayName: 'Photo Tenant A',
-    });
+    tenantA = await setupAuthedTenant(stack.app, 'photo-a');
     tenantAId = tenantA.id;
-    await provisionTenant(stack.app, { slug: 'photo-b', displayName: 'Photo Tenant B' });
+    tenantB = await setupAuthedTenant(stack.app, 'photo-b');
   }, 180_000);
 
   afterAll(async () => {
@@ -84,8 +94,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
     recorded.length = 0;
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'image/jpeg', sizeBytes: 12_345 },
     });
     expect(res.statusCode).toBe(200);
@@ -101,8 +111,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
   it('uses the correct extension for image/png and image/webp', async () => {
     const png = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'image/png', sizeBytes: 1024 },
     });
     expect(png.statusCode).toBe(200);
@@ -110,8 +120,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
 
     const webp = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'image/webp', sizeBytes: 1024 },
     });
     expect(webp.statusCode).toBe(200);
@@ -121,8 +131,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
   it('rejects disallowed contentType with 400', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'application/pdf', sizeBytes: 1024 },
     });
     expect(res.statusCode).toBe(400);
@@ -131,8 +141,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
   it('rejects sizeBytes over 5 MiB with 400', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'image/jpeg', sizeBytes: 6_000_000 },
     });
     expect(res.statusCode).toBe(400);
@@ -141,18 +151,18 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
   it('rejects non-positive sizeBytes with 400', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantA.authed,
       payload: { contentType: 'image/jpeg', sizeBytes: 0 },
     });
     expect(res.statusCode).toBe(400);
   });
 
-  it('rejects request without x-internal-token with 401', async () => {
+  it('rejects an unauthenticated request with 401', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-tenant-slug': 'photo-a' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: { 'x-tenant-id': tenantAId },
       payload: { contentType: 'image/jpeg', sizeBytes: 1024 },
     });
     expect(res.statusCode).toBe(401);
@@ -161,8 +171,8 @@ suite('POST /internal/v1/catalog/photo-upload-url — CAT-03 presigned PUT hands
   it('s3Key is bound to the calling tenant; tenant B cannot produce a key under tenant A prefix', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/photo-upload-url',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'photo-b' },
+      url: '/v1/catalog/photo-upload-url',
+      headers: tenantB.authed,
       payload: { contentType: 'image/jpeg', sizeBytes: 1024 },
     });
     expect(res.statusCode).toBe(200);
