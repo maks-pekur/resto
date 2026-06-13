@@ -20,6 +20,10 @@ export default defineConfig({
   server: {
     port: 3003,
     host: true,
+    // Brand subdomains (e.g. `cafe-demo.menu.lvh.me`) must be allowed through
+    // Vite's host check so the dev server serves them; the brand resolves from
+    // this Host downstream.
+    allowedHosts: ['.lvh.me', '.localhost'],
     // Dev only: forward the public/internal api paths to the api on :3000.
     // `changeOrigin: false` keeps the brand subdomain Host (e.g.
     // `cafe-demo.menu.lvh.me`) so the api resolves the brand from it,
