@@ -30,7 +30,7 @@ Phase: 06 (qr-menu-customer) — EXECUTING
 Plan: 1 of 5
 Next: Phase 6 — QR-Menu Customer (reuses /v1/menu + the cart/menu patterns from Phase 5)
 Status: Executing Phase 06
-Last activity: 2026-06-12 -- Phase 06 execution started
+Last activity: 2026-06-13 -- Completed quick task 260613-qmn: audit hygiene (#22/#23/#24)
 
 Progress: [█████████░] 89%
 
@@ -124,6 +124,12 @@ None yet.
 - Phase 6 (Customer Site) is a stub — checkout wires in at Phase 8; zone validation wires in at Phase 9; promo code field is non-functional until Phase 11
 - Phase 9 (Delivery Zones) must complete before Phase 10 (Admin Order Intake) so zone validation is enforced for live delivery orders
 - `feature-flags` package is an empty placeholder (CONCERNS.md) — defer until needed; do not import from `@resto/feature-flags` in any Phase 1–16 work; ONB-05 dev-mode toggle should be implemented as `SKIP_PAYMENT_FLOW=true` env var, not a feature-flag dependency
+
+### Quick Tasks Completed
+
+| #          | Description                                                               | Date       | Commit  | Directory                                                     |
+| ---------- | ------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------- |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24) | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/) |
 
 ## Deferred Items
 
