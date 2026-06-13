@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { ModifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
@@ -39,10 +39,10 @@ export async function upsertModifierGroupAction(
   };
   if (input.groupId) payload.id = input.groupId;
 
-  const res = await apiFetchInternal<UpsertModifierGroupResponse>(
-    '/internal/v1/catalog/modifier-groups',
-    { method: 'POST', body: payload },
-  );
+  const res = await apiFetch<UpsertModifierGroupResponse>('/v1/catalog/modifier-groups', {
+    method: 'POST',
+    body: payload,
+  });
   if (!res.ok || !res.data) {
     return {
       ok: false,

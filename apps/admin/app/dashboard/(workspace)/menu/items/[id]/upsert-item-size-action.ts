@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { SizeFormSchema } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
@@ -32,7 +32,7 @@ export async function upsertItemSizeAction(
       const t = await getTranslations('menu.sizes');
       return { ok: false, error: t('sizeIdMissing') };
     }
-    const res = await apiFetchInternal(`/internal/v1/catalog/item-sizes/${values.sizeId}`, {
+    const res = await apiFetch(`/v1/catalog/item-sizes/${values.sizeId}`, {
       method: 'DELETE',
     });
     if (!res.ok) {
@@ -64,7 +64,7 @@ export async function upsertItemSizeAction(
   };
   if (values.sizeId) payload.id = values.sizeId;
 
-  const res = await apiFetchInternal<UpsertItemSizeResponse>('/internal/v1/catalog/item-sizes', {
+  const res = await apiFetch<UpsertItemSizeResponse>('/v1/catalog/item-sizes', {
     method: 'POST',
     body: payload,
   });

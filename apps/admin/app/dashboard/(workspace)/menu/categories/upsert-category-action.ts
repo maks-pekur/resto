@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { CategoryFormSchema } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
@@ -58,7 +58,7 @@ export async function upsertCategoryAction(
     payload.id = rawId;
   }
 
-  const res = await apiFetchInternal<UpsertCategoryResponse>('/internal/v1/catalog/categories', {
+  const res = await apiFetch<UpsertCategoryResponse>('/v1/catalog/categories', {
     method: 'POST',
     body: payload,
   });

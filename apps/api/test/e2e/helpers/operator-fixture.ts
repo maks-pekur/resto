@@ -6,11 +6,15 @@
  * (`app`) — callers own app lifecycle in beforeAll / afterAll.
  */
 import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import { NestFactory } from '@nestjs/core';
 import { expect } from 'vitest';
+import { schema } from '@resto/db';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { BootstrapModule } from '../../../src/contexts/identity/bootstrap.module';
 import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
+import { AUTH_DRIZZLE_TOKEN } from '../../../src/contexts/identity/identity.tokens';
+import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
 export interface TenantFixture {
   id: string;
@@ -152,4 +156,36 @@ export const signInAsOperator = async (
   expect.fail(
     `set-active failed after ${String(SIGN_IN_MAX_ATTEMPTS)} attempts: ${String(lastStatus)} ${lastBody}`,
   );
+};
+
+export const addMemberWithRole = async (
+  app: NestFastifyApplication,
+  input: {
+    tenantId: string;
+    internalToken: string;
+    email: string;
+    password: string;
+    name: string;
+    role: 'admin' | 'staff';
+  },
+): Promise<string> => {
+  const throwawaySlug = `member-tenant-${randomUUID().slice(0, 8)}`;
+  await provisionTenant(app, throwawaySlug, input.internalToken);
+  const user = await runBootstrap({
+    tenantSlug: throwawaySlug,
+    email: input.email,
+    password: input.password,
+    name: input.name,
+  });
+
+  const authDb = app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+  await authDb.db.insert(schema.member).values({
+    id: randomUUID(),
+    organizationId: input.tenantId,
+    userId: user.userId,
+    role: input.role,
+    createdAt: new Date(),
+  });
+
+  return signInAsOperator(app, input.email, input.password, input.tenantId);
 };

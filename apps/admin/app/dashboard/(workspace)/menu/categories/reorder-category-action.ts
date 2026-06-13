@@ -1,6 +1,6 @@
 'use server';
 
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ReorderCategoriesActionState {
@@ -25,7 +25,7 @@ export async function reorderCategoriesAction(
   if (input.moves.length === 0) {
     return { error: null, success: true };
   }
-  const res = await apiFetchInternal<ReorderResponse>('/internal/v1/catalog/categories/reorder', {
+  const res = await apiFetch<ReorderResponse>('/v1/catalog/categories/reorder', {
     method: 'POST',
     body: { moves: input.moves },
   });

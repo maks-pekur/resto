@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 
 export type SchedulePublishActionResult =
   | { readonly ok: true; readonly scheduledAt: number; readonly error: null }
@@ -13,7 +13,7 @@ interface PublishScheduledBody {
 }
 
 export const schedulePublishAction = async (): Promise<SchedulePublishActionResult> => {
-  const res = await apiFetchInternal<PublishScheduledBody>('/internal/v1/catalog/publish', {
+  const res = await apiFetch<PublishScheduledBody>('/v1/catalog/publish', {
     method: 'POST',
   });
   if (!res.ok) {

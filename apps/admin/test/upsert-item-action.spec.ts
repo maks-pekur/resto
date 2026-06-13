@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -36,8 +36,8 @@ interface CallShape {
 }
 
 const lastCallBody = (): Record<string, unknown> => {
-  const first = apiFetchInternalMock.mock.calls[0] as readonly [string, CallShape] | undefined;
-  if (!first) throw new Error('apiFetchInternal was not invoked');
+  const first = apiFetchMock.mock.calls[0] as readonly [string, CallShape] | undefined;
+  if (!first) throw new Error('apiFetch was not invoked');
   return first[1].body;
 };
 
@@ -47,10 +47,10 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('returns ok with new id, revalidates layout + detail on a successful new-item create', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     const res = await upsertItemAction('new', validValues, null);
-    expect(apiFetchInternalMock).toHaveBeenCalledWith(
-      '/internal/v1/catalog/items',
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      '/v1/catalog/items',
       expect.objectContaining({ method: 'POST' }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
@@ -59,7 +59,7 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('serialises basePrice via toFixed(2) and omits id for new items', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     await upsertItemAction('new', { ...validValues, basePrice: 4.5 }, null);
     const callBody = lastCallBody();
     expect(callBody.basePrice).toBe('4.50');
@@ -67,14 +67,14 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('sends an empty photos array when no s3Key is provided', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     await upsertItemAction('new', validValues, null);
     const body = lastCallBody();
     expect(body.photos).toEqual([]);
   });
 
   it('sends a single primary photo entry when s3Key is provided', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     await upsertItemAction('new', validValues, 'tenants/xx/items/yy.jpg');
     const body = lastCallBody();
     expect(body.photos).toEqual([
@@ -85,12 +85,12 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
   it('short-circuits on validation failure without calling the api', async () => {
     const res = await upsertItemAction('new', { ...validValues, name: '   ' }, null);
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
   it('surfaces api errors and does not revalidate on failure', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 404,
       data: { code: 'catalog.menu_category_not_found' },
@@ -102,14 +102,14 @@ describe('upsertItemAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('sends id for existing items', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     await upsertItemAction(ITEM_ID, validValues, null);
     const body = lastCallBody();
     expect(body.id).toBe(ITEM_ID);
   });
 
-  it('forwards ingredients + metaTitle + metaDescription to apiFetchInternal', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
+  it('forwards ingredients + metaTitle + metaDescription to apiFetch', async () => {
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: ITEM_ID } });
     await upsertItemAction(
       'new',
       {

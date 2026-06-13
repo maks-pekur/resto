@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 import type { ItemDetailApi } from './types';
@@ -48,7 +49,7 @@ export async function upsertItemModifierGroupsAction(
     modifierGroupIds: [...modifierGroupIds],
   };
 
-  const res = await apiFetchInternal<UpsertItemResponse>('/internal/v1/catalog/items', {
+  const res = await apiFetch<UpsertItemResponse>('/v1/catalog/items', {
     method: 'POST',
     body: payload,
   });

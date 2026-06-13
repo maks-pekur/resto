@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { IMAGE_URL_PORT } from '../../src/contexts/catalog/domain/ports';
@@ -7,6 +9,7 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
+import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -16,27 +19,43 @@ if (!dockerOk) {
 }
 
 const INTERNAL_TOKEN = 'integration-test-token-1234567890';
+const PASSWORD = 'Sup3r-Secret-Pw!';
 
-const provisionTenant = async (
+interface AuthedTenant {
+  id: string;
+  slug: string;
+  internal: { 'x-internal-token': string; 'x-tenant-slug': string };
+  authed: { cookie: string; 'x-tenant-id': string };
+}
+
+const setupAuthedTenant = async (
   app: NestFastifyApplication,
-  body: { slug: string; displayName: string },
-): Promise<{ id: string; primaryDomain: string }> => {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/internal/v1/tenants',
-    headers: { 'x-internal-token': INTERNAL_TOKEN },
-    payload: { ...body, defaultCurrency: 'USD', locale: 'en' },
-  });
-  if (res.statusCode !== 201) {
-    throw new Error(`provisionTenant failed: ${res.statusCode.toString()} ${res.body}`);
-  }
-  return res.json();
+  label: string,
+): Promise<AuthedTenant> => {
+  const slug = `${label}-${randomUUID().slice(0, 8)}`;
+  const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
+  const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+  await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
+  const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
+  return {
+    id: tenant.id,
+    slug,
+    internal: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': slug },
+    authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id },
+  };
 };
 
 suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   let stack: RealStack;
+  let readsA: AuthedTenant;
+  let readsB: AuthedTenant;
 
   beforeAll(async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
+    process.env.RATE_LIMIT_INTERNAL_PER_MIN = '10000';
+
     stack = await startRealStack({
       natsEnabledInApp: false,
       overrideProviders: [
@@ -49,8 +68,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
         },
       ],
     });
-    await provisionTenant(stack.app, { slug: 'reads-a', displayName: 'Reads A' });
-    await provisionTenant(stack.app, { slug: 'reads-b', displayName: 'Reads B' });
+    readsA = await setupAuthedTenant(stack.app, 'reads-a');
+    readsB = await setupAuthedTenant(stack.app, 'reads-b');
   }, 180_000);
 
   afterAll(async () => {
@@ -58,18 +77,16 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   });
 
   it('GET /categories returns own-tenant categories filtered by parentId and sorted by sortOrder', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
-
     const top1 = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'cat-a-2', name: { en: 'Second' }, sortOrder: 2 },
     });
     const top2 = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'cat-a-1', name: { en: 'First' }, sortOrder: 1 },
     });
     expect(top1.statusCode).toBe(200);
@@ -77,8 +94,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const parentId = top2.json<{ id: string }>().id;
     const child = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'cat-a-child', name: { en: 'Child' }, sortOrder: 0, parentId },
     });
     expect(child.statusCode).toBe(200);
@@ -86,7 +103,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const topRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/categories',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(topRes.statusCode).toBe(200);
     const topBody = topRes.json<{
@@ -99,7 +116,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const childRes = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/categories?parentId=${parentId}`,
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(childRes.statusCode).toBe(200);
     const childBody = childRes.json<{
@@ -110,19 +127,18 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /items returns thin rows with hasSizes flag and respects status filter', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'items-cat', name: { en: 'Items category' } },
     });
     const categoryId = categoryRes.json<{ id: string }>().id;
 
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
       payload: {
         categoryId,
         slug: 'items-draft',
@@ -137,8 +153,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const sizeRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/item-sizes',
-      headers: authA,
+      url: '/v1/catalog/item-sizes',
+      headers: readsA.authed,
       payload: {
         menuItemId: itemId,
         name: { en: 'Small' },
@@ -151,7 +167,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/items',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(listRes.statusCode).toBe(200);
     const listBody = listRes.json<{
@@ -169,7 +185,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const pubRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/items?status=published',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(pubRes.statusCode).toBe(200);
     const pubBody = pubRes.json<{ items: { id: string }[] }>();
@@ -177,18 +193,17 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /items/:id returns full detail including sizes + modifierGroupIds', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'detail-cat', name: { en: 'Detail category' } },
     });
     const categoryId = categoryRes.json<{ id: string }>().id;
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
       payload: {
         categoryId,
         slug: 'detail-item',
@@ -202,8 +217,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const groupRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: authA,
+      url: '/v1/catalog/modifier-groups',
+      headers: readsA.authed,
       payload: {
         name: { en: 'Group A' },
         minSelectable: 0,
@@ -215,8 +230,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const sizeRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/item-sizes',
-      headers: authA,
+      url: '/v1/catalog/item-sizes',
+      headers: readsA.authed,
       payload: { menuItemId: itemId, name: { en: 'M' }, price: '8.00' },
     });
     expect(sizeRes.statusCode).toBe(200);
@@ -224,7 +239,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const detail = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/items/${itemId}`,
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(detail.statusCode).toBe(200);
     const body = detail.json<{
@@ -239,19 +254,17 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /items/:id returns 404 for cross-tenant id', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
-    const authB = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-b' };
     const catA = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'xtenant-cat', name: { en: 'X-tenant cat' } },
     });
     const catId = catA.json<{ id: string }>().id;
     const itemA = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
       payload: {
         categoryId: catId,
         slug: 'xtenant-item',
@@ -264,24 +277,23 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const sniff = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/items/${itemId}`,
-      headers: authB,
+      headers: readsB.internal,
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
 
   it('GET /modifier-groups returns option-count and usage-count', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const groupRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: authA,
+      url: '/v1/catalog/modifier-groups',
+      headers: readsA.authed,
       payload: { name: { en: 'Counted' }, minSelectable: 0, maxSelectable: 2 },
     });
     const groupId = groupRes.json<{ id: string }>().id;
     await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-options',
-      headers: authA,
+      url: '/v1/catalog/modifier-options',
+      headers: readsA.authed,
       payload: {
         modifierGroupId: groupId,
         name: { en: 'Opt 1' },
@@ -292,7 +304,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/modifier-groups',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(listRes.statusCode).toBe(200);
     const list = listRes.json<{
@@ -304,18 +316,17 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /modifier-groups/:id returns embedded options', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const groupRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: authA,
+      url: '/v1/catalog/modifier-groups',
+      headers: readsA.authed,
       payload: { name: { en: 'WithOpts' }, minSelectable: 0, maxSelectable: 1 },
     });
     const groupId = groupRes.json<{ id: string }>().id;
     await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-options',
-      headers: authA,
+      url: '/v1/catalog/modifier-options',
+      headers: readsA.authed,
       payload: {
         modifierGroupId: groupId,
         name: { en: 'Embedded opt' },
@@ -326,7 +337,7 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const detail = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/modifier-groups/${groupId}`,
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(detail.statusCode).toBe(200);
     const body = detail.json<{
@@ -338,28 +349,26 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /modifier-groups/:id returns 404 for unknown id', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const res = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/modifier-groups/00000000-0000-0000-0000-000000000000',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(res.statusCode).toBe(404);
   }, 60_000);
 
   it('GET /stop-list surfaces stoppedAt per item, sorted DESC', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const catRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'stoplist-cat', name: { en: 'Stoplist cat' } },
     });
     const categoryId = catRes.json<{ id: string }>().id;
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
       payload: {
         categoryId,
         slug: 'stoplist-item',
@@ -372,15 +381,15 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const itemId = itemRes.json<{ id: string }>().id;
     await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/stop-list',
-      headers: authA,
+      url: '/v1/catalog/stop-list',
+      headers: readsA.authed,
       payload: { itemId, reason: 'Out of stock' },
     });
 
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/stop-list',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(listRes.statusCode).toBe(200);
     const body = listRes.json<{
@@ -392,11 +401,10 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('GET /draft-diff returns unpublishedCount and capped items', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const res = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/draft-diff',
-      headers: authA,
+      headers: readsA.internal,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
@@ -410,67 +418,63 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   }, 60_000);
 
   it('PATCH /categories/:id/archive flips status to archived (idempotent on re-call)', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const catRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'archive-cat', name: { en: 'Archive cat' } },
     });
     const id = catRes.json<{ id: string }>().id;
     const arch1 = await stack.app.inject({
       method: 'PATCH',
-      url: `/internal/v1/catalog/categories/${id}/archive`,
-      headers: authA,
+      url: `/v1/catalog/categories/${id}/archive`,
+      headers: readsA.authed,
     });
     expect(arch1.statusCode).toBe(204);
     const arch2 = await stack.app.inject({
       method: 'PATCH',
-      url: `/internal/v1/catalog/categories/${id}/archive`,
-      headers: authA,
+      url: `/v1/catalog/categories/${id}/archive`,
+      headers: readsA.authed,
     });
     expect(arch2.statusCode).toBe(204);
 
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/internal/v1/catalog/categories',
-      headers: authA,
+      headers: readsA.internal,
     });
     const list = listRes.json<{ items: { id: string; status: string }[] }>();
     expect(list.items.find((i) => i.id === id)?.status).toBe('archived');
   }, 60_000);
 
   it('PATCH /categories/:id/archive returns 404 for cross-tenant id', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
-    const authB = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-b' };
     const catA = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'archive-xt', name: { en: 'Archive xt' } },
     });
     const id = catA.json<{ id: string }>().id;
     const sniff = await stack.app.inject({
       method: 'PATCH',
-      url: `/internal/v1/catalog/categories/${id}/archive`,
-      headers: authB,
+      url: `/v1/catalog/categories/${id}/archive`,
+      headers: readsB.authed,
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
 
   it('PATCH /items/:id/archive flips status to archived', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'reads-a' };
     const catRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
       payload: { slug: 'archive-item-cat', name: { en: 'Archive item cat' } },
     });
     const categoryId = catRes.json<{ id: string }>().id;
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
       payload: {
         categoryId,
         slug: 'archive-item',
@@ -482,15 +486,15 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const id = itemRes.json<{ id: string }>().id;
     const arch = await stack.app.inject({
       method: 'PATCH',
-      url: `/internal/v1/catalog/items/${id}/archive`,
-      headers: authA,
+      url: `/v1/catalog/items/${id}/archive`,
+      headers: readsA.authed,
     });
     expect(arch.statusCode).toBe(204);
 
     const detail = await stack.app.inject({
       method: 'GET',
       url: `/internal/v1/catalog/items/${id}`,
-      headers: authA,
+      headers: readsA.internal,
     });
     const body = detail.json<{ status: string }>();
     expect(body.status).toBe('archived');

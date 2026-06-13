@@ -23,9 +23,11 @@ import { PublishMenuService } from './publish-menu.service';
  */
 @Injectable()
 export class DelayedPublishService implements OnModuleDestroy {
+  static readonly CANCEL_WINDOW_MS = 5_000;
+
   private readonly logger = new Logger(DelayedPublishService.name);
   readonly #pending = new Map<string, { timerId: NodeJS.Timeout }>();
-  readonly #DELAY_MS = 5_000;
+  readonly #DELAY_MS = DelayedPublishService.CANCEL_WINDOW_MS;
 
   constructor(@Inject(PublishMenuService) private readonly publisher: PublishMenuService) {}
 

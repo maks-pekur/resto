@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
 vi.mock('@/lib/api-server-internal', () => ({
   apiFetchInternal: apiFetchInternalMock,
+}));
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -42,9 +46,9 @@ interface CallShape {
 }
 
 const upsertBody = (): Record<string, unknown> => {
-  const second = apiFetchInternalMock.mock.calls[1] as readonly [string, CallShape] | undefined;
-  if (!second) throw new Error('upsert call was not invoked');
-  return second[1].body;
+  const first = apiFetchMock.mock.calls[0] as readonly [string, CallShape] | undefined;
+  if (!first) throw new Error('upsert call was not invoked');
+  return first[1].body;
 };
 
 describe('upsertItemModifierGroupsAction (Plan 04b-08 Task 1)', () => {
@@ -53,9 +57,8 @@ describe('upsertItemModifierGroupsAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('GETs the item then POSTs the full item body with replaced modifierGroupIds', async () => {
-    apiFetchInternalMock
-      .mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail })
-      .mockResolvedValueOnce({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchInternalMock.mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail });
+    apiFetchMock.mockResolvedValueOnce({ ok: true, status: 200, data: { id: ITEM_ID } });
 
     const res = await upsertItemModifierGroupsAction(ITEM_ID, [GROUP_B]);
 
@@ -63,9 +66,9 @@ describe('upsertItemModifierGroupsAction (Plan 04b-08 Task 1)', () => {
       1,
       `/internal/v1/catalog/items/${ITEM_ID}`,
     );
-    expect(apiFetchInternalMock).toHaveBeenNthCalledWith(
-      2,
-      '/internal/v1/catalog/items',
+    expect(apiFetchMock).toHaveBeenNthCalledWith(
+      1,
+      '/v1/catalog/items',
       expect.objectContaining({ method: 'POST' }),
     );
     expect(upsertBody().modifierGroupIds).toEqual([GROUP_B]);
@@ -75,9 +78,8 @@ describe('upsertItemModifierGroupsAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('revalidates layout + detail path on success', async () => {
-    apiFetchInternalMock
-      .mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail })
-      .mockResolvedValueOnce({ ok: true, status: 200, data: { id: ITEM_ID } });
+    apiFetchInternalMock.mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail });
+    apiFetchMock.mockResolvedValueOnce({ ok: true, status: 200, data: { id: ITEM_ID } });
 
     await upsertItemModifierGroupsAction(ITEM_ID, []);
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
@@ -89,12 +91,12 @@ describe('upsertItemModifierGroupsAction (Plan 04b-08 Task 1)', () => {
     const res = await upsertItemModifierGroupsAction(ITEM_ID, [GROUP_B]);
     expect(res.ok).toBe(false);
     expect(apiFetchInternalMock).toHaveBeenCalledTimes(1);
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('surfaces upsert errors and skips revalidate', async () => {
-    apiFetchInternalMock
-      .mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail })
-      .mockResolvedValueOnce({ ok: false, status: 500, data: null });
+    apiFetchInternalMock.mockResolvedValueOnce({ ok: true, status: 200, data: itemDetail });
+    apiFetchMock.mockResolvedValueOnce({ ok: false, status: 500, data: null });
     const res = await upsertItemModifierGroupsAction(ITEM_ID, []);
     expect(res.ok).toBe(false);
     expect(revalidatePathMock).not.toHaveBeenCalled();

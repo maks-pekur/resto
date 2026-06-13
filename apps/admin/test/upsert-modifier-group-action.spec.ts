@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -20,8 +20,8 @@ interface CallShape {
 }
 
 const lastCallBody = (): Record<string, unknown> => {
-  const first = apiFetchInternalMock.mock.calls[0] as readonly [string, CallShape] | undefined;
-  if (!first) throw new Error('apiFetchInternal was not invoked');
+  const first = apiFetchMock.mock.calls[0] as readonly [string, CallShape] | undefined;
+  if (!first) throw new Error('apiFetch was not invoked');
   return first[1].body;
 };
 
@@ -31,10 +31,10 @@ describe('upsertModifierGroupAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('creates a new group, revalidates layout + detail path', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
     const res = await upsertModifierGroupAction({ values: validValues });
-    expect(apiFetchInternalMock).toHaveBeenCalledWith(
-      '/internal/v1/catalog/modifier-groups',
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      '/v1/catalog/modifier-groups',
       expect.objectContaining({ method: 'POST' }),
     );
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
@@ -43,13 +43,13 @@ describe('upsertModifierGroupAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('attaches groupId as id for existing groups; omits id for new ones', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
     await upsertModifierGroupAction({ groupId: GROUP_ID, values: validValues });
     expect(lastCallBody().id).toBe(GROUP_ID);
   });
 
   it('wraps the name with toLocalizedText', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: GROUP_ID } });
     await upsertModifierGroupAction({ values: validValues });
     expect(lastCallBody().name).toEqual({ ru: 'Соусы' });
   });
@@ -59,7 +59,7 @@ describe('upsertModifierGroupAction (Plan 04b-08 Task 1)', () => {
       values: { name: '   ', minSelectable: 0, maxSelectable: 0 },
     });
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('short-circuits when min > max (refine)', async () => {
@@ -67,11 +67,11 @@ describe('upsertModifierGroupAction (Plan 04b-08 Task 1)', () => {
       values: { name: 'X', minSelectable: 3, maxSelectable: 1 },
     });
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('surfaces api errors and skips revalidation on failure', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 409,
       data: { code: 'catalog.modifier_group_conflict' },

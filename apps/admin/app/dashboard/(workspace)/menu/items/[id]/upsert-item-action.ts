@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { toLocalizedText } from '@/lib/menu/localized';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
@@ -46,7 +46,7 @@ export async function upsertItemAction(
   };
   if (itemId !== 'new') payload.id = itemId;
 
-  const res = await apiFetchInternal<UpsertItemResponse>('/internal/v1/catalog/items', {
+  const res = await apiFetch<UpsertItemResponse>('/v1/catalog/items', {
     method: 'POST',
     body: payload,
   });

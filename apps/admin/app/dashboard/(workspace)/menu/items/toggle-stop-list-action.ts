@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 export interface ToggleStopListResult {
@@ -28,11 +28,11 @@ export async function toggleStopListAction(
 ): Promise<ToggleStopListResult> {
   const res =
     input.next === 'paused'
-      ? await apiFetchInternal<unknown>('/internal/v1/catalog/stop-list', {
+      ? await apiFetch<unknown>('/v1/catalog/stop-list', {
           method: 'POST',
           body: { itemId: input.itemId, reason: null },
         })
-      : await apiFetchInternal<unknown>(`/internal/v1/catalog/stop-list/${input.itemId}`, {
+      : await apiFetch<unknown>(`/v1/catalog/stop-list/${input.itemId}`, {
           method: 'DELETE',
         });
   if (!res.ok) {

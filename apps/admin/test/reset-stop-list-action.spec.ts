@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
 vi.mock('@/lib/api-server-internal', () => ({
   apiFetchInternal: apiFetchInternalMock,
+}));
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -30,45 +34,38 @@ describe('resetStopListAction (Plan 04b-09 Task 1)', () => {
   });
 
   it('DELETEs every paused item in sequence and revalidates dashboard + menu', async () => {
-    apiFetchInternalMock
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        data: [{ id: ITEM_A }, { id: ITEM_B }, { id: ITEM_C }],
-      })
+    apiFetchInternalMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: [{ id: ITEM_A }, { id: ITEM_B }, { id: ITEM_C }],
+    });
+    apiFetchMock
       .mockResolvedValueOnce({ ok: true, status: 204, data: null })
       .mockResolvedValueOnce({ ok: true, status: 204, data: null })
       .mockResolvedValueOnce({ ok: true, status: 204, data: null });
 
     const res = await resetStopListAction();
 
-    expect(apiFetchInternalMock).toHaveBeenCalledTimes(4);
-    expect(apiFetchInternalMock).toHaveBeenNthCalledWith(
-      2,
-      `/internal/v1/catalog/stop-list/${ITEM_A}`,
-      {
-        method: 'DELETE',
-      },
-    );
-    expect(apiFetchInternalMock).toHaveBeenNthCalledWith(
-      3,
-      `/internal/v1/catalog/stop-list/${ITEM_B}`,
-      {
-        method: 'DELETE',
-      },
-    );
+    expect(apiFetchInternalMock).toHaveBeenCalledTimes(1);
+    expect(apiFetchMock).toHaveBeenCalledTimes(3);
+    expect(apiFetchMock).toHaveBeenNthCalledWith(1, `/v1/catalog/stop-list/${ITEM_A}`, {
+      method: 'DELETE',
+    });
+    expect(apiFetchMock).toHaveBeenNthCalledWith(2, `/v1/catalog/stop-list/${ITEM_B}`, {
+      method: 'DELETE',
+    });
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard');
     expect(res).toEqual({ ok: true, resetCount: 3, failedIds: [], error: null });
   });
 
   it('continues past per-item failures and surfaces failedIds without aborting', async () => {
-    apiFetchInternalMock
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        data: [{ id: ITEM_A }, { id: ITEM_B }, { id: ITEM_C }],
-      })
+    apiFetchInternalMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: [{ id: ITEM_A }, { id: ITEM_B }, { id: ITEM_C }],
+    });
+    apiFetchMock
       .mockResolvedValueOnce({ ok: true, status: 204, data: null })
       .mockResolvedValueOnce({ ok: false, status: 500, data: null })
       .mockResolvedValueOnce({ ok: true, status: 204, data: null });

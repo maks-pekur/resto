@@ -1,3 +1,5 @@
+import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { sql } from 'drizzle-orm';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
@@ -9,6 +11,7 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
+import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -18,38 +21,42 @@ if (!dockerOk) {
 }
 
 const INTERNAL_TOKEN = 'integration-test-token-1234567890';
+const PASSWORD = 'Sup3r-Secret-Pw!';
 
-const provisionTenant = async (
+interface AuthedTenant {
+  id: string;
+  slug: string;
+  authed: { cookie: string; 'x-tenant-id': string };
+}
+
+const setupAuthedTenant = async (
   app: NestFastifyApplication,
-  body: { slug: string; displayName: string },
-): Promise<{ id: string; primaryDomain: string }> => {
-  const res = await app.inject({
-    method: 'POST',
-    url: '/internal/v1/tenants',
-    headers: { 'x-internal-token': INTERNAL_TOKEN },
-    payload: { ...body, defaultCurrency: 'USD', locale: 'en' },
-  });
-  if (res.statusCode !== 201) {
-    throw new Error(`provisionTenant failed: ${res.statusCode.toString()} ${res.body}`);
-  }
-  return res.json();
+  label: string,
+): Promise<AuthedTenant> => {
+  const slug = `${label}-${randomUUID().slice(0, 8)}`;
+  const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
+  const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+  await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
+  const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
+  return { id: tenant.id, slug, authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id } };
 };
 
-suite('Catalog — internal write → public read → cross-tenant isolation', () => {
+suite('Catalog — authed write → public read → cross-tenant isolation', () => {
   let stack: RealStack;
+  let cafeA: AuthedTenant;
+  let cafeB: AuthedTenant;
 
   beforeAll(async () => {
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
+    process.env.RATE_LIMIT_INTERNAL_PER_MIN = '10000';
+
     stack = await startRealStack({
-      // Catalog tests don't exercise the event publish path; the broker
-      // container is still started by the harness, but the api skips
-      // wiring its NATS publisher.
       natsEnabledInApp: false,
       overrideProviders: [
         {
           provide: IMAGE_URL_PORT,
-          // Don't reach for MinIO in tests — produce a deterministic
-          // signed URL so the assertion stays focused on "raw key
-          // never leaks".
           useValue: {
             presignGet: (key: string, ttl: number): Promise<string> =>
               Promise.resolve(`https://signed.test/${key}?expires=${ttl.toString()}`),
@@ -57,22 +64,20 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
         },
       ],
     });
-    await provisionTenant(stack.app, { slug: 'cafe-a', displayName: 'Cafe A' });
-    // Tenant B exists so the cross-tenant test has a host to send requests against.
-    await provisionTenant(stack.app, { slug: 'cafe-b', displayName: 'Cafe B' });
+
+    cafeA = await setupAuthedTenant(stack.app, 'cafe-a');
+    cafeB = await setupAuthedTenant(stack.app, 'cafe-b');
   }, 180_000);
 
   afterAll(async () => {
     await stopRealStack(stack);
   });
 
-  it('operator with internal token can upsert + publish, and the public menu surfaces the item', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-
+  it('an authenticated owner can upsert + publish, and the public menu surfaces the item', async () => {
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuth,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'pizza', name: { en: 'Pizza' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -80,8 +85,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'margherita',
@@ -97,20 +102,15 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const publishRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuth,
+      url: '/v1/catalog/publish',
+      headers: cafeA.authed,
     });
     expect(publishRes.statusCode).toBe(200);
-
-    // Plan 04a-07: publish is now delayed (5s timer). `/v1/menu` still
-    // returns items with status='published' immediately because the read
-    // path uses repo.loadPublishedMenu regardless of version bump state;
-    // outbox emission is checked in the dedicated delayed-publish test.
 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -123,33 +123,28 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     }>();
     const item = menu.items.find((i) => i.id === itemId);
     expect(item?.slug).toBe('margherita');
-    // RES-92: raw S3 key never crosses the wire; the response carries
-    // a presigned URL instead. `imageUrl` is `photos[0]?.url` for
-    // backward-compat with v1 callers.
     expect(item?.imageUrl).toBe('https://signed.test/menu/margherita.webp?expires=300');
     expect(item?.photos).toHaveLength(1);
     expect(item?.photos[0]?.url).toBe('https://signed.test/menu/margherita.webp?expires=300');
     expect(item?.photos[0]?.s3Key).toBe('menu/margherita.webp');
-    // raw S3 key never appears as an outbound DTO field.
     expect(JSON.stringify(menu)).not.toContain('imageS3Key');
   }, 60_000);
 
-  it('rejects internal write without the shared token', async () => {
+  it('rejects an unauthenticated catalog write with 401', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      url: '/v1/catalog/categories',
+      headers: { 'x-tenant-id': cafeA.id },
       payload: { slug: 'drinks', name: { en: 'Drinks' } },
     });
     expect(res.statusCode).toBe(401);
   });
 
-  it('operator with internal token can upsert a modifier group (RES-109)', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
+  it('an authenticated owner can upsert a modifier group (RES-109)', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: internalAuth,
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
       payload: {
         name: { en: 'Spice level' },
         minSelectable: 0,
@@ -162,40 +157,38 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(id).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   });
 
-  it('rejects modifier-group upsert without the internal token', async () => {
+  it('rejects an unauthenticated modifier-group upsert with 401', async () => {
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      url: '/v1/catalog/modifier-groups',
+      headers: { 'x-tenant-id': cafeA.id },
       payload: { name: { en: 'No auth' }, minSelectable: 0, maxSelectable: 1 },
     });
     expect(res.statusCode).toBe(401);
   });
 
   it('rejects an invalid modifier group (maxSelectable < minSelectable) at the DTO boundary', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: internalAuth,
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
       payload: { name: { en: 'Bad' }, minSelectable: 3, maxSelectable: 1 },
     });
     expect(res.statusCode).toBe(400);
   });
 
   it("tenant B sniffing tenant A's item id gets 404 (RLS-backed)", async () => {
-    const internalAuthA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuthA,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'drinks', name: { en: 'Drinks' } },
     });
     const categoryId = categoryRes.json<{ id: string }>().id;
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuthA,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'cola',
@@ -207,44 +200,40 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     });
     const tenantAItemId = itemRes.json<{ id: string }>().id;
 
-    // Publish so the item is reachable on the public read path.
     const publishRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuthA,
+      url: '/v1/catalog/publish',
+      headers: cafeA.authed,
     });
     expect(publishRes.statusCode).toBe(200);
 
-    // Positive control: tenant A reads its own item — proves the route is
-    // mounted and the id is real (RES-109). Without this, the 404 below
-    // could be a route-not-found bug rather than RLS doing its job.
     const ownerView = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(ownerView.statusCode).toBe(200);
     expect(ownerView.json<{ id: string; slug: string }>().slug).toBe('cola');
 
-    // Now request the same id from tenant B's host. RLS should return 404.
     const sniff = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': 'cafe-b' },
+      headers: { 'x-tenant-slug': cafeB.slug },
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
 
   it('returns 404 with code on GET /v1/menu/items with a malformed (non-UUID) id', async () => {
-    await provisionTenant(stack.app, {
-      slug: 'cafe-malformed',
-      displayName: 'Cafe Malformed',
-    });
+    const cafeMalformed = await provisionTenant(
+      stack.app,
+      `cafe-malformed-${randomUUID().slice(0, 8)}`,
+      INTERNAL_TOKEN,
+    );
 
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/items/not-a-uuid',
-      headers: { 'x-tenant-slug': 'cafe-malformed' },
+      headers: { 'x-tenant-slug': cafeMalformed.slug },
     });
     expect(res.statusCode).toBe(404);
     const body = res.json<{ type: string; status: number }>();
@@ -253,22 +242,18 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
   }, 60_000);
 
   it("tenant A's published menu contains no rows from tenant B (RES-241 ScopedTx auto-filter)", async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-    const authB = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-b' };
-
-    // Seed tenant A: category + published item with unique cross-tenant slugs.
     const aCatRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'xt-a-cat', name: { en: 'XT A category' }, sortOrder: 0 },
     });
     expect(aCatRes.statusCode).toBe(200);
     const aCategoryId = aCatRes.json<{ id: string }>().id;
     const aItemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId: aCategoryId,
         slug: 'xt-a-item',
@@ -280,19 +265,18 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     });
     expect(aItemRes.statusCode).toBe(200);
 
-    // Seed tenant B: category + published item with B-specific slugs.
     const bCatRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authB,
+      url: '/v1/catalog/categories',
+      headers: cafeB.authed,
       payload: { slug: 'xt-b-cat', name: { en: 'XT B category' }, sortOrder: 0 },
     });
     expect(bCatRes.statusCode).toBe(200);
     const bCategoryId = bCatRes.json<{ id: string }>().id;
     const bItemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authB,
+      url: '/v1/catalog/items',
+      headers: cafeB.authed,
       payload: {
         categoryId: bCategoryId,
         slug: 'xt-b-item',
@@ -304,13 +288,12 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     });
     expect(bItemRes.statusCode).toBe(200);
 
-    // Publish both tenants' menus.
     expect(
       (
         await stack.app.inject({
           method: 'POST',
-          url: '/internal/v1/catalog/publish',
-          headers: authA,
+          url: '/v1/catalog/publish',
+          headers: cafeA.authed,
         })
       ).statusCode,
     ).toBe(200);
@@ -318,19 +301,16 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       (
         await stack.app.inject({
           method: 'POST',
-          url: '/internal/v1/catalog/publish',
-          headers: authB,
+          url: '/v1/catalog/publish',
+          headers: cafeB.authed,
         })
       ).statusCode,
     ).toBe(200);
 
-    // Tenant A reads its published menu. ScopedTx's auto-applied
-    // `eq(table.tenantId, ALS.tenantId)` (with RLS as the second line of
-    // defense) must keep tenant B's category and item out of the response.
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -344,25 +324,11 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(menu.items.map((i) => i.slug)).not.toContain('xt-b-item');
   }, 60_000);
 
-  /*
-   * ── Plan 04a-07 — new HTTP surface coverage ──
-   *
-   * The tests below exercise the endpoints added in plan 04a-07:
-   *   POST /modifier-options, POST /item-sizes, POST/DELETE /stop-list,
-   *   POST /publish (delayed) + DELETE /publish (Undo), PUT-via-POST item
-   *   with slug change → menu_item_slug_aliases row.
-   *
-   * They depend on the cafe-a tenant seeded in beforeAll. Each test creates
-   * its own categories/items/slugs to avoid cross-test interference.
-   */
-
   it('round-trips BJU + photos[] + source on POST items', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuth,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'salads', name: { en: 'Salads' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -370,8 +336,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'cobb',
@@ -397,7 +363,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -416,7 +382,6 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(item?.photos).toHaveLength(2);
     expect(item?.photos[0]?.s3Key).toBe('menu/cobb-1.webp');
     expect(item?.photos[1]?.s3Key).toBe('menu/cobb-2.webp');
-    // Numeric BJU columns are emitted as decimal strings (Drizzle numeric).
     expect(item?.proteins).toBe('32.50');
     expect(item?.fats).toBe('18.20');
     expect(item?.carbs).toBe('9.70');
@@ -425,12 +390,10 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
   }, 60_000);
 
   it('creates a modifier group then attaches an option; option fields round-trip on /v1/menu', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-
     const groupRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: internalAuth,
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
       payload: {
         name: { en: 'Crust' },
         minSelectable: 1,
@@ -443,8 +406,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const optionRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/modifier-options',
-      headers: internalAuth,
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
       payload: {
         modifierGroupId: groupId,
         name: { en: 'Thin' },
@@ -459,7 +422,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -487,12 +450,10 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
   }, 60_000);
 
   it('creates an item-size with an absolute price; round-trips on /v1/menu', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuth,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'sizes-cat', name: { en: 'Sized' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -500,8 +461,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'pasta',
@@ -516,8 +477,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const sizeRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/item-sizes',
-      headers: internalAuth,
+      url: '/v1/catalog/item-sizes',
+      headers: cafeA.authed,
       payload: {
         menuItemId: itemId,
         name: { en: 'Large' },
@@ -531,7 +492,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -544,12 +505,10 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
   }, 60_000);
 
   it('stop-list overlay marks items isStopListed on /v1/menu; DELETE clears it', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuth,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'stoplist-cat', name: { en: 'StopList' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -557,8 +516,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const itemRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'stop-this',
@@ -571,20 +530,18 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(itemRes.statusCode).toBe(200);
     const itemId = itemRes.json<{ id: string }>().id;
 
-    // Sanity: item visible before stop-list.
     const beforeRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     const beforeBody = beforeRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     expect(beforeBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
 
-    // Stop it.
     const stopRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/stop-list',
-      headers: internalAuth,
+      url: '/v1/catalog/stop-list',
+      headers: cafeA.authed,
       payload: { itemId, reason: '86 in the kitchen' },
     });
     expect(stopRes.statusCode).toBe(200);
@@ -592,80 +549,71 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     const stoppedRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     const stoppedBody = stoppedRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     const stoppedItem = stoppedBody.items.find((i) => i.id === itemId);
     expect(stoppedItem).toBeDefined();
     expect(stoppedItem?.isStopListed).toBe(true);
 
-    // Unstop.
     const unstopRes = await stack.app.inject({
       method: 'DELETE',
-      url: `/internal/v1/catalog/stop-list/${itemId}`,
-      headers: internalAuth,
+      url: `/v1/catalog/stop-list/${itemId}`,
+      headers: cafeA.authed,
     });
     expect(unstopRes.statusCode).toBe(204);
 
     const restoredRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': 'cafe-a' },
+      headers: { 'x-tenant-slug': cafeA.slug },
     });
     const restoredBody = restoredRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     expect(restoredBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
   }, 60_000);
 
   it('POST /publish then DELETE /publish within 5s cancels the timer — no outbox emission', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-undo' };
-    await provisionTenant(stack.app, { slug: 'cafe-undo', displayName: 'Cafe Undo' });
+    const cafeUndo = await setupAuthedTenant(stack.app, 'cafe-undo');
     const db = stack.app.get(TenantAwareDb);
 
     const scheduleRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuth,
+      url: '/v1/catalog/publish',
+      headers: cafeUndo.authed,
     });
     expect(scheduleRes.statusCode).toBe(200);
     const scheduled = scheduleRes.json<{ scheduled: boolean; cancelAfterMs: number }>();
     expect(scheduled.scheduled).toBe(true);
     expect(scheduled.cancelAfterMs).toBe(5_000);
 
-    // Cancel immediately.
     const cancelRes = await stack.app.inject({
       method: 'DELETE',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuth,
+      url: '/v1/catalog/publish',
+      headers: cafeUndo.authed,
     });
     expect(cancelRes.statusCode).toBe(200);
     expect(cancelRes.json<{ cancelled: boolean }>().cancelled).toBe(true);
 
-    // Wait past the original 5s window to be sure the timer would have fired
-    // if it hadn't been cancelled.
     await new Promise((r) => setTimeout(r, 5_500));
 
     const outboxRows = await db.withoutTenant('inspect outbox after cancel', async (tx) =>
       tx.execute<{ count: string }>(
         sql`SELECT COUNT(*)::text AS count FROM outbox_events
             WHERE type IN ('catalog.menu_first_published.v1','catalog.menu_republished.v1')
-              AND tenant_id IN (
-                SELECT id FROM tenants WHERE slug = 'cafe-undo'
-              )`,
+              AND tenant_id = ${cafeUndo.id}::uuid`,
       ),
     );
     expect(outboxRows[0]?.count).toBe('0');
   }, 30_000);
 
   it('first POST /publish emits MenuFirstPublishedV1; second emits MenuRepublishedV1', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-pub' };
-    await provisionTenant(stack.app, { slug: 'cafe-pub', displayName: 'Cafe Publish' });
+    const cafePub = await setupAuthedTenant(stack.app, 'cafe-pub');
     const db = stack.app.get(TenantAwareDb);
 
-    // First publish.
     const first = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuth,
+      url: '/v1/catalog/publish',
+      headers: cafePub.authed,
     });
     expect(first.statusCode).toBe(200);
 
@@ -675,17 +623,16 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       tx.execute<{ type: string }>(
         sql`SELECT type FROM outbox_events
             WHERE type IN ('catalog.menu_first_published.v1','catalog.menu_republished.v1')
-              AND tenant_id = (SELECT id FROM tenants WHERE slug = 'cafe-pub')
+              AND tenant_id = ${cafePub.id}::uuid
             ORDER BY occurred_at ASC`,
       ),
     );
     expect(firstRow.map((r) => r.type)).toEqual(['catalog.menu_first_published.v1']);
 
-    // Second publish.
     const second = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/publish',
-      headers: internalAuth,
+      url: '/v1/catalog/publish',
+      headers: cafePub.authed,
     });
     expect(second.statusCode).toBe(200);
 
@@ -695,7 +642,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       tx.execute<{ type: string }>(
         sql`SELECT type FROM outbox_events
             WHERE type IN ('catalog.menu_first_published.v1','catalog.menu_republished.v1')
-              AND tenant_id = (SELECT id FROM tenants WHERE slug = 'cafe-pub')
+              AND tenant_id = ${cafePub.id}::uuid
             ORDER BY occurred_at ASC`,
       ),
     );
@@ -706,13 +653,12 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
   }, 30_000);
 
   it('PUT item with a changed slug inserts a row in menu_item_slug_aliases', async () => {
-    const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
     const db = stack.app.get(TenantAwareDb);
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: internalAuth,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'aliased-cat', name: { en: 'Aliased' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -720,8 +666,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
 
     const createRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId,
         slug: 'old-name',
@@ -734,11 +680,10 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(createRes.statusCode).toBe(200);
     const itemId = createRes.json<{ id: string }>().id;
 
-    // Rename with a new slug — should create alias row for old-name.
     const renameRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: internalAuth,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         id: itemId,
         categoryId,
@@ -759,30 +704,18 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(aliases.map((a) => a.alias)).toContain('old-name');
   }, 60_000);
 
-  /*
-   * ── tenant-isolation matrix for new entities (T-04a-07-03 mitigation) ──
-   *
-   * The canonical RLS regression net lives at
-   * `packages/db/test/integration/tenant-isolation.spec.ts` — this spec adds a
-   * thin smoke check using the live HTTP stack to demonstrate the same
-   * invariants behave end-to-end. Direct SQL probes for cross-tenant SELECT
-   * empty + INSERT error live in the db integration spec.
-   */
   it('cross-tenant: tenant B cannot read or stop tenant A items via the HTTP surface', async () => {
-    const authA = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
-    const authB = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-b' };
-
     const catRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: authA,
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
       payload: { slug: 'iso-a-cat', name: { en: 'Iso A' }, sortOrder: 0 },
     });
     expect(catRes.statusCode).toBe(200);
     const itemARes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/items',
-      headers: authA,
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
       payload: {
         categoryId: catRes.json<{ id: string }>().id,
         slug: 'iso-a-item',
@@ -795,16 +728,12 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(itemARes.statusCode).toBe(200);
     const itemAId = itemARes.json<{ id: string }>().id;
 
-    // Tenant B attempts to stop tenant A's item. RLS-backed: the upsert
-    // surface refuses (the item isn't visible from B's tenant context).
     const sniff = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/stop-list',
-      headers: authB,
+      url: '/v1/catalog/stop-list',
+      headers: cafeB.authed,
       payload: { itemId: itemAId },
     });
-    // Behaviour: either 404 (item not found in B's tenant scope) or a
-    // composite-FK 5xx — either is acceptable. We assert non-200.
     expect(sniff.statusCode).not.toBe(200);
   }, 60_000);
 });

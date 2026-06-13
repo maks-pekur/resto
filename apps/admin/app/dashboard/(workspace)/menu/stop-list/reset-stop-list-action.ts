@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getTranslations } from 'next-intl/server';
+import { apiFetch } from '@/lib/api-server';
 import { apiFetchInternal } from '@/lib/api-server-internal';
 
 interface StopListItemApi {
@@ -31,7 +32,7 @@ export async function resetStopListAction(): Promise<ResetStopListResult> {
   let resetCount = 0;
   for (const item of list.data) {
     try {
-      const res = await apiFetchInternal(`/internal/v1/catalog/stop-list/${item.id}`, {
+      const res = await apiFetch(`/v1/catalog/stop-list/${item.id}`, {
         method: 'DELETE',
       });
       if (res.ok) {
