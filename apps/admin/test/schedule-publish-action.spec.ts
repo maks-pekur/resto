@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({ apiFetchInternal: apiFetchInternalMock }));
+vi.mock('@/lib/api-server', () => ({ apiFetch: apiFetchMock }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
 const { schedulePublishAction } = await import('../lib/menu/schedule-publish-action');
@@ -13,15 +13,15 @@ describe('schedulePublishAction', () => {
     vi.clearAllMocks();
   });
 
-  it('POSTs /internal/v1/catalog/publish and returns ok=true with scheduledAt on 2xx', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+  it('POSTs /v1/catalog/publish and returns ok=true with scheduledAt on 2xx', async () => {
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 202,
       data: { scheduled: true, cancelAfterMs: 5_000 },
     });
     const before = Date.now();
     const res = await schedulePublishAction();
-    expect(apiFetchInternalMock).toHaveBeenCalledWith('/internal/v1/catalog/publish', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/v1/catalog/publish', {
       method: 'POST',
     });
     expect(res.ok).toBe(true);
@@ -33,7 +33,7 @@ describe('schedulePublishAction', () => {
   });
 
   it('returns ok=false with Russian error copy on 5xx, no revalidation', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: false, status: 500, data: null });
+    apiFetchMock.mockResolvedValue({ ok: false, status: 500, data: null });
     const res = await schedulePublishAction();
     expect(res.ok).toBe(false);
     if (!res.ok) {
@@ -44,7 +44,7 @@ describe('schedulePublishAction', () => {
   });
 
   it('returns ok=false on network-level failure (status: 0)', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: false, status: 0, data: null });
+    apiFetchMock.mockResolvedValue({ ok: false, status: 0, data: null });
     const res = await schedulePublishAction();
     expect(res.ok).toBe(false);
     expect(revalidatePathMock).not.toHaveBeenCalled();

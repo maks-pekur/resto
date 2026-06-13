@@ -1,10 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -18,23 +18,22 @@ describe('archiveItemAction (Plan 04b-06 Task 1)', () => {
     vi.clearAllMocks();
   });
 
-  it('PATCHes /internal/v1/catalog/items/:id/archive and revalidates on success', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+  it('PATCHes /v1/catalog/items/:id/archive and revalidates on success', async () => {
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 204,
       data: null,
     });
     const res = await archiveItemAction({ error: null, success: false }, { id: ITEM_ID });
-    expect(apiFetchInternalMock).toHaveBeenCalledWith(
-      `/internal/v1/catalog/items/${ITEM_ID}/archive`,
-      { method: 'PATCH' },
-    );
+    expect(apiFetchMock).toHaveBeenCalledWith(`/v1/catalog/items/${ITEM_ID}/archive`, {
+      method: 'PATCH',
+    });
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
     expect(res).toEqual({ error: null, success: true });
   });
 
   it('surfaces 404 as "Item not found."', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 404,
       data: { code: 'catalog.menu_item_not_found' },
@@ -46,7 +45,7 @@ describe('archiveItemAction (Plan 04b-06 Task 1)', () => {
   });
 
   it('surfaces 5xx with a generic retry message', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 502,
       data: null,

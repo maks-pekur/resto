@@ -1,10 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -18,14 +18,14 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     vi.clearAllMocks();
   });
 
-  it("POSTs /internal/v1/catalog/stop-list with itemId + null reason when next='paused'", async () => {
-    apiFetchInternalMock.mockResolvedValue({
+  it("POSTs /v1/catalog/stop-list with itemId + null reason when next='paused'", async () => {
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 201,
       data: null,
     });
     const res = await toggleStopListAction({ itemId: ITEM_ID, next: 'paused' });
-    expect(apiFetchInternalMock).toHaveBeenCalledWith('/internal/v1/catalog/stop-list', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/v1/catalog/stop-list', {
       method: 'POST',
       body: { itemId: ITEM_ID, reason: null },
     });
@@ -33,14 +33,14 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
     expect(res).toEqual({ ok: true, error: null });
   });
 
-  it("DELETEs /internal/v1/catalog/stop-list/:itemId when next='published'", async () => {
-    apiFetchInternalMock.mockResolvedValue({
+  it("DELETEs /v1/catalog/stop-list/:itemId when next='published'", async () => {
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 204,
       data: null,
     });
     const res = await toggleStopListAction({ itemId: ITEM_ID, next: 'published' });
-    expect(apiFetchInternalMock).toHaveBeenCalledWith(`/internal/v1/catalog/stop-list/${ITEM_ID}`, {
+    expect(apiFetchMock).toHaveBeenCalledWith(`/v1/catalog/stop-list/${ITEM_ID}`, {
       method: 'DELETE',
     });
     expect(revalidatePathMock).toHaveBeenCalledWith('/dashboard/menu', 'layout');
@@ -48,7 +48,7 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
   });
 
   it('surfaces 409 catalog.menu_item_not_found as an "Item not found" error', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 409,
       data: { code: 'catalog.menu_item_not_found' },
@@ -60,7 +60,7 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
   });
 
   it('surfaces 409 catalog.stop_list_item_not_found as a not-on-stop-list error', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 409,
       data: { code: 'catalog.stop_list_item_not_found' },
@@ -71,7 +71,7 @@ describe('toggleStopListAction (Plan 04b-06 Task 1)', () => {
   });
 
   it('surfaces 5xx with a generic retry message', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 502,
       data: null,

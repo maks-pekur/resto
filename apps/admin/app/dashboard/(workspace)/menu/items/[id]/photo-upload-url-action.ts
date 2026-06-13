@@ -1,7 +1,7 @@
 'use server';
 
 import { getTranslations } from 'next-intl/server';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 import { friendlyCatalogError, type ProblemDetails } from '@/lib/menu/catalog-errors';
 
 interface PhotoUploadUrlResponse {
@@ -25,10 +25,10 @@ export async function photoUploadUrlAction(
     return { ok: false, error: t('photoAllowlistError') };
   }
 
-  const res = await apiFetchInternal<PhotoUploadUrlResponse>(
-    '/internal/v1/catalog/photo-upload-url',
-    { method: 'POST', body: { contentType, sizeBytes } },
-  );
+  const res = await apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {
+    method: 'POST',
+    body: { contentType, sizeBytes },
+  });
   if (!res.ok || !res.data) {
     return {
       ok: false,

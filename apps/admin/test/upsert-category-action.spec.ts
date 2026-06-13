@@ -1,10 +1,10 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -31,18 +31,18 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
       buildForm({ name: '   ' }),
     );
     expect(res.error).not.toBeNull();
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
     expect(revalidatePathMock).not.toHaveBeenCalled();
   });
 
-  it('POSTs to /internal/v1/catalog/categories with LocalizedText name (ru locale)', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+  it('POSTs to /v1/catalog/categories with LocalizedText name (ru locale)', async () => {
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { id: 'cat-uuid' },
     });
     const res = await upsertCategoryAction({ error: null, success: null }, buildForm());
-    expect(apiFetchInternalMock).toHaveBeenCalledWith('/internal/v1/catalog/categories', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/v1/catalog/categories', {
       method: 'POST',
       body: {
         name: { ru: 'Напитки' },
@@ -55,24 +55,24 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
   });
 
   it('includes id in the payload when present (edit mode)', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { id: 'existing-uuid' },
     });
     await upsertCategoryAction({ error: null, success: null }, buildForm({ id: 'existing-uuid' }));
-    const calls = apiFetchInternalMock.mock.calls as unknown as [
+    const calls = apiFetchMock.mock.calls as unknown as [
       string,
       { method?: string; body?: { id?: string; parentId?: string | null } },
     ][];
-    expect(calls[0]?.[0]).toBe('/internal/v1/catalog/categories');
+    expect(calls[0]?.[0]).toBe('/v1/catalog/categories');
     expect(calls[0]?.[1]?.method).toBe('POST');
     expect(calls[0]?.[1]?.body?.id).toBe('existing-uuid');
   });
 
   it('normalizes a non-empty parentId into the payload', async () => {
     const parentUuid = '11111111-1111-4111-8111-111111111111';
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { id: 'cat-uuid' },
@@ -81,7 +81,7 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
       { error: null, success: null },
       buildForm({ name: 'Кофе', parentId: parentUuid }),
     );
-    const calls = apiFetchInternalMock.mock.calls as unknown as [
+    const calls = apiFetchMock.mock.calls as unknown as [
       string,
       { method?: string; body?: { parentId?: string | null } },
     ][];
@@ -89,7 +89,7 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
   });
 
   it('revalidates the menu layout segment on success (Pattern S8)', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { id: 'cat-uuid' },
@@ -99,7 +99,7 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
   });
 
   it('surfaces 5xx with a generic retry message', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 500,
       data: { detail: 'internal' },
@@ -111,7 +111,7 @@ describe('upsertCategoryAction (Plan 04b-05 Task 2)', () => {
   });
 
   it('surfaces 409 menu_category_slug_taken with the friendly message', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: false,
       status: 409,
       data: { code: 'catalog.menu_category_slug_taken' },

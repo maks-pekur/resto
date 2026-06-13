@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { apiFetchInternal } from '@/lib/api-server-internal';
+import { apiFetch } from '@/lib/api-server';
 
 export type CancelPublishActionResult =
   | { readonly ok: true; readonly cancelled: boolean; readonly expired: boolean }
@@ -12,7 +12,7 @@ interface CancelBody {
 }
 
 export const cancelPublishAction = async (): Promise<CancelPublishActionResult> => {
-  const res = await apiFetchInternal<CancelBody>('/internal/v1/catalog/publish', {
+  const res = await apiFetch<CancelBody>('/v1/catalog/publish', {
     method: 'DELETE',
   });
   if (!res.ok) {

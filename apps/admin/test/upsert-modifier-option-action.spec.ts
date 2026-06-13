@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 const revalidatePathMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 vi.mock('next/cache', () => ({ revalidatePath: revalidatePathMock }));
 
@@ -19,8 +19,8 @@ interface CallShape {
 }
 
 const lastCallBody = (): Record<string, unknown> => {
-  const first = apiFetchInternalMock.mock.calls[0] as readonly [string, CallShape] | undefined;
-  if (!first) throw new Error('apiFetchInternal was not invoked');
+  const first = apiFetchMock.mock.calls[0] as readonly [string, CallShape] | undefined;
+  if (!first) throw new Error('apiFetch was not invoked');
   return first[1].body;
 };
 
@@ -30,7 +30,7 @@ describe('upsertModifierOptionAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('POSTs with toLocalizedText name + toFixed(2) priceDelta + groupId', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
     await upsertModifierOptionAction({
       groupId: GROUP_ID,
       values: { name: 'Карамель', priceDelta: 1.5, defaultAmount: 0, freeAmount: 0 },
@@ -43,7 +43,7 @@ describe('upsertModifierOptionAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('attaches optionId for updates', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
     await upsertModifierOptionAction({
       groupId: GROUP_ID,
       optionId: OPTION_ID,
@@ -53,7 +53,7 @@ describe('upsertModifierOptionAction (Plan 04b-08 Task 1)', () => {
   });
 
   it('revalidates the editor path and menu layout on success', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
+    apiFetchMock.mockResolvedValue({ ok: true, status: 200, data: { id: OPTION_ID } });
     await upsertModifierOptionAction({
       groupId: GROUP_ID,
       values: { name: 'X', priceDelta: 0, defaultAmount: 0, freeAmount: 0 },
@@ -68,11 +68,11 @@ describe('upsertModifierOptionAction (Plan 04b-08 Task 1)', () => {
       values: { name: '  ', priceDelta: 0, defaultAmount: 0, freeAmount: 0 },
     });
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('surfaces api errors and skips revalidation', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: false, status: 500, data: null });
+    apiFetchMock.mockResolvedValue({ ok: false, status: 500, data: null });
     const res = await upsertModifierOptionAction({
       groupId: GROUP_ID,
       values: { name: 'X', priceDelta: 0, defaultAmount: 0, freeAmount: 0 },

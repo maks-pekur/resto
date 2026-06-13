@@ -1,9 +1,9 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 
 const { reorderCategoriesAction } =
@@ -19,7 +19,7 @@ describe('reorderCategoriesAction', () => {
   });
 
   it('posts {moves} to the batch reorder endpoint', async () => {
-    apiFetchInternalMock.mockResolvedValueOnce({
+    apiFetchMock.mockResolvedValueOnce({
       ok: true,
       status: 200,
       data: { updated: 2 },
@@ -30,21 +30,21 @@ describe('reorderCategoriesAction', () => {
     ];
     const res = await reorderCategoriesAction({ error: null, success: false }, { moves });
     expect(res).toEqual({ error: null, success: true });
-    expect(apiFetchInternalMock).toHaveBeenCalledTimes(1);
-    const call = apiFetchInternalMock.mock.calls[0];
-    if (!call) throw new Error('apiFetchInternal was not called');
-    expect(call[0]).toBe('/internal/v1/catalog/categories/reorder');
+    expect(apiFetchMock).toHaveBeenCalledTimes(1);
+    const call = apiFetchMock.mock.calls[0];
+    if (!call) throw new Error('apiFetch was not called');
+    expect(call[0]).toBe('/v1/catalog/categories/reorder');
     expect(call[1]).toMatchObject({ method: 'POST', body: { moves } });
   });
 
   it('short-circuits to success when moves is empty (no network call)', async () => {
     const res = await reorderCategoriesAction({ error: null, success: false }, { moves: [] });
     expect(res).toEqual({ error: null, success: true });
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('surfaces 5xx as a friendly server error', async () => {
-    apiFetchInternalMock.mockResolvedValueOnce({ ok: false, status: 500, data: null });
+    apiFetchMock.mockResolvedValueOnce({ ok: false, status: 500, data: null });
     const res = await reorderCategoriesAction(
       { error: null, success: false },
       { moves: [{ id: A, parentId: null, sortOrder: 0 }] },
@@ -54,7 +54,7 @@ describe('reorderCategoriesAction', () => {
   });
 
   it('surfaces 400 with depth code from the nesting guard', async () => {
-    apiFetchInternalMock.mockResolvedValueOnce({
+    apiFetchMock.mockResolvedValueOnce({
       ok: false,
       status: 400,
       data: { code: 'catalog.category_nesting_depth', message: 'depth violation' },

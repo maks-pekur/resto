@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const apiFetchInternalMock = vi.fn();
+const apiFetchMock = vi.fn();
 
-vi.mock('@/lib/api-server-internal', () => ({
-  apiFetchInternal: apiFetchInternalMock,
+vi.mock('@/lib/api-server', () => ({
+  apiFetch: apiFetchMock,
 }));
 
 const { photoUploadUrlAction } =
@@ -15,13 +15,13 @@ describe('photoUploadUrlAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('POSTs payload { contentType, sizeBytes } and returns uploadUrl + s3Key on success', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { uploadUrl: 'https://s3.example/abc', s3Key: 'tenants/x/items/y.jpg' },
     });
     const res = await photoUploadUrlAction('image/jpeg', 1_024_000);
-    expect(apiFetchInternalMock).toHaveBeenCalledWith('/internal/v1/catalog/photo-upload-url', {
+    expect(apiFetchMock).toHaveBeenCalledWith('/v1/catalog/photo-upload-url', {
       method: 'POST',
       body: { contentType: 'image/jpeg', sizeBytes: 1_024_000 },
     });
@@ -35,17 +35,17 @@ describe('photoUploadUrlAction (Plan 04b-07 Task 2)', () => {
   it('rejects disallowed content types client-side without hitting the api', async () => {
     const res = await photoUploadUrlAction('image/gif', 1_000);
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('rejects oversized payloads client-side (>5 MiB)', async () => {
     const res = await photoUploadUrlAction('image/jpeg', 6 * 1024 * 1024);
     expect(res.ok).toBe(false);
-    expect(apiFetchInternalMock).not.toHaveBeenCalled();
+    expect(apiFetchMock).not.toHaveBeenCalled();
   });
 
   it('accepts JPEG, PNG, and WEBP at the 5 MiB boundary', async () => {
-    apiFetchInternalMock.mockResolvedValue({
+    apiFetchMock.mockResolvedValue({
       ok: true,
       status: 200,
       data: { uploadUrl: 'https://s3.example/a', s3Key: 'k' },
@@ -57,7 +57,7 @@ describe('photoUploadUrlAction (Plan 04b-07 Task 2)', () => {
   });
 
   it('surfaces api errors with a friendly message', async () => {
-    apiFetchInternalMock.mockResolvedValue({ ok: false, status: 502, data: null });
+    apiFetchMock.mockResolvedValue({ ok: false, status: 502, data: null });
     const res = await photoUploadUrlAction('image/jpeg', 1_000);
     expect(res.ok).toBe(false);
   });
