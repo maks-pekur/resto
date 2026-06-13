@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { getBrandId, requireTenantContext, TenantAwareDb } from '@resto/db';
+import { requireBrandContext, requireTenantContext, TenantAwareDb } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { appendToOutbox, buildEnvelope, ItemStoppedV1, ItemUnstoppedV1 } from '@resto/events';
 import {
@@ -41,7 +41,7 @@ export class StopListService {
   async stop(input: StopItemInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = getBrandId() ?? null;
+    const brandId = requireBrandContext();
 
     const { id, itemSlug } = await this.db.withTenant(async (tx) => {
       const result = await this.repo.addToStopList({
@@ -78,10 +78,10 @@ export class StopListService {
   async unstop(itemId: string): Promise<void> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = getBrandId() ?? null;
+    const brandId = requireBrandContext();
 
     const itemSlug = await this.db.withTenant(async (tx) => {
-      const result = await this.repo.removeFromStopList({ itemId });
+      const result = await this.repo.removeFromStopList({ itemId, brandId });
       if (!result.removed) {
         throw new StopListItemNotFoundError(itemId);
       }

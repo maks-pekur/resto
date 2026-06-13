@@ -37,7 +37,12 @@ import {
   type UpsertModifierGroupRow,
   type UpsertModifierOptionRow,
 } from '../domain/ports';
-import { CategoryNestingDepthError, MenuCategoryNotFoundError } from '../domain/errors';
+import {
+  CategoryNestingDepthError,
+  MenuCategoryNotFoundError,
+  MenuItemNotFoundError,
+  MenuModifierGroupNotFoundError,
+} from '../domain/errors';
 import type {
   PublishedMenu,
   PublishedMenuBrand,
@@ -286,7 +291,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const [row] = await scoped
         .insertInto(schema.menuCategories, {
           ...(input.id ? { id: input.id } : {}),
-          brandId: input.brandId ?? null,
+          brandId: input.brandId,
           parentId: input.parentId ?? null,
           slug: input.slug,
           name: input.name,
@@ -294,9 +299,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: input.sortOrder,
         })
         .onConflictDoUpdate({
-          target: [schema.menuCategories.tenantId, schema.menuCategories.slug],
+          target: [
+            schema.menuCategories.tenantId,
+            schema.menuCategories.brandId,
+            schema.menuCategories.slug,
+          ],
           set: {
-            brandId: input.brandId ?? null,
             parentId: input.parentId ?? null,
             name: input.name,
             description: input.description,
@@ -314,6 +322,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     input: UpsertItemRow,
   ): Promise<{ id: string; slugChanged?: { oldSlug: string } }> {
     return this.db.withTenant(async (_tx, scoped) => {
+      const parentCategory = await scoped
+        .selectFrom(
+          schema.menuCategories,
+          and(
+            eq(schema.menuCategories.id, input.categoryId),
+            eq(schema.menuCategories.brandId, input.brandId),
+          ),
+        )
+        .limit(1);
+      if (!parentCategory[0]) {
+        throw new MenuCategoryNotFoundError(input.categoryId);
+      }
+
       const photos: MenuItemPhoto[] = [...input.photos];
 
       // D-4a-04: id-based path and (tenant_id, slug)-based path are split so a
@@ -325,13 +346,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         const existing = await scoped
           .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
           .limit(1);
-        oldSlug = existing[0]?.slug ?? null;
+        const existingRow = existing[0];
+        if (existingRow && existingRow.brandId !== input.brandId) {
+          throw new MenuItemNotFoundError(input.id);
+        }
+        oldSlug = existingRow?.slug ?? null;
 
         if (existing.length === 0) {
           const [row] = await scoped
             .insertInto(schema.menuItems, {
               id: input.id,
-              brandId: input.brandId ?? null,
+              brandId: input.brandId,
               categoryId: input.categoryId,
               slug: input.slug,
               name: input.name,
@@ -362,7 +387,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             .updateTable(
               schema.menuItems,
               {
-                brandId: input.brandId ?? null,
+                brandId: input.brandId,
                 categoryId: input.categoryId,
                 slug: input.slug,
                 name: input.name,
@@ -386,7 +411,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 sortOrder: input.sortOrder,
                 updatedAt: new Date(),
               },
-              eq(schema.menuItems.id, input.id),
+              and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
             )
             .returning({ id: schema.menuItems.id });
           if (!row) throw new Error('upsertItem: update returned no row');
@@ -395,7 +420,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       } else {
         const [row] = await scoped
           .insertInto(schema.menuItems, {
-            brandId: input.brandId ?? null,
+            brandId: input.brandId,
             categoryId: input.categoryId,
             slug: input.slug,
             name: input.name,
@@ -419,9 +444,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             sortOrder: input.sortOrder,
           })
           .onConflictDoUpdate({
-            target: [schema.menuItems.tenantId, schema.menuItems.slug],
+            target: [schema.menuItems.tenantId, schema.menuItems.brandId, schema.menuItems.slug],
             set: {
-              brandId: input.brandId ?? null,
               categoryId: input.categoryId,
               name: input.name,
               description: input.description,
@@ -477,7 +501,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               isRequired: input.isRequired,
               updatedAt: new Date(),
             },
-            eq(schema.menuModifierGroups.id, input.id),
+            and(
+              eq(schema.menuModifierGroups.id, input.id),
+              eq(schema.menuModifierGroups.brandId, input.brandId),
+            ),
           )
           .returning({ id: schema.menuModifierGroups.id });
         if (!row) throw new Error('upsertModifierGroup: update returned no row');
@@ -485,7 +512,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierGroups, {
-          brandId: input.brandId ?? null,
+          brandId: input.brandId,
           name: input.name,
           minSelectable: input.minSelectable,
           maxSelectable: input.maxSelectable,
@@ -499,6 +526,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
+      const parentGroup = await scoped
+        .selectFrom(
+          schema.menuModifierGroups,
+          and(
+            eq(schema.menuModifierGroups.id, input.modifierGroupId),
+            eq(schema.menuModifierGroups.brandId, input.brandId),
+          ),
+        )
+        .limit(1);
+      if (!parentGroup[0]) {
+        throw new MenuModifierGroupNotFoundError(input.modifierGroupId);
+      }
+
       if (input.id) {
         const [row] = await scoped
           .updateTable(
@@ -512,7 +552,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sortOrder: input.sortOrder,
               updatedAt: new Date(),
             },
-            eq(schema.menuModifierOptions.id, input.id),
+            and(
+              eq(schema.menuModifierOptions.id, input.id),
+              eq(schema.menuModifierOptions.brandId, input.brandId),
+            ),
           )
           .returning({ id: schema.menuModifierOptions.id });
         if (!row) throw new Error('upsertModifierOption: update returned no row');
@@ -520,7 +563,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierOptions, {
-          brandId: input.brandId ?? null,
+          brandId: input.brandId,
           modifierGroupId: input.modifierGroupId,
           name: input.name,
           priceDelta: input.priceDelta,
@@ -536,6 +579,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
+      const parentItem = await scoped
+        .selectFrom(
+          schema.menuItems,
+          and(
+            eq(schema.menuItems.id, input.menuItemId),
+            eq(schema.menuItems.brandId, input.brandId),
+          ),
+        )
+        .limit(1);
+      if (!parentItem[0]) {
+        throw new MenuItemNotFoundError(input.menuItemId);
+      }
+
       if (input.id) {
         const [row] = await scoped
           .updateTable(
@@ -548,7 +604,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sortOrder: input.sortOrder,
               updatedAt: new Date(),
             },
-            eq(schema.menuItemSizes.id, input.id),
+            and(
+              eq(schema.menuItemSizes.id, input.id),
+              eq(schema.menuItemSizes.brandId, input.brandId),
+            ),
           )
           .returning({ id: schema.menuItemSizes.id });
         if (!row) throw new Error('upsertItemSize: update returned no row');
@@ -556,7 +615,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuItemSizes, {
-          brandId: input.brandId ?? null,
+          brandId: input.brandId,
           menuItemId: input.menuItemId,
           name: input.name,
           price: input.price,
@@ -573,17 +632,20 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
       const existingItem = await scoped
-        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
+        .selectFrom(
+          schema.menuItems,
+          and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
+        )
         .limit(1);
       const itemRow = existingItem[0];
       if (!itemRow) {
-        throw new Error(`addToStopList: item ${input.itemId} not found`);
+        throw new MenuItemNotFoundError(input.itemId);
       }
       const itemSlug = itemRow.slug;
 
       const inserted = await scoped
         .insertInto(schema.menuStopList, {
-          brandId: input.brandId ?? null,
+          brandId: input.brandId,
           itemId: input.itemId,
           reason: input.reason,
           stoppedByUserId: input.stoppedByUserId,
@@ -608,6 +670,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async removeFromStopList(input: {
     itemId: string;
+    brandId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }> {
     return this.db.withTenant(async (tx, scoped) => {
       const itemRow = (
@@ -623,6 +686,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .where(
           and(
             eq(schema.menuStopList.tenantId, ctx.tenantId),
+            eq(schema.menuStopList.brandId, input.brandId),
             eq(schema.menuStopList.itemId, input.itemId),
           ),
         )
@@ -727,10 +791,14 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async applyCategoryMoves(input: {
+    brandId: string;
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const all = await scoped.selectFrom(schema.menuCategories);
+      const all = await scoped.selectFrom(
+        schema.menuCategories,
+        eq(schema.menuCategories.brandId, input.brandId),
+      );
       const byId = new Map(all.map((c) => [c.id, c]));
       const childrenOf = new Map<string, number>();
       for (const c of all) {
@@ -771,7 +839,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           .updateTable(
             schema.menuCategories,
             { parentId: move.parentId, sortOrder: move.sortOrder, updatedAt },
-            eq(schema.menuCategories.id, move.id),
+            and(
+              eq(schema.menuCategories.id, move.id),
+              eq(schema.menuCategories.brandId, input.brandId),
+            ),
           )
           .execute();
         updated += 1;
@@ -1065,26 +1136,26 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async archiveCategory(id: string): Promise<{ found: boolean }> {
+  async archiveCategory(id: string, brandId: string): Promise<{ found: boolean }> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped
         .updateTable(
           schema.menuCategories,
           { status: 'archived', updatedAt: new Date() },
-          eq(schema.menuCategories.id, id),
+          and(eq(schema.menuCategories.id, id), eq(schema.menuCategories.brandId, brandId)),
         )
         .returning({ id: schema.menuCategories.id });
       return { found: rows.length > 0 };
     });
   }
 
-  async archiveItem(id: string): Promise<{ found: boolean }> {
+  async archiveItem(id: string, brandId: string): Promise<{ found: boolean }> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped
         .updateTable(
           schema.menuItems,
           { status: 'archived', updatedAt: new Date() },
-          eq(schema.menuItems.id, id),
+          and(eq(schema.menuItems.id, id), eq(schema.menuItems.brandId, brandId)),
         )
         .returning({ id: schema.menuItems.id });
       return { found: rows.length > 0 };

@@ -309,6 +309,13 @@
       "when": 1779841900000,
       "tag": "0043_catalog_item_ingredients_seo",
       "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1779842000000,
+      "tag": "0044_catalog_brand_id_not_null",
+      "breakpoints": true
     }
   ]
 }

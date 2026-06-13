@@ -17,6 +17,7 @@ export interface CatalogRepository {
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
+    brandId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
 
   listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
@@ -36,10 +37,11 @@ export interface CatalogRepository {
     totalCount: number;
   }>;
 
-  archiveCategory(id: string): Promise<{ found: boolean }>;
-  archiveItem(id: string): Promise<{ found: boolean }>;
+  archiveCategory(id: string, brandId: string): Promise<{ found: boolean }>;
+  archiveItem(id: string, brandId: string): Promise<{ found: boolean }>;
 
   applyCategoryMoves(input: {
+    brandId: string;
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }>;
 
@@ -86,7 +88,7 @@ export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
 export interface UpsertCategoryRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly parentId?: string | null;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -97,7 +99,7 @@ export interface UpsertCategoryRow {
 export interface UpsertItemRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly categoryId: string;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -124,7 +126,7 @@ export interface UpsertItemRow {
 export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly name: Record<string, string>;
   readonly minSelectable: number;
   readonly maxSelectable: number;
@@ -134,7 +136,7 @@ export interface UpsertModifierGroupRow {
 export interface UpsertModifierOptionRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly modifierGroupId: string;
   readonly name: Record<string, string>;
   readonly priceDelta: string;
@@ -146,7 +148,7 @@ export interface UpsertModifierOptionRow {
 export interface UpsertItemSizeRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly menuItemId: string;
   readonly name: Record<string, string>;
   readonly price: string;
@@ -157,7 +159,7 @@ export interface UpsertItemSizeRow {
 export interface StopListInsertRow {
   readonly itemId: string;
   readonly tenantId: string;
-  readonly brandId?: string | null;
+  readonly brandId: string;
   readonly reason: string | null;
   readonly stoppedByUserId: string | null;
 }

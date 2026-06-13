@@ -52,6 +52,7 @@ const CASES: FkCase[] = [
       pg.db.withoutTenant('I-2 probe: menu_items', async (tx) =>
         tx.insert(schema.menuItems).values({
           tenantId: fx.tenantA,
+          brandId: fx.brandA,
           categoryId: fx.categoryB,
           slug: `i2-probe-items-${Date.now()}`,
           name: { en: 'Probe' },
@@ -66,6 +67,7 @@ const CASES: FkCase[] = [
       pg.db.withoutTenant('I-2 probe: menu_item_sizes', async (tx) =>
         tx.insert(schema.menuItemSizes).values({
           tenantId: fx.tenantA,
+          brandId: fx.brandA,
           menuItemId: fx.itemB,
           price: '1.00',
           name: { en: 'Probe' },
@@ -78,6 +80,7 @@ const CASES: FkCase[] = [
       pg.db.withoutTenant('I-2 probe: menu_modifier_options', async (tx) =>
         tx.insert(schema.menuModifierOptions).values({
           tenantId: fx.tenantA,
+          brandId: fx.brandA,
           modifierGroupId: fx.modifierB,
           name: { en: 'Probe' },
         }),
@@ -89,6 +92,7 @@ const CASES: FkCase[] = [
       pg.db.withoutTenant('I-2 probe: menu_item_modifier_groups.menu_item_id', async (tx) =>
         tx.insert(schema.menuItemModifierGroups).values({
           tenantId: fx.tenantA,
+          brandId: fx.brandA,
           menuItemId: fx.itemB,
           modifierGroupId: fx.modifierA,
         }),
@@ -100,6 +104,7 @@ const CASES: FkCase[] = [
       pg.db.withoutTenant('I-2 probe: menu_item_modifier_groups.modifier_group_id', async (tx) =>
         tx.insert(schema.menuItemModifierGroups).values({
           tenantId: fx.tenantA,
+          brandId: fx.brandA,
           menuItemId: fx.itemA,
           modifierGroupId: fx.modifierB,
         }),
@@ -160,11 +165,21 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
 
       const [categoryA] = await tx
         .insert(schema.menuCategories)
-        .values({ tenantId: tenantA.id, slug: 'i2-cat-a', name: { en: 'Cat A' } })
+        .values({
+          tenantId: tenantA.id,
+          brandId: brandA.id,
+          slug: 'i2-cat-a',
+          name: { en: 'Cat A' },
+        })
         .returning({ id: schema.menuCategories.id });
       const [categoryB] = await tx
         .insert(schema.menuCategories)
-        .values({ tenantId: tenantB.id, slug: 'i2-cat-b', name: { en: 'Cat B' } })
+        .values({
+          tenantId: tenantB.id,
+          brandId: brandB.id,
+          slug: 'i2-cat-b',
+          name: { en: 'Cat B' },
+        })
         .returning({ id: schema.menuCategories.id });
       if (!categoryA || !categoryB) throw new Error('seed categories failed');
 
@@ -172,6 +187,7 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         .insert(schema.menuItems)
         .values({
           tenantId: tenantA.id,
+          brandId: brandA.id,
           categoryId: categoryA.id,
           slug: 'i2-item-a',
           name: { en: 'Item A' },
@@ -183,6 +199,7 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         .insert(schema.menuItems)
         .values({
           tenantId: tenantB.id,
+          brandId: brandB.id,
           categoryId: categoryB.id,
           slug: 'i2-item-b',
           name: { en: 'Item B' },
@@ -194,11 +211,11 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
 
       const [modifierA] = await tx
         .insert(schema.menuModifierGroups)
-        .values({ tenantId: tenantA.id, name: { en: 'Mod A' } })
+        .values({ tenantId: tenantA.id, brandId: brandA.id, name: { en: 'Mod A' } })
         .returning({ id: schema.menuModifierGroups.id });
       const [modifierB] = await tx
         .insert(schema.menuModifierGroups)
-        .values({ tenantId: tenantB.id, name: { en: 'Mod B' } })
+        .values({ tenantId: tenantB.id, brandId: brandB.id, name: { en: 'Mod B' } })
         .returning({ id: schema.menuModifierGroups.id });
       if (!modifierA || !modifierB) throw new Error('seed modifiers failed');
 

@@ -68,19 +68,40 @@ const seedAlsLeakFixture = async (stack: RealStack): Promise<AlsLeakFixture> => 
   const db = stack.app.get(TenantAwareDb);
 
   await db.withoutTenant('seed cross-tenant ALS-leak fixture rows', async (tx) => {
+    const [brandA] = await tx
+      .insert(schema.brands)
+      .values({ tenantId: tenantA.id, slug: 'als-flagship-a', displayName: 'Flagship A' })
+      .returning({ id: schema.brands.id });
+    const [brandB] = await tx
+      .insert(schema.brands)
+      .values({ tenantId: tenantB.id, slug: 'als-flagship-b', displayName: 'Flagship B' })
+      .returning({ id: schema.brands.id });
+    if (!brandA || !brandB) throw new Error('seed ALS fixture: brand insert failed');
+
     const [categoryA] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantA.id, slug: 'als-pizza-a', name: { en: 'Pizza A' } })
+      .values({
+        tenantId: tenantA.id,
+        brandId: brandA.id,
+        slug: 'als-pizza-a',
+        name: { en: 'Pizza A' },
+      })
       .returning({ id: schema.menuCategories.id });
     const [categoryB] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantB.id, slug: 'als-pizza-b', name: { en: 'Pizza B' } })
+      .values({
+        tenantId: tenantB.id,
+        brandId: brandB.id,
+        slug: 'als-pizza-b',
+        name: { en: 'Pizza B' },
+      })
       .returning({ id: schema.menuCategories.id });
     if (!categoryA || !categoryB) throw new Error('seed ALS fixture: category insert failed');
 
     await tx.insert(schema.menuItems).values(
       SLUGS_A.map((s, i) => ({
         tenantId: tenantA.id,
+        brandId: brandA.id,
         categoryId: categoryA.id,
         slug: s,
         name: { en: `Item ${s}` },
@@ -93,6 +114,7 @@ const seedAlsLeakFixture = async (stack: RealStack): Promise<AlsLeakFixture> => 
     await tx.insert(schema.menuItems).values(
       SLUGS_B.map((s, i) => ({
         tenantId: tenantB.id,
+        brandId: brandB.id,
         categoryId: categoryB.id,
         slug: s,
         name: { en: `Item ${s}` },
