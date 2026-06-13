@@ -153,3 +153,45 @@ export const signInAsOperator = async (
     `set-active failed after ${String(SIGN_IN_MAX_ATTEMPTS)} attempts: ${String(lastStatus)} ${lastBody}`,
   );
 };
+
+export const addMemberWithRole = async (
+  app: NestFastifyApplication,
+  input: {
+    ownerCookie: string;
+    tenantId: string;
+    email: string;
+    password: string;
+    name: string;
+    role: 'admin' | 'staff';
+  },
+): Promise<string> => {
+  const invite = await app.inject({
+    method: 'POST',
+    url: '/api/auth/organization/invite-member',
+    headers: { 'content-type': 'application/json', cookie: input.ownerCookie },
+    payload: { email: input.email, role: input.role, organizationId: input.tenantId },
+  });
+  expect([200, 201]).toContain(invite.statusCode);
+  const body = invite.json<{ id?: string; invitation?: { id: string } }>();
+  const id = body.id ?? body.invitation?.id;
+  expect(id, `invite-member response had no invitation id: ${invite.body}`).toBeTruthy();
+
+  const signUp = await app.inject({
+    method: 'POST',
+    url: '/api/auth/sign-up/email',
+    headers: { 'content-type': 'application/json' },
+    payload: { email: input.email, password: input.password, name: input.name },
+  });
+  expect([200, 201]).toContain(signUp.statusCode);
+  const memberCookie = extractCookies(signUp.headers['set-cookie']);
+
+  const accept = await app.inject({
+    method: 'POST',
+    url: '/api/auth/organization/accept-invitation',
+    headers: { 'content-type': 'application/json', cookie: memberCookie },
+    payload: { invitationId: id },
+  });
+  expect([200, 201]).toContain(accept.statusCode);
+
+  return signInAsOperator(app, input.email, input.password, input.tenantId);
+};
