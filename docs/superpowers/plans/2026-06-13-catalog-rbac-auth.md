@@ -35,75 +35,50 @@
 
 - Modify: `apps/api/test/e2e/helpers/operator-fixture.ts` (append)
 
-The existing helpers only create an owner (`runBootstrap`). The RBAC test needs a `staff` session. Reuse the proven HTTP flow: owner invites → invitee signs up → invitee accepts → `signInAsOperator`.
+The existing helpers only create an owner (`runBootstrap`). The RBAC test needs a `staff` session.
 
-- [ ] **Step 1: Append the helper**
+> **AS-BUILT note (reconciled 2026-06-13):** the original plan used Better Auth's `invite-member` → `accept-invitation` HTTP flow. That flow is **broken on this branch** — BA requires the inviter to be email-verified, but `runBootstrap` owners are `emailVerified: false`, so `invite-member` returns 403 (a pre-existing breakage; `identity-invitation.e2e.spec.ts` fails the same way — out of scope for AUDIT #1). The helper therefore uses the proven **member-row-insert** pattern already used by `identity-role-changed.e2e.spec.ts`: provision a throwaway tenant, `runBootstrap` the user there, insert a `schema.member` row binding them to the target tenant with the given role (via `AUTH_DRIZZLE_TOKEN`), then `signInAsOperator`. No comment block on the helper (project rule).
+
+- [ ] **Step 1: Append the helper** (member-insert pattern)
 
 ```typescript
-/**
- * Create a non-owner member with the given role and return an active
- * operator session cookie for them. Requires an owner cookie to send the
- * invitation. Uses only BA's organization HTTP endpoints.
- */
 export const addMemberWithRole = async (
   app: NestFastifyApplication,
   input: {
-    ownerCookie: string;
     tenantId: string;
+    internalToken: string;
     email: string;
     password: string;
     name: string;
     role: 'admin' | 'staff';
   },
 ): Promise<string> => {
-  const invite = await app.inject({
-    method: 'POST',
-    url: '/api/auth/organization/invite-member',
-    headers: { 'content-type': 'application/json', cookie: input.ownerCookie },
-    payload: {
-      email: input.email,
-      role: input.role,
-      organizationId: input.tenantId,
-    },
+  const throwawaySlug = `member-tenant-${randomUUID().slice(0, 8)}`;
+  await provisionTenant(app, throwawaySlug, input.internalToken);
+  const user = await runBootstrap({
+    tenantSlug: throwawaySlug,
+    email: input.email,
+    password: input.password,
+    name: input.name,
   });
-  expect([200, 201]).toContain(invite.statusCode);
-  const invitationId = invite.json<{
-    id?: string;
-    invitation?: { id: string };
-  }>();
-  const id = invitationId.id ?? invitationId.invitation?.id;
-  expect(
-    id,
-    `invite-member response had no invitation id: ${invite.body}`,
-  ).toBeTruthy();
-
-  const signUp = await app.inject({
-    method: 'POST',
-    url: '/api/auth/sign-up/email',
-    headers: { 'content-type': 'application/json' },
-    payload: { email: input.email, password: input.password, name: input.name },
+  const authDb = app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+  await authDb.db.insert(schema.member).values({
+    id: randomUUID(),
+    organizationId: input.tenantId,
+    userId: user.userId,
+    role: input.role,
+    createdAt: new Date(),
   });
-  expect([200, 201]).toContain(signUp.statusCode);
-  const memberCookie = extractCookies(signUp.headers['set-cookie']);
-
-  const accept = await app.inject({
-    method: 'POST',
-    url: '/api/auth/organization/accept-invitation',
-    headers: { 'content-type': 'application/json', cookie: memberCookie },
-    payload: { invitationId: id },
-  });
-  expect([200, 201]).toContain(accept.statusCode);
-
   return signInAsOperator(app, input.email, input.password, input.tenantId);
 };
 ```
+
+Imports needed in `operator-fixture.ts`: `randomUUID` from `node:crypto`, `schema` from `@resto/db`, `AUTH_DRIZZLE_TOKEN` from `../../src/contexts/identity/identity.tokens`, type `AuthDrizzle` from `../../src/contexts/identity/infrastructure/better-auth/auth-db`.
 
 - [ ] **Step 2: Verify it compiles**
 
 Run: `pnpm exec nx typecheck api`
 Expected: PASS
-
-> **Library-contract note for the executor:** BA's `invite-member` / `accept-invitation` response shapes are library-defined. If `invite.json()` does not expose the invitation id under `id` or `invitation.id`, log `invite.body`, read the actual field, and adjust the two lines that read `id`. This is a one-line contract confirmation, not a redesign.
 
 - [ ] **Step 3: Commit**
 
