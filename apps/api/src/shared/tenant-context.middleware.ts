@@ -4,6 +4,7 @@ import { TenantId } from '@resto/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
+import { effectiveHost } from './effective-host';
 import { TenantAndBrandResolverService } from '../contexts/tenancy/application/tenant-and-brand-resolver.service';
 import { TenantResolverService } from '../contexts/tenancy/application/tenant-resolver.service';
 
@@ -52,7 +53,8 @@ export class TenantContextMiddleware implements NestMiddleware {
   }
 
   private async resolveContext(req: FastifyRequest['raw']): Promise<TenantContext | null> {
-    const host = req.headers.host;
+    const trustProxy = this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0;
+    const host = effectiveHost(req.headers, trustProxy);
 
     const customer = await this.brands.resolveByCustomerHost(host);
     if (customer) {
@@ -101,7 +103,12 @@ export class TenantContextMiddleware implements NestMiddleware {
       }
     }
 
-    const fromHost = await this.tenants.resolveByHost(req.headers.host);
+    const fromHost = await this.tenants.resolveByHost(
+      effectiveHost(
+        req.headers,
+        this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0,
+      ),
+    );
     if (fromHost) return fromHost.id;
 
     if (this.env.NODE_ENV === 'development' && this.env.TENANT_DEV_FALLBACK_SLUG) {
