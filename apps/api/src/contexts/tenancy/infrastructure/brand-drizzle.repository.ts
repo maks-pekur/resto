@@ -59,7 +59,7 @@ export class BrandDrizzleRepository extends TenantScopedRepository implements Br
           theme: schema.brands.theme,
         })
         .from(schema.brands)
-        .where(eq(schema.brands.slug, slug))
+        .where(and(eq(schema.brands.slug, slug), ne(schema.brands.status, 'erased')))
         .limit(1);
       const row = rows[0];
       return row ? ROW_TO_SNAPSHOT(row) : null;
