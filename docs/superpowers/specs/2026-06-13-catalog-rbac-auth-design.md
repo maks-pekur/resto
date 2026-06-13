@@ -138,6 +138,17 @@ for archive — semantically aligned and free.
   routes → regenerate `docs/api/openapi.yaml` + `packages/api-client` via `pnpm openapi:generate`.
 - No DB migration. No domain/permission change (the `menu` perms already exist).
 
+## As-built decisions
+
+- **Upsert endpoints gate on `menu:['update']`, not `menu:['create']`.** The `menu`
+  permission catalogue defines a distinct `create` action, but every upsert route
+  (create-or-update by nature) requires `update`. For the three system roles this is
+  exactly correct (owner/admin hold all `menu` actions, staff holds none → DoD met),
+  and tenant-defined custom roles are effectively unreachable today (AUDIT #18:
+  `createRole` needs an `ac:['create']` grant no role has). The `create`/`update`
+  split for upserts is deferred to if/when custom roles ship (would require splitting
+  create vs update at the service boundary). Conscious decision, not an oversight.
+
 ## Out of scope (do not touch)
 
 - Brand-scope enforcement, `member_brand_scope` population, `@RequireBrand` (#15/#2/#3).
