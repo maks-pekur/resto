@@ -58,8 +58,8 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
-      url: '/internal/v1/catalog/categories',
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': slug },
+      url: '/v1/catalog/categories',
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: { slug: 'drinks', name: { en: 'Drinks' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
