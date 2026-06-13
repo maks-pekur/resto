@@ -10,6 +10,15 @@ export const isDockerAvailable = (): boolean => {
     execSync('docker info', { stdio: 'ignore' });
     return true;
   } catch {
+    // AUDIT #5: CI sets RESTO_REQUIRE_DOCKER=1 so a missing daemon hard-fails the
+    // isolation suite instead of silently degrading every spec to describe.skip
+    // (a green run with zero assertions). Absent the flag, local dev keeps skipping.
+    const flag = process.env.RESTO_REQUIRE_DOCKER;
+    if (flag === '1' || flag === 'true') {
+      throw new Error(
+        'RESTO_REQUIRE_DOCKER is set but Docker is not available — refusing to silently skip the e2e isolation suite. Start Docker or unset RESTO_REQUIRE_DOCKER.',
+      );
+    }
     return false;
   }
 };
