@@ -15,7 +15,7 @@
     "@resto/domain": "workspace:*",
     "drizzle-orm": "^0.45.2",
     "nats": "^2.29.1",
-    "pino": "^9.5.0",
+    "pino": "^10.3.1",
     "zod": "^3.24.1"
   },
   "devDependencies": {
