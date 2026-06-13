@@ -199,8 +199,8 @@ Note: the suite was not executed against a live `apps/api` in this plan because 
 
 ### [Plan tweak] Single `data-testid` reused; no new ones added
 
-**Found during:** Task 3 (per the plan's Task 3 read_first).
-**Issue:** Plan instructs _"Do NOT add new `data-testid`s for Phase 02"_.
+**Found during:** Task 3 (per the plan's Task 3 read*first).
+**Issue:** Plan instructs *"Do NOT add new `data-testid`s for Phase 02"\_.
 **Fix:** Reused only `data-testid="brand-switcher-trigger"` (already at `apps/admin/components/brand-switcher.tsx:61`). Scenario 3 + scenario 6 + scenario 1 all use it. Plan 04 will add `brand-switcher-static` + `brand-switcher-add-brand`; Plan 05 owns adding scenario 7.
 
 ## Authentication gates

@@ -13,30 +13,30 @@ Add the following four TXT records in your DNS provider (Cloudflare, Route 53, e
 
 ### 1. SPF
 
-| Record type | Host / Name | Value |
-|-------------|-------------|-------|
-| TXT | `@` (root domain) | `v=spf1 include:_spf.resend.com -all` |
+| Record type | Host / Name       | Value                                 |
+| ----------- | ----------------- | ------------------------------------- |
+| TXT         | `@` (root domain) | `v=spf1 include:_spf.resend.com -all` |
 
 ### 2. DKIM
 
-| Record type | Host / Name | Value |
-|-------------|-------------|-------|
-| TXT | `resend._domainkey` | `v=DKIM1; k=rsa; p=<from Resend Dashboard>` |
+| Record type | Host / Name         | Value                                       |
+| ----------- | ------------------- | ------------------------------------------- |
+| TXT         | `resend._domainkey` | `v=DKIM1; k=rsa; p=<from Resend Dashboard>` |
 
 > Get the DKIM public key from: **Resend Dashboard → Domains → resto.app → DKIM**.
 > Copy the full `p=...` value (it is a long base64-encoded string).
 
 ### 3. DMARC
 
-| Record type | Host / Name | Value |
-|-------------|-------------|-------|
-| TXT | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@resto.app` |
+| Record type | Host / Name | Value                                                        |
+| ----------- | ----------- | ------------------------------------------------------------ |
+| TXT         | `_dmarc`    | `v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@resto.app` |
 
 ### 4. Return-Path / Bounce domain (Resend requirement)
 
-| Record type | Host / Name | Value |
-|-------------|-------------|-------|
-| CNAME | `bounce` | `feedback-smtp.us-east-1.amazonses.com` (verify in Resend Dashboard — region may differ) |
+| Record type | Host / Name | Value                                                                                    |
+| ----------- | ----------- | ---------------------------------------------------------------------------------------- |
+| CNAME       | `bounce`    | `feedback-smtp.us-east-1.amazonses.com` (verify in Resend Dashboard — region may differ) |
 
 ---
 

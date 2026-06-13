@@ -149,7 +149,7 @@ suite('Identity — password reset email + D-06 parity', () => {
       expect(r2.statusCode).toBe(200);
     }
     const delta = Math.abs(median(realTimes) - median(ghostTimes));
-     
+
     console.warn(
       `[D-06 reset] median real=${median(realTimes).toFixed(1)}ms ghost=${median(ghostTimes).toFixed(1)}ms delta=${delta.toFixed(1)}ms`,
     );

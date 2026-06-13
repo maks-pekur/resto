@@ -34,13 +34,17 @@ describe('RecordAuditService', () => {
   // methods on the db stub so either branch works.
   const buildDbStub = (
     insert: ReturnType<typeof vi.fn>,
-  ): { db: TenantAwareDb; withTenantId: ReturnType<typeof vi.fn>; withoutTenant: ReturnType<typeof vi.fn> } => {
+  ): {
+    db: TenantAwareDb;
+    withTenantId: ReturnType<typeof vi.fn>;
+    withoutTenant: ReturnType<typeof vi.fn>;
+  } => {
     const tx = { insert: () => ({ values: insert }) };
     const withTenantId = vi.fn(
       async (_id: string, fn: (tx: unknown, scoped: unknown) => Promise<unknown>) => fn(tx, {}),
     );
-    const withoutTenant = vi.fn(
-      async (_reason: string, fn: (tx: unknown) => Promise<unknown>) => fn(tx),
+    const withoutTenant = vi.fn(async (_reason: string, fn: (tx: unknown) => Promise<unknown>) =>
+      fn(tx),
     );
     const db = { withTenantId, withoutTenant } as unknown as TenantAwareDb;
     return { db, withTenantId, withoutTenant };

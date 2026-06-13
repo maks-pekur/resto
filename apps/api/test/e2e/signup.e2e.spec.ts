@@ -143,7 +143,7 @@ suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
     const slugs = new Set(tenants.map((t) => t.slug));
     expect(slugs.size).toBe(2);
     // The second-inserted slug carries the `-2` suffix per `findFreeSlug`.
-    const hasSuffix = [...slugs].some((s) => s.endsWith("-2"));
+    const hasSuffix = [...slugs].some((s) => s.endsWith('-2'));
     expect(hasSuffix).toBe(true);
   }, 60_000);
 

@@ -29,8 +29,7 @@ const MAX_BUCKETS = 10_000;
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
 // UUID v4 shape — BA's organizationId surface is UUID-like; bound cardinality
 // by rejecting anything else.
-const ORG_ID_PATTERN =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const ORG_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Module-scope bucket store — resets on process restart (acceptable for
 // MVP-1 in-process rate limiting; Redis-backed store is a Phase 6+ concern).

@@ -178,7 +178,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
     const medExisting = median(existingTimes);
     const delta = Math.abs(medExisting - medNew);
     // Log so flake investigation has data to start from.
-     
+
     console.warn(
       `[D-06] median new=${medNew.toFixed(1)}ms existing=${medExisting.toFixed(1)}ms delta=${delta.toFixed(1)}ms`,
     );

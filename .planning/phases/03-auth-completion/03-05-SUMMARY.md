@@ -1,6 +1,6 @@
 ---
 phase: 03-auth-completion
-plan: "05"
+plan: '05'
 subsystem: identity
 tags:
   - auth
@@ -65,7 +65,7 @@ decisions:
   - scripts/reset-2fa.ts uses a SCREAMING_SNAKE_CASE env var RESET_ACTOR_EMAIL for audit attribution rather than prompting for email — keeps the script non-interactive in scripted runbook contexts while still producing a meaningful actor subject
 metrics:
   duration_minutes: 74
-  completed_date: "2026-05-30"
+  completed_date: '2026-05-30'
   tasks_completed: 3
   files_changed: 16
 ---
@@ -83,6 +83,7 @@ Phase 3 closure plan. Ships AUTH-09 boot-time drift guard + D-16a role-change au
 `IdentityRoleChangedV1` contract added to `packages/events/src/contracts/identity.ts`. `ACTION_TARGET_KIND['identity.role_changed'] = 'user'` added to the audit projection map.
 
 Regression test `test/unit/system-roles-presets.spec.ts` pins:
+
 - `owner ⊇ admin ⊇ staff` containment
 - `admin` does NOT have `tenant:delete`, `tenant:transfer`, or `staff:role:create`
 - `staff` is read-only on `tenant:*` and `brand:*`
@@ -100,6 +101,7 @@ AUTH-11 WeakMap refactor: module-scope `signOutStash = new WeakMap<object, SignO
 ### Task 3: GDPR Sweep + Per-Tenant Rate Limit + Runbooks
 
 **GDPR sweep (D-21):** Two sibling scheduler services under `apps/api/src/infrastructure/jobs/`:
+
 - `InvitationRetentionSchedulerService`: `@Cron(EVERY_DAY_AT_3AM)` deletes invitation rows where `expires_at < now() - INTERVAL '30 days'` AND status IN (`expired`, `revoked`, `accepted`). Pending rows are preserved (Skeptic MED-9 — admin visibility on bouncing pending invites).
 - `VerificationRetentionSchedulerService`: `@Cron(EVERY_DAY_AT_3AM)` deletes verification rows where `expires_at < now() - INTERVAL '1 hour'` (1h buffer over BA's deletion-on-consumption per RESEARCH.md Pitfall 6).
 
@@ -113,21 +115,22 @@ Both registered in `BackgroundJobsModule`. Both reason strings added to `package
 
 ## Commits
 
-| Hash | Message |
-|------|---------|
+| Hash      | Message                                                                                         |
+| --------- | ----------------------------------------------------------------------------------------------- |
 | `ac302b5` | feat(03-05): AUTH-09 boot-time SYSTEM_ROLES drift guard + IdentityRoleChangedV1 contract (D-16) |
-| `d6dd814` | feat(03-05): wire organizationHooks.afterUpdateMemberRole + audit-gap WIRED (D-16a) |
-| `de7a0bc` | refactor(03-05): AUTH-11 WeakMap context-stash refactor (D-22) |
-| `27e901b` | feat(03-05): GDPR daily sweep — invitation + verification schedulers (D-21) |
-| `0a1ee7b` | feat(03-05): per-tenant signin rate-limit middleware + e2e tests (D-20) |
-| `475333f` | feat(03-05): 2FA recovery runbook + reset-2fa.ts CLI (D-23) |
-| `3795bed` | docs(03-05): SPF/DKIM/DMARC pre-deploy DNS checklist (D-07) |
+| `d6dd814` | feat(03-05): wire organizationHooks.afterUpdateMemberRole + audit-gap WIRED (D-16a)             |
+| `de7a0bc` | refactor(03-05): AUTH-11 WeakMap context-stash refactor (D-22)                                  |
+| `27e901b` | feat(03-05): GDPR daily sweep — invitation + verification schedulers (D-21)                     |
+| `0a1ee7b` | feat(03-05): per-tenant signin rate-limit middleware + e2e tests (D-20)                         |
+| `475333f` | feat(03-05): 2FA recovery runbook + reset-2fa.ts CLI (D-23)                                     |
+| `3795bed` | docs(03-05): SPF/DKIM/DMARC pre-deploy DNS checklist (D-07)                                     |
 
 ## Deviations from Plan
 
 ### Auto-fixed Issues
 
 **1. [Rule 1 - Bug] Typecheck errors in per-tenant-signin-rate-limit.e2e.spec.ts**
+
 - **Found during:** Task 3
 - **Issue:** Initial draft used `stack.app.getHttpServer().address().port` which produced `TS2531` (possibly null) and `TS2339` (no `port` on `string | AddressInfo`) because Fastify's `getHttpServer()` returns the underlying Node HTTP server whose `.address()` returns `string | AddressInfo | null`. The port extraction would never work in the Fastify inject context anyway since tests use NestJS `app.inject()` directly.
 - **Fix:** Rewrote both test cases to use `stack.app.inject({ method, url, headers, payload })` matching the pattern used by all other e2e tests in the project. No URL construction needed.
@@ -135,6 +138,7 @@ Both registered in `BackgroundJobsModule`. Both reason strings added to `package
 - **Commit:** `0a1ee7b`
 
 **2. [Rule 2 - Missing ESLint override] auth.config.ts BA `any`-typed callback causes lint failures**
+
 - **Found during:** Task 2
 - **Issue:** BA 1.4.22 `createAuthMiddleware` callbacks are typed `any` in the library's type declarations; ESLint `no-unsafe-*` rules fired on every access inside those callbacks, producing 105 lint errors. This blocked the pre-commit hook.
 - **Fix:** Added a per-file ESLint override block in `apps/api/eslint.config.mjs` disabling all five `no-unsafe-*` rules for `auth.config.ts` only. This is the correct scoping — the file is fundamentally constrained by BA's type declarations.
@@ -155,6 +159,7 @@ Both registered in `BackgroundJobsModule`. Both reason strings added to `package
 **Task 3 — GDPR scheduler shape choice:** Two sibling files (`invitation-retention-scheduler.service.ts` and `verification-retention-scheduler.service.ts`) rather than one consolidated file. Rationale: distinct reason strings satisfy TEN-11 allowlist intent (each bypass is individually registered + auditable); independent cron scheduling is possible in the future; mirrors the single-responsibility shape of the existing `tenant-erasure-scheduler.service.ts`.
 
 **TEN-11 allowlist line numbers:**
+
 - `packages/db/src/withoutTenant.allowlist.ts`: lines 70-71
 - `apps/api/eslint.config.mjs`: lines 132-133
 
@@ -169,6 +174,7 @@ None. All implemented features connect to real infrastructure (Drizzle DB, NestJ
 ## Self-Check: PASSED
 
 Files verified to exist:
+
 - `apps/api/src/bootstrap/assert-system-roles-present.ts` — FOUND
 - `apps/api/src/infrastructure/jobs/invitation-retention-scheduler.service.ts` — FOUND
 - `apps/api/src/infrastructure/jobs/verification-retention-scheduler.service.ts` — FOUND

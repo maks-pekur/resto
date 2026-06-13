@@ -25,6 +25,7 @@ pnpm exec tsx scripts/reset-2fa.ts --user-id <UUID> --dry-run
 ```
 
 Review the output:
+
 - Confirm the `userId`, email, and tenant affiliation match the caller.
 - Confirm the session count that will be revoked.
 
@@ -37,6 +38,7 @@ pnpm exec tsx scripts/reset-2fa.ts --user-id <UUID>
 The script prompts `Confirm reset for <email>? (y/N)`. Type `y` and press Enter.
 
 **What the script does (single transaction):**
+
 1. `UPDATE user SET twoFactorEnabled = false WHERE id = ?`
 2. `DELETE FROM two_factor WHERE userId = ?` — removes TOTP secret + backup codes
 3. `DELETE FROM session WHERE userId = ?` — force re-login on all devices
