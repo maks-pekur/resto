@@ -20,7 +20,13 @@ export default defineConfig({
   server: {
     port: 3003,
     host: true,
-    // Same-origin in production; in dev the api runs on :3000 and the
-    // qr-menu fetches via VITE_API_URL configured by the developer.
+    // Dev only: forward the public/internal api paths to the api on :3000.
+    // `changeOrigin: false` keeps the brand subdomain Host (e.g.
+    // `cafe-demo.menu.lvh.me`) so the api resolves the brand from it,
+    // mirroring same-origin production.
+    proxy: {
+      '/v1': { target: 'http://localhost:3000', changeOrigin: false },
+      '/internal': { target: 'http://localhost:3000', changeOrigin: false },
+    },
   },
 });
