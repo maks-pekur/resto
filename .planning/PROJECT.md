@@ -74,7 +74,7 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 
 - ✓ `apps/admin` — Next.js 15 RSC operator dashboard scaffold (shadcn/ui, App Router, server actions, `apiFetch` with BA session forwarding)
 - ✓ `apps/qr-menu` — Vite+React customer-facing menu reader
-- ✓ Empty placeholder apps: `apps/website`, `apps/landing`, `apps/mobile` (scaffolded but `.gitkeep`-only)
+- ✓ Empty placeholder app: `apps/landing` (`.gitkeep`-only). `apps/mobile` removed 2026-06-13 (premature placeholder; recreated when the mobile track starts — single white-label codebase, not per-tenant).
 
 ### Active
 
@@ -171,7 +171,7 @@ If everything else fails (no mobile, no loyalty, no marketing automation, no adv
 - `apps/qr-menu` — in-restaurant QR-driven menu (dine-in)
 - `apps/website` — public restaurant site (delivery + pickup orders) ← scaffolded only, must be built for MVP
 - `apps/landing` — RestOS SaaS marketing site ← post-MVP
-- `apps/mobile` — React Native customer app ← post-MVP
+- mobile — React Native customer app ← post-MVP (dir not yet created; one white-label codebase when started)
 - (Staff app, Telegram MA, support back-office) ← post-MVP
 
 ## Constraints
