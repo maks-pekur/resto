@@ -1,0 +1,23 @@
+{
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "name": "config-tailwind",
+  "projectType": "library",
+  "sourceRoot": "packages/config-tailwind",
+  "tags": ["scope:shared", "type:lib", "layer:infrastructure"],
+  "targets": {
+    "test": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run",
+        "cwd": "packages/config-tailwind"
+      }
+    },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "tsc -p tsconfig.json --noEmit",
+        "cwd": "packages/config-tailwind"
+      }
+    }
+  }
+}

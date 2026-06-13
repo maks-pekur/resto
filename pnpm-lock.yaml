@@ -379,6 +379,9 @@ importers:
       '@resto/cart':
         specifier: workspace:^
         version: link:../../packages/cart
+      '@resto/config-tailwind':
+        specifier: workspace:*
+        version: link:../../packages/config-tailwind
       '@resto/ui':
         specifier: workspace:*
         version: link:../../packages/ui

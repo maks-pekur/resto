@@ -17,6 +17,7 @@
     "@hookform/resolvers": "^5.4.0",
     "@resto/api-client": "workspace:*",
     "@resto/cart": "workspace:^",
+    "@resto/config-tailwind": "workspace:*",
     "@resto/ui": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",

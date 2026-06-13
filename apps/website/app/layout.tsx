@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
+import { buildTenantThemeVars } from '@resto/config-tailwind';
 import { Toaster } from '@/components/ui/sonner';
 import { fetchMenuPublic } from '@/lib/api-client';
 import { getTenantSlugFromHeaders } from '@/lib/tenant-resolver';
@@ -29,19 +30,17 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   const tenantSlug = await getTenantSlugFromHeaders();
 
-  let primaryColor: string | null = null;
+  let theme: { primaryColor?: string | null } | null = null;
   if (tenantSlug) {
     try {
       const menu = await fetchMenuPublic(tenantSlug);
-      primaryColor = menu.brand?.theme?.primaryColor ?? null;
+      theme = menu.brand?.theme ?? null;
     } catch {
       // cold Redis / not-found / suspended — render default theme
     }
   }
 
-  const themeStyle = primaryColor
-    ? ({ '--primary': primaryColor } as React.CSSProperties)
-    : undefined;
+  const themeStyle = theme ? (buildTenantThemeVars(theme) as React.CSSProperties) : undefined;
 
   return (
     <html lang={locale} suppressHydrationWarning className={inter.variable} style={themeStyle}>
