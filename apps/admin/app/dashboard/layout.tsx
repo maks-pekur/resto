@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import type { CSSProperties } from 'react';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { apiFetch } from '@/lib/api-server';
-import { readActiveBrand, signActiveBrand } from '@/lib/active-brand-cookie';
+import { readActiveBrand } from '@/lib/active-brand-cookie';
 import { getMe, toOperatorSummary } from '@/lib/me';
 import { getMyBrands } from '@/lib/me-brands';
 
@@ -46,17 +45,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   let activeBrandSlug = cookieBrandSlug;
   if (!activeBrandSlug || !brands.find((b) => b.slug === activeBrandSlug)) {
-    const fallback = brands[0]?.slug ?? null;
-    if (fallback) {
-      const cookieStore = await cookies();
-      cookieStore.set('resto.active_brand', signActiveBrand(fallback), {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/',
-      });
-      activeBrandSlug = fallback;
-    }
+    activeBrandSlug = brands[0]?.slug ?? null;
   }
 
   return (
