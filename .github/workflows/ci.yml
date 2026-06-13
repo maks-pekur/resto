@@ -35,6 +35,11 @@ jobs:
     name: Affected ${{ matrix.target }}
     runs-on: ubuntu-latest
     needs: install
+    # AUDIT #5: force the isolation suite to fail-closed. ubuntu-latest ships a
+    # Docker daemon, so the testcontainer specs run normally; if Docker ever goes
+    # missing they now hard-error instead of silently degrading to describe.skip.
+    env:
+      RESTO_REQUIRE_DOCKER: "1"
     strategy:
       fail-fast: false
       matrix:

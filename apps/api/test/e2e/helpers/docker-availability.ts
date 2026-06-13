@@ -10,6 +10,12 @@ export const isDockerAvailable = (): boolean => {
     execSync('docker info', { stdio: 'ignore' });
     return true;
   } catch {
+    const flag = process.env.RESTO_REQUIRE_DOCKER;
+    if (flag === '1' || flag === 'true') {
+      throw new Error(
+        'RESTO_REQUIRE_DOCKER is set but Docker is not available — refusing to silently skip the e2e isolation suite. Start Docker or unset RESTO_REQUIRE_DOCKER.',
+      );
+    }
     return false;
   }
 };
