@@ -1,0 +1,26 @@
+{
+  "name": "@resto/config-tailwind",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared Tailwind token contract + tenant-theme mapper for Resto surfaces.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./tokens.css": "./tokens.css",
+    "./preset.css": "./preset.css"
+  },
+  "files": [
+    "src",
+    "tokens.css",
+    "preset.css"
+  ],
+  "devDependencies": {
+    "@resto/config-eslint": "workspace:*",
+    "@resto/config-typescript": "workspace:*",
+    "typescript": "^6.0.3",
+    "vitest": "^2.1.8"
+  }
+}
