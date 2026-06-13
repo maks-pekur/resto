@@ -543,7 +543,7 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
     expect(item?.sizes[0]?.name.en).toBe('Large');
   }, 60_000);
 
-  it('stop-list overlay filters items on /v1/menu; DELETE restores them', async () => {
+  it('stop-list overlay marks items isStopListed on /v1/menu; DELETE clears it', async () => {
     const internalAuth = { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': 'cafe-a' };
 
     const categoryRes = await stack.app.inject({
@@ -577,8 +577,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       url: '/v1/menu',
       headers: { 'x-tenant-slug': 'cafe-a' },
     });
-    const beforeBody = beforeRes.json<{ items: { id: string }[] }>();
-    expect(beforeBody.items.map((i) => i.id)).toContain(itemId);
+    const beforeBody = beforeRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
+    expect(beforeBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
 
     // Stop it.
     const stopRes = await stack.app.inject({
@@ -594,8 +594,10 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       url: '/v1/menu',
       headers: { 'x-tenant-slug': 'cafe-a' },
     });
-    const stoppedBody = stoppedRes.json<{ items: { id: string }[] }>();
-    expect(stoppedBody.items.map((i) => i.id)).not.toContain(itemId);
+    const stoppedBody = stoppedRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
+    const stoppedItem = stoppedBody.items.find((i) => i.id === itemId);
+    expect(stoppedItem).toBeDefined();
+    expect(stoppedItem?.isStopListed).toBe(true);
 
     // Unstop.
     const unstopRes = await stack.app.inject({
@@ -610,8 +612,8 @@ suite('Catalog — internal write → public read → cross-tenant isolation', (
       url: '/v1/menu',
       headers: { 'x-tenant-slug': 'cafe-a' },
     });
-    const restoredBody = restoredRes.json<{ items: { id: string }[] }>();
-    expect(restoredBody.items.map((i) => i.id)).toContain(itemId);
+    const restoredBody = restoredRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
+    expect(restoredBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
   }, 60_000);
 
   it('POST /publish then DELETE /publish within 5s cancels the timer — no outbox emission', async () => {
