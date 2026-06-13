@@ -1,0 +1,55 @@
+{
+  "cart": {
+    "empty": "Ваша корзина пуста",
+    "emptyBody": "Откройте меню и добавьте позиции, чтобы начать.",
+    "triggerEmpty": "Ваша корзина пуста",
+    "triggerItems": "{n} позиция",
+    "triggerItemsPlural": "{n} позиций",
+    "addToCart": "В корзину",
+    "goToCheckout": "Оформить заказ",
+    "removeItem": "Удалить позицию",
+    "clearCart": "Очистить корзину",
+    "clearCartHeading": "Очистить корзину?",
+    "clearCartBody": "Все позиции будут удалены.",
+    "clearCartConfirm": "Очистить",
+    "clearCartCancel": "Оставить",
+    "removedFromCart": "Удалено из корзины",
+    "undo": "Отменить",
+    "addedToCart": "Добавлено в корзину"
+  },
+  "menu": {
+    "emptyHeading": "Меню недоступно",
+    "emptyBody": "Этот ресторан ещё не опубликовал меню. Загляните позже.",
+    "unavailableToday": "Сегодня недоступно"
+  },
+  "checkout": {
+    "placeOrder": "Оформить заказ",
+    "addressPlaceholder": "Введите адрес доставки",
+    "zoneValid": "Мы доставляем в этот район",
+    "zoneInvalid": "Мы пока не доставляем по этому адресу. Попробуйте самовывоз.",
+    "promoPlaceholder": "Промокод",
+    "promoApply": "Применить",
+    "promoHelper": "Промокоды скоро станут доступны.",
+    "orderTimeAsap": "Как можно скорее",
+    "orderTimeScheduled": "Запланировать на позже",
+    "contactNamePlaceholder": "Ваше имя",
+    "contactPhonePlaceholder": "Номер телефона",
+    "paymentComingSoon": "Онлайн-оплата скоро появится",
+    "deliveryMode": "Доставка",
+    "pickupMode": "Самовывоз",
+    "modePrompt": "Как вы хотите получить заказ?"
+  },
+  "content": {
+    "aboutHeading": "О {restaurantName}",
+    "deliveryHeading": "Информация о доставке",
+    "contactHeading": "Контакты",
+    "faqHeading": "Частые вопросы"
+  },
+  "errors": {
+    "tenantNotFound": "Ресторан не найден",
+    "tenantNotFoundBody": "Этого ресторана пока нет на RestOS. Если вы перешли по ссылке, возможно, она изменилась.",
+    "tenantSuspended": "Этот ресторан временно недоступен.",
+    "errorBoundaryHeading": "Что-то пошло не так",
+    "errorBoundaryBody": "Не удаётся загрузить меню. Попробуйте обновить страницу."
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "cart": {
+    "empty": "Ваш кошик порожній",
+    "emptyBody": "Перегляньте меню та додайте позиції, щоб почати.",
+    "triggerEmpty": "Ваш кошик порожній",
+    "triggerItems": "{n} позиція",
+    "triggerItemsPlural": "{n} позицій",
+    "addToCart": "До кошика",
+    "goToCheckout": "Оформити замовлення",
+    "removeItem": "Видалити позицію",
+    "clearCart": "Очистити кошик",
+    "clearCartHeading": "Очистити кошик?",
+    "clearCartBody": "Усі позиції буде видалено.",
+    "clearCartConfirm": "Очистити",
+    "clearCartCancel": "Залишити",
+    "removedFromCart": "Видалено з кошика",
+    "undo": "Скасувати",
+    "addedToCart": "Додано до кошика"
+  },
+  "menu": {
+    "emptyHeading": "Меню недоступне",
+    "emptyBody": "Цей ресторан ще не опублікував меню. Завітайте пізніше.",
+    "unavailableToday": "Сьогодні недоступно"
+  },
+  "checkout": {
+    "placeOrder": "Оформити замовлення",
+    "addressPlaceholder": "Введіть адресу доставки",
+    "zoneValid": "Ми доставляємо в цей район",
+    "zoneInvalid": "Ми поки не доставляємо за цією адресою. Спробуйте самовивіз.",
+    "promoPlaceholder": "Промокод",
+    "promoApply": "Застосувати",
+    "promoHelper": "Промокоди скоро стануть доступні.",
+    "orderTimeAsap": "Якнайшвидше",
+    "orderTimeScheduled": "Запланувати на пізніше",
+    "contactNamePlaceholder": "Ваше ім'я",
+    "contactPhonePlaceholder": "Номер телефону",
+    "paymentComingSoon": "Онлайн-оплата скоро з'явиться",
+    "deliveryMode": "Доставка",
+    "pickupMode": "Самовивіз",
+    "modePrompt": "Як ви бажаєте отримати замовлення?"
+  },
+  "content": {
+    "aboutHeading": "Про {restaurantName}",
+    "deliveryHeading": "Інформація про доставку",
+    "contactHeading": "Контакти",
+    "faqHeading": "Поширені запитання"
+  },
+  "errors": {
+    "tenantNotFound": "Ресторан не знайдено",
+    "tenantNotFoundBody": "Цього ресторану поки немає на RestOS. Якщо ви перейшли за посиланням, можливо, воно змінилося.",
+    "tenantSuspended": "Цей ресторан тимчасово недоступний.",
+    "errorBoundaryHeading": "Щось пішло не так",
+    "errorBoundaryBody": "Не вдається завантажити меню. Спробуйте оновити сторінку."
+  }
+}
