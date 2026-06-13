@@ -51,7 +51,7 @@
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.3",
     "@types/nodemailer": "8.0.0",
     "esbuild": "^0.28.0",
     "eslint": "^10.4.0",

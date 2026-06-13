@@ -29,7 +29,7 @@
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.3",
     "drizzle-kit": "^0.31.10",
     "eslint": "^10.4.0",
     "tsx": "^4.19.2",
