@@ -285,23 +285,7 @@ export interface paths {
         };
         get: operations["InternalCatalogController_listCategories"];
         put?: never;
-        post: operations["InternalCatalogController_category"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/categories/reorder": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["InternalCatalogController_reorderCategories"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -317,7 +301,23 @@ export interface paths {
         };
         get: operations["InternalCatalogController_listItems"];
         put?: never;
-        post: operations["InternalCatalogController_item"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/internal/v1/catalog/items/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InternalCatalogController_getItem"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -332,118 +332,6 @@ export interface paths {
             cookie?: never;
         };
         get: operations["InternalCatalogController_listModifierGroups"];
-        put?: never;
-        post: operations["InternalCatalogController_modifierGroup"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/modifier-options": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["InternalCatalogController_modifierOption"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/item-sizes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["InternalCatalogController_itemSize"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/stop-list": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["InternalCatalogController_listStopList"];
-        put?: never;
-        post: operations["InternalCatalogController_stopListAdd"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/stop-list/{itemId}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post?: never;
-        delete: operations["InternalCatalogController_stopListRemove"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/photo-upload-url": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["InternalCatalogController_photoUploadUrl"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/publish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["InternalCatalogController_publishMenu"];
-        delete: operations["InternalCatalogController_cancelPublishMenu"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/internal/v1/catalog/items/{id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["InternalCatalogController_getItem"];
         put?: never;
         post?: never;
         delete?: never;
@@ -468,6 +356,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/internal/v1/catalog/stop-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["InternalCatalogController_listStopList"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/internal/v1/catalog/draft-diff": {
         parameters: {
             query?: never;
@@ -484,7 +388,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/internal/v1/catalog/categories/{id}/archive": {
+    "/v1/catalog/categories": {
         parameters: {
             query?: never;
             header?: never;
@@ -493,14 +397,158 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post?: never;
+        post: operations["CatalogController_category"];
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["InternalCatalogController_archiveCategory"];
+        patch?: never;
         trace?: never;
     };
-    "/internal/v1/catalog/items/{id}/archive": {
+    "/v1/catalog/categories/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_reorderCategories"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/items": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_item"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/modifier-groups": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_modifierGroup"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/modifier-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_modifierOption"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/item-sizes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_itemSize"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/stop-list": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_stopListAdd"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/stop-list/{itemId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CatalogController_stopListRemove"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/photo-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_photoUploadUrl"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CatalogController_publishMenu"];
+        delete: operations["CatalogController_cancelPublishMenu"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/categories/{id}/archive": {
         parameters: {
             query?: never;
             header?: never;
@@ -513,7 +561,23 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        patch: operations["InternalCatalogController_archiveItem"];
+        patch: operations["CatalogController_archiveCategory"];
+        trace?: never;
+    };
+    "/v1/catalog/items/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CatalogController_archiveItem"];
         trace?: never;
     };
 }
@@ -763,166 +827,6 @@ export interface components {
             modifierGroupIds: string[];
             isStopListed: boolean;
         };
-        UpsertCategoryInputDto: {
-            /** Format: uuid */
-            id?: string;
-            slug?: string;
-            /**
-             * Format: uuid
-             * @default null
-             */
-            parentId: string | null;
-            name: {
-                [key: string]: string;
-            };
-            /** @default null */
-            description: {
-                [key: string]: string;
-            } | null;
-            /** @default 0 */
-            sortOrder: number;
-        };
-        IdResponseDto: {
-            /** Format: uuid */
-            id: string;
-        };
-        ReorderCategoriesInputDto: {
-            moves: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                parentId: string | null;
-                sortOrder: number;
-            }[];
-        };
-        ReorderCategoriesResponseDto: {
-            updated: number;
-        };
-        UpsertItemInputDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            categoryId: string;
-            slug?: string;
-            name: {
-                [key: string]: string;
-            };
-            /** @default null */
-            description: {
-                [key: string]: string;
-            } | null;
-            basePrice: string;
-            currency: string;
-            /** @default [] */
-            photos: {
-                s3Key: string;
-                sortOrder: number;
-                alt?: string;
-                width?: number;
-                height?: number;
-                isPrimary?: boolean;
-            }[];
-            /** @default null */
-            allergens: string[] | null;
-            /** @default null */
-            ingredients: string[] | null;
-            /** @default null */
-            metaTitle: string | null;
-            /** @default null */
-            metaDescription: string | null;
-            /** @default null */
-            proteins: number | null;
-            /** @default null */
-            fats: number | null;
-            /** @default null */
-            carbs: number | null;
-            /** @default null */
-            kcal: number | null;
-            /** @default false */
-            nutritionEstimated: boolean;
-            /**
-             * @default manual
-             * @enum {string}
-             */
-            source: "manual" | "ai_generated" | "imported_iiko" | "imported_csv";
-            /** @default false */
-            needsReview: boolean;
-            /** @default null */
-            sourceExternalId: string | null;
-            /**
-             * @default draft
-             * @enum {string}
-             */
-            status: "draft" | "published" | "archived";
-            /** @default 0 */
-            sortOrder: number;
-        };
-        UpsertModifierGroupInputDto: {
-            /** Format: uuid */
-            id?: string;
-            name: {
-                [key: string]: string;
-            };
-            /** @default 0 */
-            minSelectable: number;
-            /** @default 1 */
-            maxSelectable: number;
-            /** @default false */
-            isRequired: boolean;
-        };
-        UpsertModifierOptionInputDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            modifierGroupId: string;
-            name: {
-                [key: string]: string;
-            };
-            priceDelta: string;
-            /** @default 0 */
-            defaultAmount: number;
-            /** @default 0 */
-            freeAmount: number;
-            /** @default 0 */
-            sortOrder: number;
-        };
-        UpsertItemSizeInputDto: {
-            /** Format: uuid */
-            id?: string;
-            /** Format: uuid */
-            menuItemId: string;
-            name: {
-                [key: string]: string;
-            };
-            price: string;
-            /** @default false */
-            isDefault: boolean;
-            /** @default 0 */
-            sortOrder: number;
-        };
-        StopItemInputDto: {
-            /** Format: uuid */
-            itemId: string;
-            /** @default null */
-            reason: string | null;
-        };
-        PhotoUploadUrlInputDto: {
-            /** @enum {string} */
-            contentType: "image/jpeg" | "image/png" | "image/webp";
-            sizeBytes: number;
-        };
-        PhotoUploadUrlResponseDto: {
-            /** Format: uri */
-            uploadUrl: string;
-            s3Key: string;
-        };
-        PublishScheduledResponseDto: {
-            scheduled: boolean;
-            cancelAfterMs: number;
-        };
-        PublishCancelResponseDto: {
-            cancelled: boolean;
-        };
         CategoryListResponseDto: {
             items: {
                 /** Format: uuid */
@@ -1090,6 +994,166 @@ export interface components {
                 status: "draft" | "modified" | "archived";
             }[];
             truncatedCount: number;
+        };
+        UpsertCategoryInputDto: {
+            /** Format: uuid */
+            id?: string;
+            slug?: string;
+            /**
+             * Format: uuid
+             * @default null
+             */
+            parentId: string | null;
+            name: {
+                [key: string]: string;
+            };
+            /** @default null */
+            description: {
+                [key: string]: string;
+            } | null;
+            /** @default 0 */
+            sortOrder: number;
+        };
+        IdResponseDto: {
+            /** Format: uuid */
+            id: string;
+        };
+        ReorderCategoriesInputDto: {
+            moves: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                parentId: string | null;
+                sortOrder: number;
+            }[];
+        };
+        ReorderCategoriesResponseDto: {
+            updated: number;
+        };
+        UpsertItemInputDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            categoryId: string;
+            slug?: string;
+            name: {
+                [key: string]: string;
+            };
+            /** @default null */
+            description: {
+                [key: string]: string;
+            } | null;
+            basePrice: string;
+            currency: string;
+            /** @default [] */
+            photos: {
+                s3Key: string;
+                sortOrder: number;
+                alt?: string;
+                width?: number;
+                height?: number;
+                isPrimary?: boolean;
+            }[];
+            /** @default null */
+            allergens: string[] | null;
+            /** @default null */
+            ingredients: string[] | null;
+            /** @default null */
+            metaTitle: string | null;
+            /** @default null */
+            metaDescription: string | null;
+            /** @default null */
+            proteins: number | null;
+            /** @default null */
+            fats: number | null;
+            /** @default null */
+            carbs: number | null;
+            /** @default null */
+            kcal: number | null;
+            /** @default false */
+            nutritionEstimated: boolean;
+            /**
+             * @default manual
+             * @enum {string}
+             */
+            source: "manual" | "ai_generated" | "imported_iiko" | "imported_csv";
+            /** @default false */
+            needsReview: boolean;
+            /** @default null */
+            sourceExternalId: string | null;
+            /**
+             * @default draft
+             * @enum {string}
+             */
+            status: "draft" | "published" | "archived";
+            /** @default 0 */
+            sortOrder: number;
+        };
+        UpsertModifierGroupInputDto: {
+            /** Format: uuid */
+            id?: string;
+            name: {
+                [key: string]: string;
+            };
+            /** @default 0 */
+            minSelectable: number;
+            /** @default 1 */
+            maxSelectable: number;
+            /** @default false */
+            isRequired: boolean;
+        };
+        UpsertModifierOptionInputDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            modifierGroupId: string;
+            name: {
+                [key: string]: string;
+            };
+            priceDelta: string;
+            /** @default 0 */
+            defaultAmount: number;
+            /** @default 0 */
+            freeAmount: number;
+            /** @default 0 */
+            sortOrder: number;
+        };
+        UpsertItemSizeInputDto: {
+            /** Format: uuid */
+            id?: string;
+            /** Format: uuid */
+            menuItemId: string;
+            name: {
+                [key: string]: string;
+            };
+            price: string;
+            /** @default false */
+            isDefault: boolean;
+            /** @default 0 */
+            sortOrder: number;
+        };
+        StopItemInputDto: {
+            /** Format: uuid */
+            itemId: string;
+            /** @default null */
+            reason: string | null;
+        };
+        PhotoUploadUrlInputDto: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp";
+            sizeBytes: number;
+        };
+        PhotoUploadUrlResponseDto: {
+            /** Format: uri */
+            uploadUrl: string;
+            s3Key: string;
+        };
+        PublishScheduledResponseDto: {
+            scheduled: boolean;
+            cancelAfterMs: number;
+        };
+        PublishCancelResponseDto: {
+            cancelled: boolean;
         };
     };
     responses: never;
@@ -1746,68 +1810,6 @@ export interface operations {
             };
         };
     };
-    InternalCatalogController_category: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertCategoryInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_reorderCategories: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReorderCategoriesInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ReorderCategoriesResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
     InternalCatalogController_listItems: {
         parameters: {
             query?: never;
@@ -1823,319 +1825,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ItemListResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_item: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertItemInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_listModifierGroups: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ModifierGroupListResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_modifierGroup: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertModifierGroupInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_modifierOption: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertModifierOptionInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_itemSize: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["UpsertItemSizeInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_listStopList: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StopListResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_stopListAdd: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StopItemInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["IdResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_stopListRemove: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_photoUploadUrl: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["PhotoUploadUrlInputDto"];
-            };
-        };
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PhotoUploadUrlResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_publishMenu: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublishScheduledResponseDto"];
-                };
-            };
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    InternalCatalogController_cancelPublishMenu: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PublishCancelResponseDto"];
                 };
             };
             401: {
@@ -2175,6 +1864,33 @@ export interface operations {
             };
         };
     };
+    InternalCatalogController_listModifierGroups: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierGroupListResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     InternalCatalogController_getModifierGroup: {
         parameters: {
             query?: never;
@@ -2190,6 +1906,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModifierGroupDetailResponseDto"];
+                };
+            };
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InternalCatalogController_listStopList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StopListResponseDto"];
                 };
             };
             401: {
@@ -2229,16 +1972,28 @@ export interface operations {
             };
         };
     };
-    InternalCatalogController_archiveCategory: {
+    CatalogController_category: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertCategoryInputDto"];
+            };
+        };
         responses: {
-            401: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -2248,7 +2003,193 @@ export interface operations {
             };
         };
     };
-    InternalCatalogController_archiveItem: {
+    CatalogController_reorderCategories: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReorderCategoriesInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReorderCategoriesResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_item: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertItemInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_modifierGroup: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertModifierGroupInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_modifierOption: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertModifierOptionInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_itemSize: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertItemSizeInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_stopListAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StopItemInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_stopListRemove: {
         parameters: {
             query?: never;
             header?: never;
@@ -2257,7 +2198,130 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            401: {
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_photoUploadUrl: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhotoUploadUrlInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhotoUploadUrlResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_publishMenu: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishScheduledResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_cancelPublishMenu: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishCancelResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_archiveCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_archiveItem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
