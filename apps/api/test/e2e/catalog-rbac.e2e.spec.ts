@@ -1,16 +1,18 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { schema } from '@resto/db';
 import {
   isDockerAvailable,
   startRealStack,
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
-import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
-import { AUTH_DRIZZLE_TOKEN } from '../../src/contexts/identity/identity.tokens';
-import type { AuthDrizzle } from '../../src/contexts/identity/infrastructure/better-auth/auth-db';
+import {
+  addMemberWithRole,
+  provisionTenant,
+  runBootstrap,
+  signInAsOperator,
+} from './helpers/operator-fixture';
 
 const INTERNAL_TOKEN = 'integration-test-token-1234567890';
 const dockerOk = isDockerAvailable();
@@ -35,7 +37,6 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
     stack = await startRealStack();
 
     const slug = `cafe-${randomUUID().slice(0, 8)}`;
-    const staffSlug = `staff-tenant-${randomUUID().slice(0, 8)}`;
     const ownerEmail = `owner-${randomUUID().slice(0, 8)}@example.com`;
     const staffEmail = `staff-${randomUUID().slice(0, 8)}@example.com`;
     const password = 'Sup3r-Secret-Pw!';
@@ -46,23 +47,14 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
     await runBootstrap({ tenantSlug: slug, email: ownerEmail, password, name: 'Owner' });
     ownerCookie = await signInAsOperator(stack.app, ownerEmail, password, tenant.id);
 
-    await provisionTenant(stack.app, staffSlug, INTERNAL_TOKEN);
-    const staffUser = await runBootstrap({
-      tenantSlug: staffSlug,
+    staffCookie = await addMemberWithRole(stack.app, {
+      tenantId: tenant.id,
+      internalToken: INTERNAL_TOKEN,
       email: staffEmail,
       password,
       name: 'Staff',
-    });
-
-    const authDb = stack.app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
-    await authDb.db.insert(schema.member).values({
-      id: randomUUID(),
-      organizationId: tenant.id,
-      userId: staffUser.userId,
       role: 'staff',
-      createdAt: new Date(),
     });
-    staffCookie = await signInAsOperator(stack.app, staffEmail, password, tenant.id);
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
