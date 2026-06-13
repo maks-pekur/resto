@@ -30,7 +30,7 @@ Phase: 06 (qr-menu-customer) — EXECUTING
 Plan: 1 of 5
 Next: Phase 6 — QR-Menu Customer (reuses /v1/menu + the cart/menu patterns from Phase 5)
 Status: Executing Phase 06
-Last activity: 2026-06-13 -- Completed quick task 260613-qff: isolation test suite fail-closed (AUDIT #5)
+Last activity: 2026-06-13 -- Completed audit quick tasks 260613-qff (#5) and 260613-qmn (#22/#23/#24)
 
 Progress: [█████████░] 89%
 
@@ -127,9 +127,10 @@ None yet.
 
 ### Quick Tasks Completed
 
-| #          | Description                                       | Date       | Commit  | Directory                                                                               |
-| ---------- | ------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------- |
-| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5) | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/) |
+| #          | Description                                                               | Date       | Commit  | Directory                                                                               |
+| ---------- | ------------------------------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------- |
+| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                         | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/) |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24) | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                           |
 
 ## Deferred Items
 
