@@ -1,10 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { eq } from 'drizzle-orm';
-import { user as userTable } from '@resto/db/schema';
 import { Currency, TenantSlug } from '@resto/domain';
-import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
+import { AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
 import { BootstrapOwnerService } from './bootstrap-owner.service';
 import {
   OwnerAlreadyExistsError,
@@ -76,7 +74,7 @@ export class SignUpService {
     @Inject(BootstrapOwnerService) private readonly bootstrap: BootstrapOwnerService,
     @Inject(TENANT_LOOKUP_PORT) private readonly tenantLookup: TenantLookupPort,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
-    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
+    @Inject(BA_USER_READER) private readonly users: BaUserReader,
   ) {}
 
   /**
@@ -178,12 +176,7 @@ export class SignUpService {
   }
 
   private async userExistsByEmail(email: string): Promise<boolean> {
-    const rows = await this.authDb.db
-      .select({ id: userTable.id })
-      .from(userTable)
-      .where(eq(userTable.email, email))
-      .limit(1);
-    return rows.length > 0;
+    return (await this.users.findUserByEmail(email)) !== null;
   }
 
   private async findFreeSlug(base: string): Promise<string> {

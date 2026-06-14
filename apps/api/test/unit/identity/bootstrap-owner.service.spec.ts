@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
-import { member as memberTable, user as userTable } from '@resto/db/schema';
 import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
-import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
+import type { BaUserReader } from '../../../src/contexts/identity/application/ports/ba-user-reader.port';
 
 const makeTenantLookup = (
   result: { id: string; slug: string; displayName: string } | null,
@@ -11,21 +10,6 @@ const makeTenantLookup = (
   findById: vi.fn().mockResolvedValue(result),
 });
 
-/**
- * Mocks the BA admin API surface used by the service:
- *   - signUpEmail (top-level user creation)
- *   - addMember (organization plugin, SERVER_ONLY)
- *
- * `listMembers` is intentionally NOT mocked: the service uses direct
- * Drizzle queries (via AUTH_DRIZZLE_TOKEN) for idempotency probes instead
- * of the BA session-gated listMembers endpoint.
- *
- * `createOrganization` is intentionally NOT mocked: BA's `organization`
- * is physically the `tenants` table, so the tenant row created by the
- * provisioning flow already IS the BA organization. The service must
- * never call `createOrganization` — it would collide on the slug unique
- * or duplicate the tenant row.
- */
 const makeAuth = () => ({
   api: {
     signUpEmail: vi.fn().mockResolvedValue({ user: { id: 'user-uuid', email: 'ops@demo.test' } }),
@@ -33,43 +17,13 @@ const makeAuth = () => ({
   },
 });
 
-/**
- * Stub for the AuthDrizzle pool. The service calls two distinct query chains:
- *
- *   1. `findExistingOwner`: `.select().from(memberTable).innerJoin(userTable, ...).where(...).limit(...)`
- *      Returns `existingOwner` — the user record for the current tenant owner (if any).
- *
- *   2. `findUserByEmail`: `.select().from(userTable).where(...).limit(...)`
- *      Returns `existingUser` — a BA user record matching the email (if any).
- *
- * The `from()` mock dispatches to the correct chain by table reference identity.
- */
-const makeAuthDb = (
+const makeUsers = (
   existingOwner: { id: string; email: string } | null = null,
   existingUser: { id: string; email: string } | null = null,
-): AuthDrizzle => {
-  const memberChain = {
-    innerJoin: vi.fn().mockReturnThis(),
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue(existingOwner ? [existingOwner] : []),
-  };
-  const userChain = {
-    where: vi.fn().mockReturnThis(),
-    limit: vi.fn().mockResolvedValue(existingUser ? [existingUser] : []),
-  };
-  return {
-    db: {
-      select: () => ({
-        from: (table: unknown) => {
-          if (table === memberTable) return memberChain;
-          if (table === userTable) return userChain;
-          throw new Error(`Unexpected from() table: ${String(table)}`);
-        },
-      }),
-    },
-    client: {} as never,
-  } as unknown as AuthDrizzle;
-};
+): BaUserReader => ({
+  findOwnerByOrganization: vi.fn().mockResolvedValue(existingOwner),
+  findUserByEmail: vi.fn().mockResolvedValue(existingUser),
+});
 
 describe('BootstrapOwnerService — happy path', () => {
   it('creates user and owner member against the existing tenant org', async () => {
@@ -80,7 +34,7 @@ describe('BootstrapOwnerService — happy path', () => {
     });
     const auth = makeAuth();
     // No existing owner, no existing user → full signup + addMember path.
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb(null, null));
+    const svc = new BootstrapOwnerService(lookup, auth as never, makeUsers(null, null));
 
     const result = await svc.execute({
       tenantSlug: 'demo',
@@ -122,7 +76,7 @@ describe('BootstrapOwnerService — happy path', () => {
   it('throws TenantNotFoundForBootstrapError when slug does not exist', async () => {
     const lookup = makeTenantLookup(null);
     const auth = makeAuth();
-    const svc = new BootstrapOwnerService(lookup, auth as never, makeAuthDb(null, null));
+    const svc = new BootstrapOwnerService(lookup, auth as never, makeUsers(null, null));
 
     await expect(
       svc.execute({
@@ -151,8 +105,8 @@ describe('BootstrapOwnerService — idempotency', () => {
     });
     const auth = makeAuth();
     // existingOwner matches the requested email → pure no-op.
-    const authDb = makeAuthDb({ id: 'user-uuid', email: 'ops@demo.test' }, null);
-    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
+    const users = makeUsers({ id: 'user-uuid', email: 'ops@demo.test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, users);
 
     const result = await svc.execute({
       tenantSlug: 'demo',
@@ -181,8 +135,8 @@ describe('BootstrapOwnerService — idempotency', () => {
     const auth = makeAuth();
     // Both stored and input are non-canonical to prove BOTH sides are
     // normalized before comparison (RES-109 testing review §14).
-    const authDb = makeAuthDb({ id: 'user-uuid', email: 'Ops@Demo.Test' }, null);
-    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
+    const users = makeUsers({ id: 'user-uuid', email: 'Ops@Demo.Test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, users);
 
     const result = await svc.execute({
       tenantSlug: 'demo',
@@ -204,8 +158,8 @@ describe('BootstrapOwnerService — idempotency', () => {
     });
     const auth = makeAuth();
     // existingOwner has a different email → conflict.
-    const authDb = makeAuthDb({ id: 'someone-else', email: 'other@demo.test' }, null);
-    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
+    const users = makeUsers({ id: 'someone-else', email: 'other@demo.test' }, null);
+    const svc = new BootstrapOwnerService(lookup, auth as never, users);
 
     await expect(
       svc.execute({
@@ -233,8 +187,8 @@ describe('BootstrapOwnerService — idempotency', () => {
     });
     const auth = makeAuth();
     // No existing owner member, but the BA user row already exists.
-    const authDb = makeAuthDb(null, { id: 'existing-user', email: 'ops@demo.test' });
-    const svc = new BootstrapOwnerService(lookup, auth as never, authDb);
+    const users = makeUsers(null, { id: 'existing-user', email: 'ops@demo.test' });
+    const svc = new BootstrapOwnerService(lookup, auth as never, users);
 
     const result = await svc.execute({
       tenantSlug: 'demo',

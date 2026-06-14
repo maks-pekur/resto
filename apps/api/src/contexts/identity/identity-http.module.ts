@@ -25,6 +25,8 @@ import { MeBrandsController } from './interfaces/http/me-brands.controller';
 import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
 import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
 import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
+import { BA_USER_READER } from './application/ports/ba-user-reader.port';
+import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';
 import { TENANT_PROVISIONING_PORT } from './application/ports/tenant-provisioning.port';
 import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.adapter';
 import { BRAND_PROVISIONING_PORT } from './application/ports/brand-provisioning.port';
@@ -52,6 +54,8 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     { provide: APP_GUARD, useClass: BrandScopeGuard },
     { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
     MemberBrandScopeDrizzleReader,
+    { provide: BA_USER_READER, useClass: BaUserDrizzleReader },
+    BaUserDrizzleReader,
     { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },
     TenantProvisioningAdapter,
     { provide: BRAND_PROVISIONING_PORT, useClass: BrandProvisioningAdapter },

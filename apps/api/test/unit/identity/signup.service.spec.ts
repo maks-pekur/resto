@@ -37,22 +37,17 @@ const buildAuthMock = () => ({
   },
 });
 
-interface AuthDbMock {
-  db: {
-    select: ReturnType<typeof vi.fn>;
-    from: ReturnType<typeof vi.fn>;
-    where: ReturnType<typeof vi.fn>;
-    limit: ReturnType<typeof vi.fn>;
-  };
+interface BaUserReaderMock {
+  findUserByEmail: ReturnType<typeof vi.fn>;
+  findOwnerByOrganization: ReturnType<typeof vi.fn>;
 }
 
-const buildAuthDbMock = (existingRows: readonly { id: string }[] = []): AuthDbMock => {
-  const limit = vi.fn().mockResolvedValue(existingRows);
-  const where = vi.fn().mockReturnValue({ limit });
-  const from = vi.fn().mockReturnValue({ where, limit });
-  const select = vi.fn().mockReturnValue({ from, where, limit });
-  return { db: { select, from, where, limit } };
-};
+const buildUsersMock = (
+  existingUser: { id: string; email: string } | null = null,
+): BaUserReaderMock => ({
+  findUserByEmail: vi.fn().mockResolvedValue(existingUser),
+  findOwnerByOrganization: vi.fn().mockResolvedValue(null),
+});
 
 describe('SignUpService', () => {
   let tenantProvisioningMock: { provision: ReturnType<typeof vi.fn> };
@@ -62,7 +57,7 @@ describe('SignUpService', () => {
     findById: ReturnType<typeof vi.fn>;
   };
   let authMock: ReturnType<typeof buildAuthMock>;
-  let authDbMock: AuthDbMock;
+  let usersMock: BaUserReaderMock;
 
   const buildService = (): SignUpService =>
     new SignUpService(
@@ -70,7 +65,7 @@ describe('SignUpService', () => {
       bootstrapMock as never,
       tenantLookupMock,
       authMock as never,
-      authDbMock as never,
+      usersMock,
     );
 
   const baseInput = {
@@ -86,7 +81,7 @@ describe('SignUpService', () => {
     bootstrapMock = { execute: vi.fn() };
     tenantLookupMock = { findBySlug: vi.fn(), findById: vi.fn() };
     authMock = buildAuthMock();
-    authDbMock = buildAuthDbMock();
+    usersMock = buildUsersMock();
   });
 
   it('uses base slug when free', async () => {
@@ -113,7 +108,7 @@ describe('SignUpService', () => {
   });
 
   it('rejects duplicate email pre-flight (no provision call)', async () => {
-    authDbMock = buildAuthDbMock([{ id: 'existing-user' }]);
+    usersMock = buildUsersMock({ id: 'existing-user', email: baseInput.email });
     await expect(buildService().execute(baseInput)).rejects.toThrow(SignupEmailAlreadyExistsError);
     expect(tenantProvisioningMock.provision).not.toHaveBeenCalled();
     expect(tenantLookupMock.findBySlug).not.toHaveBeenCalled();

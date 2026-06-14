@@ -5,7 +5,9 @@ import { TenancyModule } from '../tenancy/tenancy.module';
 import { IdentityCoreModule } from './identity-core.module';
 import { IdentitySessionsModule } from './identity-sessions.module';
 import { BootstrapOwnerService } from './application/bootstrap-owner.service';
+import { BA_USER_READER } from './application/ports/ba-user-reader.port';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
+import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 
 /**
@@ -33,6 +35,8 @@ import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
     BootstrapOwnerService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
+    { provide: BA_USER_READER, useClass: BaUserDrizzleReader },
+    BaUserDrizzleReader,
   ],
   exports: [BootstrapOwnerService],
 })
