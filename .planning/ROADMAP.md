@@ -326,7 +326,7 @@ Plans:
 
 **Wave 2** _(after 07-01)_
 
-- [ ] 07-03-PLAN.md — Order aggregate: full state machine + immutable snapshot + totals + errors/ports (ORD-01/02/04/05, TDD)
+- [x] 07-03-PLAN.md — Order aggregate: full state machine + immutable snapshot + totals + errors/ports (ORD-01/02/04/05, TDD)
 
 **Wave 3** _(after 07-02 + 07-03)_
 
@@ -555,7 +555,7 @@ Notes:
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
-| 7. Ordering                                   | 2/5            | In Progress   |            |
+| 7. Ordering                                   | 3/5            | In Progress   |            |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |

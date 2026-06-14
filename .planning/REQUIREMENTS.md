@@ -121,11 +121,11 @@
 
 > New bounded context. Cart, order state machine, fulfillment.
 
-- [ ] **ORD-01**: New bounded context `ordering` created at `apps/api/src/contexts/ordering/` with 4-layer DDD structure
-- [ ] **ORD-02**: `Order` aggregate with state machine: `created → paid → accepted → preparing → ready → completed` (plus branches: `canceled`, `refunded`, `failed`)
+- [x] **ORD-01**: New bounded context `ordering` created at `apps/api/src/contexts/ordering/` with 4-layer DDD structure
+- [x] **ORD-02**: `Order` aggregate with state machine: `created → paid → accepted → preparing → ready → completed` (plus branches: `canceled`, `refunded`, `failed`)
 - [ ] **ORD-03**: Cart is anonymous (no auth required); converts to `Order` on checkout
-- [ ] **ORD-04**: Order persists immutable snapshot of items / modifiers / prices at creation time
-- [ ] **ORD-05**: Order totals: `subtotal + modifiers + delivery + service_fee − discount = total`; calculation in domain layer with rounding rules
+- [x] **ORD-04**: Order persists immutable snapshot of items / modifiers / prices at creation time
+- [x] **ORD-05**: Order totals: `subtotal + modifiers + delivery + service_fee − discount = total`; calculation in domain layer with rounding rules
 - [x] **ORD-06**: New DB tables (`orders`, `order_items`, `order_modifiers`, `payments`) with `tenant_id` + composite FK
 - [x] **ORD-07**: Event contracts: `ordering.order_created.v1`, `ordering.order_paid.v1`, `ordering.order_canceled.v1`, `ordering.order_refunded.v1`, `ordering.order_status_changed.v1`
 - [x] **ORD-08**: NATS subject `ordering.>` added to `STREAM_SUBJECTS` in `nats.module.ts`
@@ -446,11 +446,11 @@
 | SITE-07     | Phase 6       | Pending  |
 | SITE-09     | Phase 6       | Complete |
 | SITE-10     | Phase 6       | Pending  |
-| ORD-01      | Phase 7       | Pending  |
-| ORD-02      | Phase 7       | Pending  |
+| ORD-01      | Phase 7       | Complete |
+| ORD-02      | Phase 7       | Complete |
 | ORD-03      | Phase 7       | Pending  |
-| ORD-04      | Phase 7       | Pending  |
-| ORD-05      | Phase 7       | Pending  |
+| ORD-04      | Phase 7       | Complete |
+| ORD-05      | Phase 7       | Complete |
 | ORD-06      | Phase 7       | Complete |
 | ORD-07      | Phase 7       | Complete |
 | ORD-08      | Phase 7       | Complete |
