@@ -15,6 +15,7 @@ export * from './menu';
 //   - menuItemModifierGroups (D-4a CAT-04, plan 04A-04 — renamed from menuItemModifiers)
 //   - menuStopList (D-4a-10, plan 04A-03)
 //   - menuItemSlugAliases (D-4a-04, plan 04A-03)
+export * from './ordering';
 export * from './audit';
 export * from './outbox';
 export * from './inbox';
