@@ -220,6 +220,14 @@ suite('GET /v1/menu — brand object in response', () => {
     expectEtag(res.headers.etag);
   }, 60_000);
 
+  it('public menu reads carry no Set-Cookie so an edge cache can store them', async () => {
+    for (const url of ['/v1/menu', '/v1/menu/availability']) {
+      const res = await stack.app.inject({ method: 'GET', url, headers: { host: brandHost } });
+      expect(res.statusCode).toBe(200);
+      expect(res.headers['set-cookie']).toBeUndefined();
+    }
+  }, 60_000);
+
   it('honours If-None-Match: a current ETag yields an empty 304, a stale one yields 200', async () => {
     const before = await stack.app.inject({
       method: 'GET',
