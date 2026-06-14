@@ -15,3 +15,16 @@ export const fetchMenu = async (signal?: AbortSignal): Promise<MenuDto> => {
   if (!res.ok) throw new Error(`fetchMenu failed: ${res.status.toString()}`);
   return res.json() as Promise<MenuDto>;
 };
+
+export interface MenuAvailability {
+  stoppedItemIds: string[];
+}
+
+export const fetchAvailability = async (signal?: AbortSignal): Promise<MenuAvailability> => {
+  const init: RequestInit = {};
+  if (signal) init.signal = signal;
+  const res = await fetch('/v1/menu/availability', init);
+  if (res.status === 404) return { stoppedItemIds: [] };
+  if (!res.ok) throw new Error(`fetchAvailability failed: ${res.status.toString()}`);
+  return res.json() as Promise<MenuAvailability>;
+};

@@ -514,7 +514,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(item?.sizes[0]?.name.en).toBe('Large');
   }, 60_000);
 
-  it('stop-list overlay marks items isStopListed on /v1/menu; DELETE clears it', async () => {
+  it('menu doc carries no stop overlay; stopped item stays present and reachable via detail', async () => {
     const categoryRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/categories',
@@ -540,13 +540,22 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(itemRes.statusCode).toBe(200);
     const itemId = itemRes.json<{ id: string }>().id;
 
+    const publishRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/publish',
+      headers: cafeA.authed,
+    });
+    expect(publishRes.statusCode).toBe(200);
+
     const beforeRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
       headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
-    const beforeBody = beforeRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
-    expect(beforeBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
+    const beforeBody = beforeRes.json<{ items: Record<string, unknown>[] }>();
+    const beforeItem = beforeBody.items.find((i) => i.id === itemId);
+    expect(beforeItem).toBeDefined();
+    expect(beforeItem).not.toHaveProperty('isStopListed');
 
     const stopRes = await stack.app.inject({
       method: 'POST',
@@ -561,25 +570,20 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       url: '/v1/menu',
       headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
-    const stoppedBody = stoppedRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
+    const stoppedBody = stoppedRes.json<{ items: Record<string, unknown>[] }>();
     const stoppedItem = stoppedBody.items.find((i) => i.id === itemId);
     expect(stoppedItem).toBeDefined();
-    expect(stoppedItem?.isStopListed).toBe(true);
+    expect(stoppedItem).not.toHaveProperty('isStopListed');
 
-    const unstopRes = await stack.app.inject({
-      method: 'DELETE',
-      url: `/v1/catalog/stop-list/${itemId}`,
-      headers: cafeA.authed,
-    });
-    expect(unstopRes.statusCode).toBe(204);
-
-    const restoredRes = await stack.app.inject({
+    const detailRes = await stack.app.inject({
       method: 'GET',
-      url: '/v1/menu',
+      url: `/v1/menu/items/${itemId}`,
       headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
-    const restoredBody = restoredRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
-    expect(restoredBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
+    expect(detailRes.statusCode).toBe(200);
+    const detailBody = detailRes.json<Record<string, unknown>>();
+    expect(detailBody.id).toBe(itemId);
+    expect(detailBody).not.toHaveProperty('isStopListed');
   }, 60_000);
 
   it('POST /publish then DELETE /publish within 5s cancels the timer — no outbox emission', async () => {

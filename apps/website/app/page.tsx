@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
-import { fetchMenuPublic, TenantNotFoundError, TenantSuspendedError } from '@/lib/api-client';
+import {
+  fetchMenuPublic,
+  fetchAvailabilityPublic,
+  TenantNotFoundError,
+  TenantSuspendedError,
+} from '@/lib/api-client';
 import { MenuPageClient } from '@/components/menu/menu-page-client';
 
 function SuspendedState() {
@@ -36,8 +41,11 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function MenuPage() {
   try {
-    const menu = await fetchMenuPublic();
-    return <MenuPageClient menu={menu} />;
+    const [menu, availability] = await Promise.all([
+      fetchMenuPublic(),
+      fetchAvailabilityPublic().catch(() => ({ stoppedItemIds: [] })),
+    ]);
+    return <MenuPageClient menu={menu} stoppedItemIds={availability.stoppedItemIds} />;
   } catch (err) {
     if (err instanceof TenantNotFoundError) notFound();
     if (err instanceof TenantSuspendedError) return <SuspendedState />;

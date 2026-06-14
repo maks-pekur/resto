@@ -36,7 +36,6 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
-      isStopListed: false,
     },
     {
       id: 'item-2',
@@ -57,7 +56,6 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
-      isStopListed: false,
     },
   ],
   modifierGroups: [],
@@ -77,19 +75,19 @@ describe('MenuPageClient', () => {
   });
 
   it('renders 2 category sections for a menu with 2 categories', () => {
-    render(<MenuPageClient menu={makeMenu()} />);
+    render(<MenuPageClient menu={makeMenu()} stoppedItemIds={[]} />);
     expect(screen.getAllByText('Starters').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Mains').length).toBeGreaterThan(0);
   });
 
   it('renders the correct item cards in each section', () => {
-    render(<MenuPageClient menu={makeMenu()} />);
+    render(<MenuPageClient menu={makeMenu()} stoppedItemIds={[]} />);
     expect(screen.getByText('Soup')).toBeDefined();
     expect(screen.getByText('Burger')).toBeDefined();
   });
 
   it('clicking a card opens the modal with that item name', async () => {
-    render(<MenuPageClient menu={makeMenu()} />);
+    render(<MenuPageClient menu={makeMenu()} stoppedItemIds={[]} />);
     const soupButton = screen.getAllByRole('button', { name: 'Soup' })[0];
     if (!soupButton) throw new Error('Soup button not found');
     fireEvent.click(soupButton);
@@ -98,7 +96,17 @@ describe('MenuPageClient', () => {
   });
 
   it('renders the "Menu unavailable" state for empty items', () => {
-    render(<MenuPageClient menu={makeMenu({ items: [] })} />);
+    render(<MenuPageClient menu={makeMenu({ items: [] })} stoppedItemIds={[]} />);
     expect(screen.getByText('emptyHeading')).toBeDefined();
+  });
+
+  it('marks an item as unavailable when its id is in the stopped set', () => {
+    render(<MenuPageClient menu={makeMenu()} stoppedItemIds={['item-1']} />);
+
+    const soupCard = screen.getByRole('button', { name: 'Soup' });
+    expect(soupCard.getAttribute('aria-disabled')).toBe('true');
+
+    const burgerCard = screen.getByRole('button', { name: 'Burger' });
+    expect(burgerCard.getAttribute('aria-disabled')).toBeNull();
   });
 });

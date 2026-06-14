@@ -16,9 +16,10 @@ import { localized } from '@/lib/i18n/localized';
 
 interface MenuPageClientProps {
   readonly menu: MenuDto;
+  readonly stoppedItemIds: readonly string[];
 }
 
-export function MenuPageClient({ menu }: MenuPageClientProps) {
+export function MenuPageClient({ menu, stoppedItemIds }: MenuPageClientProps) {
   const locale = useLocale();
   const t = useTranslations('menu');
   const tCart = useTranslations('cart');
@@ -26,6 +27,8 @@ export function MenuPageClient({ menu }: MenuPageClientProps) {
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [cartOpen, setCartOpen] = useState(false);
+
+  const stoppedIds = new Set(stoppedItemIds);
 
   const addItem = useCartStore((s) => s.addItem);
   const itemCount = useCartStore(selectItemCount);
@@ -109,7 +112,7 @@ export function MenuPageClient({ menu }: MenuPageClientProps) {
                         key={item.id}
                         item={item}
                         onSelect={handleSelect}
-                        unavailable={item.isStopListed}
+                        unavailable={stoppedIds.has(item.id)}
                       />
                     ))}
                   </div>

@@ -122,7 +122,6 @@ export interface PublishedMenuItem {
    * `PublishedMenu.modifierGroups`.
    */
   readonly modifierGroupIds: readonly MenuModifierId[];
-  readonly isStopListed: boolean;
 }
 
 export interface PublishedMenuCategory {

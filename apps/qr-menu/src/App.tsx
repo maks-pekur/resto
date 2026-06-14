@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { fetchMenu, MenuNotFoundError } from './api/client';
+import { fetchAvailability, fetchMenu, MenuNotFoundError } from './api/client';
+import { toStoppedSet } from './api/availability';
 import type { MenuDto } from '@resto/api-client/public';
 import { ItemDetail } from './components/ItemDetail';
 import { MenuView } from './components/MenuView';
@@ -23,8 +24,11 @@ type State =
   | { kind: 'not-found' }
   | { kind: 'error' };
 
+const AVAILABILITY_POLL_MS = 20_000;
+
 export const App = () => {
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const [stoppedIds, setStoppedIds] = useState<ReadonlySet<string>>(() => new Set());
   const [route, setRoute] = useState(() =>
     typeof window === 'undefined' ? { kind: 'menu' as const } : parsePath(window.location.pathname),
   );
@@ -44,10 +48,35 @@ export const App = () => {
           setState({ kind: 'error' });
         }
       });
+    fetchAvailability(controller.signal)
+      .then((availability) => {
+        setStoppedIds(toStoppedSet(availability.stoppedItemIds));
+      })
+      .catch(() => undefined);
     return () => {
       controller.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (state.kind !== 'ready') return;
+    const refresh = (): void => {
+      if (document.hidden) return;
+      fetchAvailability()
+        .then((availability) => {
+          setStoppedIds(toStoppedSet(availability.stoppedItemIds));
+        })
+        .catch(() => undefined);
+    };
+    const interval = window.setInterval(refresh, AVAILABILITY_POLL_MS);
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [state.kind]);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
@@ -116,6 +145,7 @@ export const App = () => {
   return (
     <MenuView
       menu={state.menu}
+      stoppedIds={stoppedIds}
       onSelectItem={navigateToItem}
       cartOpen={cartOpen}
       onOpenCart={() => {
