@@ -27,6 +27,7 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
   let ownerCookie: string;
   let staffCookie: string;
   let tenantId: string;
+  let brandSlug: string;
   let categoryId: string;
 
   beforeAll(async () => {
@@ -56,10 +57,19 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
       role: 'staff',
     });
 
+    brandSlug = `brand-${randomUUID().slice(0, 8)}`;
+    const brandRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
+      payload: { slug: brandSlug, displayName: 'RBAC Brand' },
+    });
+    expect(brandRes.statusCode).toBe(201);
+
     const categoryRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/categories',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
       payload: { slug: 'drinks', name: { en: 'Drinks' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -112,7 +122,7 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/items',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
       payload: itemPayload(),
     });
     expect(res.statusCode).toBe(200);
