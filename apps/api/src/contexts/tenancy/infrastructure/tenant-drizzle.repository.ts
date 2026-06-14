@@ -15,7 +15,7 @@ import {
 } from '@resto/events';
 import { eq, sql } from 'drizzle-orm';
 import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
-import { TenantNotFoundError } from '../domain/errors';
+import { TenantNotFoundError, TenantSlugTakenError } from '../domain/errors';
 import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
@@ -28,6 +28,30 @@ const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
   'erased',
 ]);
 const ALLOWED_DOMAIN_KINDS: ReadonlySet<TenantDomainKind> = new Set(['subdomain', 'custom']);
+
+const PG_UNIQUE_VIOLATION = '23505';
+
+const matchesUniqueConstraint = (err: unknown, names: ReadonlySet<string>): boolean => {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (typeof cur === 'object' && cur !== null && !seen.has(cur)) {
+    seen.add(cur);
+    const e = cur as {
+      code?: string;
+      constraint_name?: string;
+      constraint?: string;
+      cause?: unknown;
+    };
+    if (e.code === PG_UNIQUE_VIOLATION) {
+      const constraint = e.constraint_name ?? e.constraint;
+      if (constraint !== undefined && names.has(constraint)) return true;
+    }
+    cur = e.cause;
+  }
+  return false;
+};
+
+const TENANT_SLUG_CONSTRAINTS: ReadonlySet<string> = new Set(['tenants_slug_uq']);
 
 @Injectable()
 export class TenantDrizzleRepository implements TenantRepository {
@@ -99,64 +123,71 @@ export class TenantDrizzleRepository implements TenantRepository {
     const snapshot = tenant.toSnapshot();
     const events = tenant.pullEvents();
 
-    await this.db.withoutTenant('tenancy.save', async (tx) => {
-      await tx
-        .insert(schema.tenants)
-        .values({
-          id: snapshot.id,
-          slug: snapshot.slug,
-          displayName: snapshot.displayName,
-          status: snapshot.status,
-          locale: snapshot.locale,
-          defaultCurrency: snapshot.defaultCurrency,
-          stripeAccountId: snapshot.stripeAccountId,
-          createdAt: snapshot.createdAt,
-          updatedAt: snapshot.updatedAt,
-          archivedAt: snapshot.archivedAt,
-          offboardingScheduledAt: snapshot.offboardingScheduledAt,
-          offboardingExecutedAt: snapshot.offboardingExecutedAt,
-          offboardingRequestedBy: snapshot.offboardingRequestedBy,
-        })
-        .onConflictDoUpdate({
-          target: schema.tenants.id,
-          set: {
+    try {
+      await this.db.withoutTenant('tenancy.save', async (tx) => {
+        await tx
+          .insert(schema.tenants)
+          .values({
+            id: snapshot.id,
             slug: snapshot.slug,
             displayName: snapshot.displayName,
             status: snapshot.status,
             locale: snapshot.locale,
             defaultCurrency: snapshot.defaultCurrency,
             stripeAccountId: snapshot.stripeAccountId,
+            createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,
             offboardingScheduledAt: snapshot.offboardingScheduledAt,
             offboardingExecutedAt: snapshot.offboardingExecutedAt,
             offboardingRequestedBy: snapshot.offboardingRequestedBy,
-          },
-        });
-
-      const domains = [snapshot.primaryDomain, ...snapshot.customDomains];
-      for (const domain of domains) {
-        await tx
-          .insert(schema.tenantDomains)
-          .values({
-            id: domain.id,
-            tenantId: domain.tenantId,
-            domain: domain.domain,
-            kind: domain.kind,
-            isPrimary: domain.isPrimary,
-            verifiedAt: domain.verifiedAt,
-            createdAt: domain.createdAt,
-            updatedAt: domain.createdAt,
-            archivedAt: null,
           })
-          .onConflictDoNothing({ target: schema.tenantDomains.id });
-      }
+          .onConflictDoUpdate({
+            target: schema.tenants.id,
+            set: {
+              slug: snapshot.slug,
+              displayName: snapshot.displayName,
+              status: snapshot.status,
+              locale: snapshot.locale,
+              defaultCurrency: snapshot.defaultCurrency,
+              stripeAccountId: snapshot.stripeAccountId,
+              updatedAt: snapshot.updatedAt,
+              archivedAt: snapshot.archivedAt,
+              offboardingScheduledAt: snapshot.offboardingScheduledAt,
+              offboardingExecutedAt: snapshot.offboardingExecutedAt,
+              offboardingRequestedBy: snapshot.offboardingRequestedBy,
+            },
+          });
 
-      for (const event of events) {
-        const envelope = domainEventToEnvelope(event);
-        await appendToOutbox(tx, { envelope, aggregateId: snapshot.id });
+        const domains = [snapshot.primaryDomain, ...snapshot.customDomains];
+        for (const domain of domains) {
+          await tx
+            .insert(schema.tenantDomains)
+            .values({
+              id: domain.id,
+              tenantId: domain.tenantId,
+              domain: domain.domain,
+              kind: domain.kind,
+              isPrimary: domain.isPrimary,
+              verifiedAt: domain.verifiedAt,
+              createdAt: domain.createdAt,
+              updatedAt: domain.createdAt,
+              archivedAt: null,
+            })
+            .onConflictDoNothing({ target: schema.tenantDomains.id });
+        }
+
+        for (const event of events) {
+          const envelope = domainEventToEnvelope(event);
+          await appendToOutbox(tx, { envelope, aggregateId: snapshot.id });
+        }
+      });
+    } catch (err) {
+      if (matchesUniqueConstraint(err, TENANT_SLUG_CONSTRAINTS)) {
+        throw new TenantSlugTakenError(snapshot.slug);
       }
-    });
+      throw err;
+    }
   }
 
   listScheduledForErasure(): Promise<readonly TenantSnapshot[]> {
