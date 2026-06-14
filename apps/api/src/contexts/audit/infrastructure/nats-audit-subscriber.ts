@@ -8,11 +8,12 @@ import {
 import { TenantAwareDb } from '@resto/db';
 import {
   runDeduped,
+  type DlqPublisher,
   type EventEnvelope,
   type EventSubscriber,
   type EventSubscription,
 } from '@resto/events';
-import { EVENT_SUBSCRIBER } from '../../../infrastructure/nats.module';
+import { EVENT_PUBLISHER, EVENT_SUBSCRIBER } from '../../../infrastructure/nats.module';
 import { RecordAuditService } from '../application/record-audit.service';
 
 const TENANCY_CONSUMER_NAME = 'audit-recorder-tenancy';
@@ -28,6 +29,7 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
 
   constructor(
     @Inject(EVENT_SUBSCRIBER) private readonly subscriber: EventSubscriber | null,
+    @Inject(EVENT_PUBLISHER) private readonly dlqPublisher: DlqPublisher | null,
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(RecordAuditService) private readonly recorder: RecordAuditService,
   ) {}
@@ -50,6 +52,7 @@ export class NatsAuditSubscriber implements OnApplicationBootstrap, OnApplicatio
         subject: cfg.subject,
         durableName: cfg.durableName,
         maxInFlight: 1,
+        ...(this.dlqPublisher ? { dlqPublisher: this.dlqPublisher } : {}),
         handler,
       });
       this.subscriptions.push(subscription);
