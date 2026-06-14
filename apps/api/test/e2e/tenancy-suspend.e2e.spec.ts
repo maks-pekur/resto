@@ -66,7 +66,7 @@ suite('Tenant suspend/resume — HTTP, events, audit, customer-route block', () 
     expect(audit.count).toBe(1);
   }, 60_000);
 
-  it('GET /v1/menu returns 403 problem+json when tenant is suspended', async () => {
+  it('GET /v1/menu returns 404 (existence hidden) when tenant is suspended', async () => {
     const slug = `susp-menu-${randomUUID().slice(0, 8)}`;
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
 
@@ -86,15 +86,13 @@ suite('Tenant suspend/resume — HTTP, events, audit, customer-route block', () 
         'x-tenant-id': tenant.id,
       },
     });
-    expect(res.statusCode).toBe(403);
-    expect(res.headers['content-type']).toContain('application/problem+json');
+    expect(res.statusCode).toBe(404);
     const body = res.json<{ code?: string; detail?: string; type: string }>();
-    expect(body.code).toBe('tenancy.tenant_suspended');
-    // Generic detail; no menu data leaked.
-    expect(body.detail ?? '').not.toMatch(/\b(items|categories|modifiers)\b/i);
+    // Generic 404; no menu data leaked, no suspension signal revealed.
+    expect(body.detail ?? '').not.toMatch(/\b(items|categories|modifiers|suspend)\b/i);
   }, 60_000);
 
-  it('GET /v1/menu/items/:id returns 403 problem+json when tenant is suspended', async () => {
+  it('GET /v1/menu/items/:id returns 404 (existence hidden) when tenant is suspended', async () => {
     const slug = `susp-item-${randomUUID().slice(0, 8)}`;
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
     const suspendRes = await stack.app.inject({
@@ -113,10 +111,7 @@ suite('Tenant suspend/resume — HTTP, events, audit, customer-route block', () 
         'x-tenant-id': tenant.id,
       },
     });
-    expect(res.statusCode).toBe(403);
-    expect(res.headers['content-type']).toContain('application/problem+json');
-    const body = res.json<{ code?: string }>();
-    expect(body.code).toBe('tenancy.tenant_suspended');
+    expect(res.statusCode).toBe(404);
   }, 60_000);
 
   it('POST /internal/v1/tenants/:id/resume restores active status and emits tenancy.tenant_resumed.v1', async () => {

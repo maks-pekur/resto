@@ -17,6 +17,15 @@ const COOL_OFF_MS = COOL_OFF_DAYS * 24 * 60 * 60 * 1000;
 
 export type TenantStatus = 'active' | 'suspended' | 'archived' | 'pending_offboarding' | 'erased';
 
+/**
+ * Statuses whose public surface (QR menu, marketing site) stays live.
+ * Single source of truth for read-enforcement; every status NOT in this
+ * set goes dark on the public read path (AUDIT #21).
+ */
+export const SERVABLE_STATUSES: ReadonlySet<TenantStatus> = new Set<TenantStatus>(['active']);
+
+export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_STATUSES.has(status);
+
 export interface TenantSnapshot {
   readonly id: TenantId;
   readonly slug: TenantSlug;
@@ -222,6 +231,10 @@ export class Tenant {
       executedAt: now,
       occurredAt: now,
     });
+  }
+
+  isPubliclyServable(): boolean {
+    return isPubliclyServable(this.snapshot.status);
   }
 
   toSnapshot(): TenantSnapshot {
