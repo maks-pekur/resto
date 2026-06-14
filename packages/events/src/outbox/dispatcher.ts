@@ -79,10 +79,11 @@ export class OutboxDispatcher {
       return { claimed: 0, delivered: 0, failed: 0 };
     }
 
+    const batchClaimId = claimed[0]?.claimId;
     const deliveredIds: string[] = [];
     let failed = 0;
 
-    for (const { envelope } of claimed) {
+    for (const { envelope, claimId } of claimed) {
       try {
         await this.#publisher.publish(envelope);
         deliveredIds.push(envelope.id);
@@ -91,7 +92,7 @@ export class OutboxDispatcher {
         this.#onError(err);
         await this.#db
           .withoutTenant('outbox dispatcher release claim', (tx) =>
-            releaseOutboxClaim(tx, envelope.id),
+            releaseOutboxClaim(tx, envelope.id, claimId),
           )
           .catch((releaseErr: unknown) => {
             this.#onError(releaseErr);
@@ -99,9 +100,9 @@ export class OutboxDispatcher {
       }
     }
 
-    if (deliveredIds.length > 0) {
+    if (deliveredIds.length > 0 && batchClaimId !== undefined) {
       await this.#db.withoutTenant('outbox dispatcher mark delivered', (tx) =>
-        markOutboxDelivered(tx, deliveredIds),
+        markOutboxDelivered(tx, deliveredIds, batchClaimId),
       );
     }
 

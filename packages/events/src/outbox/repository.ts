@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { schema, type RestoTx } from '@resto/db';
 import { and, asc, eq, inArray, isNull, lt, or, sql } from 'drizzle-orm';
 import { EventEnvelope } from '../envelope';
@@ -40,6 +41,7 @@ export interface ClaimOptions {
 
 export interface ClaimedEvent {
   readonly envelope: EventEnvelope;
+  readonly claimId: string;
 }
 
 const reconstructEnvelope = (row: typeof schema.outboxEvents.$inferSelect): EventEnvelope => {
@@ -76,6 +78,7 @@ export const claimOutboxBatch = async (
   options: ClaimOptions,
 ): Promise<ClaimedEvent[]> => {
   const timeout = options.visibilityTimeoutSeconds ?? DEFAULT_VISIBILITY_TIMEOUT_SECONDS;
+  const claimId = randomUUID();
 
   const candidates = tx
     .select({ id: schema.outboxEvents.id })
@@ -95,7 +98,7 @@ export const claimOutboxBatch = async (
 
   const claimed = await tx
     .update(schema.outboxEvents)
-    .set({ claimedAt: sql`NOW()` })
+    .set({ claimedAt: sql`NOW()`, claimId })
     .where(inArray(schema.outboxEvents.id, candidates))
     .returning();
 
@@ -104,7 +107,7 @@ export const claimOutboxBatch = async (
       (a, b) =>
         a.occurredAt.getTime() - b.occurredAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
     )
-    .map((row) => ({ envelope: reconstructEnvelope(row) }));
+    .map((row) => ({ envelope: reconstructEnvelope(row), claimId }));
 };
 
 /**
@@ -113,12 +116,18 @@ export const claimOutboxBatch = async (
  * mark is harmless because `EventEnvelope.id` is the broker idempotency
  * key (`msgID` on NATS) and consumers dedup via the inbox tracker.
  */
-export const markOutboxDelivered = async (tx: RestoTx, ids: readonly string[]): Promise<void> => {
+export const markOutboxDelivered = async (
+  tx: RestoTx,
+  ids: readonly string[],
+  claimId: string,
+): Promise<void> => {
   if (ids.length === 0) return;
   await tx
     .update(schema.outboxEvents)
     .set({ deliveredAt: sql`NOW()` })
-    .where(inArray(schema.outboxEvents.id, [...ids]));
+    .where(
+      and(inArray(schema.outboxEvents.id, [...ids]), eq(schema.outboxEvents.claimId, claimId)),
+    );
 };
 
 /**
@@ -126,9 +135,19 @@ export const markOutboxDelivered = async (tx: RestoTx, ids: readonly string[]): 
  * fails and we want the row immediately reclaimable rather than waiting
  * for the visibility timeout. Optional optimization; safe to skip.
  */
-export const releaseOutboxClaim = async (tx: RestoTx, id: string): Promise<void> => {
+export const releaseOutboxClaim = async (
+  tx: RestoTx,
+  id: string,
+  claimId: string,
+): Promise<void> => {
   await tx
     .update(schema.outboxEvents)
-    .set({ claimedAt: null })
-    .where(and(eq(schema.outboxEvents.id, id), isNull(schema.outboxEvents.deliveredAt)));
+    .set({ claimedAt: null, claimId: null })
+    .where(
+      and(
+        eq(schema.outboxEvents.id, id),
+        eq(schema.outboxEvents.claimId, claimId),
+        isNull(schema.outboxEvents.deliveredAt),
+      ),
+    );
 };

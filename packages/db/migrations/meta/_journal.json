@@ -330,6 +330,13 @@
       "when": 1779842200000,
       "tag": "0046_menu_brand_composite_fk",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1779842300000,
+      "tag": "0047_outbox_claim_id",
+      "breakpoints": true
     }
   ]
 }
