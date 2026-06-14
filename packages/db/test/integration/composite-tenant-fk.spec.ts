@@ -47,6 +47,33 @@ const CASES: FkCase[] = [
       ),
   },
   {
+    name: 'menu_categories.brand_id → brands(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: menu_categories.brand_id', async (tx) =>
+        tx.insert(schema.menuCategories).values({
+          tenantId: fx.tenantA,
+          brandId: fx.brandB,
+          slug: `i2-probe-cat-brand-${Date.now()}`,
+          name: { en: 'Probe' },
+        }),
+      ),
+  },
+  {
+    name: 'menu_items.brand_id → brands(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: menu_items.brand_id', async (tx) =>
+        tx.insert(schema.menuItems).values({
+          tenantId: fx.tenantA,
+          brandId: fx.brandB,
+          categoryId: fx.categoryA,
+          slug: `i2-probe-item-brand-${Date.now()}`,
+          name: { en: 'Probe' },
+          basePrice: '1.00',
+          currency: 'USD',
+        }),
+      ),
+  },
+  {
     name: 'menu_items.category_id → menu_categories(id, tenant_id)',
     probe: async (pg, fx) =>
       pg.db.withoutTenant('I-2 probe: menu_items', async (tx) =>
