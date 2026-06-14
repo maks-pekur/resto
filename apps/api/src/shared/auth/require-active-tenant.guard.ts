@@ -1,8 +1,12 @@
-import { type CanActivate, type ExecutionContext, Inject, Injectable } from '@nestjs/common';
+import {
+  type CanActivate,
+  type ExecutionContext,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { getTenantContext } from '@resto/db';
 import { TENANT_REPOSITORY, type TenantRepository } from '../../contexts/tenancy/domain/ports';
-import { TenantSuspendedError } from '../../contexts/tenancy/domain/errors';
-import { mapDomainError } from '../../contexts/tenancy/interfaces/http/error-mapping';
 
 // OQ-3: enforce per-route via decorator; middleware stays informational so
 // /internal/* routes remain reachable on suspended tenants.
@@ -12,17 +16,16 @@ export class RequireActiveTenantGuard implements CanActivate {
 
   async canActivate(_ctx: ExecutionContext): Promise<boolean> {
     // If no tenant resolved by middleware, defer to the controller body
-    // (which 404s via requireTenantOr404). The guard's job is suspension
+    // (which 404s via requireTenantOr404). The guard's job is read
     // enforcement, not tenant-resolution validation.
     if (!getTenantContext()) return true;
     const tenant = await this.repo.findCurrentTenant();
     if (!tenant) return true;
-    const snapshot = tenant.toSnapshot();
-    if (snapshot.status === 'suspended') {
-      // Map domain error to ForbiddenException here — ProblemDetailsFilter is
-      // generic and only knows HttpException; the guard runs outside any
-      // wrapWith(mapDomainError) controller body so we map inline.
-      throw mapDomainError(new TenantSuspendedError(snapshot.id));
+    // AUDIT #21: every non-active status goes dark on the public read path.
+    // 404 (not 403) so a suspended/archived tenant's existence stays hidden,
+    // matching how a brandless host already collapses to 404.
+    if (!tenant.isPubliclyServable()) {
+      throw new NotFoundException('No tenant resolved for this host.');
     }
     return true;
   }
