@@ -6,9 +6,11 @@ import {
   Module,
   type OnApplicationShutdown,
 } from '@nestjs/common';
+import { TenantAwareDb } from '@resto/db';
 import {
   NatsJetStreamPublisher,
   NatsJetStreamSubscriber,
+  type DlqPublisher,
   type EventPublisher,
   type EventSubscriber,
 } from '@resto/events';
@@ -64,7 +66,7 @@ class NatsShutdownHook implements OnApplicationShutdown {
   providers: [
     {
       provide: EVENT_PUBLISHER,
-      useFactory: async (env: Env): Promise<EventPublisher | null> => {
+      useFactory: async (env: Env): Promise<(EventPublisher & DlqPublisher) | null> => {
         if (process.env.NATS_DISABLED === 'true') {
           // Test/CI escape hatch — skip the connection attempt so booting
           // the app does not require a running broker.
@@ -90,7 +92,7 @@ class NatsShutdownHook implements OnApplicationShutdown {
     },
     {
       provide: EVENT_SUBSCRIBER,
-      useFactory: async (env: Env): Promise<EventSubscriber | null> => {
+      useFactory: async (env: Env, db: TenantAwareDb): Promise<EventSubscriber | null> => {
         if (process.env.NATS_DISABLED === 'true') {
           return null;
         }
@@ -99,6 +101,7 @@ class NatsShutdownHook implements OnApplicationShutdown {
           return await NatsJetStreamSubscriber.connect({
             servers: env.NATS_URL,
             stream: env.NATS_STREAM,
+            db,
             ...(auth ? { connectionOptions: auth } : {}),
           });
         } catch (err) {
@@ -109,7 +112,7 @@ class NatsShutdownHook implements OnApplicationShutdown {
           return null;
         }
       },
-      inject: [ENV_TOKEN],
+      inject: [ENV_TOKEN, TenantAwareDb],
     },
     NatsShutdownHook,
     OutboxDispatcherService,
