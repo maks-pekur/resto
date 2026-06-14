@@ -46,7 +46,6 @@ const buildCache = (): CatalogCachePort => ({
 
 const buildVersionPort = (): MenuVersionPort => ({
   current: vi.fn().mockResolvedValue(7),
-  bump: vi.fn(),
 });
 
 describe('GetPublishedMenuService', () => {

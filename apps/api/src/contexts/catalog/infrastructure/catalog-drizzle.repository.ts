@@ -672,6 +672,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           target: [schema.menuStopList.tenantId, schema.menuStopList.itemId],
         })
         .returning({ id: schema.menuStopList.id });
+      await this.#bumpStopVersion(scoped, input.brandId);
       if (inserted[0]) {
         return { id: inserted[0].id, itemSlug };
       }
@@ -715,8 +716,22 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         )
         .returning({ id: schema.menuStopList.id });
 
+      await this.#bumpStopVersion(scoped, input.brandId);
+
       return { removed: result.length > 0, itemSlug };
     });
+  }
+
+  async #bumpStopVersion(
+    scoped: Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[1],
+    brandId: string,
+  ): Promise<void> {
+    await scoped
+      .insertInto(schema.catalogBrandStopVersion, { brandId, stopVersion: 2 })
+      .onConflictDoUpdate({
+        target: [schema.catalogBrandStopVersion.brandId, schema.catalogBrandStopVersion.tenantId],
+        set: { stopVersion: sql`${schema.catalogBrandStopVersion.stopVersion} + 1` },
+      });
   }
 
   async getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null> {
@@ -734,10 +749,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   // D-4a-06: tenants-row stamp + outbox insert in one tx so a concurrent publish cannot double-emit MenuFirstPublishedV1 (T-04a-06-05).
   async finalizeMenuPublish(input: {
     tenantId: TenantId;
-    version: number;
-  }): Promise<{ isFirstPublish: boolean }> {
-    const { tenantId, version } = input;
-    // withTenant requires an active ALS frame, withTenantId requires it absent — probe once at boundary.
+  }): Promise<{ isFirstPublish: boolean; version: number }> {
+    const { tenantId } = input;
     const hasAls = ((): boolean => {
       try {
         requireTenantContext();
@@ -749,7 +762,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
     const op = async (
       tx: Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[0],
-    ): Promise<boolean> => {
+      scoped: Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[1],
+    ): Promise<{ isFirstPublish: boolean; version: number }> => {
+      const bumped = await scoped
+        .insertInto(schema.catalogMenuVersion, { menuVersion: 2 })
+        .onConflictDoUpdate({
+          target: [schema.catalogMenuVersion.tenantId],
+          set: { menuVersion: sql`${schema.catalogMenuVersion.menuVersion} + 1` },
+        })
+        .returning({ menuVersion: schema.catalogMenuVersion.menuVersion });
+      const version = bumped[0]?.menuVersion ?? 2;
+
       const rows = await tx
         .select({ menuFirstPublishedAt: schema.tenants.menuFirstPublishedAt })
         .from(schema.tenants)
@@ -770,13 +793,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           envelope: buildEnvelope(MenuRepublishedV1, { tenantId, version }, { tenantId }),
         });
       }
-      return isFirstPublish;
+      return { isFirstPublish, version };
     };
 
-    const isFirstPublish = hasAls
-      ? await this.db.withTenant(async (tx) => op(tx))
-      : await this.db.withTenantId(tenantId, async (tx) => op(tx));
-    return { isFirstPublish };
+    return hasAls
+      ? await this.db.withTenant(async (tx, scoped) => op(tx, scoped))
+      : await this.db.withTenantId(tenantId, async (tx, scoped) => op(tx, scoped));
   }
 
   async insertSlugAlias(input: { itemId: string; alias: string }): Promise<void> {

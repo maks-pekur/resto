@@ -746,4 +746,114 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     expect(sniff.statusCode).not.toBe(200);
   }, 60_000);
+
+  it('POST /publish bumps catalog_menu_version by exactly 1 and touches no stop_version', async () => {
+    const cafe = await setupAuthedTenant(stack.app, 'cafe-mv');
+    const db = stack.app.get(TenantAwareDb);
+
+    const readMenuVersion = async (): Promise<number> => {
+      const rows = await db.withoutTenant('read menu version', async (tx) =>
+        tx.execute<{ v: string | null }>(
+          sql`SELECT menu_version AS v FROM catalog_menu_version WHERE tenant_id = ${cafe.id}::uuid`,
+        ),
+      );
+      return rows[0]?.v == null ? 1 : Number(rows[0].v);
+    };
+    const readStopVersionSum = async (): Promise<number> => {
+      const rows = await db.withoutTenant('read stop version sum', async (tx) =>
+        tx.execute<{ s: string | null }>(
+          sql`SELECT COALESCE(SUM(stop_version), 0) AS s
+              FROM catalog_brand_stop_version WHERE tenant_id = ${cafe.id}::uuid`,
+        ),
+      );
+      return rows[0]?.s == null ? 0 : Number(rows[0].s);
+    };
+
+    const beforeVersion = await readMenuVersion();
+    const beforeStopSum = await readStopVersionSum();
+
+    const publishRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/publish',
+      headers: cafe.authed,
+    });
+    expect(publishRes.statusCode).toBe(200);
+
+    await new Promise((r) => setTimeout(r, 5_500));
+
+    expect(await readMenuVersion()).toBe(beforeVersion + 1);
+    expect(await readStopVersionSum()).toBe(beforeStopSum);
+  }, 30_000);
+
+  it('POST /stop-list bumps only the targeted brand stop_version; menu_version unchanged', async () => {
+    const cafe = await setupAuthedTenant(stack.app, 'cafe-sv');
+    const db = stack.app.get(TenantAwareDb);
+
+    const brandBSlug = `brand-${randomUUID().slice(0, 8)}`;
+    const brandBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie: cafe.authed.cookie, 'x-tenant-id': cafe.id },
+      payload: { slug: brandBSlug, displayName: 'Brand B' },
+    });
+    expect(brandBRes.statusCode).toBe(201);
+
+    const categoryRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafe.authed,
+      payload: { slug: 'sv-cat', name: { en: 'SV' }, sortOrder: 0 },
+    });
+    const categoryId = categoryRes.json<{ id: string }>().id;
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafe.authed,
+      payload: {
+        categoryId,
+        slug: 'sv-item',
+        name: { en: 'SV Item' },
+        basePrice: '4.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const stopVersionOf = async (brandSlug: string): Promise<number> => {
+      const rows = await db.withoutTenant('read brand stop version', async (tx) =>
+        tx.execute<{ s: string | null }>(
+          sql`SELECT sv.stop_version AS s
+              FROM catalog_brand_stop_version sv
+              JOIN brands b ON b.id = sv.brand_id AND b.tenant_id = sv.tenant_id
+              WHERE sv.tenant_id = ${cafe.id}::uuid AND b.slug = ${brandSlug}`,
+        ),
+      );
+      return rows[0]?.s == null ? 1 : Number(rows[0].s);
+    };
+    const menuVersion = async (): Promise<number> => {
+      const rows = await db.withoutTenant('read menu version', async (tx) =>
+        tx.execute<{ v: string | null }>(
+          sql`SELECT menu_version AS v FROM catalog_menu_version WHERE tenant_id = ${cafe.id}::uuid`,
+        ),
+      );
+      return rows[0]?.v == null ? 1 : Number(rows[0].v);
+    };
+
+    const beforeA = await stopVersionOf(cafe.brandSlug);
+    const beforeB = await stopVersionOf(brandBSlug);
+    const beforeMenu = await menuVersion();
+
+    const stopRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/stop-list',
+      headers: cafe.authed,
+      payload: { itemId, reason: '86' },
+    });
+    expect(stopRes.statusCode).toBe(200);
+
+    expect(await stopVersionOf(cafe.brandSlug)).toBe(beforeA + 1);
+    expect(await stopVersionOf(brandBSlug)).toBe(beforeB);
+    expect(await menuVersion()).toBe(beforeMenu);
+  }, 60_000);
 });

@@ -1,19 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { PublishMenuService } from '../../../src/contexts/catalog/application/publish-menu.service';
-import type {
-  CatalogRepository,
-  MenuVersionPort,
-} from '../../../src/contexts/catalog/domain/ports';
+import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 
-const buildVersions = (next = 7): MenuVersionPort => ({
-  current: vi.fn(),
-  bump: vi.fn().mockResolvedValue(next),
-});
-
-const buildRepo = (isFirstPublish: boolean): CatalogRepository =>
+const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository =>
   ({
     loadPublishedMenu: vi.fn(),
     findPublishedItem: vi.fn(),
@@ -25,7 +17,7 @@ const buildRepo = (isFirstPublish: boolean): CatalogRepository =>
     addToStopList: vi.fn(),
     removeFromStopList: vi.fn(),
     getMenuFirstPublishedAt: vi.fn(),
-    finalizeMenuPublish: vi.fn().mockResolvedValue({ isFirstPublish }),
+    finalizeMenuPublish: vi.fn().mockResolvedValue({ isFirstPublish, version }),
     insertSlugAlias: vi.fn(),
     listCategoriesByParent: vi.fn(),
     listItems: vi.fn(),
@@ -40,48 +32,40 @@ const buildRepo = (isFirstPublish: boolean): CatalogRepository =>
   }) satisfies CatalogRepository;
 
 describe('PublishMenuService', () => {
-  it('bumps the per-tenant version and returns the new value', async () => {
-    const versions = buildVersions(42);
-    const repo = buildRepo(false);
-    const service = new PublishMenuService(versions, repo);
+  it('returns the version produced by the repository finalize bump', async () => {
+    const repo = buildRepo(false, 42);
+    const service = new PublishMenuService(repo);
 
     const result = await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute());
 
     expect(result).toEqual({ tenantId: TENANT_ID, version: 42 });
-    expect(versions.bump).toHaveBeenCalledTimes(1);
-    expect(versions.bump).toHaveBeenCalledWith(TENANT_ID);
-    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({
-      tenantId: TENANT_ID,
-      version: 42,
-    });
+    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({ tenantId: TENANT_ID });
   });
 
   it('emits via the first-publish branch when finalize reports isFirstPublish=true', async () => {
-    const versions = buildVersions(1);
-    const repo = buildRepo(true);
-    const service = new PublishMenuService(versions, repo);
+    const repo = buildRepo(true, 1);
+    const service = new PublishMenuService(repo);
 
-    await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute());
+    const result = await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute());
 
-    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({ tenantId: TENANT_ID, version: 1 });
+    expect(result).toEqual({ tenantId: TENANT_ID, version: 1 });
+    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({ tenantId: TENANT_ID });
   });
 
   it('doPublish accepts an explicit tenantId (setTimeout callback path, no ALS frame)', async () => {
-    const versions = buildVersions(11);
-    const repo = buildRepo(false);
-    const service = new PublishMenuService(versions, repo);
+    const repo = buildRepo(false, 11);
+    const service = new PublishMenuService(repo);
 
     const result = await service.doPublish(TENANT_ID);
 
     expect(result).toEqual({ version: 11 });
-    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({ tenantId: TENANT_ID, version: 11 });
+    expect(repo.finalizeMenuPublish).toHaveBeenCalledWith({ tenantId: TENANT_ID });
   });
 
   it('throws when execute() is called without a tenant context', async () => {
-    const versions = buildVersions();
-    const repo = buildRepo(false);
-    const service = new PublishMenuService(versions, repo);
+    const repo = buildRepo(false, 1);
+    const service = new PublishMenuService(repo);
     await expect(service.execute()).rejects.toThrow(/tenant context/i);
-    expect(versions.bump).not.toHaveBeenCalled();
+    expect(repo.finalizeMenuPublish).not.toHaveBeenCalled();
   });
 });
