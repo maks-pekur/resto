@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { getBrandId } from '@resto/db';
+import { requireBrandContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import {
   CATALOG_CACHE_PORT,
@@ -27,7 +27,7 @@ export class GetPublishedMenuService {
     const tenantId = TenantId.parse(rawTenantId);
     const version = await this.versions.current(tenantId);
 
-    const brandId = getBrandId() ?? null;
+    const brandId = requireBrandContext();
 
     const cached = await this.cache.get(tenantId, version, brandId);
     if (cached) {

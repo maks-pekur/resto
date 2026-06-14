@@ -171,14 +171,12 @@ suite('GET /v1/menu — brand object in response', () => {
     // catalog.e2e tenant-scoped reads.
   }, 60_000);
 
-  it('returns brand: null when the request resolves a tenant without a brand', async () => {
+  it('returns 404 when the request resolves a tenant without a brand', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
       headers: { host: tenantHost },
     });
-    expect(res.statusCode).toBe(200);
-    const body = res.json<{ brand: unknown }>();
-    expect(body.brand).toBeNull();
+    expect(res.statusCode).toBe(404);
   }, 60_000);
 });

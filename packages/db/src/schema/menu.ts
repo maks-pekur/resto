@@ -269,7 +269,7 @@ export const menuStopList = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     itemId: uuid('item_id').notNull(),
     stoppedAt: timestamp('stopped_at', { withTimezone: true, mode: 'date' })
       .notNull()

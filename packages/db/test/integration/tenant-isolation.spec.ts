@@ -383,7 +383,7 @@ suite('Row-Level Security — tenant isolation', () => {
           await tx.insert(schema.menuStopList).values({
             tenantId: tenantA,
             itemId: aItemId,
-            brandId: null,
+            brandId: brandA,
             reason: 'iso fixture',
             stoppedByUserId: null,
           });
@@ -425,7 +425,7 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.menuStopList).values({
             tenantId: tenantB,
             itemId: aItemId,
-            brandId: null,
+            brandId: brandB,
             reason: null,
             stoppedByUserId: null,
           }),

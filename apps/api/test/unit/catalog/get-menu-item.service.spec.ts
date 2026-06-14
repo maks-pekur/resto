@@ -7,6 +7,7 @@ import type { CatalogRepository } from '../../../src/contexts/catalog/domain/por
 import type { PublishedMenuItem } from '../../../src/contexts/catalog/domain/published-menu';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
+const BRAND_ID = '44444444-4444-4444-8444-444444444444';
 const ITEM_ID = MenuItemId.parse('22222222-2222-4222-8222-222222222222');
 const CATEGORY_ID = MenuCategoryId.parse('33333333-3333-4333-8333-333333333333');
 
@@ -59,17 +60,19 @@ describe('GetMenuItemService', () => {
   it('returns the item when the repository finds it', async () => {
     const item = buildItem();
     repo.findPublishedItem = vi.fn().mockResolvedValue(item);
-    const result = await runInTenantContext({ tenantId: TENANT_ID }, () =>
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute(ITEM_ID),
     );
     expect(result).toBe(item);
-    expect(repo.findPublishedItem).toHaveBeenCalledWith(ITEM_ID, null);
+    expect(repo.findPublishedItem).toHaveBeenCalledWith(ITEM_ID, BRAND_ID);
   });
 
   it('throws MenuItemNotFoundError when the item is missing or unpublished', async () => {
     repo.findPublishedItem = vi.fn().mockResolvedValue(null);
     await expect(
-      runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(ITEM_ID)),
+      runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+        service.execute(ITEM_ID),
+      ),
     ).rejects.toBeInstanceOf(MenuItemNotFoundError);
   });
 

@@ -2,7 +2,7 @@ import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/commo
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { requireTenantContext } from '@resto/db';
+import { getBrandId, requireTenantContext } from '@resto/db';
 import { MenuItemId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuItemService } from '../../application/get-menu-item.service';
@@ -130,6 +130,7 @@ export class PublicMenuController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
   async menu(): Promise<PublishedMenu> {
     const ctx = requireTenantOr404();
+    requireBrandOr404();
     return wrap(() => this.getMenu.execute(ctx.tenantId));
   }
 
@@ -139,6 +140,7 @@ export class PublicMenuController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async item(@Param('id') id: string): Promise<PublishedMenuItem> {
     requireTenantOr404();
+    requireBrandOr404();
     return wrap(() => {
       const parsed = MenuItemId.safeParse(id);
       if (!parsed.success) throw new MenuItemNotFoundError(id);
@@ -152,5 +154,11 @@ const requireTenantOr404 = (): { readonly tenantId: string } => {
     return requireTenantContext();
   } catch {
     throw new NotFoundException('No tenant resolved for this host.');
+  }
+};
+
+const requireBrandOr404 = (): void => {
+  if (getBrandId() === undefined) {
+    throw new NotFoundException('No brand resolved for this host.');
   }
 };

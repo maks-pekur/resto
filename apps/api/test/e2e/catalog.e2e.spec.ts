@@ -26,6 +26,7 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 interface AuthedTenant {
   id: string;
   slug: string;
+  brandSlug: string;
   authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
 }
 
@@ -49,6 +50,7 @@ const setupAuthedTenant = async (
   return {
     id: tenant.id,
     slug,
+    brandSlug,
     authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug },
   };
 };
@@ -122,7 +124,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -222,7 +224,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const ownerView = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(ownerView.statusCode).toBe(200);
     expect(ownerView.json<{ id: string; slug: string }>().slug).toBe('cola');
@@ -230,22 +232,18 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const sniff = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': cafeB.slug },
+      headers: { 'x-tenant-slug': cafeB.slug, 'x-brand-slug': cafeB.brandSlug },
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
 
   it('returns 404 with code on GET /v1/menu/items with a malformed (non-UUID) id', async () => {
-    const cafeMalformed = await provisionTenant(
-      stack.app,
-      `cafe-malformed-${randomUUID().slice(0, 8)}`,
-      INTERNAL_TOKEN,
-    );
+    const cafeMalformed = await setupAuthedTenant(stack.app, 'cafe-malformed');
 
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/items/not-a-uuid',
-      headers: { 'x-tenant-slug': cafeMalformed.slug },
+      headers: { 'x-tenant-slug': cafeMalformed.slug, 'x-brand-slug': cafeMalformed.brandSlug },
     });
     expect(res.statusCode).toBe(404);
     const body = res.json<{ type: string; status: number }>();
@@ -322,7 +320,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -375,7 +373,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -434,7 +432,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -504,7 +502,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -545,7 +543,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const beforeRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     const beforeBody = beforeRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     expect(beforeBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
@@ -561,7 +559,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const stoppedRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     const stoppedBody = stoppedRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     const stoppedItem = stoppedBody.items.find((i) => i.id === itemId);
@@ -578,7 +576,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const restoredRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug },
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
     });
     const restoredBody = restoredRes.json<{ items: { id: string; isStopListed: boolean }[] }>();
     expect(restoredBody.items.find((i) => i.id === itemId)?.isStopListed).toBe(false);
