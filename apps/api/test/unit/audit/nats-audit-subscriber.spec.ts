@@ -26,7 +26,7 @@ describe('NatsAuditSubscriber DLQ wiring (AUDIT #12)', () => {
     );
     await audit.onApplicationBootstrap();
 
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(3);
     for (const options of calls) {
       expect(options.dlqPublisher).toBe(dlqPublisher);
     }
@@ -43,7 +43,7 @@ describe('NatsAuditSubscriber DLQ wiring (AUDIT #12)', () => {
     );
     await audit.onApplicationBootstrap();
 
-    expect(calls).toHaveLength(2);
+    expect(calls).toHaveLength(3);
     for (const options of calls) {
       expect(options.dlqPublisher).toBeUndefined();
     }
