@@ -8,13 +8,21 @@ import { CartDrawer } from './CartDrawer';
 
 interface Props {
   readonly menu: MenuDto;
+  readonly stoppedIds: ReadonlySet<string>;
   readonly onSelectItem: (id: string) => void;
   readonly cartOpen: boolean;
   readonly onOpenCart: () => void;
   readonly onCloseCart: () => void;
 }
 
-export const MenuView = ({ menu, onSelectItem, cartOpen, onOpenCart, onCloseCart }: Props) => {
+export const MenuView = ({
+  menu,
+  stoppedIds,
+  onSelectItem,
+  cartOpen,
+  onOpenCart,
+  onCloseCart,
+}: Props) => {
   const itemCount = useCartStore(selectItemCount);
 
   const itemsByCategory = new Map<string, MenuItemDto[]>();
@@ -76,7 +84,7 @@ export const MenuView = ({ menu, onSelectItem, cartOpen, onOpenCart, onCloseCart
                   <MenuItemCard
                     item={item}
                     onSelect={onSelectItem}
-                    isStopListed={item.isStopListed}
+                    isStopListed={stoppedIds.has(item.id)}
                   />
                 </li>
               ))}
