@@ -132,4 +132,31 @@ describe('GetPublishedMenuService', () => {
 
     expect(result.brand).toEqual(brand);
   });
+
+  it('degrades to the repository when the cache read rejects (cold/down Redis)', async () => {
+    cache.get = vi.fn().mockRejectedValue(new Error('redis down'));
+    const fresh = buildMenu(7);
+    repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
+
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
+
+    expect(result).toBe(fresh);
+    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, BRAND_ID);
+  });
+
+  it('does not crash when the cache write rejects (fire-and-forget)', async () => {
+    cache.get = vi.fn().mockResolvedValue(null);
+    cache.set = vi.fn().mockRejectedValue(new Error('redis down'));
+    const fresh = buildMenu(7);
+    repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
+
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
+
+    expect(result).toBe(fresh);
+    await new Promise((r) => setImmediate(r));
+  });
 });
