@@ -11,6 +11,7 @@ import type { PublishedMenu } from '../../../src/contexts/catalog/domain/publish
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
 const TENANT = TenantId.parse(TENANT_ID);
+const BRAND_ID = '44444444-4444-4444-8444-444444444444';
 
 const buildMenu = (version: number, brand: PublishedMenu['brand'] = null): PublishedMenu => ({
   tenantId: TENANT,
@@ -64,7 +65,9 @@ describe('GetPublishedMenuService', () => {
   it('returns the cached menu without hitting the repository', async () => {
     const cached = buildMenu(7);
     cache.get = vi.fn().mockResolvedValue(cached);
-    const result = await service.execute(TENANT);
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
     expect(result).toBe(cached);
     expect(repo.loadPublishedMenu).not.toHaveBeenCalled();
   });
@@ -74,21 +77,25 @@ describe('GetPublishedMenuService', () => {
     const fresh = buildMenu(7);
     repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
 
-    const result = await service.execute(TENANT);
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
     expect(result).toBe(fresh);
-    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, null);
+    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, BRAND_ID);
     // Cache write is fire-and-forget; await a tick before assertion.
     await new Promise((r) => setImmediate(r));
-    expect(cache.set).toHaveBeenCalledWith(fresh, expect.any(Number), null);
+    expect(cache.set).toHaveBeenCalledWith(fresh, expect.any(Number), BRAND_ID);
   });
 
   it('uses the current menu version from the version port', async () => {
     versions.current = vi.fn().mockResolvedValue(42);
     cache.get = vi.fn().mockResolvedValue(null);
     repo.loadPublishedMenu = vi.fn().mockResolvedValue(buildMenu(42));
-    await service.execute(TENANT);
+    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
     expect(versions.current).toHaveBeenCalledWith(TENANT);
-    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 42, null);
+    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 42, BRAND_ID);
   });
 
   it('passes brandId from ALS to the repo loadPublishedMenu call', async () => {
@@ -119,7 +126,9 @@ describe('GetPublishedMenuService', () => {
     const fresh = buildMenu(11, brand);
     repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
 
-    const result = await service.execute(TENANT);
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(TENANT),
+    );
 
     expect(result.brand).toEqual(brand);
   });
