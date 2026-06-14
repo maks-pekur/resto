@@ -1,5 +1,5 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
+import { Injectable, Logger } from '@nestjs/common';
+import { schema, type RestoTx } from '@resto/db';
 import { type EventEnvelope } from '@resto/events';
 import { AuditRecord } from '../domain/audit-record';
 
@@ -35,23 +35,6 @@ const targetKindFor = (action: string): string | null => {
 @Injectable()
 export class RecordAuditService {
   private readonly logger = new Logger(RecordAuditService.name);
-
-  constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
-
-  async fromEnvelope(envelope: EventEnvelope): Promise<void> {
-    // WR-02: prefer withTenantId for tenant-bound events so RLS stays scoped
-    // and the bypass-WARN log line is not emitted for ordinary tenant audit
-    // rows. withoutTenant remains the legitimate path for platform-level
-    // events whose envelope tenantId is null (e.g. identity.email_dispatch_failed
-    // DLQ branch, tenancy.tenant_erasure_completed).
-    if (envelope.tenantId !== null) {
-      await this.db.withTenantId(envelope.tenantId, (tx) => this.fromEnvelopeWithTx(envelope, tx));
-      return;
-    }
-    await this.db.withoutTenant(`audit platform event: ${envelope.type}`, (tx) =>
-      this.fromEnvelopeWithTx(envelope, tx),
-    );
-  }
 
   async fromEnvelopeWithTx(envelope: EventEnvelope, tx: RestoTx): Promise<void> {
     const record = this.project(envelope);
