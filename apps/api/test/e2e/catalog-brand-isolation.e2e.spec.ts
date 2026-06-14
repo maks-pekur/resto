@@ -134,6 +134,32 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
     expect(survivorBody.slug).not.toBe(renamedSlug);
   });
 
+  it('operator on brand B cannot overwrite a brand-A modifier group by id (404, not 500)', async () => {
+    const created = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: hdr(brandASlug),
+      payload: { name: { en: 'Sauce' }, minSelectable: 0, maxSelectable: 1, isRequired: false },
+    });
+    expect(created.statusCode).toBe(200);
+    const groupId = created.json<{ id: string }>().id;
+
+    const hijack = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: hdr(brandBSlug),
+      payload: {
+        id: groupId,
+        name: { en: 'Hijacked' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(hijack.statusCode).toBe(404);
+    expect(hijack.json<{ code?: string }>().code).toBe('catalog.modifier_group_not_found');
+  });
+
   it("cannot create an item under another brand's category (404)", async () => {
     const catA = await createCategory(brandASlug, `cat-${randomUUID().slice(0, 6)}`);
     const res = await createItem(brandBSlug, makeItem(catA, `x-${randomUUID().slice(0, 6)}`));

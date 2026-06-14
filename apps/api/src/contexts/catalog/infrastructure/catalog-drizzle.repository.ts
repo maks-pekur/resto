@@ -41,7 +41,9 @@ import {
   CategoryNestingDepthError,
   MenuCategoryNotFoundError,
   MenuItemNotFoundError,
+  MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
+  MenuModifierOptionNotFoundError,
 } from '../domain/errors';
 import type {
   PublishedMenu,
@@ -399,7 +401,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             .updateTable(
               schema.menuItems,
               {
-                brandId: input.brandId,
                 categoryId: input.categoryId,
                 slug: input.slug,
                 name: input.name,
@@ -519,7 +520,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             ),
           )
           .returning({ id: schema.menuModifierGroups.id });
-        if (!row) throw new Error('upsertModifierGroup: update returned no row');
+        if (!row) throw new MenuModifierGroupNotFoundError(input.id);
         return { id: row.id };
       }
       const [row] = await scoped
@@ -570,7 +571,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             ),
           )
           .returning({ id: schema.menuModifierOptions.id });
-        if (!row) throw new Error('upsertModifierOption: update returned no row');
+        if (!row) throw new MenuModifierOptionNotFoundError(input.id);
         return { id: row.id };
       }
       const [row] = await scoped
@@ -622,7 +623,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             ),
           )
           .returning({ id: schema.menuItemSizes.id });
-        if (!row) throw new Error('upsertItemSize: update returned no row');
+        if (!row) throw new MenuItemSizeNotFoundError(input.id);
         return { id: row.id };
       }
       const [row] = await scoped

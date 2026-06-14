@@ -14,6 +14,7 @@ import {
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
+  MenuModifierOptionNotFoundError,
   StopListItemNotFoundError,
   type CatalogDomainError,
 } from '../../domain/errors';
@@ -23,6 +24,7 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof MenuCategoryNotFoundError ||
   err instanceof CatalogPublishConflictError ||
   err instanceof MenuModifierGroupNotFoundError ||
+  err instanceof MenuModifierOptionNotFoundError ||
   err instanceof MenuItemSizeNotFoundError ||
   err instanceof StopListItemNotFoundError ||
   err instanceof MenuCategoryAlreadyArchivedError ||
@@ -53,6 +55,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'MenuModifierGroupNotFoundError':
       return new NotFoundException({
         code: 'catalog.modifier_group_not_found',
+        message: err.message,
+      });
+    case 'MenuModifierOptionNotFoundError':
+      return new NotFoundException({
+        code: 'catalog.modifier_option_not_found',
         message: err.message,
       });
     case 'MenuItemSizeNotFoundError':
