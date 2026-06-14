@@ -26,7 +26,7 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 interface AuthedTenant {
   id: string;
   slug: string;
-  authed: { cookie: string; 'x-tenant-id': string };
+  authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
 }
 
 const setupAuthedTenant = async (
@@ -38,7 +38,19 @@ const setupAuthedTenant = async (
   const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
   await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
   const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
-  return { id: tenant.id, slug, authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id } };
+  const brandSlug = `brand-${randomUUID().slice(0, 8)}`;
+  const brandRes = await app.inject({
+    method: 'POST',
+    url: '/v1/me/brands',
+    headers: { cookie: ownerCookie, 'x-tenant-id': tenant.id },
+    payload: { slug: brandSlug, displayName: `Brand ${label}` },
+  });
+  expect(brandRes.statusCode).toBe(201);
+  return {
+    id: tenant.id,
+    slug,
+    authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug },
+  };
 };
 
 suite('Catalog — authed write → public read → cross-tenant isolation', () => {

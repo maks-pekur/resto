@@ -89,13 +89,15 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .values({ tenantId: tenantB.id, slug: 'flagship-i1b', displayName: 'Flagship B' })
       .returning({ id: schema.brands.id });
 
+    if (!brandA || !brandB) throw new Error('seed I1 fixture: brand insert failed');
+
     const [categoryA] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantA.id, slug: 'pizza', name: { en: 'Pizza A' } })
+      .values({ tenantId: tenantA.id, brandId: brandA.id, slug: 'pizza', name: { en: 'Pizza A' } })
       .returning({ id: schema.menuCategories.id });
     const [categoryB] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantB.id, slug: 'pizza', name: { en: 'Pizza B' } })
+      .values({ tenantId: tenantB.id, brandId: brandB.id, slug: 'pizza', name: { en: 'Pizza B' } })
       .returning({ id: schema.menuCategories.id });
 
     if (!categoryA || !categoryB) throw new Error('seed I1 fixture: category insert failed');
@@ -104,6 +106,7 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantA.id,
+        brandId: brandA.id,
         categoryId: categoryA.id,
         slug: 'margherita',
         name: { en: 'Margherita A' },
@@ -116,6 +119,7 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantB.id,
+        brandId: brandB.id,
         categoryId: categoryB.id,
         slug: 'margherita',
         name: { en: 'Margherita B' },
@@ -146,7 +150,7 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       },
     ]);
 
-    if (!brandA || !brandB || !itemA || !itemB) {
+    if (!itemA || !itemB) {
       throw new Error('seed I1 fixture failed');
     }
 

@@ -5,6 +5,7 @@ import { UpsertCategoryService } from '../../../src/contexts/catalog/application
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
+const BRAND_ID = '33333333-3333-4333-8333-333333333333';
 
 const buildRepo = (): CatalogRepository =>
   ({
@@ -34,7 +35,7 @@ describe('UpsertCategoryService', () => {
     const repo = buildRepo();
     const service = new UpsertCategoryService(repo);
 
-    const result = await runInTenantContext({ tenantId: TENANT_ID }, () =>
+    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute(baseInput),
     );
 
@@ -42,7 +43,7 @@ describe('UpsertCategoryService', () => {
     expect(repo.upsertCategory).toHaveBeenCalledTimes(1);
     expect(repo.upsertCategory).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
-      brandId: null,
+      brandId: BRAND_ID,
       parentId: null,
       slug: 'starters',
       name: { en: 'Starters' },
@@ -55,7 +56,7 @@ describe('UpsertCategoryService', () => {
     const repo = buildRepo();
     const service = new UpsertCategoryService(repo);
 
-    await runInTenantContext({ tenantId: TENANT_ID }, () =>
+    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute({
         ...baseInput,
         slug: undefined,
@@ -71,13 +72,15 @@ describe('UpsertCategoryService', () => {
     const repo = buildRepo();
     const service = new UpsertCategoryService(repo);
 
-    await runInTenantContext({ tenantId: TENANT_ID }, () =>
+    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute({ ...baseInput, id: '22222222-2222-4222-8222-222222222222' }),
     );
     const updateCall = vi.mocked(repo.upsertCategory).mock.calls[0]?.[0];
     expect(updateCall?.id).toBe('22222222-2222-4222-8222-222222222222');
 
-    await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(baseInput));
+    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(baseInput),
+    );
     const insertCall = vi.mocked(repo.upsertCategory).mock.calls[1]?.[0];
     expect(insertCall && 'id' in insertCall).toBe(false);
   });
@@ -93,22 +96,22 @@ describe('UpsertCategoryService', () => {
     const repo = buildRepo();
     const service = new UpsertCategoryService(repo);
 
-    await runInTenantContext(
-      { tenantId: TENANT_ID, brandId: '33333333-3333-4333-8333-333333333333' },
-      () => service.execute(baseInput),
+    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+      service.execute(baseInput),
     );
 
     expect(repo.upsertCategory).toHaveBeenCalledWith(
-      expect.objectContaining({ brandId: '33333333-3333-4333-8333-333333333333' }),
+      expect.objectContaining({ brandId: BRAND_ID }),
     );
   });
 
-  it('passes brandId=null when no brand is bound to ALS', async () => {
+  it('throws when no brand context is bound', async () => {
     const repo = buildRepo();
     const service = new UpsertCategoryService(repo);
 
-    await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(baseInput));
-
-    expect(repo.upsertCategory).toHaveBeenCalledWith(expect.objectContaining({ brandId: null }));
+    await expect(
+      runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(baseInput)),
+    ).rejects.toThrow(/brand context/i);
+    expect(repo.upsertCategory).not.toHaveBeenCalled();
   });
 });

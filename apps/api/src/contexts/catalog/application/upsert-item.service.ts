@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { getBrandId, requireTenantContext, type MenuItemPhoto } from '@resto/db';
+import { requireBrandContext, requireTenantContext, type MenuItemPhoto } from '@resto/db';
 import { Currency, MoneyAmount } from '@resto/domain';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import { deriveSlugFromName } from './slug-util';
@@ -16,7 +16,7 @@ export class UpsertItemService {
     const basePrice = input.basePrice as MoneyAmount;
     const currency = input.currency as Currency;
     const ctx = requireTenantContext();
-    const brandId = getBrandId() ?? null;
+    const brandId = requireBrandContext();
     // D-4a-04 / RESEARCH.md Pattern 4: auto-derive slug from name when
     // operator did not supply one. Slug-change alias insertion happens at the
     // repository layer (single transaction with the upsert so the alias and

@@ -22,6 +22,8 @@ suite('Row-Level Security — tenant isolation', () => {
   let pg: TestPg;
   let tenantA: string;
   let tenantB: string;
+  let brandA: string;
+  let brandB: string;
 
   beforeAll(async () => {
     pg = await startPostgres();
@@ -39,9 +41,21 @@ suite('Row-Level Security — tenant isolation', () => {
       tenantA = a.id;
       tenantB = b.id;
 
+      const [ba] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'cafe-a-brand', displayName: 'Cafe A Brand' })
+        .returning({ id: schema.brands.id });
+      const [bb] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantB, slug: 'cafe-b-brand', displayName: 'Cafe B Brand' })
+        .returning({ id: schema.brands.id });
+      if (!ba || !bb) throw new Error('Failed to seed brands.');
+      brandA = ba.id;
+      brandB = bb.id;
+
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, slug: 'pizza', name: { en: 'Pizza' } },
-        { tenantId: tenantB, slug: 'pizza', name: { en: 'Pizza' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'pizza', name: { en: 'Pizza' } },
+        { tenantId: tenantB, brandId: brandB, slug: 'pizza', name: { en: 'Pizza' } },
       ]);
     });
   }, 90_000);
@@ -76,7 +90,7 @@ suite('Row-Level Security — tenant isolation', () => {
       pg.db.withTenant(async (tx) =>
         tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantB, slug: 'sneaky', name: { en: 'Sneaky' } })
+          .values({ tenantId: tenantB, brandId: brandB, slug: 'sneaky', name: { en: 'Sneaky' } })
           .returning(),
       ),
     ).then(
@@ -206,7 +220,7 @@ suite('Row-Level Security — tenant isolation', () => {
       // Seed enough rows that the planner prefers index over seq scan.
       const cat = await tx
         .insert(schema.menuCategories)
-        .values({ tenantId: tenantA, slug: 'drinks', name: { en: 'Drinks' } })
+        .values({ tenantId: tenantA, brandId: brandA, slug: 'drinks', name: { en: 'Drinks' } })
         .returning({ id: schema.menuCategories.id });
       const created = cat[0];
       if (!created) throw new Error('Failed to seed drinks category.');
@@ -214,6 +228,7 @@ suite('Row-Level Security — tenant isolation', () => {
 
       const items = Array.from({ length: 200 }, (_, i) => ({
         tenantId: tenantA,
+        brandId: brandA,
         categoryId: catId,
         slug: `item-${i.toString().padStart(3, '0')}`,
         name: { en: `Item ${i.toString()}` },
@@ -311,11 +326,11 @@ suite('Row-Level Security — tenant isolation', () => {
       await pg.db.withoutTenant('seed items for plan 04a-07 cross-tenant matrix', async (tx) => {
         const [aCat] = await tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
+          .values({ tenantId: tenantA, brandId: brandA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
           .returning({ id: schema.menuCategories.id });
         const [bCat] = await tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantB, slug: 'iso-b-cat', name: { en: 'IsoB' } })
+          .values({ tenantId: tenantB, brandId: brandB, slug: 'iso-b-cat', name: { en: 'IsoB' } })
           .returning({ id: schema.menuCategories.id });
         if (!aCat || !bCat) throw new Error('Cross-tenant seed: category create failed.');
 
@@ -323,6 +338,7 @@ suite('Row-Level Security — tenant isolation', () => {
           .insert(schema.menuItems)
           .values({
             tenantId: tenantA,
+            brandId: brandA,
             categoryId: aCat.id,
             slug: 'iso-a-item',
             name: { en: 'IsoAItem' },
@@ -335,6 +351,7 @@ suite('Row-Level Security — tenant isolation', () => {
         // sides — even though the assertions only inspect tenant A's row.
         await tx.insert(schema.menuItems).values({
           tenantId: tenantB,
+          brandId: brandB,
           categoryId: bCat.id,
           slug: 'iso-b-item',
           name: { en: 'IsoBItem' },
@@ -348,6 +365,7 @@ suite('Row-Level Security — tenant isolation', () => {
           .insert(schema.menuModifierGroups)
           .values({
             tenantId: tenantA,
+            brandId: brandA,
             name: { en: 'IsoAGroup' },
             minSelectable: 0,
             maxSelectable: 1,
@@ -376,6 +394,7 @@ suite('Row-Level Security — tenant isolation', () => {
           });
           await tx.insert(schema.menuItemSizes).values({
             tenantId: tenantA,
+            brandId: brandA,
             menuItemId: aItemId,
             name: { en: 'Large' },
             price: '2.00',
@@ -384,6 +403,7 @@ suite('Row-Level Security — tenant isolation', () => {
           });
           await tx.insert(schema.menuItemModifierGroups).values({
             tenantId: tenantA,
+            brandId: brandA,
             menuItemId: aItemId,
             modifierGroupId: aModifierGroupId,
             sortOrder: 0,
@@ -452,6 +472,7 @@ suite('Row-Level Security — tenant isolation', () => {
         pg.db.withTenant(async (tx) =>
           tx.insert(schema.menuItemSizes).values({
             tenantId: tenantB,
+            brandId: brandB,
             menuItemId: aItemId,
             name: { en: 'sneaky' },
             price: '1.00',
@@ -484,6 +505,7 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.menuModifierGroups).values({
             id: aModifierGroupId,
             tenantId: tenantB,
+            brandId: brandB,
             name: { en: 'sneaky' },
             minSelectable: 0,
             maxSelectable: 1,
@@ -509,6 +531,7 @@ suite('Row-Level Security — tenant isolation', () => {
         pg.db.withTenant(async (tx) =>
           tx.insert(schema.menuItemModifierGroups).values({
             tenantId: tenantB,
+            brandId: brandB,
             menuItemId: aItemId,
             modifierGroupId: aModifierGroupId,
             sortOrder: 0,
@@ -522,7 +545,7 @@ suite('Row-Level Security — tenant isolation', () => {
     });
   });
 
-  it('accepts an explicit brand_id on menu_categories (nullable column exists)', async () => {
+  it('requires an explicit brand_id on menu_categories (NOT NULL column)', async () => {
     const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
       tx
         .insert(schema.brands)
@@ -542,16 +565,22 @@ suite('Row-Level Security — tenant isolation', () => {
       }),
     );
 
-    await runInTenantContext({ tenantId: tenantA }, () =>
+    const error = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) => {
         await tx.insert(schema.menuCategories).values({
           tenantId: tenantA,
           slug: 'col-smoke-cat-2',
           name: { en: 'ColSmoke2' },
-          brandId: null,
+          brandId: null as never,
         });
       }),
+    ).then(
+      () => null,
+      (e: unknown) => e,
     );
+    expect(error).toBeInstanceOf(Error);
+    const cause = (error as Error).cause as { code?: string } | undefined;
+    expect(cause?.code).toBe('23502');
   });
 
   describe('preflight (RES-243)', () => {

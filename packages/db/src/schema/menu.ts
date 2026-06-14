@@ -30,7 +30,7 @@ export const menuCategories = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     parentId: uuid('parent_id'),
     slug: text('slug').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
@@ -51,7 +51,7 @@ export const menuCategories = pgTable(
       columns: [table.parentId, table.tenantId],
       foreignColumns: [table.id, table.tenantId],
     }).onDelete('restrict'),
-    uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_categories_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
     check('menu_categories_status_chk', sql`${table.status} IN ('draft', 'published', 'archived')`),
@@ -75,7 +75,7 @@ export const menuItems = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     categoryId: uuid('category_id').notNull(),
     slug: text('slug').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
@@ -114,7 +114,7 @@ export const menuItems = pgTable(
       child: { id: table.categoryId, tenantId: table.tenantId },
       parent: { id: menuCategories.id, tenantId: menuCategories.tenantId },
     }).onDelete('restrict'),
-    uniqueIndex('menu_items_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_items_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
     index('menu_items_tenant_category_status_idx').on(
       table.tenantId,
       table.categoryId,
@@ -140,7 +140,7 @@ export const menuItemSizes = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     menuItemId: uuid('menu_item_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     price: money('price').notNull(),
@@ -172,7 +172,7 @@ export const menuModifierGroups = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     minSelectable: integer('min_selectable').notNull().default(0),
     maxSelectable: integer('max_selectable').notNull().default(1),
@@ -200,7 +200,7 @@ export const menuModifierOptions = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     modifierGroupId: uuid('modifier_group_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     priceDelta: money('price_delta').notNull().default('0'),
@@ -233,7 +233,7 @@ export const menuItemModifierGroups = pgTable(
   'menu_item_modifier_groups',
   {
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
+    brandId: uuid('brand_id').notNull(),
     menuItemId: uuid('menu_item_id').notNull(),
     modifierGroupId: uuid('modifier_group_id').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),

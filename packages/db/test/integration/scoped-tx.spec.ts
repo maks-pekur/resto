@@ -20,6 +20,8 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
   let pg: TestPg;
   let tenantA: string;
   let tenantB: string;
+  let brandA: string;
+  let brandB: string;
 
   beforeAll(async () => {
     pg = await startPostgres();
@@ -35,6 +37,17 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
       if (!a || !b) throw new Error('Failed to seed tenants.');
       tenantA = a.id;
       tenantB = b.id;
+      const [ba] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'scoped-a-brand', displayName: 'Scoped A Brand' })
+        .returning({ id: schema.brands.id });
+      const [bb] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantB, slug: 'scoped-b-brand', displayName: 'Scoped B Brand' })
+        .returning({ id: schema.brands.id });
+      if (!ba || !bb) throw new Error('Failed to seed brands.');
+      brandA = ba.id;
+      brandB = bb.id;
     });
   }, 90_000);
 
@@ -45,8 +58,8 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
   it('selectFrom auto-applies tenant filter', async () => {
     await pg.db.withoutTenant('seed case-1 rows', async (tx) => {
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, slug: 'c1-pizza', name: { en: 'C1 Pizza A' } },
-        { tenantId: tenantB, slug: 'c1-pizza', name: { en: 'C1 Pizza B' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c1-pizza', name: { en: 'C1 Pizza A' } },
+        { tenantId: tenantB, brandId: brandB, slug: 'c1-pizza', name: { en: 'C1 Pizza B' } },
       ]);
     });
     const rows = await runInTenantContext({ tenantId: tenantA }, () =>
@@ -62,9 +75,9 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
   it('selectFrom composes extra where with AND', async () => {
     await pg.db.withoutTenant('seed case-2 rows', async (tx) => {
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, slug: 'c2-pizza', name: { en: 'C2 Pizza A' } },
-        { tenantId: tenantA, slug: 'c2-burger', name: { en: 'C2 Burger A' } },
-        { tenantId: tenantB, slug: 'c2-pizza', name: { en: 'C2 Pizza B' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c2-pizza', name: { en: 'C2 Pizza A' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c2-burger', name: { en: 'C2 Burger A' } },
+        { tenantId: tenantB, brandId: brandB, slug: 'c2-pizza', name: { en: 'C2 Pizza B' } },
       ]);
     });
     const rows = await runInTenantContext({ tenantId: tenantA }, () =>
@@ -80,9 +93,9 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
   it('selectFrom chains Drizzle ops (.limit)', async () => {
     await pg.db.withoutTenant('seed case-3 rows', async (tx) => {
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, slug: 'c3-one', name: { en: 'One' } },
-        { tenantId: tenantA, slug: 'c3-two', name: { en: 'Two' } },
-        { tenantId: tenantA, slug: 'c3-three', name: { en: 'Three' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c3-one', name: { en: 'One' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c3-two', name: { en: 'Two' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c3-three', name: { en: 'Three' } },
       ]);
     });
     const rows = await runInTenantContext({ tenantId: tenantA }, () =>
@@ -99,6 +112,7 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
     await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (_tx, scoped) =>
         scoped.insertInto(schema.menuCategories, {
+          brandId: brandA,
           slug: 'c4-pizza',
           name: { en: 'C4 Pizza' },
         }),
@@ -117,6 +131,7 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
         .withTenant(async (_tx, scoped) =>
           scoped.insertInto(schema.menuCategories, {
             tenantId: tenantB,
+            brandId: brandB,
             slug: 'c5-sneaky',
             name: { en: 'Sneaky' },
           } as never),
@@ -138,8 +153,8 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
   it('updateTable auto-filters by tenantId', async () => {
     await pg.db.withoutTenant('seed case-6 rows', async (tx) => {
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, slug: 'c6-pizza', name: { en: 'C6 Pizza A' } },
-        { tenantId: tenantB, slug: 'c6-pizza', name: { en: 'C6 Pizza B' } },
+        { tenantId: tenantA, brandId: brandA, slug: 'c6-pizza', name: { en: 'C6 Pizza A' } },
+        { tenantId: tenantB, brandId: brandB, slug: 'c6-pizza', name: { en: 'C6 Pizza B' } },
       ]);
     });
     await runInTenantContext({ tenantId: tenantA }, () =>
@@ -171,7 +186,7 @@ suite('ScopedTx — tenant-scoped Drizzle helper', () => {
     await pg.db.withoutTenant('seed case-8 row', async (tx) => {
       await tx
         .insert(schema.menuCategories)
-        .values({ tenantId: tenantA, slug: 'c8-wtid', name: { en: 'WTID' } });
+        .values({ tenantId: tenantA, brandId: brandA, slug: 'c8-wtid', name: { en: 'WTID' } });
     });
     const rows = await pg.db.withTenantId(tenantA, async (_tx, scoped) =>
       scoped.selectFrom(schema.menuCategories, eq(schema.menuCategories.slug, 'c8-wtid')),

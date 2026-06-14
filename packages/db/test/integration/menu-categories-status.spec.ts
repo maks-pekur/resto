@@ -13,6 +13,7 @@ if (!dockerOk) {
 suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
   let pg: TestPg;
   let tenantA: string;
+  let brandA: string;
   let preMigrationRowsFlippedToPublished = false;
 
   beforeAll(async () => {
@@ -24,8 +25,15 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
         .returning({ id: schema.tenants.id });
       if (!t) throw new Error('seed tenant');
       tenantA = t.id;
+      const [b] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA, slug: 'mcs-a-brand', displayName: 'MCS A Brand' })
+        .returning({ id: schema.brands.id });
+      if (!b) throw new Error('seed brand');
+      brandA = b.id;
       await tx.insert(schema.menuCategories).values({
         tenantId: tenantA,
+        brandId: brandA,
         slug: 'pre-existing',
         name: { en: 'Pre-existing category' },
       });
@@ -47,6 +55,7 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
         .insert(schema.menuCategories)
         .values({
           tenantId: tenantA,
+          brandId: brandA,
           slug: 'default-draft-probe',
           name: { en: 'Default draft probe' },
         })
@@ -64,6 +73,7 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
           .insert(schema.menuCategories)
           .values({
             tenantId: tenantA,
+            brandId: brandA,
             slug: 'invalid-status-probe',
             name: { en: 'Invalid status probe' },
             status: 'paused',
@@ -85,6 +95,7 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
         .insert(schema.menuCategories)
         .values({
           tenantId: tenantA,
+          brandId: brandA,
           slug: 'published-probe',
           name: { en: 'Published probe' },
           status: 'published',
@@ -96,6 +107,7 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
         .insert(schema.menuCategories)
         .values({
           tenantId: tenantA,
+          brandId: brandA,
           slug: 'archived-probe',
           name: { en: 'Archived probe' },
           status: 'archived',
@@ -111,6 +123,7 @@ suite('menu_categories.status (migration 0042 — Phase 4b D-4b-07)', () => {
         .insert(schema.menuCategories)
         .values({
           tenantId: tenantA,
+          brandId: brandA,
           slug: 'already-published',
           name: { en: 'Already published' },
           status: 'published',

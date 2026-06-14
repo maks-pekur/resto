@@ -89,7 +89,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     await runBootstrap({ tenantSlug, email, password: PASSWORD, name: 'RES-154 Owner' });
     const ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
-    const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId };
+    const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',

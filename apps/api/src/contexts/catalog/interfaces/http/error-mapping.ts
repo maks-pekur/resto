@@ -5,6 +5,7 @@ import {
   type HttpException,
 } from '@nestjs/common';
 import {
+  BrandContextRequiredError,
   CatalogPublishConflictError,
   CategoryNestingDepthError,
   MenuCategoryAlreadyArchivedError,
@@ -26,7 +27,11 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof StopListItemNotFoundError ||
   err instanceof MenuCategoryAlreadyArchivedError ||
   err instanceof MenuItemAlreadyArchivedError ||
+  err instanceof BrandContextRequiredError ||
   err instanceof CategoryNestingDepthError;
+
+const isMissingBrandContextError = (err: unknown): err is Error =>
+  err instanceof Error && err.message.startsWith('No brand context bound.');
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -70,6 +75,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
         code: 'catalog.menu_item_already_archived',
         message: err.message,
       });
+    case 'BrandContextRequiredError':
+      return new BadRequestException({
+        code: 'catalog.brand_context_required',
+        message: err.message,
+      });
     case 'CategoryNestingDepthError':
       return new BadRequestException({
         code: 'catalog.category_nesting_depth',
@@ -82,5 +92,8 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
   }
 };
 
-export const mapCatalogError = (err: unknown): unknown =>
-  isCatalogDomainError(err) ? mapKnown(err) : err;
+export const mapCatalogError = (err: unknown): unknown => {
+  if (isCatalogDomainError(err)) return mapKnown(err);
+  if (isMissingBrandContextError(err)) return mapKnown(new BrandContextRequiredError());
+  return err;
+};

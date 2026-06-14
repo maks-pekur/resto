@@ -63,6 +63,14 @@ export class MenuItemAlreadyArchivedError extends Error {
   }
 }
 
+export class BrandContextRequiredError extends Error {
+  readonly kind = 'BrandContextRequiredError' as const;
+  constructor() {
+    super('A menu write requires an active brand. Send the x-brand-slug header.');
+    this.name = 'BrandContextRequiredError';
+  }
+}
+
 export class CategoryNestingDepthError extends Error {
   readonly kind = 'CategoryNestingDepthError' as const;
   constructor(
@@ -83,4 +91,5 @@ export type CatalogDomainError =
   | StopListItemNotFoundError
   | MenuCategoryAlreadyArchivedError
   | MenuItemAlreadyArchivedError
+  | BrandContextRequiredError
   | CategoryNestingDepthError;
