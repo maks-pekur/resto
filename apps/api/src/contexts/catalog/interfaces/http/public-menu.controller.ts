@@ -1,10 +1,12 @@
-import { Controller, Get, Inject, NotFoundException, Param } from '@nestjs/common';
+import { Controller, Get, Headers, Inject, NotFoundException, Param, Res } from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import type { FastifyReply } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { getBrandId, requireTenantContext } from '@resto/db';
 import { MenuItemId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { GetMenuAvailabilityService } from '../../application/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
 import { MenuItemNotFoundError } from '../../domain/errors';
@@ -94,6 +96,10 @@ const PublishedMenuBrandSchema = z.object({
     .nullable(),
 });
 
+const MenuAvailabilitySchema = z.object({
+  stoppedItemIds: z.array(z.string().uuid()),
+});
+
 const PublishedMenuSchema = z.object({
   tenantId: z.string().uuid(),
   version: z.number().int().nonnegative(),
@@ -106,6 +112,7 @@ const PublishedMenuSchema = z.object({
 
 class PublishedMenuDto extends createZodDto(PublishedMenuSchema) {}
 class PublishedMenuItemDto extends createZodDto(PublishedMenuItemSchema) {}
+class MenuAvailabilityDto extends createZodDto(MenuAvailabilitySchema) {}
 
 const wrap = wrapWith(mapCatalogError);
 
@@ -122,7 +129,30 @@ export class PublicMenuController {
   constructor(
     @Inject(GetPublishedMenuService) private readonly getMenu: GetPublishedMenuService,
     @Inject(GetMenuItemService) private readonly getItem: GetMenuItemService,
+    @Inject(GetMenuAvailabilityService)
+    private readonly getAvailability: GetMenuAvailabilityService,
   ) {}
+
+  @Get('availability')
+  @RequireActiveTenant()
+  @ApiOkResponse({ type: MenuAvailabilityDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
+  async availability(
+    @Res({ passthrough: true }) reply: FastifyReply,
+    @Headers('if-none-match') ifNoneMatch?: string,
+  ): Promise<{ stoppedItemIds: string[] } | undefined> {
+    requireTenantOr404();
+    requireBrandOr404();
+    const { stoppedItemIds, stopVersion } = await wrap(() => this.getAvailability.execute());
+    const etag = '"' + stopVersion.toString() + '"';
+    if (ifNoneMatch === etag) {
+      reply.status(304);
+      return undefined;
+    }
+    reply.header('ETag', etag);
+    reply.header('Cache-Control', 'public, s-maxage=5');
+    return { stoppedItemIds };
+  }
 
   @Get()
   @RequireActiveTenant()

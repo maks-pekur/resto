@@ -6,6 +6,7 @@ import { ArchiveItemService } from './application/archive-item.service';
 import { DelayedPublishService } from './application/delayed-publish.service';
 import { GetDraftDiffService } from './application/get-draft-diff.service';
 import { GetItemService } from './application/get-item.service';
+import { GetMenuAvailabilityService } from './application/get-menu-availability.service';
 import { GetMenuItemService } from './application/get-menu-item.service';
 import { GetModifierGroupService } from './application/get-modifier-group.service';
 import { GetPhotoUploadUrlService } from './application/get-photo-upload-url.service';
@@ -60,6 +61,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     GetPhotoUploadUrlService,
     GetPublishedMenuService,
     GetMenuItemService,
+    GetMenuAvailabilityService,
     UpsertCategoryService,
     ReorderCategoriesService,
     UpsertItemService,
