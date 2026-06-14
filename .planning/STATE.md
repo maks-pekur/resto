@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 5 UI-SPEC approved
-last_updated: '2026-06-12T17:34:31.556Z'
-last_activity: 2026-06-12 -- Phase 06 execution started
+status: ready-to-plan
+stopped_at: Phase 6 complete; ready to plan Phase 7 (Ordering)
+last_updated: '2026-06-14'
+last_activity: 2026-06-14 -- Phase 6 verified complete; out-of-band audit + menu-caching shipped
 progress:
   total_phases: 19
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 43
-  completed_plans: 38
-  percent: 32
+  completed_plans: 43
+  percent: 37
 ---
 
 # Project State
@@ -21,18 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 06 — qr-menu-customer
+**Current focus:** Phase 07 — ordering (ready to plan)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 06 (qr-menu-customer) — EXECUTING
-Plan: 1 of 5
-Next: Phase 6 — QR-Menu Customer (reuses /v1/menu + the cart/menu patterns from Phase 5)
-Status: Executing Phase 06
-Last activity: 2026-06-13 -- Completed audit quick tasks 260613-qff (#5) and 260613-qmn (#22/#23/#24)
+Phase: 06 (qr-menu-customer) — COMPLETE (5/5 plans; 06-VERIFICATION status: passed, blocker closed 2026-06-13 in cff2c76)
+Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
+Status: Phase 6 done; Phase 7 not yet planned.
+Last activity: 2026-06-14 -- closed out-of-band hardening + feature work (below)
 
-Progress: [█████████░] 89%
+### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
+
+- **Deep audit remediation — ALL 28 findings closed** (.planning/AUDIT.md; PRs #197-225 + follow-ups #232-234). Tenancy/multibrand/identity hardened: catalog RBAC, multibrand data+read isolation + composite FKs + per-operator BrandScopeGuard activation, outbox ordering/claim-ownership, audit-DLQ wiring, session-revoke org-scoping, slug-race, presign→null, withoutTenant call-site enforcement test, BA-store ports, dynamic-AC disabled, suspend/archive public reads → existence-hiding 404.
+- **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
+- **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
+
+Progress: [█████████░] 7/19 phases (37%) — MVP-1 revenue spine: 5,6 done → next 7 (Ordering) → 7.5 (Deploy) → 8 (Payments) → 10 (Admin Order Intake)
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
