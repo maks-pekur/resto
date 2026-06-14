@@ -151,7 +151,7 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
     expect(a.id).not.toBe(b.id);
   });
 
-  it('a write with no active brand is a clean 400, not a 500', async () => {
+  it('a write with no active brand is rejected by the brand-scope guard (403, not 500)', async () => {
     const catA = await createCategory(brandASlug, `cat-${randomUUID().slice(0, 6)}`);
     const res = await stack.app.inject({
       method: 'POST',
@@ -159,6 +159,7 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
       headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: makeItem(catA, `nb-${randomUUID().slice(0, 6)}`),
     });
-    expect(res.statusCode).toBe(400);
+    expect(res.statusCode).toBe(403);
+    expect(res.json<{ code?: string }>().code).toBe('brand.context_required');
   });
 });

@@ -16,7 +16,7 @@ import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import { Permissions, RequireBrand, RequiresTenantContext } from '../../../../shared/auth';
 import {
   PhotoUploadUrlInputDto,
   PhotoUploadUrlResponseDto,
@@ -82,6 +82,7 @@ export class CatalogController {
   @Post('categories')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: UpsertCategoryInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -94,6 +95,7 @@ export class CatalogController {
   @Post('categories/reorder')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: ReorderCategoriesInputDto })
   @ApiOkResponse({ type: ReorderCategoriesResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -106,6 +108,7 @@ export class CatalogController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: UpsertItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -118,6 +121,7 @@ export class CatalogController {
   @Post('modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: UpsertModifierGroupInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -131,6 +135,7 @@ export class CatalogController {
   @Post('modifier-options')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: UpsertModifierOptionInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -144,6 +149,7 @@ export class CatalogController {
   @Post('item-sizes')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: UpsertItemSizeInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -156,6 +162,7 @@ export class CatalogController {
   @Post('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiBody({ type: StopItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -168,6 +175,7 @@ export class CatalogController {
   @Delete('stop-list/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['update'] })
+  @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   stopListRemove(@Param('itemId') itemId: string): Promise<void> {
     return wrap(() => this.stopList.unstop(itemId));
@@ -219,6 +227,7 @@ export class CatalogController {
   @Patch('categories/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
+  @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveCategory(@Param('id') id: string): Promise<void> {
     return wrap(() => this.archiveCategoryService.execute(id));
@@ -227,6 +236,7 @@ export class CatalogController {
   @Patch('items/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
+  @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id') id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
