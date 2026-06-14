@@ -60,9 +60,10 @@ export const App = () => {
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
+    const controller = new AbortController();
     const refresh = (): void => {
       if (document.hidden) return;
-      fetchAvailability()
+      fetchAvailability(controller.signal)
         .then((availability) => {
           setStoppedIds(toStoppedSet(availability.stoppedItemIds));
         })
@@ -72,6 +73,7 @@ export const App = () => {
     window.addEventListener('focus', refresh);
     document.addEventListener('visibilitychange', refresh);
     return () => {
+      controller.abort();
       window.clearInterval(interval);
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
