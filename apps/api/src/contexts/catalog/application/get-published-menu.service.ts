@@ -29,7 +29,14 @@ export class GetPublishedMenuService {
 
     const brandId = requireBrandContext();
 
-    const cached = await this.cache.get(tenantId, version, brandId);
+    // A cold/down Redis must not crash a public menu read — degrade to the
+    // repository as if it were a cache miss.
+    let cached: PublishedMenu | null = null;
+    try {
+      cached = await this.cache.get(tenantId, version, brandId);
+    } catch (err) {
+      this.logger.warn({ err }, 'Cache read failed; serving from repository.');
+    }
     if (cached) {
       return cached;
     }
