@@ -198,7 +198,7 @@
 - [ ] **PROMO-03**: Guest enters promo code at checkout, sees discount applied or specific error (expired / invalid / max-uses)
 - [ ] **PROMO-04**: Single-use code rejects second use
 - [ ] **PROMO-05**: Operator creates automatic discount (no code, applies on condition like `cart_total > X`)
-- [ ] **PROMO-06**: Discount calculation pure (no DB calls); domain layer — assigned to Phase 7 (ordering context) so it exists before Phase 8 processes real payments
+- [x] **PROMO-06**: Discount calculation pure (no DB calls); domain layer — assigned to Phase 7 (ordering context) so it exists before Phase 8 processes real payments
 
 ### CRM — basic (`CRM`)
 
@@ -458,7 +458,7 @@
 | ORD-10      | Phase 7       | Pending  |
 | ORD-11      | Phase 7       | Pending  |
 | ORD-12      | Phase 7       | Pending  |
-| PROMO-06    | Phase 7       | Pending  |
+| PROMO-06    | Phase 7       | Complete |
 | PAY-01      | Phase 8       | Pending  |
 | PAY-02      | Phase 8       | Pending  |
 | PAY-03      | Phase 8       | Pending  |

@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: '2026-06-14T20:53:18.043Z'
-last_activity: 2026-06-14 -- Phase 7 planning complete
+last_updated: '2026-06-14T21:03:19.084Z'
+last_activity: 2026-06-14
 progress:
   total_phases: 19
   completed_phases: 7
   total_plans: 48
-  completed_plans: 43
+  completed_plans: 44
   percent: 37
 ---
 
@@ -21,15 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 07 — ordering (ready to plan)
+**Current focus:** Phase 07 — ordering
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 06 (qr-menu-customer) — COMPLETE (5/5 plans; 06-VERIFICATION status: passed, blocker closed 2026-06-13 in cff2c76)
+Phase: 07 (ordering) — EXECUTING
+Plan: 2 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
-Last activity: 2026-06-14 -- Phase 7 planning complete
+Last activity: 2026-06-14
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -37,7 +38,7 @@ Last activity: 2026-06-14 -- Phase 7 planning complete
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 7/19 phases (37%) — MVP-1 revenue spine: 5,6 done → next 7 (Ordering) → 7.5 (Deploy) → 8 (Payments) → 10 (Admin Order Intake)
+Progress: [█████████░] 92%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -82,6 +83,7 @@ _Updated after each plan completion_
 | Phase 04b-catalog-admin-ui P05 | 78min | 3 tasks | 10 files |
 | Phase 05-customer-site P05-01 | 20min | 3 tasks | 20 files |
 | Phase 05-customer-site P05-02 | 25min | 3 tasks | 14 files |
+| Phase 07 P01 | 12 | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -118,6 +120,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Plan 04b-05: DEFAULT_LOCALE='ru' pinned in apps/admin/lib/menu/localized.ts (Open Question #1 RESOLVED; v2 multilingual editor replaces with tenant-default lookup)
 - [Phase ?]: Plan 04b-05: Reorder via two sequential upsert POSTs (Plan 02 didn't add a batch endpoint; T-04b-05-04 accepted)
 - [Phase ?]: Plan 04b-05 deviation: added ResizeObserver polyfill in apps/admin/test/setup.ts (JSDOM lacks it; Radix popper crashes leaked across spec files)
+- [Phase ?]: 07-01 discount engine decisions
 
 ### Pending Todos
 
@@ -162,6 +165,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-14T20:12:24.657Z
+Last session: 2026-06-14T21:03:19.075Z
 Stopped at: Phase 7 context gathered
-Resume file: .planning/phases/07-ordering/07-CONTEXT.md
+Resume file: None
