@@ -179,7 +179,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     expect(reserved.statusCode).toBe(200);
   }, 120_000);
 
-  it('blocks GET /v1/menu once archived (no menu served)', async () => {
+  it('404s GET /v1/menu once archived, hiding existence', async () => {
     const tenant = await seedPublishedTenant(stack.app, db, 'arch');
 
     const active = await stack.app.inject({
@@ -196,14 +196,12 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     });
     expect(archive.statusCode).toBe(204);
 
-    // Archived tenants are stopped globally by AuthGuard (403 tenant.archived)
-    // before the public read path; an archived tenant is never served.
     const archived = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
       headers: { host: tenant.brandHost },
     });
-    expect(archived.statusCode).toBeGreaterThanOrEqual(400);
+    expect(archived.statusCode).toBe(404);
     const body = archived.json<{ items?: unknown }>();
     expect(body.items).toBeUndefined();
   }, 120_000);

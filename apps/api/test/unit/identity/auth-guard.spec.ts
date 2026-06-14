@@ -1,6 +1,11 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { type ExecutionContext, ForbiddenException, UnauthorizedException } from '@nestjs/common';
+import {
+  type ExecutionContext,
+  ForbiddenException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../../src/contexts/identity/interfaces/http/guards/auth.guard';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
@@ -201,5 +206,24 @@ describe('AuthGuard', () => {
     await expect(guard.canActivate(ctx)).rejects.toMatchObject({
       response: { code: 'tenant.archived' },
     });
+  });
+
+  it('returns 404 (not 403) for an archived tenant on a @Public route, hiding existence', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 'tenant-archived-uuid' });
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(true);
+    const auth = buildAuthStub(null);
+    const lookup: TenantLookupPort = {
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findById: vi.fn().mockResolvedValue({
+        id: 'tenant-archived-uuid',
+        slug: 'tenant-archived',
+        displayName: 'Tenant Archived',
+        archivedAt: new Date('2026-05-07T00:00:00Z'),
+      }),
+    };
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const ctx = buildContext({ headers: {}, url: '/v1/menu' });
+    await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundException);
   });
 });

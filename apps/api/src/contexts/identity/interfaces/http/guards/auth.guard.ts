@@ -4,6 +4,7 @@ import {
   ForbiddenException,
   Inject,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
@@ -51,10 +52,18 @@ export class AuthGuard implements CanActivate {
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
+    const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC_KEY, [
+      ctx.getHandler(),
+      ctx.getClass(),
+    ]);
+
     const alsTenantId = getTenantContext()?.tenantId;
     if (alsTenantId) {
       const tenant = await this.tenantLookup.findById(alsTenantId);
       if (tenant?.archivedAt) {
+        if (isPublic) {
+          throw new NotFoundException('No tenant resolved for this host.');
+        }
         throw new ForbiddenException({
           code: 'tenant.archived',
           message: 'Tenant has been archived.',
@@ -62,10 +71,6 @@ export class AuthGuard implements CanActivate {
       }
     }
 
-    const isPublic = this.reflector.getAllAndOverride<boolean | undefined>(IS_PUBLIC_KEY, [
-      ctx.getHandler(),
-      ctx.getClass(),
-    ]);
     if (isPublic) return true;
 
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
