@@ -25,6 +25,7 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     listModifierGroups: vi.fn(),
     getModifierGroupById: vi.fn(),
     listStopListWithStoppedAt: vi.fn(),
+    listStoppedItemIds: vi.fn(),
     computeDraftDiff: vi.fn(),
     archiveCategory: vi.fn(),
     archiveItem: vi.fn(),

@@ -1148,6 +1148,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async listStoppedItemIds(brandId: string): Promise<string[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped.selectFrom(
+        schema.menuStopList,
+        eq(schema.menuStopList.brandId, brandId),
+      );
+      return rows.map((r) => r.itemId);
+    });
+  }
+
   async computeDraftDiff(input: { tenantId: TenantId }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;

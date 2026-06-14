@@ -244,6 +244,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/menu/availability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicMenuController_availability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/menu": {
         parameters: {
             query?: never;
@@ -684,6 +700,9 @@ export interface components {
         SignUpResponseDto: {
             /** @enum {string} */
             status: "pending_verification";
+        };
+        MenuAvailabilityDto: {
+            stoppedItemIds: string[];
         };
         PublishedMenuDto: {
             /** Format: uuid */
@@ -1719,6 +1738,34 @@ export interface operations {
             };
             /** @description slug exhausted (rare) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicMenuController_availability: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MenuAvailabilityDto"];
+                };
+            };
+            /** @description no tenant resolved for host */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

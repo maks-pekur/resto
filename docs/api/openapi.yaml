@@ -410,6 +410,25 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - identity
+  /v1/menu/availability:
+    get:
+      operationId: PublicMenuController_availability
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuAvailabilityDto"
+        "404":
+          description: no tenant resolved for host
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
   /v1/menu:
     get:
       operationId: PublicMenuController_menu
@@ -1146,6 +1165,16 @@ components:
             - pending_verification
       required:
         - status
+    MenuAvailabilityDto:
+      type: object
+      properties:
+        stoppedItemIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - stoppedItemIds
     PublishedMenuDto:
       type: object
       properties:

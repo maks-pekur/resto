@@ -28,6 +28,7 @@ export interface CatalogRepository {
   listModifierGroups(): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
   listStopListWithStoppedAt(): Promise<StopListEntryRow[]>;
+  listStoppedItemIds(brandId: string): Promise<string[]>;
   computeDraftDiff(input: { tenantId: TenantId }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
