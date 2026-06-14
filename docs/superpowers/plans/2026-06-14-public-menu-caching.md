@@ -23,8 +23,8 @@
 ## Phase roadmap (ship & pause between phases — do NOT auto-advance)
 
 1. **Postgres versions** — durable `menuVersion` (per-tenant) + `stopVersion` (per-brand); Postgres-backed `MenuVersionPort` + a `StopVersionPort`; atomic bump inside publish/stop txns. Redis still caches the menu doc — behavior unchanged, versions now durable. **Detailed below.**
-2. **Endpoints + contract** — ETag + `Cache-Control` + `If-None-Match`/304 on `GET /v1/menu`; new `GET /v1/menu/availability`; remove `isStopListed` from the menu document; per-item detail drops the stop-filter.
-3. **Clients** — qr-menu (Vite) + website (Next) fetch both resources, merge client-side, send `If-None-Match`, refresh availability on focus + ~20s.
+2. **Availability endpoint (additive)** — new `GET /v1/menu/availability` returning `{ stoppedItemIds }` with `ETag: "<stopVersion>"` + `Cache-Control: public, s-maxage=5` + `If-None-Match`/304. `/v1/menu` is NOT touched (keeps `isStopListed`) so qr-menu does not regress. **Regrouped 2026-06-14:** the `isStopListed` removal + menu-doc ETag/caching were moved OUT of this phase into Phase 3 — they are a breaking contract change that must ship atomically with the client switch (otherwise qr-menu shows stopped items as orderable between phases, and a stop would stale an ETag-cached menu doc without bumping `menuVersion`).
+3. **Contract break + caching + clients (atomic)** — remove `isStopListed` from `GET /v1/menu`; per-item detail drops the stop-filter; add `ETag: "<menuVersion>"` + `Cache-Control: public, s-maxage=300, stale-while-revalidate=60` + `If-None-Match`/304 to `/v1/menu`; AND switch qr-menu (Vite) + website (Next) to fetch both resources, merge client-side (grey-out/hide stopped), send `If-None-Match`, refresh availability on focus + ~20s — all in one phase so there is no regression window.
 4. **CDN** — Cloudflare in front of qr-menu/API; verify edge HIT/MISS + 304 revalidation in staging (ops/config, minimal code).
 5. **Redis removal** — delete `redis-catalog-cache.adapter.ts`, the `menu_versions_seq` fallback, and its `WITHOUT_TENANT_ALLOWLIST` entry (the AUDIT #16 enforcement test flags the stale entry).
 
