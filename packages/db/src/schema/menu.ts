@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import {
+  bigint,
   boolean,
   check,
   foreignKey,
@@ -363,5 +364,45 @@ export const menuItemSlugAliases = pgTable(
       tenantId: table.tenantId,
     }),
     check('menu_item_slug_aliases_format_chk', sql`${table.alias} ~ '^[a-z0-9][a-z0-9-]*$'`),
+  ],
+);
+
+export const catalogMenuVersion = pgTable(
+  'catalog_menu_version',
+  {
+    tenantId: uuid('tenant_id').primaryKey(),
+    menuVersion: bigint('menu_version', { mode: 'number' }).notNull().default(1),
+  },
+  (table) => [
+    foreignKey({
+      name: 'catalog_menu_version_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+  ],
+);
+
+export const catalogBrandStopVersion = pgTable(
+  'catalog_brand_stop_version',
+  {
+    brandId: uuid('brand_id').notNull(),
+    tenantId: tenantIdColumn(),
+    stopVersion: bigint('stop_version', { mode: 'number' }).notNull().default(1),
+  },
+  (table) => [
+    primaryKey({
+      name: 'catalog_brand_stop_version_pk',
+      columns: [table.brandId, table.tenantId],
+    }),
+    foreignKey({
+      name: 'catalog_brand_stop_version_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }),
+    compositeTenantFk({
+      name: 'catalog_brand_stop_version_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('cascade'),
   ],
 );
