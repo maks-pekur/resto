@@ -26,10 +26,6 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // lookups happen before ALS binding; platform-level ops cross-tenant by design.
   'apps/api/src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
 
-  // Audit consumer writes to the platform-wide audit_log table; tenant_id
-  // is nullable for platform events (RES-204 added the 'tenant_erased' row).
-  'apps/api/src/contexts/audit/application/record-audit.service.ts',
-
   // Identity event emitter writes outbox from Better Auth hook handlers;
   // BA hooks fire outside any HTTP request, so no ALS tenant is bound.
   'apps/api/src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
