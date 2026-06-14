@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { eq, inArray } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import { member as memberTable, session as sessionTable } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
@@ -19,7 +19,9 @@ export class RevokeUserSessionsService {
     }
     const deleted = await this.authDb.db
       .delete(sessionTable)
-      .where(inArray(sessionTable.userId, userIds))
+      .where(
+        and(inArray(sessionTable.userId, userIds), eq(sessionTable.activeOrganizationId, tenantId)),
+      )
       .returning({ id: sessionTable.id });
     return { revokedSessionsCount: deleted.length };
   }
