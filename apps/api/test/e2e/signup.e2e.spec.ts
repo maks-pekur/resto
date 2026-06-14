@@ -43,6 +43,9 @@ suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
   let db: TenantAwareDb;
 
   beforeAll(async () => {
+    process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
     stack = await startRealStack();
     db = stack.app.get(TenantAwareDb);
   }, 180_000);
