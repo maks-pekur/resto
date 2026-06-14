@@ -777,7 +777,6 @@ export interface components {
                     sortOrder: number;
                 }[];
                 modifierGroupIds: string[];
-                isStopListed: boolean;
             }[];
             modifierGroups: {
                 /** Format: uuid */
@@ -844,7 +843,6 @@ export interface components {
                 sortOrder: number;
             }[];
             modifierGroupIds: string[];
-            isStopListed: boolean;
         };
         CategoryListResponseDto: {
             items: {

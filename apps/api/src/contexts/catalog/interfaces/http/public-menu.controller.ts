@@ -4,11 +4,12 @@ import type { FastifyReply } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { getBrandId, requireTenantContext } from '@resto/db';
-import { MenuItemId } from '@resto/domain';
+import { MenuItemId, TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/get-published-menu.service';
+import { MENU_VERSION_PORT, type MenuVersionPort } from '../../domain/ports';
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
@@ -54,7 +55,6 @@ const PublishedMenuItemSchema = z.object({
   nutritionEstimated: z.boolean(),
   sizes: z.array(PublishedMenuItemSizeSchema),
   modifierGroupIds: z.array(z.string().uuid()),
-  isStopListed: z.boolean(),
 });
 
 const PublishedMenuCategorySchema = z.object({
@@ -131,6 +131,7 @@ export class PublicMenuController {
     @Inject(GetMenuItemService) private readonly getItem: GetMenuItemService,
     @Inject(GetMenuAvailabilityService)
     private readonly getAvailability: GetMenuAvailabilityService,
+    @Inject(MENU_VERSION_PORT) private readonly menuVersions: MenuVersionPort,
   ) {}
 
   @Get('availability')
@@ -158,9 +159,20 @@ export class PublicMenuController {
   @RequireActiveTenant()
   @ApiOkResponse({ type: PublishedMenuDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
-  async menu(): Promise<PublishedMenu> {
+  async menu(
+    @Res({ passthrough: true }) reply: FastifyReply,
+    @Headers('if-none-match') ifNoneMatch?: string,
+  ): Promise<PublishedMenu | undefined> {
     const ctx = requireTenantOr404();
     requireBrandOr404();
+    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
+    const etag = '"' + version.toString() + '"';
+    if (ifNoneMatch === etag) {
+      reply.status(304);
+      return undefined;
+    }
+    reply.header('ETag', etag);
+    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return wrap(() => this.getMenu.execute(ctx.tenantId));
   }
 
@@ -168,9 +180,21 @@ export class PublicMenuController {
   @RequireActiveTenant()
   @ApiOkResponse({ type: PublishedMenuItemDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
-  async item(@Param('id') id: string): Promise<PublishedMenuItem> {
-    requireTenantOr404();
+  async item(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) reply: FastifyReply,
+    @Headers('if-none-match') ifNoneMatch?: string,
+  ): Promise<PublishedMenuItem | undefined> {
+    const ctx = requireTenantOr404();
     requireBrandOr404();
+    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
+    const etag = '"' + version.toString() + '"';
+    if (ifNoneMatch === etag) {
+      reply.status(304);
+      return undefined;
+    }
+    reply.header('ETag', etag);
+    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
     return wrap(() => {
       const parsed = MenuItemId.safeParse(id);
       if (!parsed.success) throw new MenuItemNotFoundError(id);

@@ -28,6 +28,34 @@ suite('GET /v1/menu — brand object in response', () => {
   let brandSlug: string;
   let tenantHost: string;
   let brandHost: string;
+  let authed: Record<string, string>;
+  let itemId: string;
+
+  const expectEtag = (value: string | string[] | undefined): string => {
+    expect(typeof value).toBe('string');
+    if (typeof value !== 'string') throw new Error('etag header missing');
+    return value;
+  };
+
+  const getMenuEtag = async (): Promise<string> => {
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost },
+    });
+    expect(res.statusCode).toBe(200);
+    return expectEtag(res.headers.etag);
+  };
+
+  const waitForEtagChange = async (previous: string): Promise<string> => {
+    const deadline = Date.now() + 12_000;
+    while (Date.now() < deadline) {
+      const current = await getMenuEtag();
+      if (current !== previous) return current;
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    throw new Error(`menu ETag did not change from ${previous} within the deadline`);
+  };
 
   beforeAll(async () => {
     process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
@@ -89,7 +117,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     await runBootstrap({ tenantSlug, email, password: PASSWORD, name: 'RES-154 Owner' });
     const ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
-    const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+    authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
@@ -120,6 +148,7 @@ suite('GET /v1/menu — brand object in response', () => {
     if (itemRes.statusCode !== 200) {
       throw new Error(`item seed failed: ${itemRes.statusCode.toString()} ${itemRes.body}`);
     }
+    itemId = itemRes.json<{ id: string }>().id;
 
     const publishRes = await stack.app.inject({
       method: 'POST',
@@ -178,5 +207,102 @@ suite('GET /v1/menu — brand object in response', () => {
       headers: { host: tenantHost },
     });
     expect(res.statusCode).toBe(404);
+  }, 60_000);
+
+  it('GET /v1/menu carries a menu-version ETag and the Cache-Control directive', async () => {
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['cache-control']).toBe('public, s-maxage=300, stale-while-revalidate=60');
+    expectEtag(res.headers.etag);
+  }, 60_000);
+
+  it('honours If-None-Match: a current ETag yields an empty 304, a stale one yields 200', async () => {
+    const before = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost },
+    });
+    const currentEtag = expectEtag(before.headers.etag);
+
+    const notModified = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost, 'if-none-match': currentEtag },
+    });
+    expect(notModified.statusCode).toBe(304);
+    expect(notModified.body).toBe('');
+
+    const republish = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/publish',
+      headers: authed,
+    });
+    expect(republish.statusCode).toBe(200);
+
+    const newEtag = await waitForEtagChange(currentEtag);
+    expect(newEtag).not.toBe(currentEtag);
+
+    const stale = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost, 'if-none-match': currentEtag },
+    });
+    expect(stale.statusCode).toBe(200);
+    expect(expectEtag(stale.headers.etag)).toBe(newEtag);
+    expect(stale.json<{ items: unknown[] }>().items.length).toBeGreaterThan(0);
+
+    const fresh = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost, 'if-none-match': newEtag },
+    });
+    expect(fresh.statusCode).toBe(304);
+    expect(fresh.body).toBe('');
+  }, 60_000);
+
+  it('stopping an item does not change the /v1/menu ETag and keeps the item present', async () => {
+    const before = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost },
+    });
+    const etagBeforeStop = expectEtag(before.headers.etag);
+    const itemsBefore = before.json<{ items: { id: string }[] }>().items;
+    expect(itemsBefore.some((i) => i.id === itemId)).toBe(true);
+
+    const stopRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/stop-list',
+      headers: authed,
+      payload: { itemId, reason: '86' },
+    });
+    expect(stopRes.statusCode).toBe(200);
+
+    const after = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: brandHost },
+    });
+    expect(after.statusCode).toBe(200);
+    const etagAfterStop = expectEtag(after.headers.etag);
+    expect(etagAfterStop).toBe(etagBeforeStop);
+
+    const stoppedItem = after
+      .json<{ items: { id: string }[] }>()
+      .items.find((i) => i.id === itemId);
+    expect(stoppedItem).toBeDefined();
+    expect(stoppedItem).not.toHaveProperty('isStopListed');
+
+    const detail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/menu/items/${itemId}`,
+      headers: { host: brandHost },
+    });
+    expect(detail.statusCode).toBe(200);
+    expect(detail.json<{ id: string }>().id).toBe(itemId);
   }, 60_000);
 });

@@ -116,15 +116,11 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         )
         .limit(1);
 
-      // D-4a-10: stop-list overlay — filter stopped items before per-item joins fire to avoid wasted size/modifier work.
-      const [categoriesRows, allItemsRows, stopListRows, brandRows] = await Promise.all([
+      const [categoriesRows, allItemsRows, brandRows] = await Promise.all([
         scoped.selectFrom(schema.menuCategories, eq(schema.menuCategories.brandId, brandId)),
         scoped.selectFrom(schema.menuItems, itemsBaseConditions),
-        scoped.selectFrom(schema.menuStopList, eq(schema.menuStopList.brandId, brandId)),
         brandRowPromise,
       ]);
-
-      const stoppedItemIds = new Set(stopListRows.map((r) => r.itemId));
 
       const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
         scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.brandId, brandId)),
@@ -186,7 +182,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
               MenuModifierId.parse(m.modifierGroupId),
             ),
-            isStopListed: stoppedItemIds.has(r.id),
           };
         }),
       );
@@ -246,17 +241,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         eq(schema.menuItems.status, 'published'),
         eq(schema.menuItems.brandId, brandId),
       );
-      const [items, stopListRows] = await Promise.all([
-        scoped.selectFrom(schema.menuItems, where).limit(1),
-        scoped.selectFrom(
-          schema.menuStopList,
-          and(eq(schema.menuStopList.itemId, itemId), eq(schema.menuStopList.brandId, brandId)),
-        ),
-      ]);
+      const items = await scoped.selectFrom(schema.menuItems, where).limit(1);
       const row = items[0];
       if (!row) return null;
-      // D-4a-10: stopped items must not surface via the per-item read either.
-      if (stopListRows.length > 0) return null;
 
       const [sizes, links] = await Promise.all([
         scoped.selectFrom(
@@ -300,7 +287,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: v.sortOrder,
         })),
         modifierGroupIds: links.map((m) => MenuModifierId.parse(m.modifierGroupId)),
-        isStopListed: false,
       };
     });
   }
