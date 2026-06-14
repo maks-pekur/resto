@@ -1,0 +1,91 @@
+import { z } from 'zod';
+import { createZodDto } from 'nestjs-zod';
+import { randomBytes } from 'node:crypto';
+import { DiscountSpecSchema } from '../domain/discount';
+
+const CartModifierSchema = z.object({
+  optionId: z.string().uuid(),
+  name: z.string().min(1).max(200),
+  priceDelta: z.string().regex(/^-?\d+(\.\d{1,2})?$/),
+  modifierGroupId: z.string().uuid().optional(),
+  amount: z.number().int().positive().optional(),
+});
+
+const CartLineItemSchema = z.object({
+  itemId: z.string().uuid(),
+  sizeId: z.string().uuid().nullable(),
+  name: z.string().min(1).max(200),
+  unitPrice: z.string().regex(/^\d+(\.\d{1,2})?$/),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  modifiers: z.array(CartModifierSchema),
+  quantity: z.number().int().positive(),
+});
+
+export const CreateOrderInputSchema = z
+  .object({
+    items: z.array(CartLineItemSchema).min(1),
+    fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+    table: z.string().max(20).optional(),
+    customerName: z.string().max(200).optional(),
+    customerPhone: z.string().max(30).optional(),
+    idempotencyKey: z.string().uuid(),
+    // ORD-12: no operating-hours source exists yet — accept any future datetime; schedule validation deferred.
+    scheduledFor: z
+      .string()
+      .datetime()
+      .refine((v) => new Date(v) > new Date(), {
+        message: 'scheduledFor must be in the future',
+      })
+      .optional(),
+    discountSpec: DiscountSpecSchema.optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.fulfillmentMode === 'dine_in') return data.table !== undefined && data.table !== '';
+      return true;
+    },
+    { message: 'table is required for dine_in orders', path: ['table'] },
+  )
+  .refine(
+    (data) => {
+      if (data.fulfillmentMode === 'pickup' || data.fulfillmentMode === 'delivery') {
+        return (
+          data.customerName !== undefined &&
+          data.customerName !== '' &&
+          data.customerPhone !== undefined &&
+          data.customerPhone !== ''
+        );
+      }
+      return true;
+    },
+    {
+      message: 'customerName and customerPhone are required for pickup/delivery orders',
+      path: ['customerName'],
+    },
+  );
+
+export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
+export class CreateOrderInputDto extends createZodDto(CreateOrderInputSchema) {}
+
+export const OrderResponseSchema = z.object({
+  orderId: z.string().uuid(),
+  orderNumber: z.string().min(1).max(20),
+  status: z.string(),
+  total: z.string(),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+});
+export type OrderResponse = z.infer<typeof OrderResponseSchema>;
+
+const ALPHANUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+
+export function generateOrderNumber(): string {
+  const now = new Date();
+  const y = now.getUTCFullYear().toString();
+  const m = (now.getUTCMonth() + 1).toString().padStart(2, '0');
+  const d = now.getUTCDate().toString().padStart(2, '0');
+  const bytes = randomBytes(5);
+  const suffix = Array.from(bytes)
+    .map((b) => ALPHANUM[b % ALPHANUM.length])
+    .join('');
+  return `${y}${m}${d}-${suffix}`;
+}
