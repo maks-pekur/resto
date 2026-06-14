@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: ready-to-plan
-stopped_at: Phase 6 complete; ready to plan Phase 7 (Ordering)
-last_updated: '2026-06-14'
-last_activity: 2026-06-14 -- Phase 6 verified complete; out-of-band audit + menu-caching shipped
+status: completed
+stopped_at: Phase 7 context gathered
+last_updated: '2026-06-14T20:12:24.666Z'
+last_activity: 2026-06-14 -- closed out-of-band hardening + feature work (below)
 progress:
   total_phases: 19
   completed_phases: 7
@@ -162,6 +162,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-12T13:04:34.616Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: None
+Last session: 2026-06-14T20:12:24.657Z
+Stopped at: Phase 7 context gathered
+Resume file: .planning/phases/07-ordering/07-CONTEXT.md
