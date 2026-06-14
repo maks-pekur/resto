@@ -24,7 +24,6 @@ import { UpsertItemSizeService } from './application/upsert-item-size.service';
 import { UpsertModifierGroupService } from './application/upsert-modifier-group.service';
 import { UpsertModifierOptionService } from './application/upsert-modifier-option.service';
 import {
-  CATALOG_CACHE_PORT,
   CATALOG_REPOSITORY,
   IMAGE_URL_PORT,
   MENU_VERSION_PORT,
@@ -32,7 +31,6 @@ import {
 } from './domain/ports';
 import { CatalogDrizzleRepository } from './infrastructure/catalog-drizzle.repository';
 import { PostgresMenuVersionAdapter } from './infrastructure/postgres-menu-version.adapter';
-import { RedisCatalogCacheAdapter } from './infrastructure/redis-catalog-cache.adapter';
 import { S3SignedImageUrlAdapter } from './infrastructure/s3-signed-image-url.adapter';
 import { CatalogController } from './interfaces/http/catalog.controller';
 import { InternalCatalogController } from './interfaces/http/internal-catalog.controller';
@@ -43,8 +41,6 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
   controllers: [PublicMenuController, InternalCatalogController, CatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },
-    RedisCatalogCacheAdapter,
-    { provide: CATALOG_CACHE_PORT, useExisting: RedisCatalogCacheAdapter },
     PostgresMenuVersionAdapter,
     { provide: MENU_VERSION_PORT, useExisting: PostgresMenuVersionAdapter },
     { provide: STOP_VERSION_PORT, useExisting: PostgresMenuVersionAdapter },

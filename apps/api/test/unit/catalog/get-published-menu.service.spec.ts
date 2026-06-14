@@ -3,7 +3,6 @@ import { runInTenantContext } from '@resto/db';
 import { BrandId, BrandTheme, Currency, TenantId } from '@resto/domain';
 import { GetPublishedMenuService } from '../../../src/contexts/catalog/application/get-published-menu.service';
 import type {
-  CatalogCachePort,
   CatalogRepository,
   MenuVersionPort,
 } from '../../../src/contexts/catalog/domain/ports';
@@ -38,71 +37,46 @@ const buildRepo = (): CatalogRepository =>
     insertSlugAlias: vi.fn(),
   }) as unknown as CatalogRepository;
 
-const buildCache = (): CatalogCachePort => ({
-  get: vi.fn().mockResolvedValue(null),
-  set: vi.fn().mockResolvedValue(undefined),
-  invalidate: vi.fn().mockResolvedValue(undefined),
-});
-
 const buildVersionPort = (): MenuVersionPort => ({
   current: vi.fn().mockResolvedValue(7),
 });
 
 describe('GetPublishedMenuService', () => {
   let repo: CatalogRepository;
-  let cache: CatalogCachePort;
   let versions: MenuVersionPort;
   let service: GetPublishedMenuService;
 
   beforeEach(() => {
     repo = buildRepo();
-    cache = buildCache();
     versions = buildVersionPort();
-    service = new GetPublishedMenuService(repo, cache, versions);
+    service = new GetPublishedMenuService(repo, versions);
   });
 
-  it('returns the cached menu without hitting the repository', async () => {
-    const cached = buildMenu(7);
-    cache.get = vi.fn().mockResolvedValue(cached);
-    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
-      service.execute(TENANT),
-    );
-    expect(result).toBe(cached);
-    expect(repo.loadPublishedMenu).not.toHaveBeenCalled();
-  });
-
-  it('falls through to the repository on cache miss and writes back', async () => {
-    cache.get = vi.fn().mockResolvedValue(null);
+  it('returns the menu loaded from the repository', async () => {
     const fresh = buildMenu(7);
     repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
 
     const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute(TENANT),
     );
+
     expect(result).toBe(fresh);
     expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, BRAND_ID);
-    // Cache write is fire-and-forget; await a tick before assertion.
-    await new Promise((r) => setImmediate(r));
-    expect(cache.set).toHaveBeenCalledWith(fresh, expect.any(Number), BRAND_ID);
   });
 
-  it('uses the current menu version from the version port', async () => {
+  it('loads the menu at the current version from the version port', async () => {
     versions.current = vi.fn().mockResolvedValue(42);
-    cache.get = vi.fn().mockResolvedValue(null);
     repo.loadPublishedMenu = vi.fn().mockResolvedValue(buildMenu(42));
+
     await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
       service.execute(TENANT),
     );
+
     expect(versions.current).toHaveBeenCalledWith(TENANT);
     expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 42, BRAND_ID);
   });
 
-  it('passes brandId from ALS to the repo loadPublishedMenu call', async () => {
-    const repo = buildRepo();
-    const cache = buildCache();
-    const versionPort = buildVersionPort();
-    const service = new GetPublishedMenuService(repo, cache, versionPort);
-
+  it('threads brandId from ALS into the repo loadPublishedMenu call', async () => {
     await runInTenantContext(
       { tenantId: TENANT_ID, brandId: '33333333-3333-4333-8333-333333333333' },
       () => service.execute(TENANT),
@@ -130,32 +104,5 @@ describe('GetPublishedMenuService', () => {
     );
 
     expect(result.brand).toEqual(brand);
-  });
-
-  it('degrades to the repository when the cache read rejects (cold/down Redis)', async () => {
-    cache.get = vi.fn().mockRejectedValue(new Error('redis down'));
-    const fresh = buildMenu(7);
-    repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
-
-    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
-      service.execute(TENANT),
-    );
-
-    expect(result).toBe(fresh);
-    expect(repo.loadPublishedMenu).toHaveBeenCalledWith(TENANT, 7, BRAND_ID);
-  });
-
-  it('does not crash when the cache write rejects (fire-and-forget)', async () => {
-    cache.get = vi.fn().mockResolvedValue(null);
-    cache.set = vi.fn().mockRejectedValue(new Error('redis down'));
-    const fresh = buildMenu(7);
-    repo.loadPublishedMenu = vi.fn().mockResolvedValue(fresh);
-
-    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
-      service.execute(TENANT),
-    );
-
-    expect(result).toBe(fresh);
-    await new Promise((r) => setImmediate(r));
   });
 });

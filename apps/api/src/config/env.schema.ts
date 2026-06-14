@@ -24,7 +24,6 @@ export const envSchema = z
     /** Schema-owner URL — used by migrations only, never by the runtime app. */
     DATABASE_ADMIN_URL: z.string().url().optional(),
 
-    REDIS_URL: z.string().url().optional(),
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */
     NATS_STREAM: z.string().default('RESTO_EVENTS'),
