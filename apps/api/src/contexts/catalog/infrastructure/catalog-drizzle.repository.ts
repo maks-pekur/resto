@@ -84,49 +84,51 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async loadPublishedMenu(
     tenantId: TenantId,
     version: number,
-    brandId?: string | null,
+    brandId: string,
   ): Promise<PublishedMenu> {
     return this.db.withTenant(async (tx, scoped) => {
-      const itemsBaseConditions = brandId
-        ? and(eq(schema.menuItems.status, 'published'), eq(schema.menuItems.brandId, brandId))
-        : eq(schema.menuItems.status, 'published');
+      const itemsBaseConditions = and(
+        eq(schema.menuItems.status, 'published'),
+        eq(schema.menuItems.brandId, brandId),
+      );
 
-      const brandRowPromise = brandId
-        ? tx
-            .select({
-              id: schema.brands.id,
-              slug: schema.brands.slug,
-              displayName: schema.brands.displayName,
-              theme: schema.brands.theme,
-            })
-            .from(schema.brands)
-            .where(
-              // ADR-0020 I-1: ScopedTx does not support column projection; explicit tenant filter at this single call site.
-              and(
-                eq(schema.brands.tenantId, requireTenantContext().tenantId),
-                eq(schema.brands.id, brandId),
-              ),
-            )
-            .limit(1)
-        : Promise.resolve([] as const);
+      const brandRowPromise = tx
+        .select({
+          id: schema.brands.id,
+          slug: schema.brands.slug,
+          displayName: schema.brands.displayName,
+          theme: schema.brands.theme,
+        })
+        .from(schema.brands)
+        .where(
+          // ADR-0020 I-1: ScopedTx does not support column projection; explicit tenant filter at this single call site.
+          and(
+            eq(schema.brands.tenantId, requireTenantContext().tenantId),
+            eq(schema.brands.id, brandId),
+          ),
+        )
+        .limit(1);
 
       // D-4a-10: stop-list overlay — filter stopped items before per-item joins fire to avoid wasted size/modifier work.
       const [categoriesRows, allItemsRows, stopListRows, brandRows] = await Promise.all([
-        scoped.selectFrom(
-          schema.menuCategories,
-          brandId ? eq(schema.menuCategories.brandId, brandId) : undefined,
-        ),
+        scoped.selectFrom(schema.menuCategories, eq(schema.menuCategories.brandId, brandId)),
         scoped.selectFrom(schema.menuItems, itemsBaseConditions),
-        scoped.selectFrom(schema.menuStopList),
+        scoped.selectFrom(schema.menuStopList, eq(schema.menuStopList.brandId, brandId)),
         brandRowPromise,
       ]);
 
       const stoppedItemIds = new Set(stopListRows.map((r) => r.itemId));
 
       const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
-        scoped.selectFrom(schema.menuItemSizes),
-        scoped.selectFrom(schema.menuItemModifierGroups),
-        scoped.selectFrom(schema.menuModifierGroups),
+        scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.brandId, brandId)),
+        scoped.selectFrom(
+          schema.menuItemModifierGroups,
+          eq(schema.menuItemModifierGroups.brandId, brandId),
+        ),
+        scoped.selectFrom(
+          schema.menuModifierGroups,
+          eq(schema.menuModifierGroups.brandId, brandId),
+        ),
       ]);
 
       const optionsRows =
@@ -134,9 +136,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           ? []
           : await scoped.selectFrom(
               schema.menuModifierOptions,
-              inArray(
-                schema.menuModifierOptions.modifierGroupId,
-                modifierGroupsRows.map((m) => m.id),
+              and(
+                inArray(
+                  schema.menuModifierOptions.modifierGroupId,
+                  modifierGroupsRows.map((m) => m.id),
+                ),
+                eq(schema.menuModifierOptions.brandId, brandId),
               ),
             );
 
@@ -227,21 +232,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async findPublishedItem(
-    itemId: string,
-    brandId?: string | null,
-  ): Promise<PublishedMenuItem | null> {
+  async findPublishedItem(itemId: string, brandId: string): Promise<PublishedMenuItem | null> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const baseConditions = and(
+      const where = and(
         eq(schema.menuItems.id, itemId),
         eq(schema.menuItems.status, 'published'),
+        eq(schema.menuItems.brandId, brandId),
       );
-      const where = brandId
-        ? and(baseConditions, eq(schema.menuItems.brandId, brandId))
-        : baseConditions;
       const [items, stopListRows] = await Promise.all([
         scoped.selectFrom(schema.menuItems, where).limit(1),
-        scoped.selectFrom(schema.menuStopList, eq(schema.menuStopList.itemId, itemId)),
+        scoped.selectFrom(
+          schema.menuStopList,
+          and(eq(schema.menuStopList.itemId, itemId), eq(schema.menuStopList.brandId, brandId)),
+        ),
       ]);
       const row = items[0];
       if (!row) return null;
@@ -249,10 +252,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       if (stopListRows.length > 0) return null;
 
       const [sizes, links] = await Promise.all([
-        scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
+        scoped.selectFrom(
+          schema.menuItemSizes,
+          and(
+            eq(schema.menuItemSizes.menuItemId, row.id),
+            eq(schema.menuItemSizes.brandId, brandId),
+          ),
+        ),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
-          eq(schema.menuItemModifierGroups.menuItemId, row.id),
+          and(
+            eq(schema.menuItemModifierGroups.menuItemId, row.id),
+            eq(schema.menuItemModifierGroups.brandId, brandId),
+          ),
         ),
       ]);
       const photos = await this.signPhotos(row.photos);

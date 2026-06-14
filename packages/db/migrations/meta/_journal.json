@@ -316,6 +316,13 @@
       "when": 1779842000000,
       "tag": "0044_catalog_brand_id_not_null",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1779842100000,
+      "tag": "0045_stop_list_brand_not_null",
+      "breakpoints": true
     }
   ]
 }
