@@ -13,7 +13,7 @@ import {
   MEMBER_BRAND_SCOPE_READER,
   type MemberBrandScopeReader,
 } from '../../../application/ports/member-brand-scope-reader.port';
-import { REQUIRE_BRAND_KEY } from '../decorators/require-brand.decorator';
+import { REQUIRE_BRAND_KEY } from '../../../../../shared/auth';
 
 /**
  * Per-route brand-scope authorization. Runs after AuthGuard +
