@@ -67,20 +67,25 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   ) {}
 
   private async signPhotos(photos: readonly MenuItemPhoto[]): Promise<PublishedMenuItemPhoto[]> {
-    return Promise.all(
+    const signed = await Promise.all(
       photos.map(async (p) => {
-        const signed: PublishedMenuItemPhoto = {
+        // presignGet returns '' on S3 failure (degraded mode); drop the photo
+        // rather than emit a broken `<img src="">` to the client.
+        const url = await this.imageUrl.presignGet(p.s3Key, IMAGE_URL_TTL_SECONDS);
+        if (!url) return null;
+        const photo: PublishedMenuItemPhoto = {
           s3Key: p.s3Key,
           sortOrder: p.sortOrder,
           ...(p.alt !== undefined ? { alt: p.alt } : {}),
           ...(p.width !== undefined ? { width: p.width } : {}),
           ...(p.height !== undefined ? { height: p.height } : {}),
           ...(p.isPrimary !== undefined ? { isPrimary: p.isPrimary } : {}),
-          url: await this.imageUrl.presignGet(p.s3Key, IMAGE_URL_TTL_SECONDS),
+          url,
         };
-        return signed;
+        return photo;
       }),
     );
+    return signed.filter((p): p is PublishedMenuItemPhoto => p !== null);
   }
 
   async loadPublishedMenu(
