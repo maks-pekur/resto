@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+status: verifying
 stopped_at: Phase 7 context gathered
-last_updated: '2026-06-14T21:40:26.165Z'
+last_updated: '2026-06-14T22:07:52.784Z'
 last_activity: 2026-06-14
 progress:
   total_phases: 19
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 48
-  completed_plans: 47
-  percent: 37
+  completed_plans: 48
+  percent: 42
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 Phase: 07 (ordering) — EXECUTING
 Plan: 5 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-06-14
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
@@ -38,7 +38,7 @@ Last activity: 2026-06-14
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [██████████] 98%
+Progress: [██████████] 100%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -87,6 +87,7 @@ _Updated after each plan completion_
 | Phase 07-ordering P02 | 9 | 3 tasks | 6 files |
 | Phase 07-ordering P03 | 25 | 2 tasks | 5 files |
 | Phase 07-ordering P04 | 525s | 3 tasks | 5 files |
+| Phase 07-ordering P05 | 90 | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -127,6 +128,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 07-02: DDL ordered so orders/tenantParentUniqueIndex precede order_items — composite FK resolution
 - [Phase ?]: 07-02: No timestampsColumns() on orders/payments — status is the soft-delete pattern
 - [Phase ?]: 07-02: OrderCreatedV1Payload excludes customer PII — GDPR minimisation (T-07-PII)
+- [Phase ?]: No disjunctive fallback; feeds envelope directly to fromEnvelopeWithTx
 
 ### Pending Todos
 
@@ -171,6 +173,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-14T21:40:26.156Z
+Last session: 2026-06-14T22:07:52.776Z
 Stopped at: Phase 7 context gathered
 Resume file: None

@@ -129,7 +129,7 @@
 - [x] **ORD-06**: New DB tables (`orders`, `order_items`, `order_modifiers`, `payments`) with `tenant_id` + composite FK
 - [x] **ORD-07**: Event contracts: `ordering.order_created.v1`, `ordering.order_paid.v1`, `ordering.order_canceled.v1`, `ordering.order_refunded.v1`, `ordering.order_status_changed.v1`
 - [x] **ORD-08**: NATS subject `ordering.>` added to `STREAM_SUBJECTS` in `nats.module.ts`
-- [ ] **ORD-09**: Order events subscribed by `audit` context (existing pattern)
+- [x] **ORD-09**: Order events subscribed by `audit` context (existing pattern)
 - [x] **ORD-10**: Idempotent order creation (client-provided idempotency key)
 - [x] **ORD-11**: `outbox_events` table gets `claim_token UUID` column; `releaseOutboxClaim` and `markOutboxDelivered` scope to claim token to prevent multi-replica double-delivery race
 - [x] **ORD-12**: `orders` table includes `scheduled_for TIMESTAMPTZ NULL` column with operating-hours validation; supports SITE-07 scheduled order time
@@ -454,7 +454,7 @@
 | ORD-06      | Phase 7       | Complete |
 | ORD-07      | Phase 7       | Complete |
 | ORD-08      | Phase 7       | Complete |
-| ORD-09      | Phase 7       | Pending  |
+| ORD-09      | Phase 7       | Complete |
 | ORD-10      | Phase 7       | Complete |
 | ORD-11      | Phase 7       | Complete |
 | ORD-12      | Phase 7       | Complete |
