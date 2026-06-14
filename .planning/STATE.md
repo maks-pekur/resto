@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7 context gathered
-last_updated: '2026-06-14T21:03:19.084Z'
+last_updated: '2026-06-14T21:15:41.992Z'
 last_activity: 2026-06-14
 progress:
   total_phases: 19
   completed_phases: 7
   total_plans: 48
-  completed_plans: 44
+  completed_plans: 45
   percent: 37
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 07 (ordering) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
 Last activity: 2026-06-14
@@ -38,7 +38,7 @@ Last activity: 2026-06-14
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -84,6 +84,7 @@ _Updated after each plan completion_
 | Phase 05-customer-site P05-01 | 20min | 3 tasks | 20 files |
 | Phase 05-customer-site P05-02 | 25min | 3 tasks | 14 files |
 | Phase 07 P01 | 12 | 2 tasks | 6 files |
+| Phase 07-ordering P02 | 9 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Plan 04b-05: Reorder via two sequential upsert POSTs (Plan 02 didn't add a batch endpoint; T-04b-05-04 accepted)
 - [Phase ?]: Plan 04b-05 deviation: added ResizeObserver polyfill in apps/admin/test/setup.ts (JSDOM lacks it; Radix popper crashes leaked across spec files)
 - [Phase ?]: 07-01 discount engine decisions
+- [Phase ?]: 07-02: DDL ordered so orders/tenantParentUniqueIndex precede order_items — composite FK resolution
+- [Phase ?]: 07-02: No timestampsColumns() on orders/payments — status is the soft-delete pattern
+- [Phase ?]: 07-02: OrderCreatedV1Payload excludes customer PII — GDPR minimisation (T-07-PII)
 
 ### Pending Todos
 
@@ -165,6 +169,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-14T21:03:19.075Z
+Last session: 2026-06-14T21:15:34.341Z
 Stopped at: Phase 7 context gathered
 Resume file: None

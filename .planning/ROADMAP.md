@@ -322,7 +322,7 @@ Plans:
 **Wave 1** _(parallel — no file overlap)_
 
 - [x] 07-01-PLAN.md — Pure domain foundation: OrderId/OrderItemId branded IDs + ordering money-utils + discount engine (PROMO-06, TDD)
-- [ ] 07-02-PLAN.md — Persistence + contracts: 4 Drizzle tables + migration 0049 + RLS + 5 ordering.\* event contracts (ORD-06/07; ORD-08/11 verify-only)
+- [x] 07-02-PLAN.md — Persistence + contracts: 4 Drizzle tables + migration 0049 + RLS + 5 ordering.\* event contracts (ORD-06/07; ORD-08/11 verify-only)
 
 **Wave 2** _(after 07-01)_
 
@@ -555,7 +555,7 @@ Notes:
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
-| 7. Ordering                                   | 1/5            | In Progress   |            |
+| 7. Ordering                                   | 2/5            | In Progress   |            |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
