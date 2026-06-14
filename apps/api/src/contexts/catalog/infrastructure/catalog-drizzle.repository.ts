@@ -674,7 +674,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }): Promise<{ removed: boolean; itemSlug: string | null }> {
     return this.db.withTenant(async (tx, scoped) => {
       const itemRow = (
-        await scoped.selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId)).limit(1)
+        await scoped
+          .selectFrom(
+            schema.menuItems,
+            and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
+          )
+          .limit(1)
       )[0];
       const itemSlug = itemRow?.slug ?? null;
 

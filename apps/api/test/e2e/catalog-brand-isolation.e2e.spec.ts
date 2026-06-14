@@ -18,6 +18,7 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
   let stack: RealStack;
   let ownerCookie: string;
   let tenantId: string;
+  let tenantSlug: string;
   let brandASlug: string;
   let brandBSlug: string;
 
@@ -77,6 +78,7 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
     process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
     stack = await startRealStack();
     const slug = `cafe-${randomUUID().slice(0, 8)}`;
+    tenantSlug = slug;
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     const password = 'Sup3r-Secret-Pw!';
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
@@ -107,16 +109,29 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
 
   it('operator on brand B cannot overwrite a brand-A item by id (404)', async () => {
     const catA = await createCategory(brandASlug, `cat-${randomUUID().slice(0, 6)}`);
-    const a = await createItem(brandASlug, makeItem(catA, `burger-${randomUUID().slice(0, 6)}`));
+    const originalSlug = `burger-${randomUUID().slice(0, 6)}`;
+    const a = await createItem(brandASlug, makeItem(catA, originalSlug));
     expect(a.status).toBe(200);
     const catB = await createCategory(brandBSlug, `cat-${randomUUID().slice(0, 6)}`);
+    const renamedSlug = `renamed-${randomUUID().slice(0, 6)}`;
     const hijack = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/items',
       headers: hdr(brandBSlug),
-      payload: { ...makeItem(catB, `renamed-${randomUUID().slice(0, 6)}`), id: a.id },
+      payload: { ...makeItem(catB, renamedSlug), id: a.id },
     });
     expect(hijack.statusCode).toBe(404);
+
+    const survivor = await stack.app.inject({
+      method: 'GET',
+      url: `/internal/v1/catalog/items/${a.id}`,
+      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': tenantSlug },
+    });
+    expect(survivor.statusCode).toBe(200);
+    const survivorBody = survivor.json<{ id: string; slug: string }>();
+    expect(survivorBody.id).toBe(a.id);
+    expect(survivorBody.slug).toBe(originalSlug);
+    expect(survivorBody.slug).not.toBe(renamedSlug);
   });
 
   it("cannot create an item under another brand's category (404)", async () => {

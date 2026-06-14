@@ -10,6 +10,8 @@ UPDATE "menu_modifier_options" mo SET "brand_id" = (SELECT b."id" FROM "brands" 
 --> statement-breakpoint
 UPDATE "menu_item_modifier_groups" mig SET "brand_id" = (SELECT b."id" FROM "brands" b WHERE b."tenant_id" = mig."tenant_id" ORDER BY b."created_at" LIMIT 1) WHERE mig."brand_id" IS NULL;
 --> statement-breakpoint
+UPDATE "menu_stop_list" msl SET "brand_id" = (SELECT b."id" FROM "brands" b WHERE b."tenant_id" = msl."tenant_id" ORDER BY b."created_at" LIMIT 1) WHERE msl."brand_id" IS NULL;
+--> statement-breakpoint
 ALTER TABLE "menu_categories" ALTER COLUMN "brand_id" SET NOT NULL;
 --> statement-breakpoint
 ALTER TABLE "menu_items" ALTER COLUMN "brand_id" SET NOT NULL;
