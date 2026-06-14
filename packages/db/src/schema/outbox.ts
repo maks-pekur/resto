@@ -55,6 +55,13 @@ export const outboxEvents = pgTable(
      * (the prior dispatcher likely crashed mid-publish).
      */
     claimedAt: timestamp('claimed_at', { withTimezone: true, mode: 'date' }),
+    /**
+     * Per-claim epoch, set together with `claimed_at` on every claim; a
+     * reclaim after the visibility timeout mints a fresh value. Release
+     * and mark-delivered scope by it so a stale dispatcher's late call
+     * cannot clear a reclaimer's active claim (lost-update fence).
+     */
+    claimId: uuid('claim_id'),
     /** Set after successful publish. NULL → not yet delivered. */
     deliveredAt: timestamp('delivered_at', { withTimezone: true, mode: 'date' }),
   },
