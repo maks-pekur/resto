@@ -330,7 +330,7 @@ Plans:
 
 **Wave 3** _(after 07-02 + 07-03)_
 
-- [ ] 07-04-PLAN.md — Application + infra: CreateOrderInput DTO + repository (idempotent outbox) + create/get-order services (ORD-03/04/10/12, PROMO-06 wiring)
+- [x] 07-04-PLAN.md — Application + infra: CreateOrderInput DTO + repository (idempotent outbox) + create/get-order services (ORD-03/04/10/12, PROMO-06 wiring)
 
 **Wave 4** _(after 07-04)_
 
@@ -555,7 +555,7 @@ Notes:
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
-| 7. Ordering                                   | 3/5            | In Progress   |            |
+| 7. Ordering                                   | 4/5            | In Progress   |            |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |

@@ -123,14 +123,14 @@
 
 - [x] **ORD-01**: New bounded context `ordering` created at `apps/api/src/contexts/ordering/` with 4-layer DDD structure
 - [x] **ORD-02**: `Order` aggregate with state machine: `created → paid → accepted → preparing → ready → completed` (plus branches: `canceled`, `refunded`, `failed`)
-- [ ] **ORD-03**: Cart is anonymous (no auth required); converts to `Order` on checkout
+- [x] **ORD-03**: Cart is anonymous (no auth required); converts to `Order` on checkout
 - [x] **ORD-04**: Order persists immutable snapshot of items / modifiers / prices at creation time
 - [x] **ORD-05**: Order totals: `subtotal + modifiers + delivery + service_fee − discount = total`; calculation in domain layer with rounding rules
 - [x] **ORD-06**: New DB tables (`orders`, `order_items`, `order_modifiers`, `payments`) with `tenant_id` + composite FK
 - [x] **ORD-07**: Event contracts: `ordering.order_created.v1`, `ordering.order_paid.v1`, `ordering.order_canceled.v1`, `ordering.order_refunded.v1`, `ordering.order_status_changed.v1`
 - [x] **ORD-08**: NATS subject `ordering.>` added to `STREAM_SUBJECTS` in `nats.module.ts`
 - [ ] **ORD-09**: Order events subscribed by `audit` context (existing pattern)
-- [ ] **ORD-10**: Idempotent order creation (client-provided idempotency key)
+- [x] **ORD-10**: Idempotent order creation (client-provided idempotency key)
 - [x] **ORD-11**: `outbox_events` table gets `claim_token UUID` column; `releaseOutboxClaim` and `markOutboxDelivered` scope to claim token to prevent multi-replica double-delivery race
 - [x] **ORD-12**: `orders` table includes `scheduled_for TIMESTAMPTZ NULL` column with operating-hours validation; supports SITE-07 scheduled order time
 
@@ -448,14 +448,14 @@
 | SITE-10     | Phase 6       | Pending  |
 | ORD-01      | Phase 7       | Complete |
 | ORD-02      | Phase 7       | Complete |
-| ORD-03      | Phase 7       | Pending  |
+| ORD-03      | Phase 7       | Complete |
 | ORD-04      | Phase 7       | Complete |
 | ORD-05      | Phase 7       | Complete |
 | ORD-06      | Phase 7       | Complete |
 | ORD-07      | Phase 7       | Complete |
 | ORD-08      | Phase 7       | Complete |
 | ORD-09      | Phase 7       | Pending  |
-| ORD-10      | Phase 7       | Pending  |
+| ORD-10      | Phase 7       | Complete |
 | ORD-11      | Phase 7       | Complete |
 | ORD-12      | Phase 7       | Complete |
 | PROMO-06    | Phase 7       | Complete |
