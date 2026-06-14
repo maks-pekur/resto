@@ -1,10 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
-import { user as userTable, member as memberTable } from '@resto/db/schema';
-import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from '../identity.tokens';
+import { AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
 import { TENANT_LOOKUP_PORT, type TenantLookupPort } from './ports/tenant-lookup.port';
 import {
   BetterAuthBootstrapFailureError,
@@ -39,12 +37,9 @@ const EmailSchema = z.string().trim().toLowerCase().email();
  *   - `auth.api.signUpEmail` — creates the user and credential.
  *   - `auth.api.addMember` — SERVER_ONLY; attaches the user with role=owner.
  *
- * Probes that use direct Drizzle queries (via AUTH_DRIZZLE_TOKEN, BYPASSRLS):
- *   - Existing-owner probe: queries `member` JOIN `user` — avoids BA's
- *     `listMembers` endpoint which requires an active session and cannot be
- *     called from an unauthenticated server context.
- *   - Existing-user probe: queries `user` by email — BA admin plugin not
- *     loaded, so no dedicated server-side API for getUserByEmail.
+ * Idempotency probes go through `BaUserReader`, which avoids BA's
+ * `listMembers` endpoint (requires an active session, unusable from an
+ * unauthenticated server context) and the absent server-side getUserByEmail.
  *
  * BA's `organization` is physically aliased onto our `tenants` table (see
  * `packages/db/src/schema/auth.ts` + ADR-0013). The tenant row is created
@@ -56,7 +51,7 @@ const EmailSchema = z.string().trim().toLowerCase().email();
  *
  * The service must NOT touch infrastructure directly: it talks to BA via
  * the AUTH_TOKEN provider, to tenancy via TenantLookupPort, and to the BA
- * Drizzle pool via AUTH_DRIZZLE_TOKEN.
+ * user store via BaUserReader.
  */
 @Injectable()
 export class BootstrapOwnerService {
@@ -65,7 +60,7 @@ export class BootstrapOwnerService {
   constructor(
     @Inject(TENANT_LOOKUP_PORT) private readonly tenants: TenantLookupPort,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
-    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
+    @Inject(BA_USER_READER) private readonly users: BaUserReader,
   ) {}
 
   async execute(input: BootstrapOwnerInput): Promise<BootstrapOwnerResult> {
@@ -78,8 +73,7 @@ export class BootstrapOwnerService {
       tenantId: tenant.id,
     });
 
-    // Idempotency probe #1: does this org already have an owner?
-    const existingOwner = await this.findExistingOwner(tenant.id);
+    const existingOwner = await this.users.findOwnerByOrganization(tenant.id);
     if (existingOwner) {
       if (existingOwner.email.toLowerCase() === email) {
         this.logger.log({
@@ -102,9 +96,7 @@ export class BootstrapOwnerService {
       throw new OwnerAlreadyExistsError(tenant.id, existingOwner.email);
     }
 
-    // Idempotency probe #2: does the BA user already exist (e.g. previous
-    // run created the user but failed before addMember)?
-    const existingUser = await this.findUserByEmail(email);
+    const existingUser = await this.users.findUserByEmail(email);
     const userId = existingUser
       ? existingUser.id
       : await this.signUpUser(email, input.password, input.name);
@@ -125,30 +117,6 @@ export class BootstrapOwnerService {
       email,
       requiresPasswordChange: true,
     };
-  }
-
-  private async findExistingOwner(
-    organizationId: string,
-  ): Promise<{ id: string; email: string } | null> {
-    // Direct Drizzle query via the BYPASSRLS auth client — avoids the BA
-    // organization.listMembers endpoint which requires an active session
-    // (session middleware rejects unauthenticated internal callers).
-    const rows = await this.authDb.db
-      .select({ id: userTable.id, email: userTable.email })
-      .from(memberTable)
-      .innerJoin(userTable, eq(memberTable.userId, userTable.id))
-      .where(and(eq(memberTable.organizationId, organizationId), eq(memberTable.role, 'owner')))
-      .limit(1);
-    return rows[0] ?? null;
-  }
-
-  private async findUserByEmail(email: string): Promise<{ id: string; email: string } | null> {
-    const rows = await this.authDb.db
-      .select({ id: userTable.id, email: userTable.email })
-      .from(userTable)
-      .where(eq(userTable.email, email))
-      .limit(1);
-    return rows[0] ?? null;
   }
 
   private async signUpUser(email: string, password: string, name: string): Promise<string> {
@@ -194,11 +162,6 @@ export class BootstrapOwnerService {
  * we just need a typed handle to call them.
  *
  * Kept module-scoped so the service body stays clean of `as` casts.
- *
- * Note: listMembers is intentionally absent here — that endpoint requires
- * an active session (orgSessionMiddleware) and cannot be called from an
- * unauthenticated server context. The existing-owner probe uses a direct
- * Drizzle query via AUTH_DRIZZLE_TOKEN instead.
  */
 interface OrgPluginApi {
   addMember: (args: {
