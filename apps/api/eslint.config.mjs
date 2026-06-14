@@ -96,7 +96,7 @@ export default [
     // (future RES-235d); the catalog repo retains a single manual brands
     // projection query that carries an explicit `eq(brands.tenantId, ...)`.
     // record-audit.service.ts writes to the platform-wide auditLog table
-    // (no tenant_id column) inside withoutTenant.
+    // via the tx handed in by runDeduped.
     //
     // TEN-15: the FORBIDDEN_CORRELATION_ID_LITERALS selectors stay active
     // even in these overrides — the existing 5 sites in tenant-drizzle
@@ -121,7 +121,6 @@ export default [
     files: [
       'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
       'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
-      'src/contexts/audit/application/record-audit.service.ts',
       'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
       // AUTH-01 / Phase 3 / D-05 + D-17: Resend adapter pre-org-bind
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
