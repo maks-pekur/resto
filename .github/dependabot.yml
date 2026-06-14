@@ -3,58 +3,30 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 10
+      interval: monthly
+    open-pull-requests-limit: 3
+    # One grouped minor/patch PR per month. ALL major version bumps are ignored
+    # (deferred to the pre-launch Fastify 5 / NestJS 11 / better-auth 1.6
+    # migration — see .planning/notes/dependency-cve-deferral.md). Dependabot
+    # SECURITY updates are exempt from `ignore` and still flow when a real
+    # advisory lands.
     groups:
-      nx:
-        patterns:
-          - "nx"
-          - "@nx/*"
-      typescript-eslint:
-        patterns:
-          - "@typescript-eslint/*"
-          - "typescript-eslint"
-          - "eslint"
-          - "eslint-*"
-      types:
-        patterns:
-          - "@types/*"
       minor-and-patch:
+        patterns:
+          - "*"
         update-types:
           - "minor"
           - "patch"
-    # Framework majors are deferred to the pre-launch Fastify 5 / NestJS 11 /
-    # better-auth 1.6 migration (see .planning/notes/dependency-cve-deferral.md).
-    # Minor/patch updates — including security backports — still flow through.
     ignore:
-      - dependency-name: "fastify"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@fastify/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@nestjs/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "better-auth"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vite"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@vitejs/*"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "testcontainers"
-        update-types: ["version-update:semver-major"]
-      - dependency-name: "@testcontainers/*"
+      - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
 
   - package-ecosystem: docker
     directory: /infra/docker
     schedule:
-      interval: weekly
-      day: monday
+      interval: monthly
