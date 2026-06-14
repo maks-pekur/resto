@@ -99,7 +99,12 @@ export const claimOutboxBatch = async (
     .where(inArray(schema.outboxEvents.id, candidates))
     .returning();
 
-  return claimed.map((row) => ({ envelope: reconstructEnvelope(row) }));
+  return [...claimed]
+    .sort(
+      (a, b) =>
+        a.occurredAt.getTime() - b.occurredAt.getTime() || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0),
+    )
+    .map((row) => ({ envelope: reconstructEnvelope(row) }));
 };
 
 /**

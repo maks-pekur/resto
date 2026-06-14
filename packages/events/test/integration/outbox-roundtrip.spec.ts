@@ -5,6 +5,7 @@ import { schema } from '@resto/db';
 import { eq } from 'drizzle-orm';
 import {
   appendToOutbox,
+  claimOutboxBatch,
   OutboxDispatcher,
   TenantProvisionedV1,
   runDeduped,
@@ -140,6 +141,35 @@ suite('Outbox → NATS roundtrip', () => {
       tx.select().from(schema.outboxEvents),
     );
     expect(afterRows.length).toBe(beforeCount);
+  }, 60_000);
+
+  it('claims a batch in occurred_at order regardless of insertion/RETURNING order', async () => {
+    const idEarly = randomUUID();
+    const idMid = randomUUID();
+    const idLate = randomUUID();
+    const mk = (id: string, iso: string): TypedEnvelope<TenantProvisionedV1Payload> => ({
+      ...buildEnvelope(id, {
+        tenantId: TENANT_UUID as TenantProvisionedV1Payload['tenantId'],
+        slug: `cafe-${id.slice(0, 8)}`,
+        displayName: 'Ordered',
+        defaultCurrency: 'USD' as TenantProvisionedV1Payload['defaultCurrency'],
+      }),
+      occurredAt: new Date(iso),
+    });
+
+    await env.db.withoutTenant('append in descending occurred_at order', async (tx) => {
+      await appendToOutbox(tx, { envelope: mk(idLate, '2026-05-02T00:00:03.000Z') });
+      await appendToOutbox(tx, { envelope: mk(idMid, '2026-05-02T00:00:02.000Z') });
+      await appendToOutbox(tx, { envelope: mk(idEarly, '2026-05-02T00:00:01.000Z') });
+    });
+
+    const claimed = await env.db.withoutTenant('claim ordered batch', (tx) =>
+      claimOutboxBatch(tx, { batchSize: 50 }),
+    );
+
+    const ours = new Set<string>([idEarly, idMid, idLate]);
+    const orderedIds = claimed.map((c) => c.envelope.id).filter((id) => ours.has(id));
+    expect(orderedIds).toEqual([idEarly, idMid, idLate]);
   }, 60_000);
 });
 
