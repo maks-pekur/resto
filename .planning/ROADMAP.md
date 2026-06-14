@@ -316,7 +316,25 @@ Plans:
 3. Cart-to-order conversion is anonymous (no auth required); order records an immutable snapshot of items, modifiers, and prices at creation time
 4. Order total calculation (`subtotal + modifiers + delivery + service_fee − discount = total`) lives entirely in the domain layer with correct rounding; idempotent order creation rejects duplicate client keys; pure discount engine (no DB calls at calculation time) is available for Phase 8 checkout
 5. `ordering.>` events (`order_created`, `order_paid`, `order_canceled`, `order_refunded`, `order_status_changed`) are consumed by the `audit` context and produce audit rows; `outbox_events` table has `claim_token UUID` column and `releaseOutboxClaim`/`markOutboxDelivered` are scoped to the claiming replica's token
-   **Plans**: TBD
+   **Plans**: 5 plans
+
+Plans:
+**Wave 1** _(parallel — no file overlap)_
+
+- [ ] 07-01-PLAN.md — Pure domain foundation: OrderId/OrderItemId branded IDs + ordering money-utils + discount engine (PROMO-06, TDD)
+- [ ] 07-02-PLAN.md — Persistence + contracts: 4 Drizzle tables + migration 0049 + RLS + 5 ordering.* event contracts (ORD-06/07; ORD-08/11 verify-only)
+
+**Wave 2** _(after 07-01)_
+
+- [ ] 07-03-PLAN.md — Order aggregate: full state machine + immutable snapshot + totals + errors/ports (ORD-01/02/04/05, TDD)
+
+**Wave 3** _(after 07-02 + 07-03)_
+
+- [ ] 07-04-PLAN.md — Application + infra: CreateOrderInput DTO + repository (idempotent outbox) + create/get-order services (ORD-03/04/10/12, PROMO-06 wiring)
+
+**Wave 4** _(after 07-04)_
+
+- [ ] 07-05-PLAN.md — HTTP surface + audit loop: anonymous POST /v1/orders + OrderingModule + app.module + ordering.> audit wiring + isolation net (ORD-01/03/07/09)
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
@@ -537,7 +555,7 @@ Notes:
 | 4b. Catalog Admin UI                          | 9/9            | Complete      | 2026-06-01 |
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
-| 7. Ordering                                   | 0/?            | Not started   | -          |
+| 7. Ordering                                   | 0/5            | Planned       | -          |
 | 7.5. Production Deploy                        | 0/?            | Not started   | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
