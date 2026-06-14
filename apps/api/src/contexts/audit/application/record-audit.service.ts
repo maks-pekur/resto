@@ -25,6 +25,11 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   'catalog.menu_republished': 'menu',
   'catalog.item_stopped': 'menu_item',
   'catalog.item_unstopped': 'menu_item',
+  'ordering.order_created': 'order',
+  'ordering.order_paid': 'order',
+  'ordering.order_canceled': 'order',
+  'ordering.order_refunded': 'order',
+  'ordering.order_status_changed': 'order',
 };
 
 const targetKindFor = (action: string): string | null => {
@@ -78,6 +83,11 @@ export class RecordAuditService {
       if (targetType === 'user') {
         return typeof payload.userId === 'string' && payload.userId.length > 0
           ? payload.userId
+          : null;
+      }
+      if (targetType === 'order') {
+        return typeof payload.orderId === 'string' && payload.orderId.length > 0
+          ? payload.orderId
           : null;
       }
       return null;
