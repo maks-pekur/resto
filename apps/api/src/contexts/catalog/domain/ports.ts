@@ -42,9 +42,9 @@ export interface CatalogRepository {
   }): Promise<{ updated: number }>;
 
   getMenuFirstPublishedAt(tenantId: TenantId): Promise<Date | null>;
-  // tenantId is passed explicitly because the setTimeout callback escapes the ALS frame (ADR-0020 I-6).
-  finalizeMenuPublish(input: { tenantId: TenantId; version: number }): Promise<{
+  finalizeMenuPublish(input: { tenantId: TenantId }): Promise<{
     isFirstPublish: boolean;
+    version: number;
   }>;
   insertSlugAlias(input: { itemId: string; alias: string }): Promise<void>;
 }
@@ -53,10 +53,15 @@ export const CATALOG_REPOSITORY = Symbol('CATALOG_REPOSITORY');
 
 export interface MenuVersionPort {
   current(tenantId: TenantId): Promise<number>;
-  bump(tenantId: TenantId): Promise<number>;
 }
 
 export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
+
+export interface StopVersionPort {
+  currentStop(brandId: string): Promise<number>;
+}
+
+export const STOP_VERSION_PORT = Symbol('STOP_VERSION_PORT');
 
 // `invalidate` flushes the current-version cache entry without bumping the version (D-4a-10) for non-publish writes (e.g. stop-list toggle).
 export interface CatalogCachePort {

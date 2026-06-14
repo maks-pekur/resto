@@ -126,9 +126,6 @@ export default [
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
       // for the matching entry.
       'src/contexts/identity/infrastructure/email/resend.adapter.ts',
-      // CAT-10 / D-4a-07 / Phase 4a Plan 06: Redis nextval fallback for
-      // menu-version when Redis is unavailable. See withoutTenant.allowlist.ts.
-      'src/contexts/catalog/infrastructure/redis-catalog-cache.adapter.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
