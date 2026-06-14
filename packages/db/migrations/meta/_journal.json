@@ -323,6 +323,13 @@
       "when": 1779842100000,
       "tag": "0045_stop_list_brand_not_null",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1779842200000,
+      "tag": "0046_menu_brand_composite_fk",
+      "breakpoints": true
     }
   ]
 }

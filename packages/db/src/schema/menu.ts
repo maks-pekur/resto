@@ -24,6 +24,7 @@ import {
   timestampsColumns,
 } from './_columns';
 import { tenants } from './tenants';
+import { brands } from './brands';
 
 export const menuCategories = pgTable(
   'menu_categories',
@@ -50,6 +51,11 @@ export const menuCategories = pgTable(
       name: 'menu_categories_parent_fk',
       columns: [table.parentId, table.tenantId],
       foreignColumns: [table.id, table.tenantId],
+    }).onDelete('restrict'),
+    compositeTenantFk({
+      name: 'menu_categories_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('menu_categories_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
@@ -114,6 +120,11 @@ export const menuItems = pgTable(
       child: { id: table.categoryId, tenantId: table.tenantId },
       parent: { id: menuCategories.id, tenantId: menuCategories.tenantId },
     }).onDelete('restrict'),
+    compositeTenantFk({
+      name: 'menu_items_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     uniqueIndex('menu_items_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
     index('menu_items_tenant_category_status_idx').on(
       table.tenantId,
@@ -159,6 +170,11 @@ export const menuItemSizes = pgTable(
       child: { id: table.menuItemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_item_sizes_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     index('menu_item_sizes_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
     uniqueIndex('menu_item_sizes_one_default_per_item_uq')
       .on(table.menuItemId)
@@ -185,6 +201,11 @@ export const menuModifierGroups = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_modifier_groups_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     check(
       'menu_modifier_groups_selectable_range_chk',
       sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
@@ -220,6 +241,11 @@ export const menuModifierOptions = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_modifier_options_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     index('menu_modifier_options_tenant_group_idx').on(
       table.tenantId,
       table.modifierGroupId,
@@ -258,6 +284,11 @@ export const menuItemModifierGroups = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_item_modifier_groups_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     index('menu_item_modifier_groups_tenant_item_idx').on(table.tenantId, table.menuItemId),
   ],
 );
@@ -288,6 +319,11 @@ export const menuStopList = pgTable(
       child: { id: table.itemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_stop_list_brand_fk',
+      child: { id: table.brandId, tenantId: table.tenantId },
+      parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
     uniqueIndex('menu_stop_list_item_tenant_uq').on(table.tenantId, table.itemId),
     tenantParentUniqueIndex('menu_stop_list', { id: table.id, tenantId: table.tenantId }),
   ],
