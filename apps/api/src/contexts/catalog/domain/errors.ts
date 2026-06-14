@@ -30,6 +30,14 @@ export class MenuModifierGroupNotFoundError extends Error {
   }
 }
 
+export class MenuModifierOptionNotFoundError extends Error {
+  readonly kind = 'MenuModifierOptionNotFoundError' as const;
+  constructor(public readonly optionId: string) {
+    super(`Menu modifier option "${optionId}" was not found.`);
+    this.name = 'MenuModifierOptionNotFoundError';
+  }
+}
+
 export class MenuItemSizeNotFoundError extends Error {
   readonly kind = 'MenuItemSizeNotFoundError' as const;
   constructor(public readonly sizeId: string) {
@@ -87,6 +95,7 @@ export type CatalogDomainError =
   | MenuCategoryNotFoundError
   | CatalogPublishConflictError
   | MenuModifierGroupNotFoundError
+  | MenuModifierOptionNotFoundError
   | MenuItemSizeNotFoundError
   | StopListItemNotFoundError
   | MenuCategoryAlreadyArchivedError
