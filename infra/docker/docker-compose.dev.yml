@@ -20,21 +20,6 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
-    image: redis:7-alpine
-    container_name: resto-redis
-    restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "allkeys-lru"]
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   nats:
     image: nats:2.10-alpine
     container_name: resto-nats
@@ -101,6 +86,5 @@ services:
 
 volumes:
   postgres-data:
-  redis-data:
   nats-data:
   minio-data:

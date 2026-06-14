@@ -64,15 +64,6 @@ export interface StopVersionPort {
 
 export const STOP_VERSION_PORT = Symbol('STOP_VERSION_PORT');
 
-// `invalidate` flushes the current-version cache entry without bumping the version (D-4a-10) for non-publish writes (e.g. stop-list toggle).
-export interface CatalogCachePort {
-  get(tenantId: TenantId, version: number, brandId: string): Promise<PublishedMenu | null>;
-  set(menu: PublishedMenu, ttlSeconds: number, brandId: string): Promise<void>;
-  invalidate(tenantId: TenantId, version: number, brandId: string): Promise<void>;
-}
-
-export const CATALOG_CACHE_PORT = Symbol('CATALOG_CACHE_PORT');
-
 // Bucket is private — public read path must never leak the raw S3 key; this port turns a key into a short-lived presigned URL.
 export interface ImageUrlPort {
   presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
