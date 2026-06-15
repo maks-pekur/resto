@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   BrandContextRequiredError,
+  CatalogCodeConflictError,
   CatalogPublishConflictError,
   CategoryNestingDepthError,
   MenuCategoryAlreadyArchivedError,
@@ -30,7 +31,8 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof MenuCategoryAlreadyArchivedError ||
   err instanceof MenuItemAlreadyArchivedError ||
   err instanceof BrandContextRequiredError ||
-  err instanceof CategoryNestingDepthError;
+  err instanceof CategoryNestingDepthError ||
+  err instanceof CatalogCodeConflictError;
 
 const isMissingBrandContextError = (err: unknown): err is Error =>
   err instanceof Error && err.message.startsWith('No brand context bound.');
@@ -90,6 +92,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'CategoryNestingDepthError':
       return new BadRequestException({
         code: 'catalog.category_nesting_depth',
+        message: err.message,
+      });
+    case 'CatalogCodeConflictError':
+      return new ConflictException({
+        code: 'catalog.code_conflict',
         message: err.message,
       });
     default: {
