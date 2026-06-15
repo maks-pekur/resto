@@ -44,6 +44,9 @@ const PublishedMenuItemSchema = z.object({
   description: LocalizedTextSchema.nullable(),
   basePrice: z.string(),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  code: z.string().nullable(),
+  weight: z.string().nullable(),
+  measureUnit: z.enum(['g', 'kg', 'ml', 'l', 'pcs']).nullable(),
   imageUrl: z.string().url().nullable(),
   photos: z.array(PublishedMenuItemPhotoSchema),
   allergens: z.array(z.string()),
@@ -63,6 +66,7 @@ const PublishedMenuCategorySchema = z.object({
   name: LocalizedTextSchema,
   description: LocalizedTextSchema.nullable(),
   sortOrder: z.number().int().nonnegative(),
+  code: z.string().nullable(),
 });
 
 const PublishedMenuModifierOptionSchema = z.object({
@@ -72,6 +76,8 @@ const PublishedMenuModifierOptionSchema = z.object({
   defaultAmount: z.number().int().nonnegative(),
   freeAmount: z.number().int().nonnegative(),
   sortOrder: z.number().int().nonnegative(),
+  minAmount: z.number().int().nonnegative().nullable(),
+  maxAmount: z.number().int().nonnegative().nullable(),
 });
 
 const PublishedMenuModifierGroupSchema = z.object({

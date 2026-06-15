@@ -87,6 +87,7 @@ export interface UpsertCategoryRow {
   readonly name: Record<string, string>;
   readonly description: Record<string, string> | null;
   readonly sortOrder: number;
+  readonly code: string | null;
 }
 
 export interface UpsertItemRow {
@@ -114,6 +115,9 @@ export interface UpsertItemRow {
   readonly sourceExternalId: string | null;
   readonly status: 'draft' | 'published' | 'archived';
   readonly sortOrder: number;
+  readonly code: string | null;
+  readonly weight: number | null;
+  readonly measureUnit: 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null;
 }
 
 export interface UpsertModifierGroupRow {
@@ -136,6 +140,8 @@ export interface UpsertModifierOptionRow {
   readonly defaultAmount: number;
   readonly freeAmount: number;
   readonly sortOrder: number;
+  readonly minAmount: number | null;
+  readonly maxAmount: number | null;
 }
 
 export interface UpsertItemSizeRow {

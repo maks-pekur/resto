@@ -28,6 +28,7 @@ const baseInput = {
   name: LocalizedText.parse({ en: 'Starters' }),
   description: null,
   sortOrder: 0,
+  code: null,
 };
 
 describe('UpsertCategoryService', () => {
@@ -49,6 +50,7 @@ describe('UpsertCategoryService', () => {
       name: { en: 'Starters' },
       description: null,
       sortOrder: 0,
+      code: null,
     });
   });
 

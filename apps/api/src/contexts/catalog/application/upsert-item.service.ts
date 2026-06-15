@@ -59,6 +59,9 @@ export class UpsertItemService {
       sourceExternalId: input.sourceExternalId,
       status: input.status,
       sortOrder: input.sortOrder,
+      code: input.code,
+      weight: input.weight,
+      measureUnit: input.measureUnit,
     });
     return { id: result.id };
   }

@@ -163,6 +163,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             description: r.description ?? null,
             basePrice: MoneyAmount.parse(r.basePrice),
             currency: Currency.parse(r.currency),
+            code: r.code ?? null,
+            weight: r.weight ?? null,
+            measureUnit: (r.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
             imageUrl: photos[0]?.url ?? null,
             photos,
             allergens: r.allergens ?? [],
@@ -192,6 +195,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         name: r.name,
         description: r.description ?? null,
         sortOrder: r.sortOrder,
+        code: r.code ?? null,
       }));
 
       const modifierGroups = modifierGroupsRows.map<PublishedMenuModifierGroup>((r) => ({
@@ -207,6 +211,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           defaultAmount: o.defaultAmount,
           freeAmount: o.freeAmount,
           sortOrder: o.sortOrder,
+          minAmount: o.minAmount ?? null,
+          maxAmount: o.maxAmount ?? null,
         })),
       }));
 
@@ -270,6 +276,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: row.description ?? null,
         basePrice: MoneyAmount.parse(row.basePrice),
         currency: Currency.parse(row.currency),
+        code: row.code ?? null,
+        weight: row.weight ?? null,
+        measureUnit: (row.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
         imageUrl: photos[0]?.url ?? null,
         photos,
         allergens: row.allergens ?? [],
@@ -302,6 +311,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           name: input.name,
           description: input.description,
           sortOrder: input.sortOrder,
+          code: input.code,
         })
         .onConflictDoUpdate({
           target: [
@@ -314,6 +324,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             name: input.name,
             description: input.description,
             sortOrder: input.sortOrder,
+            code: input.code,
             updatedAt: new Date(),
           },
         })
@@ -383,6 +394,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sourceExternalId: input.sourceExternalId,
               status: input.status,
               sortOrder: input.sortOrder,
+              code: input.code,
+              weight: input.weight === null ? null : input.weight.toString(),
+              measureUnit: input.measureUnit,
             })
             .returning({ id: schema.menuItems.id });
           if (!row) throw new Error('upsertItem: insert returned no row');
@@ -413,6 +427,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 sourceExternalId: input.sourceExternalId,
                 status: input.status,
                 sortOrder: input.sortOrder,
+                code: input.code,
+                weight: input.weight === null ? null : input.weight.toString(),
+                measureUnit: input.measureUnit,
                 updatedAt: new Date(),
               },
               and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
@@ -446,6 +463,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             sourceExternalId: input.sourceExternalId,
             status: input.status,
             sortOrder: input.sortOrder,
+            code: input.code,
+            weight: input.weight === null ? null : input.weight.toString(),
+            measureUnit: input.measureUnit,
           })
           .onConflictDoUpdate({
             target: [schema.menuItems.tenantId, schema.menuItems.brandId, schema.menuItems.slug],
@@ -470,6 +490,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sourceExternalId: input.sourceExternalId,
               status: input.status,
               sortOrder: input.sortOrder,
+              code: input.code,
+              weight: input.weight === null ? null : input.weight.toString(),
+              measureUnit: input.measureUnit,
               updatedAt: new Date(),
             },
           })
@@ -554,6 +577,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               defaultAmount: input.defaultAmount,
               freeAmount: input.freeAmount,
               sortOrder: input.sortOrder,
+              minAmount: input.minAmount,
+              maxAmount: input.maxAmount,
               updatedAt: new Date(),
             },
             and(
@@ -574,6 +599,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           defaultAmount: input.defaultAmount,
           freeAmount: input.freeAmount,
           sortOrder: input.sortOrder,
+          minAmount: input.minAmount,
+          maxAmount: input.maxAmount,
         })
         .returning({ id: schema.menuModifierOptions.id });
       if (!row) throw new Error('upsertModifierOption: insert returned no row');
