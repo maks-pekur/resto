@@ -39,6 +39,7 @@ export const menuCategories = pgTable(
     description: jsonb('description').$type<LocalizedText>(),
     sortOrder: integer('sort_order').notNull().default(0),
     status: text('status').notNull().default('draft'),
+    code: text('code'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -59,6 +60,9 @@ export const menuCategories = pgTable(
       parent: { id: brands.id, tenantId: brands.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('menu_categories_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
+    uniqueIndex('menu_categories_brand_code_uq')
+      .on(table.tenantId, table.brandId, table.code)
+      .where(sql`${table.code} IS NOT NULL`),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
     check('menu_categories_status_chk', sql`${table.status} IN ('draft', 'published', 'archived')`),
@@ -108,6 +112,9 @@ export const menuItems = pgTable(
     sourceExternalId: text('source_external_id'),
     status: text('status').notNull().default('draft'),
     sortOrder: integer('sort_order').notNull().default(0),
+    code: text('code'),
+    weight: numeric('weight', { precision: 10, scale: 3 }),
+    measureUnit: text('measure_unit'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -127,6 +134,9 @@ export const menuItems = pgTable(
       parent: { id: brands.id, tenantId: brands.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('menu_items_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
+    uniqueIndex('menu_items_brand_code_uq')
+      .on(table.tenantId, table.brandId, table.code)
+      .where(sql`${table.code} IS NOT NULL`),
     index('menu_items_tenant_category_status_idx').on(
       table.tenantId,
       table.categoryId,
@@ -140,6 +150,11 @@ export const menuItems = pgTable(
     check(
       'menu_items_source_chk',
       sql`${table.source} IN ('manual', 'ai_generated', 'imported_iiko', 'imported_csv')`,
+    ),
+    check('menu_items_weight_nonneg_chk', sql`${table.weight} IS NULL OR ${table.weight} >= 0`),
+    check(
+      'menu_items_measure_unit_chk',
+      sql`${table.measureUnit} IS NULL OR ${table.measureUnit} IN ('g','kg','ml','l','pcs')`,
     ),
     tenantParentUniqueIndex('menu_items', { id: table.id, tenantId: table.tenantId }),
   ],
@@ -229,6 +244,8 @@ export const menuModifierOptions = pgTable(
     defaultAmount: smallint('default_amount').notNull().default(0),
     freeAmount: smallint('free_amount').notNull().default(0),
     sortOrder: integer('sort_order').notNull().default(0),
+    minAmount: smallint('min_amount'),
+    maxAmount: smallint('max_amount'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -251,6 +268,14 @@ export const menuModifierOptions = pgTable(
       table.tenantId,
       table.modifierGroupId,
       table.sortOrder,
+    ),
+    check(
+      'menu_modifier_options_amount_nonneg_chk',
+      sql`${table.minAmount} IS NULL OR ${table.minAmount} >= 0`,
+    ),
+    check(
+      'menu_modifier_options_amount_order_chk',
+      sql`${table.minAmount} IS NULL OR ${table.maxAmount} IS NULL OR ${table.maxAmount} >= ${table.minAmount}`,
     ),
     tenantParentUniqueIndex('menu_modifier_options', { id: table.id, tenantId: table.tenantId }),
   ],

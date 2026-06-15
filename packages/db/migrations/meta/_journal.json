@@ -351,6 +351,13 @@
       "when": 1781471200000,
       "tag": "0049_ordering_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1781517561000,
+      "tag": "0050_catalog_syrve_fields",
+      "breakpoints": true
     }
   ]
 }
