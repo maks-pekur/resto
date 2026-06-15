@@ -1264,12 +1264,16 @@ components:
                 type: integer
                 minimum: 0
                 exclusiveMinimum: false
+              code:
+                type: string
+                nullable: true
             required:
               - id
               - slug
               - name
               - description
               - sortOrder
+              - code
         items:
           type: array
           items:
@@ -1297,6 +1301,21 @@ components:
               currency:
                 type: string
                 pattern: ^[A-Z]{3}$
+              code:
+                type: string
+                nullable: true
+              weight:
+                type: string
+                nullable: true
+              measureUnit:
+                type: string
+                enum:
+                  - g
+                  - kg
+                  - ml
+                  - l
+                  - pcs
+                nullable: true
               imageUrl:
                 type: string
                 format: uri
@@ -1392,6 +1411,9 @@ components:
               - description
               - basePrice
               - currency
+              - code
+              - weight
+              - measureUnit
               - imageUrl
               - photos
               - allergens
@@ -1450,6 +1472,16 @@ components:
                       type: integer
                       minimum: 0
                       exclusiveMinimum: false
+                    minAmount:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                      nullable: true
+                    maxAmount:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                      nullable: true
                   required:
                     - id
                     - name
@@ -1457,6 +1489,8 @@ components:
                     - defaultAmount
                     - freeAmount
                     - sortOrder
+                    - minAmount
+                    - maxAmount
             required:
               - id
               - name
@@ -1497,6 +1531,21 @@ components:
         currency:
           type: string
           pattern: ^[A-Z]{3}$
+        code:
+          type: string
+          nullable: true
+        weight:
+          type: string
+          nullable: true
+        measureUnit:
+          type: string
+          enum:
+            - g
+            - kg
+            - ml
+            - l
+            - pcs
+          nullable: true
         imageUrl:
           type: string
           format: uri
@@ -1592,6 +1641,9 @@ components:
         - description
         - basePrice
         - currency
+        - code
+        - weight
+        - measureUnit
         - imageUrl
         - photos
         - allergens
@@ -2143,6 +2195,12 @@ components:
           minimum: 0
           exclusiveMinimum: false
           default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          nullable: true
+          default: null
       required:
         - name
         - description
@@ -2344,6 +2402,28 @@ components:
           minimum: 0
           exclusiveMinimum: false
           default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          nullable: true
+          default: null
+        weight:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
+        measureUnit:
+          type: string
+          enum:
+            - g
+            - kg
+            - ml
+            - l
+            - pcs
+          nullable: true
+          default: null
       required:
         - categoryId
         - name
@@ -2408,6 +2488,18 @@ components:
           minimum: 0
           exclusiveMinimum: false
           default: 0
+        minAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
+        maxAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
       required:
         - modifierGroupId
         - name
