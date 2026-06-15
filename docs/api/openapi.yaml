@@ -876,6 +876,25 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog
+  /v1/orders:
+    post:
+      operationId: OrdersController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderInputDto"
+      responses:
+        "201":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderResponseDto"
+      tags:
+        - ordering
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.
@@ -2485,3 +2504,239 @@ components:
           type: boolean
       required:
         - cancelled
+    CreateOrderInputDto:
+      type: object
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              itemId:
+                type: string
+                format: uuid
+              sizeId:
+                type: string
+                format: uuid
+                nullable: true
+              name:
+                type: string
+                minLength: 1
+                maxLength: 200
+              unitPrice:
+                type: string
+                pattern: ^\d+(\.\d{1,2})?$
+              currency:
+                type: string
+                pattern: ^[A-Z]{3}$
+              modifiers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    optionId:
+                      type: string
+                      format: uuid
+                    name:
+                      type: string
+                      minLength: 1
+                      maxLength: 200
+                    priceDelta:
+                      type: string
+                      pattern: ^-?\d+(\.\d{1,2})?$
+                    modifierGroupId:
+                      type: string
+                      format: uuid
+                    amount:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: true
+                  required:
+                    - optionId
+                    - name
+                    - priceDelta
+              quantity:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+            required:
+              - itemId
+              - sizeId
+              - name
+              - unitPrice
+              - currency
+              - modifiers
+              - quantity
+        fulfillmentMode:
+          type: string
+          enum:
+            - dine_in
+            - pickup
+            - delivery
+        table:
+          type: string
+          maxLength: 20
+        customerName:
+          type: string
+          maxLength: 200
+        customerPhone:
+          type: string
+          maxLength: 30
+        idempotencyKey:
+          type: string
+          format: uuid
+        scheduledFor:
+          type: string
+          format: date-time
+        discountSpec:
+          oneOf:
+            - oneOf:
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - percentage
+                    scope:
+                      type: string
+                      enum:
+                        - cart
+                    pct:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - pct
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - percentage
+                    scope:
+                      type: string
+                      enum:
+                        - category
+                    categoryId:
+                      type: string
+                    pct:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - categoryId
+                    - pct
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - percentage
+                    scope:
+                      type: string
+                      enum:
+                        - item
+                    itemId:
+                      type: string
+                    pct:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - itemId
+                    - pct
+            - oneOf:
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - fixed
+                    scope:
+                      type: string
+                      enum:
+                        - cart
+                    amountMinorUnits:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - amountMinorUnits
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - fixed
+                    scope:
+                      type: string
+                      enum:
+                        - category
+                    categoryId:
+                      type: string
+                    amountMinorUnits:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - categoryId
+                    - amountMinorUnits
+                - type: object
+                  properties:
+                    kind:
+                      type: string
+                      enum:
+                        - fixed
+                    scope:
+                      type: string
+                      enum:
+                        - item
+                    itemId:
+                      type: string
+                    amountMinorUnits:
+                      type: integer
+                      minimum: 0
+                      exclusiveMinimum: false
+                  required:
+                    - kind
+                    - scope
+                    - itemId
+                    - amountMinorUnits
+      required:
+        - items
+        - fulfillmentMode
+        - idempotencyKey
+    OrderResponseDto:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          minLength: 1
+          maxLength: 20
+        status:
+          type: string
+        total:
+          type: string
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+      required:
+        - orderId
+        - orderNumber
+        - status
+        - total
+        - currency

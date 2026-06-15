@@ -13,6 +13,8 @@ export {
   MenuItemId,
   MenuModifierId,
   MenuVariantId,
+  OrderId,
+  OrderItemId,
 } from './ids';
 
 export { Currency, CurrencyValue, Money, MoneyAmount, MoneyAmountValue, PriceDelta } from './money';

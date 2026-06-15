@@ -583,6 +583,121 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(cause?.code).toBe('23502');
   });
 
+  describe('ORD-06: cross-tenant matrix for orders / order_items', () => {
+    let aOrderId: string;
+
+    beforeAll(async () => {
+      await pg.db.withoutTenant('seed order for ORD-06 cross-tenant matrix', async (tx) => {
+        const [order] = await tx
+          .insert(schema.orders)
+          .values({
+            tenantId: tenantA,
+            brandId: brandA,
+            idempotencyKey: 'ord06-idem-key-a',
+            orderNumber: '20260614-ORD06',
+            status: 'created',
+            fulfillmentMode: 'pickup',
+            customerName: 'Iso Tester',
+            customerPhone: '+10000000000',
+            subtotal: '10.00',
+            deliveryFee: '0.00',
+            serviceFee: '0.00',
+            discount: '0.00',
+            total: '10.00',
+            currency: 'USD',
+          })
+          .returning({ id: schema.orders.id });
+        if (!order) throw new Error('ORD-06 seed: order insert failed.');
+        aOrderId = order.id;
+
+        await tx.insert(schema.orderItems).values({
+          tenantId: tenantA,
+          orderId: aOrderId,
+          menuItemId: '00000000-0000-0000-0000-000000000001',
+          nameSnapshot: 'Iso Item',
+          unitPrice: '10.00',
+          quantity: 1,
+          lineTotal: '10.00',
+          currency: 'USD',
+          sortOrder: 0,
+        });
+      });
+    }, 60_000);
+
+    it('orders: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.orders)
+            .where(sql`${schema.orders.id} = ${aOrderId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('orders: tenant B INSERT with tenant A brand_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.orders).values({
+            tenantId: tenantB,
+            brandId: brandA,
+            idempotencyKey: 'ord06-idem-cross',
+            orderNumber: '20260614-CROSS',
+            status: 'created',
+            fulfillmentMode: 'pickup',
+            customerName: 'Cross Tester',
+            customerPhone: '+10000000001',
+            subtotal: '5.00',
+            deliveryFee: '0.00',
+            serviceFee: '0.00',
+            discount: '0.00',
+            total: '5.00',
+            currency: 'USD',
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('order_items: tenant B sees zero of tenant A order_items rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.orderItems)
+            .where(sql`${schema.orderItems.orderId} = ${aOrderId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('order_items: tenant B INSERT with tenant A order_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.orderItems).values({
+            tenantId: tenantB,
+            orderId: aOrderId,
+            menuItemId: '00000000-0000-0000-0000-000000000002',
+            nameSnapshot: 'Cross Item',
+            unitPrice: '5.00',
+            quantity: 1,
+            lineTotal: '5.00',
+            currency: 'USD',
+            sortOrder: 0,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+  });
+
   describe('preflight (RES-243)', () => {
     it('assertTenantLockInstalled passes on a freshly-migrated DB', async () => {
       await expect(assertTenantLockInstalled(pg.url)).resolves.toBeUndefined();

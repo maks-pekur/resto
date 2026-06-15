@@ -91,3 +91,16 @@ export {
   MenuRepublishedV1,
   MenuRepublishedV1Payload,
 } from './contracts/catalog';
+
+export {
+  OrderCanceledV1,
+  OrderCanceledV1Payload,
+  OrderCreatedV1,
+  OrderCreatedV1Payload,
+  OrderPaidV1,
+  OrderPaidV1Payload,
+  OrderRefundedV1,
+  OrderRefundedV1Payload,
+  OrderStatusChangedV1,
+  OrderStatusChangedV1Payload,
+} from './contracts/ordering';
