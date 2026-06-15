@@ -30,7 +30,7 @@ Phase: 07 (ordering) — EXECUTING
 Plan: 5 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Phase complete — ready for verification
-Last activity: 2026-06-14
+Last activity: 2026-06-15 - Quick task 260615-gl7: catalog Syrve-field alignment
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -144,10 +144,11 @@ None yet.
 
 ### Quick Tasks Completed
 
-| #          | Description                                                               | Date       | Commit  | Directory                                                                               |
-| ---------- | ------------------------------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------- |
-| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                         | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/) |
-| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24) | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                           |
+| #          | Description                                                                             | Date       | Commit  | Directory                                                                               |
+| ---------- | --------------------------------------------------------------------------------------- | ---------- | ------- | --------------------------------------------------------------------------------------- |
+| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                       | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/) |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)               | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                           |
+| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max) | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)             |
 
 ## Deferred Items
 
