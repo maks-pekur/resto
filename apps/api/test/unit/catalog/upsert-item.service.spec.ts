@@ -45,6 +45,9 @@ const baseInput = {
   sourceExternalId: null,
   status: 'draft' as const,
   sortOrder: 0,
+  code: null,
+  weight: null,
+  measureUnit: null,
 };
 
 describe('UpsertItemService', () => {
@@ -81,6 +84,9 @@ describe('UpsertItemService', () => {
       sourceExternalId: null,
       status: 'draft',
       sortOrder: 0,
+      code: null,
+      weight: null,
+      measureUnit: null,
     });
   });
 

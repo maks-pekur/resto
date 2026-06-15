@@ -38,6 +38,7 @@ import {
   type UpsertModifierOptionRow,
 } from '../domain/ports';
 import {
+  CatalogCodeConflictError,
   CategoryNestingDepthError,
   MenuCategoryNotFoundError,
   MenuItemNotFoundError,
@@ -163,6 +164,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             description: r.description ?? null,
             basePrice: MoneyAmount.parse(r.basePrice),
             currency: Currency.parse(r.currency),
+            code: r.code ?? null,
+            weight: r.weight ?? null,
+            measureUnit: (r.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
             imageUrl: photos[0]?.url ?? null,
             photos,
             allergens: r.allergens ?? [],
@@ -192,6 +196,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         name: r.name,
         description: r.description ?? null,
         sortOrder: r.sortOrder,
+        code: r.code ?? null,
       }));
 
       const modifierGroups = modifierGroupsRows.map<PublishedMenuModifierGroup>((r) => ({
@@ -207,6 +212,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           defaultAmount: o.defaultAmount,
           freeAmount: o.freeAmount,
           sortOrder: o.sortOrder,
+          minAmount: o.minAmount ?? null,
+          maxAmount: o.maxAmount ?? null,
         })),
       }));
 
@@ -270,6 +277,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: row.description ?? null,
         basePrice: MoneyAmount.parse(row.basePrice),
         currency: Currency.parse(row.currency),
+        code: row.code ?? null,
+        weight: row.weight ?? null,
+        measureUnit: (row.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
         imageUrl: photos[0]?.url ?? null,
         photos,
         allergens: row.allergens ?? [],
@@ -293,74 +303,153 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const [row] = await scoped
-        .insertInto(schema.menuCategories, {
-          ...(input.id ? { id: input.id } : {}),
-          brandId: input.brandId,
-          parentId: input.parentId ?? null,
-          slug: input.slug,
-          name: input.name,
-          description: input.description,
-          sortOrder: input.sortOrder,
-        })
-        .onConflictDoUpdate({
-          target: [
-            schema.menuCategories.tenantId,
-            schema.menuCategories.brandId,
-            schema.menuCategories.slug,
-          ],
-          set: {
+      try {
+        const [row] = await scoped
+          .insertInto(schema.menuCategories, {
+            ...(input.id ? { id: input.id } : {}),
+            brandId: input.brandId,
             parentId: input.parentId ?? null,
+            slug: input.slug,
             name: input.name,
             description: input.description,
             sortOrder: input.sortOrder,
-            updatedAt: new Date(),
-          },
-        })
-        .returning({ id: schema.menuCategories.id });
-      if (!row) throw new Error('upsertCategory: insert returned no row');
-      return { id: row.id };
+            code: input.code,
+          })
+          .onConflictDoUpdate({
+            target: [
+              schema.menuCategories.tenantId,
+              schema.menuCategories.brandId,
+              schema.menuCategories.slug,
+            ],
+            set: {
+              parentId: input.parentId ?? null,
+              name: input.name,
+              description: input.description,
+              sortOrder: input.sortOrder,
+              code: input.code,
+              updatedAt: new Date(),
+            },
+          })
+          .returning({ id: schema.menuCategories.id });
+        if (!row) throw new Error('upsertCategory: insert returned no row');
+        return { id: row.id };
+      } catch (err) {
+        if (isCodeUniqueViolation(err, 'menu_categories_brand_code_uq')) {
+          throw new CatalogCodeConflictError('category', input.code ?? '');
+        }
+        throw err;
+      }
     });
   }
 
   async upsertItem(
     input: UpsertItemRow,
   ): Promise<{ id: string; slugChanged?: { oldSlug: string } }> {
-    return this.db.withTenant(async (_tx, scoped) => {
-      const parentCategory = await scoped
-        .selectFrom(
-          schema.menuCategories,
-          and(
-            eq(schema.menuCategories.id, input.categoryId),
-            eq(schema.menuCategories.brandId, input.brandId),
-          ),
-        )
-        .limit(1);
-      if (!parentCategory[0]) {
-        throw new MenuCategoryNotFoundError(input.categoryId);
-      }
-
-      const photos: MenuItemPhoto[] = [...input.photos];
-
-      // D-4a-04: id-based path and (tenant_id, slug)-based path are split so a
-      // slug rename does not trigger an id-PK conflict on the upsert.
-      let oldSlug: string | null = null;
-      let rowId: string;
-
-      if (input.id) {
-        const existing = await scoped
-          .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
+    try {
+      return await this.db.withTenant(async (_tx, scoped) => {
+        const parentCategory = await scoped
+          .selectFrom(
+            schema.menuCategories,
+            and(
+              eq(schema.menuCategories.id, input.categoryId),
+              eq(schema.menuCategories.brandId, input.brandId),
+            ),
+          )
           .limit(1);
-        const existingRow = existing[0];
-        if (existingRow && existingRow.brandId !== input.brandId) {
-          throw new MenuItemNotFoundError(input.id);
+        if (!parentCategory[0]) {
+          throw new MenuCategoryNotFoundError(input.categoryId);
         }
-        oldSlug = existingRow?.slug ?? null;
 
-        if (existing.length === 0) {
+        const photos: MenuItemPhoto[] = [...input.photos];
+
+        // D-4a-04: id-based path and (tenant_id, slug)-based path are split so a
+        // slug rename does not trigger an id-PK conflict on the upsert.
+        let oldSlug: string | null = null;
+        let rowId: string;
+
+        if (input.id) {
+          const existing = await scoped
+            .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
+            .limit(1);
+          const existingRow = existing[0];
+          if (existingRow && existingRow.brandId !== input.brandId) {
+            throw new MenuItemNotFoundError(input.id);
+          }
+          oldSlug = existingRow?.slug ?? null;
+
+          if (existing.length === 0) {
+            const [row] = await scoped
+              .insertInto(schema.menuItems, {
+                id: input.id,
+                brandId: input.brandId,
+                categoryId: input.categoryId,
+                slug: input.slug,
+                name: input.name,
+                description: input.description,
+                basePrice: input.basePrice,
+                currency: input.currency,
+                photos,
+                allergens: input.allergens ? [...input.allergens] : null,
+                ingredients: input.ingredients ? [...input.ingredients] : null,
+                metaTitle: input.metaTitle,
+                metaDescription: input.metaDescription,
+                proteins: input.proteins === null ? null : input.proteins.toString(),
+                fats: input.fats === null ? null : input.fats.toString(),
+                carbs: input.carbs === null ? null : input.carbs.toString(),
+                kcal: input.kcal,
+                nutritionEstimated: input.nutritionEstimated,
+                source: input.source,
+                needsReview: input.needsReview,
+                sourceExternalId: input.sourceExternalId,
+                status: input.status,
+                sortOrder: input.sortOrder,
+                code: input.code,
+                weight: input.weight === null ? null : input.weight.toString(),
+                measureUnit: input.measureUnit,
+              })
+              .returning({ id: schema.menuItems.id });
+            if (!row) throw new Error('upsertItem: insert returned no row');
+            rowId = row.id;
+          } else {
+            const [row] = await scoped
+              .updateTable(
+                schema.menuItems,
+                {
+                  categoryId: input.categoryId,
+                  slug: input.slug,
+                  name: input.name,
+                  description: input.description,
+                  basePrice: input.basePrice,
+                  currency: input.currency,
+                  photos,
+                  allergens: input.allergens ? [...input.allergens] : null,
+                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  metaTitle: input.metaTitle,
+                  metaDescription: input.metaDescription,
+                  proteins: input.proteins === null ? null : input.proteins.toString(),
+                  fats: input.fats === null ? null : input.fats.toString(),
+                  carbs: input.carbs === null ? null : input.carbs.toString(),
+                  kcal: input.kcal,
+                  nutritionEstimated: input.nutritionEstimated,
+                  source: input.source,
+                  needsReview: input.needsReview,
+                  sourceExternalId: input.sourceExternalId,
+                  status: input.status,
+                  sortOrder: input.sortOrder,
+                  code: input.code,
+                  weight: input.weight === null ? null : input.weight.toString(),
+                  measureUnit: input.measureUnit,
+                  updatedAt: new Date(),
+                },
+                and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
+              )
+              .returning({ id: schema.menuItems.id });
+            if (!row) throw new Error('upsertItem: update returned no row');
+            rowId = row.id;
+          }
+        } else {
           const [row] = await scoped
             .insertInto(schema.menuItems, {
-              id: input.id,
               brandId: input.brandId,
               categoryId: input.categoryId,
               slug: input.slug,
@@ -383,17 +472,14 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sourceExternalId: input.sourceExternalId,
               status: input.status,
               sortOrder: input.sortOrder,
+              code: input.code,
+              weight: input.weight === null ? null : input.weight.toString(),
+              measureUnit: input.measureUnit,
             })
-            .returning({ id: schema.menuItems.id });
-          if (!row) throw new Error('upsertItem: insert returned no row');
-          rowId = row.id;
-        } else {
-          const [row] = await scoped
-            .updateTable(
-              schema.menuItems,
-              {
+            .onConflictDoUpdate({
+              target: [schema.menuItems.tenantId, schema.menuItems.brandId, schema.menuItems.slug],
+              set: {
                 categoryId: input.categoryId,
-                slug: input.slug,
                 name: input.name,
                 description: input.description,
                 basePrice: input.basePrice,
@@ -413,83 +499,35 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 sourceExternalId: input.sourceExternalId,
                 status: input.status,
                 sortOrder: input.sortOrder,
+                code: input.code,
+                weight: input.weight === null ? null : input.weight.toString(),
+                measureUnit: input.measureUnit,
                 updatedAt: new Date(),
               },
-              and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
-            )
+            })
             .returning({ id: schema.menuItems.id });
-          if (!row) throw new Error('upsertItem: update returned no row');
+          if (!row) throw new Error('upsertItem: insert returned no row');
           rowId = row.id;
         }
-      } else {
-        const [row] = await scoped
-          .insertInto(schema.menuItems, {
-            brandId: input.brandId,
-            categoryId: input.categoryId,
-            slug: input.slug,
-            name: input.name,
-            description: input.description,
-            basePrice: input.basePrice,
-            currency: input.currency,
-            photos,
-            allergens: input.allergens ? [...input.allergens] : null,
-            ingredients: input.ingredients ? [...input.ingredients] : null,
-            metaTitle: input.metaTitle,
-            metaDescription: input.metaDescription,
-            proteins: input.proteins === null ? null : input.proteins.toString(),
-            fats: input.fats === null ? null : input.fats.toString(),
-            carbs: input.carbs === null ? null : input.carbs.toString(),
-            kcal: input.kcal,
-            nutritionEstimated: input.nutritionEstimated,
-            source: input.source,
-            needsReview: input.needsReview,
-            sourceExternalId: input.sourceExternalId,
-            status: input.status,
-            sortOrder: input.sortOrder,
-          })
-          .onConflictDoUpdate({
-            target: [schema.menuItems.tenantId, schema.menuItems.brandId, schema.menuItems.slug],
-            set: {
-              categoryId: input.categoryId,
-              name: input.name,
-              description: input.description,
-              basePrice: input.basePrice,
-              currency: input.currency,
-              photos,
-              allergens: input.allergens ? [...input.allergens] : null,
-              ingredients: input.ingredients ? [...input.ingredients] : null,
-              metaTitle: input.metaTitle,
-              metaDescription: input.metaDescription,
-              proteins: input.proteins === null ? null : input.proteins.toString(),
-              fats: input.fats === null ? null : input.fats.toString(),
-              carbs: input.carbs === null ? null : input.carbs.toString(),
-              kcal: input.kcal,
-              nutritionEstimated: input.nutritionEstimated,
-              source: input.source,
-              needsReview: input.needsReview,
-              sourceExternalId: input.sourceExternalId,
-              status: input.status,
-              sortOrder: input.sortOrder,
-              updatedAt: new Date(),
-            },
-          })
-          .returning({ id: schema.menuItems.id });
-        if (!row) throw new Error('upsertItem: insert returned no row');
-        rowId = row.id;
-      }
 
-      if (oldSlug !== null && oldSlug !== input.slug) {
-        // D-4a-04: slug change → alias the prior slug (idempotent on rename cycle).
-        await scoped
-          .insertInto(schema.menuItemSlugAliases, {
-            itemId: rowId,
-            alias: oldSlug,
-          })
-          .onConflictDoNothing();
-        return { id: rowId, slugChanged: { oldSlug } };
+        if (oldSlug !== null && oldSlug !== input.slug) {
+          // D-4a-04: slug change → alias the prior slug (idempotent on rename cycle).
+          await scoped
+            .insertInto(schema.menuItemSlugAliases, {
+              itemId: rowId,
+              alias: oldSlug,
+            })
+            .onConflictDoNothing();
+          return { id: rowId, slugChanged: { oldSlug } };
+        }
+        return { id: rowId };
+      });
+    } catch (err) {
+      if (isCodeUniqueViolation(err, 'menu_items_brand_code_uq')) {
+        throw new CatalogCodeConflictError('item', input.code ?? '');
       }
-      return { id: rowId };
-    });
+      throw err;
+    }
   }
 
   async upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }> {
@@ -554,6 +592,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               defaultAmount: input.defaultAmount,
               freeAmount: input.freeAmount,
               sortOrder: input.sortOrder,
+              minAmount: input.minAmount,
+              maxAmount: input.maxAmount,
               updatedAt: new Date(),
             },
             and(
@@ -574,6 +614,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           defaultAmount: input.defaultAmount,
           freeAmount: input.freeAmount,
           sortOrder: input.sortOrder,
+          minAmount: input.minAmount,
+          maxAmount: input.maxAmount,
         })
         .returning({ id: schema.menuModifierOptions.id });
       if (!row) throw new Error('upsertModifierOption: insert returned no row');
@@ -1203,6 +1245,26 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 }
+
+const isCodeUniqueViolation = (err: unknown, constraintName: string): boolean => {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (typeof cur === 'object' && cur !== null && !seen.has(cur)) {
+    seen.add(cur);
+    const e = cur as {
+      code?: string;
+      constraint_name?: string;
+      constraint?: string;
+      cause?: unknown;
+    };
+    if (e.code === '23505') {
+      const constraint = e.constraint_name ?? e.constraint;
+      if (constraint === constraintName) return true;
+    }
+    cur = e.cause;
+  }
+  return false;
+};
 
 const groupBy = <T, K>(items: readonly T[], keyOf: (item: T) => K): Map<K, T[]> => {
   const out = new Map<K, T[]>();

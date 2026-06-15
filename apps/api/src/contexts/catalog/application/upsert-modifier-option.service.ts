@@ -22,6 +22,8 @@ export class UpsertModifierOptionService {
       defaultAmount: input.defaultAmount,
       freeAmount: input.freeAmount,
       sortOrder: input.sortOrder,
+      minAmount: input.minAmount,
+      maxAmount: input.maxAmount,
     });
   }
 }

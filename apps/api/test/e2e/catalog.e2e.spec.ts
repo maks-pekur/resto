@@ -860,4 +860,211 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(await stopVersionOf(brandBSlug)).toBe(beforeB);
     expect(await menuVersion()).toBe(beforeMenu);
   }, 60_000);
+
+  it('Syrve fields (code/weight/measureUnit) round-trip on category + item upsert → /v1/menu', async () => {
+    const categoryRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: {
+        slug: 'syrve-cat',
+        name: { en: 'Syrve Cat' },
+        sortOrder: 0,
+        code: 'CAT-001',
+      },
+    });
+    expect(categoryRes.statusCode).toBe(200);
+    const categoryId = categoryRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'syrve-item',
+        name: { en: 'Syrve Item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'published',
+        code: 'ITEM-007',
+        weight: 0.35,
+        measureUnit: 'kg',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+
+    const publishRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/publish',
+      headers: cafeA.authed,
+    });
+    expect(publishRes.statusCode).toBe(200);
+
+    const menuRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+    });
+    expect(menuRes.statusCode).toBe(200);
+    const menu = menuRes.json<{
+      categories: { slug: string; code: string | null }[];
+      items: {
+        slug: string;
+        code: string | null;
+        weight: string | null;
+        measureUnit: string | null;
+      }[];
+    }>();
+
+    const cat = menu.categories.find((c) => c.slug === 'syrve-cat');
+    expect(cat?.code).toBe('CAT-001');
+
+    const item = menu.items.find((i) => i.slug === 'syrve-item');
+    expect(item?.code).toBe('ITEM-007');
+    expect(item?.weight).toBe('0.350');
+    expect(item?.measureUnit).toBe('kg');
+  }, 60_000);
+
+  it('Syrve minAmount/maxAmount round-trip on modifier option → /v1/menu', async () => {
+    const groupRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Shots' }, minSelectable: 0, maxSelectable: 5, isRequired: false },
+    });
+    expect(groupRes.statusCode).toBe(200);
+    const groupId = groupRes.json<{ id: string }>().id;
+
+    const optionRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        modifierGroupId: groupId,
+        name: { en: 'Espresso Shot' },
+        priceDelta: '0.50',
+        defaultAmount: 1,
+        freeAmount: 0,
+        sortOrder: 0,
+        minAmount: 1,
+        maxAmount: 3,
+      },
+    });
+    expect(optionRes.statusCode).toBe(200);
+
+    const menuRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+    });
+    expect(menuRes.statusCode).toBe(200);
+    const menu = menuRes.json<{
+      modifierGroups: {
+        id: string;
+        options: { minAmount: number | null; maxAmount: number | null }[];
+      }[];
+    }>();
+    const grp = menu.modifierGroups.find((g) => g.id === groupId);
+    expect(grp?.options[0]?.minAmount).toBe(1);
+    expect(grp?.options[0]?.maxAmount).toBe(3);
+  }, 60_000);
+
+  it('rejects measureUnit outside the allowed enum', async () => {
+    const categoryRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'enum-cat', name: { en: 'Enum Cat' }, sortOrder: 0 },
+    });
+    const categoryId = categoryRes.json<{ id: string }>().id;
+
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'bad-unit',
+        name: { en: 'Bad Unit' },
+        basePrice: '5.00',
+        currency: 'USD',
+        status: 'draft',
+        measureUnit: 'oz',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+  }, 60_000);
+
+  it('rejects modifier option with maxAmount < minAmount', async () => {
+    const groupRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Bad Range' }, minSelectable: 0, maxSelectable: 5, isRequired: false },
+    });
+    expect(groupRes.statusCode).toBe(200);
+    const groupId = groupRes.json<{ id: string }>().id;
+
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        modifierGroupId: groupId,
+        name: { en: 'Bad' },
+        priceDelta: '0.00',
+        defaultAmount: 0,
+        freeAmount: 0,
+        sortOrder: 0,
+        minAmount: 3,
+        maxAmount: 1,
+      },
+    });
+    expect(res.statusCode).toBe(400);
+  }, 60_000);
+
+  it('rejects item with negative weight', async () => {
+    const categoryRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'neg-weight-cat', name: { en: 'NegWeight' }, sortOrder: 0 },
+    });
+    const categoryId = categoryRes.json<{ id: string }>().id;
+
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'negative-weight',
+        name: { en: 'Negative Weight' },
+        basePrice: '5.00',
+        currency: 'USD',
+        status: 'draft',
+        weight: -0.5,
+      },
+    });
+    expect(res.statusCode).toBe(400);
+  }, 60_000);
+
+  it('rejects duplicate brand code for category (partial unique index)', async () => {
+    const r1 = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'dup-code-cat-1', name: { en: 'Dup Cat 1' }, sortOrder: 0, code: 'DUPCAT' },
+    });
+    expect(r1.statusCode).toBe(200);
+
+    const r2 = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'dup-code-cat-2', name: { en: 'Dup Cat 2' }, sortOrder: 1, code: 'DUPCAT' },
+    });
+    expect(r2.statusCode).toBe(409);
+  }, 60_000);
 });

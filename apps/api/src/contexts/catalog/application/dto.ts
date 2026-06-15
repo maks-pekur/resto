@@ -25,6 +25,7 @@ export const UpsertCategoryInputSchema = z.object({
   name: LocalizedText,
   description: LocalizedText.nullable().default(null),
   sortOrder: NonNegInt.default(0),
+  code: z.string().min(1).max(64).nullable().default(null),
 });
 export type UpsertCategoryInput = z.infer<typeof UpsertCategoryInputSchema>;
 export class UpsertCategoryInputDto extends createZodDto(UpsertCategoryInputSchema) {}
@@ -71,6 +72,9 @@ export const UpsertItemInputSchema = z.object({
   sourceExternalId: z.string().max(255).nullable().default(null),
   status: z.enum(['draft', 'published', 'archived']).default('draft'),
   sortOrder: NonNegInt.default(0),
+  code: z.string().min(1).max(64).nullable().default(null),
+  weight: z.number().nonnegative().nullable().default(null),
+  measureUnit: z.enum(['g', 'kg', 'ml', 'l', 'pcs']).nullable().default(null),
 });
 export type UpsertItemInput = z.infer<typeof UpsertItemInputSchema>;
 export class UpsertItemInputDto extends createZodDto(UpsertItemInputSchema) {}
@@ -90,15 +94,22 @@ export const UpsertModifierGroupInputSchema = z
 export type UpsertModifierGroupInput = z.infer<typeof UpsertModifierGroupInputSchema>;
 export class UpsertModifierGroupInputDto extends createZodDto(UpsertModifierGroupInputSchema) {}
 
-export const UpsertModifierOptionInputSchema = z.object({
-  id: z.string().uuid().optional(),
-  modifierGroupId: z.string().uuid(),
-  name: LocalizedText,
-  priceDelta: MoneyAmountValue,
-  defaultAmount: NonNegInt.default(0),
-  freeAmount: NonNegInt.default(0),
-  sortOrder: NonNegInt.default(0),
-});
+export const UpsertModifierOptionInputSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    modifierGroupId: z.string().uuid(),
+    name: LocalizedText,
+    priceDelta: MoneyAmountValue,
+    defaultAmount: NonNegInt.default(0),
+    freeAmount: NonNegInt.default(0),
+    sortOrder: NonNegInt.default(0),
+    minAmount: NonNegInt.nullable().default(null),
+    maxAmount: NonNegInt.nullable().default(null),
+  })
+  .refine((o) => o.minAmount === null || o.maxAmount === null || o.maxAmount >= o.minAmount, {
+    message: 'maxAmount must be greater than or equal to minAmount',
+    path: ['maxAmount'],
+  });
 export type UpsertModifierOptionInput = z.infer<typeof UpsertModifierOptionInputSchema>;
 export class UpsertModifierOptionInputDto extends createZodDto(UpsertModifierOptionInputSchema) {}
 

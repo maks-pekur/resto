@@ -15,6 +15,7 @@ export const MenuCategory = z.object({
   name: LocalizedText,
   description: LocalizedText.nullable(),
   sortOrder: z.number().int().nonnegative(),
+  code: z.string().min(1).max(64).nullable(),
   ...timestampsShape,
 });
 export type MenuCategory = z.infer<typeof MenuCategory>;

@@ -50,6 +50,7 @@ describe('MenuCategory', () => {
     name: { en: 'Pizza', ru: 'Пицца' },
     description: null,
     sortOrder: 0,
+    code: null,
     ...baseTimestamps,
   };
 
@@ -83,6 +84,9 @@ describe('MenuItem', () => {
     metaDescription: null,
     status: 'published' as const,
     sortOrder: 1,
+    code: null,
+    weight: null,
+    measureUnit: null,
     ...baseTimestamps,
   };
 

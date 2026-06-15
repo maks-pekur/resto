@@ -25,6 +25,7 @@ export class UpsertCategoryService {
       name: input.name,
       description: input.description,
       sortOrder: input.sortOrder,
+      code: input.code,
     });
   }
 }

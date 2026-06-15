@@ -26,10 +26,12 @@ export { BrandSlug, BrandSlugValue } from './brand-slug';
 export { BrandTheme } from './brand-theme';
 
 export {
+  MeasureUnit,
   MenuCategory,
   MenuItem,
   MenuItemStatus,
   MenuModifier,
+  MenuModifierOption,
   MenuVariant,
   Tenant,
   TenantStatus,

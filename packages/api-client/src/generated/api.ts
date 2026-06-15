@@ -596,6 +596,22 @@ export interface paths {
         patch: operations["CatalogController_archiveItem"];
         trace?: never;
     };
+    "/v1/orders": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OrdersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -732,6 +748,7 @@ export interface components {
                     [key: string]: string;
                 } | null;
                 sortOrder: number;
+                code: string | null;
             }[];
             items: {
                 /** Format: uuid */
@@ -747,6 +764,10 @@ export interface components {
                 } | null;
                 basePrice: string;
                 currency: string;
+                code: string | null;
+                weight: string | null;
+                /** @enum {string|null} */
+                measureUnit: "g" | "kg" | "ml" | "l" | "pcs" | null;
                 /** Format: uri */
                 imageUrl: string | null;
                 photos: {
@@ -796,6 +817,8 @@ export interface components {
                     defaultAmount: number;
                     freeAmount: number;
                     sortOrder: number;
+                    minAmount: number | null;
+                    maxAmount: number | null;
                 }[];
             }[];
         };
@@ -813,6 +836,10 @@ export interface components {
             } | null;
             basePrice: string;
             currency: string;
+            code: string | null;
+            weight: string | null;
+            /** @enum {string|null} */
+            measureUnit: "g" | "kg" | "ml" | "l" | "pcs" | null;
             /** Format: uri */
             imageUrl: string | null;
             photos: {
@@ -1030,6 +1057,8 @@ export interface components {
             } | null;
             /** @default 0 */
             sortOrder: number;
+            /** @default null */
+            code: string | null;
         };
         IdResponseDto: {
             /** Format: uuid */
@@ -1105,6 +1134,15 @@ export interface components {
             status: "draft" | "published" | "archived";
             /** @default 0 */
             sortOrder: number;
+            /** @default null */
+            code: string | null;
+            /** @default null */
+            weight: number | null;
+            /**
+             * @default null
+             * @enum {string|null}
+             */
+            measureUnit: "g" | "kg" | "ml" | "l" | "pcs" | null;
         };
         UpsertModifierGroupInputDto: {
             /** Format: uuid */
@@ -1134,6 +1172,10 @@ export interface components {
             freeAmount: number;
             /** @default 0 */
             sortOrder: number;
+            /** @default null */
+            minAmount: number | null;
+            /** @default null */
+            maxAmount: number | null;
         };
         UpsertItemSizeInputDto: {
             /** Format: uuid */
@@ -1171,6 +1213,85 @@ export interface components {
         };
         PublishCancelResponseDto: {
             cancelled: boolean;
+        };
+        CreateOrderInputDto: {
+            items: {
+                /** Format: uuid */
+                itemId: string;
+                /** Format: uuid */
+                sizeId: string | null;
+                name: string;
+                unitPrice: string;
+                currency: string;
+                modifiers: {
+                    /** Format: uuid */
+                    optionId: string;
+                    name: string;
+                    priceDelta: string;
+                    /** Format: uuid */
+                    modifierGroupId?: string;
+                    amount?: number;
+                }[];
+                quantity: number;
+            }[];
+            /** @enum {string} */
+            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            table?: string;
+            customerName?: string;
+            customerPhone?: string;
+            /** Format: uuid */
+            idempotencyKey: string;
+            /** Format: date-time */
+            scheduledFor?: string;
+            discountSpec?: ({
+                /** @enum {string} */
+                kind: "percentage";
+                /** @enum {string} */
+                scope: "cart";
+                pct: number;
+            } | {
+                /** @enum {string} */
+                kind: "percentage";
+                /** @enum {string} */
+                scope: "category";
+                categoryId: string;
+                pct: number;
+            } | {
+                /** @enum {string} */
+                kind: "percentage";
+                /** @enum {string} */
+                scope: "item";
+                itemId: string;
+                pct: number;
+            }) | ({
+                /** @enum {string} */
+                kind: "fixed";
+                /** @enum {string} */
+                scope: "cart";
+                amountMinorUnits: number;
+            } | {
+                /** @enum {string} */
+                kind: "fixed";
+                /** @enum {string} */
+                scope: "category";
+                categoryId: string;
+                amountMinorUnits: number;
+            } | {
+                /** @enum {string} */
+                kind: "fixed";
+                /** @enum {string} */
+                scope: "item";
+                itemId: string;
+                amountMinorUnits: number;
+            });
+        };
+        OrderResponseDto: {
+            /** Format: uuid */
+            orderId: string;
+            orderNumber: string;
+            status: string;
+            total: string;
+            currency: string;
         };
     };
     responses: never;
@@ -2372,6 +2493,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    OrdersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrderInputDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderResponseDto"];
                 };
             };
         };

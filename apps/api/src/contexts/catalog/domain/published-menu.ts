@@ -44,6 +44,8 @@ export interface PublishedMenuModifierOption {
   readonly defaultAmount: number;
   readonly freeAmount: number;
   readonly sortOrder: number;
+  readonly minAmount: number | null;
+  readonly maxAmount: number | null;
 }
 
 /**
@@ -82,6 +84,9 @@ export interface PublishedMenuItem {
   readonly description: LocalizedText | null;
   readonly basePrice: MoneyAmount;
   readonly currency: Currency;
+  readonly code: string | null;
+  readonly weight: string | null;
+  readonly measureUnit: 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null;
   /**
    * Backward-compatibility convenience: presigned GET URL of the first
    * photo (or `null` if the item has no photo). Same source as
@@ -130,6 +135,7 @@ export interface PublishedMenuCategory {
   readonly name: LocalizedText;
   readonly description: LocalizedText | null;
   readonly sortOrder: number;
+  readonly code: string | null;
 }
 
 /**

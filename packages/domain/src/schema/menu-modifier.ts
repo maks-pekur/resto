@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { MenuModifierId, TenantId } from '../ids';
 import { LocalizedText } from '../localized-text';
+import { MoneyAmount } from '../money';
 import { timestampsShape } from './_shared';
 
 /**
@@ -27,3 +28,20 @@ export const MenuModifier = z
     'maxSelectable must be greater than or equal to minSelectable',
   );
 export type MenuModifier = z.infer<typeof MenuModifier>;
+
+const MenuModifierOptionBase = z.object({
+  id: z.string().uuid(),
+  name: LocalizedText,
+  priceDelta: MoneyAmount,
+  defaultAmount: z.number().int().nonnegative(),
+  freeAmount: z.number().int().nonnegative(),
+  sortOrder: z.number().int().nonnegative(),
+  minAmount: z.number().int().nonnegative().nullable(),
+  maxAmount: z.number().int().nonnegative().nullable(),
+});
+
+export const MenuModifierOption = MenuModifierOptionBase.refine(
+  (o) => o.minAmount === null || o.maxAmount === null || o.maxAmount >= o.minAmount,
+  { message: 'maxAmount must be greater than or equal to minAmount', path: ['maxAmount'] },
+);
+export type MenuModifierOption = z.infer<typeof MenuModifierOption>;

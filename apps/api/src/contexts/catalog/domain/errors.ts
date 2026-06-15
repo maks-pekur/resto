@@ -90,6 +90,17 @@ export class CategoryNestingDepthError extends Error {
   }
 }
 
+export class CatalogCodeConflictError extends Error {
+  readonly kind = 'CatalogCodeConflictError' as const;
+  constructor(
+    public readonly entityType: 'category' | 'item',
+    public readonly code: string,
+  ) {
+    super(`A ${entityType} with code "${code}" already exists in this brand.`);
+    this.name = 'CatalogCodeConflictError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
@@ -101,4 +112,5 @@ export type CatalogDomainError =
   | MenuCategoryAlreadyArchivedError
   | MenuItemAlreadyArchivedError
   | BrandContextRequiredError
-  | CategoryNestingDepthError;
+  | CategoryNestingDepthError
+  | CatalogCodeConflictError;
