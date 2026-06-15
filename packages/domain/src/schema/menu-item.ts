@@ -17,6 +17,9 @@ export type MenuItemStatus = z.infer<typeof MenuItemStatus>;
  * separate junction rows in the database; the public projection assembles
  * them into a denormalized read model in the catalog context.
  */
+export const MeasureUnit = z.enum(['g', 'kg', 'ml', 'l', 'pcs']);
+export type MeasureUnit = z.infer<typeof MeasureUnit>;
+
 export const MenuItem = z.object({
   id: MenuItemId,
   tenantId: TenantId,
@@ -34,6 +37,9 @@ export const MenuItem = z.object({
   metaDescription: z.string().max(160).nullable(),
   status: MenuItemStatus,
   sortOrder: z.number().int().nonnegative(),
+  code: z.string().min(1).max(64).nullable(),
+  weight: z.number().nonnegative().nullable(),
+  measureUnit: MeasureUnit.nullable(),
   ...timestampsShape,
 });
 export type MenuItem = z.infer<typeof MenuItem>;
