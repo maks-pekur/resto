@@ -16,11 +16,38 @@ const DEV_DEFAULTS = {
   S3_SECRET_KEY: 'minio_dev_password',
   S3_ACCESS_KEY: 'minio',
   S3_ENDPOINT: 'http://localhost:9000',
-  AUDIT_ERASURE_SALT: 'dev-only-erasure-salt-32-chars-padding',
   INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
+
+/**
+ * API review 2026-06-15 BLOCK-4: the two highest-value secrets were fail-open.
+ * `BETTER_AUTH_SECRET` was not guarded at all (a known signing key forges any
+ * session/bearer cross-tenant); `AUDIT_ERASURE_SALT` was guarded only against
+ * the in-code dev fallback, not the *different* string shipped in `.env.example`
+ * (a known salt makes GDPR anonymization reversible). Each key lists every value
+ * that must fail-closed in prod: the in-code dev fallback AND the `.env.example`
+ * placeholder. Keep in sync with `.env.example` and identity-core's
+ * `DEV_BA_SECRET_FALLBACK`.
+ */
+const FORBIDDEN_SECRET_VALUES = {
+  BETTER_AUTH_SECRET: [
+    'dev-only-better-auth-secret-32-chars-padding',
+    'local_dev_secret_replace_me_with_a_real_32_char_value',
+  ],
+  AUDIT_ERASURE_SALT: [
+    'dev-only-erasure-salt-32-chars-padding',
+    'local-dev-erasure-salt-replace-me-with-a-real-32-char-value',
+  ],
+} as const satisfies Partial<Record<keyof Env, readonly string[]>>;
+
+type ForbiddenSecretKey = keyof typeof FORBIDDEN_SECRET_VALUES;
+
+// Substring tell-tales of an unreplaced placeholder — catches a new placeholder
+// even if the exact literal above drifts. Scoped to the critical secrets above
+// to avoid false positives on unrelated env values.
+const PLACEHOLDER_MARKERS = ['replace_me', 'replace-me', 'change_me', 'change-me'] as const;
 
 /**
  * D-01 / Skeptic HIGH-2: `.env.example` ships a placeholder so dev tooling
@@ -70,6 +97,23 @@ export const assertProdGuardrails = (
     const devDefault = DEV_DEFAULTS[key];
     if (value === undefined || value === devDefault) {
       violations.push(`${key} is unset or equals the dev default`);
+    }
+  }
+  // API review 2026-06-15 BLOCK-4: value-check the two critical secrets the
+  // exact-match loop above never covered.
+  for (const key of Object.keys(FORBIDDEN_SECRET_VALUES) as ForbiddenSecretKey[]) {
+    const value = env[key];
+    if (value === undefined || value.trim().length === 0) {
+      violations.push(`${key} is unset or blank in NODE_ENV=${env.NODE_ENV}`);
+      continue;
+    }
+    if ((FORBIDDEN_SECRET_VALUES[key] as readonly string[]).includes(value)) {
+      violations.push(`${key} equals a known dev fallback or shipped .env.example placeholder`);
+      continue;
+    }
+    const lower = value.toLowerCase();
+    if (PLACEHOLDER_MARKERS.some((marker) => lower.includes(marker))) {
+      violations.push(`${key} contains an unreplaced placeholder marker`);
     }
   }
   // D-01 / Skeptic HIGH-2.
