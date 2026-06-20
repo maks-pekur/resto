@@ -2,7 +2,9 @@ import { ConflictException, NotFoundException, UnprocessableEntityException } fr
 import {
   DuplicateOrderKeyError,
   InvalidOrderTransitionError,
+  OrderItemNotOrderableError,
   OrderItemUnavailableError,
+  OrderModifierNotAvailableError,
   OrderNotFoundError,
 } from '../../domain/errors';
 
@@ -19,6 +21,18 @@ export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof OrderItemUnavailableError) {
     return new UnprocessableEntityException({
       code: 'ordering.item_unavailable',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderItemNotOrderableError) {
+    return new UnprocessableEntityException({
+      code: 'ordering.item_not_orderable',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderModifierNotAvailableError) {
+    return new UnprocessableEntityException({
+      code: 'ordering.modifier_not_available',
       message: err.message,
     });
   }

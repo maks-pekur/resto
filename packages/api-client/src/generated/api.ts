@@ -1221,15 +1221,10 @@ export interface components {
                 /** Format: uuid */
                 sizeId: string | null;
                 name: string;
-                unitPrice: string;
-                currency: string;
                 modifiers: {
                     /** Format: uuid */
                     optionId: string;
                     name: string;
-                    priceDelta: string;
-                    /** Format: uuid */
-                    modifierGroupId?: string;
                     amount?: number;
                 }[];
                 quantity: number;
@@ -1243,47 +1238,6 @@ export interface components {
             idempotencyKey: string;
             /** Format: date-time */
             scheduledFor?: string;
-            discountSpec?: ({
-                /** @enum {string} */
-                kind: "percentage";
-                /** @enum {string} */
-                scope: "cart";
-                pct: number;
-            } | {
-                /** @enum {string} */
-                kind: "percentage";
-                /** @enum {string} */
-                scope: "category";
-                categoryId: string;
-                pct: number;
-            } | {
-                /** @enum {string} */
-                kind: "percentage";
-                /** @enum {string} */
-                scope: "item";
-                itemId: string;
-                pct: number;
-            }) | ({
-                /** @enum {string} */
-                kind: "fixed";
-                /** @enum {string} */
-                scope: "cart";
-                amountMinorUnits: number;
-            } | {
-                /** @enum {string} */
-                kind: "fixed";
-                /** @enum {string} */
-                scope: "category";
-                categoryId: string;
-                amountMinorUnits: number;
-            } | {
-                /** @enum {string} */
-                kind: "fixed";
-                /** @enum {string} */
-                scope: "item";
-                itemId: string;
-                amountMinorUnits: number;
-            });
         };
         OrderResponseDto: {
             /** Format: uuid */
