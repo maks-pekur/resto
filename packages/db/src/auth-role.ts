@@ -1,10 +1,10 @@
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
 import type { Sql } from 'postgres';
+// G-01: inlined at build time by esbuild `loader: { '.sql': 'text' }`;
+// eliminates the import.meta.dirname runtime path read that crashes the
+// CJS bundle (import_meta.dirname = undefined in bundled output).
+import GRANTS_SQL from '../sql/auth-role.sql';
 import { validateRolePassword } from './internal/password';
 import { assertRoleAttributes } from './preflight';
-
-const GRANTS_SQL_PATH = resolve(import.meta.dirname, '..', 'sql', 'auth-role.sql');
 
 /**
  * Provision the `resto_auth` BYPASSRLS role for Better Auth's drizzle
@@ -48,7 +48,7 @@ export const provisionAuthRole = async (
     );
   }
 
-  await client.unsafe(readFileSync(GRANTS_SQL_PATH, 'utf8'));
+  await client.unsafe(GRANTS_SQL);
 
   await assertRoleAttributes(client, 'resto_auth', {
     rolsuper: false,

@@ -38,7 +38,12 @@ const NESTJS_OPTIONAL_PEERS = [
   'amqplib',
   'redis',
   'ioredis',
-  'nats',
+  // NOTE: `nats` is intentionally NOT in this list. It is a direct runtime
+  // dep of packages/events (not just a NestJS optional peer) and is NOT
+  // hoisted to node_modules/ by pnpm in the Docker image — bundling it inline
+  // is simpler than wiring a Dockerfile symlink. NestJS NATS auto-detection
+  // fires via @nestjs/microservices (which IS external above), not the raw
+  // `nats` package, so inlining `nats` does not enable the microservices transport.
   'mongoose',
   '@apollo/subgraph',
   '@apollo/gateway',
@@ -54,6 +59,9 @@ await build({
   target: 'node22',
   format: 'cjs',
   outfile: 'dist/main.cjs',
+  // G-01: inline *.sql files as string literals so import.meta.dirname
+  // path math never runs at runtime inside the CJS bundle.
+  loader: { '.sql': 'text' },
   external: NESTJS_OPTIONAL_PEERS,
   logLevel: 'info',
   sourcemap: true,
@@ -61,10 +69,19 @@ await build({
     {
       // Externalize every npm package, but let esbuild bundle workspace
       // packages (@resto/*) because they ship as TypeScript source.
+      // G-01: `nats` is also bundled inline because pnpm does not hoist it
+      // to a top-level node_modules/ symlink in the Docker image — it is only
+      // available via .pnpm/ virtual store which Node's CJS resolver cannot
+      // traverse. Inlining avoids a Dockerfile symlink workaround.
       name: 'externalize-non-workspace',
       setup(build) {
         build.onResolve({ filter: /^[^./]/ }, (args) => {
           if (args.path.startsWith('@resto/')) return null;
+          // G-01: nats + its transitive deps (nkeys.js → tweetnacl) are bundled
+          // inline because pnpm does not hoist them to top-level node_modules/ in
+          // the Docker image. All three are pure-JS with no native addons.
+          if (args.path === 'nats' || args.path === 'nkeys.js' || args.path === 'tweetnacl')
+            return null;
           return { path: args.path, external: true };
         });
       },

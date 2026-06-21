@@ -7,6 +7,12 @@
     "useDefineForClassFields": false,
     "rootDir": "."
   },
-  "include": ["src/**/*.ts", "test/**/*.ts", "vitest.config.ts", "eslint.config.mjs"],
+  "include": [
+    "src/**/*.ts",
+    "test/**/*.ts",
+    "vitest.config.ts",
+    "eslint.config.mjs",
+    "../../packages/db/src/sql.d.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 }
