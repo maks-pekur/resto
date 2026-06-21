@@ -377,8 +377,8 @@ Plans:
 **Wave 4** _(go-live gate)_
 
 - [ ] 07.5-10-PLAN.md — G-02 tested restore + G-06 app-only rollback proof + SC#5 external E2E smoke + G-07 infra-stub supersession
-   **UI hint**: no
-   **Persona reviewers**: persona-cto, persona-investor
+      **UI hint**: no
+      **Persona reviewers**: persona-cto, persona-investor
 
 ### Phase 8: Payments (Stripe Connect)
 
