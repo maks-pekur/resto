@@ -212,13 +212,17 @@ describe('markPaid', () => {
     paidOrder.pullEvents();
     paidOrder.markPaid('pi_1');
     paidOrder.pullEvents();
-    expect(() => { paidOrder.markPaid('pi_2'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      paidOrder.markPaid('pi_2');
+    }).toThrow(InvalidOrderTransitionError);
 
     const canceledOrder = Order.create(makeInput());
     canceledOrder.pullEvents();
     canceledOrder.cancel('test');
     canceledOrder.pullEvents();
-    expect(() => { canceledOrder.markPaid('pi_3'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      canceledOrder.markPaid('pi_3');
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -244,7 +248,9 @@ describe('accept', () => {
   it('throws InvalidOrderTransitionError from created state', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    expect(() => { order.accept(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.accept();
+    }).toThrow(InvalidOrderTransitionError);
   });
 
   it('throws InvalidOrderTransitionError from canceled state', () => {
@@ -252,7 +258,9 @@ describe('accept', () => {
     order.pullEvents();
     order.cancel('test');
     order.pullEvents();
-    expect(() => { order.accept(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.accept();
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -282,7 +290,9 @@ describe('startPreparing', () => {
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    expect(() => { order.startPreparing(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.startPreparing();
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -316,7 +326,9 @@ describe('markReady', () => {
     order.pullEvents();
     order.accept();
     order.pullEvents();
-    expect(() => { order.markReady(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.markReady();
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -354,7 +366,9 @@ describe('complete', () => {
     order.pullEvents();
     order.startPreparing();
     order.pullEvents();
-    expect(() => { order.complete(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.complete();
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -395,7 +409,9 @@ describe('cancel', () => {
     order.pullEvents();
     order.accept();
     order.pullEvents();
-    expect(() => { order.cancel('test'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.cancel('test');
+    }).toThrow(InvalidOrderTransitionError);
   });
 
   it('throws InvalidOrderTransitionError from completed state', () => {
@@ -411,7 +427,9 @@ describe('cancel', () => {
     order.pullEvents();
     order.complete();
     order.pullEvents();
-    expect(() => { order.cancel('test'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.cancel('test');
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -436,7 +454,9 @@ describe('refund', () => {
   it('throws InvalidOrderTransitionError from created state', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    expect(() => { order.refund(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.refund();
+    }).toThrow(InvalidOrderTransitionError);
   });
 
   it('throws InvalidOrderTransitionError from accepted state', () => {
@@ -446,7 +466,9 @@ describe('refund', () => {
     order.pullEvents();
     order.accept();
     order.pullEvents();
-    expect(() => { order.refund(); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.refund();
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
@@ -493,7 +515,9 @@ describe('markFailed', () => {
     order.pullEvents();
     order.complete();
     order.pullEvents();
-    expect(() => { order.markFailed('test'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.markFailed('test');
+    }).toThrow(InvalidOrderTransitionError);
   });
 
   it('throws InvalidOrderTransitionError from canceled state', () => {
@@ -501,7 +525,9 @@ describe('markFailed', () => {
     order.pullEvents();
     order.cancel('test');
     order.pullEvents();
-    expect(() => { order.markFailed('test'); }).toThrow(InvalidOrderTransitionError);
+    expect(() => {
+      order.markFailed('test');
+    }).toThrow(InvalidOrderTransitionError);
   });
 });
 
