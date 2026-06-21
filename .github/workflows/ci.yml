@@ -40,6 +40,11 @@ jobs:
     # missing they now hard-error instead of silently degrading to describe.skip.
     env:
       RESTO_REQUIRE_DOCKER: "1"
+      NEXT_PUBLIC_API_ORIGIN: "https://api.ci.invalid"
+      ADMIN_WEB_URL: "https://admin.ci.invalid"
+      WEBSITE_URL: "https://website.ci.invalid"
+      INTERNAL_API_TOKEN: "ci-build-internal-token-placeholder"
+      ACTIVE_BRAND_COOKIE_SECRET: "ci-build-active-brand-cookie-secret-placeholder"
     strategy:
       fail-fast: false
       matrix:
