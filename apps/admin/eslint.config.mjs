@@ -34,6 +34,13 @@ export default [
       'eslint.config.mjs',
       'vite.config.ts',
       'vitest.config.ts',
+      'app/**',
+      'lib/**',
+      'components/**',
+      'test/**',
+      'e2e/**',
+      'hooks/**',
+      'playwright.config.ts',
     ],
   },
 ];
