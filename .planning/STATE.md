@@ -144,12 +144,13 @@ None yet.
 
 ### Quick Tasks Completed
 
-| #          | Description                                                                                     | Date       | Commit  | Directory                                                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                               | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
-| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                       | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
-| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)         | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
-| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
+| #          | Description                                                                                                             | Date       | Commit  | Directory                                                                                                           |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                                                       | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                                               | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
+| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                 | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
+| 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
+| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                         | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
 
 ## Deferred Items
 

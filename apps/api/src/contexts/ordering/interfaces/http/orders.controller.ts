@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
 import { ApiBody, ApiCreatedResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
@@ -16,7 +16,9 @@ class OrderResponseDto extends createZodDto(OrderResponseSchema) {}
 @Public()
 @Controller('v1/orders')
 export class OrdersController {
-  constructor(private readonly createOrder: CreateOrderService) {}
+  // Explicit @Inject: esbuild/tsx omit design:paramtypes, so bare class
+  // injection resolves to undefined at runtime (project-wide convention).
+  constructor(@Inject(CreateOrderService) private readonly createOrder: CreateOrderService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)

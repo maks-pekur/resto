@@ -34,8 +34,26 @@ export class OrderItemUnavailableError extends Error {
   }
 }
 
+export class OrderItemNotOrderableError extends Error {
+  readonly kind = 'OrderItemNotOrderableError' as const;
+  constructor(public readonly itemId: string) {
+    super(`Menu item "${itemId}" is not available for ordering.`);
+    this.name = 'OrderItemNotOrderableError';
+  }
+}
+
+export class OrderModifierNotAvailableError extends Error {
+  readonly kind = 'OrderModifierNotAvailableError' as const;
+  constructor(public readonly optionId: string) {
+    super(`Modifier option "${optionId}" is not available for this item.`);
+    this.name = 'OrderModifierNotAvailableError';
+  }
+}
+
 export type OrderDomainError =
   | OrderNotFoundError
   | DuplicateOrderKeyError
   | InvalidOrderTransitionError
-  | OrderItemUnavailableError;
+  | OrderItemUnavailableError
+  | OrderItemNotOrderableError
+  | OrderModifierNotAvailableError;

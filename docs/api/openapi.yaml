@@ -2616,12 +2616,6 @@ components:
                 type: string
                 minLength: 1
                 maxLength: 200
-              unitPrice:
-                type: string
-                pattern: ^\d+(\.\d{1,2})?$
-              currency:
-                type: string
-                pattern: ^[A-Z]{3}$
               modifiers:
                 type: array
                 items:
@@ -2634,12 +2628,6 @@ components:
                       type: string
                       minLength: 1
                       maxLength: 200
-                    priceDelta:
-                      type: string
-                      pattern: ^-?\d+(\.\d{1,2})?$
-                    modifierGroupId:
-                      type: string
-                      format: uuid
                     amount:
                       type: integer
                       minimum: 0
@@ -2647,7 +2635,6 @@ components:
                   required:
                     - optionId
                     - name
-                    - priceDelta
               quantity:
                 type: integer
                 minimum: 0
@@ -2656,8 +2643,6 @@ components:
               - itemId
               - sizeId
               - name
-              - unitPrice
-              - currency
               - modifiers
               - quantity
         fulfillmentMode:
@@ -2681,130 +2666,6 @@ components:
         scheduledFor:
           type: string
           format: date-time
-        discountSpec:
-          oneOf:
-            - oneOf:
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - percentage
-                    scope:
-                      type: string
-                      enum:
-                        - cart
-                    pct:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - pct
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - percentage
-                    scope:
-                      type: string
-                      enum:
-                        - category
-                    categoryId:
-                      type: string
-                    pct:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - categoryId
-                    - pct
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - percentage
-                    scope:
-                      type: string
-                      enum:
-                        - item
-                    itemId:
-                      type: string
-                    pct:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - itemId
-                    - pct
-            - oneOf:
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - fixed
-                    scope:
-                      type: string
-                      enum:
-                        - cart
-                    amountMinorUnits:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - amountMinorUnits
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - fixed
-                    scope:
-                      type: string
-                      enum:
-                        - category
-                    categoryId:
-                      type: string
-                    amountMinorUnits:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - categoryId
-                    - amountMinorUnits
-                - type: object
-                  properties:
-                    kind:
-                      type: string
-                      enum:
-                        - fixed
-                    scope:
-                      type: string
-                      enum:
-                        - item
-                    itemId:
-                      type: string
-                    amountMinorUnits:
-                      type: integer
-                      minimum: 0
-                      exclusiveMinimum: false
-                  required:
-                    - kind
-                    - scope
-                    - itemId
-                    - amountMinorUnits
       required:
         - items
         - fulfillmentMode

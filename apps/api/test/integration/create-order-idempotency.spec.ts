@@ -12,6 +12,7 @@ import {
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
+import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -20,16 +21,48 @@ if (!dockerOk) {
   console.warn('[create-order-idempotency] Docker not available — skipping.');
 }
 
+const pizzaItemId = randomUUID();
+const pizzaCategoryId = randomUUID();
+const cheeseGroupId = randomUUID();
+const cheeseOptionId = randomUUID();
+
+// Prices are server-authoritative now: the cart only references ids and the
+// service resolves prices from this snapshot (mirrors the catalog read path).
+const pricing: MenuPricingPort = {
+  loadSnapshot: () =>
+    Promise.resolve({
+      currency: 'USD',
+      items: [
+        {
+          itemId: pizzaItemId,
+          categoryId: pizzaCategoryId,
+          basePrice: '12.00',
+          sizes: [],
+          modifierGroupIds: [cheeseGroupId],
+        },
+      ],
+      modifierOptions: [
+        {
+          optionId: cheeseOptionId,
+          groupId: cheeseGroupId,
+          priceDelta: '1.50',
+          freeAmount: 0,
+          minAmount: null,
+          maxAmount: null,
+        },
+      ],
+      stoppedItemIds: [],
+    }),
+};
+
 const makeCartInput = (
   overrides: Partial<CreateOrderInput> = {},
 ): CreateOrderInput & { idempotencyKey: string } => ({
   items: [
     {
-      itemId: randomUUID(),
+      itemId: pizzaItemId,
       sizeId: null,
       name: 'Margherita Pizza',
-      unitPrice: '12.00',
-      currency: 'USD',
       modifiers: [],
       quantity: 2,
     },
@@ -60,7 +93,7 @@ suite('CreateOrderService — idempotency', () => {
   beforeAll(async () => {
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo);
+    service = new CreateOrderService(repo, pricing);
 
     await stack.db.withoutTenant('seed idempotency spec fixtures', async (tx) => {
       await tx.insert(schema.tenants).values([
@@ -173,16 +206,13 @@ suite('CreateOrderService — idempotency', () => {
     const input = makeCartInput({
       items: [
         {
-          itemId: randomUUID(),
+          itemId: pizzaItemId,
           sizeId: null,
           name: 'Pizza',
-          unitPrice: '10.00',
-          currency: 'USD',
           modifiers: [
             {
-              optionId: randomUUID(),
+              optionId: cheeseOptionId,
               name: 'Extra cheese',
-              priceDelta: '1.50',
               amount: 1,
             },
           ],
