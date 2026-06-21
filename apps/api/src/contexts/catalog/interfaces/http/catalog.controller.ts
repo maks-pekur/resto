@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  Get,
   HttpCode,
   HttpStatus,
   Inject,
@@ -9,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
@@ -19,11 +21,18 @@ import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { Permissions, RequireBrand, RequiresTenantContext } from '../../../../shared/auth';
 import {
+  CategoryListResponseDto,
+  DraftDiffResponseDto,
+  ItemDetailResponseDto,
+  ItemListResponseDto,
+  ModifierGroupDetailResponseDto,
+  ModifierGroupListResponseDto,
   PhotoUploadUrlInputDto,
   PhotoUploadUrlResponseDto,
   ReorderCategoriesInputDto,
   ReorderCategoriesResponseDto,
   StopItemInputDto,
+  StopListResponseDto,
   UpsertCategoryInputDto,
   UpsertItemInputDto,
   UpsertItemSizeInputDto,
@@ -33,7 +42,14 @@ import {
 import { ArchiveCategoryService } from '../../application/archive-category.service';
 import { ArchiveItemService } from '../../application/archive-item.service';
 import { DelayedPublishService } from '../../application/delayed-publish.service';
+import { GetDraftDiffService } from '../../application/get-draft-diff.service';
+import { GetItemService } from '../../application/get-item.service';
+import { GetModifierGroupService } from '../../application/get-modifier-group.service';
 import { GetPhotoUploadUrlService } from '../../application/get-photo-upload-url.service';
+import { GetStopListService } from '../../application/get-stop-list.service';
+import { ListCategoriesService } from '../../application/list-categories.service';
+import { ListItemsService } from '../../application/list-items.service';
+import { ListModifierGroupsService } from '../../application/list-modifier-groups.service';
 import { ReorderCategoriesService } from '../../application/reorder-categories.service';
 import { StopListService } from '../../application/stop-list.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
@@ -41,6 +57,7 @@ import { UpsertItemService } from '../../application/upsert-item.service';
 import { UpsertItemSizeService } from '../../application/upsert-item-size.service';
 import { UpsertModifierGroupService } from '../../application/upsert-modifier-group.service';
 import { UpsertModifierOptionService } from '../../application/upsert-modifier-option.service';
+import type { ItemStatusFilter } from '../../domain/ports';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { mapCatalogError } from './error-mapping';
 
@@ -78,6 +95,15 @@ export class CatalogController {
     private readonly getPhotoUploadUrlService: GetPhotoUploadUrlService,
     @Inject(ReorderCategoriesService)
     private readonly reorderCategoriesService: ReorderCategoriesService,
+    @Inject(ListCategoriesService) private readonly listCategoriesService: ListCategoriesService,
+    @Inject(ListItemsService) private readonly listItemsService: ListItemsService,
+    @Inject(GetItemService) private readonly getItemService: GetItemService,
+    @Inject(ListModifierGroupsService)
+    private readonly listModifierGroupsService: ListModifierGroupsService,
+    @Inject(GetModifierGroupService)
+    private readonly getModifierGroupService: GetModifierGroupService,
+    @Inject(GetStopListService) private readonly getStopListService: GetStopListService,
+    @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
   ) {}
 
   @Post('categories')
@@ -241,5 +267,110 @@ export class CatalogController {
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
+  }
+
+  @Get('categories')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: CategoryListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
+    // No query param → all categories (admin tree view). Empty string → top-level only. UUID → children of that parent.
+    const filter: string | null | undefined =
+      parentId === undefined ? undefined : parentId === '' ? null : parentId;
+    return wrap(() => this.listCategoriesService.execute({ parentId: filter }));
+  }
+
+  @Get('items')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: ItemListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  listItems(
+    @Query('status') status?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('q') q?: string,
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ): Promise<ItemListResponseDto> {
+    const allowed: readonly ItemStatusFilter[] = [
+      'all',
+      'active',
+      'draft',
+      'published',
+      'archived',
+    ];
+    const statusFilter: ItemStatusFilter | undefined =
+      status && (allowed as readonly string[]).includes(status)
+        ? (status as ItemStatusFilter)
+        : undefined;
+    const parsedLimit = limit !== undefined ? Number.parseInt(limit, 10) : undefined;
+    const parsedOffset = offset !== undefined ? Number.parseInt(offset, 10) : undefined;
+    return wrap(() =>
+      this.listItemsService.execute({
+        ...(statusFilter !== undefined ? { status: statusFilter } : {}),
+        categoryId: categoryId ?? null,
+        q: q ?? null,
+        ...(parsedLimit !== undefined && Number.isFinite(parsedLimit)
+          ? { limit: parsedLimit }
+          : {}),
+        ...(parsedOffset !== undefined && Number.isFinite(parsedOffset)
+          ? { offset: parsedOffset }
+          : {}),
+      }),
+    );
+  }
+
+  @Get('items/:id')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: ItemDetailResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  getItem(@Param('id', ParseUUIDPipe) id: string): Promise<ItemDetailResponseDto> {
+    return wrap(() => this.getItemService.execute({ id }));
+  }
+
+  @Get('modifier-groups')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: ModifierGroupListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  listModifierGroups(): Promise<ModifierGroupListResponseDto> {
+    return wrap(() => this.listModifierGroupsService.execute());
+  }
+
+  @Get('modifier-groups/:id')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  getModifierGroup(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ModifierGroupDetailResponseDto> {
+    return wrap(() => this.getModifierGroupService.execute({ id }));
+  }
+
+  @Get('stop-list')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @ApiOkResponse({ type: StopListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  listStopList(): Promise<StopListResponseDto> {
+    return wrap(() => this.getStopListService.execute());
+  }
+
+  @Get('draft-diff')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @ApiOkResponse({ type: DraftDiffResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  getDraftDiff(): Promise<DraftDiffResponseDto> {
+    return wrap(() => this.getDraftDiffService.execute());
   }
 }
