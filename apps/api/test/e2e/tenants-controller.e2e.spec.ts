@@ -11,7 +11,12 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { provisionAppRole, provisionAuthRole, runInTenantContext } from '@resto/db';
 import { AppModule } from '../../src/app.module';
 import { TENANT_REPOSITORY, type TenantRepository } from '../../src/contexts/tenancy/domain/ports';
-import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
+import {
+  addMemberWithRole,
+  provisionTenant,
+  runBootstrap,
+  signInAsOperator,
+} from './helpers/operator-fixture';
 
 const MIGRATIONS_DIR = fileURLToPath(
   new URL('../../../../packages/db/migrations', import.meta.url),
@@ -302,6 +307,174 @@ describe('TenantsController E2E', () => {
       const primary = body.find((d) => d.domain === expectedDomain);
       expect(primary).toBeDefined();
       expect(primary?.isPrimary).toBe(true);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // POST /v1/tenants/me/offboard + DELETE /v1/tenants/me/offboard
+  // ---------------------------------------------------------------------------
+
+  describe('POST /v1/tenants/me/offboard', () => {
+    it('returns 401 without auth', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: { 'content-type': 'application/json' },
+        payload: { requestedBy: 'user-id' },
+      });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('returns 403 for non-owner (admin role) — tenant:delete gate', async () => {
+      const slug = `offboard-admin-${randomUUID().slice(0, 8)}`;
+      const ownerEmail = `owner-${slug}@example.com`;
+      const adminEmail = `admin-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-offboard-1';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      await runBootstrap({ tenantSlug: slug, email: ownerEmail, password, name: 'OB Owner' });
+      const adminCookie = await addMemberWithRole(app, {
+        tenantId: tenant.id,
+        internalToken: INTERNAL_TOKEN,
+        email: adminEmail,
+        password,
+        name: 'OB Admin',
+        role: 'admin',
+      });
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: { 'content-type': 'application/json', cookie: adminCookie, 'x-tenant-slug': slug },
+        payload: { requestedBy: adminEmail },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 202 and sets offboardingScheduledAt for owner', async () => {
+      const slug = `offboard-owner-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-offboard-2';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      const { userId } = await runBootstrap({
+        tenantSlug: slug,
+        email,
+        password,
+        name: 'OB Owner 2',
+      });
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: { 'content-type': 'application/json', cookie, 'x-tenant-slug': slug },
+        payload: { requestedBy: userId },
+      });
+
+      expect(res.statusCode).toBe(202);
+      const body = res.json<{ id: string; offboardingScheduledAt: string | null }>();
+      expect(body.id).toBe(tenant.id);
+      expect(body.offboardingScheduledAt).not.toBeNull();
+    });
+
+    it('tenant is derived from session — no cross-tenant offboard via crafted payload', async () => {
+      const slugA = `ob-iso-a-${randomUUID().slice(0, 8)}`;
+      const slugB = `ob-iso-b-${randomUUID().slice(0, 8)}`;
+      const passwordA = 'correct-horse-battery-staple-ob-iso-A';
+      const emailA = `owner-${slugA}@example.com`;
+
+      const tenantA = await provisionTenant(app, slugA, INTERNAL_TOKEN);
+      await provisionTenant(app, slugB, INTERNAL_TOKEN);
+      const { userId } = await runBootstrap({
+        tenantSlug: slugA,
+        email: emailA,
+        password: passwordA,
+        name: 'OB ISO A',
+      });
+      const cookieA = await signInAsOperator(app, emailA, passwordA, tenantA.id);
+
+      // Sending slugB in x-tenant-slug header while authenticated as tenant A
+      // resolves tenant B from middleware — session principal is for A, so
+      // AuthGuard's tenant-mismatch check fires before the handler runs.
+      const res = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: {
+          'content-type': 'application/json',
+          cookie: cookieA,
+          'x-tenant-slug': slugB,
+        },
+        payload: { requestedBy: userId },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  describe('DELETE /v1/tenants/me/offboard', () => {
+    it('returns 401 without auth', async () => {
+      const res = await app.inject({ method: 'DELETE', url: '/v1/tenants/me/offboard' });
+      expect(res.statusCode).toBe(401);
+    });
+
+    it('returns 403 for non-owner (admin role) — tenant:delete gate', async () => {
+      const slug = `cancel-admin-${randomUUID().slice(0, 8)}`;
+      const ownerEmail = `owner-${slug}@example.com`;
+      const adminEmail = `admin-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-cancel-1';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      await runBootstrap({ tenantSlug: slug, email: ownerEmail, password, name: 'Cancel Owner' });
+      const adminCookie = await addMemberWithRole(app, {
+        tenantId: tenant.id,
+        internalToken: INTERNAL_TOKEN,
+        email: adminEmail,
+        password,
+        name: 'Cancel Admin',
+        role: 'admin',
+      });
+
+      const res = await app.inject({
+        method: 'DELETE',
+        url: '/v1/tenants/me/offboard',
+        headers: { cookie: adminCookie, 'x-tenant-slug': slug },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('returns 200 and clears offboardingScheduledAt for owner', async () => {
+      const slug = `cancel-owner-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-cancel-2';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      const { userId } = await runBootstrap({
+        tenantSlug: slug,
+        email,
+        password,
+        name: 'Cancel Owner 2',
+      });
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+      // Schedule first
+      const scheduleRes = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: { 'content-type': 'application/json', cookie, 'x-tenant-slug': slug },
+        payload: { requestedBy: userId },
+      });
+      expect(scheduleRes.statusCode).toBe(202);
+
+      // Cancel
+      const cancelRes = await app.inject({
+        method: 'DELETE',
+        url: '/v1/tenants/me/offboard',
+        headers: { cookie, 'x-tenant-slug': slug },
+      });
+      expect(cancelRes.statusCode).toBe(200);
+      const body = cancelRes.json<{ id: string; offboardingScheduledAt: string | null }>();
+      expect(body.id).toBe(tenant.id);
+      expect(body.offboardingScheduledAt).toBeNull();
     });
   });
 
