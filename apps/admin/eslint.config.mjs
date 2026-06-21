@@ -28,6 +28,13 @@ export default [
     },
   },
   {
+    files: ['src/routes/**/*.{ts,tsx}'],
+    rules: {
+      // TanStack Router's throw redirect() / throw notFound() are not Error instances
+      '@typescript-eslint/only-throw-error': 'off',
+    },
+  },
+  {
     ignores: [
       'dist/**',
       'node_modules/**',
