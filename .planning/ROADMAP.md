@@ -345,12 +345,12 @@ Plans:
 **Requirements**: infra phase, no product requirement IDs
 **Success Criteria** (what must be TRUE):
 
-1. `apps/api` + `apps/admin` (+ `apps/website` / `apps/qr-menu` as they land) run in a managed production environment reachable over HTTPS on a real domain; the 3-role Postgres schema (`resto_app` / `resto_auth` / admin-migration role) is provisioned on managed Postgres
+1. All four apps — `apps/api` + `apps/admin` + `apps/website` (ECS/Fargate) + `apps/qr-menu` (static hosting) — run in a managed production environment reachable over HTTPS on a real domain (website checkout stays disabled until Phase 8, but the public storefront surface is live); the 3-role Postgres schema (`resto_app` / `resto_auth` / admin-migration role) is provisioned on managed Postgres
 2. Object storage (R2/S3) is wired for menu media; secrets are injected at runtime (platform secret store / Vault), never baked into images or committed
 3. CD deploys on merge to `main` on top of the existing nx-affected CI; database migrations run as a pre-rollout step (`pnpm db:migrate`)
 4. Boot-time preflight assertions (`assertProdGuardrails`, RLS-bypass checks) pass in the real prod environment — the process refuses to start on misconfiguration
-5. A public HTTPS endpoint exists for Stripe webhooks before Phase 8 begins; a smoke check confirms an external request reaches the API and a tenant menu renders end-to-end
-   **Plans**: 10 plans
+5. A public HTTPS endpoint exists for Stripe webhooks before Phase 8 begins; an external smoke confirms all four surfaces are reachable over HTTPS (api `/healthz`, admin login page, website tenant menu, qr-menu SPA) and a tenant menu renders end-to-end
+   **Plans**: 11 plans
 
 Plans:
 **Wave 0** _(gating — code-side readiness + the two BLOCK spikes; run in parallel, no file overlap)_
@@ -360,23 +360,24 @@ Plans:
 - [ ] 07.5-03-PLAN.md — D-05 direct-connection outbox lock + G-03 outbox_leader /readyz + G-04 Sentry init (DATABASE_DIRECT_URL, SENTRY_DSN)
 - [ ] 07.5-04-PLAN.md — G-05 web-env fail-loud verify + D-06 NATS max_deliver/DLQ live verify + qr-menu hidden maps -> PRE-DEPLOY-VERIFY
 - [ ] 07.5-05-PLAN.md — Sentry SDK installs behind a single legitimacy gate (@sentry/node/nextjs/react/vite-plugin)
+- [ ] 07.5-11-PLAN.md — admin + website production Dockerfiles (Next output:standalone, NEXT_PUBLIC_API_ORIGIN build arg) — enables the website/admin ECS services + CD
 
 **Wave 1** _(provider provisioning — depends on the Wave 0 DB decision)_
 
 - [ ] 07.5-06-PLAN.md — Provision managed Postgres (provider per 07.5-01): 3 roles + extensions + migrations + backups; preflight dry-check
 - [ ] 07.5-07-PLAN.md — NATS JetStream on EC2+EBS (D-06) + Cloudflare R2 wiring (D-07); degraded-mode + presigned-PUT verified
 
-**Wave 2** _(hosting surface — depends on bootable image + DB + NATS/R2)_
+**Wave 2** _(hosting surface — depends on bootable api image + admin/website Dockerfiles + DB + NATS/R2)_
 
-- [ ] 07.5-08-PLAN.md — ECS Express Mode (api+admin) + ALB/ACM + Secrets Manager + Cloudflare DNS/TLS/CDN (SC#1/#2; D-01/02/03/08/09)
+- [ ] 07.5-08-PLAN.md — ECS Express Mode (api+admin+website) + qr-menu static hosting + ALB/ACM + Secrets Manager + Cloudflare DNS/TLS/CDN/routing (SC#1/#2; D-01/02/03/08/09)
 
 **Wave 3** _(CD — depends on the live ECS surface)_
 
-- [ ] 07.5-09-PLAN.md — GitHub Actions CD on merge to main: build -> ECR -> smoke -> gated db:migrate -> deploy (SC#3; D-10; G-06 strategy)
+- [ ] 07.5-09-PLAN.md — GitHub Actions CD on merge to main (nx-affected): build api/admin/website -> ECR + qr-menu static -> gated db:migrate -> deploy all four + live /healthz (SC#3; D-10; G-06 strategy)
 
 **Wave 4** _(go-live gate)_
 
-- [ ] 07.5-10-PLAN.md — G-02 tested restore + G-06 app-only rollback proof + SC#5 external E2E smoke + G-07 infra-stub supersession
+- [ ] 07.5-10-PLAN.md — G-02 tested restore + G-06 app-only rollback proof + SC#5 external four-surface E2E smoke (api/admin/website/qr-menu) + G-07 infra-stub supersession
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-investor
 
