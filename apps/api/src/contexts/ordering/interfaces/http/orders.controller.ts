@@ -4,7 +4,11 @@ import { createZodDto } from 'nestjs-zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { CreateOrderInputDto, OrderResponseSchema } from '../../application/dto';
+import {
+  CreateOrderInputDto,
+  OrderResponseSchema,
+  type OrderResponse,
+} from '../../application/dto';
 import { CreateOrderService } from '../../application/create-order.service';
 import { mapOrderError } from './error-mapping';
 
@@ -27,7 +31,7 @@ export class OrdersController {
   @ApiCreatedResponse({ type: OrderResponseDto })
   create(
     @Body(new RestoZodValidationPipe(CreateOrderInputDto)) input: CreateOrderInputDto,
-  ): Promise<{ orderId: string; orderNumber: string }> {
+  ): Promise<OrderResponse> {
     return wrap(() => this.createOrder.execute(input));
   }
 }

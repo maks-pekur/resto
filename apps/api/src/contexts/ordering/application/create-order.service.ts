@@ -14,7 +14,7 @@ import {
   OrderModifierNotAvailableError,
 } from '../domain/errors';
 import { Order, type CreateOrderInput as DomainCreateOrderInput } from '../domain/order.aggregate';
-import { generateOrderNumber, type CreateOrderInput } from './dto';
+import { generateOrderNumber, type CreateOrderInput, type OrderResponse } from './dto';
 
 type DomainItem = DomainCreateOrderInput['items'][number];
 
@@ -25,7 +25,7 @@ export class CreateOrderService {
     @Inject(MENU_PRICING_PORT) private readonly pricing: MenuPricingPort,
   ) {}
 
-  async execute(input: CreateOrderInput): Promise<{ orderId: string; orderNumber: string }> {
+  async execute(input: CreateOrderInput): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
     const brandId = requireBrandContext();
@@ -98,7 +98,13 @@ export class CreateOrderService {
     const existing = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     const snap = existing?.toSnapshot() ?? order.toSnapshot();
 
-    return { orderId: snap.id, orderNumber: snap.orderNumber };
+    return {
+      orderId: snap.id,
+      orderNumber: snap.orderNumber,
+      status: snap.status,
+      total: snap.total,
+      currency: snap.currency,
+    };
   }
 
   private resolveUnitPrice(item: PricedMenuItem, sizeId: string | null): string {

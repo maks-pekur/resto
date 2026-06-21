@@ -155,5 +155,8 @@ export const payments = pgTable(
       'payments_status_chk',
       sql`${table.status} IN ('pending','succeeded','failed','refunded')`,
     ),
+    uniqueIndex('payments_provider_payment_id_uq')
+      .on(table.provider, table.providerPaymentId)
+      .where(sql`${table.providerPaymentId} IS NOT NULL`),
   ],
 );
