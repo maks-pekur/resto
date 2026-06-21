@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import i18n from './index';
 
 beforeAll(async () => {
-  // Ensure i18n has initialised before any assertion
   if (!i18n.isInitialized) {
     await new Promise<void>((resolve) => {
       i18n.on('initialized', resolve);
@@ -47,7 +46,6 @@ describe('i18n — language switch', () => {
     await i18n.changeLanguage('en');
     const result = i18n.t('nav.dashboard');
     expect(result).toBe('Dashboard');
-    // restore ru for subsequent tests
     await i18n.changeLanguage('ru');
   });
 });
