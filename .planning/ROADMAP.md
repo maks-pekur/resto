@@ -404,7 +404,7 @@ Plans:
 **Wave 1** _(parallel — API enablers + SPA foundation, no file overlap)_
 
 - [x] 07.6-01-PLAN.md — D-08: relocate 7 catalog GET reads to operator v1/catalog + delete internal-catalog controller (SC-1/SC-2)
-- [ ] 07.6-02-PLAN.md — operator POST/DELETE /v1/tenants/me/offboard (closes settings internal-token gap) + admin-host CORS/trusted-origins env (SC-2/SC-3)
+- [x] 07.6-02-PLAN.md — operator POST/DELETE /v1/tenants/me/offboard (closes settings internal-token gap) + admin-host CORS/trusted-origins env (SC-2/SC-3)
 - [ ] 07.6-03-PLAN.md — Vite + React + Tailwind4 + shadcn scaffold; env/api-client/auth-client/query-client/i18n/theme/router root; retire Next (legitimacy gate) (SC-1/SC-2/SC-3)
 
 **Wave 2** _(surface port — depends on 07.6-03; partitioned by route-group, no file overlap)_
