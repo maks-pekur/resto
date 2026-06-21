@@ -1,9 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { defineConfig, type Plugin } from 'vitest/config';
 
-// G-01: vitest uses Vite's transform pipeline which doesn't natively handle
-// *.sql imports. This plugin mirrors esbuild's text loader: any *.sql import
-// is returned as an ES module exporting the file content as a default string.
 const sqlTextPlugin: Plugin = {
   name: 'sql-text',
   transform(_code, id) {

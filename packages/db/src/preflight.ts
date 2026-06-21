@@ -258,8 +258,6 @@ export class WithoutTenantAllowlistMisalignedError extends Error {
 // file" at boot. Resolves paths against the workspace root (detected by
 // pnpm-workspace.yaml), not process.cwd(), so the check works whether boot is
 // from the repo root (dev) or the api app directory (built image).
-// G-01: returns null when no workspace root is found (bundled/Docker context
-// where pnpm-workspace.yaml is not present) so the caller can skip the FS check.
 const findWorkspaceRoot = (start: string): string | null => {
   let dir = start;
   // Walk up until pnpm-workspace.yaml is found or we hit the filesystem root.
@@ -272,10 +270,6 @@ const findWorkspaceRoot = (start: string): string | null => {
   }
 };
 
-// G-01: esbuild rewrites import.meta to {} in CJS, so import.meta.url is
-// undefined at runtime even though TypeScript types it as `string`. Cast
-// through `{ url?: string }` so the null-check is well-typed without a
-// non-null assertion, and fall back to process.cwd() in bundled/Docker context.
 const metaUrl = (import.meta as { url?: string }).url;
 const WORKSPACE_ROOT =
   metaUrl != null
@@ -286,8 +280,6 @@ export const assertWithoutTenantCallsiteRegistered = (
   allowlist: readonly string[] = WITHOUT_TENANT_ALLOWLIST,
 ): void => {
   if (WORKSPACE_ROOT === null) {
-    // Bundled/Docker context: source files are not present on disk; the
-    // ESLint call-site fence (TEN-12) already enforced this at build time.
     logger.info(
       { allowed: allowlist.length },
       'Database preflight skipped (bundled context): withoutTenant allowlist FS check not applicable.',

@@ -1,8 +1,6 @@
 import postgres from 'postgres';
 import { provisionAppRole, provisionAuthRole } from '../index.js';
 
-// Used by the CI docker-api job to provision resto_app and resto_auth roles
-// against the CI Postgres service before the Docker boot smoke test.
 const main = async (): Promise<void> => {
   const adminUrl = process.env.DATABASE_ADMIN_URL;
   const appPassword = process.env.APP_ROLE_PASSWORD;

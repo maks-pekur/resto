@@ -68,9 +68,6 @@ export const emitOpenApi = async (outputPath: string): Promise<void> => {
   await app.close();
 };
 
-// G-01: esbuild rewrites import.meta to {} in CJS, so import.meta.url is
-// undefined at runtime. Cast to expose it as optional so the check is
-// well-typed without a non-null assertion; guard skips cleanly in the bundle.
 const _metaUrl = (import.meta as { url?: string }).url;
 if (process.argv[1] && _metaUrl?.endsWith(process.argv[1].replace(/\\/g, '/'))) {
   const target = resolve(import.meta.dirname, '..', '..', '..', 'docs', 'api', 'openapi.yaml');

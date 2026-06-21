@@ -1,7 +1,4 @@
 import type { Sql } from 'postgres';
-// G-01: inlined at build time by esbuild `loader: { '.sql': 'text' }`;
-// eliminates the import.meta.dirname runtime path read that crashes the
-// CJS bundle (import_meta.dirname = undefined in bundled output).
 import GRANTS_SQL from '../sql/roles.sql';
 import { validateRolePassword } from './internal/password';
 import { assertRoleAttributes } from './preflight';
