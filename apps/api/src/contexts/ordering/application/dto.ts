@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
 import { randomBytes } from 'node:crypto';
-import { DiscountSpecSchema } from '../domain/discount';
 
+// Prices and discounts are resolved server-side from the published catalog
+// (API review 2026-06-15 BLOCK-1) — the client sends only what it selected
+// (item, size, modifier options, quantity, display names), never money.
 const CartModifierSchema = z.object({
   optionId: z.string().uuid(),
   name: z.string().min(1).max(200),
-  priceDelta: z.string().regex(/^-?\d+(\.\d{1,2})?$/),
-  modifierGroupId: z.string().uuid().optional(),
   amount: z.number().int().positive().optional(),
 });
 
@@ -15,8 +15,6 @@ const CartLineItemSchema = z.object({
   itemId: z.string().uuid(),
   sizeId: z.string().uuid().nullable(),
   name: z.string().min(1).max(200),
-  unitPrice: z.string().regex(/^\d+(\.\d{1,2})?$/),
-  currency: z.string().regex(/^[A-Z]{3}$/),
   modifiers: z.array(CartModifierSchema),
   quantity: z.number().int().positive(),
 });
@@ -37,7 +35,6 @@ export const CreateOrderInputSchema = z
         message: 'scheduledFor must be in the future',
       })
       .optional(),
-    discountSpec: DiscountSpecSchema.optional(),
   })
   .refine(
     (data) => {

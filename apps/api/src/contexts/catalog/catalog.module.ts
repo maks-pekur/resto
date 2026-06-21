@@ -69,5 +69,6 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     PublishMenuService,
     RequireActiveTenantGuard,
   ],
+  exports: [CATALOG_REPOSITORY, MENU_VERSION_PORT],
 })
 export class CatalogModule {}
