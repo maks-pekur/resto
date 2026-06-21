@@ -5,6 +5,7 @@ import {
   HttpStatus,
   Inject,
   Param,
+  ParseUUIDPipe,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -105,7 +106,7 @@ export class InternalCatalogController {
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ItemDetailResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
-  getItem(@Param('id') id: string): Promise<ItemDetailResponseDto> {
+  getItem(@Param('id', ParseUUIDPipe) id: string): Promise<ItemDetailResponseDto> {
     return wrap(() => this.getItemService.execute({ id }));
   }
 
@@ -121,7 +122,9 @@ export class InternalCatalogController {
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
-  getModifierGroup(@Param('id') id: string): Promise<ModifierGroupDetailResponseDto> {
+  getModifierGroup(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ModifierGroupDetailResponseDto> {
     return wrap(() => this.getModifierGroupService.execute({ id }));
   }
 

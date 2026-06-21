@@ -61,8 +61,9 @@ export class CreateOrderService {
         return {
           optionId: option.optionId,
           nameSnapshot: m.name,
-          priceDelta: amount <= option.freeAmount ? '0.00' : option.priceDelta,
+          priceDelta: option.priceDelta,
           amount,
+          freeAmount: option.freeAmount,
           modifierGroupId: option.groupId,
         };
       });

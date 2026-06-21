@@ -78,6 +78,7 @@ export interface CreateOrderInput {
       readonly nameSnapshot: string;
       readonly priceDelta: string;
       readonly amount: number;
+      readonly freeAmount?: number;
       readonly modifierGroupId: string | null;
     }[];
     readonly quantity: number;
@@ -102,7 +103,10 @@ function computeTotals(
 
   for (const item of items) {
     const unitMinor = toMinorUnits(item.unitPrice);
-    const modifierMinor = item.modifiers.reduce((sum, m) => sum + toMinorUnits(m.priceDelta), 0);
+    const modifierMinor = item.modifiers.reduce(
+      (sum, m) => sum + toMinorUnits(m.priceDelta) * Math.max(0, m.amount - (m.freeAmount ?? 0)),
+      0,
+    );
     const lineCostMinor = Math.round(unitMinor + modifierMinor) * item.quantity;
     subtotalMinor += lineCostMinor;
 
@@ -112,7 +116,13 @@ function computeTotals(
       nameSnapshot: item.nameSnapshot,
       unitPrice: item.unitPrice,
       currency: item.currency,
-      modifiers: item.modifiers.map((m) => ({ ...m })),
+      modifiers: item.modifiers.map((m) => ({
+        optionId: m.optionId,
+        nameSnapshot: m.nameSnapshot,
+        priceDelta: m.priceDelta,
+        amount: m.amount,
+        modifierGroupId: m.modifierGroupId,
+      })),
       quantity: item.quantity,
       lineTotal: fromMinorUnits(lineCostMinor),
       categoryId: item.categoryId,
