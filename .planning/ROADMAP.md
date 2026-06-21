@@ -30,7 +30,8 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_ (completed 2026-06-12)
 - [x] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding) (completed 2026-06-13)
 - [x] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11) (completed 2026-06-14)
-- [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: managed Postgres (the 3-role schema is already designed), managed object storage (R2/S3), pragmatic hosting (Fly/Railway/ECS — not full k8s), CD on top of the existing CI, runtime secret injection _(added 2026-06-12 scope rebalance — CTO review HIGH: no prod deploy existed)_
+- [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
+- [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [ ] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
 
@@ -341,6 +342,9 @@ Plans:
 ### Phase 7.5: Production Deploy
 
 **Goal**: Stand up the first real production environment so the MVP-1 spine is actually shippable and Stripe webhooks (Phase 8) have a public HTTPS URL to call. Pragmatic over ideal — managed services, not a full k8s build-out _(added 2026-06-12 scope rebalance — closes the CTO review HIGH finding that no production deploy existed; `infra/k8s` and `infra/terraform` were stubs)_
+
+> **Scope change (2026-06-21):** `apps/admin` is being migrated to a Vite SPA (Phase 7.6) and will deploy as **static**, not an ECS service. 7.5 now deploys **api + website (ECS) + qr-menu (static)**; the admin ECS service / admin Dockerfile / admin CD path are **deferred to Phase 7.6**. Plan 07.5-11's admin Dockerfile (already written) is superseded; its website Dockerfile stays. The api Docker-boot fix (07.5-02) is done and unaffected. Stack locked via 07.5-CONTEXT.md.
+
 **Depends on**: Phase 7 (a deployable surface — admin + catalog + ordering — exists)
 **Requirements**: infra phase, no product requirement IDs
 **Success Criteria** (what must be TRUE):
@@ -380,6 +384,23 @@ Plans:
 - [ ] 07.5-10-PLAN.md — G-02 tested restore + G-06 app-only rollback proof + SC#5 external four-surface E2E smoke (api/admin/website/qr-menu) + G-07 infra-stub supersession
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-investor
+
+### Phase 7.6: Admin → Vite SPA
+
+**Goal**: Migrate `apps/admin` from Next.js 16 (App Router / RSC / server-actions) to a **React + Vite + shadcn SPA**, and deploy it as **static** (Cloudflare Pages or R2 + CDN, like qr-menu). The admin is an internal auth-gated operator dashboard — no SEO / SSR-first-paint benefit — so the Next standalone-Docker friction + RSC complexity buy nothing. Recommended approach: **fresh Vite scaffold + port the existing shadcn primitives and feature components** (they are framework-agnostic React); rewrite only routing + the data/auth layer. _(decided 2026-06-21 during Phase 7.5 deploy work — see `.claude/.../memory/project_admin_vite_migration_2026_06_21.md`)_
+**Depends on**: Phase 7.5 api deploy (operator-auth API endpoints reachable). Should complete BEFORE the admin static deploy is finalized.
+**Requirements**: no new product requirement IDs — re-platform of an existing surface.
+**Success Criteria** (what must be TRUE):
+
+1. `apps/admin` is a Vite + React + shadcn SPA (no Next.js, no RSC, no server actions) with client-side routing; the existing catalog-admin UI surface (item list, item/category/modifier editors, stop-list, publish flow, photo upload, sidebar nav) is preserved by porting components.
+2. **No `INTERNAL_API_TOKEN` in the browser.** All admin→API calls go through **operator-authenticated** endpoints (better-auth session + RBAC), not `/internal/*` — closing review HIGH-7 (per-operator RBAC/attribution). The API exposes the operator-facing endpoints the admin needs (catalog admin endpoints already use operator-auth + Permissions; any remaining `/internal/*` reliance is retired or replaced).
+3. Auth: operator login → better-auth session works from the SPA; open-redirect / cookie-security concerns (formerly handled in Next server actions) are re-established client-side.
+4. The admin builds to static assets and deploys via Cloudflare Pages/R2 + CDN with the wildcard/admin host + TLS (folds the deferred admin slice of Phase 7.5); CD publishes on merge to main.
+5. The four-surface smoke (Phase 7.5 SC#5) passes with the new static admin reachable over HTTPS.
+
+**Plans**: TBD (plan via `/gsd:discuss-phase 7.6` → `/gsd:plan-phase 7.6` after `/clear`)
+**UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
+**Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 8: Payments (Stripe Connect)
 
