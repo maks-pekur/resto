@@ -6,6 +6,7 @@ import {
   HttpStatus,
   Inject,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
 } from '@nestjs/common';
@@ -177,7 +178,7 @@ export class CatalogController {
   @Permissions({ menu: ['update'] })
   @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
-  stopListRemove(@Param('itemId') itemId: string): Promise<void> {
+  stopListRemove(@Param('itemId', ParseUUIDPipe) itemId: string): Promise<void> {
     return wrap(() => this.stopList.unstop(itemId));
   }
 
@@ -229,7 +230,7 @@ export class CatalogController {
   @Permissions({ menu: ['delete'] })
   @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
-  archiveCategory(@Param('id') id: string): Promise<void> {
+  archiveCategory(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveCategoryService.execute(id));
   }
 
@@ -238,7 +239,7 @@ export class CatalogController {
   @Permissions({ menu: ['delete'] })
   @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
-  archiveItem(@Param('id') id: string): Promise<void> {
+  archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
   }
 }
