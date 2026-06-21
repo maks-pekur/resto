@@ -12,6 +12,7 @@ import {
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
+  OrderModifierSelectionInvalidError,
 } from '../domain/errors';
 import { Order, type CreateOrderInput as DomainCreateOrderInput } from '../domain/order.aggregate';
 import { generateOrderNumber, type CreateOrderInput, type OrderResponse } from './dto';
@@ -33,6 +34,7 @@ export class CreateOrderService {
     const snapshot = await this.pricing.loadSnapshot(tenantId, brandId);
     const currency = Currency.parse(snapshot.currency);
     const itemsById = new Map(snapshot.items.map((i) => [i.itemId, i]));
+    const groupsById = new Map(snapshot.modifierGroups.map((g) => [g.groupId, g]));
     const optionsById = new Map(snapshot.modifierOptions.map((o) => [o.optionId, o]));
     const stopped = new Set(snapshot.stoppedItemIds);
 
@@ -58,6 +60,9 @@ export class CreateOrderService {
         if (option.maxAmount !== null && amount > option.maxAmount) {
           throw new OrderModifierNotAvailableError(m.optionId);
         }
+        if (option.minAmount !== null && amount < option.minAmount) {
+          throw new OrderModifierNotAvailableError(m.optionId);
+        }
         return {
           optionId: option.optionId,
           nameSnapshot: m.name,
@@ -67,6 +72,31 @@ export class CreateOrderService {
           modifierGroupId: option.groupId,
         };
       });
+
+      const countByGroup = new Map<string, number>();
+      for (const m of modifiers) {
+        countByGroup.set(m.modifierGroupId, (countByGroup.get(m.modifierGroupId) ?? 0) + 1);
+      }
+      for (const groupId of published.modifierGroupIds) {
+        const group = groupsById.get(groupId);
+        if (!group) continue;
+        const count = countByGroup.get(groupId) ?? 0;
+        if (group.isRequired && count === 0) {
+          throw new OrderModifierSelectionInvalidError(groupId, 'a selection is required');
+        }
+        if (count < group.minSelectable) {
+          throw new OrderModifierSelectionInvalidError(
+            groupId,
+            `at least ${group.minSelectable} required`,
+          );
+        }
+        if (count > group.maxSelectable) {
+          throw new OrderModifierSelectionInvalidError(
+            groupId,
+            `at most ${group.maxSelectable} allowed`,
+          );
+        }
+      }
 
       return {
         menuItemId: published.itemId,

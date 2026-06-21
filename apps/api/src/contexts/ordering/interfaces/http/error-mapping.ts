@@ -5,6 +5,7 @@ import {
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
+  OrderModifierSelectionInvalidError,
   OrderNotFoundError,
 } from '../../domain/errors';
 
@@ -33,6 +34,12 @@ export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof OrderModifierNotAvailableError) {
     return new UnprocessableEntityException({
       code: 'ordering.modifier_not_available',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderModifierSelectionInvalidError) {
+    return new UnprocessableEntityException({
+      code: 'ordering.modifier_selection_invalid',
       message: err.message,
     });
   }

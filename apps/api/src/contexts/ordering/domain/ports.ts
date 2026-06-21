@@ -31,9 +31,17 @@ export interface PricedModifierOption {
   readonly maxAmount: number | null;
 }
 
+export interface PricedModifierGroup {
+  readonly groupId: string;
+  readonly minSelectable: number;
+  readonly maxSelectable: number;
+  readonly isRequired: boolean;
+}
+
 export interface OrderingMenuSnapshot {
   readonly currency: string;
   readonly items: readonly PricedMenuItem[];
+  readonly modifierGroups: readonly PricedModifierGroup[];
   readonly modifierOptions: readonly PricedModifierOption[];
   readonly stoppedItemIds: readonly string[];
 }

@@ -12,6 +12,7 @@ import {
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
+  OrderModifierSelectionInvalidError,
 } from '../../src/contexts/ordering/domain/errors';
 import type { Order } from '../../src/contexts/ordering/domain/order.aggregate';
 
@@ -23,9 +24,13 @@ const categoryId = randomUUID();
 const largeSizeId = randomUUID();
 const cheeseGroupId = randomUUID();
 const cheeseOptionId = randomUUID();
+const cheeseOptionId2 = randomUUID();
 const sauceGroupId = randomUUID();
 const freeSauceOptionId = randomUUID();
 const stoppedItemId = randomUUID();
+const requiredItemId = randomUUID();
+const reqGroupId = randomUUID();
+const reqOptionId = randomUUID();
 
 const snapshot: OrderingMenuSnapshot = {
   currency: 'USD',
@@ -44,10 +49,30 @@ const snapshot: OrderingMenuSnapshot = {
       sizes: [],
       modifierGroupIds: [],
     },
+    {
+      itemId: requiredItemId,
+      categoryId,
+      basePrice: '8.00',
+      sizes: [],
+      modifierGroupIds: [reqGroupId],
+    },
+  ],
+  modifierGroups: [
+    { groupId: cheeseGroupId, minSelectable: 0, maxSelectable: 1, isRequired: false },
+    { groupId: sauceGroupId, minSelectable: 0, maxSelectable: 1, isRequired: false },
+    { groupId: reqGroupId, minSelectable: 1, maxSelectable: 1, isRequired: true },
   ],
   modifierOptions: [
     {
       optionId: cheeseOptionId,
+      groupId: cheeseGroupId,
+      priceDelta: '1.50',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: 3,
+    },
+    {
+      optionId: cheeseOptionId2,
       groupId: cheeseGroupId,
       priceDelta: '1.50',
       freeAmount: 0,
@@ -60,6 +85,14 @@ const snapshot: OrderingMenuSnapshot = {
       priceDelta: '0.50',
       freeAmount: 1,
       minAmount: null,
+      maxAmount: null,
+    },
+    {
+      optionId: reqOptionId,
+      groupId: reqGroupId,
+      priceDelta: '2.00',
+      freeAmount: 0,
+      minAmount: 2,
       maxAmount: null,
     },
   ],
@@ -267,5 +300,87 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
         ),
       ),
     ).rejects.toBeInstanceOf(OrderModifierNotAvailableError);
+  });
+
+  it('rejects when a required modifier group has no selection (HIGH-5)', async () => {
+    const { service, repo } = makeService();
+    await expect(
+      run(() =>
+        service.execute(
+          baseInput({
+            items: [
+              { itemId: requiredItemId, sizeId: null, name: 'Combo', modifiers: [], quantity: 1 },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierSelectionInvalidError);
+    expect(repo.saved).toHaveLength(0);
+  });
+
+  it('rejects when a group exceeds its maxSelectable (HIGH-5)', async () => {
+    const { service } = makeService();
+    await expect(
+      run(() =>
+        service.execute(
+          baseInput({
+            items: [
+              {
+                itemId: pizzaId,
+                sizeId: null,
+                name: 'Pizza',
+                modifiers: [
+                  { optionId: cheeseOptionId, name: 'Cheese', amount: 1 },
+                  { optionId: cheeseOptionId2, name: 'Cheese 2', amount: 1 },
+                ],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierSelectionInvalidError);
+  });
+
+  it('rejects an option whose amount is below its minAmount (HIGH-5)', async () => {
+    const { service } = makeService();
+    await expect(
+      run(() =>
+        service.execute(
+          baseInput({
+            items: [
+              {
+                itemId: requiredItemId,
+                sizeId: null,
+                name: 'Combo',
+                modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 1 }],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierNotAvailableError);
+  });
+
+  it('accepts a valid required selection that satisfies group + amount rules (HIGH-5)', async () => {
+    const { service, repo } = makeService();
+    await run(() =>
+      service.execute(
+        baseInput({
+          items: [
+            {
+              itemId: requiredItemId,
+              sizeId: null,
+              name: 'Combo',
+              modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 2 }],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    // base 8.00 + req 2.00 * 2 = 12.00
+    expect(repo.saved[0]?.toSnapshot().total).toBe('12.00');
   });
 });

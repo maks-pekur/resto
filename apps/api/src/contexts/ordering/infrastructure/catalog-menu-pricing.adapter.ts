@@ -10,6 +10,7 @@ import type {
   MenuPricingPort,
   OrderingMenuSnapshot,
   PricedMenuItem,
+  PricedModifierGroup,
   PricedModifierOption,
 } from '../domain/ports';
 
@@ -35,6 +36,13 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
       modifierGroupIds: [...item.modifierGroupIds],
     }));
 
+    const modifierGroups: PricedModifierGroup[] = menu.modifierGroups.map((group) => ({
+      groupId: group.id,
+      minSelectable: group.minSelectable,
+      maxSelectable: group.maxSelectable,
+      isRequired: group.isRequired,
+    }));
+
     const modifierOptions: PricedModifierOption[] = menu.modifierGroups.flatMap((group) =>
       group.options.map<PricedModifierOption>((opt) => ({
         optionId: opt.id,
@@ -46,6 +54,6 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
       })),
     );
 
-    return { currency: menu.currency, items, modifierOptions, stoppedItemIds };
+    return { currency: menu.currency, items, modifierGroups, modifierOptions, stoppedItemIds };
   }
 }

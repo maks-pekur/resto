@@ -30,7 +30,7 @@ Phase: 07 (ordering) — EXECUTING
 Plan: 5 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Phase complete — ready for verification
-Last activity: 2026-06-21 - Completed quick task 260621-ef1: HIGH-4 + HIGH-13 (HIGH-1 by design)
+Last activity: 2026-06-21 - Completed quick task 260621-est: HIGH-5 + HIGH-10 (HIGH-7/8/11 deferred)
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -155,6 +155,7 @@ None yet.
 | 260621-dai | BLOCK-2: erase ordering tables (orders/items/modifiers/payments) in tenancy_erase_tenant — GDPR PII + orders→brands FK  | 2026-06-21 | 4718d01 | [260621-dai-fix-block-2-tenancy-erase-tenant-must-de](./quick/260621-dai-fix-block-2-tenancy-erase-tenant-must-de/) |
 | 260621-e0m | HIGH-12 order response contract (status/total/currency) + HIGH-9 payments.provider_payment_id unique index              | 2026-06-21 | b3371c5 | [260621-e0m-ordering-highs-order-response-contract-h](./quick/260621-e0m-ordering-highs-order-response-contract-h/) |
 | 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design        | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
+| 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                    | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
 
 ## Deferred Items
 
