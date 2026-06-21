@@ -30,7 +30,7 @@ Phase: 07 (ordering) — EXECUTING
 Plan: 5 of 5
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Phase complete — ready for verification
-Last activity: 2026-06-20 - Completed quick task 260620-wyq: BLOCK-4 prod-guardrail fail-open closed
+Last activity: 2026-06-21 - Completed quick task 260621-cyf: green main CI (format + next build env)
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -151,6 +151,7 @@ None yet.
 | 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                 | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
 | 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
 | 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                         | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
+| 260621-cyf | Fix red CI on main — prettier format + build-time env for admin/website next builds                                     | 2026-06-21 | f8e18ce | [260621-cyf-fix-red-ci-on-main-prettier-format-missi](./quick/260621-cyf-fix-red-ci-on-main-prettier-format-missi/) |
 
 ## Deferred Items
 
