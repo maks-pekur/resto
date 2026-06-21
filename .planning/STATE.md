@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7.6 context gathered
-last_updated: "2026-06-21T17:43:13.904Z"
+last_updated: '2026-06-21T17:43:13.904Z'
 last_activity: 2026-06-21 -- Phase 7.6 planning complete
 progress:
   total_phases: 20
