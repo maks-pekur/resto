@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 7.6 context gathered
-last_updated: '2026-06-21T19:14:52.487Z'
+stopped_at: Completed 07.6-04-PLAN.md
+last_updated: '2026-06-21T19:38:08.201Z'
 last_activity: 2026-06-21
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 66
-  completed_plans: 53
+  completed_plans: 54
   percent: 40
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 7.6 (admin-vite-spa) — EXECUTING
-Plan: 4 of 7
+Plan: 5 of 7
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
 Last activity: 2026-06-21
@@ -38,7 +38,7 @@ Last activity: 2026-06-21
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [████████░░] 80%
+Progress: [████████░░] 82%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -93,6 +93,7 @@ _Updated after each plan completion_
 | Phase 07.6-admin-vite-spa P01 | 20min | 3 tasks | 4 files |
 | Phase 07.6 P02 | 20min | 3 tasks | 3 files |
 | Phase 07.6-admin-vite-spa P03 | 51 | 3 tasks | 27 files |
+| Phase 07.6 P04 | 15m | 3 tasks | 58 files |
 
 ## Accumulated Context
 
@@ -137,6 +138,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Next.js 16 Turbopack monorepo Docker: WORKDIR to app dir + turbopack.root via import.meta.url; server-only env vars need ARG placeholders for build-time page collection
 - [Phase ?]: owner-only permission gate
 - [Phase ?]: admin SPA trusted origin
+- [Phase ?]: better-auth v1.4.22 forgetPassword missing on client — use direct fetch to /api/auth/request-password-reset
+- [Phase ?]: Brand-in-URL ($brandSlug param) replaces HMAC active-brand cookie — D-03 compliant
+- [Phase ?]: dashboard/index.tsx self-contained with TodaysStopListPlaceholder stub; plan 07.6-05 overwrites with live catalog data
 
 ### Pending Todos
 
@@ -189,6 +193,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-21T19:14:52.477Z
-Stopped at: Phase 7.6 context gathered
+Last session: 2026-06-21T19:38:08.191Z
+Stopped at: Completed 07.6-04-PLAN.md
 Resume file: None
