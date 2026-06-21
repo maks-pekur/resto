@@ -170,10 +170,73 @@ jobs:
         # the same single command to reproduce a CI drift failure.
         run: pnpm openapi:check
 
-  # docker-api job intentionally removed at ADR-0021 adoption.
-  # Reason: pre-revenue MVP, no production deploy exists yet; a green Docker
-  # build check would currently mask a latent runtime bug (`import.meta.dirname`
-  # undefined in CJS bundle — see packages/db/src/roles.ts, auth-role.ts,
-  # apps/api/src/openapi.ts). Reinstate when ADR-0021 Tier 6 (app propagation +
-  # production deploy) becomes the active focus. Hosting direction per ADR-0011
-  # (AWS) — revisit at that point.
+  docker-api:
+    name: Docker API boot smoke
+    runs-on: ubuntu-latest
+    needs: install
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci_admin
+          POSTGRES_PASSWORD: ci_admin_pwd
+          POSTGRES_DB: ci_resto
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        run: pnpm --filter @resto/db db:migrate
+        env:
+          DATABASE_ADMIN_URL: postgres://ci_admin:ci_admin_pwd@localhost:5432/ci_resto
+      - name: Provision roles
+        run: |
+          pnpm exec tsx --tsconfig packages/db/tsconfig.json packages/db/src/cli/provision-roles-ci.ts
+        env:
+          DATABASE_ADMIN_URL: postgres://ci_admin:ci_admin_pwd@localhost:5432/ci_resto
+          APP_ROLE_PASSWORD: ci_app_role_pwd_1234
+          AUTH_ROLE_PASSWORD: ci_auth_role_pwd_1234
+      - name: Docker build
+        run: docker build -f apps/api/Dockerfile -t api-smoke:ci .
+      - name: Docker boot smoke
+        run: |
+          docker run --rm --network host \
+            -e NODE_ENV=test \
+            -e DATABASE_URL=postgres://resto_app:ci_app_role_pwd_1234@localhost:5432/ci_resto \
+            -e BETTER_AUTH_DATABASE_URL=postgres://resto_auth:ci_auth_role_pwd_1234@localhost:5432/ci_resto \
+            -e NATS_URL=nats://localhost:4222 \
+            -e NATS_DISABLED=true \
+            -e OTEL_DISABLED=true \
+            -e BETTER_AUTH_BASE_URL=http://localhost:3000 \
+            -e ADMIN_WEB_URL=http://localhost:3001 \
+            -e INTERNAL_API_TOKEN=ci_internal_token_placeholder \
+            -e BETTER_AUTH_SECRET=ci_better_auth_secret_placeholder_32ch \
+            -e AUDIT_ERASURE_SALT=ci_audit_erasure_salt_placeholder_32ch \
+            -e S3_ENDPOINT=http://localhost:9000 \
+            -e S3_ACCESS_KEY=ci_s3_access_key \
+            -e S3_SECRET_KEY=ci_s3_secret_key \
+            &
+          for i in $(seq 1 20); do
+            sleep 1
+            if curl -sf http://localhost:3000/healthz; then
+              echo "Boot smoke passed."
+              exit 0
+            fi
+          done
+          echo "Boot smoke FAILED — container did not serve /healthz within 20s."
+          exit 1
