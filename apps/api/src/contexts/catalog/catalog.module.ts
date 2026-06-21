@@ -33,12 +33,11 @@ import { CatalogDrizzleRepository } from './infrastructure/catalog-drizzle.repos
 import { PostgresMenuVersionAdapter } from './infrastructure/postgres-menu-version.adapter';
 import { S3SignedImageUrlAdapter } from './infrastructure/s3-signed-image-url.adapter';
 import { CatalogController } from './interfaces/http/catalog.controller';
-import { InternalCatalogController } from './interfaces/http/internal-catalog.controller';
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
 @Module({
   imports: [TenancyModule],
-  controllers: [PublicMenuController, InternalCatalogController, CatalogController],
+  controllers: [PublicMenuController, CatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },
     PostgresMenuVersionAdapter,
