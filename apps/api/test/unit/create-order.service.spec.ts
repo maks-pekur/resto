@@ -162,6 +162,27 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
     expect(repo.saved[0]?.toSnapshot().total).toBe('12.00');
   });
 
+  it('charges a paid modifier per unit when amount > 1 (HIGH-4)', async () => {
+    const { service, repo } = makeService();
+    await run(() =>
+      service.execute(
+        baseInput({
+          items: [
+            {
+              itemId: pizzaId,
+              sizeId: null,
+              name: 'Pizza',
+              modifiers: [{ optionId: cheeseOptionId, name: 'Cheese', amount: 2 }],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    // base 12.00 + cheese 1.50 * 2 = 15.00
+    expect(repo.saved[0]?.toSnapshot().total).toBe('15.00');
+  });
+
   it('rejects an unknown / cross-brand item with 422 and persists nothing', async () => {
     const { service, repo } = makeService();
     await expect(

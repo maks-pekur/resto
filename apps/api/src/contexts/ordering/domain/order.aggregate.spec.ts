@@ -101,6 +101,40 @@ describe('Order.create', () => {
     expect(snap.subtotal).toMatch(/^\d+\.\d{2}$/);
   });
 
+  it('charges a modifier per unit and prorates the free allowance (HIGH-4)', () => {
+    const order = Order.create(
+      makeInput({
+        items: [
+          {
+            menuItemId: '00000000-0000-0000-0000-000000000010',
+            nameSnapshot: 'Burger',
+            unitPrice: '10.00',
+            currency: USD,
+            modifiers: [
+              {
+                optionId: '00000000-0000-0000-0000-0000000000a1',
+                nameSnapshot: 'Bacon',
+                priceDelta: '1.50',
+                amount: 3,
+                freeAmount: 1,
+                modifierGroupId: null,
+              },
+            ],
+            quantity: 2,
+            categoryId: 'cat-1',
+          },
+        ],
+      }),
+    );
+    const snap = order.toSnapshot();
+    // per item unit: 10.00 + 1.50 * (3 - 1) = 13.00; * quantity 2 = 26.00
+    expect(snap.subtotal).toBe('26.00');
+    expect(snap.total).toBe('26.00');
+    // the persisted modifier keeps the real per-unit price + selected amount
+    expect(snap.items[0]?.modifiers[0]?.priceDelta).toBe('1.50');
+    expect(snap.items[0]?.modifiers[0]?.amount).toBe(3);
+  });
+
   it('demonstrates per-line rounding diverges from round-at-total when fractional modifiers exist', () => {
     const order = Order.create(
       makeInput({
