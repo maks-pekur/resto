@@ -9,8 +9,9 @@ import {
 const okProdValues = {
   S3_ENDPOINT: 'https://s3.amazonaws.com',
   S3_ACCESS_KEY: 'prod-access',
-  S3_SECRET_KEY: 'prod-secret-replace-me',
+  S3_SECRET_KEY: 'prod-secret-value-32-chars-padding-aaa',
   AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
+  BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
   INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
   // D-01 / Skeptic HIGH-2 — guard added in Plan 03-02; the prod fixture
   // must carry a valid RESEND_API_KEY so the pre-existing dev-default
@@ -117,6 +118,48 @@ describe('assertProdGuardrails', () => {
     expect(() =>
       assertProdGuardrails(buildEnv({ INTERNAL_API_TOKEN: 'internal_dev_token_change_me' })),
     ).toThrow(/INTERNAL_API_TOKEN/);
+  });
+
+  describe('API review 2026-06-15 BLOCK-4: critical-secret value checks', () => {
+    it('throws when BETTER_AUTH_SECRET equals the in-code dev fallback', () => {
+      expect(() =>
+        assertProdGuardrails(
+          buildEnv({ BETTER_AUTH_SECRET: 'dev-only-better-auth-secret-32-chars-padding' }),
+        ),
+      ).toThrow(/BETTER_AUTH_SECRET/);
+    });
+
+    it('throws when BETTER_AUTH_SECRET equals the .env.example placeholder', () => {
+      expect(() =>
+        assertProdGuardrails(
+          buildEnv({ BETTER_AUTH_SECRET: 'local_dev_secret_replace_me_with_a_real_32_char_value' }),
+        ),
+      ).toThrow(/BETTER_AUTH_SECRET/);
+    });
+
+    it('throws when BETTER_AUTH_SECRET is unset in production', () => {
+      expect(() =>
+        assertProdGuardrails(buildEnv({ BETTER_AUTH_SECRET: undefined as unknown as string })),
+      ).toThrow(/BETTER_AUTH_SECRET/);
+    });
+
+    it('throws when AUDIT_ERASURE_SALT equals the .env.example placeholder', () => {
+      expect(() =>
+        assertProdGuardrails(
+          buildEnv({
+            AUDIT_ERASURE_SALT: 'local-dev-erasure-salt-replace-me-with-a-real-32-char-value',
+          }),
+        ),
+      ).toThrow(/AUDIT_ERASURE_SALT/);
+    });
+
+    it('throws when a critical secret still contains a replace-me/change-me marker', () => {
+      expect(() =>
+        assertProdGuardrails(
+          buildEnv({ BETTER_AUTH_SECRET: 'almost-real-secret-but-replace_me-32chars' }),
+        ),
+      ).toThrow(/BETTER_AUTH_SECRET/);
+    });
   });
 
   describe('D-01 / Skeptic HIGH-2: Resend assertion', () => {
