@@ -16,6 +16,7 @@ RUN corepack enable && corepack prepare pnpm@9.15.0 --activate
 
 COPY --from=deps /workspace/node_modules ./node_modules
 COPY --from=deps /workspace/apps/admin/node_modules ./apps/admin/node_modules
+COPY --from=deps /workspace/packages/domain/node_modules ./packages/domain/node_modules
 COPY tsconfig.base.json ./
 COPY apps/admin ./apps/admin
 COPY packages/domain ./packages/domain
@@ -23,9 +24,16 @@ COPY packages/config-typescript ./packages/config-typescript
 COPY packages/config-eslint ./packages/config-eslint
 
 ARG NEXT_PUBLIC_API_ORIGIN
+ARG ADMIN_WEB_URL=https://admin.resto.app
+ARG INTERNAL_API_TOKEN=build-time-placeholder-token-32-chars
+ARG ACTIVE_BRAND_COOKIE_SECRET=build-time-placeholder-secret-32chars!
 ENV NEXT_PUBLIC_API_ORIGIN=$NEXT_PUBLIC_API_ORIGIN
+ENV ADMIN_WEB_URL=$ADMIN_WEB_URL
+ENV INTERNAL_API_TOKEN=$INTERNAL_API_TOKEN
+ENV ACTIVE_BRAND_COOKIE_SECRET=$ACTIVE_BRAND_COOKIE_SECRET
 
-RUN pnpm --filter @resto/admin build
+WORKDIR /workspace/apps/admin
+RUN pnpm build
 
 FROM node:22-alpine AS runner
 WORKDIR /app
