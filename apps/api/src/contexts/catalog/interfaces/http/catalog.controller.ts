@@ -276,7 +276,6 @@ export class CatalogController {
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
-    // No query param → all categories (admin tree view). Empty string → top-level only. UUID → children of that parent.
     const filter: string | null | undefined =
       parentId === undefined ? undefined : parentId === '' ? null : parentId;
     return wrap(() => this.listCategoriesService.execute({ parentId: filter }));

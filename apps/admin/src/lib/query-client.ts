@@ -4,8 +4,8 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      retry: 1,
-      retryDelay: 500,
+      // apiFetch owns the single idempotent-GET 5xx retry (apps/CLAUDE.md); no Query-layer retry.
+      retry: 0,
     },
     mutations: {
       retry: 0,

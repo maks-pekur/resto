@@ -59,7 +59,6 @@ export function ItemsFilterBar({
     'all-except-archived': t('filtersAll'),
     draft: t('filtersDraft'),
     published: t('filtersPublished'),
-    paused: t('filtersPaused'),
     archived: t('filtersArchived'),
   };
 
@@ -102,7 +101,6 @@ export function ItemsFilterBar({
           <SelectItem value="all-except-archived">{STATUS_LABEL['all-except-archived']}</SelectItem>
           <SelectItem value="draft">{STATUS_LABEL.draft}</SelectItem>
           <SelectItem value="published">{STATUS_LABEL.published}</SelectItem>
-          <SelectItem value="paused">{STATUS_LABEL.paused}</SelectItem>
           <SelectItem value="archived">{STATUS_LABEL.archived}</SelectItem>
         </SelectContent>
       </Select>

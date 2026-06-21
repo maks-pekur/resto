@@ -205,18 +205,15 @@ export const upsertCategory = (brandSlug: string, id: string | null, data: Categ
     brandSlug,
   });
 
-export const reorderCategories = async (
+export const reorderCategories = (
   brandSlug: string,
   moves: { id: string; parentId: string | null; sortOrder: number }[],
-): Promise<void> => {
-  for (const move of moves) {
-    await apiFetch('/v1/catalog/categories', {
-      method: 'POST',
-      body: move,
-      brandSlug,
-    });
-  }
-};
+) =>
+  apiFetch<{ readonly updated: number }>('/v1/catalog/categories/reorder', {
+    method: 'POST',
+    body: { moves },
+    brandSlug,
+  });
 
 export const archiveCategory = (brandSlug: string, id: string) =>
   apiFetch(`/v1/catalog/categories/${id}/archive`, {
@@ -277,11 +274,15 @@ export const toggleStopList = (brandSlug: string, itemId: string, next: 'paused'
   });
 };
 
-export const resetStopList = (brandSlug: string) =>
-  apiFetch('/v1/catalog/stop-list/reset', {
-    method: 'POST',
-    brandSlug,
-  });
+export const resetStopList = async (brandSlug: string): Promise<{ ok: boolean }> => {
+  const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug });
+  if (!res.ok) return { ok: false };
+  for (const item of res.data?.items ?? []) {
+    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, { method: 'DELETE', brandSlug });
+    if (!del.ok) return { ok: false };
+  }
+  return { ok: true };
+};
 
 export const upsertModifierGroup = (
   brandSlug: string,

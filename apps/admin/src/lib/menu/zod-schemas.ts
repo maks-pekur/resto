@@ -25,18 +25,12 @@ export const refineCategoryDepth = (
     }
   });
 
-export type ItemListStatusFilter =
-  | 'all-except-archived'
-  | 'draft'
-  | 'published'
-  | 'paused'
-  | 'archived';
+export type ItemListStatusFilter = 'all-except-archived' | 'draft' | 'published' | 'archived';
 
 const KNOWN_STATUS_FILTERS: ReadonlySet<ItemListStatusFilter> = new Set<ItemListStatusFilter>([
   'all-except-archived',
   'draft',
   'published',
-  'paused',
   'archived',
 ]);
 
