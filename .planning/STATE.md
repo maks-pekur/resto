@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 07.6-04-PLAN.md
-last_updated: '2026-06-21T20:21:25.647Z'
+last_updated: '2026-06-21T20:39:55.466Z'
 last_activity: 2026-06-21
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 66
-  completed_plans: 55
+  completed_plans: 56
   percent: 40
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 7.6 (admin-vite-spa) — EXECUTING
-Plan: 6 of 7
+Plan: 7 of 7
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
 Last activity: 2026-06-21
@@ -38,7 +38,7 @@ Last activity: 2026-06-21
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 85%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -95,6 +95,7 @@ _Updated after each plan completion_
 | Phase 07.6-admin-vite-spa P03 | 51 | 3 tasks | 27 files |
 | Phase 07.6 P04 | 15m | 3 tasks | 58 files |
 | Phase 07.6-admin-vite-spa P05 | 300 | 4 tasks | 41 files |
+| Phase 07.6-admin-vite-spa P06 | 11min | 3 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -145,6 +146,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 07.6-05
 - [Phase ?]: 07.6-05
 - [Phase ?]: 07.6-05
+- [Phase ?]: useParams strict:false for parent brandSlug in nested brand routes
 
 ### Pending Todos
 
@@ -197,6 +199,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-21T20:21:16.157Z
+Last session: 2026-06-21T20:39:49.588Z
 Stopped at: Completed 07.6-04-PLAN.md
 Resume file: None

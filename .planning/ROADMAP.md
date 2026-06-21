@@ -411,7 +411,7 @@ Plans:
 
 - [x] 07.6-04-PLAN.md — auth routes + client route guard + dashboard shell + sidebar/nav-user/brand-switcher (brand-in-URL) + onboarding/brand (SC-1/SC-3)
 - [x] 07.6-05-PLAN.md — menu surface: items/categories/modifier-groups/item-sizes/stop-list + publish flow + photo upload + draft-diff via operator v1/catalog (SC-1/SC-2)
-- [ ] 07.6-06-PLAN.md — brands/domains/payouts/theme + settings (offboard danger-zone on operator endpoint) + team; eliminates last internal-token path (SC-1/SC-2)
+- [x] 07.6-06-PLAN.md — brands/domains/payouts/theme + settings (offboard danger-zone on operator endpoint) + team; eliminates last internal-token path (SC-1/SC-2)
 
 **Wave 3** _(deploy + verify — depends on full surface)_
 
