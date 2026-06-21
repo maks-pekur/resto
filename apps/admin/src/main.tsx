@@ -18,6 +18,13 @@ import { Route as brandSlugLayoutRoute } from './routes/(protected)/dashboard/$b
 import { Route as onboardingBrandRoute } from './routes/(protected)/onboarding/brand';
 import { Route as dashboardSettingsRoute } from './routes/(protected)/dashboard/settings';
 import { Route as dashboardTeamRoute } from './routes/(protected)/dashboard/team';
+import { Route as menuLayoutRoute } from './routes/(protected)/dashboard/$brandSlug/menu/_layout';
+import { Route as menuCategoriesRoute } from './routes/(protected)/dashboard/$brandSlug/menu/categories';
+import { Route as menuItemsRoute } from './routes/(protected)/dashboard/$brandSlug/menu/items';
+import { Route as menuItemDetailRoute } from './routes/(protected)/dashboard/$brandSlug/menu/items.$id';
+import { Route as menuStopListRoute } from './routes/(protected)/dashboard/$brandSlug/menu/stop-list';
+import { Route as menuModifierGroupsRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups';
+import { Route as menuModifierGroupDetailRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups.$id';
 import '@resto/config-tailwind/tokens.css';
 import './styles.css';
 
@@ -29,7 +36,16 @@ const authRouteTree = authLayoutRoute.addChildren([
   acceptInvitationRoute,
 ]);
 
-const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([]);
+const menuRouteTree = menuLayoutRoute.addChildren([
+  menuCategoriesRoute,
+  menuItemsRoute,
+  menuItemDetailRoute,
+  menuStopListRoute,
+  menuModifierGroupsRoute,
+  menuModifierGroupDetailRoute,
+]);
+
+const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([menuRouteTree]);
 
 const dashboardRouteTree = dashboardLayoutRoute.addChildren([
   dashboardIndexRoute,

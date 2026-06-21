@@ -1,12 +1,12 @@
 import { createRoute } from '@tanstack/react-router';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Route as dashboardLayoutRoute } from './_layout';
 import { meBrandsQuery } from '@/lib/queries/identity';
+import { stopListQuery } from '@/lib/queries/catalog';
 import { SetupChecklistCard } from '@/components/setup-checklist-card';
 import { PageHeading } from '@/components/page-heading';
-import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { TodaysWidget } from '@/components/menu/todays-86-widget';
 
 export const Route = createRoute({
   getParentRoute: () => dashboardLayoutRoute,
@@ -14,27 +14,19 @@ export const Route = createRoute({
   component: DashboardPage,
 });
 
-function TodaysStopListPlaceholder() {
-  const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between gap-3">
-          <CardTitle>{t('todayTitle')}</CardTitle>
-          <Badge variant="secondary" aria-label={t('todayBadgeAria')}>
-            0
-          </Badge>
-        </div>
-        <CardDescription>{t('todayEmpty')}</CardDescription>
-      </CardHeader>
-    </Card>
-  );
-}
-
 function DashboardPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
   const { data: brandsResult } = useSuspenseQuery(meBrandsQuery());
-  const brandsCount = brandsResult.data?.brands.length ?? 0;
+  const brands = brandsResult.data?.brands ?? [];
+  const brandsCount = brands.length;
+  const firstBrandSlug = brands[0]?.slug ?? null;
+
+  const { data: stopListResult } = useQuery({
+    ...stopListQuery(firstBrandSlug ?? ''),
+    enabled: firstBrandSlug !== null,
+  });
+
+  const stopCount = stopListResult?.data?.items.length ?? 0;
 
   return (
     <>
@@ -42,7 +34,7 @@ function DashboardPage() {
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <div className="grid gap-4 md:grid-cols-2">
           <SetupChecklistCard brandsCount={brandsCount} />
-          <TodaysStopListPlaceholder />
+          {firstBrandSlug !== null ? <TodaysWidget count={stopCount} /> : null}
         </div>
       </div>
     </>
