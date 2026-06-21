@@ -64,6 +64,33 @@ suite('Row-Level Security — tenant isolation', () => {
     await stopPostgres(pg);
   });
 
+  it('every table with a tenant_id column has RLS ENABLED + FORCED (HIGH-10)', async () => {
+    const rows = await pg.db.withoutTenant('audit rls flags', async (tx) =>
+      tx.execute(sql`
+        SELECT c.relname AS table_name,
+               c.relrowsecurity AS enabled,
+               c.relforcerowsecurity AS forced
+        FROM pg_class c
+        JOIN pg_namespace n ON n.oid = c.relnamespace AND n.nspname = 'public'
+        WHERE c.relkind = 'r'
+          AND EXISTS (
+            SELECT 1 FROM information_schema.columns col
+            WHERE col.table_schema = 'public'
+              AND col.table_name = c.relname
+              AND col.column_name = 'tenant_id'
+          )
+      `),
+    );
+    const tables = rows as unknown as readonly {
+      table_name: string;
+      enabled: boolean;
+      forced: boolean;
+    }[];
+    expect(tables.length).toBeGreaterThan(0);
+    const offenders = tables.filter((t) => !t.enabled || !t.forced).map((t) => t.table_name);
+    expect(offenders).toEqual([]);
+  });
+
   it('a tenant context sees only its own tenant row', async () => {
     const visible = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) => tx.select().from(schema.tenants)),

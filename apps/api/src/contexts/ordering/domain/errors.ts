@@ -50,10 +50,22 @@ export class OrderModifierNotAvailableError extends Error {
   }
 }
 
+export class OrderModifierSelectionInvalidError extends Error {
+  readonly kind = 'OrderModifierSelectionInvalidError' as const;
+  constructor(
+    public readonly groupId: string,
+    public readonly reason: string,
+  ) {
+    super(`Modifier selection for group "${groupId}" is invalid: ${reason}.`);
+    this.name = 'OrderModifierSelectionInvalidError';
+  }
+}
+
 export type OrderDomainError =
   | OrderNotFoundError
   | DuplicateOrderKeyError
   | InvalidOrderTransitionError
   | OrderItemUnavailableError
   | OrderItemNotOrderableError
-  | OrderModifierNotAvailableError;
+  | OrderModifierNotAvailableError
+  | OrderModifierSelectionInvalidError;
