@@ -350,7 +350,33 @@ Plans:
 3. CD deploys on merge to `main` on top of the existing nx-affected CI; database migrations run as a pre-rollout step (`pnpm db:migrate`)
 4. Boot-time preflight assertions (`assertProdGuardrails`, RLS-bypass checks) pass in the real prod environment — the process refuses to start on misconfiguration
 5. A public HTTPS endpoint exists for Stripe webhooks before Phase 8 begins; a smoke check confirms an external request reaches the API and a tenant menu renders end-to-end
-   **Plans**: TBD
+   **Plans**: 10 plans
+
+Plans:
+**Wave 0** _(gating — code-side readiness + the two BLOCK spikes; run in parallel, no file overlap)_
+
+- [ ] 07.5-01-PLAN.md — D-04 HARD GATE: Neon BYPASSRLS spike -> DB-PROVIDER-DECISION (Neon vs RDS) before any provisioning
+- [ ] 07.5-02-PLAN.md — G-01 BLOCK: esbuild .sql text-loader Docker boot fix + restored docker-api CI gate (8 preflights green on real Postgres)
+- [ ] 07.5-03-PLAN.md — D-05 direct-connection outbox lock + G-03 outbox_leader /readyz + G-04 Sentry init (DATABASE_DIRECT_URL, SENTRY_DSN)
+- [ ] 07.5-04-PLAN.md — G-05 web-env fail-loud verify + D-06 NATS max_deliver/DLQ live verify + qr-menu hidden maps -> PRE-DEPLOY-VERIFY
+- [ ] 07.5-05-PLAN.md — Sentry SDK installs behind a single legitimacy gate (@sentry/node/nextjs/react/vite-plugin)
+
+**Wave 1** _(provider provisioning — depends on the Wave 0 DB decision)_
+
+- [ ] 07.5-06-PLAN.md — Provision managed Postgres (provider per 07.5-01): 3 roles + extensions + migrations + backups; preflight dry-check
+- [ ] 07.5-07-PLAN.md — NATS JetStream on EC2+EBS (D-06) + Cloudflare R2 wiring (D-07); degraded-mode + presigned-PUT verified
+
+**Wave 2** _(hosting surface — depends on bootable image + DB + NATS/R2)_
+
+- [ ] 07.5-08-PLAN.md — ECS Express Mode (api+admin) + ALB/ACM + Secrets Manager + Cloudflare DNS/TLS/CDN (SC#1/#2; D-01/02/03/08/09)
+
+**Wave 3** _(CD — depends on the live ECS surface)_
+
+- [ ] 07.5-09-PLAN.md — GitHub Actions CD on merge to main: build -> ECR -> smoke -> gated db:migrate -> deploy (SC#3; D-10; G-06 strategy)
+
+**Wave 4** _(go-live gate)_
+
+- [ ] 07.5-10-PLAN.md — G-02 tested restore + G-06 app-only rollback proof + SC#5 external E2E smoke + G-07 infra-stub supersession
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-investor
 
@@ -556,7 +582,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 0/?            | Not started   | -          |
+| 7.5. Production Deploy                        | 0/10           | Planned       | -          |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
