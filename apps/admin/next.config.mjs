@@ -4,12 +4,9 @@ const withNextIntl = createNextIntlPlugin('./lib/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   reactStrictMode: true,
   typedRoutes: true,
-  // Hand the api the operator session via cookie when admin runs on the
-  // same parent domain. In dev the api lives on :3000; we proxy
-  // `/api/*` through Next so the BA cookie flow stays same-origin and
-  // the browser sets the cookie on `localhost`.
   async rewrites() {
     const apiOrigin = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3000';
     return [
