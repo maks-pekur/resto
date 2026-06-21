@@ -398,9 +398,26 @@ Plans:
 4. The admin builds to static assets and deploys via Cloudflare Pages/R2 + CDN with the wildcard/admin host + TLS (folds the deferred admin slice of Phase 7.5); CD publishes on merge to main.
 5. The four-surface smoke (Phase 7.5 SC#5) passes with the new static admin reachable over HTTPS.
 
-**Plans**: TBD (plan via `/gsd:discuss-phase 7.6` → `/gsd:plan-phase 7.6` after `/clear`)
-**UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
-**Persona reviewers**: persona-cto, persona-skeptic
+**Plans**: 7 plans in 3 waves
+
+Plans:
+**Wave 1** _(parallel — API enablers + SPA foundation, no file overlap)_
+
+- [ ] 07.6-01-PLAN.md — D-08: relocate 7 catalog GET reads to operator v1/catalog + delete internal-catalog controller (SC-1/SC-2)
+- [ ] 07.6-02-PLAN.md — operator POST/DELETE /v1/tenants/me/offboard (closes settings internal-token gap) + admin-host CORS/trusted-origins env (SC-2/SC-3)
+- [ ] 07.6-03-PLAN.md — Vite + React + Tailwind4 + shadcn scaffold; env/api-client/auth-client/query-client/i18n/theme/router root; retire Next (legitimacy gate) (SC-1/SC-2/SC-3)
+
+**Wave 2** _(surface port — depends on 07.6-03; partitioned by route-group, no file overlap)_
+
+- [ ] 07.6-04-PLAN.md — auth routes + client route guard + dashboard shell + sidebar/nav-user/brand-switcher (brand-in-URL) + onboarding/brand (SC-1/SC-3)
+- [ ] 07.6-05-PLAN.md — menu surface: items/categories/modifier-groups/item-sizes/stop-list + publish flow + photo upload + draft-diff via operator v1/catalog (SC-1/SC-2)
+- [ ] 07.6-06-PLAN.md — brands/domains/payouts/theme + settings (offboard danger-zone on operator endpoint) + team; eliminates last internal-token path (SC-1/SC-2)
+
+**Wave 3** _(deploy + verify — depends on full surface)_
+
+- [ ] 07.6-07-PLAN.md — Cloudflare Pages static deploy + admin host/TLS + CD on merge + ported ADM-00 Playwright smoke + four-surface HTTPS smoke (SC-4/SC-5)
+      **UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 8: Payments (Stripe Connect)
 
