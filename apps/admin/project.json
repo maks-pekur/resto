@@ -2,15 +2,21 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "name": "admin",
   "projectType": "application",
-  "sourceRoot": "apps/admin/app",
+  "sourceRoot": "apps/admin/src",
   "tags": ["scope:admin", "type:app", "layer:ui"],
   "targets": {
+    "build": {
+      "executor": "nx:run-commands",
+      "options": { "command": "vite build", "cwd": "apps/admin" },
+      "outputs": ["{projectRoot}/dist"]
+    },
+    "serve": {
+      "executor": "nx:run-commands",
+      "options": { "command": "vite", "cwd": "apps/admin" }
+    },
     "lint": {
       "executor": "nx:run-commands",
-      "options": {
-        "command": "eslint .",
-        "cwd": "apps/admin"
-      }
+      "options": { "command": "eslint .", "cwd": "apps/admin" }
     },
     "typecheck": {
       "executor": "nx:run-commands",
@@ -21,32 +27,11 @@
     },
     "test": {
       "executor": "nx:run-commands",
-      "options": {
-        "command": "vitest run",
-        "cwd": "apps/admin"
-      }
-    },
-    "build": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "NODE_ENV=production next build",
-        "cwd": "apps/admin"
-      },
-      "outputs": ["{projectRoot}/.next"]
-    },
-    "serve": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "next dev --port 3001",
-        "cwd": "apps/admin"
-      }
+      "options": { "command": "vitest run", "cwd": "apps/admin" }
     },
     "e2e": {
       "executor": "nx:run-commands",
-      "options": {
-        "command": "playwright test",
-        "cwd": "apps/admin"
-      }
+      "options": { "command": "playwright test", "cwd": "apps/admin" }
     }
   }
 }

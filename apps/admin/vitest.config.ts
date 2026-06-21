@@ -7,11 +7,11 @@ export default defineConfig({
     globals: false,
     environment: 'jsdom',
     setupFiles: ['./test/setup.ts'],
-    include: ['test/**/*.{spec,test}.{ts,tsx}'],
+    include: ['src/**/*.{spec,test}.{ts,tsx}', 'test/**/*.{spec,test}.{ts,tsx}'],
   },
   resolve: {
     alias: {
-      '@': new URL('.', import.meta.url).pathname,
+      '@': new URL('./src', import.meta.url).pathname,
     },
   },
 });

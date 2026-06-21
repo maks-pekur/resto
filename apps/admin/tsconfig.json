@@ -1,21 +1,18 @@
 {
-  "extends": "@resto/config-typescript/nextjs.json",
+  "extends": "@resto/config-typescript/vite.json",
   "compilerOptions": {
     "noEmit": true,
     "rootDir": ".",
-    "paths": {
-      "@/*": ["./*"]
-    },
-    "types": ["node"],
-    /*
-     * shadcn/ui-generated code (Radix-based primitives) uses
-     * `prop: undefined` patterns that `exactOptionalPropertyTypes`
-     * forbids. Re-running `shadcn add` would re-introduce the
-     * incompatibilities, so we relax the flag for this app. The rest
-     * of `strict: true` + `noUncheckedIndexedAccess` etc. remain on.
-     */
+    "types": ["vite/client", "node"],
+    "paths": { "@/*": ["./src/*"] },
     "exactOptionalPropertyTypes": false
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "dist"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "vite.config.ts",
+    "vitest.config.ts",
+    "eslint.config.mjs"
+  ],
+  "exclude": ["node_modules", "dist"]
 }
