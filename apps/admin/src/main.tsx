@@ -25,6 +25,9 @@ import { Route as menuItemDetailRoute } from './routes/(protected)/dashboard/$br
 import { Route as menuStopListRoute } from './routes/(protected)/dashboard/$brandSlug/menu/stop-list';
 import { Route as menuModifierGroupsRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups';
 import { Route as menuModifierGroupDetailRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups.$id';
+import { Route as brandDomainsRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.domains';
+import { Route as brandThemeRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.theme';
+import { Route as brandPayoutsRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.payouts';
 import '@resto/config-tailwind/tokens.css';
 import './styles.css';
 
@@ -45,7 +48,12 @@ const menuRouteTree = menuLayoutRoute.addChildren([
   menuModifierGroupDetailRoute,
 ]);
 
-const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([menuRouteTree]);
+const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([
+  menuRouteTree,
+  brandDomainsRoute,
+  brandThemeRoute,
+  brandPayoutsRoute,
+]);
 
 const dashboardRouteTree = dashboardLayoutRoute.addChildren([
   dashboardIndexRoute,
