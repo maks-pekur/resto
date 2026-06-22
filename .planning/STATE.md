@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 7.6 Waves 1-2 done + code-review remediation; CR-01/CR-03a/CR-04 open
-last_updated: "2026-06-22T07:14:21.214Z"
+last_updated: '2026-06-22T07:14:21.214Z'
 last_activity: 2026-06-21
 progress:
   total_phases: 20
