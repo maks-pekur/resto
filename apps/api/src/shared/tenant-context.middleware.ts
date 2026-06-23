@@ -74,28 +74,16 @@ export class TenantContextMiddleware implements NestMiddleware {
   }
 
   private async resolveTenantOnly(req: FastifyRequest['raw']): Promise<string | undefined> {
-    // The `x-tenant-slug` header is an escape hatch:
-    //   - dev/test: always honored for tooling ergonomics.
-    //   - prod/staging on `/internal/v1/*`: honored ONLY when the
-    //     `x-internal-token` matches `INTERNAL_API_TOKEN` (RES-176).
-    //     The seed CLI hits the bare api host with the token, so it
-    //     needs this path to bind a tenant context. The check duplicates
-    //     `InternalTokenGuard` (which runs after this middleware), and
-    //     that's intentional — middleware must not bind a tenant based
-    //     on an unauthenticated client's header.
-    //   - prod/staging everywhere else: ignored. Host-based routing only.
+    // RES-181: admin sends BA `activeOrganizationId` (UUID) as `x-tenant-id` on every /v1/* request.
+    // Safe in prod: AuthGuard `auth.tenant_mismatch` (RES-172) rejects any value that diverges from the session.
+    const idHeader = req.headers[HEADER_TENANT_ID];
+    if (typeof idHeader === 'string' && idHeader.length > 0) {
+      const fromId = await this.tenants.resolveById(idHeader);
+      if (fromId) return fromId.id;
+    }
+
+    // RES-176: `x-tenant-slug` stays gated — seed CLI escape hatch for dev/test and /internal/v1/* + token.
     if (this.shouldAcceptTenantSlugHeader(req)) {
-      // Admin (RES-181) sends `x-tenant-id` from BA's
-      // `activeOrganizationId` (UUID); the seed CLI uses the
-      // human-readable `x-tenant-slug`. Both honored under the same
-      // gate; both pass through `AuthGuard.tenant_mismatch` cross-check
-      // (RES-172) so a forged header still cannot read another tenant's
-      // data.
-      const idHeader = req.headers[HEADER_TENANT_ID];
-      if (typeof idHeader === 'string' && idHeader.length > 0) {
-        const fromId = await this.tenants.resolveById(idHeader);
-        if (fromId) return fromId.id;
-      }
       const headerOverride = req.headers[HEADER_TENANT];
       if (typeof headerOverride === 'string' && headerOverride.length > 0) {
         const fromHeader = await this.tenants.resolveBySlug(headerOverride);
