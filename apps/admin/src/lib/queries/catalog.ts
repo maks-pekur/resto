@@ -254,9 +254,9 @@ export const upsertItemModifierGroups = (
   itemId: string,
   modifierGroupIds: readonly string[],
 ) =>
-  apiFetch('/v1/catalog/items/modifier-groups', {
-    method: 'POST',
-    body: { itemId, modifierGroupIds },
+  apiFetch(`/v1/catalog/items/${itemId}/modifier-groups`, {
+    method: 'PUT',
+    body: { modifierGroupIds },
     brandSlug,
   });
 
