@@ -4,6 +4,7 @@ import { TenantId } from '@resto/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
+import { constantTimeStringEqual } from './api/constant-time-equal';
 import { effectiveHost } from './effective-host';
 import { TenantAndBrandResolverService } from '../contexts/tenancy/application/tenant-and-brand-resolver.service';
 import { TenantResolverService } from '../contexts/tenancy/application/tenant-resolver.service';
@@ -114,15 +115,6 @@ export class TenantContextMiddleware implements NestMiddleware {
     if (!expected) return false;
     const presented = req.headers['x-internal-token'];
     if (typeof presented !== 'string') return false;
-    return timingSafeEqualString(presented, expected);
+    return constantTimeStringEqual(presented, expected);
   }
 }
-
-const timingSafeEqualString = (a: string, b: string): boolean => {
-  if (a.length !== b.length) return false;
-  let result = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return result === 0;
-};
