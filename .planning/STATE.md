@@ -30,7 +30,7 @@ Phase: 7.6 (admin-vite-spa) — EXECUTING
 Plan: 7 of 7
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
-Last activity: 2026-06-23 - Completed quick task 260623-waj: 07.6 CR-03a (item modifier-group links endpoint)
+Last activity: 2026-06-24 - Completed quick task 260623-xb6: 07.6 WR-02 + WR-04 remediation warnings
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -176,6 +176,7 @@ None yet.
 | 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                    | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
 | 260623-vwy | 07.6 CR-01: honor x-tenant-id on operator routes in prod (slug stays gated) + prod-mode unit tests                      | 2026-06-23 | 527969c | [260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout](./quick/260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout/) |
 | 260623-waj | 07.6 CR-03a: PUT /v1/catalog/items/:id/modifier-groups replace-links endpoint (migration 0053 DELETE grant) + e2e       | 2026-06-23 | be64970 | [260623-waj-cr-03a-item-modifier-group-links-endpoin](./quick/260623-waj-cr-03a-item-modifier-group-links-endpoin/) |
+| 260623-xb6 | 07.6 WR-02 autosave retry ref-stable + WR-04 shared constant-time token compare (closes token-length leak)              | 2026-06-24 | c03f6d1 | [260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-](./quick/260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-/) |
 
 ## Deferred Items
 
