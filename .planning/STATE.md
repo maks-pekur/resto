@@ -30,7 +30,7 @@ Phase: 7.6 (admin-vite-spa) — EXECUTING
 Plan: 7 of 7
 Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
 Status: Ready to execute
-Last activity: 2026-06-23 - Completed quick task 260623-vwy: 07.6 CR-01 (x-tenant-id on operator routes in prod)
+Last activity: 2026-06-23 - Completed quick task 260623-waj: 07.6 CR-03a (item modifier-group links endpoint)
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -175,6 +175,7 @@ None yet.
 | 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design        | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
 | 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                    | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
 | 260623-vwy | 07.6 CR-01: honor x-tenant-id on operator routes in prod (slug stays gated) + prod-mode unit tests                      | 2026-06-23 | 527969c | [260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout](./quick/260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout/) |
+| 260623-waj | 07.6 CR-03a: PUT /v1/catalog/items/:id/modifier-groups replace-links endpoint (migration 0053 DELETE grant) + e2e       | 2026-06-23 | be64970 | [260623-waj-cr-03a-item-modifier-group-links-endpoin](./quick/260623-waj-cr-03a-item-modifier-group-links-endpoin/) |
 
 ## Deferred Items
 
