@@ -372,6 +372,13 @@
       "when": 1782028800000,
       "tag": "0052_payments_provider_payment_id_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1782115200000,
+      "tag": "0053_grant_delete_menu_item_modifier_groups",
+      "breakpoints": true
     }
   ]
 }
