@@ -14,6 +14,7 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     upsertModifierGroup: vi.fn(),
     upsertModifierOption: vi.fn(),
     upsertItemSize: vi.fn(),
+    replaceItemModifierGroups: vi.fn(),
     addToStopList: vi.fn(),
     removeFromStopList: vi.fn(),
     getMenuFirstPublishedAt: vi.fn(),

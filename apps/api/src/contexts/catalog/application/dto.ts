@@ -124,6 +124,12 @@ export const UpsertItemSizeInputSchema = z.object({
 export type UpsertItemSizeInput = z.infer<typeof UpsertItemSizeInputSchema>;
 export class UpsertItemSizeInputDto extends createZodDto(UpsertItemSizeInputSchema) {}
 
+export const SetItemModifierGroupsInputSchema = z.object({
+  modifierGroupIds: z.array(z.string().uuid()).max(50),
+});
+export type SetItemModifierGroupsInput = z.infer<typeof SetItemModifierGroupsInputSchema>;
+export class SetItemModifierGroupsInputDto extends createZodDto(SetItemModifierGroupsInputSchema) {}
+
 export const StopItemInputSchema = z.object({
   itemId: z.string().uuid(),
   reason: z.string().max(500).nullable().default(null),

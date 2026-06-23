@@ -10,6 +10,11 @@ export interface CatalogRepository {
   upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }>;
   upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }>;
   upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }>;
+  replaceItemModifierGroups(input: {
+    itemId: string;
+    brandId: string;
+    modifierGroupIds: readonly string[];
+  }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;

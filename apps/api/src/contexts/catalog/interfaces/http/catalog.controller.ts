@@ -10,6 +10,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Put,
   Query,
 } from '@nestjs/common';
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
@@ -31,6 +32,7 @@ import {
   PhotoUploadUrlResponseDto,
   ReorderCategoriesInputDto,
   ReorderCategoriesResponseDto,
+  SetItemModifierGroupsInputDto,
   StopItemInputDto,
   StopListResponseDto,
   UpsertCategoryInputDto,
@@ -54,6 +56,7 @@ import { ReorderCategoriesService } from '../../application/reorder-categories.s
 import { StopListService } from '../../application/stop-list.service';
 import { UpsertCategoryService } from '../../application/upsert-category.service';
 import { UpsertItemService } from '../../application/upsert-item.service';
+import { SetItemModifierGroupsService } from '../../application/set-item-modifier-groups.service';
 import { UpsertItemSizeService } from '../../application/upsert-item-size.service';
 import { UpsertModifierGroupService } from '../../application/upsert-modifier-group.service';
 import { UpsertModifierOptionService } from '../../application/upsert-modifier-option.service';
@@ -87,6 +90,8 @@ export class CatalogController {
     @Inject(UpsertModifierOptionService)
     private readonly upsertModifierOption: UpsertModifierOptionService,
     @Inject(UpsertItemSizeService) private readonly upsertItemSize: UpsertItemSizeService,
+    @Inject(SetItemModifierGroupsService)
+    private readonly setItemModifierGroups: SetItemModifierGroupsService,
     @Inject(StopListService) private readonly stopList: StopListService,
     @Inject(DelayedPublishService) private readonly delayed: DelayedPublishService,
     @Inject(ArchiveCategoryService) private readonly archiveCategoryService: ArchiveCategoryService,
@@ -184,6 +189,23 @@ export class CatalogController {
     @Body(new RestoZodValidationPipe(UpsertItemSizeInputDto)) input: UpsertItemSizeInputDto,
   ): Promise<IdResponseDto> {
     return wrap(() => this.upsertItemSize.execute(input));
+  }
+
+  @Put('items/:id/modifier-groups')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @RequireBrand()
+  @ApiBody({ type: SetItemModifierGroupsInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  setItemModifierGroupsRoute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new RestoZodValidationPipe(SetItemModifierGroupsInputDto))
+    input: SetItemModifierGroupsInputDto,
+  ): Promise<IdResponseDto> {
+    return wrap(() =>
+      this.setItemModifierGroups.execute({ itemId: id, modifierGroupIds: input.modifierGroupIds }),
+    );
   }
 
   @Post('stop-list')

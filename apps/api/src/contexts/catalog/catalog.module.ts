@@ -22,6 +22,7 @@ import { UpsertCategoryService } from './application/upsert-category.service';
 import { UpsertItemService } from './application/upsert-item.service';
 import { UpsertItemSizeService } from './application/upsert-item-size.service';
 import { UpsertModifierGroupService } from './application/upsert-modifier-group.service';
+import { SetItemModifierGroupsService } from './application/set-item-modifier-groups.service';
 import { UpsertModifierOptionService } from './application/upsert-modifier-option.service';
 import {
   CATALOG_REPOSITORY,
@@ -61,6 +62,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     ReorderCategoriesService,
     UpsertItemService,
     UpsertItemSizeService,
+    SetItemModifierGroupsService,
     UpsertModifierGroupService,
     UpsertModifierOptionService,
     StopListService,
