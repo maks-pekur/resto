@@ -17,6 +17,7 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onPersistRef = useRef(onPersist);
   const onStateRef = useRef(onState);
+  const runSaveRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
     onPersistRef.current = onPersist;
@@ -39,9 +40,15 @@ export const useDebouncedAutosave = <TForm extends FieldValues>(
           onStateRef.current({ kind: 'saved', at: Date.now() });
           return;
         }
-        onStateRef.current({ kind: 'failed', retry: runSave });
+        onStateRef.current({
+          kind: 'failed',
+          retry: () => {
+            runSaveRef.current();
+          },
+        });
       })();
     };
+    runSaveRef.current = runSave;
 
     const subscription = form.watch((_values, { type }) => {
       if (type !== 'change') return;
