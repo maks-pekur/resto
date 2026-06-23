@@ -260,6 +260,49 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenants/me/offboard:
+    post:
+      operationId: TenantsController_scheduleOffboarding
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleOffboardingInputDto"
+      responses:
+        "202":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+    delete:
+      operationId: TenantsController_cancelOffboarding
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/me:
     get:
       operationId: MeController_me
@@ -467,139 +510,6 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog
-  /internal/v1/catalog/categories:
-    get:
-      operationId: InternalCatalogController_listCategories
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CategoryListResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/items:
-    get:
-      operationId: InternalCatalogController_listItems
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ItemListResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/items/{id}:
-    get:
-      operationId: InternalCatalogController_getItem
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ItemDetailResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/modifier-groups:
-    get:
-      operationId: InternalCatalogController_listModifierGroups
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModifierGroupListResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/modifier-groups/{id}:
-    get:
-      operationId: InternalCatalogController_getModifierGroup
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ModifierGroupDetailResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/stop-list:
-    get:
-      operationId: InternalCatalogController_listStopList
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StopListResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
-  /internal/v1/catalog/draft-diff:
-    get:
-      operationId: InternalCatalogController_getDraftDiff
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DraftDiffResponseDto"
-        "401":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - catalog/internal
   /v1/catalog/categories:
     post:
       operationId: CatalogController_category
@@ -617,6 +527,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IdResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+    get:
+      operationId: CatalogController_listCategories
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponseDto"
         "403":
           description: ""
           content:
@@ -675,6 +603,24 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog
+    get:
+      operationId: CatalogController_listItems
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemListResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
   /v1/catalog/modifier-groups:
     post:
       operationId: CatalogController_modifierGroup
@@ -692,6 +638,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IdResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+    get:
+      operationId: CatalogController_listModifierGroups
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModifierGroupListResponseDto"
         "403":
           description: ""
           content:
@@ -750,6 +714,31 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog
+  /v1/catalog/items/{id}/modifier-groups:
+    put:
+      operationId: CatalogController_setItemModifierGroupsRoute
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetItemModifierGroupsInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IdResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
   /v1/catalog/stop-list:
     post:
       operationId: CatalogController_stopListAdd
@@ -767,6 +756,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/IdResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+    get:
+      operationId: CatalogController_listStopList
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StopListResponseDto"
         "403":
           description: ""
           content:
@@ -868,6 +875,63 @@ paths:
       operationId: CatalogController_archiveItem
       parameters: []
       responses:
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+  /v1/catalog/items/{id}:
+    get:
+      operationId: CatalogController_getItem
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ItemDetailResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+  /v1/catalog/modifier-groups/{id}:
+    get:
+      operationId: CatalogController_getModifierGroup
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModifierGroupDetailResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
+  /v1/catalog/draft-diff:
+    get:
+      operationId: CatalogController_getDraftDiff
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DraftDiffResponseDto"
         "403":
           description: ""
           content:
@@ -1655,6 +1719,451 @@ components:
         - nutritionEstimated
         - sizes
         - modifierGroupIds
+    UpsertCategoryInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: ^[a-z0-9][a-z0-9-]*$
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          default: null
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        description:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          nullable: true
+          default: null
+      required:
+        - name
+        - description
+    IdResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+      required:
+        - id
+    ReorderCategoriesInputDto:
+      type: object
+      properties:
+        moves:
+          type: array
+          minItems: 1
+          maxItems: 500
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              parentId:
+                type: string
+                format: uuid
+                nullable: true
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+            required:
+              - id
+              - parentId
+              - sortOrder
+      required:
+        - moves
+    ReorderCategoriesResponseDto:
+      type: object
+      properties:
+        updated:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - updated
+    UpsertItemInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 120
+          pattern: ^[a-z0-9][a-z0-9-]*$
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        description:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        basePrice:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        photos:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            properties:
+              s3Key:
+                type: string
+                minLength: 1
+                maxLength: 1024
+              sortOrder:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              alt:
+                type: string
+                maxLength: 255
+              width:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              height:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              isPrimary:
+                type: boolean
+            required:
+              - s3Key
+              - sortOrder
+          default: []
+        allergens:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          nullable: true
+          default: null
+        ingredients:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            minLength: 1
+            maxLength: 100
+          nullable: true
+          default: null
+        metaTitle:
+          type: string
+          maxLength: 70
+          nullable: true
+          default: null
+        metaDescription:
+          type: string
+          maxLength: 160
+          nullable: true
+          default: null
+        proteins:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        fats:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        carbs:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 999.99
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        kcal:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 32000
+          exclusiveMaximum: false
+          nullable: true
+          default: null
+        nutritionEstimated:
+          type: boolean
+          default: false
+        source:
+          type: string
+          enum:
+            - manual
+            - ai_generated
+            - imported_iiko
+            - imported_csv
+          default: manual
+        needsReview:
+          type: boolean
+          default: false
+        sourceExternalId:
+          type: string
+          maxLength: 255
+          nullable: true
+          default: null
+        status:
+          type: string
+          enum:
+            - draft
+            - published
+            - archived
+          default: draft
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          nullable: true
+          default: null
+        weight:
+          type: number
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
+        measureUnit:
+          type: string
+          enum:
+            - g
+            - kg
+            - ml
+            - l
+            - pcs
+          nullable: true
+          default: null
+      required:
+        - categoryId
+        - name
+        - description
+        - basePrice
+        - currency
+    UpsertModifierGroupInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        minSelectable:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        maxSelectable:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 1
+        isRequired:
+          type: boolean
+          default: false
+      required:
+        - name
+    UpsertModifierOptionInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        modifierGroupId:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        priceDelta:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        defaultAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        freeAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+        minAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
+        maxAmount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          nullable: true
+          default: null
+      required:
+        - modifierGroupId
+        - name
+        - priceDelta
+    UpsertItemSizeInputDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        menuItemId:
+          type: string
+          format: uuid
+        name:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+        price:
+          type: string
+          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+        isDefault:
+          type: boolean
+          default: false
+        sortOrder:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          default: 0
+      required:
+        - menuItemId
+        - name
+        - price
+    SetItemModifierGroupsInputDto:
+      type: object
+      properties:
+        modifierGroupIds:
+          type: array
+          maxItems: 50
+          items:
+            type: string
+            format: uuid
+      required:
+        - modifierGroupIds
+    StopItemInputDto:
+      type: object
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          maxLength: 500
+          nullable: true
+          default: null
+      required:
+        - itemId
+    PhotoUploadUrlInputDto:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+        sizeBytes:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 5242880
+          exclusiveMaximum: false
+      required:
+        - contentType
+        - sizeBytes
+    PhotoUploadUrlResponseDto:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        s3Key:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      required:
+        - uploadUrl
+        - s3Key
+    PublishScheduledResponseDto:
+      type: object
+      properties:
+        scheduled:
+          type: boolean
+        cancelAfterMs:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - scheduled
+        - cancelAfterMs
+    PublishCancelResponseDto:
+      type: object
+      properties:
+        cancelled:
+          type: boolean
+      required:
+        - cancelled
     CategoryListResponseDto:
       type: object
       properties:
@@ -2162,440 +2671,6 @@ components:
         - unpublishedCount
         - items
         - truncatedCount
-    UpsertCategoryInputDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        slug:
-          type: string
-          minLength: 1
-          maxLength: 120
-          pattern: ^[a-z0-9][a-z0-9-]*$
-        parentId:
-          type: string
-          format: uuid
-          nullable: true
-          default: null
-        name:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-        description:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-          nullable: true
-          default: null
-        sortOrder:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        code:
-          type: string
-          minLength: 1
-          maxLength: 64
-          nullable: true
-          default: null
-      required:
-        - name
-        - description
-    IdResponseDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-      required:
-        - id
-    ReorderCategoriesInputDto:
-      type: object
-      properties:
-        moves:
-          type: array
-          minItems: 1
-          maxItems: 500
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-                format: uuid
-              parentId:
-                type: string
-                format: uuid
-                nullable: true
-              sortOrder:
-                type: integer
-                minimum: 0
-                exclusiveMinimum: false
-            required:
-              - id
-              - parentId
-              - sortOrder
-      required:
-        - moves
-    ReorderCategoriesResponseDto:
-      type: object
-      properties:
-        updated:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-      required:
-        - updated
-    UpsertItemInputDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        categoryId:
-          type: string
-          format: uuid
-        slug:
-          type: string
-          minLength: 1
-          maxLength: 120
-          pattern: ^[a-z0-9][a-z0-9-]*$
-        name:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-        description:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-          nullable: true
-          default: null
-        basePrice:
-          type: string
-          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
-        currency:
-          type: string
-          pattern: ^[A-Z]{3}$
-        photos:
-          type: array
-          maxItems: 20
-          items:
-            type: object
-            properties:
-              s3Key:
-                type: string
-                minLength: 1
-                maxLength: 1024
-              sortOrder:
-                type: integer
-                minimum: 0
-                exclusiveMinimum: false
-              alt:
-                type: string
-                maxLength: 255
-              width:
-                type: integer
-                minimum: 0
-                exclusiveMinimum: true
-              height:
-                type: integer
-                minimum: 0
-                exclusiveMinimum: true
-              isPrimary:
-                type: boolean
-            required:
-              - s3Key
-              - sortOrder
-          default: []
-        allergens:
-          type: array
-          maxItems: 50
-          items:
-            type: string
-            minLength: 1
-            maxLength: 100
-          nullable: true
-          default: null
-        ingredients:
-          type: array
-          maxItems: 50
-          items:
-            type: string
-            minLength: 1
-            maxLength: 100
-          nullable: true
-          default: null
-        metaTitle:
-          type: string
-          maxLength: 70
-          nullable: true
-          default: null
-        metaDescription:
-          type: string
-          maxLength: 160
-          nullable: true
-          default: null
-        proteins:
-          type: number
-          minimum: 0
-          exclusiveMinimum: false
-          maximum: 999.99
-          exclusiveMaximum: false
-          nullable: true
-          default: null
-        fats:
-          type: number
-          minimum: 0
-          exclusiveMinimum: false
-          maximum: 999.99
-          exclusiveMaximum: false
-          nullable: true
-          default: null
-        carbs:
-          type: number
-          minimum: 0
-          exclusiveMinimum: false
-          maximum: 999.99
-          exclusiveMaximum: false
-          nullable: true
-          default: null
-        kcal:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          maximum: 32000
-          exclusiveMaximum: false
-          nullable: true
-          default: null
-        nutritionEstimated:
-          type: boolean
-          default: false
-        source:
-          type: string
-          enum:
-            - manual
-            - ai_generated
-            - imported_iiko
-            - imported_csv
-          default: manual
-        needsReview:
-          type: boolean
-          default: false
-        sourceExternalId:
-          type: string
-          maxLength: 255
-          nullable: true
-          default: null
-        status:
-          type: string
-          enum:
-            - draft
-            - published
-            - archived
-          default: draft
-        sortOrder:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        code:
-          type: string
-          minLength: 1
-          maxLength: 64
-          nullable: true
-          default: null
-        weight:
-          type: number
-          minimum: 0
-          exclusiveMinimum: false
-          nullable: true
-          default: null
-        measureUnit:
-          type: string
-          enum:
-            - g
-            - kg
-            - ml
-            - l
-            - pcs
-          nullable: true
-          default: null
-      required:
-        - categoryId
-        - name
-        - description
-        - basePrice
-        - currency
-    UpsertModifierGroupInputDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        name:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-        minSelectable:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        maxSelectable:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 1
-        isRequired:
-          type: boolean
-          default: false
-      required:
-        - name
-    UpsertModifierOptionInputDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        modifierGroupId:
-          type: string
-          format: uuid
-        name:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-        priceDelta:
-          type: string
-          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
-        defaultAmount:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        freeAmount:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        sortOrder:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-        minAmount:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          nullable: true
-          default: null
-        maxAmount:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          nullable: true
-          default: null
-      required:
-        - modifierGroupId
-        - name
-        - priceDelta
-    UpsertItemSizeInputDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        menuItemId:
-          type: string
-          format: uuid
-        name:
-          type: object
-          additionalProperties:
-            type: string
-            minLength: 1
-        price:
-          type: string
-          pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
-        isDefault:
-          type: boolean
-          default: false
-        sortOrder:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-          default: 0
-      required:
-        - menuItemId
-        - name
-        - price
-    StopItemInputDto:
-      type: object
-      properties:
-        itemId:
-          type: string
-          format: uuid
-        reason:
-          type: string
-          maxLength: 500
-          nullable: true
-          default: null
-      required:
-        - itemId
-    PhotoUploadUrlInputDto:
-      type: object
-      properties:
-        contentType:
-          type: string
-          enum:
-            - image/jpeg
-            - image/png
-            - image/webp
-        sizeBytes:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: true
-          maximum: 5242880
-          exclusiveMaximum: false
-      required:
-        - contentType
-        - sizeBytes
-    PhotoUploadUrlResponseDto:
-      type: object
-      properties:
-        uploadUrl:
-          type: string
-          format: uri
-        s3Key:
-          type: string
-          minLength: 1
-          maxLength: 1024
-      required:
-        - uploadUrl
-        - s3Key
-    PublishScheduledResponseDto:
-      type: object
-      properties:
-        scheduled:
-          type: boolean
-        cancelAfterMs:
-          type: integer
-          minimum: 0
-          exclusiveMinimum: false
-      required:
-        - scheduled
-        - cancelAfterMs
-    PublishCancelResponseDto:
-      type: object
-      properties:
-        cancelled:
-          type: boolean
-      required:
-        - cancelled
     CreateOrderInputDto:
       type: object
       properties:
