@@ -1067,4 +1067,125 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     expect(r2.statusCode).toBe(409);
   }, 60_000);
+
+  it('PUT items/:id/modifier-groups: set, subset-remove, empty-clear, cross-brand reject', async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'mg-link-cat', name: { en: 'MG Link Cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'mg-link-item',
+        name: { en: 'MG Link Item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const g1Res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Size' }, minSelectable: 1, maxSelectable: 1, isRequired: true },
+    });
+    expect(g1Res.statusCode).toBe(200);
+    const g1 = g1Res.json<{ id: string }>().id;
+
+    const g2Res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Sauce' }, minSelectable: 0, maxSelectable: 2, isRequired: false },
+    });
+    expect(g2Res.statusCode).toBe(200);
+    const g2 = g2Res.json<{ id: string }>().id;
+
+    const put1 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [g1, g2] },
+    });
+    expect(put1.statusCode).toBe(200);
+    expect(put1.json<{ id: string }>().id).toBe(itemId);
+
+    const get1 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get1.statusCode).toBe(200);
+    expect(get1.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([g1, g2]);
+
+    const put2 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [g1] },
+    });
+    expect(put2.statusCode).toBe(200);
+
+    const get2 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get2.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([g1]);
+
+    const put3 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [] },
+    });
+    expect(put3.statusCode).toBe(200);
+
+    const get3 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get3.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
+
+    const gBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeB.authed,
+      payload: {
+        name: { en: 'Cross-brand' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(gBRes.statusCode).toBe(200);
+    const gB = gBRes.json<{ id: string }>().id;
+
+    const putCross = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [gB] },
+    });
+    expect(putCross.statusCode).toBe(404);
+
+    const get4 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get4.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
+  }, 60_000);
 });
