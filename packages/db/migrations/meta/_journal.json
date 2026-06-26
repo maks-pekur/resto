@@ -379,6 +379,13 @@
       "when": 1782115200000,
       "tag": "0053_grant_delete_menu_item_modifier_groups",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1782506190000,
+      "tag": "0054_resto_auth_permissive_policies",
+      "breakpoints": true
     }
   ]
 }
