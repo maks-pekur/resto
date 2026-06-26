@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 7.5 — production-deploy (VPS pivot 2026-06-26; AWS dropped; next = provision Hetzner VPS — founder action)
+**Current focus:** Phase 7.5 — code prod-readiness DONE (Wave 0); live stand-up DEFERRED to first customer (target VPS+Cloudflare). Next = continue MVP build (Phase 8) locally.
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -35,9 +35,9 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 - DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
 
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
-Next (FOUNDER GATE): provision a single VPS (Hetzner CPX21, Ubuntu 24.04, EU). Add SSH key id_personal.pub (mpekur.dev@gmail.com) at creation + give me the IP → I SSH in and stand up: Docker + docker-compose (api + postgres + nats) + Cloudflare (DNS/TLS/CDN reverse-proxy) + R2 wiring + Pages (admin/qr-menu) + nightly pg_dump/WAL-G→R2 backups + restore drill (G-02). Alt: give an hcloud API token and I provision the server too.
-Plans 06-10 (were RDS/NATS-EC2/ECS/ECR-CD) are being re-planned for the VPS+Cloudflare stack. Then Phase 8 Payments.
-Status: Phase 7.5 EXECUTING — VPS pivot; AWS torn down; awaiting Hetzner VPS.
+DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
+Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
+Status: Phase 7.5 — code prod-readiness DONE (01–05, 11); live stand-up DEFERRED to first customer.
 Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
