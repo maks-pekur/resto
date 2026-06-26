@@ -389,6 +389,7 @@ export class CatalogController {
   @Get('draft-diff')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
+  @RequireBrand()
   @ApiOkResponse({ type: DraftDiffResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getDraftDiff(): Promise<DraftDiffResponseDto> {

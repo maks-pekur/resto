@@ -1137,10 +1137,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listModifierGroups(): Promise<ModifierGroupListRow[]> {
+  async listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const groups = await scoped
-        .selectFrom(schema.menuModifierGroups)
+        .selectFrom(schema.menuModifierGroups, eq(schema.menuModifierGroups.brandId, brandId))
         .orderBy(asc(schema.menuModifierGroups.id));
       if (groups.length === 0) return [];
       const groupIds = groups.map((g) => g.id);
@@ -1200,10 +1200,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listStopListWithStoppedAt(): Promise<StopListEntryRow[]> {
+  async listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const stopRows = await scoped
-        .selectFrom(schema.menuStopList)
+        .selectFrom(schema.menuStopList, eq(schema.menuStopList.brandId, brandId))
         .orderBy(desc(schema.menuStopList.stoppedAt));
       if (stopRows.length === 0) return [];
       const itemIds = stopRows.map((s) => s.itemId);
@@ -1245,7 +1245,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async computeDraftDiff(input: { tenantId: TenantId }): Promise<{
+  async computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }> {
@@ -1257,7 +1257,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const firstPublishedAt = firstPublishedRows[0]?.at ?? null;
 
-      const items = await scoped.selectFrom(schema.menuItems);
+      const items = await scoped.selectFrom(
+        schema.menuItems,
+        eq(schema.menuItems.brandId, input.brandId),
+      );
       const entries: DraftDiffEntryRow[] = [];
       for (const it of items) {
         if (it.status === 'draft') {

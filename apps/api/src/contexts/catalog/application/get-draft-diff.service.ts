@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireTenantContext } from '@resto/db';
+import { requireBrandContext, requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { DraftDiffResponse } from './dto';
@@ -11,7 +11,8 @@ export class GetDraftDiffService {
   async execute(): Promise<DraftDiffResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const { items, totalCount } = await this.repo.computeDraftDiff({ tenantId });
+    const brandId = requireBrandContext();
+    const { items, totalCount } = await this.repo.computeDraftDiff({ tenantId, brandId });
     const truncatedCount = Math.max(totalCount - items.length, 0);
     return {
       unpublishedCount: totalCount,
