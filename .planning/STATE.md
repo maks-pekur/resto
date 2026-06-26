@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 7.6 code-complete; CR-01/CR-03a/WR-02/WR-04 resolved+verified. Open: CR-04 (per-brand publish rework, needs reviewed plan) + 07.6-07 deploy (needs Cloudflare setup) + optional NATS-env
+stopped_at: Phase 7.6 code-complete; CR-04 split — 3 cross-brand catalog read leaks CLOSED via quick task 260626-mzp (e2e 26/26). Open: 07.6-07 deploy (needs Cloudflare setup) + per-brand publish rework (deferred to its own phase) + optional NATS-env
 last_updated: '2026-06-26'
-last_activity: 2026-06-24
+last_activity: 2026-06-26
 progress:
   total_phases: 20
   completed_phases: 8
@@ -31,13 +31,13 @@ Plan: 6 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
-- NOW (quick task): fix all 3 cross-brand read leaks — draft-diff (original CR-04: add @RequireBrand + computeDraftDiff brandId filter) + the 2 SIBLINGS the review found: listModifierGroups (repo:1143) + listStopListWithStoppedAt (repo:1206), both read tenant-wide on @RequireBrand routes — + cross-brand e2e on all 3. Closes 7.6's security part.
+- DONE — quick task 260626-mzp (2026-06-26): all 3 cross-brand read leaks closed — draft-diff (added @RequireBrand + computeDraftDiff brandId filter), listModifierGroups, listStopListWithStoppedAt now brand-scoped; cross-brand isolation e2e added (catalog.e2e 26/26 green, zero regressions). Commits b810944 (fix) + a098c64 (test) on admin-vite-spa. 7.6's security part is closed.
 - DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
 
-Next: run the quick task for the 3 cross-brand leaks. Then 7.6 remaining = 07.6-07 admin static deploy (blocked on founder Cloudflare setup) + optional NATS-env e2e fix.
+Next: 7.6 remaining = 07.6-07 admin static deploy (blocked on founder Cloudflare setup) + optional NATS-env e2e fix.
 After 7.6: Phase 7.5 deploy remainder (2/11) → [07.7 per-brand publish] → Phase 8 Payments → Phase 10.
-Status: Ready to run the quick task for the 3 leaks; per-brand publish rework deferred to its own phase.
-Last activity: 2026-06-26 - Cross-lens review of CR-04 (07.6-REVIEWS.md); founder split: leaks now, rework deferred
+Status: 3 cross-brand leaks CLOSED (260626-mzp, e2e 26/26). 7.6 remaining = 07.6-07 deploy (needs Cloudflare); per-brand publish rework deferred to its own phase.
+Last activity: 2026-06-26 - Quick task 260626-mzp: closed 3 cross-brand catalog read leaks (catalog.e2e 26/26)
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -169,21 +169,22 @@ None yet.
 
 ### Quick Tasks Completed
 
-| #          | Description                                                                                                             | Date       | Commit  | Directory                                                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                                                       | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
-| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                                               | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
-| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                 | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
-| 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
-| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                         | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
-| 260621-cyf | Fix red CI on main — prettier format + build-time env for admin/website next builds                                     | 2026-06-21 | f8e18ce | [260621-cyf-fix-red-ci-on-main-prettier-format-missi](./quick/260621-cyf-fix-red-ci-on-main-prettier-format-missi/) |
-| 260621-dai | BLOCK-2: erase ordering tables (orders/items/modifiers/payments) in tenancy_erase_tenant — GDPR PII + orders→brands FK  | 2026-06-21 | 4718d01 | [260621-dai-fix-block-2-tenancy-erase-tenant-must-de](./quick/260621-dai-fix-block-2-tenancy-erase-tenant-must-de/) |
-| 260621-e0m | HIGH-12 order response contract (status/total/currency) + HIGH-9 payments.provider_payment_id unique index              | 2026-06-21 | b3371c5 | [260621-e0m-ordering-highs-order-response-contract-h](./quick/260621-e0m-ordering-highs-order-response-contract-h/) |
-| 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design        | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
-| 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                    | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
-| 260623-vwy | 07.6 CR-01: honor x-tenant-id on operator routes in prod (slug stays gated) + prod-mode unit tests                      | 2026-06-23 | 527969c | [260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout](./quick/260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout/) |
-| 260623-waj | 07.6 CR-03a: PUT /v1/catalog/items/:id/modifier-groups replace-links endpoint (migration 0053 DELETE grant) + e2e       | 2026-06-23 | be64970 | [260623-waj-cr-03a-item-modifier-group-links-endpoin](./quick/260623-waj-cr-03a-item-modifier-group-links-endpoin/) |
-| 260623-xb6 | 07.6 WR-02 autosave retry ref-stable + WR-04 shared constant-time token compare (closes token-length leak)              | 2026-06-24 | c03f6d1 | [260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-](./quick/260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-/) |
+| #          | Description                                                                                                                                  | Date       | Commit  | Directory                                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                                                                            | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                                                                    | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
+| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                                      | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
+| 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix                      | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
+| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                                              | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
+| 260621-cyf | Fix red CI on main — prettier format + build-time env for admin/website next builds                                                          | 2026-06-21 | f8e18ce | [260621-cyf-fix-red-ci-on-main-prettier-format-missi](./quick/260621-cyf-fix-red-ci-on-main-prettier-format-missi/) |
+| 260621-dai | BLOCK-2: erase ordering tables (orders/items/modifiers/payments) in tenancy_erase_tenant — GDPR PII + orders→brands FK                       | 2026-06-21 | 4718d01 | [260621-dai-fix-block-2-tenancy-erase-tenant-must-de](./quick/260621-dai-fix-block-2-tenancy-erase-tenant-must-de/) |
+| 260621-e0m | HIGH-12 order response contract (status/total/currency) + HIGH-9 payments.provider_payment_id unique index                                   | 2026-06-21 | b3371c5 | [260621-e0m-ordering-highs-order-response-contract-h](./quick/260621-e0m-ordering-highs-order-response-contract-h/) |
+| 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design                             | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
+| 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                                         | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
+| 260623-vwy | 07.6 CR-01: honor x-tenant-id on operator routes in prod (slug stays gated) + prod-mode unit tests                                           | 2026-06-23 | 527969c | [260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout](./quick/260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout/) |
+| 260623-waj | 07.6 CR-03a: PUT /v1/catalog/items/:id/modifier-groups replace-links endpoint (migration 0053 DELETE grant) + e2e                            | 2026-06-23 | be64970 | [260623-waj-cr-03a-item-modifier-group-links-endpoin](./quick/260623-waj-cr-03a-item-modifier-group-links-endpoin/) |
+| 260623-xb6 | 07.6 WR-02 autosave retry ref-stable + WR-04 shared constant-time token compare (closes token-length leak)                                   | 2026-06-24 | c03f6d1 | [260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-](./quick/260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-/) |
+| 260626-mzp | 07.6 CR-04 split: brand-scope 3 catalog reads (draft-diff + modifier-groups + stop-list) — close cross-brand leaks + cross-brand e2e (26/26) | 2026-06-26 | a098c64 | [260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra](./quick/260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra/) |
 
 ## Deferred Items
 
@@ -209,6 +210,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26 (resumed → planned + reviewed CR-04 → split)
-Stopped at: Cross-lens review (07.6-REVIEWS.md, FIX-THEN-EXECUTE). Founder split CR-04: (1) fix 3 cross-brand read leaks NOW via quick task, (2) defer per-brand publish rework to its own phase before Phase 8 (plans 07.6-08/09 marked deferred). Next: run the quick task for the 3 leaks.
-Resume file: .planning/phases/07.6-admin-vite-spa/07.6-REVIEWS.md (consensus + the 3 leaks + 2 blockers for the deferred phase)
+Last session: 2026-06-26 (resumed → planned + reviewed CR-04 → split → fixed leaks)
+Stopped at: CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).
+Resume file: .planning/quick/260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra/260626-mzp-SUMMARY.md
