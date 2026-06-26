@@ -4,10 +4,16 @@ import { validateRolePassword } from './internal/password';
 import { assertRoleAttributes } from './preflight';
 
 /**
- * Provision the `resto_auth` BYPASSRLS role for Better Auth's drizzle
- * client. Mirrors `provisionAppRole` but with BYPASSRLS. Caller must be
- * connected as a role with CREATE ROLE / GRANT privileges (bootstrap
- * superuser in dev; resto_admin in prod).
+ * Provision the `resto_auth` NOBYPASSRLS role for Better Auth's drizzle
+ * client. Mirrors `provisionAppRole` exactly (NOSUPERUSER NOBYPASSRLS).
+ * resto_auth reaches the four RLS-enabled BA-owned tables it operates on
+ * (member, invitation, organization_role, tenants) via explicit permissive
+ * RLS policies created by migration 0054 (Option A, D-04 / RDS). This
+ * removes the dependency on the BYPASSRLS attribute, which AWS RDS cannot
+ * confer on a non-superuser (rds_superuser is not a true SUPERUSER).
+ *
+ * Caller must be connected as a role with CREATE ROLE / GRANT privileges
+ * (bootstrap superuser in dev; resto_admin in prod).
  *
  * Idempotent. Password handling (RES-245):
  *   1. `validateRolePassword` enforces a strict whitelist
@@ -18,7 +24,7 @@ import { assertRoleAttributes } from './preflight';
  *      exists so that in-band literal quoting is provably safe (no
  *      quote, no backslash, no escape sequence inside the literal).
  *
- * `assertRoleAttributes` verifies the resulting role has BYPASSRLS but
+ * `assertRoleAttributes` verifies the resulting role has NOBYPASSRLS and
  * no SUPERUSER / CREATEROLE / CREATEDB attributes.
  */
 export const provisionAuthRole = async (
@@ -36,12 +42,14 @@ export const provisionAuthRole = async (
   // statement. See RES-245 spec.
   const pwdLiteral = `'${options.authPassword}'`;
   if (rows[0]?.exists) {
+    // NOBYPASSRLS strips a pre-existing BYPASSRLS attribute from any DB
+    // provisioned before migration 0054 / plan 07.5-05 (D-04 / RDS fix).
     await client.unsafe(
-      `ALTER ROLE resto_auth WITH LOGIN NOSUPERUSER BYPASSRLS PASSWORD ${pwdLiteral}`,
+      `ALTER ROLE resto_auth WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD ${pwdLiteral}`,
     );
   } else {
     await client.unsafe(
-      `CREATE ROLE resto_auth WITH LOGIN NOSUPERUSER BYPASSRLS PASSWORD ${pwdLiteral}`,
+      `CREATE ROLE resto_auth WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD ${pwdLiteral}`,
     );
   }
 
@@ -49,14 +57,14 @@ export const provisionAuthRole = async (
 
   await assertRoleAttributes(client, 'resto_auth', {
     rolsuper: false,
-    rolbypassrls: true,
+    rolbypassrls: false,
     rolcreaterole: false,
     rolcreatedb: false,
   });
 };
 
 /**
- * Resolved name of the BYPASSRLS role provisioned by `provisionAuthRole`.
+ * Resolved name of the NOBYPASSRLS role provisioned by `provisionAuthRole`.
  * Exported so callers (tests, runbook tooling) can build a connection URL
  * without hard-coding the literal in a second place.
  */
