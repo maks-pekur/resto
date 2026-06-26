@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 'Phase 7.5 — Wave 0 COMPLETE (01 RDS decision + 02 boot fix + 03 D-05/G-03/G-04/G-05 code + 04 NATS-decouple e2e + 11 website Dockerfile). DB provider LOCKED = AWS RDS (07.5-01 DB-PROVIDER-DECISION.md; Neon declined). Next FOUNDER GATE: 07.5-06 provision RDS (db.t4g.micro, private SG) — first gated step confirms rds_superuser can confer BYPASSRLS on resto_auth (HARD-STOP if not) + extensions + automated backups + snapshot-restore drill (G-02). Then 07/08/09/10. All Wave 1+ needs founder AWS/Cloudflare/GitHub accounts.'
-last_updated: '2026-06-26T20:09:57.504Z'
+status: verifying
+stopped_at: 'CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).'
+last_updated: '2026-06-26T20:46:37.768Z'
 last_activity: 2026-06-26
 progress:
   total_phases: 20
   completed_phases: 8
-  total_plans: 67
-  completed_plans: 59
+  total_plans: 68
+  completed_plans: 60
   percent: 40
 ---
 
@@ -37,7 +37,7 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. DB provider LOCKED = AWS RDS (founder, 2026-06-26; Neon declined — see 07.5-01 DB-PROVIDER-DECISION.md). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 Next (FOUNDER GATE): 07.5-06 — provision AWS RDS (db.t4g.micro, private subnet, SG locked to the ECS task SG). FIRST gated step = empirical D-04 proof: confirm rds_superuser can confer BYPASSRLS on resto_auth (HARD-STOP if not) + resto_app NOBYPASSRLS + FORCE RLS + pgcrypto/citext/pg_trgm install; then automated backups + a snapshot-restore drill (G-02). Needs a founder AWS account. Plan 07 (NATS EC2+EBS + R2) is the other Wave 1 plan.
 After 06/07: 07.5-08 (ECS api+website + static admin+qr-menu + Cloudflare DNS/TLS/CDN + Secrets) → 07.5-09 (GitHub Actions CD) → 07.5-10 (4-surface smoke + restore/rollback proof + EKS-stub supersession) → Phase 8 Payments.
-Status: Phase 7.5 EXECUTING — Wave 0 complete; paused at 07.5-06 founder cloud gate (provision RDS).
+Status: Phase complete — ready for verification
 Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
@@ -106,6 +106,7 @@ _Updated after each plan completion_
 | Phase 07.6-admin-vite-spa P06 | 11min | 3 tasks | 13 files |
 | Phase 07.5-production-deploy P04 | 331 | 2 tasks | 2 files |
 | Phase 07.5-production-deploy P03 | 30 | 3 tasks | 18 files |
+| Phase 07.5-production-deploy P05 | 10 | 4 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -161,6 +162,7 @@ Recent decisions affecting current work:
 - [Phase 07.5-production-deploy]: G-03: OutboxDispatcherService.getOutboxLeaderHealth() exposes isLeader+staleMs; /readyz 503 on stall — LB drains wedged leader instead of silently queuing paid-order events
 - [Phase 07.5-production-deploy]: G-04: Sentry init in bootstrap-telemetry.ts/instrumentation.ts/main.tsx, all SENTRY_DSN-guarded — Dev/CI boot unchanged when DSN absent; captures prod exceptions before first customer
 - [Phase 07.5-production-deploy]: G-05: isLocalhostUrl() regex rejects localhost API origin in production for website and admin — A forgotten NEXT_PUBLIC_API_ORIGIN/VITE_API_ORIGIN crashes build, never silently routes users to localhost
+- [Phase ?]: resto_auth NOBYPASSRLS: permissive policies on 4 BA-owned tables via migration 0054 (RDS-compatible, D-04)
 
 ### Pending Todos
 
@@ -217,6 +219,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26T20:09:57.495Z
+Last session: 2026-06-26T20:46:37.759Z
 Stopped at: CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).
 Resume file: None
