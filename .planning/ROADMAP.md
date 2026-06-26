@@ -364,7 +364,7 @@ Plans:
 - [ ] 07.5-01-PLAN.md — D-04 HARD GATE: managed-Postgres BYPASSRLS spike → DB-PROVIDER-DECISION (Neon vs RDS) before any provisioning
 - [x] 07.5-02-PLAN.md — G-01 BLOCK: esbuild .sql text-loader Docker boot fix + restored docker-api CI gate (api image boots, preflights green on real Postgres) — DONE ANCHOR
 - [ ] 07.5-03-PLAN.md — D-05 direct-connection outbox lock + G-03 leader-aware /readyz + G-04 Sentry init + G-05 web-env fail-loud (DATABASE_DIRECT_URL, SENTRY_DSN; Sentry legitimacy gate folds in)
-- [ ] 07.5-04-PLAN.md — D-06 NATS DLQ/max_deliver live verify + outbox-decouples-NATS proof + qr-menu same-origin requirement → PRE-DEPLOY-VERIFY
+- [x] 07.5-04-PLAN.md — D-06 NATS DLQ/max_deliver live verify + outbox-decouples-NATS proof + qr-menu same-origin requirement → PRE-DEPLOY-VERIFY
 - [x] 07.5-11-PLAN.md — website production Dockerfile (Next output:standalone, NEXT_PUBLIC_API_ORIGIN build arg) — DONE ANCHOR (admin Dockerfile half superseded; admin is static)
 
 **Wave 1** _(provider provisioning — depends on the Wave 0 DB decision + NATS verify)_
@@ -417,8 +417,8 @@ Plans:
 **Wave 3** _(deploy + verify — depends on full surface)_
 
 - [~] 07.6-07-PLAN.md — ~~Cloudflare Pages static deploy + admin host/TLS + CD on merge + ported ADM-00 Playwright smoke + four-surface HTTPS smoke (SC-4/SC-5)~~ **SUPERSEDED by Phase 7.5 (re-plan 2026-06-26)** — admin static deploy now folds into the 7.5 prod stand-up (it was blocked here because 7.5 prod did not exist). The ported ADM-00 Playwright smoke + four-surface HTTPS smoke move into 7.5's go-live gate.
-      **UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
-      **Persona reviewers**: persona-cto, persona-skeptic
+  **UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
+  **Persona reviewers**: persona-cto, persona-skeptic
 
 **Wave 4** _(CR-04 per-brand publish rework — independent of 07.6-07 deploy; founder-decided 2026-06-23; plan reviewed before execution)_
 
@@ -628,7 +628,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 2/11           | In Progress   |            |
+| 7.5. Production Deploy                        | 3/10           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |

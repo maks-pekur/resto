@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup)."
-last_updated: "2026-06-26T15:39:56.897Z"
-last_activity: 2026-06-26 -- Phase 07.5 planning complete
+stopped_at: 'CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).'
+last_updated: '2026-06-26T16:19:56.589Z'
+last_activity: 2026-06-26
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 67
-  completed_plans: 56
+  completed_plans: 57
   percent: 40
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 ## Current Position
 
 Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete)
-Plan: 6 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict FIX-THEN-EXECUTE — 2 blockers + HIGH security gap + scope concern in the full rework).
+Plan: 7 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict FIX-THEN-EXECUTE — 2 blockers + HIGH security gap + scope concern in the full rework).
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -37,7 +37,7 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Next: 7.6 remaining = 07.6-07 admin static deploy — BLOCKED on PRODUCTION not existing (discovered 2026-06-26). It is NOT just a Cloudflare-setup gap: 07.6-07 bakes VITE_API_ORIGIN=https://api.resto.app and its acceptance gate is the 4-surface smoke (api /healthz + website + qr-menu + admin). Per Phase 7.5 artifacts, prod is 2/11 (only Dockerfile build/boot done; ECS/Terraform/DNS/deploy all TODO) and 7.5-11 SUMMARY states api.resto.app "doesn't exist". So admin deploy is premature — admin would load but login/data fail (no API) and SC-5 smoke can't pass. The real critical path = Phase 7.5 prod stand-up. NOTE: 7.5 plans are likely STALE — they predate the admin Vite migration (admin no longer needs ECS/Dockerfile — it's a Cloudflare Pages static surface like qr-menu) and the Redis removal; re-plan before executing.
 After 7.6: Phase 7.5 prod stand-up (refresh for Vite/Redis; admin folds in as a static surface) → [07.7 per-brand publish] → Phase 8 Payments → Phase 10.
 Status: Ready to execute
-Last activity: 2026-06-26 -- Phase 07.5 planning complete
+Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -103,6 +103,7 @@ _Updated after each plan completion_
 | Phase 07.6 P04 | 15m | 3 tasks | 58 files |
 | Phase 07.6-admin-vite-spa P05 | 300 | 4 tasks | 41 files |
 | Phase 07.6-admin-vite-spa P06 | 11min | 3 tasks | 13 files |
+| Phase 07.5-production-deploy P04 | 331 | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -210,6 +211,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26 (resumed → planned + reviewed CR-04 → split → fixed leaks)
+Last session: 2026-06-26T16:19:56.578Z
 Stopped at: CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).
-Resume file: .planning/quick/260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra/260626-mzp-SUMMARY.md
+Resume file: None
