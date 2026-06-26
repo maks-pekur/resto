@@ -53,22 +53,43 @@ Postgres superusers and roles with `BYPASSRLS` ignore RLS regardless of
 role — otherwise the entire RLS layer collapses silently. We enforce
 this by splitting credentials:
 
-| role          | used by                             | privileges                                           |
-| ------------- | ----------------------------------- | ---------------------------------------------------- |
-| `resto_admin` | migrations only (`pnpm db:migrate`) | schema owner; effectively superuser within the DB    |
-| `resto_app`   | runtime (`apps/api`, every service) | LOGIN NOSUPERUSER NOBYPASSRLS; CRUD + sequences only |
+| role          | used by                                 | privileges                                           |
+| ------------- | --------------------------------------- | ---------------------------------------------------- |
+| `resto_admin` | migrations only (`pnpm db:migrate`)     | schema owner; effectively superuser within the DB    |
+| `resto_app`   | runtime (`apps/api`, every service)     | LOGIN NOSUPERUSER NOBYPASSRLS; CRUD + sequences only |
+| `resto_auth`  | Better Auth's drizzle client (ADR-0013) | LOGIN NOSUPERUSER NOBYPASSRLS; BA-owned tables only  |
 
 The dev stack provisions `resto_app` automatically via
 `infra/docker/postgres/init/02-app-role.sql`. Production provisioning
 follows the same SQL — see `docs/runbooks/database-roles.md`. The
 canonical script lives at `packages/db/sql/roles.sql`; the
 `provisionAppRole(client, { appPassword })` helper applies it from Node.
+`provisionAuthRole(client, { authPassword })` in `src/auth-role.ts` provisions
+`resto_auth` with the same attribute set (NOSUPERUSER NOBYPASSRLS).
+
+**ADR-0013 — `resto_auth` access model (RDS-compatible, migration 0054):**
+Better Auth's drizzle client connects as `resto_auth` (NOBYPASSRLS) and
+reaches the four RLS-enabled BA-owned tables it needs — `member`,
+`invitation`, `organization_role`, `tenants` — via explicit permissive
+`CREATE POLICY ... FOR ALL TO resto_auth USING(true) WITH CHECK(true)` policies
+(migration 0054). Postgres OR-combines these with the existing PUBLIC
+tenant-isolation policies, giving `resto_auth` full access to those
+tables without the `BYPASSRLS` attribute. The `TO resto_auth` clause
+scopes each policy exclusively to `resto_auth`; `resto_app` keeps only
+the PUBLIC tenant-isolation policy and its cross-tenant isolation is
+unchanged.
+
+**Why not `BYPASSRLS`:** AWS RDS's master is `rds_superuser`, NOT a true
+`SUPERUSER`. Conferring `BYPASSRLS` on another role requires superuser, so
+`ALTER ROLE resto_auth WITH BYPASSRLS` hard-stops on RDS. The permissive-policy
+approach is RDS-compatible and equivalent in effect for the BA surface.
 
 **RES-206 exception:** the runtime `resto_app` role does NOT have grants
 on the 4 BA credential tables (`account`, `two_factor`, `verification`,
 `session`). These hold password hashes, OAuth tokens, 2FA secrets, and
-session bearer tokens — accessible only via `resto_auth` (BYPASSRLS) per
-ADR-0013. Migration `0027` revokes the grants; `sql/roles.sql` mirrors.
+session bearer tokens. Migration `0027` revokes the grants; `sql/roles.sql`
+mirrors. `resto_auth` reaches these non-RLS tables as a plain grantee —
+no policy is needed (no RLS, no bypass required).
 
 Apps must call `assertNoRlsBypass(DATABASE_URL)` once at startup. It
 runs a single SELECT against `pg_roles` and throws `RlsBypassError` if
