@@ -2,6 +2,7 @@ import { ServiceUnavailableException } from '@nestjs/common';
 import { describe, expect, it } from 'vitest';
 import type { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
+import { type OutboxDispatcherService } from '../../src/infrastructure/outbox-dispatcher.service';
 import { HealthController } from '../../src/health/health.controller';
 
 const dbWithPing = (pingImpl: () => Promise<void>): TenantAwareDb =>
@@ -14,11 +15,21 @@ const okPublisher = (): EventPublisher => ({
   close: (): Promise<void> => Promise.resolve(),
 });
 
+const idleOutbox = (): OutboxDispatcherService =>
+  ({
+    isLeader: () => false,
+    getOutboxLeaderHealth: () => ({ isLeader: false, lastDispatchAt: null, staleMs: null }),
+  }) as unknown as OutboxDispatcherService;
+
+const THRESHOLD_MS = 60_000;
+
 describe('HealthController.liveness', () => {
   it('returns ok unconditionally', () => {
     const ctrl = new HealthController(
       dbWithPing(() => Promise.resolve()),
       okPublisher(),
+      idleOutbox(),
+      THRESHOLD_MS,
     );
     expect(ctrl.liveness()).toEqual({ status: 'ok' });
   });
@@ -29,6 +40,8 @@ describe('HealthController.readiness', () => {
     const ctrl = new HealthController(
       dbWithPing(() => Promise.resolve()),
       okPublisher(),
+      idleOutbox(),
+      THRESHOLD_MS,
     );
     const result = await ctrl.readiness();
     expect(result.status).toBe('ok');
@@ -39,6 +52,8 @@ describe('HealthController.readiness', () => {
     const ctrl = new HealthController(
       dbWithPing(() => Promise.reject(new Error('connection lost'))),
       okPublisher(),
+      idleOutbox(),
+      THRESHOLD_MS,
     );
     await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
@@ -47,6 +62,8 @@ describe('HealthController.readiness', () => {
     const ctrl = new HealthController(
       dbWithPing(() => Promise.resolve()),
       null,
+      idleOutbox(),
+      THRESHOLD_MS,
     );
     await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
   });

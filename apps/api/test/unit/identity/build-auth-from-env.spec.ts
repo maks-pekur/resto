@@ -52,6 +52,7 @@ const envFor = (nodeEnv: Env['NODE_ENV']): Env =>
     AUTH_COOKIE_DOMAIN: '.resto.app',
     AUDIT_ERASURE_SALT: 'b'.repeat(32),
     TRUST_PROXY: '10.0.0.0/8',
+    OUTBOX_STALL_THRESHOLD_MS: 60_000,
   }) satisfies Env;
 
 const stubAuthDb = {} as AuthDrizzle;

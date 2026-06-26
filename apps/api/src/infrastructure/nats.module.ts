@@ -137,6 +137,6 @@ class NatsShutdownHook implements OnApplicationShutdown {
     NatsShutdownHook,
     OutboxDispatcherService,
   ],
-  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER, DIRECT_DB_CONNECTION],
+  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER, DIRECT_DB_CONNECTION, OutboxDispatcherService],
 })
 export class NatsModule {}

@@ -40,6 +40,13 @@ export const envSchema = z
      * boot normally without it.
      */
     SENTRY_DSN: z.string().url().optional(),
+    /**
+     * Milliseconds since last successful dispatch (or empty-queue poll)
+     * before /readyz marks the outbox leader as stalled (G-03). Default
+     * 60s — generous enough for normal variance but tight enough to catch
+     * a wedged leader before a customer notices missing emails.
+     */
+    OUTBOX_STALL_THRESHOLD_MS: z.coerce.number().int().positive().default(60_000),
 
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */

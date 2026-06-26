@@ -53,6 +53,7 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
   private leaderConn: ReservedSql | null = null;
   private acquireTimer: NodeJS.Timeout | null = null;
   private shuttingDown = false;
+  private lastDispatchAt: Date | null = null;
 
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
@@ -84,6 +85,18 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
   /** Returns true when this instance holds the advisory lock (is outbox leader). */
   isLeader(): boolean {
     return this.leaderConn !== null;
+  }
+
+  /** Returns the minimal leader-liveness signal consumed by /readyz (G-03). */
+  getOutboxLeaderHealth(): {
+    isLeader: boolean;
+    lastDispatchAt: Date | null;
+    staleMs: number | null;
+  } {
+    const isLeader = this.isLeader();
+    const staleMs =
+      this.lastDispatchAt !== null ? Date.now() - this.lastDispatchAt.getTime() : null;
+    return { isLeader, lastDispatchAt: this.lastDispatchAt, staleMs };
   }
 
   private async tryAcquireLeadership(): Promise<void> {
@@ -154,6 +167,8 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
           'event.type': envelope.type,
           'tenant.id': envelope.tenantId ?? 'platform',
         });
+        // G-03: record heartbeat so /readyz can detect a stalled leader.
+        this.lastDispatchAt = new Date();
       },
       close: () => publisher.close(),
     };

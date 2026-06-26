@@ -11,7 +11,10 @@ import { ApiTags } from '@nestjs/swagger';
 import { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { EVENT_PUBLISHER } from '../infrastructure/nats.module';
+import { OutboxDispatcherService } from '../infrastructure/outbox-dispatcher.service';
 import { Public } from '../shared/auth';
+
+export const OUTBOX_STALL_THRESHOLD_MS = 'OUTBOX_STALL_THRESHOLD_MS';
 
 interface CheckResult {
   readonly name: string;
@@ -28,6 +31,8 @@ export class HealthController {
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null,
+    @Inject(OutboxDispatcherService) private readonly outboxDispatcher: OutboxDispatcherService,
+    @Inject(OUTBOX_STALL_THRESHOLD_MS) private readonly stallThresholdMs: number,
   ) {}
 
   /**
@@ -49,7 +54,11 @@ export class HealthController {
    */
   @Get('readyz')
   async readiness(): Promise<{ status: 'ok'; checks: CheckResult[] }> {
-    const checks = await Promise.all([this.checkDatabase(), this.checkBroker()]);
+    const checks = await Promise.all([
+      this.checkDatabase(),
+      this.checkBroker(),
+      this.checkOutboxLeader(),
+    ]);
     const failed = checks.filter((c) => !c.ok);
     if (failed.length > 0) {
       this.logger.warn({ failed }, 'Readiness check failed');
@@ -80,5 +89,24 @@ export class HealthController {
       });
     }
     return Promise.resolve({ name: 'broker', ok: true });
+  }
+
+  // G-03: leader liveness check. Non-leaders are always ok (correctly
+  // idle). Leaders are ok when lastDispatchAt is recent or null (startup /
+  // empty queue). A leader whose last dispatch is older than
+  // OUTBOX_STALL_THRESHOLD_MS gets the LB drained via 503.
+  private checkOutboxLeader(): Promise<CheckResult> {
+    const { isLeader, staleMs } = this.outboxDispatcher.getOutboxLeaderHealth();
+    if (!isLeader) {
+      return Promise.resolve({ name: 'outbox_leader', ok: true });
+    }
+    if (staleMs !== null && staleMs > this.stallThresholdMs) {
+      return Promise.resolve({
+        name: 'outbox_leader',
+        ok: false,
+        detail: `outbox leader stalled: last dispatch ${staleMs}ms ago (threshold ${this.stallThresholdMs}ms)`,
+      });
+    }
+    return Promise.resolve({ name: 'outbox_leader', ok: true });
   }
 }

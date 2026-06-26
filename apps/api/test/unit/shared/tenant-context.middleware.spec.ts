@@ -51,6 +51,7 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   MAILHOG_HOST: 'localhost',
   MAILHOG_PORT: 1025,
   AUDIT_ERASURE_SALT: undefined,
+  OUTBOX_STALL_THRESHOLD_MS: 60_000,
   ...overrides,
 });
 
