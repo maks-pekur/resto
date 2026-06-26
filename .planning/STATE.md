@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 'Phase 7.5 RE-PLANNED (four-surface, admin static; supersedes 07.6-07). Wave 0 code-side DONE: 07.5-02 (boot fix), 07.5-03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud web env; 449/449 api tests green), 07.5-04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY), 07.5-11 (website Dockerfile). BLOCKED on 07.5-01 DB-provider HARD GATE — founder must pick Neon vs RDS + run the BYPASSRLS spike (throwaway Neon project -> NEON_SPIKE_ADMIN_URL). Waves 1-4 (06/07/08/09/10) gated on 01 + founder cloud accounts (AWS/Neon/EC2/Cloudflare/GitHub OIDC).'
-last_updated: '2026-06-26T17:04:37.132Z'
+status: verifying
+stopped_at: 'CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).'
+last_updated: '2026-06-26T20:09:57.504Z'
 last_activity: 2026-06-26
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 67
-  completed_plans: 58
+  completed_plans: 59
   percent: 40
 ---
 
@@ -34,10 +34,10 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 - DONE — quick task 260626-mzp (2026-06-26): all 3 cross-brand read leaks closed — draft-diff (added @RequireBrand + computeDraftDiff brandId filter), listModifierGroups, listStopListWithStoppedAt now brand-scoped; cross-brand isolation e2e added (catalog.e2e 26/26 green, zero regressions). Commits b810944 (fix) + a098c64 (test) on admin-vite-spa. 7.6's security part is closed.
 - DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
 
-Phase 7.5 (Production Deploy) is now ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under _superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Wave 0 code-side complete (02/03/04/11). 07.6-07 superseded; the ported ADM-00 admin smoke now lives in 07.5-10.
+Phase 7.5 (Production Deploy) is now ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Wave 0 code-side complete (02/03/04/11). 07.6-07 superseded; the ported ADM-00 admin smoke now lives in 07.5-10.
 Next (FOUNDER GATE): 07.5-01 — DB-provider HARD GATE. Decide Neon (primary) vs RDS (fallback); to run the spike, create a throwaway Neon project and provide NEON_SPIKE_ADMIN_URL. The spike proves the 3-role + FORCE-RLS + pgcrypto/citext/pg_trgm model works on the provider BEFORE any provisioning. Nothing in Waves 1-4 provisions until 01 is recorded with proof.
 After 01: 07.5-06 (Postgres provision + tested restore) → 07.5-07 (NATS EC2+EBS + R2) → 07.5-08 (ECS + static deploys + Cloudflare DNS/TLS/CDN + Secrets) → 07.5-09 (GitHub Actions CD) → 07.5-10 (4-surface smoke + restore/rollback proof + EKS-stub supersession) → Phase 8 Payments.
-Status: Phase 7.5 EXECUTING — Wave 0 code done; paused at 07.5-01 founder cloud gate.
+Status: Phase complete — ready for verification
 Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
@@ -46,7 +46,7 @@ Last activity: 2026-06-26
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 88%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -217,6 +217,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26T17:04:37.063Z
+Last session: 2026-06-26T20:09:57.495Z
 Stopped at: CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).
 Resume file: None

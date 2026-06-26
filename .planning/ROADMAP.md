@@ -361,7 +361,7 @@ Plans:
 Plans:
 **Wave 0** _(gating — code-side readiness + the DB BLOCK spike; run in parallel, no file overlap)_
 
-- [ ] 07.5-01-PLAN.md — D-04 HARD GATE: managed-Postgres BYPASSRLS spike → DB-PROVIDER-DECISION (Neon vs RDS) before any provisioning
+- [x] 07.5-01-PLAN.md — D-04 HARD GATE: managed-Postgres BYPASSRLS spike → DB-PROVIDER-DECISION (Neon vs RDS) before any provisioning
 - [x] 07.5-02-PLAN.md — G-01 BLOCK: esbuild .sql text-loader Docker boot fix + restored docker-api CI gate (api image boots, preflights green on real Postgres) — DONE ANCHOR
 - [x] 07.5-03-PLAN.md — D-05 direct-connection outbox lock + G-03 leader-aware /readyz + G-04 Sentry init + G-05 web-env fail-loud (DATABASE_DIRECT_URL, SENTRY_DSN; Sentry legitimacy gate folds in)
 - [x] 07.5-04-PLAN.md — D-06 NATS DLQ/max_deliver live verify + outbox-decouples-NATS proof + qr-menu same-origin requirement → PRE-DEPLOY-VERIFY
@@ -628,7 +628,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 4/10           | In Progress   |            |
+| 7.5. Production Deploy                        | 5/10           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
