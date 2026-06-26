@@ -2,14 +2,16 @@ import {
   Inject,
   Injectable,
   Logger,
+  Optional,
   type OnApplicationBootstrap,
   type OnModuleDestroy,
 } from '@nestjs/common';
 import { metrics } from '@opentelemetry/api';
 import { TenantAwareDb } from '@resto/db';
 import { OutboxDispatcher, type EventEnvelope, type EventPublisher } from '@resto/events';
-import type { ReservedSql } from 'postgres';
+import type { ReservedSql, Sql } from 'postgres';
 
+import { DIRECT_DB_CONNECTION } from './direct-db-connection.token';
 import { EVENT_PUBLISHER } from './event-publisher.token';
 
 /**
@@ -55,6 +57,7 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null,
+    @Optional() @Inject(DIRECT_DB_CONNECTION) private readonly directConn: Sql | null,
   ) {}
 
   onApplicationBootstrap(): void {
@@ -78,11 +81,21 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
     await this.releaseLeadership();
   }
 
+  /** Returns true when this instance holds the advisory lock (is outbox leader). */
+  isLeader(): boolean {
+    return this.leaderConn !== null;
+  }
+
   private async tryAcquireLeadership(): Promise<void> {
     if (this.shuttingDown || this.publisher === null) return;
     let reserved: ReservedSql | null = null;
     try {
-      reserved = await this.db.connection.raw.reserve();
+      // D-05: use the dedicated direct (unpooled) connection when provided so
+      // the session-level advisory lock is not at the mercy of a pooler in
+      // transaction mode (Neon PgBouncer footgun). Falls back to the pooled
+      // connection in dev/test where DATABASE_DIRECT_URL is not set.
+      const lockSource = this.directConn ?? this.db.connection.raw;
+      reserved = await lockSource.reserve();
       const rows = await reserved<
         { got: boolean }[]
       >`SELECT pg_try_advisory_lock(${ADVISORY_LOCK_KEY}) AS got`;

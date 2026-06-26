@@ -167,7 +167,7 @@ export default [
     // assertion expressions; the type-aware checks fight with idiomatic
     // test code where mock return types are intentionally untyped (the
     // test asserts the shape rather than declares it).
-    files: ['test/**/*.ts'],
+    files: ['test/**/*.ts', 'src/**/*.spec.ts'],
     rules: {
       '@typescript-eslint/unbound-method': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',

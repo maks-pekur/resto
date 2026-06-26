@@ -23,6 +23,23 @@ export const envSchema = z
     DATABASE_URL: z.string().url(),
     /** Schema-owner URL — used by migrations only, never by the runtime app. */
     DATABASE_ADMIN_URL: z.string().url().optional(),
+    /**
+     * Unpooled, session-pinned Postgres connection for the outbox
+     * dispatcher's advisory lock (D-05 / Neon PgBouncer transaction-mode
+     * footgun). A session-level advisory lock (`pg_try_advisory_lock`)
+     * must live on a dedicated backend that is never returned to a pooler
+     * between queries. Required outside dev/test (enforced by
+     * superRefine); in dev falls back to DATABASE_URL so the local docker
+     * stack needs no extra env var.
+     */
+    DATABASE_DIRECT_URL: z.string().url().optional(),
+    /**
+     * Sentry Cloud DSN for unhandled-exception capture (G-04). Optional
+     * at all times — Sentry is observability, not a correctness gate.
+     * When absent the init is a silent no-op; api, website, and admin all
+     * boot normally without it.
+     */
+    SENTRY_DSN: z.string().url().optional(),
 
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */
@@ -233,6 +250,7 @@ export const envSchema = z
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
         'INTERNAL_API_TOKEN',
+        'DATABASE_DIRECT_URL',
       ] as const) {
         if (!env[key]?.trim()) {
           ctx.addIssue({
