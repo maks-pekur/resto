@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 7.6 code-complete; CR-04 split — 3 cross-brand catalog read leaks CLOSED via quick task 260626-mzp (e2e 26/26). Open: 07.6-07 deploy (needs Cloudflare setup) + per-brand publish rework (deferred to its own phase) + optional NATS-env
-last_updated: '2026-06-26'
-last_activity: 2026-06-26
+stopped_at: "CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup)."
+last_updated: "2026-06-26T15:39:56.897Z"
+last_activity: 2026-06-26 -- Phase 07.5 planning complete
 progress:
   total_phases: 20
   completed_phases: 8
-  total_plans: 68
+  total_plans: 67
   completed_plans: 56
   percent: 40
 ---
@@ -36,8 +36,8 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 
 Next: 7.6 remaining = 07.6-07 admin static deploy — BLOCKED on PRODUCTION not existing (discovered 2026-06-26). It is NOT just a Cloudflare-setup gap: 07.6-07 bakes VITE_API_ORIGIN=https://api.resto.app and its acceptance gate is the 4-surface smoke (api /healthz + website + qr-menu + admin). Per Phase 7.5 artifacts, prod is 2/11 (only Dockerfile build/boot done; ECS/Terraform/DNS/deploy all TODO) and 7.5-11 SUMMARY states api.resto.app "doesn't exist". So admin deploy is premature — admin would load but login/data fail (no API) and SC-5 smoke can't pass. The real critical path = Phase 7.5 prod stand-up. NOTE: 7.5 plans are likely STALE — they predate the admin Vite migration (admin no longer needs ECS/Dockerfile — it's a Cloudflare Pages static surface like qr-menu) and the Redis removal; re-plan before executing.
 After 7.6: Phase 7.5 prod stand-up (refresh for Vite/Redis; admin folds in as a static surface) → [07.7 per-brand publish] → Phase 8 Payments → Phase 10.
-Status: 3 cross-brand leaks CLOSED (260626-mzp, e2e 26/26). 07.6-07 deploy BLOCKED on prod env (Phase 7.5, ~unstarted). Per-brand publish rework deferred to its own phase.
-Last activity: 2026-06-26 - Quick task 260626-mzp: closed 3 cross-brand catalog read leaks (catalog.e2e 26/26)
+Status: Ready to execute
+Last activity: 2026-06-26 -- Phase 07.5 planning complete
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
