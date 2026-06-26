@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: 'CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).'
+status: executing
+stopped_at: 'Phase 7.5 RE-PLANNED (four-surface, admin static; supersedes 07.6-07). Wave 0 code-side DONE: 07.5-02 (boot fix), 07.5-03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud web env; 449/449 api tests green), 07.5-04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY), 07.5-11 (website Dockerfile). BLOCKED on 07.5-01 DB-provider HARD GATE — founder must pick Neon vs RDS + run the BYPASSRLS spike (throwaway Neon project -> NEON_SPIKE_ADMIN_URL). Waves 1-4 (06/07/08/09/10) gated on 01 + founder cloud accounts (AWS/Neon/EC2/Cloudflare/GitHub OIDC).'
 last_updated: '2026-06-26T17:04:37.132Z'
 last_activity: 2026-06-26
 progress:
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 7.6 — admin-vite-spa
+**Current focus:** Phase 7.5 — production-deploy (re-planned 2026-06-26; Wave 0 code done; blocked on 07.5-01 DB-provider HARD GATE — founder cloud action)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -34,9 +34,10 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 - DONE — quick task 260626-mzp (2026-06-26): all 3 cross-brand read leaks closed — draft-diff (added @RequireBrand + computeDraftDiff brandId filter), listModifierGroups, listStopListWithStoppedAt now brand-scoped; cross-brand isolation e2e added (catalog.e2e 26/26 green, zero regressions). Commits b810944 (fix) + a098c64 (test) on admin-vite-spa. 7.6's security part is closed.
 - DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
 
-Next: 7.6 remaining = 07.6-07 admin static deploy — BLOCKED on PRODUCTION not existing (discovered 2026-06-26). It is NOT just a Cloudflare-setup gap: 07.6-07 bakes VITE_API_ORIGIN=https://api.resto.app and its acceptance gate is the 4-surface smoke (api /healthz + website + qr-menu + admin). Per Phase 7.5 artifacts, prod is 2/11 (only Dockerfile build/boot done; ECS/Terraform/DNS/deploy all TODO) and 7.5-11 SUMMARY states api.resto.app "doesn't exist". So admin deploy is premature — admin would load but login/data fail (no API) and SC-5 smoke can't pass. The real critical path = Phase 7.5 prod stand-up. NOTE: 7.5 plans are likely STALE — they predate the admin Vite migration (admin no longer needs ECS/Dockerfile — it's a Cloudflare Pages static surface like qr-menu) and the Redis removal; re-plan before executing.
-After 7.6: Phase 7.5 prod stand-up (refresh for Vite/Redis; admin folds in as a static surface) → [07.7 per-brand publish] → Phase 8 Payments → Phase 10.
-Status: Phase complete — ready for verification
+Phase 7.5 (Production Deploy) is now ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under _superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Wave 0 code-side complete (02/03/04/11). 07.6-07 superseded; the ported ADM-00 admin smoke now lives in 07.5-10.
+Next (FOUNDER GATE): 07.5-01 — DB-provider HARD GATE. Decide Neon (primary) vs RDS (fallback); to run the spike, create a throwaway Neon project and provide NEON_SPIKE_ADMIN_URL. The spike proves the 3-role + FORCE-RLS + pgcrypto/citext/pg_trgm model works on the provider BEFORE any provisioning. Nothing in Waves 1-4 provisions until 01 is recorded with proof.
+After 01: 07.5-06 (Postgres provision + tested restore) → 07.5-07 (NATS EC2+EBS + R2) → 07.5-08 (ECS + static deploys + Cloudflare DNS/TLS/CDN + Secrets) → 07.5-09 (GitHub Actions CD) → 07.5-10 (4-surface smoke + restore/rollback proof + EKS-stub supersession) → Phase 8 Payments.
+Status: Phase 7.5 EXECUTING — Wave 0 code done; paused at 07.5-01 founder cloud gate.
 Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
