@@ -398,7 +398,7 @@ Plans:
 4. The admin builds to static assets and deploys via Cloudflare Pages/R2 + CDN with the wildcard/admin host + TLS (folds the deferred admin slice of Phase 7.5); CD publishes on merge to main.
 5. The four-surface smoke (Phase 7.5 SC#5) passes with the new static admin reachable over HTTPS.
 
-**Plans**: 7 plans in 3 waves
+**Plans**: 9 plans in 4 waves _(08/09 added 2026-06-26: CR-04 per-brand publish rework — review before execution)_
 
 Plans:
 **Wave 1** _(parallel — API enablers + SPA foundation, no file overlap)_
@@ -417,6 +417,12 @@ Plans:
 
 - [ ] 07.6-07-PLAN.md — Cloudflare Pages static deploy + admin host/TLS + CD on merge + ported ADM-00 Playwright smoke + four-surface HTTPS smoke (SC-4/SC-5)
       **UI hint**: yes (re-platform of a UI app — consider `/gsd:ui-phase` if the visual surface changes)
+      **Persona reviewers**: persona-cto, persona-skeptic
+
+**Wave 4** _(CR-04 per-brand publish rework — independent of 07.6-07 deploy; founder-decided 2026-06-23; plan reviewed before execution)_
+
+- [ ] 07.6-08-PLAN.md — CR-04 data path: catalog_menu_version → per-brand PK (migration 0054) + brand-aware menu-version port/adapter + brand-keyed delayed-publish + @RequireBrand on publish/cancel/draft-diff + computeDraftDiff brand filter (CR-04)
+- [ ] 07.6-09-PLAN.md — CR-04 wire + verify: v2 publish events (brandId) + per-brand finalizeMenuPublish UPSERT + per-brand public /v1/menu ETag + cross-brand isolation e2e (version/ETag/403/draft-diff) (CR-04)
       **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 8: Payments (Stripe Connect)
