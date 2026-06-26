@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 'Phase 7.5 VPS PIVOT (2026-06-26): dropped AWS entirely. Spine = api+postgres+nats in Docker Compose on ONE VPS (Hetzner) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu). AWS RDS torn down (instance+SG+subnet-group). Wave 0 code DONE (01-04, 11) + 05 (resto_auth NOBYPASSRLS policies — now optional since self-Postgres is superuser, kept as portable hygiene). Next FOUNDER GATE: provision a Hetzner VPS (add id_personal.pub or give hcloud token), then I SSH in and stand up Docker+Postgres+NATS+Cloudflare+backups. Plans 06-10 to be re-planned for VPS.'
-last_updated: '2026-06-26T20:46:37.768Z'
+status: completed
+stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
+last_updated: "2026-06-26T22:15:33.156Z"
 last_activity: 2026-06-26
 progress:
   total_phases: 20
@@ -219,6 +219,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26T20:46:37.759Z
-Stopped at: CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).
-Resume file: None
+Last session: 2026-06-26T22:15:33.145Z
+Stopped at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
+Resume file: .planning/phases/08-payments-stripe-connect/08-CONTEXT.md
