@@ -44,6 +44,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -86,6 +87,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -116,6 +118,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -134,6 +137,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -158,6 +162,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -179,6 +184,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -199,6 +205,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -219,6 +226,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
@@ -237,6 +245,7 @@ describe('loadEnv', () => {
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
+      DATABASE_DIRECT_URL: 'postgres://direct@localhost:5432/resto',
       BETTER_AUTH_SECRET: 'production-secret-32-chars-padding-padding',
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',

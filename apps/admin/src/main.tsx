@@ -1,3 +1,4 @@
+import * as Sentry from '@sentry/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
@@ -30,6 +31,19 @@ import { Route as brandThemeRoute } from './routes/(protected)/dashboard/$brandS
 import { Route as brandPayoutsRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.payouts';
 import '@resto/config-tailwind/tokens.css';
 import './styles.css';
+
+// G-04: init Sentry before the React tree mounts so unhandled errors are captured.
+// No-op when VITE_SENTRY_DSN is absent — dev builds without the var are unaffected.
+const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+if (sentryDsn) {
+  Sentry.init({
+    dsn: sentryDsn,
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 0.1,
+    sendDefaultPii: false,
+    integrations: [Sentry.browserTracingIntegration()],
+  });
+}
 
 const authRouteTree = authLayoutRoute.addChildren([
   loginRoute,
