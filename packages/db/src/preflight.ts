@@ -207,6 +207,63 @@ export const assertNoBaCredentialAccess = async (url: string): Promise<void> => 
   }
 };
 
+/**
+ * Error raised when the `resto_auth` role still carries the `BYPASSRLS`
+ * attribute on an existing database after provisioning. After plan 07.5-05
+ * (D-04 / RDS), `provisionAuthRole` always creates/alters resto_auth as
+ * NOBYPASSRLS. This assertion is the boot-time witness for runbook tooling
+ * (plan 06 dry-check) — it is NOT wired into the main boot sequence because
+ * the API boots as `resto_app`, not `resto_auth`.
+ */
+export class AuthRoleBypassRlsError extends Error {
+  constructor(public readonly attributes: { rolsuper: boolean; rolbypassrls: boolean }) {
+    super(
+      `Database role "resto_auth" still carries BYPASSRLS or SUPERUSER after provisioning ` +
+        `(rolsuper=${attributes.rolsuper.toString()}, rolbypassrls=${attributes.rolbypassrls.toString()}). ` +
+        'Re-run provisionAuthRole (packages/db/src/auth-role.ts) against this database — ' +
+        'the ALTER ROLE path will strip the attribute. See docs/runbooks/database-roles.md.',
+    );
+    this.name = 'AuthRoleBypassRlsError';
+  }
+}
+
+/**
+ * Assert that `resto_auth` is provisioned as NOBYPASSRLS on the database
+ * reachable via `url`. Symmetric to `assertNoRlsBypass` (which checks
+ * `resto_app`), but intended for runbook/plan-06 dry-run tooling, NOT for
+ * the application boot path (the API connects as `resto_app`, not
+ * `resto_auth`).
+ *
+ * Exported for plan-06 and runbook use; intentionally not called from
+ * `apps/api/src/main.ts`.
+ */
+export const assertAuthRoleNoBypass = async (adminUrl: string): Promise<void> => {
+  const client = postgres(adminUrl, { max: 1, prepare: false, onnotice: () => undefined });
+  try {
+    const rows = await client<(ExpectedRoleAttributes & { rolname: string })[]>`
+      SELECT rolname, rolsuper, rolbypassrls, rolcreaterole, rolcreatedb
+      FROM pg_roles
+      WHERE rolname = 'resto_auth'
+    `;
+    const row = rows[0];
+    if (!row) {
+      throw new Error('assertAuthRoleNoBypass: role "resto_auth" does not exist.');
+    }
+    if (row.rolsuper || row.rolbypassrls) {
+      throw new AuthRoleBypassRlsError({
+        rolsuper: row.rolsuper,
+        rolbypassrls: row.rolbypassrls,
+      });
+    }
+    logger.info(
+      { role: 'resto_auth' },
+      'Database preflight passed: resto_auth is NOBYPASSRLS (RDS-compatible).',
+    );
+  } finally {
+    await client.end({ timeout: 5 });
+  }
+};
+
 export class InboxProcessedDeleteMissingError extends Error {
   constructor() {
     super(
