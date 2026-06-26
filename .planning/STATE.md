@@ -26,16 +26,18 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete + CR-04 planned)
-Plan: 6 of 7 done; CR-04 newly planned as 07.6-08 + 07.6-09 (PLANNED, not executed)
-Next: CR-04 per-brand publish rework is PLANNED + checker-passed (0 blockers). Founder gate = /gsd-review the two plans BEFORE execution, then /gsd-execute-phase 07.6.
+Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete)
+Plan: 6 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict FIX-THEN-EXECUTE — 2 blockers + HIGH security gap + scope concern in the full rework).
 
-- 07.6-08 (wave 1, autonomous:false) — catalog_menu_version → per-brand PK (brand_id,tenant_id) + composite brand FK (hand-authored migration 0054, mirrors catalog_brand_stop_version); brand-aware MenuVersionPort.current(tenantId,brandId); brand-keyed delayed-publish timer; @RequireBrand() on publish/cancel/draft-diff; computeDraftDiff brandId filter (the actual CR-04 leak). Includes [BLOCKING] pnpm db:migrate apply (Task 4).
-- 07.6-09 (wave 2, depends 07.6-08) — v2 publish events carrying brandId (clean cut-over, catalog has no NATS consumer → zero subscriber edit); per-brand finalizeMenuPublish UPSERT; per-brand public /v1/menu ETag (CDN-safe — backfill keeps same integer); cross-brand isolation e2e.
-  Still open (parked): 07.6-07 admin static deploy (blocked on founder Cloudflare setup) + optional NATS-env e2e fix.
-  After 7.6: finish Phase 7.5 deploy remainder (2/11) → Phase 8 Payments → Phase 10 Admin Order Intake.
-  Status: CR-04 plans ready for /gsd-review (founder's review-before-execute gate).
-  Last activity: 2026-06-26 - Planned CR-04 per-brand publish (07.6-08/09); research + plan-checker passed
+CR-04 SPLIT DECISION (founder, 2026-06-26):
+
+- NOW (quick task): fix all 3 cross-brand read leaks — draft-diff (original CR-04: add @RequireBrand + computeDraftDiff brandId filter) + the 2 SIBLINGS the review found: listModifierGroups (repo:1143) + listStopListWithStoppedAt (repo:1206), both read tenant-wide on @RequireBrand routes — + cross-brand e2e on all 3. Closes 7.6's security part.
+- DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
+
+Next: run the quick task for the 3 cross-brand leaks. Then 7.6 remaining = 07.6-07 admin static deploy (blocked on founder Cloudflare setup) + optional NATS-env e2e fix.
+After 7.6: Phase 7.5 deploy remainder (2/11) → [07.7 per-brand publish] → Phase 8 Payments → Phase 10.
+Status: Ready to run the quick task for the 3 leaks; per-brand publish rework deferred to its own phase.
+Last activity: 2026-06-26 - Cross-lens review of CR-04 (07.6-REVIEWS.md); founder split: leaks now, rework deferred
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -207,6 +209,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-26 (resumed → planned CR-04)
-Stopped at: CR-04 planned as 07.6-08 + 07.6-09 on admin-vite-spa; research (07.6-08-RESEARCH.md) + plan-checker passed (0 blockers, 2 warnings fixed). Awaiting founder's /gsd-review gate before /gsd-execute-phase 07.6.
-Resume file: .planning/phases/07.6-admin-vite-spa/07.6-08-PLAN.md + 07.6-09-PLAN.md
+Last session: 2026-06-26 (resumed → planned + reviewed CR-04 → split)
+Stopped at: Cross-lens review (07.6-REVIEWS.md, FIX-THEN-EXECUTE). Founder split CR-04: (1) fix 3 cross-brand read leaks NOW via quick task, (2) defer per-brand publish rework to its own phase before Phase 8 (plans 07.6-08/09 marked deferred). Next: run the quick task for the 3 leaks.
+Resume file: .planning/phases/07.6-admin-vite-spa/07.6-REVIEWS.md (consensus + the 3 leaks + 2 blockers for the deferred phase)
