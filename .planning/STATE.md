@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: 'CR-04 split executed. Quick task 260626-mzp CLOSED the 3 cross-brand catalog read leaks (catalog.e2e 26/26, commits b810944 + a098c64 on admin-vite-spa). Per-brand publish rework deferred to its own phase (07.6-08/09 marked deferred; re-plan from 07.6-08-RESEARCH.md + 07.6-REVIEWS.md). Next: 07.6-07 admin static deploy (needs founder Cloudflare setup).'
+status: executing
+stopped_at: 'Phase 7.5 VPS PIVOT (2026-06-26): dropped AWS entirely. Spine = api+postgres+nats in Docker Compose on ONE VPS (Hetzner) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu). AWS RDS torn down (instance+SG+subnet-group). Wave 0 code DONE (01-04, 11) + 05 (resto_auth NOBYPASSRLS policies — now optional since self-Postgres is superuser, kept as portable hygiene). Next FOUNDER GATE: provision a Hetzner VPS (add id_personal.pub or give hcloud token), then I SSH in and stand up Docker+Postgres+NATS+Cloudflare+backups. Plans 06-10 to be re-planned for VPS.'
 last_updated: '2026-06-26T20:46:37.768Z'
 last_activity: 2026-06-26
 progress:
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 7.5 — production-deploy (Wave 0 COMPLETE incl. RDS decision; next = 07.5-06 provision AWS RDS — founder cloud action)
+**Current focus:** Phase 7.5 — production-deploy (VPS pivot 2026-06-26; AWS dropped; next = provision Hetzner VPS — founder action)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -34,10 +34,10 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 - DONE — quick task 260626-mzp (2026-06-26): all 3 cross-brand read leaks closed — draft-diff (added @RequireBrand + computeDraftDiff brandId filter), listModifierGroups, listStopListWithStoppedAt now brand-scoped; cross-brand isolation e2e added (catalog.e2e 26/26 green, zero regressions). Commits b810944 (fix) + a098c64 (test) on admin-vite-spa. 7.6's security part is closed.
 - DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
 
-Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. DB provider LOCKED = AWS RDS (founder, 2026-06-26; Neon declined — see 07.5-01 DB-PROVIDER-DECISION.md). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
-Next (FOUNDER GATE): 07.5-06 — provision AWS RDS (db.t4g.micro, private subnet, SG locked to the ECS task SG). FIRST gated step = empirical D-04 proof: confirm rds_superuser can confer BYPASSRLS on resto_auth (HARD-STOP if not) + resto_app NOBYPASSRLS + FORCE RLS + pgcrypto/citext/pg_trgm install; then automated backups + a snapshot-restore drill (G-02). Needs a founder AWS account. Plan 07 (NATS EC2+EBS + R2) is the other Wave 1 plan.
-After 06/07: 07.5-08 (ECS api+website + static admin+qr-menu + Cloudflare DNS/TLS/CDN + Secrets) → 07.5-09 (GitHub Actions CD) → 07.5-10 (4-surface smoke + restore/rollback proof + EKS-stub supersession) → Phase 8 Payments.
-Status: Phase complete — ready for verification
+Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
+Next (FOUNDER GATE): provision a single VPS (Hetzner CPX21, Ubuntu 24.04, EU). Add SSH key id_personal.pub (mpekur.dev@gmail.com) at creation + give me the IP → I SSH in and stand up: Docker + docker-compose (api + postgres + nats) + Cloudflare (DNS/TLS/CDN reverse-proxy) + R2 wiring + Pages (admin/qr-menu) + nightly pg_dump/WAL-G→R2 backups + restore drill (G-02). Alt: give an hcloud API token and I provision the server too.
+Plans 06-10 (were RDS/NATS-EC2/ECS/ECR-CD) are being re-planned for the VPS+Cloudflare stack. Then Phase 8 Payments.
+Status: Phase 7.5 EXECUTING — VPS pivot; AWS torn down; awaiting Hetzner VPS.
 Last activity: 2026-06-26
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
