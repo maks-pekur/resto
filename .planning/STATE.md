@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 7.6 Waves 1-2 done + code-review remediation; CR-01/CR-03a/CR-04 open
-last_updated: '2026-06-22T07:14:21.214Z'
-last_activity: 2026-06-21
+stopped_at: Phase 7.6 code-complete; CR-01/CR-03a/WR-02/WR-04 resolved+verified. Open: CR-04 (per-brand publish rework, needs reviewed plan) + 07.6-07 deploy (needs Cloudflare setup) + optional NATS-env
+last_updated: '2026-06-26'
+last_activity: 2026-06-24
 progress:
   total_phases: 20
   completed_phases: 8
-  total_plans: 66
+  total_plans: 68
   completed_plans: 56
   percent: 40
 ---
@@ -26,11 +26,16 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-Phase: 7.6 (admin-vite-spa) — EXECUTING
-Plan: 7 of 7
-Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
-Status: Ready to execute
-Last activity: 2026-06-24 - Completed quick task 260623-xb6: 07.6 WR-02 + WR-04 remediation warnings
+Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete + CR-04 planned)
+Plan: 6 of 7 done; CR-04 newly planned as 07.6-08 + 07.6-09 (PLANNED, not executed)
+Next: CR-04 per-brand publish rework is PLANNED + checker-passed (0 blockers). Founder gate = /gsd-review the two plans BEFORE execution, then /gsd-execute-phase 07.6.
+
+- 07.6-08 (wave 1, autonomous:false) — catalog_menu_version → per-brand PK (brand_id,tenant_id) + composite brand FK (hand-authored migration 0054, mirrors catalog_brand_stop_version); brand-aware MenuVersionPort.current(tenantId,brandId); brand-keyed delayed-publish timer; @RequireBrand() on publish/cancel/draft-diff; computeDraftDiff brandId filter (the actual CR-04 leak). Includes [BLOCKING] pnpm db:migrate apply (Task 4).
+- 07.6-09 (wave 2, depends 07.6-08) — v2 publish events carrying brandId (clean cut-over, catalog has no NATS consumer → zero subscriber edit); per-brand finalizeMenuPublish UPSERT; per-brand public /v1/menu ETag (CDN-safe — backfill keeps same integer); cross-brand isolation e2e.
+  Still open (parked): 07.6-07 admin static deploy (blocked on founder Cloudflare setup) + optional NATS-env e2e fix.
+  After 7.6: finish Phase 7.5 deploy remainder (2/11) → Phase 8 Payments → Phase 10 Admin Order Intake.
+  Status: CR-04 plans ready for /gsd-review (founder's review-before-execute gate).
+  Last activity: 2026-06-26 - Planned CR-04 per-brand publish (07.6-08/09); research + plan-checker passed
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -202,6 +207,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-22T07:14:21.176Z
-Stopped at: Phase 7.6 Waves 1-2 done + code-review remediation; CR-01/CR-03a/CR-04 open
-Resume file: .planning/phases/07.6-admin-vite-spa/07.6-REVIEW.md
+Last session: 2026-06-26 (resumed → planned CR-04)
+Stopped at: CR-04 planned as 07.6-08 + 07.6-09 on admin-vite-spa; research (07.6-08-RESEARCH.md) + plan-checker passed (0 blockers, 2 warnings fixed). Awaiting founder's /gsd-review gate before /gsd-execute-phase 07.6.
+Resume file: .planning/phases/07.6-admin-vite-spa/07.6-08-PLAN.md + 07.6-09-PLAN.md
