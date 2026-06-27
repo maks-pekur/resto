@@ -13,11 +13,13 @@ const makeDb = (pingOk: boolean) =>
   }) as unknown as TenantAwareDb;
 
 const makePublisher = (connected: boolean): EventPublisher | null =>
-  connected
-    ? ({ publish: () => Promise.resolve(), close: () => Promise.resolve() })
-    : null;
+  connected ? { publish: () => Promise.resolve(), close: () => Promise.resolve() } : null;
 
-const makeOutboxSvc = (isLeader: boolean, lastDispatchAt: Date | null) =>
+const makeOutboxSvc = (
+  isLeader: boolean,
+  lastDispatchAt: Date | null,
+  oldestUndeliveredAgeMs: number | null = null,
+) =>
   ({
     isLeader: () => isLeader,
     getOutboxLeaderHealth: () => ({
@@ -25,6 +27,7 @@ const makeOutboxSvc = (isLeader: boolean, lastDispatchAt: Date | null) =>
       lastDispatchAt,
       staleMs: lastDispatchAt ? Date.now() - lastDispatchAt.getTime() : null,
     }),
+    getOldestUndeliveredOutboxAgeMs: () => Promise.resolve(oldestUndeliveredAgeMs),
   }) as unknown as OutboxDispatcherService;
 
 async function buildController(
@@ -84,9 +87,9 @@ describe('HealthController', () => {
       expect(leaderCheck?.ok).toBe(true);
     });
 
-    it('returns 503 when instance is leader but dispatch is stale', async () => {
+    it('returns 503 when instance is leader, dispatch is stale, and backlog has undelivered rows', async () => {
       const stale = new Date(Date.now() - 120_000);
-      const ctrl = await buildController(true, true, makeOutboxSvc(true, stale), 60_000);
+      const ctrl = await buildController(true, true, makeOutboxSvc(true, stale, 90_000), 60_000);
       await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
     });
 
@@ -103,6 +106,23 @@ describe('HealthController', () => {
       const ctrl = await buildController(true, true, makeOutboxSvc(true, null), 60_000);
       const result = await ctrl.readiness();
       expect(result.status).toBe('ok');
+    });
+
+    it('returns 503 when leader is stale and outbox backlog exists (wedged-at-startup false-negative fixed)', async () => {
+      // Leader acquired lock but staleMs > threshold AND backlog has old undelivered rows
+      const stale = new Date(Date.now() - 120_000);
+      const ctrl = await buildController(true, true, makeOutboxSvc(true, stale, 90_000), 60_000);
+      await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
+    });
+
+    it('returns 200 when leader is stale but outbox backlog is empty (idle queue is healthy)', async () => {
+      // Leader staleMs > threshold but no undelivered rows — queue is genuinely empty
+      const stale = new Date(Date.now() - 120_000);
+      const ctrl = await buildController(true, true, makeOutboxSvc(true, stale, null), 60_000);
+      const result = await ctrl.readiness();
+      expect(result.status).toBe('ok');
+      const leaderCheck = result.checks.find((c) => c.name === 'outbox_leader');
+      expect(leaderCheck?.ok).toBe(true);
     });
   });
 });

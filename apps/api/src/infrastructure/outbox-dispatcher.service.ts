@@ -7,8 +7,9 @@ import {
   type OnModuleDestroy,
 } from '@nestjs/common';
 import { metrics } from '@opentelemetry/api';
-import { TenantAwareDb } from '@resto/db';
+import { schema, TenantAwareDb } from '@resto/db';
 import { OutboxDispatcher, type EventEnvelope, type EventPublisher } from '@resto/events';
+import { isNull, min } from 'drizzle-orm';
 import type { ReservedSql, Sql } from 'postgres';
 
 import { DIRECT_DB_CONNECTION } from './direct-db-connection.token';
@@ -48,6 +49,9 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
   private readonly claimFailuresCounter = this.meter.createCounter('outbox.claim_failures', {
     description: 'Outbox dispatcher tick failures (publish or claim)',
   });
+  private readonly isLeaderGauge = this.meter.createObservableGauge('outbox.is_leader', {
+    description: 'Whether this instance holds the outbox dispatcher advisory lock (1/0)',
+  });
 
   private dispatcher: OutboxDispatcher | null = null;
   private leaderConn: ReservedSql | null = null;
@@ -59,7 +63,11 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(EVENT_PUBLISHER) private readonly publisher: EventPublisher | null,
     @Optional() @Inject(DIRECT_DB_CONNECTION) private readonly directConn: Sql | null,
-  ) {}
+  ) {
+    this.isLeaderGauge.addCallback((result) => {
+      result.observe(this.isLeader() ? 1 : 0, { 'tenant.id': 'platform' });
+    });
+  }
 
   onApplicationBootstrap(): void {
     if (this.publisher === null) {
@@ -119,6 +127,9 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
         return;
       }
       this.leaderConn = reserved;
+      // D-14: seed the staleness clock at acquisition so a leader that has
+      // not yet dispatched does not read as stale from t=0.
+      this.lastDispatchAt = new Date();
       this.logger.log('Acquired outbox dispatcher leadership');
       this.startDispatcher(this.publisher);
     } catch (err) {
@@ -172,6 +183,19 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
       },
       close: () => publisher.close(),
     };
+  }
+
+  /** Returns the age in ms of the oldest undelivered outbox row, or null when the queue is empty. */
+  async getOldestUndeliveredOutboxAgeMs(): Promise<number | null> {
+    return this.db.withoutTenant('outbox backlog age probe', async (tx) => {
+      const rows = await tx
+        .select({ oldest: min(schema.outboxEvents.occurredAt) })
+        .from(schema.outboxEvents)
+        .where(isNull(schema.outboxEvents.deliveredAt));
+      const oldest = rows[0]?.oldest;
+      if (!oldest) return null;
+      return Date.now() - oldest.getTime();
+    });
   }
 
   private scheduleRetry(): void {

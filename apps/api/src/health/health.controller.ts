@@ -91,22 +91,26 @@ export class HealthController {
     return Promise.resolve({ name: 'broker', ok: true });
   }
 
-  // G-03: leader liveness check. Non-leaders are always ok (correctly
-  // idle). Leaders are ok when lastDispatchAt is recent or null (startup /
-  // empty queue). A leader whose last dispatch is older than
-  // OUTBOX_STALL_THRESHOLD_MS gets the LB drained via 503.
-  private checkOutboxLeader(): Promise<CheckResult> {
+  // G-03: leader liveness check. Non-leaders are always ok (correctly idle).
+  // When staleMs > threshold, consult the outbox backlog: an empty backlog
+  // means the leader is genuinely idle (healthy); a non-empty backlog means
+  // the leader is wedged and must be drained (D-14 false-negative fix).
+  private async checkOutboxLeader(): Promise<CheckResult> {
     const { isLeader, staleMs } = this.outboxDispatcher.getOutboxLeaderHealth();
     if (!isLeader) {
-      return Promise.resolve({ name: 'outbox_leader', ok: true });
+      return { name: 'outbox_leader', ok: true };
     }
     if (staleMs !== null && staleMs > this.stallThresholdMs) {
-      return Promise.resolve({
+      const backlogAgeMs = await this.outboxDispatcher.getOldestUndeliveredOutboxAgeMs();
+      if (backlogAgeMs === null) {
+        return { name: 'outbox_leader', ok: true };
+      }
+      return {
         name: 'outbox_leader',
         ok: false,
-        detail: `outbox leader stalled: last dispatch ${staleMs}ms ago (threshold ${this.stallThresholdMs}ms)`,
-      });
+        detail: `outbox leader stalled: last dispatch ${staleMs}ms ago, oldest undelivered row ${backlogAgeMs}ms old (threshold ${this.stallThresholdMs}ms)`,
+      };
     }
-    return Promise.resolve({ name: 'outbox_leader', ok: true });
+    return { name: 'outbox_leader', ok: true };
   }
 }
