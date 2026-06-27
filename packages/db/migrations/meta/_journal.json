@@ -386,6 +386,13 @@
       "when": 1782506190000,
       "tag": "0054_resto_auth_permissive_policies",
       "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1751001600000,
+      "tag": "0055_payments_money_path",
+      "breakpoints": true
     }
   ]
 }

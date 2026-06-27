@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { citext } from './_types';
 import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
 
@@ -19,8 +28,14 @@ export const tenants = pgTable(
     status: text('status').notNull().default('active'),
     locale: text('locale').notNull().default('en'),
     defaultCurrency: text('default_currency').notNull().default('USD'),
-    /** Stripe Connect (Express) account id — populated when payments are wired in MVP-2. */
+    /** Stripe Connect (Express) account id — populated on Connect onboarding (Phase 8). */
     stripeAccountId: text('stripe_account_id'),
+    /** D-12: server-side can-accept-money capability flags (populated by account.updated webhook). */
+    stripeChargesEnabled: boolean('stripe_charges_enabled').notNull().default(false),
+    stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
+    // CHECK constraint below: 'not_started' | 'pending' | 'complete' | 'restricted'
+    stripeOnboardingStatus: text('stripe_onboarding_status').notNull().default('not_started'),
+    stripeRequirementsDue: jsonb('stripe_requirements_due'),
     offboardingScheduledAt: timestamp('offboarding_scheduled_at', {
       withTimezone: true,
       mode: 'date',
@@ -50,6 +65,10 @@ export const tenants = pgTable(
     check('tenants_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$'`),
     check('tenants_currency_format_chk', sql`${table.defaultCurrency} ~ '^[A-Z]{3}$'`),
     check('tenants_locale_format_chk', sql`${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`),
+    check(
+      'tenants_stripe_onboarding_status_chk',
+      sql`${table.stripeOnboardingStatus} IN ('not_started','pending','complete','restricted')`,
+    ),
   ],
 );
 
