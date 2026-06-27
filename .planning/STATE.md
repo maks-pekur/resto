@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
+status: executing
+stopped_at: 'Phase 8 (Payments) EXECUTING — Waves 1-4 DONE: 08-01 schema/migration 0055, 08-02 adapter+onboarding+admin button, 08-03 webhooks, 08-07 PAY-12/PAY-11, 08-04a checkout-API, 08-06 guest emails. 577+ tests green; comments stripped per no-comments rule (12af50a). Charge model = DIRECT charges (D-02). REMAINING Wave 5 (both autonomous:false, need founder): 08-04b website Payment Element + SITE-08 page, 08-05 refunds+disputes. Pending founder verify: 08-02 onboarding click-through (needs Stripe Connect enabled in test dashboard + STRIPE_CONNECT_CLIENT_ID).'
 last_updated: '2026-06-27T14:25:12.800Z'
 last_activity: 2026-06-27
 progress:
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 7.5 — code prod-readiness DONE (Wave 0); live stand-up DEFERRED to first customer (target VPS+Cloudflare). Next = continue MVP build (Phase 8) locally.
+**Current focus:** Phase 8 (Payments) EXECUTING — Waves 1-4 done (backend + checkout-API + guest emails; 577+ tests green). Wave 5 (08-04b website checkout + 08-05 refunds) remains — needs founder Stripe-Connect test setup + test-card e2e. (Phase 7.5 prod stand-up still DEFERRED to first customer; target VPS+Cloudflare.)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
