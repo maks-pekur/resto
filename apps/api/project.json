@@ -52,7 +52,7 @@
     "serve": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "tsx watch src/main.ts",
+        "command": "tsx watch --experimental-loader ../../tools/sql-esm-loader.mjs src/main.ts",
         "cwd": "apps/api"
       }
     }
