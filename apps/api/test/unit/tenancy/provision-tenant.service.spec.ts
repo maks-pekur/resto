@@ -19,7 +19,21 @@ const buildRepo = (): TenantRepository => ({
   listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
 
-const stripeNoop = { ensureExpressAccount: vi.fn().mockResolvedValue(null) };
+const stripeNoop = {
+  ensureExpressAccount: vi.fn().mockResolvedValue(null),
+  createExpressAccount: vi.fn().mockResolvedValue({ accountId: 'acct_test' }),
+  createAccountLink: vi.fn().mockResolvedValue({ url: 'https://connect.stripe.com', expiresAt: 0 }),
+  createPaymentIntent: vi.fn().mockResolvedValue({
+    paymentIntentId: 'pi_test',
+    clientSecret: 'secret',
+    status: 'requires_payment_method',
+  }),
+  cancelPaymentIntent: vi.fn().mockResolvedValue({ status: 'canceled' }),
+  createRefund: vi.fn().mockResolvedValue({ stripeRefundId: 're_test', status: 'succeeded' }),
+  retrieveAccount: vi
+    .fn()
+    .mockResolvedValue({ chargesEnabled: false, payoutsEnabled: false, requirementsDue: null }),
+};
 
 const baseInput = {
   slug: TenantSlug.parse('cafe-roma'),

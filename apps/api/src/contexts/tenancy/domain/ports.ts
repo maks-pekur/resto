@@ -39,15 +39,89 @@ export interface TenantRepository {
 
 export const TENANT_REPOSITORY = Symbol('TENANT_REPOSITORY');
 
-/**
- * Stripe Connect onboarding port — placeholder. Payments runtime is
- * MVP-2 (ADR-0010). The port exists today so the application service
- * already speaks to an interface; the production adapter wires up the
- * Stripe SDK in a later ticket without touching application code.
- */
+export interface CreateExpressAccountInput {
+  readonly tenantId: TenantId;
+  readonly displayName: string;
+  readonly country?: string;
+  readonly defaultCurrency?: string;
+}
+
+export interface CreateAccountLinkInput {
+  readonly accountId: string;
+  readonly refreshUrl: string;
+  readonly returnUrl: string;
+}
+
+export interface CreatePaymentIntentInput {
+  readonly orderId: string;
+  readonly connectedAccountId: string;
+  readonly amountMinor: number;
+  readonly currency: string;
+  readonly applicationFeeMinor: number;
+  /** Caller-supplied attempt counter — changes the idempotency key on retry-after-same-order. */
+  readonly attempt: number;
+  readonly metadata: Record<string, string>;
+}
+
+export interface CancelPaymentIntentInput {
+  readonly paymentIntentId: string;
+  readonly connectedAccountId: string;
+  readonly reason?: string;
+}
+
+export interface CreateRefundInput {
+  readonly paymentIntentId: string;
+  readonly connectedAccountId: string;
+  readonly amountMinor?: number;
+  readonly reason: string;
+  readonly refundRequestId: string;
+}
+
+export interface RetrieveAccountInput {
+  readonly accountId: string;
+}
+
+export interface CreateExpressAccountResult {
+  readonly accountId: string;
+}
+
+export interface CreateAccountLinkResult {
+  readonly url: string;
+  readonly expiresAt: number;
+}
+
+export interface CreatePaymentIntentResult {
+  readonly paymentIntentId: string;
+  readonly clientSecret: string;
+  readonly status: string;
+}
+
+export interface CancelPaymentIntentResult {
+  readonly status: string;
+}
+
+export interface CreateRefundResult {
+  readonly stripeRefundId: string;
+  readonly status: string;
+}
+
+export interface RetrieveAccountResult {
+  readonly chargesEnabled: boolean;
+  readonly payoutsEnabled: boolean;
+  readonly requirementsDue: unknown;
+}
+
 export interface StripeConnectPort {
-  /** Returns the Stripe Express account id if/when an account is created. */
+  /** Thin shim kept for backwards-compat with provision-tenant.service. */
   ensureExpressAccount(input: { tenantId: TenantId; displayName: string }): Promise<string | null>;
+  createExpressAccount(input: CreateExpressAccountInput): Promise<CreateExpressAccountResult>;
+  createAccountLink(input: CreateAccountLinkInput): Promise<CreateAccountLinkResult>;
+  /** D-02: direct charge on connected account (stripeAccount option, no transfer_data.destination). */
+  createPaymentIntent(input: CreatePaymentIntentInput): Promise<CreatePaymentIntentResult>;
+  cancelPaymentIntent(input: CancelPaymentIntentInput): Promise<CancelPaymentIntentResult>;
+  createRefund(input: CreateRefundInput): Promise<CreateRefundResult>;
+  /** Used by boot ping + account.updated reconcile. */
+  retrieveAccount(input: RetrieveAccountInput): Promise<RetrieveAccountResult>;
 }
 
 export const STRIPE_CONNECT_PORT = Symbol('STRIPE_CONNECT_PORT');

@@ -255,6 +255,16 @@ export class Tenant {
     });
   }
 
+  // PAY-01/PAY-02: record the Stripe Express account id created during onboarding
+  linkStripeAccount(accountId: string, now: Date = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeAccountId: accountId,
+      stripeOnboardingStatus: 'pending',
+      updatedAt: now,
+    };
+  }
+
   // D-12: update capability flags from Stripe account.updated webhook data (08-03)
   applyStripeCapabilities(input: ApplyStripeCapabilitiesInput, now: Date = new Date()): void {
     this.snapshot = {
