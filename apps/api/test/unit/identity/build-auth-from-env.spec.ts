@@ -65,6 +65,7 @@ const stubEmailAdapter: EmailAdapterPort = {
   sendInvitation: vi.fn(() => Promise.resolve()),
   sendResetPassword: vi.fn(() => Promise.resolve()),
   sendVerification: vi.fn(() => Promise.resolve()),
+  sendGuestNotification: vi.fn(() => Promise.resolve()),
   verifyTransport: vi.fn(() => Promise.resolve()),
 };
 

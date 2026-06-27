@@ -4,10 +4,12 @@ import type SMTPTransport from 'nodemailer/lib/smtp-transport';
 import type { Env } from '../../../../config/env.schema';
 import type {
   EmailAdapterPort,
+  SendGuestNotificationInput,
   SendInvitationInput,
   SendResetPasswordInput,
   SendVerificationInput,
 } from '../../domain/ports';
+import { renderGuestEmail } from '../../../../contexts/notifications/infrastructure/guest-email-templates';
 import {
   invitationBody as invitationBodyEn,
   invitationSubject as invitationSubjectEn,
@@ -112,11 +114,27 @@ export class MailhogSmtpAdapter implements EmailAdapterPort {
     await this.#send({ to: input.to, subject: strings.verificationSubject, text: body });
   }
 
+  async sendGuestNotification(input: SendGuestNotificationInput): Promise<void> {
+    const rendered = renderGuestEmail(
+      input.kind,
+      input.locale,
+      input.brandTheme,
+      input.brandName,
+      input.vars,
+    );
+    await this.#send({
+      to: input.to,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+    });
+  }
+
   async verifyTransport(): Promise<void> {
     await this.#transport.verify();
   }
 
-  async #send(opts: { to: string; subject: string; text: string }): Promise<void> {
+  async #send(opts: { to: string; subject: string; text: string; html?: string }): Promise<void> {
     this.#logger.log(
       { adapterName: this.adapterName, to: opts.to, subject: opts.subject },
       'MailHog email send',
@@ -127,6 +145,7 @@ export class MailhogSmtpAdapter implements EmailAdapterPort {
       replyTo: this.#replyTo,
       subject: opts.subject,
       text: opts.text,
+      ...(opts.html !== undefined ? { html: opts.html } : {}),
     });
   }
 }

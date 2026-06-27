@@ -22,6 +22,7 @@ describe('EMAIL_ADAPTER_PORT contract', () => {
       sendInvitation: () => Promise.resolve(),
       sendResetPassword: () => Promise.resolve(),
       sendVerification: () => Promise.resolve(),
+      sendGuestNotification: () => Promise.resolve(),
       verifyTransport: () => Promise.resolve(),
     };
     expect(stub.adapterName).toBe('captured');
