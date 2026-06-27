@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: 'Phase 8 (Payments) CODE-COMPLETE — all 8 plans executed (08-01 schema/0055, 08-02 adapter+onboarding+admin button, 08-03 webhooks, 08-07 PAY-12/11, 08-04a checkout-API, 08-04b website Payment Element+SITE-08, 08-06 guest emails, 08-05 refunds+disputes). ~700 tests green; comments stripped (no-comments rule); charge model = DIRECT charges (D-02). PENDING = 3 LIVE founder smokes (need Stripe Connect test setup + Stripe CLI + test card): (1) 08-02 admin onboarding click-through, (2) 08-04b test-card payment e2e, (3) 08-05 refund smoke. After smokes pass → Phase 8 done; next MVP-1 phase = Phase 10 (Admin Order Intake).'
+stopped_at: 'Phase 8 (Payments) CODE-COMPLETE + LIVE-VERIFIED partially. All 8 plans executed (~700 tests green; DIRECT charges D-02). Live run caught + fixed 2 real bugs unit/e2e/verifier missed: (a) BOOT-BREAKING webhook raw-body parser conflict — api could NOT start — fixed via NestFactory rawBody:true (18abbe0); (b) orphan-PI invalid status write + email accentColor mapping (verifier, prior). Also fixed nx serve api (missing sql-loader, 7a70015) + dev-env (DB port→5433 via infra/docker/.env, migrated). VERIFIED LIVE: api boots clean (/healthz ok, all DB preflights pass); Stripe webhook end-to-end with REAL signed events (signature+raw-body+dispatch → [201]). Connect ENABLED (Platform model). STILL PENDING (browser-only, founder): Stripe-hosted Express onboarding KYC → charges_enabled account, then test-card checkout + refund. Stack is UP (api :3000 + stripe listen forwarding). Next after smokes → Phase 10.'
 last_updated: '2026-06-27T20:59:56.195Z'
 last_activity: 2026-06-27
 progress:
