@@ -1,6 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { TenantId, TenantSlug, type Currency } from '@resto/domain';
+import { z } from 'zod';
 import type { TenantDomain } from './tenant-domain';
+
+/**
+ * PAY-11: Stripe connected-account id. Max 255 guards against oversized
+ * externally-supplied values on the webhook parse path (T-08-07).
+ */
+export const StripeAccountId = z.string().min(1).max(255);
 import type { TenantDomainEvent } from './events';
 import {
   TenantAlreadyArchivedError,

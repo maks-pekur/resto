@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { Currency, TenantSlug } from '@resto/domain';
-import { Tenant } from './tenant.aggregate';
+import { StripeAccountId, Tenant } from './tenant.aggregate';
 
 function makeTenant() {
   return Tenant.provision({
@@ -10,6 +10,16 @@ function makeTenant() {
     primaryDomainHostname: 'test-tenant-ok.menu.resto.app',
   });
 }
+
+describe('StripeAccountId (PAY-11)', () => {
+  it('accepts a valid Stripe account id', () => {
+    expect(StripeAccountId.safeParse('acct_1234567890').success).toBe(true);
+  });
+
+  it('rejects a string longer than 255 characters', () => {
+    expect(StripeAccountId.safeParse('a'.repeat(256)).success).toBe(false);
+  });
+});
 
 describe('Tenant.canAcceptPayments (D-12)', () => {
   it('returns false when stripeAccountId is null and chargesEnabled is false', () => {

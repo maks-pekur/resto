@@ -27,6 +27,7 @@ import type {
   ApplyStripeCapabilitiesInput,
   StripeOnboardingStatus,
 } from '../../tenancy/domain/tenant.aggregate';
+import { StripeAccountId } from '../../tenancy/domain/tenant.aggregate';
 import { PAYMENT_REPOSITORY, type PaymentRepository } from '../domain/ports';
 
 const CONSUMER_NAME = 'payments-webhook';
@@ -83,11 +84,20 @@ export class HandleStripeEventService {
 
   // W3: account-scoped event. Resolve tenant first; if no tenant owns this account, log + return.
   private async handleAccountUpdated(event: Stripe.Event): Promise<void> {
-    const accountId = event.account;
-    if (!accountId) {
+    const rawAccountId = event.account;
+    if (!rawAccountId) {
       this.logger.warn({ eventId: event.id }, 'account.updated missing event.account — ignoring.');
       return;
     }
+    const parsedId = StripeAccountId.safeParse(rawAccountId);
+    if (!parsedId.success) {
+      this.logger.warn(
+        { eventId: event.id, rawAccountId },
+        'account.updated: event.account fails StripeAccountId validation — ignoring (PAY-11).',
+      );
+      return;
+    }
+    const accountId = parsedId.data;
 
     const tenant = await this.tenantRepo.findByStripeAccountId(accountId);
     if (!tenant) {

@@ -41,12 +41,11 @@ export const envSchema = z
      */
     SENTRY_DSN: z.string().url().optional(),
     /**
-     * Milliseconds since last successful dispatch (or empty-queue poll)
-     * before /readyz marks the outbox leader as stalled (G-03). Default
-     * 60s — generous enough for normal variance but tight enough to catch
-     * a wedged leader before a customer notices missing emails.
+     * Milliseconds since last successful dispatch before /readyz marks the
+     * outbox leader as stalled (G-03). Default 30s — aligns with PAY-12's
+     * ">30s stall" SLA (SC-5 ROADMAP). Operators may raise for bursty queues.
      */
-    OUTBOX_STALL_THRESHOLD_MS: z.coerce.number().int().positive().default(60_000),
+    OUTBOX_STALL_THRESHOLD_MS: z.coerce.number().int().positive().default(30_000),
 
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */
