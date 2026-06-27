@@ -449,7 +449,7 @@ Plans:
 
 **Wave 2** _(after 08-01)_
 
-- [ ] 08-02-PLAN.md — Real StripeConnectAdapter replacing the Noop: Express onboarding + account_link, createPaymentIntent (DIRECT charge, config-driven application fee), cancel/refund, idempotency keys; onboarding + stripe-status endpoints + admin Connect-Stripe button & KYC status surface (D-01/02/03/06/09/B3; PAY-01/02/03/06/13) [stripe legitimacy gate + admin click-through verify]
+- [x] 08-02-PLAN.md — Real StripeConnectAdapter replacing the Noop: Express onboarding + account_link, createPaymentIntent (DIRECT charge, config-driven application fee), cancel/refund, idempotency keys; onboarding + stripe-status endpoints + admin Connect-Stripe button & KYC status surface (D-01/02/03/06/09/B3; PAY-01/02/03/06/13) [stripe legitimacy gate + admin click-through verify]
 
 **Wave 3** _(after 08-02; 08-07 also after 08-01)_
 
@@ -655,7 +655,7 @@ Notes:
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
-| 8. Payments (Stripe Connect)                  | 1/8            | In Progress   |            |
+| 8. Payments (Stripe Connect)                  | 2/8            | In Progress   |            |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
