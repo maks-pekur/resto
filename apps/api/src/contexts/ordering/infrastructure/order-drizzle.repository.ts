@@ -24,6 +24,7 @@ import type { OrderRepository } from '../domain/ports';
 
 const ALLOWED_STATUSES = new Set<string>([
   'created',
+  'requires_action',
   'paid',
   'accepted',
   'preparing',
