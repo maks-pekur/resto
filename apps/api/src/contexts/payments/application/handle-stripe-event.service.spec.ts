@@ -149,7 +149,6 @@ describe('HandleStripeEventService', () => {
       retrieveAccount: vi.fn(),
     };
 
-    // runDeduped mock: executes the handler immediately (simulating 'executed')
     runDedupedMock = vi
       .fn()
       .mockImplementation(
@@ -201,7 +200,7 @@ describe('HandleStripeEventService', () => {
       await service.handle(event as never);
 
       expect(orderRepo.save).toHaveBeenCalled();
-      const savedOrder = ((orderRepo.save).mock.calls[0] as [Order])[0];
+      const savedOrder = (orderRepo.save.mock.calls[0] as [Order])[0];
       expect(savedOrder.toSnapshot().status).toBe('paid');
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'succeeded', latestChargeId: CHARGE_ID }),
@@ -221,7 +220,6 @@ describe('HandleStripeEventService', () => {
     it('double-charge guard: orphan PI on already-paid order triggers auto-refund', async () => {
       const paidOrder = makeOrder('paid');
       orderRepo.findById.mockResolvedValue(paidOrder);
-      // existing payment with a DIFFERENT PI
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
       paymentRepo.findByOrderId.mockResolvedValue(
         makePaymentRow({ paymentIntentId: 'pi_other_existing', status: 'succeeded' }),
@@ -234,9 +232,7 @@ describe('HandleStripeEventService', () => {
       });
       await service.handle(event as never);
 
-      // order must NOT be transitioned to paid again
       expect(orderRepo.save).not.toHaveBeenCalled();
-      // orphan auto-refund must be called
       expect(stripePort.createRefund).toHaveBeenCalledWith(
         expect.objectContaining({
           paymentIntentId: PAYMENT_INTENT_ID,
@@ -259,12 +255,10 @@ describe('HandleStripeEventService', () => {
       });
       await service.handle(event as never);
 
-      // payment row updated to failed
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'failed' }),
         expect.anything(),
       );
-      // order save NOT called — order stays paid
       expect(orderRepo.save).not.toHaveBeenCalled();
     });
   });

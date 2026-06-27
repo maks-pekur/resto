@@ -14,7 +14,6 @@ const okProdValues = {
   BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
   INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
   RESEND_API_KEY: 're_real_production_key_xyz',
-  // 08-02: Stripe keys required in prod
   STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
   STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
 } as const;

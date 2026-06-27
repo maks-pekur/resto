@@ -46,7 +46,6 @@ describe('Tenant.canAcceptPayments (D-12)', () => {
       onboardingStatus: 'complete',
       requirementsDue: null,
     });
-    // no stripeAccountId set — canAcceptPayments must still be false
     expect(tenant.canAcceptPayments()).toBe(false);
   });
 

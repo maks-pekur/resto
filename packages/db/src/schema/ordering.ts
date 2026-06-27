@@ -29,7 +29,6 @@ export const orders = pgTable(
     tableIdentifier: text('table_identifier'),
     customerName: text('customer_name'),
     customerPhone: text('customer_phone'),
-    // GDPR: erased via 0051 DELETE FROM orders (tenancy_erase_tenant hard-deletes the whole row)
     customerEmail: text('customer_email'),
     subtotal: money('subtotal').notNull(),
     deliveryFee: money('delivery_fee').notNull().default('0.00'),
@@ -135,13 +134,10 @@ export const payments = pgTable(
     currency: text('currency').notNull(),
     provider: text('provider').notNull().default('stripe'),
     providerPaymentId: text('provider_payment_id'),
-    // D-07: PaymentIntent id — one payment row per PI (partial unique index below)
     paymentIntentId: text('payment_intent_id'),
     latestChargeId: text('latest_charge_id'),
-    // D-04: cumulative refunded minor-units expressed as a money column
     refundedAmount: money('refunded_amount').notNull().default('0.00'),
     stripeAccountId: text('stripe_account_id'),
-    // D-03: config-driven take rate; stored per payment for audit; default 0
     applicationFeeAmount: money('application_fee_amount').notNull().default('0.00'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .notNull()
@@ -169,7 +165,6 @@ export const payments = pgTable(
     uniqueIndex('payments_provider_payment_id_uq')
       .on(table.provider, table.providerPaymentId)
       .where(sql`${table.providerPaymentId} IS NOT NULL`),
-    // D-07: one payment row per PaymentIntent per tenant
     uniqueIndex('payments_payment_intent_id_uq')
       .on(table.tenantId, table.paymentIntentId)
       .where(sql`payment_intent_id IS NOT NULL`),
@@ -182,10 +177,8 @@ export const paymentRefunds = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     paymentId: uuid('payment_id').notNull(),
-    // D-04: Stripe Refund id for idempotency + reconciliation
     stripeRefundId: text('stripe_refund_id').notNull(),
     amount: money('amount').notNull(),
-    // D-04: reason is mandatory (T-08-05)
     reason: text('reason').notNull(),
     status: text('status').notNull().default('pending'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
@@ -198,14 +191,12 @@ export const paymentRefunds = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    // T-08-01: composite FK prevents cross-tenant phantom refund rows
     compositeTenantFk({
       name: 'payment_refunds_payment_fk',
       child: { id: table.paymentId, tenantId: table.tenantId },
       parent: { id: payments.id, tenantId: payments.tenantId },
     }).onDelete('restrict'),
     check('payment_refunds_status_chk', sql`${table.status} IN ('pending','succeeded','failed')`),
-    // T-08-02: one row per Stripe Refund id per tenant
     uniqueIndex('payment_refunds_stripe_refund_id_uq').on(table.tenantId, table.stripeRefundId),
   ],
 );

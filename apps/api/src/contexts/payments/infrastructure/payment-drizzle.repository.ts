@@ -192,5 +192,4 @@ const rowToRefundRow = (row: typeof schema.paymentRefunds.$inferSelect): Payment
   createdAt: row.createdAt,
 });
 
-// Used for building outbox envelope amounts; re-exported for service use
 export { fromMinorUnits };

@@ -82,7 +82,6 @@ export class HandleStripeEventService {
     }
   }
 
-  // W3: account-scoped event. Resolve tenant first; if no tenant owns this account, log + return.
   private async handleAccountUpdated(event: Stripe.Event): Promise<void> {
     const rawAccountId = event.account;
     if (!rawAccountId) {
@@ -186,10 +185,8 @@ export class HandleStripeEventService {
         snap.status === 'ready' ||
         snap.status === 'completed'
       ) {
-        // Order already paid — check if this is an orphan PI (different from the active one)
         const existingPayment = await this.paymentRepo.findByOrderId(parsedTenantId, orderId, tx);
         if (existingPayment && existingPayment.paymentIntentId !== pi.id) {
-          // D-06: orphan late-succeeding PI — auto-refund idempotently
           this.logger.warn(
             { orderId, paymentIntentId: pi.id, existingPiId: existingPayment.paymentIntentId },
             'Orphan PaymentIntent succeeded on already-paid order — auto-refunding (D-06).',
@@ -206,7 +203,6 @@ export class HandleStripeEventService {
             },
             tx,
           );
-          // Auto-refund outside the tx — idempotent via deterministic key (D-09)
           await this.stripePort.createRefund({
             paymentIntentId: pi.id,
             connectedAccountId: existingPayment.stripeAccountId ?? '',
@@ -217,7 +213,6 @@ export class HandleStripeEventService {
         return;
       }
 
-      // Transition order to paid (single writer of paid — PAY-07)
       try {
         order.markPaid(pi.id);
       } catch (err) {
@@ -333,17 +328,12 @@ export class HandleStripeEventService {
       return;
     }
 
-    // Find the first refund in the charge refunds list
     const refundData = charge.refunds?.data?.[0];
     if (!refundData) {
       this.logger.warn({ eventId: event.id }, 'charge.refunded: no refund data — ignoring.');
       return;
     }
 
-    // We need tenantId — look up via the payment row by PI id
-    // The event may or may not carry metadata; find via the payment row
-    // Use a system-context lookup then run inside runDeduped
-    // We'll try event.account first (Connect event), fall back to scanning
     const accountId = event.account;
     if (!accountId) {
       this.logger.warn(

@@ -126,9 +126,8 @@ export default [
       // verification path. See packages/db/src/withoutTenant.allowlist.ts
       // for the matching entry.
       'src/contexts/identity/infrastructure/email/resend.adapter.ts',
-      // PAY-12 / D-14: outbox backlog age probe — cross-tenant scan of
-      // undelivered outbox rows to determine whether a stale leader has
-      // work pending. Runs outside HTTP middleware; no ALS tenant bound.
+      // PAY-12: outbox backlog age probe. See
+      // packages/db/src/withoutTenant.allowlist.ts for the matching entry.
       'src/infrastructure/outbox-dispatcher.service.ts',
     ],
     rules: {

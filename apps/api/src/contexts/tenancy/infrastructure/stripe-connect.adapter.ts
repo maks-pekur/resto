@@ -17,7 +17,6 @@ import type {
   StripeConnectPort,
 } from '../domain/ports';
 
-/** D-05 retry budget: [immediate, +250ms, +1000ms, +4000ms] — total < 6s. */
 const RETRY_DELAYS_MS = [0, 250, 1000, 4000] as const;
 const CALL_TIMEOUT_MS = 5500;
 
@@ -38,7 +37,6 @@ const getStatusCode = (err: unknown): number | null => {
   return null;
 };
 
-/** Minimal Stripe SDK surface this adapter touches — allows test injection. */
 export interface StripeClientLike {
   readonly accounts: {
     create(
@@ -253,7 +251,6 @@ export class StripeConnectAdapter implements StripeConnectPort {
   }
 }
 
-/** Factory — wraps the real Stripe SDK instance into StripeClientLike. Tests use StripeConnectAdapter directly with a mock. */
 export const createStripeClientAdapter = (
   stripe: Stripe,
   env: StripeEnv,

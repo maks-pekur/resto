@@ -30,10 +30,8 @@ export const tenants = pgTable(
     defaultCurrency: text('default_currency').notNull().default('USD'),
     /** Stripe Connect (Express) account id — populated on Connect onboarding (Phase 8). */
     stripeAccountId: text('stripe_account_id'),
-    /** D-12: server-side can-accept-money capability flags (populated by account.updated webhook). */
     stripeChargesEnabled: boolean('stripe_charges_enabled').notNull().default(false),
     stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
-    // CHECK constraint below: 'not_started' | 'pending' | 'complete' | 'restricted'
     stripeOnboardingStatus: text('stripe_onboarding_status').notNull().default('not_started'),
     stripeRequirementsDue: jsonb('stripe_requirements_due'),
     offboardingScheduledAt: timestamp('offboarding_scheduled_at', {

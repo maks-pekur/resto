@@ -57,7 +57,6 @@ const PLACEHOLDER_MARKERS = ['replace_me', 'replace-me', 'change_me', 'change-me
  */
 export const DUMMY_RESEND_API_KEY_LITERAL = 're_test_dummy_for_ci_do_not_use_in_prod';
 
-/** T-08-11: Stripe dev-placeholder literals that must never survive to prod. */
 export const DUMMY_STRIPE_SECRET_KEY_LITERAL = 'sk_test_placeholder_do_not_use_in_prod';
 export const DUMMY_STRIPE_WEBHOOK_SECRET_LITERAL = 'whsec_placeholder_do_not_use_in_prod';
 
@@ -133,7 +132,6 @@ export const assertProdGuardrails = (
       `email adapter must be ResendEmailAdapter in NODE_ENV=${env.NODE_ENV}, got ${options.emailAdapterName}`,
     );
   }
-  // T-08-11: Stripe secret key must be a real key in staging/production.
   if (env.STRIPE_SECRET_KEY === undefined || env.STRIPE_SECRET_KEY.trim().length === 0) {
     violations.push(`STRIPE_SECRET_KEY is required in NODE_ENV=${env.NODE_ENV}`);
   } else if (env.STRIPE_SECRET_KEY === DUMMY_STRIPE_SECRET_KEY_LITERAL) {

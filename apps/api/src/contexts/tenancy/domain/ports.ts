@@ -12,7 +12,6 @@ export interface TenantRepository {
   findById(id: TenantId): Promise<Tenant | null>;
   findBySlug(slug: TenantSlug): Promise<Tenant | null>;
   findByDomainHost(host: string): Promise<Tenant | null>;
-  /** Resolve the tenant that owns this Stripe connected-account id. Returns null if unknown. */
   findByStripeAccountId(stripeAccountId: string): Promise<Tenant | null>;
   /**
    * Persist the aggregate. Implementations MUST:
@@ -60,7 +59,6 @@ export interface CreatePaymentIntentInput {
   readonly amountMinor: number;
   readonly currency: string;
   readonly applicationFeeMinor: number;
-  /** Caller-supplied attempt counter — changes the idempotency key on retry-after-same-order. */
   readonly attempt: number;
   readonly metadata: Record<string, string>;
 }
@@ -114,15 +112,12 @@ export interface RetrieveAccountResult {
 }
 
 export interface StripeConnectPort {
-  /** Thin shim kept for backwards-compat with provision-tenant.service. */
   ensureExpressAccount(input: { tenantId: TenantId; displayName: string }): Promise<string | null>;
   createExpressAccount(input: CreateExpressAccountInput): Promise<CreateExpressAccountResult>;
   createAccountLink(input: CreateAccountLinkInput): Promise<CreateAccountLinkResult>;
-  /** D-02: direct charge on connected account (stripeAccount option, no transfer_data.destination). */
   createPaymentIntent(input: CreatePaymentIntentInput): Promise<CreatePaymentIntentResult>;
   cancelPaymentIntent(input: CancelPaymentIntentInput): Promise<CancelPaymentIntentResult>;
   createRefund(input: CreateRefundInput): Promise<CreateRefundResult>;
-  /** Used by boot ping + account.updated reconcile. */
   retrieveAccount(input: RetrieveAccountInput): Promise<RetrieveAccountResult>;
 }
 

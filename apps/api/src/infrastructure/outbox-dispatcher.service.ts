@@ -185,7 +185,6 @@ export class OutboxDispatcherService implements OnApplicationBootstrap, OnModule
     };
   }
 
-  /** Returns the age in ms of the oldest undelivered outbox row, or null when the queue is empty. */
   async getOldestUndeliveredOutboxAgeMs(): Promise<number | null> {
     return this.db.withoutTenant('outbox backlog age probe', async (tx) => {
       const rows = await tx

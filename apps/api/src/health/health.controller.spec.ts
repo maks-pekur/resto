@@ -109,14 +109,12 @@ describe('HealthController', () => {
     });
 
     it('returns 503 when leader is stale and outbox backlog exists (wedged-at-startup false-negative fixed)', async () => {
-      // Leader acquired lock but staleMs > threshold AND backlog has old undelivered rows
       const stale = new Date(Date.now() - 120_000);
       const ctrl = await buildController(true, true, makeOutboxSvc(true, stale, 90_000), 60_000);
       await expect(ctrl.readiness()).rejects.toBeInstanceOf(ServiceUnavailableException);
     });
 
     it('returns 200 when leader is stale but outbox backlog is empty (idle queue is healthy)', async () => {
-      // Leader staleMs > threshold but no undelivered rows — queue is genuinely empty
       const stale = new Date(Date.now() - 120_000);
       const ctrl = await buildController(true, true, makeOutboxSvc(true, stale, null), 60_000);
       const result = await ctrl.readiness();

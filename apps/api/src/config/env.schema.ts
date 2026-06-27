@@ -240,40 +240,12 @@ export const envSchema = z
     /** MailHog SMTP port (dev adapter target). Matches docker-compose.dev.yml. */
     MAILHOG_PORT: z.coerce.number().int().positive().default(1025),
 
-    /**
-     * Stripe secret key for the platform account (D-02/D-09). Optional at
-     * schema level so dev/test boot without a real key (uses a sk_test_
-     * placeholder). `assertProdGuardrails` rejects placeholder values in
-     * staging/production. Never log this value.
-     */
+    /** Stripe platform secret key. Never log this value. */
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
-    /**
-     * Per-order application fee in minor currency units (D-01/D-03). Default 0
-     * — RestOS takes no per-order commission; monetization is subscription.
-     * Lever stays open: set to a positive integer to enable a take-rate
-     * without a code change.
-     */
     STRIPE_APPLICATION_FEE_AMOUNT: z.coerce.number().int().nonnegative().default(0),
-    /**
-     * Stripe Connect Client ID (ca_…) for Express account flows.
-     * Optional — only needed for OAuth-based account_link flows.
-     */
     STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
-    /**
-     * Return URL for Stripe-hosted account_link after successful onboarding.
-     * Required outside dev/test (enforced by superRefine).
-     */
     STRIPE_CONNECT_RETURN_URL: z.string().url().default('http://localhost:3001/stripe/return'),
-    /**
-     * Refresh URL for Stripe-hosted account_link when the link expires.
-     * Required outside dev/test (enforced by superRefine).
-     */
     STRIPE_CONNECT_REFRESH_URL: z.string().url().default('http://localhost:3001/stripe/refresh'),
-    /**
-     * Stripe webhook endpoint secret (whsec_…). Consumed by the webhook
-     * handler (08-03) to verify Stripe-Signature. Optional at schema level;
-     * `assertProdGuardrails` rejects placeholder values in prod.
-     */
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {

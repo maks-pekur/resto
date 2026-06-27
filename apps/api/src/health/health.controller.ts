@@ -91,10 +91,6 @@ export class HealthController {
     return Promise.resolve({ name: 'broker', ok: true });
   }
 
-  // G-03: leader liveness check. Non-leaders are always ok (correctly idle).
-  // When staleMs > threshold, consult the outbox backlog: an empty backlog
-  // means the leader is genuinely idle (healthy); a non-empty backlog means
-  // the leader is wedged and must be drained (D-14 false-negative fix).
   private async checkOutboxLeader(): Promise<CheckResult> {
     const { isLeader, staleMs } = this.outboxDispatcher.getOutboxLeaderHealth();
     if (!isLeader) {

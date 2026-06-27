@@ -118,9 +118,8 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   const fastify: any = app.getHttpAdapter().getInstance();
 
-  // D-10/T-08-13: raw-body capture for /webhook/stripe so Stripe signature
-  // verification sees the exact bytes. Only this path gets a Buffer parser;
-  // every other route keeps the default JSON parser.
+  // Stripe signature verification needs the exact raw bytes, so this path
+  // captures rawBody; other routes keep the default JSON parser.
   fastify.addContentTypeParser(
     'application/json',
     { parseAs: 'buffer' },
@@ -188,8 +187,8 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
       if (req.url.startsWith('/api/auth/sign-in/email')) return env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN;
       return env.RATE_LIMIT_PUBLIC_PER_MIN;
     },
-    // T-08-18: exempt Stripe webhook from per-IP rate limit — Stripe retries
-    // on non-2xx and a 429 would cause it to retry indefinitely (DoS on ourselves).
+    // Stripe webhook is rate-limit-exempt: a 429 makes Stripe retry
+    // indefinitely (self-DoS).
     allowList: (req: FastifyRequest): boolean =>
       req.url === '/healthz' || req.url === STRIPE_WEBHOOK_PATH,
     errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
