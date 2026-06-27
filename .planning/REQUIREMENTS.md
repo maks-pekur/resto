@@ -113,7 +113,7 @@
 - [ ] **SITE-05**: Guest sees cart, promo code field renders (non-functional until Phase 11), total breakdown (subtotal + delivery; modifiers and discounts wire in via Phase 7/8/11)
 - [ ] **SITE-06**: Guest provides contact info (name, phone) with optional account creation
 - [ ] **SITE-07**: Guest chooses order time (ASAP / scheduled interval)
-- [ ] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
+- [x] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
 - [x] **SITE-09**: Site supports per-tenant subdomain (`<slug>.resto.app`) and custom domain (`tenant_domains` table)
 - [ ] **SITE-10**: Operator-editable content pages (About / Delivery / Contact / FAQ)
 
@@ -146,11 +146,11 @@
 - [ ] **PAY-06**: At order checkout, `PaymentIntent` created as a **DIRECT charge on the connected account** (Stripe `stripeAccount` request option — restaurant is merchant-of-record per Phase 8 D-02) with `application_fee_amount` from `STRIPE_APPLICATION_FEE_AMOUNT` config (default 0 per D-01/D-03). _(2026-06-27: superseded the prior `transfer_data.destination` destination-charge wording — see 08-CONTEXT.md D-02.)_
 - [ ] **PAY-07**: `payment_intent.succeeded` webhook transitions order to `paid` state
 - [ ] **PAY-08**: `payment_intent.payment_failed` webhook surfaces failure to guest with retry CTA
-- [ ] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
+- [x] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
 - [ ] **PAY-10**: Stripe webhook handler idempotent (uses inbox dedup pattern with Stripe event id)
 - [ ] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
 - [ ] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
-- [ ] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
+- [x] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
 
 ### Guest Notifications (`GNOTIF`)
 
@@ -467,12 +467,12 @@
 | PAY-06      | Phase 8       | Pending  |
 | PAY-07      | Phase 8       | Pending  |
 | PAY-08      | Phase 8       | Pending  |
-| PAY-09      | Phase 8       | Pending  |
+| PAY-09      | Phase 8       | Complete |
 | PAY-10      | Phase 8       | Pending  |
 | PAY-11      | Phase 8       | Pending  |
 | PAY-12      | Phase 8       | Pending  |
-| PAY-13      | Phase 8       | Pending  |
-| SITE-08     | Phase 8       | Pending  |
+| PAY-13      | Phase 8       | Complete |
+| SITE-08     | Phase 8       | Complete |
 | GNOTIF-01   | Phase 8       | Pending  |
 | GNOTIF-02   | Phase 8       | Pending  |
 | GNOTIF-03   | Phase 8       | Pending  |

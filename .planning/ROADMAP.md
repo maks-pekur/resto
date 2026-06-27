@@ -445,7 +445,7 @@ Plans:
 Plans:
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Payments/order/tenant schema + aggregate redesign (migration 0055): partial-refund accounting (payment_refunds), N PaymentIntents/order, SCA requires_action state, Stripe-account linkage, tenant capability fields + canAcceptPayments; orders.customer_email guest-email column (erasure-covered via 0051) (D-07/D-08/D-04/D-12/B2; PAY-09/13, SITE-08 substrate)
+- [x] 08-01-PLAN.md — Payments/order/tenant schema + aggregate redesign (migration 0055): partial-refund accounting (payment_refunds), N PaymentIntents/order, SCA requires_action state, Stripe-account linkage, tenant capability fields + canAcceptPayments; orders.customer_email guest-email column (erasure-covered via 0051) (D-07/D-08/D-04/D-12/B2; PAY-09/13, SITE-08 substrate)
 
 **Wave 2** _(after 08-01)_
 
@@ -465,8 +465,8 @@ Plans:
 
 - [ ] 08-04b-PLAN.md — Website checkout + SITE-08: guest-email capture, Stripe Payment Element, 3DS, same-order retry (no new order), read-only polling confirmation page (D-06/08/B2; SITE-08, PAY-06/08) [end-to-end test-mode smoke verify]
 - [ ] 08-05-PLAN.md — Refunds + disputes: owner-only server-enforced refund (full+partial, reason mandatory), canonical CancelOrderService auto-refund (Phase 10 reuses, W1), manual↔webhook reconcile (no double-refund), dispute record+notify, cross-tenant isolation e2e (D-04/09/10/11/W1; PAY-09, GNOTIF-03)
-   **UI hint**: no
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+      **UI hint**: no
+      **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
 ### Phase 10: Admin Order Intake
 
@@ -655,7 +655,7 @@ Notes:
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
-| 8. Payments (Stripe Connect)                  | 0/?            | Not started   | -          |
+| 8. Payments (Stripe Connect)                  | 1/8            | In Progress   |            |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
