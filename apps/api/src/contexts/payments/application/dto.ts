@@ -15,3 +15,11 @@ export const CreatePaymentIntentResponseSchema = z.object({
 });
 
 export type CreatePaymentIntentResponse = z.infer<typeof CreatePaymentIntentResponseSchema>;
+
+export const RefundInputSchema = z.object({
+  amountMinor: z.number().int().positive().optional(),
+  reason: z.string().min(1, 'Reason is required'),
+});
+
+export type RefundInput = z.infer<typeof RefundInputSchema>;
+export class RefundInputDto extends createZodDto(RefundInputSchema) {}

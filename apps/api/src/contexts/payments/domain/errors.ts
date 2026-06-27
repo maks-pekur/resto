@@ -29,3 +29,19 @@ export class OrderNotCheckoutableError extends Error {
     this.name = 'OrderNotCheckoutableError';
   }
 }
+
+export class RefundReasonRequiredError extends Error {
+  readonly kind = 'RefundReasonRequiredError' as const;
+  constructor(public readonly orderId: string) {
+    super(`Refund reason is required for order "${orderId}".`);
+    this.name = 'RefundReasonRequiredError';
+  }
+}
+
+export class PaymentNotRefundableError extends Error {
+  readonly kind = 'PaymentNotRefundableError' as const;
+  constructor(public readonly orderId: string) {
+    super(`No refundable payment found for order "${orderId}".`);
+    this.name = 'PaymentNotRefundableError';
+  }
+}
