@@ -30,11 +30,8 @@ const STREAM_SUBJECTS = [
   'identity.>',
   'catalog.>',
   'ordering.>',
+  'payments.>',
   'billing.>',
-  // AUTH-10: NATS subscriber DLQ branch republishes poison bytes to
-  // `dlq.<original_subject>` (D-19). The stream MUST accept that subject
-  // prefix or the republish fails with NatsError 503 and ops loses the
-  // forensic payload.
   'dlq.>',
 ];
 

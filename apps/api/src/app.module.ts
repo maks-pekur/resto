@@ -7,6 +7,7 @@ import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
 import { AuditModule } from './contexts/audit/audit.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
+import { NotificationsModule } from './contexts/notifications/notifications.module';
 import { OrderingModule } from './contexts/ordering/ordering.module';
 import { PaymentsModule } from './contexts/payments/payments.module';
 import { TenancyModule } from './contexts/tenancy/tenancy.module';
@@ -32,6 +33,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     OrderingModule,
     PaymentsModule,
     AuditModule,
+    NotificationsModule,
     BackgroundJobsModule,
   ],
   providers: [
