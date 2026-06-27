@@ -49,6 +49,7 @@ import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.
   ],
   exports: [
     TENANT_REPOSITORY,
+    STRIPE_CONNECT_PORT,
     TenantResolverService,
     TenantAndBrandResolverService,
     TenantQueriesService,

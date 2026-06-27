@@ -104,3 +104,14 @@ export {
   OrderStatusChangedV1,
   OrderStatusChangedV1Payload,
 } from './contracts/ordering';
+
+export {
+  PaymentDisputeOpenedV1,
+  PaymentDisputeOpenedV1Payload,
+  PaymentOrderFailedV1,
+  PaymentOrderFailedV1Payload,
+  PaymentOrderRefundedV1,
+  PaymentOrderRefundedV1Payload,
+  PaymentOrderSucceededV1,
+  PaymentOrderSucceededV1Payload,
+} from './contracts/payments';
