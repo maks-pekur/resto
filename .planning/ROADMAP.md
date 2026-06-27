@@ -458,7 +458,7 @@ Plans:
 
 **Wave 4** _(after 08-03 — parallel, no file overlap)_
 
-- [ ] 08-04a-PLAN.md — Checkout API: server-authoritative PaymentIntent gated on canAcceptPayments, currency-integrity, cancel-prior-PI (double-charge guard), SCA requires_action; read-only GET /v1/orders/:id/status (D-06/08/12; PAY-06/08/13, SITE-08 substrate)
+- [x] 08-04a-PLAN.md — Checkout API: server-authoritative PaymentIntent gated on canAcceptPayments, currency-integrity, cancel-prior-PI (double-charge guard), SCA requires_action; read-only GET /v1/orders/:id/status (D-06/08/12; PAY-06/08/13, SITE-08 substrate)
 - [ ] 08-06-PLAN.md — Guest emails (GNOTIF): EmailAdapterPort.sendGuestNotification + brand-themed per-locale templates; recipient = orders.customer_email; GNOTIF-01/03 fire now, GNOTIF-02 machinery wired to a Phase-10 trigger; send-once idempotency + explicit max_deliver + DLQ on the subscriber (D-13/B2/B4; GNOTIF-01/02/03/04)
 
 **Wave 5** _(08-04b after 08-04a+08-03; 08-05 after 08-03)_
@@ -655,7 +655,7 @@ Notes:
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
-| 8. Payments (Stripe Connect)                  | 4/8            | In Progress   |            |
+| 8. Payments (Stripe Connect)                  | 5/8            | In Progress   |            |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
