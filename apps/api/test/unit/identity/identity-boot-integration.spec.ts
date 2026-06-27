@@ -31,6 +31,8 @@ const buildProdEnv = (overrides: Partial<Env> = {}): Env =>
     BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
     INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
     RESEND_API_KEY: 're_real_production_key_xyz',
+    STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
+    STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
     RESEND_FROM: 'RestOS <noreply@resto.app>',
     RESEND_REPLY_TO: 'support@resto.app',
     MAILHOG_HOST: 'localhost',
