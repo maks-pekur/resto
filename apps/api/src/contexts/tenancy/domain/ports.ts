@@ -12,6 +12,8 @@ export interface TenantRepository {
   findById(id: TenantId): Promise<Tenant | null>;
   findBySlug(slug: TenantSlug): Promise<Tenant | null>;
   findByDomainHost(host: string): Promise<Tenant | null>;
+  /** Resolve the tenant that owns this Stripe connected-account id. Returns null if unknown. */
+  findByStripeAccountId(stripeAccountId: string): Promise<Tenant | null>;
   /**
    * Persist the aggregate. Implementations MUST:
    *  1. upsert the tenant row + its domain rows

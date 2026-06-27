@@ -92,6 +92,19 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
+  findByStripeAccountId(stripeAccountId: string): Promise<Tenant | null> {
+    return this.db.withoutTenant('tenancy.findByStripeAccountId', async (tx) => {
+      const rows = await tx
+        .select({ id: schema.tenants.id })
+        .from(schema.tenants)
+        .where(eq(schema.tenants.stripeAccountId, stripeAccountId))
+        .limit(1);
+      const id = rows[0]?.id;
+      if (!id) return null;
+      return this.loadByIdWithTx(tx, TenantId.parse(id));
+    });
+  }
+
   listDomains(id: TenantId): Promise<TenantDomain[]> {
     return this.db.withoutTenant('tenancy.listDomains', async (tx) => {
       const rows = await tx
