@@ -118,29 +118,6 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access */
   const fastify: any = app.getHttpAdapter().getInstance();
 
-  // Stripe signature verification needs the exact raw bytes, so this path
-  // captures rawBody; other routes keep the default JSON parser.
-  fastify.addContentTypeParser(
-    'application/json',
-    { parseAs: 'buffer' },
-    (req: { url?: string }, body: Buffer, done: (err: Error | null, result?: unknown) => void) => {
-      if (req.url === STRIPE_WEBHOOK_PATH) {
-        (req as Record<string, unknown>).rawBody = body;
-        try {
-          done(null, JSON.parse(body.toString()) as unknown);
-        } catch {
-          done(new Error('Invalid JSON in webhook body'));
-        }
-      } else {
-        try {
-          done(null, JSON.parse(body.toString()) as unknown);
-        } catch {
-          done(new Error('Invalid JSON'));
-        }
-      }
-    },
-  );
-
   await fastify.register(helmet, {
     // Disable CSP — the api is not an HTML origin and Swagger UI under
     // /docs needs a permissive policy that's not worth maintaining

@@ -40,7 +40,7 @@ const bootstrap = async (): Promise<void> => {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
     new FastifyAdapter({ trustProxy: parseTrustProxy(bootEnv.TRUST_PROXY), logger: false }),
-    { abortOnError: true },
+    { abortOnError: true, rawBody: true },
   );
 
   const env = app.get<Env>(ENV_TOKEN);
