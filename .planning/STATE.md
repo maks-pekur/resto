@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
-last_updated: '2026-06-27T14:01:42.681Z'
+last_updated: '2026-06-27T14:25:12.800Z'
 last_activity: 2026-06-27
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 76
-  completed_plans: 65
+  completed_plans: 66
   percent: 40
 ---
 
@@ -46,7 +46,7 @@ Last activity: 2026-06-27
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 87%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -112,6 +112,7 @@ _Updated after each plan completion_
 | Phase 08-payments-stripe-connect P03 | 29 | 2 tasks | 20 files |
 | Phase 08-payments-stripe-connect P07 | 130 | 2 tasks | 10 files |
 | Phase 08-payments-stripe-connect P04a | 55 | 2 tasks | 11 files |
+| Phase 08 P06 | 90 | 2 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -170,6 +171,7 @@ Recent decisions affecting current work:
 - [Phase ?]: resto_auth NOBYPASSRLS: permissive policies on 4 BA-owned tables via migration 0054 (RDS-compatible, D-04)
 - [Phase ?]: PAY-12: seed lastDispatchAt at lock acquisition to close never-dispatched false-negative; backlog-aware probe distinguishes idle leader from wedged leader
 - [Phase ?]: PAY-11: StripeAccountId z.string().max(255) exported from tenant.aggregate.ts, parsed on account.updated event.account at the trust boundary
+- [Phase ?]: NotificationOrderDrizzleRepository isolates DB queries per ADR-0020 I-1
 
 ### Pending Todos
 
@@ -226,6 +228,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-27T14:01:42.668Z
+Last session: 2026-06-27T14:25:08.605Z
 Stopped at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
 Resume file: None

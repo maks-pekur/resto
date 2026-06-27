@@ -156,10 +156,10 @@
 
 > Post-payment and post-status guest communications via Resend adapter (wired in AUTH-01). Folded into Phase 8.
 
-- [ ] **GNOTIF-01**: Guest receives order confirmation email immediately after `payment_intent.succeeded` (order #, items, total, ETA)
-- [ ] **GNOTIF-02**: Guest receives status emails when order transitions to `accepted` and to `ready` / `on-its-way` (uses Resend adapter from AUTH-01)
-- [ ] **GNOTIF-03**: Guest receives refund confirmation email when refund is initiated (full or partial)
-- [ ] **GNOTIF-04**: Email templates respect tenant brand theme (logo, accent color); per-locale templates
+- [x] **GNOTIF-01**: Guest receives order confirmation email immediately after `payment_intent.succeeded` (order #, items, total, ETA)
+- [x] **GNOTIF-02**: Guest receives status emails when order transitions to `accepted` and to `ready` / `on-its-way` (uses Resend adapter from AUTH-01)
+- [x] **GNOTIF-03**: Guest receives refund confirmation email when refund is initiated (full or partial)
+- [x] **GNOTIF-04**: Email templates respect tenant brand theme (logo, accent color); per-locale templates
 
 ### Admin Order Intake (`ORDINT`)
 
@@ -473,10 +473,10 @@
 | PAY-12      | Phase 8       | Complete |
 | PAY-13      | Phase 8       | Complete |
 | SITE-08     | Phase 8       | Complete |
-| GNOTIF-01   | Phase 8       | Pending  |
-| GNOTIF-02   | Phase 8       | Pending  |
-| GNOTIF-03   | Phase 8       | Pending  |
-| GNOTIF-04   | Phase 8       | Pending  |
+| GNOTIF-01   | Phase 8       | Complete |
+| GNOTIF-02   | Phase 8       | Complete |
+| GNOTIF-03   | Phase 8       | Complete |
+| GNOTIF-04   | Phase 8       | Complete |
 | DELV-01     | Phase 9       | Pending  |
 | DELV-02     | Phase 9       | Pending  |
 | DELV-03     | Phase 9       | Pending  |
