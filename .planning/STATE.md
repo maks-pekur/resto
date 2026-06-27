@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 'Phase 8 (Payments) EXECUTING — Waves 1-4 DONE: 08-01 schema/migration 0055, 08-02 adapter+onboarding+admin button, 08-03 webhooks, 08-07 PAY-12/PAY-11, 08-04a checkout-API, 08-06 guest emails. 577+ tests green; comments stripped per no-comments rule (12af50a). Charge model = DIRECT charges (D-02). REMAINING Wave 5 (both autonomous:false, need founder): 08-04b website Payment Element + SITE-08 page, 08-05 refunds+disputes. Pending founder verify: 08-02 onboarding click-through (needs Stripe Connect enabled in test dashboard + STRIPE_CONNECT_CLIENT_ID).'
-last_updated: '2026-06-27T14:25:12.800Z'
+status: verifying
+stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
+last_updated: '2026-06-27T20:59:56.195Z'
 last_activity: 2026-06-27
 progress:
   total_phases: 20
-  completed_phases: 8
+  completed_phases: 9
   total_plans: 76
-  completed_plans: 66
-  percent: 40
+  completed_plans: 68
+  percent: 45
 ---
 
 # Project State
@@ -46,7 +46,7 @@ Last activity: 2026-06-27
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 89%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -113,6 +113,8 @@ _Updated after each plan completion_
 | Phase 08-payments-stripe-connect P07 | 130 | 2 tasks | 10 files |
 | Phase 08-payments-stripe-connect P04a | 55 | 2 tasks | 11 files |
 | Phase 08 P06 | 90 | 2 tasks | 15 files |
+| Phase 08-payments-stripe-connect P04b | 90 | 2 tasks | 13 files |
+| Phase 08 P05 | 90min | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -228,6 +230,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-27T14:25:08.605Z
+Last session: 2026-06-27T20:59:56.133Z
 Stopped at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
 Resume file: None

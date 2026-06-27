@@ -32,7 +32,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11) (completed 2026-06-14)
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
-- [ ] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF)
+- [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -463,8 +463,8 @@ Plans:
 
 **Wave 5** _(08-04b after 08-04a+08-03; 08-05 after 08-03)_
 
-- [ ] 08-04b-PLAN.md — Website checkout + SITE-08: guest-email capture, Stripe Payment Element, 3DS, same-order retry (no new order), read-only polling confirmation page (D-06/08/B2; SITE-08, PAY-06/08) [end-to-end test-mode smoke verify]
-- [ ] 08-05-PLAN.md — Refunds + disputes: owner-only server-enforced refund (full+partial, reason mandatory), canonical CancelOrderService auto-refund (Phase 10 reuses, W1), manual↔webhook reconcile (no double-refund), dispute record+notify, cross-tenant isolation e2e (D-04/09/10/11/W1; PAY-09, GNOTIF-03)
+- [x] 08-04b-PLAN.md — Website checkout + SITE-08: guest-email capture, Stripe Payment Element, 3DS, same-order retry (no new order), read-only polling confirmation page (D-06/08/B2; SITE-08, PAY-06/08) [end-to-end test-mode smoke verify]
+- [x] 08-05-PLAN.md — Refunds + disputes: owner-only server-enforced refund (full+partial, reason mandatory), canonical CancelOrderService auto-refund (Phase 10 reuses, W1), manual↔webhook reconcile (no double-refund), dispute record+notify, cross-tenant isolation e2e (D-04/09/10/11/W1; PAY-09, GNOTIF-03)
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
@@ -655,7 +655,7 @@ Notes:
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
-| 8. Payments (Stripe Connect)                  | 6/8            | In Progress   |            |
+| 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
