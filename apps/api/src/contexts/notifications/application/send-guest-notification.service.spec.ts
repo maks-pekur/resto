@@ -115,7 +115,7 @@ describe('SendGuestNotificationService', () => {
         transition: 'order_confirmation',
       });
 
-      expect(email.calls[0]?.brandTheme).toMatchObject({ primaryColor: '#16a34a' });
+      expect(email.calls[0]?.brandTheme).toMatchObject({ accentColor: '#16a34a' });
     });
   });
 

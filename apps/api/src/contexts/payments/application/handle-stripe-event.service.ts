@@ -191,18 +191,6 @@ export class HandleStripeEventService {
             { orderId, paymentIntentId: pi.id, existingPiId: existingPayment.paymentIntentId },
             'Orphan PaymentIntent succeeded on already-paid order — auto-refunding (D-06).',
           );
-          await this.paymentRepo.upsertByPaymentIntentId(
-            {
-              tenantId: parsedTenantId,
-              orderId,
-              status: 'orphan',
-              amount: fromMinorUnits(pi.amount),
-              currency: pi.currency.toUpperCase(),
-              paymentIntentId: pi.id,
-              latestChargeId: chargeId || null,
-            },
-            tx,
-          );
           await this.stripePort.createRefund({
             paymentIntentId: pi.id,
             connectedAccountId: existingPayment.stripeAccountId ?? '',

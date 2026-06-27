@@ -58,7 +58,9 @@ export class SendGuestNotificationService {
 
     const locale = 'ru';
     const brandName = brand?.displayName ?? 'RestOS';
-    const brandTheme = brand?.theme ?? null;
+    const brandTheme = brand?.theme
+      ? { logoUrl: brand.theme.logoUrl, accentColor: brand.theme.primaryColor }
+      : null;
 
     const itemsRows = await this.orderRepo.findOrderItems(tenantId, input.orderId);
     const itemsSummary = itemsRows
