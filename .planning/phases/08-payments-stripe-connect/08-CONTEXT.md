@@ -33,10 +33,10 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 
 ### Charge model & monetization
 
-- **D-01 (founder, LOCKED):** RestOS takes **no per-order commission** — the Stripe
+- **D-01:** (founder, LOCKED) RestOS takes **no per-order commission** — the Stripe
   `application_fee` is **0**. The restaurant bears Stripe's processing fees. Monetization is
   a **flat subscription per location** (PROJECT.md: "restaurants culturally reject % cuts").
-- **D-02 (resolution — RESOLVES the all-persona BLOCK):** Use **direct charges** on the
+- **D-02:** (resolution — RESOLVES the all-persona BLOCK) Use **direct charges** on the
   connected account, **not** destination charges. With `application_fee = 0` the founder's
   intent ("restaurant bears Stripe fees + is the merchant") is only correct under direct
   charges — there the **connected account is merchant-of-record** and bears Stripe fees +
@@ -45,20 +45,20 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
   opposite of D-01. PAY-06's "destination" wording is superseded by this. *(Flagged to the
   founder; confirm before build. Trade-off: direct charges = less RestOS liability/control,
   restaurant owns disputes.)*
-- **D-03 (investor HIGH):** The application fee MUST be a **config value (default 0)**, never
+- **D-03:** (investor HIGH) The application fee MUST be a **config value (default 0)**, never
   a hardcoded `0`. Keeps the highest-margin lever (payments take-rate) open without a code
   change. Reconcile PAY-06's "RestOS application_fee_amount" wording with the 0 default.
 
 ### Refunds
 
-- **D-04 (founder, LOCKED):** Refunds are **owner-only**, a **reason is mandatory** (audit),
+- **D-04:** (founder, LOCKED) Refunds are **owner-only**, a **reason is mandatory** (audit),
   and **full + partial** are both supported. Order **cancel/reject of a paid order →
   automatic refund**. *(Persona note: owner-only is operationally brittle — no manager
   break-glass; a `payments:refund` permission is a candidate fast-follow, see `<deferred>`.)*
 
 ### Currency
 
-- **D-05 (founder, LOCKED):** **One currency per tenant**, fixed at Stripe onboarding; all
+- **D-05:** (founder, LOCKED) **One currency per tenant**, fixed at Stripe onboarding; all
   amounts in it. Multi-currency deferred. **Reconcile:** `stripeAccountId` + `defaultCurrency`
   currently live on `brands` (not `tenants`) — under multibrand, currency/Stripe-account is
   effectively **per-brand**. Planner must resolve "per-tenant" (founder wording) vs the
@@ -66,7 +66,7 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 
 ### Guest checkout UX
 
-- **D-06 (founder, LOCKED):** Confirmation page (SITE-08) shows **order #, items, total, ETA,
+- **D-06:** (founder, LOCKED) Confirmation page (SITE-08) shows **order #, items, total, ETA,
   live status**. On payment failure the guest **retries on the SAME order** (new
   PaymentIntent; order + cart preserved). **MUST guard against double-charge** (skeptic/CTO
   BLOCK): before creating a new PaymentIntent, check/cancel the prior one — a late-succeeding
@@ -74,33 +74,33 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 
 ### Money-path correctness (persona-mandated, planner MUST address)
 
-- **D-07 (CTO/skeptic/investor BLOCK):** **Schema + `Order` aggregate redesign** is the first
+- **D-07:** (CTO/skeptic/investor BLOCK) **Schema + `Order` aggregate redesign** is the first
   build slice. Today: `payments` has a single nullable `provider_payment_id` and no
   `refunded_amount`; `Order.refund()` is **full-only**. Need: partial-refund accounting
   (`refunds` rows or `refunded_amount`), room for both PaymentIntent id and Refund id(s),
   Stripe account linkage, and a payment-status model that survives webhook ordering.
-- **D-08 (investor HIGH — EU revenue bug, not just compliance):** Add an **SCA/3DS**
+- **D-08:** (investor HIGH — EU revenue bug, not just compliance) Add an **SCA/3DS**
   intermediate state — `created → requires_action → paid` — so EU cards that need Strong
   Customer Authentication don't silently fail. PaymentIntent `requires_action` must be
   representable.
-- **D-09 (CTO HIGH):** **Stripe idempotency keys** on every PaymentIntent and Refund
+- **D-09:** (CTO HIGH) **Stripe idempotency keys** on every PaymentIntent and Refund
   *creation* call — retries without keys are a double-spend generator. This is separate from
   webhook inbox-dedup.
-- **D-10 (CTO HIGH):** Webhook handler: configure **Fastify raw-body** capture on the Stripe
+- **D-10:** (CTO HIGH) Webhook handler: configure **Fastify raw-body** capture on the Stripe
   route (else signature verification silently breaks), verify signature (400 on invalid),
   and idempotency via `runDeduped` keyed on the **Stripe event id**. NOTE: `runDeduped`
   guards handler invocation, **not** external side effects — the refund call + emails need
   their own idempotency (D-09 keys + email dedup).
-- **D-11 (skeptic/investor BLOCK):** Handle **disputes/chargebacks** at least minimally —
+- **D-11:** (skeptic/investor BLOCK) Handle **disputes/chargebacks** at least minimally —
   catch `charge.dispute.created` → record + notify. Under D-02 (direct charges) liability is
   on the restaurant, but the event must not be a silent blind spot.
-- **D-12 (skeptic/CTO):** A **server-side "can this tenant/brand accept money?" predicate**
+- **D-12:** (skeptic/CTO) A **server-side "can this tenant/brand accept money?" predicate**
   (KYC complete + Stripe capability active) enforced **at checkout**, not just the admin UI
   switch (PAY-13). UI gating alone is bypassable.
 
 ### Notifications (GNOTIF)
 
-- **D-13 (sequencing trap — CTO/skeptic):** GNOTIF reuses the Resend **transport** but the
+- **D-13:** (sequencing trap — CTO/skeptic) GNOTIF reuses the Resend **transport** but the
   guest-notification + brand-theming + per-locale surface is **net-new** (`EmailAdapterPort`
   only has the 3 auth methods today). **GNOTIF-01 (confirmation)** + **GNOTIF-03 (refund)**
   fire from Phase 8 events (`payment_intent.succeeded`, refund). **GNOTIF-02 (accepted /
@@ -110,7 +110,7 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 
 ### PAY-12 — outbox leader health (mostly already built)
 
-- **D-14 (CTO/skeptic — avoid over-planning):** Leader election (pg advisory lock),
+- **D-14:** (CTO/skeptic — avoid over-planning) Leader election (pg advisory lock),
   heartbeat, and the `/readyz` stale-leader drain already exist (shipped in 07.5-03). The
   only real delta: add the **`outbox.is_leader` OTel gauge (1/0)**, fix a never-dispatched-
   leader **false-negative** in `getOutboxLeaderHealth()`/`checkOutboxLeader()`, and

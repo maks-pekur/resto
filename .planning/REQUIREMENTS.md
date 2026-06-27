@@ -143,7 +143,7 @@
 - [ ] **PAY-03**: Stripe `account_link` generated; operator redirected to Stripe-hosted onboarding flow
 - [ ] **PAY-04**: Webhook endpoint `/webhook/stripe` validates Stripe signature; rejects invalid signatures with 400
 - [ ] **PAY-05**: `account.updated` webhook updates `tenant.stripe_account_id` and onboarding status
-- [ ] **PAY-06**: At order checkout, `PaymentIntent` created with `transfer_data.destination = tenant Stripe account` + RestOS `application_fee_amount`
+- [ ] **PAY-06**: At order checkout, `PaymentIntent` created as a **DIRECT charge on the connected account** (Stripe `stripeAccount` request option — restaurant is merchant-of-record per Phase 8 D-02) with `application_fee_amount` from `STRIPE_APPLICATION_FEE_AMOUNT` config (default 0 per D-01/D-03). _(2026-06-27: superseded the prior `transfer_data.destination` destination-charge wording — see 08-CONTEXT.md D-02.)_
 - [ ] **PAY-07**: `payment_intent.succeeded` webhook transitions order to `paid` state
 - [ ] **PAY-08**: `payment_intent.payment_failed` webhook surfaces failure to guest with retry CTA
 - [ ] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
