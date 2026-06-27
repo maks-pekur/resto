@@ -14,7 +14,12 @@ import {
   type EventEnvelope,
 } from '@resto/events';
 import { eq, sql } from 'drizzle-orm';
-import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
+import {
+  Tenant,
+  type TenantSnapshot,
+  type TenantStatus,
+  type StripeOnboardingStatus,
+} from '../domain/tenant.aggregate';
 import { TenantNotFoundError, TenantSlugTakenError } from '../domain/errors';
 import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
@@ -135,6 +140,10 @@ export class TenantDrizzleRepository implements TenantRepository {
             locale: snapshot.locale,
             defaultCurrency: snapshot.defaultCurrency,
             stripeAccountId: snapshot.stripeAccountId,
+            stripeChargesEnabled: snapshot.stripeChargesEnabled,
+            stripePayoutsEnabled: snapshot.stripePayoutsEnabled,
+            stripeOnboardingStatus: snapshot.stripeOnboardingStatus,
+            stripeRequirementsDue: snapshot.stripeRequirementsDue,
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,
@@ -151,6 +160,10 @@ export class TenantDrizzleRepository implements TenantRepository {
               locale: snapshot.locale,
               defaultCurrency: snapshot.defaultCurrency,
               stripeAccountId: snapshot.stripeAccountId,
+              stripeChargesEnabled: snapshot.stripeChargesEnabled,
+              stripePayoutsEnabled: snapshot.stripePayoutsEnabled,
+              stripeOnboardingStatus: snapshot.stripeOnboardingStatus,
+              stripeRequirementsDue: snapshot.stripeRequirementsDue,
               updatedAt: snapshot.updatedAt,
               archivedAt: snapshot.archivedAt,
               offboardingScheduledAt: snapshot.offboardingScheduledAt,
@@ -238,6 +251,10 @@ export class TenantDrizzleRepository implements TenantRepository {
           slug: erasedSnapshot.slug,
           displayName: erasedSnapshot.displayName,
           stripeAccountId: erasedSnapshot.stripeAccountId,
+          stripeChargesEnabled: erasedSnapshot.stripeChargesEnabled,
+          stripePayoutsEnabled: erasedSnapshot.stripePayoutsEnabled,
+          stripeOnboardingStatus: erasedSnapshot.stripeOnboardingStatus,
+          stripeRequirementsDue: erasedSnapshot.stripeRequirementsDue,
           offboardingExecutedAt: erasedSnapshot.offboardingExecutedAt,
           updatedAt: erasedSnapshot.updatedAt,
         })
@@ -285,6 +302,10 @@ export class TenantDrizzleRepository implements TenantRepository {
       locale: row.locale,
       defaultCurrency: Currency.parse(row.defaultCurrency),
       stripeAccountId: row.stripeAccountId,
+      stripeChargesEnabled: row.stripeChargesEnabled,
+      stripePayoutsEnabled: row.stripePayoutsEnabled,
+      stripeOnboardingStatus: parseOnboardingStatus(row.stripeOnboardingStatus),
+      stripeRequirementsDue: row.stripeRequirementsDue,
       primaryDomain: rowToTenantDomain(primary),
       customDomains,
       createdAt: row.createdAt,
@@ -303,6 +324,20 @@ const parseStatus = (raw: string): TenantStatus => {
     throw new Error(`Unknown tenant status "${raw}" in DB.`);
   }
   return raw as TenantStatus;
+};
+
+const ALLOWED_ONBOARDING_STATUSES: ReadonlySet<StripeOnboardingStatus> = new Set([
+  'not_started',
+  'pending',
+  'complete',
+  'restricted',
+]);
+
+const parseOnboardingStatus = (raw: string): StripeOnboardingStatus => {
+  if (!ALLOWED_ONBOARDING_STATUSES.has(raw as StripeOnboardingStatus)) {
+    throw new Error(`Unknown stripe_onboarding_status "${raw}" in DB.`);
+  }
+  return raw as StripeOnboardingStatus;
 };
 
 const parseDomainKind = (raw: string): TenantDomainKind => {

@@ -1,12 +1,13 @@
 import { randomUUID } from 'node:crypto';
 import { OrderId, type Currency, type TenantId } from '@resto/domain';
 import type { OrderDomainEvent } from './events';
-import { InvalidOrderTransitionError } from './errors';
+import { InvalidOrderTransitionError, RefundExceedsCapturedError } from './errors';
 import { toMinorUnits, fromMinorUnits } from './money-utils';
 import { applyDiscount, type DiscountSpec } from './discount';
 
 export type OrderStatus =
   | 'created'
+  | 'requires_action'
   | 'paid'
   | 'accepted'
   | 'preparing'
@@ -47,6 +48,8 @@ export interface OrderSnapshot {
   readonly tableIdentifier: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
+  // B2/GNOTIF: guest email captured at checkout; GDPR-erased via 0051 DELETE FROM orders
+  readonly customerEmail: string | null;
   readonly items: readonly OrderItemSnapshot[];
   readonly subtotal: string;
   readonly deliveryFee: string;
@@ -68,6 +71,7 @@ export interface CreateOrderInput {
   readonly tableIdentifier?: string | null;
   readonly customerName?: string | null;
   readonly customerPhone?: string | null;
+  readonly customerEmail?: string | null;
   readonly items: readonly {
     readonly menuItemId: string;
     readonly nameSnapshot: string;
@@ -170,6 +174,7 @@ export class Order {
       tableIdentifier: input.tableIdentifier ?? null,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
+      customerEmail: input.customerEmail ?? null,
       items: Object.freeze(itemSnapshots),
       subtotal: fromMinorUnits(subtotalMinor),
       deliveryFee: '0.00',
@@ -198,8 +203,9 @@ export class Order {
     return order;
   }
 
+  // D-08: allow transition from requires_action (SCA 3DS happy path) in addition to created
   markPaid(paymentId: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created') {
+    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'requires_action') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'paid');
     }
     this.snapshot = { ...this.snapshot, status: 'paid', updatedAt: now };
@@ -210,6 +216,28 @@ export class Order {
       paymentId,
       occurredAt: now,
     });
+  }
+
+  // D-08: SCA intermediate state — PaymentIntent requires 3DS authentication
+  requireAction(paymentIntentId: string, now: Date = new Date()): void {
+    if (this.snapshot.status !== 'created') {
+      throw new InvalidOrderTransitionError(
+        this.snapshot.id,
+        this.snapshot.status,
+        'requires_action',
+      );
+    }
+    const previousStatus = this.snapshot.status;
+    this.snapshot = { ...this.snapshot, status: 'requires_action', updatedAt: now };
+    this.#events.push({
+      kind: 'OrderStatusChanged',
+      orderId: this.snapshot.id,
+      tenantId: this.snapshot.tenantId,
+      previousStatus,
+      newStatus: 'requires_action',
+      occurredAt: now,
+    });
+    void paymentIntentId; // stored on the payment row; the aggregate tracks order status only
   }
 
   accept(now: Date = new Date()): void {
@@ -290,12 +318,25 @@ export class Order {
     });
   }
 
-  refund(now: Date = new Date()): void {
+  // D-04: partial-capable refund. amountMinor is the new refund; alreadyRefundedMinor is the
+  // cumulative total already issued (caller reads from payments.refunded_amount).
+  // Invariant: amountMinor > 0 AND amountMinor + alreadyRefundedMinor <= total (T-08-03).
+  refund(amountMinor: number, alreadyRefundedMinor: number, now: Date = new Date()): void {
     if (this.snapshot.status !== 'paid') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'refunded');
     }
-    const amountMinor = toMinorUnits(this.snapshot.total);
-    this.snapshot = { ...this.snapshot, status: 'refunded', updatedAt: now };
+    const capturedMinor = toMinorUnits(this.snapshot.total);
+    if (amountMinor <= 0 || amountMinor + alreadyRefundedMinor > capturedMinor) {
+      throw new RefundExceedsCapturedError(
+        this.snapshot.id,
+        amountMinor,
+        alreadyRefundedMinor,
+        capturedMinor,
+      );
+    }
+    const isFullRefund = amountMinor + alreadyRefundedMinor === capturedMinor;
+    const newStatus: OrderStatus = isFullRefund ? 'refunded' : 'paid';
+    this.snapshot = { ...this.snapshot, status: newStatus, updatedAt: now };
     this.#events.push({
       kind: 'OrderRefunded',
       orderId: this.snapshot.id,

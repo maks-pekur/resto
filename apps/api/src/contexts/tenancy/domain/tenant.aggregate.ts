@@ -26,6 +26,8 @@ export const SERVABLE_STATUSES: ReadonlySet<TenantStatus> = new Set<TenantStatus
 
 export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_STATUSES.has(status);
 
+export type StripeOnboardingStatus = 'not_started' | 'pending' | 'complete' | 'restricted';
+
 export interface TenantSnapshot {
   readonly id: TenantId;
   readonly slug: TenantSlug;
@@ -34,6 +36,11 @@ export interface TenantSnapshot {
   readonly locale: string;
   readonly defaultCurrency: Currency;
   readonly stripeAccountId: string | null;
+  // D-12: capability flags — populated by account.updated webhook (08-03)
+  readonly stripeChargesEnabled: boolean;
+  readonly stripePayoutsEnabled: boolean;
+  readonly stripeOnboardingStatus: StripeOnboardingStatus;
+  readonly stripeRequirementsDue: unknown;
   readonly primaryDomain: TenantDomain;
   readonly customDomains: readonly TenantDomain[];
   readonly createdAt: Date;
@@ -42,6 +49,13 @@ export interface TenantSnapshot {
   readonly offboardingScheduledAt: Date | null;
   readonly offboardingExecutedAt: Date | null;
   readonly offboardingRequestedBy: string | null;
+}
+
+export interface ApplyStripeCapabilitiesInput {
+  readonly chargesEnabled: boolean;
+  readonly payoutsEnabled: boolean;
+  readonly onboardingStatus: StripeOnboardingStatus;
+  readonly requirementsDue: unknown;
 }
 
 export interface ProvisionInput {
@@ -91,6 +105,10 @@ export class Tenant {
       locale: input.locale ?? 'en',
       defaultCurrency: input.defaultCurrency,
       stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
       primaryDomain,
       customDomains: [],
       createdAt: now,
@@ -222,6 +240,10 @@ export class Tenant {
       displayName: '[erased]',
       slug: TenantSlug.parse(`erased-${this.snapshot.id.slice(0, 8)}-${Date.now().toString(36)}`),
       stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
       offboardingExecutedAt: now,
       updatedAt: now,
     };
@@ -231,6 +253,23 @@ export class Tenant {
       executedAt: now,
       occurredAt: now,
     });
+  }
+
+  // D-12: update capability flags from Stripe account.updated webhook data (08-03)
+  applyStripeCapabilities(input: ApplyStripeCapabilitiesInput, now: Date = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeChargesEnabled: input.chargesEnabled,
+      stripePayoutsEnabled: input.payoutsEnabled,
+      stripeOnboardingStatus: input.onboardingStatus,
+      stripeRequirementsDue: input.requirementsDue,
+      updatedAt: now,
+    };
+  }
+
+  // D-12: server-authoritative predicate — consumed by checkout (08-04) to gate payments
+  canAcceptPayments(): boolean {
+    return this.snapshot.stripeAccountId !== null && this.snapshot.stripeChargesEnabled;
   }
 
   isPubliclyServable(): boolean {
