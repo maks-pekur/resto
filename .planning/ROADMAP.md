@@ -440,30 +440,31 @@ Plans:
 3. `payment_intent.payment_failed` surfaces a failure message to the guest with a retry CTA; operator-initiated refund creates a Stripe refund and transitions the order to `refunded` (full or partial)
 4. Guest receives an order confirmation email immediately after payment succeeds; guest receives status emails on `accepted` and `ready/on-its-way` transitions; guest receives a refund confirmation email when a refund is initiated; email templates respect tenant brand theme (logo, accent color)
 5. Stripe webhook handler is idempotent using the inbox dedup pattern with Stripe event ID; webhook endpoint rejects invalid signatures with 400; `stripeAccountId` Zod schema has `.max(255)`; `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0) and `/health/readiness` marks pod NOT ready when leader hasn't dispatched in >30s
-   **Plans**: 7 plans in 5 waves _(charge model resolved to DIRECT charges per D-02; schema redesign sequenced first per D-07)_
+   **Plans**: 8 plans in 5 waves _(charge model resolved to DIRECT charges per D-02; schema redesign sequenced first per D-07; 08-04 split into API/website per checker W4; admin onboarding surface added per checker B3)_
 
 Plans:
 **Wave 1**
 
-- [ ] 08-01-PLAN.md — Payments/order/tenant schema + aggregate redesign (migration 0055): partial-refund accounting (payment_refunds), N PaymentIntents/order, SCA requires_action state, Stripe-account linkage, tenant capability fields + canAcceptPayments predicate (D-07/D-08/D-04/D-12; PAY-09/13, SITE-08 substrate)
+- [ ] 08-01-PLAN.md — Payments/order/tenant schema + aggregate redesign (migration 0055): partial-refund accounting (payment_refunds), N PaymentIntents/order, SCA requires_action state, Stripe-account linkage, tenant capability fields + canAcceptPayments; orders.customer_email guest-email column (erasure-covered via 0051) (D-07/D-08/D-04/D-12/B2; PAY-09/13, SITE-08 substrate)
 
 **Wave 2** _(after 08-01)_
 
-- [ ] 08-02-PLAN.md — Real StripeConnectAdapter replacing the Noop: Express onboarding + account_link, createPaymentIntent (DIRECT charge, config-driven application fee), cancel/refund, deterministic idempotency keys; onboarding endpoint (D-01/02/03/06/09; PAY-01/02/03/06) [stripe legitimacy gate]
+- [ ] 08-02-PLAN.md — Real StripeConnectAdapter replacing the Noop: Express onboarding + account_link, createPaymentIntent (DIRECT charge, config-driven application fee), cancel/refund, idempotency keys; onboarding + stripe-status endpoints + admin Connect-Stripe button & KYC status surface (D-01/02/03/06/09/B3; PAY-01/02/03/06/13) [stripe legitimacy gate + admin click-through verify]
 
 **Wave 3** _(after 08-02; 08-07 also after 08-01)_
 
-- [ ] 08-03-PLAN.md — Stripe webhooks: raw-body + signature verify (400) + runDeduped on event id; payment_intent.succeeded/failed, account.updated, charge.refunded/dispute; single-writer-of-paid + double-charge orphan auto-refund (D-06/10/11; PAY-04/05/07/08/10)
-- [ ] 08-07-PLAN.md — PAY-12 deltas only (D-14): outbox.is_leader OTel gauge + never-dispatched false-negative fix + 30s SLA reconcile; PAY-11 stripeAccountId .max(255) (PAY-11/12)
+- [ ] 08-03-PLAN.md — Stripe webhooks: raw-body + signature verify (400) + runDeduped on event id; payment_intent.succeeded/failed, account.updated (unregistered-account no-op, W3), charge.refunded/dispute; single-writer-of-paid + double-charge orphan auto-refund (D-06/10/11/W3; PAY-04/05/07/08/10)
+- [ ] 08-07-PLAN.md — PAY-12 deltas only (D-14): outbox.is_leader OTel gauge + never-dispatched false-negative fix + 30s SLA reconcile; PAY-11 effective StripeAccountId .max(255) on the webhook parse path + rejecting unit test (W5) (PAY-11/12)
 
 **Wave 4** _(after 08-03 — parallel, no file overlap)_
 
-- [ ] 08-04-PLAN.md — Checkout + SITE-08 + SCA: server-authoritative PaymentIntent gated on canAcceptPayments, Stripe Payment Element, 3DS requires_action, same-order retry (no double-charge), read-only polling confirmation page (D-06/08/12; SITE-08, PAY-06/08/13)
-- [ ] 08-06-PLAN.md — Guest emails (GNOTIF): EmailAdapterPort.sendGuestNotification + brand-themed per-locale templates; GNOTIF-01/03 fire now, GNOTIF-02 machinery wired to a Phase-10 trigger; send-once idempotency (D-13; GNOTIF-01/02/03/04)
+- [ ] 08-04a-PLAN.md — Checkout API: server-authoritative PaymentIntent gated on canAcceptPayments, currency-integrity, cancel-prior-PI (double-charge guard), SCA requires_action; read-only GET /v1/orders/:id/status (D-06/08/12; PAY-06/08/13, SITE-08 substrate)
+- [ ] 08-06-PLAN.md — Guest emails (GNOTIF): EmailAdapterPort.sendGuestNotification + brand-themed per-locale templates; recipient = orders.customer_email; GNOTIF-01/03 fire now, GNOTIF-02 machinery wired to a Phase-10 trigger; send-once idempotency + explicit max_deliver + DLQ on the subscriber (D-13/B2/B4; GNOTIF-01/02/03/04)
 
-**Wave 5** _(after 08-03)_
+**Wave 5** _(08-04b after 08-04a+08-03; 08-05 after 08-03)_
 
-- [ ] 08-05-PLAN.md — Refunds + disputes: owner-only server-enforced refund (full+partial, reason mandatory), auto-refund on cancel/reject, manual↔webhook reconcile (no double-refund), dispute record+notify, cross-tenant isolation e2e (D-04/09/10/11; PAY-09, GNOTIF-03)
+- [ ] 08-04b-PLAN.md — Website checkout + SITE-08: guest-email capture, Stripe Payment Element, 3DS, same-order retry (no new order), read-only polling confirmation page (D-06/08/B2; SITE-08, PAY-06/08) [end-to-end test-mode smoke verify]
+- [ ] 08-05-PLAN.md — Refunds + disputes: owner-only server-enforced refund (full+partial, reason mandatory), canonical CancelOrderService auto-refund (Phase 10 reuses, W1), manual↔webhook reconcile (no double-refund), dispute record+notify, cross-tenant isolation e2e (D-04/09/10/11/W1; PAY-09, GNOTIF-03)
    **UI hint**: no
    **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
