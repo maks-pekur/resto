@@ -14,6 +14,7 @@ export function createCheckoutSchema(mode: CartMode) {
     .object({
       name: z.string().min(1, 'Name is required'),
       phone: z.string().regex(phoneRegex, 'Enter a valid phone number'),
+      email: z.string().email('Enter a valid email address'),
       address: z.string().optional(),
       orderTime: orderTimeSchema,
     })
@@ -32,4 +33,4 @@ export function createCheckoutSchema(mode: CartMode) {
 }
 
 export const CheckoutFormSchema = createCheckoutSchema(null);
-export type CheckoutForm = z.infer<typeof CheckoutFormSchema>;
+export type CheckoutForm = z.infer<ReturnType<typeof createCheckoutSchema>>;

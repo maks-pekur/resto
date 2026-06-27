@@ -118,6 +118,7 @@ export class CreateOrderService {
       tableIdentifier: input.table ?? null,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
+      customerEmail: input.customerEmail ?? null,
       items: domainItems,
       currency,
       discountSpec: null,
