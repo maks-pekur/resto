@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
+status: executing
+stopped_at: 'Phase 8 (Payments) CODE-COMPLETE — all 8 plans executed (08-01 schema/0055, 08-02 adapter+onboarding+admin button, 08-03 webhooks, 08-07 PAY-12/11, 08-04a checkout-API, 08-04b website Payment Element+SITE-08, 08-06 guest emails, 08-05 refunds+disputes). ~700 tests green; comments stripped (no-comments rule); charge model = DIRECT charges (D-02). PENDING = 3 LIVE founder smokes (need Stripe Connect test setup + Stripe CLI + test card): (1) 08-02 admin onboarding click-through, (2) 08-04b test-card payment e2e, (3) 08-05 refund smoke. After smokes pass → Phase 8 done; next MVP-1 phase = Phase 10 (Admin Order Intake).'
 last_updated: '2026-06-27T20:59:56.195Z'
 last_activity: 2026-06-27
 progress:
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 8 (Payments) EXECUTING — Waves 1-4 done (backend + checkout-API + guest emails; 577+ tests green). Wave 5 (08-04b website checkout + 08-05 refunds) remains — needs founder Stripe-Connect test setup + test-card e2e. (Phase 7.5 prod stand-up still DEFERRED to first customer; target VPS+Cloudflare.)
+**Current focus:** Phase 8 (Payments) **CODE-COMPLETE** — all 8 plans executed (full money path: schema, adapter, webhooks, checkout API+web, emails, refunds; ~700 tests green). PENDING = 3 live founder smokes (Stripe Connect test setup + Stripe CLI + test card): onboarding click-through, test-card payment, refund. After smokes → Phase 8 done; next = Phase 10 (Admin Order Intake). (Phase 7.5 prod stand-up still DEFERRED to first customer; target VPS+Cloudflare.)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
