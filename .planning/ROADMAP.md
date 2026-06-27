@@ -453,7 +453,7 @@ Plans:
 
 **Wave 3** _(after 08-02; 08-07 also after 08-01)_
 
-- [ ] 08-03-PLAN.md — Stripe webhooks: raw-body + signature verify (400) + runDeduped on event id; payment_intent.succeeded/failed, account.updated (unregistered-account no-op, W3), charge.refunded/dispute; single-writer-of-paid + double-charge orphan auto-refund (D-06/10/11/W3; PAY-04/05/07/08/10)
+- [x] 08-03-PLAN.md — Stripe webhooks: raw-body + signature verify (400) + runDeduped on event id; payment_intent.succeeded/failed, account.updated (unregistered-account no-op, W3), charge.refunded/dispute; single-writer-of-paid + double-charge orphan auto-refund (D-06/10/11/W3; PAY-04/05/07/08/10)
 - [ ] 08-07-PLAN.md — PAY-12 deltas only (D-14): outbox.is_leader OTel gauge + never-dispatched false-negative fix + 30s SLA reconcile; PAY-11 effective StripeAccountId .max(255) on the webhook parse path + rejecting unit test (W5) (PAY-11/12)
 
 **Wave 4** _(after 08-03 — parallel, no file overlap)_
@@ -655,7 +655,7 @@ Notes:
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
-| 8. Payments (Stripe Connect)                  | 2/8            | In Progress   |            |
+| 8. Payments (Stripe Connect)                  | 3/8            | In Progress   |            |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
