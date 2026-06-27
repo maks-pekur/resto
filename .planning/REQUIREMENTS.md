@@ -148,8 +148,8 @@
 - [x] **PAY-08**: `payment_intent.payment_failed` webhook surfaces failure to guest with retry CTA
 - [x] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
 - [x] **PAY-10**: Stripe webhook handler idempotent (uses inbox dedup pattern with Stripe event id)
-- [ ] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
-- [ ] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
+- [x] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
+- [x] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
 - [x] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
 
 ### Guest Notifications (`GNOTIF`)
@@ -469,8 +469,8 @@
 | PAY-08      | Phase 8       | Complete |
 | PAY-09      | Phase 8       | Complete |
 | PAY-10      | Phase 8       | Complete |
-| PAY-11      | Phase 8       | Pending  |
-| PAY-12      | Phase 8       | Pending  |
+| PAY-11      | Phase 8       | Complete |
+| PAY-12      | Phase 8       | Complete |
 | PAY-13      | Phase 8       | Complete |
 | SITE-08     | Phase 8       | Complete |
 | GNOTIF-01   | Phase 8       | Pending  |

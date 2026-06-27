@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
-last_updated: '2026-06-27T10:57:41.777Z'
+last_updated: '2026-06-27T12:57:43.733Z'
 last_activity: 2026-06-27
 progress:
   total_phases: 20
   completed_phases: 8
   total_plans: 76
-  completed_plans: 63
+  completed_plans: 64
   percent: 40
 ---
 
@@ -46,7 +46,7 @@ Last activity: 2026-06-27
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [████████░░] 83%
+Progress: [████████░░] 84%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -110,6 +110,7 @@ _Updated after each plan completion_
 | Phase 08-payments-stripe-connect P01 | 65 | 2 tasks | 9 files |
 | Phase 08-payments-stripe-connect P02 | 100 | 3 tasks | 18 files |
 | Phase 08-payments-stripe-connect P03 | 29 | 2 tasks | 20 files |
+| Phase 08-payments-stripe-connect P07 | 130 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -166,6 +167,8 @@ Recent decisions affecting current work:
 - [Phase 07.5-production-deploy]: G-04: Sentry init in bootstrap-telemetry.ts/instrumentation.ts/main.tsx, all SENTRY_DSN-guarded — Dev/CI boot unchanged when DSN absent; captures prod exceptions before first customer
 - [Phase 07.5-production-deploy]: G-05: isLocalhostUrl() regex rejects localhost API origin in production for website and admin — A forgotten NEXT_PUBLIC_API_ORIGIN/VITE_API_ORIGIN crashes build, never silently routes users to localhost
 - [Phase ?]: resto_auth NOBYPASSRLS: permissive policies on 4 BA-owned tables via migration 0054 (RDS-compatible, D-04)
+- [Phase ?]: PAY-12: seed lastDispatchAt at lock acquisition to close never-dispatched false-negative; backlog-aware probe distinguishes idle leader from wedged leader
+- [Phase ?]: PAY-11: StripeAccountId z.string().max(255) exported from tenant.aggregate.ts, parsed on account.updated event.account at the trust boundary
 
 ### Pending Todos
 
@@ -222,6 +225,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-27T10:57:41.726Z
+Last session: 2026-06-27T12:57:33.163Z
 Stopped at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
 Resume file: None
