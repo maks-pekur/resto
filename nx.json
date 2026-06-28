@@ -43,5 +43,6 @@
     }
   },
   "defaultBase": "main",
-  "parallel": 3
+  "parallel": 3,
+  "analytics": true
 }
