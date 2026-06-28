@@ -3,13 +3,9 @@ import { requireTenantContext } from '@resto/db';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
 import { StripeOnboardingFailedError } from '../domain/errors';
-import {
-  STRIPE_CONNECT_PORT,
-  TENANT_REPOSITORY,
-  type StripeConnectPort,
-  type TenantRepository,
-} from '../domain/ports';
+import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import type { StripeOnboardingStatus } from '../domain/tenant.aggregate';
+import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../payments/domain/ports';
 
 export interface StartStripeOnboardingResult {
   readonly onboardingUrl: string;
@@ -29,7 +25,7 @@ export class StartStripeOnboardingService {
 
   constructor(
     @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
-    @Inject(STRIPE_CONNECT_PORT) private readonly stripe: StripeConnectPort,
+    @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
@@ -42,10 +38,11 @@ export class StartStripeOnboardingService {
     const snapshot = tenant.toSnapshot();
 
     try {
-      const result = await this.stripe.createExpressAccount({
-        tenantId: snapshot.id,
+      const result = await this.provider.ensureOnboardingAccount({
+        brandId: snapshot.id,
         displayName: snapshot.displayName,
         defaultCurrency: snapshot.defaultCurrency,
+        accountType: 'express',
       });
       const accountId = result.accountId;
       tenant.linkStripeAccount(accountId);
@@ -54,7 +51,7 @@ export class StartStripeOnboardingService {
         { tenantId: snapshot.id, accountId },
         'Stripe Express account created and persisted.',
       );
-      const link = await this.stripe.createAccountLink({
+      const link = await this.provider.createOnboardingLink({
         accountId,
         returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
         refreshUrl: this.env.STRIPE_CONNECT_REFRESH_URL,

@@ -15,26 +15,9 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
-  findByStripeAccountId: vi.fn(),
   findCurrentTenant: vi.fn(),
   listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
-
-const stripeNoop = {
-  ensureExpressAccount: vi.fn().mockResolvedValue(null),
-  createExpressAccount: vi.fn().mockResolvedValue({ accountId: 'acct_test' }),
-  createAccountLink: vi.fn().mockResolvedValue({ url: 'https://connect.stripe.com', expiresAt: 0 }),
-  createPaymentIntent: vi.fn().mockResolvedValue({
-    paymentIntentId: 'pi_test',
-    clientSecret: 'secret',
-    status: 'requires_payment_method',
-  }),
-  cancelPaymentIntent: vi.fn().mockResolvedValue({ status: 'canceled' }),
-  createRefund: vi.fn().mockResolvedValue({ stripeRefundId: 're_test', status: 'succeeded' }),
-  retrieveAccount: vi
-    .fn()
-    .mockResolvedValue({ chargesEnabled: false, payoutsEnabled: false, requirementsDue: null }),
-};
 
 const baseInput = {
   slug: TenantSlug.parse('cafe-roma'),
@@ -49,7 +32,7 @@ describe('ProvisionTenantService', () => {
 
   beforeEach(() => {
     repo = buildRepo();
-    service = new ProvisionTenantService(repo, stripeNoop);
+    service = new ProvisionTenantService(repo);
   });
 
   it('saves a new aggregate with a TenantProvisioned event in the outbox', async () => {
@@ -96,12 +79,5 @@ describe('ProvisionTenantService', () => {
 
     await expect(service.execute(baseInput)).rejects.toBeInstanceOf(TenantSlugArchivedError);
     expect(repo.save).not.toHaveBeenCalled();
-  });
-
-  it('invokes the Stripe Connect port (placeholder no-op for MVP-1)', async () => {
-    await service.execute(baseInput);
-    expect(stripeNoop.ensureExpressAccount).toHaveBeenCalledWith(
-      expect.objectContaining({ displayName: 'Cafe Roma' }),
-    );
   });
 });
