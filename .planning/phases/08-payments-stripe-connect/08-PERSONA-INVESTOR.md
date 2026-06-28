@@ -1,0 +1,175 @@
+# Phase 8 "Payments (Stripe Connect)" — Investor / Business Review
+
+**Lens:** unit economics, moat, dependency/lock-in risk, regulatory exposure, fundability.
+**Stage of artifact:** discuss-phase, pre-plan. No PLAN exists yet — this review shapes the plan and pressure-tests the 2026-06-26 founder decisions.
+**Reviewer posture:** Series A B2B vertical-SaaS partner. This is the revenue-enabling phase — the literal gate to "first paying customer" (Q1 2027). I am reading it as the single most fundability-relevant phase in MVP-1, because it is where the company first touches money, regulation, and a hard third-party dependency at once.
+
+---
+
+## TL;DR (IC framing)
+
+- **This is the phase that turns a project into a company.** Everything before it is plumbing; this is the first revenue-bearing surface. From a fundability standpoint, getting a real EU restaurant→guest payment flowing end-to-end — with KYC, webhooks, refunds, idempotency — is the strongest single signal in the whole codebase that this team can ship a billable product. I want it shipped.
+- **The `application_fee = 0` decision is the one I'd flag hardest in IC — but as a *pricing-strategy question for the model, not a blocker for this phase's code*.** Toast monetizes payments at ~48 bps net and its **Payments ARR (~$986M) is roughly equal to its Subscription ARR (~$1,061M)** — i.e. a payments-enabled vertical-SaaS leader earns ~half its money on the rail this phase is building. RestOS is choosing to leave that entire lever at zero. That may be the right *cultural* call for EU independents, but the **code must keep the option open** — the application-fee parameter must be a config value, not a hardcoded `0`, so the take-rate can be turned on later without re-architecting. That is the one thing I want guaranteed in the plan.
+- **Two BLOCK-level items before plan approval:** (1) **chargeback / negative-balance liability sits on the RestOS platform account by default in the destination-charge model** — with `application_fee = 0`, RestOS carries fraud/refund liability while earning *nothing* on the transaction to cover it; this needs an explicit liability decision (`on_behalf_of` + loss-liability config, or accepted-and-reserved). (2) **Taking real EU card payments with per-market fiscalization deferred** is defensible for MVP *only if* the deferral is bounded and documented as a known, time-boxed risk — an investor will ask "are you compliant to take this money in Germany/France/Italy?" and "we deferred it" needs to be a *decision with a date*, not a silent gap.
+
+---
+
+## Unit economics: the `application_fee = 0` call (the heart of this review)
+
+The founder decision (2026-06-26, echoed in PROJECT.md Out-of-Scope and Key Decisions): **RestOS takes 0% of transaction volume; restaurant bears Stripe's processing fee; RestOS monetizes via flat subscription per location + tier add-ons.** Rationale: "restaurants culturally reject % cuts; already paying delivery aggregators."
+
+I want to steelman this *and* stress it, because it is the most consequential business decision in the phase.
+
+**Why the decision is reasonable:**
+
+- The cultural read is real. EU independents are already bleeding 25–35% to Glovo/Wolt/Bolt and are primed to resent another % skim. A flat "rent-like" SaaS line is an easier sell and a cleaner story: "we don't touch your margin, we replace the aggregator."
+- Subscription-only revenue is **higher-quality ARR** for a Series A narrative than payments revenue: it's recurring, predictable, and not exposed to the customer's transaction volatility. Toast's own filings show subscription ARR growing *faster* (28% vs 24%) and now exceeding payments ARR — the market rewards the subscription line at a higher multiple.
+- For a **bootstrap solo founder**, *not* taking a cut also removes a regulatory/operational burden: a platform that collects a fee is unambiguously a payment intermediary with stronger AML/KYC and money-transmission scrutiny. Zero-fee destination charges keep RestOS closer to "software that happens to wire Stripe" than "marketplace that moves money."
+
+**Why I'd still challenge it in IC (severity HIGH, as a *model* question):**
+
+- **You are turning off the highest-margin, most-scalable revenue lever in the entire business model.** Payments revenue scales with the customer's GPV at ~zero marginal cost to you, and it *grows with the customer's success* — the best kind of net revenue retention. A flat per-location subscription is capped: a location doing €1.2M/yr and one doing €200k/yr pay you the same. With a take-rate, the €1.2M location pays you 6× more, automatically. **Subscription-only structurally under-monetizes your best customers** — exactly the high-AOV restaurants PROJECT.md says you're targeting.
+- **The path to $1M ARR on subscription alone is steep for low-ACV/high-churn independents.** Independent-restaurant SaaS is a notoriously hard segment: high churn (restaurants close), long sales cycles, low willingness-to-pay. If the realistic ACV is, say, €1,200–2,400/location/yr, $1M ARR needs **~400–800 paying locations** — a lot of solo-founder sales motion. Even a **modest, disclosed** payment spread (10–30 bps, an order of magnitude below aggregators and still *below Toast's 48 bps*) on a customer doing €500k GPV would add €500–1,500/location/yr — i.e. it could **double effective ACV** and roughly halve the location count needed for the same ARR. That is the difference between a plausible and an implausible 18-month plan.
+- **"Restaurants reject % cuts" conflates two very different things.** A 25% aggregator commission on the *order* is a margin-killer. A 0.2% platform spread on *card processing they already pay Stripe ~1.5% for* is invisible and culturally different — it's a processing-fee line, not a revenue skim. The decision treats these as the same; they are not. **A hidden/bundled spread on processing is the standard playbook** (it's literally how Square and SumUp monetize SMBs) and is *not* what restaurants are revolting against.
+
+**My recommendation (does not block the phase, but must shape the code):**
+
+1. **Ship Phase 8 with `application_fee = 0` as the launch default** — the cultural risk of leading with a fee at the very first customer is real, and "we take nothing" is a clean wedge. Fine.
+2. **BUT: the application fee MUST be a per-tenant (or platform-global) configuration value, not a hardcoded literal.** `application_fee_amount` must read from config/DB so a take-rate can be enabled later per-tenant without a code change or re-onboarding. *This is the single most important business-protecting line item in the plan.* Note: REQUIREMENTS PAY-06 still literally says "RestOS `application_fee_amount`" — that requirement text and the 2026-06-26 zero-fee decision are in conflict; reconcile them so the implementer wires a *configurable* fee that *defaults to 0*, rather than hardcoding zero and welding the lever shut.
+3. **Treat the take-rate as an explicit, dated future experiment** (e.g. "revisit a 10–20 bps processing spread at 25 paying locations / MVP-1 close"), not a permanent "no." Keeping it as a logged, revisit-dated decision is what makes the subscription-only bet *defensible* rather than *naïve* in front of an investor.
+
+---
+
+## Moat assessment (does owning payment + ordering + menu strengthen the vertical?)
+
+| Source of moat | Strength (0–10) | Evidence / reasoning |
+|---|---|---|
+| **Owning the full flow (menu → order → payment → guest comms)** | 7 | This is the real moat thesis and Phase 8 is what completes it. Once a restaurant's *money* flows through RestOS (Connect account onboarded, payouts arriving, refunds handled here), switching cost jumps from "export my menu" to "re-onboard KYC + re-point payouts + migrate order history." Owning payment is the stickiest layer in the stack. Choice/Tablein (bookings) and SumUp (terminal/payments) each own *one* slice; RestOS owning menu+order+payment+guest-email together is the differentiated bet. |
+| **Stripe Connect onboarding as switching cost** | 6 | KYC onboarding is genuinely painful to repeat. A restaurant that has completed Express onboarding inside RestOS has a real friction wall against churning to a competitor. This is earned in *this* phase. |
+| **Payments data flywheel** | 4 | Latent, not yet realized. GPV/AOV/refund-rate data captured here is the fuel for MVP-2 AI (pricing, upsell, fraud). The `payments` table + order events lay the substrate. Worth nothing until MVP-2 uses it, but the substrate being captured now is correct. |
+| **Compliance work as a barrier** | 3 | Modest today. GDPR pipeline is real and credit-worthy, but PCI is fully outsourced to Stripe (correct, but not a moat — every competitor does the same). Fiscalization is *deferred*, so it's a future barrier you haven't built. The barrier exists for *anyone* entering EU restaurant payments; it doesn't specifically advantage RestOS yet. |
+| **vs Toast/Olo/Choice EU expansion** | 5 | The honest answer to "what can't they copy in a quarter?": not the Stripe integration (commodity), but the **EU-first, no-hardware, standalone, AI-layered, full-flow** *combination* aimed at the under-served 1–10-location independent. Phase 8 doesn't *create* that moat — it removes the biggest hole in it (you couldn't take money). Toast's EU push is real; the defensibility is GTM + vertical depth + AI (MVP-2), not this phase's primitives. |
+
+**Net:** Phase 8 is **moat-completing, not moat-creating.** It converts a demo into a switching-cost-bearing product. The defensibility story for an investor is "we own the whole guest-money flow standalone, EU-first, no POS prerequisite" — and that story is *false* without this phase and *true* with it. That alone justifies the phase regardless of the fee debate.
+
+---
+
+## Dependency / lock-in risk (Stripe concentration)
+
+| Dependency | Concentration risk | Mitigation present? | Assessment |
+|---|---|---|---|
+| **Stripe Connect (the rail)** | **HIGH** | Partial — `StripeConnectPort` interface already abstracts the SDK behind a domain port (good hygiene); `payments.provider` column defaults to `'stripe'` but is a free-text field, so a second provider is schema-possible. Multi-provider (Mollie/Adyen) is explicitly logged as deferred (`PAYMP-01..03`, "v2"). | Single-rail dependency on the revenue path. Acceptable for MVP, but name it: if Stripe changes Connect terms, raises fees, or **freezes the platform account**, the entire revenue surface stops. The port abstraction means a *future* swap is a config-migration not a rewrite — credit that. |
+| **Stripe platform-account freeze risk** | **HIGH** | None yet | This is the dependency risk investors actually fear, and it's underweighted in the requirements. Stripe can freeze a *platform* account (and all connected payouts under it) with little notice on "elevated risk"; documented 2026 cases involve six- and seven-figure holds for 30–180 days. For a marketplace-shaped platform with many small connected restaurants, one fraud cluster can trigger a platform-wide review. **No mitigation is in scope** (no payout-schedule controls, no reserve strategy, no "what happens to *all* tenants if our platform account is reviewed" runbook). This is a single point of failure for *every* tenant simultaneously. |
+| **Chargeback / negative-balance liability** | **HIGH** (amplified by fee=0) | None yet | In the destination-charge model, **the platform (RestOS) is liable for chargebacks and negative connected-account balances by default.** With `application_fee = 0`, RestOS bears refund/fraud/chargeback liability while earning **nothing** on the transaction to offset it. A guest disputes a €120 order, the restaurant has already been paid out and has no balance → the loss can flow to the RestOS platform account. This is a real, asymmetric financial exposure that the zero-fee decision makes *worse*, not better. Needs an explicit liability config decision (`on_behalf_of`, loss-liability assignment to the connected account where possible, or accepted-with-reserve). |
+| **NATS / outbox (event path under Stripe webhooks)** | MEDIUM | Strong — transactional outbox + inbox dedup + the new `outbox.is_leader` health probe (PAY-12) | Good. Webhook idempotency via the existing inbox-dedup pattern keyed on Stripe event id (PAY-10) is exactly right. The leader-health probe closes a real silent-failover gap before money flows. This is mature design and reads well in diligence. |
+| **Resend (guest email, GNOTIF)** | LOW | Reuses AUTH-01 adapter | Commodity, swappable, low concentration. Fine. |
+
+**Net:** Stripe concentration is the defining dependency risk of the company, and this phase is where it goes live. The *technical* abstraction (port, provider column) is good. The **commercial/operational** mitigations (freeze runbook, liability config, reserve posture) are absent and at least one (liability under fee=0) rises to BLOCK.
+
+---
+
+## Regulatory exposure
+
+- **PCI:** Fully outsourced to Stripe (tokenization; card data never touches RestOS). Correct, standard, not a differentiator and not a risk. ✓
+- **PSD2 / SCA / 3DS:** **Must be explicitly in scope for EU cards — flag as HIGH if the plan omits it.** EU card payments require Strong Customer Authentication; the PaymentIntents API supports dynamic 3DS, but the integration must (a) handle the `requires_action` PaymentIntent state and surface the 3DS challenge to the guest, and (b) not assume a single-step confirm. The current `Order` aggregate goes `created → paid` on `payment_intent.succeeded` with **no intermediate "authentication required / processing" state** — that's a gap for EU SCA flows where the guest must complete a challenge before `succeeded` fires. The retry-on-same-order decision (founder, 2026-06-26) partially covers the failed-auth path, but the *happy-path SCA challenge* needs a guest-facing state. **This is a correctness-and-revenue issue, not just compliance: if SCA isn't handled, a large share of EU card payments silently fail.**
+- **Fiscalization (per-market):** Explicitly deferred (PROJECT.md, CLAUDE.md). The schema *anticipates* it — `brands.fiscalizationConfig` JSONB and `brands.taxId`/`legalName` columns already exist as placeholders, which is good forward-thinking. **But taking real money in DE/FR/IT/AT etc. without fiscal receipt compliance is a real, market-specific legal exposure** (e.g. Germany's KassenSichV/TSE, Italy's fattura/RT, France's anti-fraud cert). For MVP with a *handful* of pilot customers in a *chosen* launch market, deferral is defensible — but it must be (a) a **bounded decision** ("we launch in market X first, where standalone-web-order fiscalization is [N/A or handled by the restaurant's existing POS]"), and (b) **disclosed**, because an investor will ask and "we forgot" is a far worse answer than "we time-boxed it to post-PMF / first market is X." Don't let "deferred" mean "undefined."
+- **GDPR:** Strong existing pipeline (erasure, anonymization, audit). Phase 8 *adds* PII surface (guest email, name, phone in order + guest-notification emails). Confirm the guest email/PII captured at checkout flows into the existing erasure pipeline (the prior quick-task `260621-dai` already extended `tenancy_erase_tenant` to ordering tables incl. `payments` — good, verify guest-comms email storage is covered too). Low risk *if* the existing pipeline is extended consistently.
+
+---
+
+## Capital efficiency read
+
+- **Built but not earning yet (and correctly so):** the `payments` table, `provider`/`providerPaymentId` unique index, order states (`paid`/`refunded`/`failed`), `StripeConnectPort`, `stripeAccountId` on tenants *and* brands — all scaffolded in Phase 7. Phase 8 *activates* this latent infrastructure rather than building from scratch. That's capital-efficient sequencing: the expensive schema/port work was front-loaded, and this phase is the comparatively cheap "wire the real adapter" step.
+- **Built and likely earning early:** the whole phase — this *is* the revenue gate. Onboarding + destination-charge PaymentIntent + webhook + refund + guest confirmation is the minimum to take a euro. Scope is tight and correct.
+- **Should be bought, not built (and is):** PCI, card vaulting, KYC, payout rails, 3DS — all Stripe. Email — Resend. Correct build-vs-buy across the board. No gold-plating risk visible in the requirements.
+- **Should be built, but watch for over-build:** the *only* gold-plating risk I see is **multi-provider abstraction creeping into this phase** — `PAYMP-01..03` is correctly deferred to v2; the plan must not let "let's make it provider-agnostic now" pull Mollie/Adyen work forward. Single provider (Stripe), single currency per tenant, single charge model (destination) is the right MVP surface. Resist generalization.
+- **Founder-time risk:** SCA/3DS handling and the liability/freeze operational work are the two places this phase can balloon from "days" to "weeks" of solo time. They are *necessary* (SCA especially), but they are also where an unbounded plan eats runway. Budget them explicitly.
+
+---
+
+## Scalability cost curve
+
+- **At 1–10 tenants:** trivial. Stripe is pay-per-transaction; no fixed payments infra cost. Webhook volume is negligible. The RLS-pooled single Postgres + single NATS handles this on the cheapest tier.
+- **At 100 tenants:** still cheap on infra. The cost that *appears* here is **operational, not compute**: refund handling, disputes, the first Stripe risk review of the platform account, support load from KYC-stuck restaurants. With `application_fee = 0`, **payments contribute zero revenue to offset this rising operational/liability cost** — the cost curve goes *up* while payments revenue stays *flat at zero*. That's the structural weakness of the fee=0 model surfacing as scale.
+- **At 1,000 tenants:** the platform-account concentration risk becomes material — 1,000 connected accounts under one Stripe platform is exactly the shape that draws elevated-risk reviews and reserve requirements. This is where a take-rate (even tiny) would have funded a reserve and where its absence is felt most. Infra (Postgres/NATS) is still fine per the pooled-tenant model; the binding constraint is Stripe-relationship risk and chargeback liability, both *worsened* by zero offsetting payments revenue.
+
+**The asymmetry to internalize:** infra cost-per-tenant stays low and falls (good, pooled RLS), but **payments-related operational + liability cost-per-tenant rises with GPV while payments revenue is pinned at zero.** Subscription must cover all of it. That's solvable, but it's the real cost-curve story, not the AWS bill.
+
+---
+
+## Diligence red flags (severity-classified)
+
+1. **BLOCK — chargeback / negative-balance liability under `application_fee = 0`.** Destination charges put refund/chargeback/negative-balance liability on the RestOS platform account by default. With zero application fee, RestOS absorbs fraud loss while earning nothing on the transaction. The plan must make an explicit liability decision: assign loss-liability to the connected account where the charge model allows, use `on_behalf_of` appropriately, and/or accept-with-reserve. **Do not ship a flow where RestOS is the silent insurer of every guest dispute for free.**
+
+2. **BLOCK — fiscalization deferral must become a *bounded, dated, market-scoped decision*, not a silent gap.** Taking real EU card payments without per-market fiscal compliance is a legal exposure that an investor *will* probe. Acceptable for MVP only if the plan states: launch market(s), why fiscalization is N/A or externally handled there for standalone web orders, and the trigger/date to build it. "Deferred" with no boundary is a fundability red flag; "deferred until market X / post-PMF, here's why it's safe for the first cohort" is a defensible decision.
+
+3. **HIGH — `application_fee` must be configurable, not a hardcoded `0`.** The single most important business-protecting line in the plan. Wire it as a per-tenant/platform config value defaulting to 0. PAY-06's existing "RestOS application_fee_amount" wording conflicts with the zero-fee decision — reconcile so the lever is *kept open*, not welded shut. Forgoing the payments take-rate is a strategy choice; *making it un-reversible in code* is an architecture mistake.
+
+4. **HIGH — EU SCA / 3DS must be explicitly in scope, with a guest-facing "authentication/processing" order state.** The current `Order` aggregate transitions `created → paid` directly on `payment_intent.succeeded` with no `requires_action`/processing intermediate. EU cards routinely require a 3DS challenge before `succeeded`. Without handling `requires_action`, a meaningful fraction of EU payments silently fail — a *revenue* bug masquerading as a compliance gap.
+
+5. **HIGH — no Stripe platform-account freeze runbook (single point of failure for ALL tenants).** A platform-account review freezes payouts for *every* connected restaurant at once. No mitigation (payout-schedule controls, reserve posture, customer comms runbook) is in scope. At least a documented runbook and conservative payout-schedule defaults for new/high-risk connected accounts should be in the plan.
+
+6. **MED — `refund()` in the order aggregate is full-refund-only, but requirements (PAY-09, FIN-03) and the founder decision call for partial refunds.** `Order.refund()` hardcodes `amountMinor = total` and transitions straight to `refunded`. Partial refunds (a remade dish, one cancelled item) are a routine restaurant reality and are in scope per PAY-09 ("full or partial"). The aggregate needs a partial-refund path and a `partially_refunded` state, or this ships as a known gap that surfaces with the first real refund.
+
+7. **MED — per-tenant vs per-brand currency/Stripe-account mismatch.** The founder decision is "single currency per tenant," but the schema carries `defaultCurrency` *and* `stripeAccountId` on **`brands`**, not tenants (and tenants also has `stripeAccountId`). A multi-brand tenant could therefore have brands in different currencies / different Stripe accounts at the schema level while the business rule says one currency per tenant. Clarify which is authoritative; the multi-brand moat (ADR-0019 direction) and the single-currency decision need to be reconciled so onboarding wires the Stripe account at the right level.
+
+8. **LOW — `application_fee_amount` rounding / fee-on-zero-fee accounting.** Even at fee=0, confirm the integration records the *gross*, Stripe fee, and net payout cleanly in the `payments` row so that (a) the operator-facing finance view (FIN-06) can show "Stripe processing fee" honestly, and (b) turning on a take-rate later doesn't require a payments-data backfill. Cheap to get right now.
+
+---
+
+## Fundability signals (0–10)
+
+| Dimension | Score | Notes |
+|---|---|---|
+| Capital efficiency to the revenue gate | 8 | Schema/ports front-loaded in Phase 7; this phase is a tight "activate the real adapter" step. Strong build-vs-buy discipline (all hard parts = Stripe/Resend). |
+| Stack supports small-team (solo) operation | 7 | Port abstraction + existing outbox/inbox/idempotency primitives mean one founder can wire Stripe credibly. SCA + liability ops are the two solo-time sinks to watch. |
+| Moat present in primitives | 6 | Moat-completing not moat-creating: owning the money flow adds the real switching cost; AI moat (MVP-2) and GTM are where defensibility actually lives. |
+| Dependency / vendor risk managed | 4 | Good *technical* abstraction (port, provider column); weak *commercial/operational* mitigation (freeze runbook, liability under fee=0, reserve posture all absent). |
+| Compliance posture for paid customers | 5 | PCI clean, GDPR strong; SCA/3DS and fiscalization are open and at least one rises to BLOCK until bounded. |
+| 18-month path to $1M ARR plausible from code | 5 | Subscription-only on low-ACV/high-churn independents needs ~400–800 locations for $1M ARR — a steep solo-sales motion. The forgone payments lever (worth ~half of Toast's monetization) is the biggest drag on this score. Keeping the fee *configurable* would raise it. |
+| Architectural story for Series A | 7 | "We own menu→order→payment→guest comms, standalone, EU-first, idempotent, audited, multi-tenant-isolated" is a genuinely good Series A slide *once this phase ships*. The transactional-outbox + webhook-idempotency + RLS story reads as a real engineering org, not a prototype. |
+
+**Overall: 42 / 70.**
+
+The score is held down almost entirely by two things, both addressable: the **self-inflicted under-monetization of payments** (fee=0, made worse if welded into code) and the **un-bounded compliance/liability deferrals** (SCA, fiscalization, freeze/liability ops). Fix the configurability of the fee and bound the deferrals, and this is a 50+/70 phase — i.e. a clean, fundable revenue gate.
+
+---
+
+## My IC recommendation
+
+**Verdict: Pursue diligence — proceed to plan, with two BLOCK gates and a strong steer on the fee model.**
+
+This is the most important phase in MVP-1 and I want it shipped. It is correctly scoped, well-sequenced on top of Phase 7's schema, and disciplined on build-vs-buy. My concerns are not "should you build this" (yes, urgently) but "don't foreclose your best revenue lever and don't take EU money with undefined liability/compliance."
+
+**Conditions I'd want answered before the plan is approved:**
+
+1. **(BLOCK)** Explicit chargeback/negative-balance liability decision under `application_fee = 0` — who eats a guest dispute, and what reserve/payout-schedule posture protects the platform account. (Red flag #1)
+2. **(BLOCK)** Fiscalization deferral converted into a bounded, dated, launch-market-scoped decision with a documented "why it's safe for the first cohort." (Red flag #2)
+3. **(HIGH, business-critical)** `application_fee` implemented as a configurable value defaulting to 0 — the take-rate lever stays open. Reconcile with PAY-06's wording. (Red flag #3)
+4. **(HIGH)** EU SCA/3DS handled with a guest-facing `requires_action`/processing order state — or an explicit, written decision that the launch market/payment methods don't require it. (Red flag #4)
+5. **(HIGH)** A one-page Stripe platform-freeze runbook + conservative new-account payout-schedule defaults. (Red flag #5)
+6. A logged, dated decision to **revisit a modest processing spread** (10–30 bps, below Toast's 48 bps, an order of magnitude below aggregators) at a named milestone — so subscription-only is a *tested hypothesis*, not a permanent constraint.
+
+Clear those and I'd be comfortable telling IC this team can take a customer's money safely — which is the entire point of the phase, and the strongest forward signal in the company.
+
+---
+
+## What I did NOT review
+
+- Whether the Stripe SDK wiring, webhook signature verification, and idempotency are *correctly implemented* — that's the CTO/skeptic lane; no plan or code exists yet to review.
+- The precise EU launch-market choice and its specific fiscalization rules — that's a founder/legal decision this review only flags the *need* for.
+- Pricing-tier design (what the flat subscription + add-ons actually cost) — out of scope for a payments-phase code review; the fee=0 unit-economics critique here is about the *transaction* lever, not the subscription list price.
+- Market sizing / TAM / valuation — I assessed what the phase tells me about the team and the model, not the market.
+- The MVP-2 AI monetization layer that the payments data flywheel feeds — forward-looking, not this phase.
+
+---
+
+**Sources (external verification):**
+
+- [Toast Q3/Q4 2025 financial results — payments net take rate (~48 bps), GPV, Subscription vs Payments ARR](https://www.businesswire.com/news/home/20251104192374/en/Toast-Announces-Third-Quarter-2025-Financial-Results)
+- [Toast, Inc. FY2025 8-K filings (SEC)](https://www.sec.gov/Archives/edgar/data/0001650164/000165016425000334/tost-20250930xexhibit991.htm)
+- [Stripe — Create destination charges (liability + application_fee behavior)](https://docs.stripe.com/connect/destination-charges)
+- [Stripe — Understand how charges work in a Connect integration (chargeback/loss liability)](https://docs.stripe.com/connect/charges)
+- [Stripe — SCA migration guide for Connect platforms (3DS / requires_action)](https://docs.stripe.com/strong-customer-authentication/connect-platforms)
+- [Stripe — Risk and liability management with Connect (reserves, negative balances, platform freeze)](https://docs.stripe.com/connect/risk-management)
+- [Stripe account-freeze recovery playbook — 2026 (six/seven-figure holds, 30–180 day timelines)](https://www.whatpayment.com/en/guides/stripe-account-frozen/)

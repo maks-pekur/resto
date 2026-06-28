@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { TenantId, TenantSlug, type Currency } from '@resto/domain';
+import { z } from 'zod';
 import type { TenantDomain } from './tenant-domain';
+
+// PAY-11: .max(255) bounds oversized externally-supplied ids on the webhook parse path.
+export const StripeAccountId = z.string().min(1).max(255);
 import type { TenantDomainEvent } from './events';
 import {
   TenantAlreadyArchivedError,
@@ -26,6 +30,8 @@ export const SERVABLE_STATUSES: ReadonlySet<TenantStatus> = new Set<TenantStatus
 
 export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_STATUSES.has(status);
 
+export type StripeOnboardingStatus = 'not_started' | 'pending' | 'complete' | 'restricted';
+
 export interface TenantSnapshot {
   readonly id: TenantId;
   readonly slug: TenantSlug;
@@ -34,6 +40,10 @@ export interface TenantSnapshot {
   readonly locale: string;
   readonly defaultCurrency: Currency;
   readonly stripeAccountId: string | null;
+  readonly stripeChargesEnabled: boolean;
+  readonly stripePayoutsEnabled: boolean;
+  readonly stripeOnboardingStatus: StripeOnboardingStatus;
+  readonly stripeRequirementsDue: unknown;
   readonly primaryDomain: TenantDomain;
   readonly customDomains: readonly TenantDomain[];
   readonly createdAt: Date;
@@ -42,6 +52,13 @@ export interface TenantSnapshot {
   readonly offboardingScheduledAt: Date | null;
   readonly offboardingExecutedAt: Date | null;
   readonly offboardingRequestedBy: string | null;
+}
+
+export interface ApplyStripeCapabilitiesInput {
+  readonly chargesEnabled: boolean;
+  readonly payoutsEnabled: boolean;
+  readonly onboardingStatus: StripeOnboardingStatus;
+  readonly requirementsDue: unknown;
 }
 
 export interface ProvisionInput {
@@ -91,6 +108,10 @@ export class Tenant {
       locale: input.locale ?? 'en',
       defaultCurrency: input.defaultCurrency,
       stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
       primaryDomain,
       customDomains: [],
       createdAt: now,
@@ -222,6 +243,10 @@ export class Tenant {
       displayName: '[erased]',
       slug: TenantSlug.parse(`erased-${this.snapshot.id.slice(0, 8)}-${Date.now().toString(36)}`),
       stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
       offboardingExecutedAt: now,
       updatedAt: now,
     };
@@ -231,6 +256,30 @@ export class Tenant {
       executedAt: now,
       occurredAt: now,
     });
+  }
+
+  linkStripeAccount(accountId: string, now: Date = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeAccountId: accountId,
+      stripeOnboardingStatus: 'pending',
+      updatedAt: now,
+    };
+  }
+
+  applyStripeCapabilities(input: ApplyStripeCapabilitiesInput, now: Date = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeChargesEnabled: input.chargesEnabled,
+      stripePayoutsEnabled: input.payoutsEnabled,
+      stripeOnboardingStatus: input.onboardingStatus,
+      stripeRequirementsDue: input.requirementsDue,
+      updatedAt: now,
+    };
+  }
+
+  canAcceptPayments(): boolean {
+    return this.snapshot.stripeAccountId !== null && this.snapshot.stripeChargesEnabled;
   }
 
   isPubliclyServable(): boolean {

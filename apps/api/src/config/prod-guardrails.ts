@@ -57,6 +57,9 @@ const PLACEHOLDER_MARKERS = ['replace_me', 'replace-me', 'change_me', 'change-me
  */
 export const DUMMY_RESEND_API_KEY_LITERAL = 're_test_dummy_for_ci_do_not_use_in_prod';
 
+export const DUMMY_STRIPE_SECRET_KEY_LITERAL = 'sk_test_placeholder_do_not_use_in_prod';
+export const DUMMY_STRIPE_WEBHOOK_SECRET_LITERAL = 'whsec_placeholder_do_not_use_in_prod';
+
 export class ProdGuardrailsError extends Error {
   constructor(public readonly violations: readonly string[]) {
     super(
@@ -127,6 +130,26 @@ export const assertProdGuardrails = (
   if (options.emailAdapterName !== undefined && options.emailAdapterName !== 'resend') {
     violations.push(
       `email adapter must be ResendEmailAdapter in NODE_ENV=${env.NODE_ENV}, got ${options.emailAdapterName}`,
+    );
+  }
+  if (env.STRIPE_SECRET_KEY === undefined || env.STRIPE_SECRET_KEY.trim().length === 0) {
+    violations.push(`STRIPE_SECRET_KEY is required in NODE_ENV=${env.NODE_ENV}`);
+  } else if (env.STRIPE_SECRET_KEY === DUMMY_STRIPE_SECRET_KEY_LITERAL) {
+    violations.push(
+      `STRIPE_SECRET_KEY equals the documented dummy literal in NODE_ENV=${env.NODE_ENV}`,
+    );
+  } else {
+    const lower = env.STRIPE_SECRET_KEY.toLowerCase();
+    if (PLACEHOLDER_MARKERS.some((marker) => lower.includes(marker))) {
+      violations.push(`STRIPE_SECRET_KEY contains an unreplaced placeholder marker`);
+    }
+  }
+  if (
+    env.STRIPE_WEBHOOK_SECRET !== undefined &&
+    env.STRIPE_WEBHOOK_SECRET === DUMMY_STRIPE_WEBHOOK_SECRET_LITERAL
+  ) {
+    violations.push(
+      `STRIPE_WEBHOOK_SECRET equals the documented dummy literal in NODE_ENV=${env.NODE_ENV}`,
     );
   }
   if (violations.length > 0) throw new ProdGuardrailsError(violations);

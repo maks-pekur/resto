@@ -14,6 +14,7 @@ const okAdapter: EmailAdapterPort = {
   sendInvitation: () => Promise.resolve(),
   sendResetPassword: () => Promise.resolve(),
   sendVerification: () => Promise.resolve(),
+  sendGuestNotification: () => Promise.resolve(),
   verifyTransport: () => Promise.resolve(),
 };
 

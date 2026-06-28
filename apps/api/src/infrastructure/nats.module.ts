@@ -14,12 +14,15 @@ import {
   type EventPublisher,
   type EventSubscriber,
 } from '@resto/events';
+import postgres from 'postgres';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
+import { DIRECT_DB_CONNECTION } from './direct-db-connection.token';
 import { EVENT_PUBLISHER } from './event-publisher.token';
 import { OutboxDispatcherService } from './outbox-dispatcher.service';
 
 export { EVENT_PUBLISHER } from './event-publisher.token';
+export { DIRECT_DB_CONNECTION } from './direct-db-connection.token';
 export const EVENT_SUBSCRIBER = Symbol('EVENT_SUBSCRIBER');
 
 const STREAM_SUBJECTS = [
@@ -27,11 +30,8 @@ const STREAM_SUBJECTS = [
   'identity.>',
   'catalog.>',
   'ordering.>',
+  'payments.>',
   'billing.>',
-  // AUTH-10: NATS subscriber DLQ branch republishes poison bytes to
-  // `dlq.<original_subject>` (D-19). The stream MUST accept that subject
-  // prefix or the republish fails with NatsError 503 and ops loses the
-  // forensic payload.
   'dlq.>',
 ];
 
@@ -64,6 +64,23 @@ class NatsShutdownHook implements OnApplicationShutdown {
 @Global()
 @Module({
   providers: [
+    {
+      // D-05: dedicated single-connection postgres client for the outbox
+      // advisory lock. When DATABASE_DIRECT_URL is absent (dev/test), the
+      // provider resolves to null and OutboxDispatcherService falls back to
+      // the pooled connection — preserving local dev behaviour.
+      provide: DIRECT_DB_CONNECTION,
+      useFactory: (env: Env) => {
+        if (!env.DATABASE_DIRECT_URL) return null;
+        return postgres(env.DATABASE_DIRECT_URL, {
+          max: 1,
+          idle_timeout: 0,
+          prepare: false,
+          onnotice: () => undefined,
+        });
+      },
+      inject: [ENV_TOKEN],
+    },
     {
       provide: EVENT_PUBLISHER,
       useFactory: async (env: Env): Promise<(EventPublisher & DlqPublisher) | null> => {
@@ -117,6 +134,6 @@ class NatsShutdownHook implements OnApplicationShutdown {
     NatsShutdownHook,
     OutboxDispatcherService,
   ],
-  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER],
+  exports: [EVENT_PUBLISHER, EVENT_SUBSCRIBER, DIRECT_DB_CONNECTION, OutboxDispatcherService],
 })
 export class NatsModule {}

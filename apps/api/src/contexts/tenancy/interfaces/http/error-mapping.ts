@@ -1,10 +1,12 @@
 import {
+  BadGatewayException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
   type HttpException,
 } from '@nestjs/common';
 import {
+  StripeOnboardingFailedError,
   TenantAlreadyArchivedError,
   TenantAlreadySuspendedError,
   TenantErasureTooEarlyError,
@@ -66,6 +68,12 @@ export const mapDomainError = (err: unknown): unknown => {
   if (err instanceof TenantSuspensionNotAllowedError) {
     return new ConflictException({
       code: 'tenancy.tenant_suspension_not_allowed',
+      message: err.message,
+    });
+  }
+  if (err instanceof StripeOnboardingFailedError) {
+    return new BadGatewayException({
+      code: 'tenancy.stripe_onboarding_failed',
       message: err.message,
     });
   }

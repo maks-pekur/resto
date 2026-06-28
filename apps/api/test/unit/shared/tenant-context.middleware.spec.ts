@@ -1,6 +1,8 @@
+import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyRequest } from 'fastify';
-import { Currency, TenantSlug } from '@resto/domain';
+import { BrandId, Currency, TenantId, TenantSlug } from '@resto/domain';
+import { getTenantContext } from '@resto/db';
 import type { Env } from '../../../src/config/env.schema';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
 import { TenantAndBrandResolverService } from '../../../src/contexts/tenancy/application/tenant-and-brand-resolver.service';
@@ -48,7 +50,11 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   RESEND_REPLY_TO: 'support@resto.app',
   MAILHOG_HOST: 'localhost',
   MAILHOG_PORT: 1025,
+  STRIPE_APPLICATION_FEE_AMOUNT: 0,
+  STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
+  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
   AUDIT_ERASURE_SALT: undefined,
+  OUTBOX_STALL_THRESHOLD_MS: 60_000,
   ...overrides,
 });
 
@@ -60,6 +66,7 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
+  findByStripeAccountId: vi.fn(),
   findCurrentTenant: vi.fn(),
   listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
@@ -181,5 +188,102 @@ describe('TenantContextMiddleware — x-tenant-slug header gating', () => {
 
     expect(resolveBySlug).not.toHaveBeenCalled();
     expect(next).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('TenantContextMiddleware — x-tenant-id header (operator routes)', () => {
+  let next: () => void;
+
+  beforeEach(() => {
+    next = vi.fn();
+  });
+
+  it('(a) binds tenant context from x-tenant-id UUID on /v1/* in production', async () => {
+    const tid = TenantId.parse(randomUUID());
+    const cafe = tenantFor('cafe-a');
+    const repo = buildRepo();
+    repo.findById = vi.fn().mockResolvedValue(cafe);
+    const { middleware, resolver } = setup(baseEnv({ NODE_ENV: 'production' }), repo);
+    const resolveById = vi.spyOn(resolver, 'resolveById');
+
+    let boundTenantId: string | undefined;
+    next = vi.fn(() => {
+      boundTenantId = getTenantContext()?.tenantId;
+    });
+
+    await middleware.use(
+      reqWith({ 'x-tenant-id': tid, url: '/v1/catalog/items' }),
+      {} as never,
+      next,
+    );
+
+    expect(resolveById).toHaveBeenCalledWith(tid);
+    expect(boundTenantId).toBe(cafe.toSnapshot().id);
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('(b) ignores x-tenant-slug on /v1/* in production — context unbound', async () => {
+    const { middleware, resolveBySlug } = setup(baseEnv({ NODE_ENV: 'production' }));
+
+    let boundCtx: ReturnType<typeof getTenantContext>;
+    next = vi.fn(() => {
+      boundCtx = getTenantContext();
+    });
+
+    await middleware.use(
+      reqWith({ 'x-tenant-slug': 'cafe-a', url: '/v1/catalog/items' }),
+      {} as never,
+      next,
+    );
+
+    expect(resolveBySlug).not.toHaveBeenCalled();
+    expect(boundCtx).toBeUndefined();
+    expect(next).toHaveBeenCalledTimes(1);
+  });
+
+  it('(c) customer-host resolution takes precedence over x-tenant-id', async () => {
+    const customerTenantId = TenantId.parse(randomUUID());
+    const customerBrandId = BrandId.parse(randomUUID());
+    const otherTid = TenantId.parse(randomUUID());
+
+    const brandRepo = buildBrandRepo();
+    brandRepo.findByDomainHost = vi.fn().mockResolvedValue({
+      id: customerBrandId,
+      tenantId: customerTenantId,
+      slug: 'cafe-a',
+      displayName: 'Cafe A',
+      status: 'active',
+      theme: null,
+    });
+
+    const repo = buildRepo();
+    repo.findById = vi.fn().mockResolvedValue(null);
+
+    const resolver = new TenantResolverService(repo);
+    const brandResolver = new TenantAndBrandResolverService(brandRepo);
+    const resolveById = vi.spyOn(resolver, 'resolveById');
+    const middleware = new TenantContextMiddleware(
+      baseEnv({ NODE_ENV: 'production' }),
+      resolver,
+      brandResolver,
+    );
+
+    let boundCtx: ReturnType<typeof getTenantContext>;
+    next = vi.fn(() => {
+      boundCtx = getTenantContext();
+    });
+
+    await middleware.use(
+      reqWith({
+        host: 'cafe-a.menu.resto.app',
+        'x-tenant-id': otherTid,
+      }),
+      {} as never,
+      next,
+    );
+
+    expect(resolveById).not.toHaveBeenCalled();
+    expect(boundCtx?.tenantId).toBe(customerTenantId);
+    expect(boundCtx?.brandId).toBe(customerBrandId);
   });
 });

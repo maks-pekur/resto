@@ -35,7 +35,11 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   RESEND_REPLY_TO: 'support@resto.app',
   MAILHOG_HOST: 'localhost',
   MAILHOG_PORT: 1025,
+  STRIPE_APPLICATION_FEE_AMOUNT: 0,
+  STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
+  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
   AUDIT_ERASURE_SALT: undefined,
+  OUTBOX_STALL_THRESHOLD_MS: 60_000,
   ...overrides,
 });
 

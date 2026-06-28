@@ -43,11 +43,11 @@ suite('Role provisioning — end-to-end (RES-245)', () => {
     });
   });
 
-  it('provisionAuthRole produces resto_auth with NOSUPERUSER BYPASSRLS', async () => {
+  it('provisionAuthRole produces resto_auth with NOSUPERUSER NOBYPASSRLS', async () => {
     await provisionAuthRole(admin, { authPassword: AUTH_PWD });
     await assertRoleAttributes(admin, RESTO_AUTH_ROLE, {
       rolsuper: false,
-      rolbypassrls: true,
+      rolbypassrls: false,
       rolcreaterole: false,
       rolcreatedb: false,
     });

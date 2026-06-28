@@ -26,6 +26,7 @@ export const CreateOrderInputSchema = z
     table: z.string().max(20).optional(),
     customerName: z.string().max(200).optional(),
     customerPhone: z.string().max(30).optional(),
+    customerEmail: z.string().email().max(254).optional(),
     idempotencyKey: z.string().uuid(),
     // ORD-12: no operating-hours source exists yet — accept any future datetime; schedule validation deferred.
     scheduledFor: z

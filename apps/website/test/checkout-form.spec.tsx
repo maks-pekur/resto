@@ -6,10 +6,25 @@ import { AddressInput } from '@/components/checkout/address-input';
 import { OrderTimeSelector, type OrderTime } from '@/components/checkout/order-time-selector';
 
 describe('checkout schema', () => {
-  const valid = { name: 'Ann', phone: '+1 555 123 4567', orderTime: { kind: 'asap' as const } };
+  const valid = {
+    name: 'Ann',
+    phone: '+1 555 123 4567',
+    email: 'ann@example.com',
+    orderTime: { kind: 'asap' as const },
+  };
 
   it('requires a non-empty name', () => {
     expect(createCheckoutSchema('pickup').safeParse({ ...valid, name: '' }).success).toBe(false);
+  });
+
+  it('requires a valid email', () => {
+    expect(createCheckoutSchema('pickup').safeParse({ ...valid, email: '' }).success).toBe(false);
+    expect(
+      createCheckoutSchema('pickup').safeParse({ ...valid, email: 'not-an-email' }).success,
+    ).toBe(false);
+    expect(
+      createCheckoutSchema('pickup').safeParse({ ...valid, email: 'guest@example.com' }).success,
+    ).toBe(true);
   });
 
   it('requires a valid phone', () => {

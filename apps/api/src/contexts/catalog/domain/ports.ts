@@ -10,6 +10,11 @@ export interface CatalogRepository {
   upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }>;
   upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }>;
   upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }>;
+  replaceItemModifierGroups(input: {
+    itemId: string;
+    brandId: string;
+    modifierGroupIds: readonly string[];
+  }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
@@ -25,11 +30,11 @@ export interface CatalogRepository {
     offset: number;
   }): Promise<{ rows: ItemListRow[]; total: number }>;
   getItemById(id: string): Promise<ItemDetailRow | null>;
-  listModifierGroups(): Promise<ModifierGroupListRow[]>;
+  listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
-  listStopListWithStoppedAt(): Promise<StopListEntryRow[]>;
+  listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(brandId: string): Promise<string[]>;
-  computeDraftDiff(input: { tenantId: TenantId }): Promise<{
+  computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }>;

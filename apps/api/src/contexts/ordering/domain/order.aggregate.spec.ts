@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { Currency, TenantId } from '@resto/domain';
 import { Order, type CreateOrderInput } from './order.aggregate';
-import { InvalidOrderTransitionError } from './errors';
+import { InvalidOrderTransitionError, RefundExceedsCapturedError } from './errors';
 
 const USD = Currency.parse('USD');
 
@@ -468,12 +468,12 @@ describe('cancel', () => {
 });
 
 describe('refund', () => {
-  it('transitions paid → refunded and emits OrderRefunded with amount', () => {
+  it('full refund: paid → refunded and emits OrderRefunded with amount', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.refund();
+    order.refund(1250, 0);
     expect(order.toSnapshot().status).toBe('refunded');
     const events = order.pullEvents();
     const [event] = events;
@@ -489,7 +489,7 @@ describe('refund', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     expect(() => {
-      order.refund();
+      order.refund(1250, 0);
     }).toThrow(InvalidOrderTransitionError);
   });
 
@@ -501,7 +501,7 @@ describe('refund', () => {
     order.accept();
     order.pullEvents();
     expect(() => {
-      order.refund();
+      order.refund(1250, 0);
     }).toThrow(InvalidOrderTransitionError);
   });
 });
@@ -562,6 +562,94 @@ describe('markFailed', () => {
     expect(() => {
       order.markFailed('test');
     }).toThrow(InvalidOrderTransitionError);
+  });
+});
+
+describe('requireAction (D-08 SCA state)', () => {
+  it('transitions created → requires_action and emits OrderStatusChanged', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.requireAction('pi_sca_1');
+    expect(order.toSnapshot().status).toBe('requires_action');
+    const events = order.pullEvents();
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    expect(event).toBeDefined();
+    if (!event) return;
+    expect(event.kind).toBe('OrderStatusChanged');
+    if (event.kind === 'OrderStatusChanged') {
+      expect(event.previousStatus).toBe('created');
+      expect(event.newStatus).toBe('requires_action');
+    }
+  });
+
+  it('throws InvalidOrderTransitionError from non-created states', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    expect(() => order.requireAction('pi_2')).toThrow(InvalidOrderTransitionError);
+  });
+
+  it('SCA happy path: created → requires_action → paid', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.requireAction('pi_sca_1');
+    order.pullEvents();
+    order.markPaid('pi_sca_1');
+    expect(order.toSnapshot().status).toBe('paid');
+    const events = order.pullEvents();
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    if (!event) return;
+    expect(event.kind).toBe('OrderPaid');
+  });
+});
+
+describe('partial refund (D-04)', () => {
+  it('partial refund keeps status paid and emits OrderRefunded with partial amount', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.refund(500, 0);
+    expect(order.toSnapshot().status).toBe('paid');
+    const events = order.pullEvents();
+    expect(events).toHaveLength(1);
+    const [event] = events;
+    expect(event).toBeDefined();
+    if (!event) return;
+    expect(event.kind).toBe('OrderRefunded');
+    if (event.kind === 'OrderRefunded') {
+      expect(event.amount).toBe(500);
+    }
+  });
+
+  it('cumulative full refund transitions to refunded', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.refund(500, 0);
+    order.pullEvents();
+    order.refund(750, 500);
+    expect(order.toSnapshot().status).toBe('refunded');
+  });
+
+  it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    expect(() => order.refund(1300, 0)).toThrow(RefundExceedsCapturedError);
+  });
+
+  it('throws RefundExceedsCapturedError when amount <= 0', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    expect(() => order.refund(0, 0)).toThrow(RefundExceedsCapturedError);
   });
 });
 

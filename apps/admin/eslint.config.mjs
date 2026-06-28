@@ -11,29 +11,16 @@ export default [
     },
   },
   {
-    /*
-     * shadcn-managed surface — primitives under `components/ui/**`,
-     * blocks scaffolded by the CLI (sidebar-07 lays down `app-sidebar`,
-     * `nav-{main,projects,user}`, `team-switcher`), and the
-     * `use-mobile` hook. shadcn's output uses idioms our base preset
-     * forbids (`type` aliases for prop unions, void-returning arrow
-     * shorthands for handlers). We relax the rules ONLY here so
-     * `shadcn add …` stays a clean upgrade path and our app code
-     * doesn't drift.
-     */
     files: [
-      'components/ui/**/*.{ts,tsx}',
-      'components/app-sidebar.tsx',
-      'components/nav-*.tsx',
-      'components/team-switcher.tsx',
-      'hooks/use-mobile.ts',
+      'src/components/ui/**/*.{ts,tsx}',
+      'src/components/app-sidebar.tsx',
+      'src/components/nav-*.tsx',
+      'src/components/team-switcher.tsx',
+      'src/hooks/use-mobile.ts',
     ],
     rules: {
       '@typescript-eslint/consistent-type-definitions': 'off',
       '@typescript-eslint/no-confusing-void-expression': 'off',
-      // Rules below also fire on stock shadcn templates (e.g. `form`,
-      // `progress`) — relaxing them here keeps `pnpm dlx shadcn add …`
-      // a clean upgrade path per apps/CLAUDE.md.
       '@typescript-eslint/no-unnecessary-condition': 'off',
       '@typescript-eslint/no-unnecessary-template-expression': 'off',
       '@typescript-eslint/no-unnecessary-type-conversion': 'off',
@@ -41,13 +28,26 @@ export default [
     },
   },
   {
+    files: ['src/routes/**/*.{ts,tsx}'],
+    rules: {
+      // TanStack Router's throw redirect() / throw notFound() are not Error instances
+      '@typescript-eslint/only-throw-error': 'off',
+    },
+  },
+  {
     ignores: [
-      '.next/**',
-      'next-env.d.ts',
+      'dist/**',
+      'node_modules/**',
       'eslint.config.mjs',
-      'next.config.mjs',
-      'postcss.config.mjs',
+      'vite.config.ts',
       'vitest.config.ts',
+      'app/**',
+      'lib/**',
+      'components/**',
+      'test/**',
+      'e2e/**',
+      'hooks/**',
+      'playwright.config.ts',
     ],
   },
 ];

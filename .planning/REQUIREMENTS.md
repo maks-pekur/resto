@@ -113,7 +113,7 @@
 - [ ] **SITE-05**: Guest sees cart, promo code field renders (non-functional until Phase 11), total breakdown (subtotal + delivery; modifiers and discounts wire in via Phase 7/8/11)
 - [ ] **SITE-06**: Guest provides contact info (name, phone) with optional account creation
 - [ ] **SITE-07**: Guest chooses order time (ASAP / scheduled interval)
-- [ ] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
+- [x] **SITE-08**: Guest sees order confirmation page with order number after payment success (ships in Phase 8, not Phase 6)
 - [x] **SITE-09**: Site supports per-tenant subdomain (`<slug>.resto.app`) and custom domain (`tenant_domains` table)
 - [ ] **SITE-10**: Operator-editable content pages (About / Delivery / Contact / FAQ)
 
@@ -138,28 +138,32 @@
 
 > Replace `NoopStripeConnectAdapter` with real implementation. Includes post-payment guest communications.
 
-- [ ] **PAY-01**: Stripe SDK installed; `StripeConnectAdapter` implements `StripeConnectPort`
-- [ ] **PAY-02**: Operator can initiate Stripe Connect onboarding from admin (`POST /v1/tenancy/stripe-onboarding`)
-- [ ] **PAY-03**: Stripe `account_link` generated; operator redirected to Stripe-hosted onboarding flow
-- [ ] **PAY-04**: Webhook endpoint `/webhook/stripe` validates Stripe signature; rejects invalid signatures with 400
-- [ ] **PAY-05**: `account.updated` webhook updates `tenant.stripe_account_id` and onboarding status
-- [ ] **PAY-06**: At order checkout, `PaymentIntent` created with `transfer_data.destination = tenant Stripe account` + RestOS `application_fee_amount`
-- [ ] **PAY-07**: `payment_intent.succeeded` webhook transitions order to `paid` state
-- [ ] **PAY-08**: `payment_intent.payment_failed` webhook surfaces failure to guest with retry CTA
-- [ ] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
-- [ ] **PAY-10**: Stripe webhook handler idempotent (uses inbox dedup pattern with Stripe event id)
-- [ ] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
-- [ ] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
-- [ ] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
+- [x] **PAY-01**: Stripe SDK installed; `StripeConnectAdapter` implements `StripeConnectPort`
+- [x] **PAY-02**: Operator can initiate Stripe Connect onboarding from admin (`POST /v1/tenancy/stripe-onboarding`)
+- [x] **PAY-03**: Stripe `account_link` generated; operator redirected to Stripe-hosted onboarding flow
+- [x] **PAY-04**: Webhook endpoint `/webhook/stripe` validates Stripe signature; rejects invalid signatures with 400
+- [x] **PAY-05**: `account.updated` webhook updates `tenant.stripe_account_id` and onboarding status
+- [x] **PAY-06**: At order checkout, `PaymentIntent` created as a **DIRECT charge on the connected account** (Stripe `stripeAccount` request option — restaurant is merchant-of-record per Phase 8 D-02) with `application_fee_amount` from `STRIPE_APPLICATION_FEE_AMOUNT` config (default 0 per D-01/D-03). _(2026-06-27: superseded the prior `transfer_data.destination` destination-charge wording — see 08-CONTEXT.md D-02.)_
+- [x] **PAY-07**: `payment_intent.succeeded` webhook transitions order to `paid` state
+- [x] **PAY-08**: `payment_intent.payment_failed` webhook surfaces failure to guest with retry CTA
+- [x] **PAY-09**: Refund flow creates Stripe refund + transitions order to `refunded` (full or partial)
+- [x] **PAY-10**: Stripe webhook handler idempotent (uses inbox dedup pattern with Stripe event id)
+- [x] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
+- [x] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
+- [x] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
+- [ ] **PAY-14**: Embedded Connect onboarding — KYC completed via Stripe embedded components rendered inside admin (no full off-domain redirect); pending-KYC state (PAY-13) preserved _(Phase 08.1)_
+- [ ] **PAY-15**: Connect Standard OAuth path — "connect existing Stripe" one-click for tenants who already have a Stripe account; `application_fee` still applied; tenant retains their own Stripe dashboard; no secret-key handling _(Phase 08.1)_
+- [ ] **PAY-16**: Provider-agnostic payment port — generalize `StripeConnectPort` → `PaymentProviderPort` (account onboarding, payment intent, refund, webhook verify); tenant carries a `paymentProvider` discriminator; a second provider slots in via adapter + config only, with no changes to checkout/refund/webhook services. Unblocks PAYMP-01/02/03 _(Phase 08.1)_
+- [ ] **PAY-17**: Admin onboarding-method choice — operator picks "Create new (Express)" vs "Connect existing (Standard)"; selection is resumable _(Phase 08.1)_
 
 ### Guest Notifications (`GNOTIF`)
 
 > Post-payment and post-status guest communications via Resend adapter (wired in AUTH-01). Folded into Phase 8.
 
-- [ ] **GNOTIF-01**: Guest receives order confirmation email immediately after `payment_intent.succeeded` (order #, items, total, ETA)
-- [ ] **GNOTIF-02**: Guest receives status emails when order transitions to `accepted` and to `ready` / `on-its-way` (uses Resend adapter from AUTH-01)
-- [ ] **GNOTIF-03**: Guest receives refund confirmation email when refund is initiated (full or partial)
-- [ ] **GNOTIF-04**: Email templates respect tenant brand theme (logo, accent color); per-locale templates
+- [x] **GNOTIF-01**: Guest receives order confirmation email immediately after `payment_intent.succeeded` (order #, items, total, ETA)
+- [x] **GNOTIF-02**: Guest receives status emails when order transitions to `accepted` and to `ready` / `on-its-way` (uses Resend adapter from AUTH-01)
+- [x] **GNOTIF-03**: Guest receives refund confirmation email when refund is initiated (full or partial)
+- [x] **GNOTIF-04**: Email templates respect tenant brand theme (logo, accent color); per-locale templates
 
 ### Admin Order Intake (`ORDINT`)
 
@@ -230,6 +234,7 @@
 - [ ] **FIN-04**: Operator sets VAT rate per category
 - [ ] **FIN-05**: Order detail shows VAT breakdown
 - [ ] **FIN-06**: Operator sees RestOS SaaS billing line for the period (separate from Stripe processing fees)
+- [ ] **FIN-07**: Per-tenant billing plan — RestOS charges the tenant via per-order commission (Connect `application_fee`) OR a fixed recurring subscription (Stripe Billing) OR a hybrid; the plan is configurable per tenant and drives whether/what application fee is applied at checkout
 
 ### Content & SEO (`CONT`)
 
@@ -459,24 +464,28 @@
 | ORD-11      | Phase 7       | Complete |
 | ORD-12      | Phase 7       | Complete |
 | PROMO-06    | Phase 7       | Complete |
-| PAY-01      | Phase 8       | Pending  |
-| PAY-02      | Phase 8       | Pending  |
-| PAY-03      | Phase 8       | Pending  |
-| PAY-04      | Phase 8       | Pending  |
-| PAY-05      | Phase 8       | Pending  |
-| PAY-06      | Phase 8       | Pending  |
-| PAY-07      | Phase 8       | Pending  |
-| PAY-08      | Phase 8       | Pending  |
-| PAY-09      | Phase 8       | Pending  |
-| PAY-10      | Phase 8       | Pending  |
-| PAY-11      | Phase 8       | Pending  |
-| PAY-12      | Phase 8       | Pending  |
-| PAY-13      | Phase 8       | Pending  |
-| SITE-08     | Phase 8       | Pending  |
-| GNOTIF-01   | Phase 8       | Pending  |
-| GNOTIF-02   | Phase 8       | Pending  |
-| GNOTIF-03   | Phase 8       | Pending  |
-| GNOTIF-04   | Phase 8       | Pending  |
+| PAY-01      | Phase 8       | Complete |
+| PAY-02      | Phase 8       | Complete |
+| PAY-03      | Phase 8       | Complete |
+| PAY-04      | Phase 8       | Complete |
+| PAY-05      | Phase 8       | Complete |
+| PAY-06      | Phase 8       | Complete |
+| PAY-07      | Phase 8       | Complete |
+| PAY-08      | Phase 8       | Complete |
+| PAY-09      | Phase 8       | Complete |
+| PAY-10      | Phase 8       | Complete |
+| PAY-11      | Phase 8       | Complete |
+| PAY-12      | Phase 8       | Complete |
+| PAY-13      | Phase 8       | Complete |
+| PAY-14      | Phase 08.1    | Pending  |
+| PAY-15      | Phase 08.1    | Pending  |
+| PAY-16      | Phase 08.1    | Pending  |
+| PAY-17      | Phase 08.1    | Pending  |
+| SITE-08     | Phase 8       | Complete |
+| GNOTIF-01   | Phase 8       | Complete |
+| GNOTIF-02   | Phase 8       | Complete |
+| GNOTIF-03   | Phase 8       | Complete |
+| GNOTIF-04   | Phase 8       | Complete |
 | DELV-01     | Phase 9       | Pending  |
 | DELV-02     | Phase 9       | Pending  |
 | DELV-03     | Phase 9       | Pending  |
@@ -516,6 +525,7 @@
 | FIN-04      | Phase 14      | Pending  |
 | FIN-05      | Phase 14      | Pending  |
 | FIN-06      | Phase 14      | Pending  |
+| FIN-07      | Phase 14      | Pending  |
 | CONT-01     | Phase 15      | Pending  |
 | CONT-02     | Phase 15      | Pending  |
 | CONT-03     | Phase 15      | Pending  |

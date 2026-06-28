@@ -19,5 +19,6 @@ import { OrdersController } from './interfaces/http/orders.controller';
     GetOrderService,
     RequireActiveTenantGuard,
   ],
+  exports: [ORDER_REPOSITORY, GetOrderService],
 })
 export class OrderingModule {}

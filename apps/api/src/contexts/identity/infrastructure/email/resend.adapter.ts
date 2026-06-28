@@ -6,10 +6,12 @@ import type { TenantId } from '@resto/domain';
 import type { Env } from '../../../../config/env.schema';
 import type {
   EmailAdapterPort,
+  SendGuestNotificationInput,
   SendInvitationInput,
   SendResetPasswordInput,
   SendVerificationInput,
 } from '../../domain/ports';
+import { renderGuestEmail } from '../../../../contexts/notifications/infrastructure/guest-email-templates';
 import {
   invitationBody as invitationBodyEn,
   invitationSubject as invitationSubjectEn,
@@ -67,6 +69,7 @@ const FlowKind = {
   invitation: 'invitation',
   reset_password: 'password_reset',
   verification: 'verification',
+  guest_notification: 'guest_notification',
 } as const;
 type FlowKindKey = keyof typeof FlowKind;
 type FlowSubjectName = (typeof FlowKind)[FlowKindKey];
@@ -75,6 +78,7 @@ interface SendCommand {
   readonly to: string;
   readonly subject: string;
   readonly text: string;
+  readonly html?: string | undefined;
   readonly idempotencyKey: string;
   readonly tenantId: TenantId | undefined;
   readonly userId: string | undefined;
@@ -91,6 +95,7 @@ export interface ResendClientLike {
         replyTo: string;
         subject: string;
         text: string;
+        html?: string | undefined;
       },
       options?: { idempotencyKey: string },
     ): Promise<ResendSendResult>;
@@ -223,6 +228,26 @@ export class ResendEmailAdapter implements EmailAdapterPort {
     });
   }
 
+  async sendGuestNotification(input: SendGuestNotificationInput): Promise<void> {
+    const rendered = renderGuestEmail(
+      input.kind,
+      input.locale,
+      input.brandTheme,
+      input.brandName,
+      input.vars,
+    );
+    await this.#sendWithRetry({
+      to: input.to,
+      subject: rendered.subject,
+      text: rendered.text,
+      html: rendered.html,
+      idempotencyKey: input.idempotencyKey,
+      tenantId: input.tenantId,
+      userId: undefined,
+      flowName: FlowKind.guest_notification,
+    });
+  }
+
   async verifyTransport(): Promise<void> {
     let result: ResendDomainsResult;
     try {
@@ -275,6 +300,7 @@ export class ResendEmailAdapter implements EmailAdapterPort {
                 replyTo: this.#replyTo,
                 subject: cmd.subject,
                 text: cmd.text,
+                ...(cmd.html !== undefined ? { html: cmd.html } : {}),
               },
               { idempotencyKey: cmd.idempotencyKey },
             ),
@@ -417,7 +443,8 @@ export const createResendClientAdapter = (
 ): ResendEmailAdapter => {
   const client: ResendClientLike = {
     emails: {
-      send: (payload, options) => resend.emails.send(payload, options),
+      send: (payload, options) =>
+        resend.emails.send(payload as Parameters<typeof resend.emails.send>[0], options),
     },
     domains: {
       list: () => resend.domains.list(),

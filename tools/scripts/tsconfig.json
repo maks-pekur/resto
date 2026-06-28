@@ -10,7 +10,8 @@
     "erase-tenant/**/*.ts",
     "test/**/*.ts",
     "vitest.config.ts",
-    "eslint.config.mjs"
+    "eslint.config.mjs",
+    "../../packages/db/src/sql.d.ts"
   ],
   "exclude": ["node_modules", "dist"]
 }

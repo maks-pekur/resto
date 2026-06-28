@@ -29,6 +29,7 @@ export const orders = pgTable(
     tableIdentifier: text('table_identifier'),
     customerName: text('customer_name'),
     customerPhone: text('customer_phone'),
+    customerEmail: text('customer_email'),
     subtotal: money('subtotal').notNull(),
     deliveryFee: money('delivery_fee').notNull().default('0.00'),
     serviceFee: money('service_fee').notNull().default('0.00'),
@@ -58,7 +59,7 @@ export const orders = pgTable(
     tenantParentUniqueIndex('orders', { id: table.id, tenantId: table.tenantId }),
     check(
       'orders_status_chk',
-      sql`${table.status} IN ('created','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
+      sql`${table.status} IN ('created','requires_action','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
     ),
     check(
       'orders_fulfillment_mode_chk',
@@ -133,6 +134,11 @@ export const payments = pgTable(
     currency: text('currency').notNull(),
     provider: text('provider').notNull().default('stripe'),
     providerPaymentId: text('provider_payment_id'),
+    paymentIntentId: text('payment_intent_id'),
+    latestChargeId: text('latest_charge_id'),
+    refundedAmount: money('refunded_amount').notNull().default('0.00'),
+    stripeAccountId: text('stripe_account_id'),
+    applicationFeeAmount: money('application_fee_amount').notNull().default('0.00'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .notNull()
       .default(sql`now()`),
@@ -151,12 +157,46 @@ export const payments = pgTable(
       child: { id: table.orderId, tenantId: table.tenantId },
       parent: { id: orders.id, tenantId: orders.tenantId },
     }).onDelete('cascade'),
+    tenantParentUniqueIndex('payments', { id: table.id, tenantId: table.tenantId }),
     check(
       'payments_status_chk',
-      sql`${table.status} IN ('pending','succeeded','failed','refunded')`,
+      sql`${table.status} IN ('pending','requires_action','succeeded','failed','refunded','partially_refunded')`,
     ),
     uniqueIndex('payments_provider_payment_id_uq')
       .on(table.provider, table.providerPaymentId)
       .where(sql`${table.providerPaymentId} IS NOT NULL`),
+    uniqueIndex('payments_payment_intent_id_uq')
+      .on(table.tenantId, table.paymentIntentId)
+      .where(sql`payment_intent_id IS NOT NULL`),
+  ],
+);
+
+export const paymentRefunds = pgTable(
+  'payment_refunds',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    paymentId: uuid('payment_id').notNull(),
+    stripeRefundId: text('stripe_refund_id').notNull(),
+    amount: money('amount').notNull(),
+    reason: text('reason').notNull(),
+    status: text('status').notNull().default('pending'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+  },
+  (table) => [
+    foreignKey({
+      name: 'payment_refunds_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'payment_refunds_payment_fk',
+      child: { id: table.paymentId, tenantId: table.tenantId },
+      parent: { id: payments.id, tenantId: payments.tenantId },
+    }).onDelete('restrict'),
+    check('payment_refunds_status_chk', sql`${table.status} IN ('pending','succeeded','failed')`),
+    uniqueIndex('payment_refunds_stripe_refund_id_uq').on(table.tenantId, table.stripeRefundId),
   ],
 );

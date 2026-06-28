@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 07.5-11-PLAN.md
-last_updated: '2026-06-21T16:21:10.130Z'
-last_activity: 2026-06-21
+status: verifying
+stopped_at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
+last_updated: '2026-06-28T10:54:35.040Z'
+last_activity: 2026-06-27
 progress:
-  total_phases: 19
-  completed_phases: 8
-  total_plans: 59
-  completed_plans: 50
-  percent: 42
+  total_phases: 21
+  completed_phases: 9
+  total_plans: 76
+  completed_plans: 68
+  percent: 43
 ---
 
 # Project State
@@ -21,16 +21,24 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 7.5 — Production Deploy
+**Current focus:** Phase 8 (Payments) **CODE-COMPLETE** — all 8 plans executed (full money path: schema, adapter, webhooks, checkout API+web, emails, refunds; ~700 tests green). PENDING = 3 live founder smokes (Stripe Connect test setup + Stripe CLI + test card): onboarding click-through, test-card payment, refund. After smokes → Phase 8 done; next = Phase 10 (Admin Order Intake). (Phase 7.5 prod stand-up still DEFERRED to first customer; target VPS+Cloudflare.)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 7.5 (Production Deploy) — EXECUTING
-Plan: 3 of 11
-Next: Phase 07 — Ordering (the largest single context build; hard prerequisite for Phases 8/9/10/11+; includes PROMO-06 discount engine + ORD-11 outbox claim-token). Ready to plan via /gsd:plan-phase.
-Status: Ready to execute
-Last activity: 2026-06-21
+Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete)
+Plan: 7 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict FIX-THEN-EXECUTE — 2 blockers + HIGH security gap + scope concern in the full rework).
+
+CR-04 SPLIT DECISION (founder, 2026-06-26):
+
+- DONE — quick task 260626-mzp (2026-06-26): all 3 cross-brand read leaks closed — draft-diff (added @RequireBrand + computeDraftDiff brandId filter), listModifierGroups, listStopListWithStoppedAt now brand-scoped; cross-brand isolation e2e added (catalog.e2e 26/26 green, zero regressions). Commits b810944 (fix) + a098c64 (test) on admin-vite-spa. 7.6's security part is closed.
+- DEFERRED to its own phase before Phase 8 (suggest 07.7-per-brand-publish): the heavy per-brand publish rework (migration 0054 + version-per-brand + v2 events + per-brand ETag + brand-keyed delayed-publish). Not needed for a single-brand first customer; bloats a closing phase. Plans 07.6-08/09 marked `deferred: true`, retained as reference; re-plan the future phase against 07.6-08-RESEARCH.md + 07.6-REVIEWS.md (REVIEWS also lists the 2 blockers to fix first: missing migration-journal entry + breaking db/e2e tests).
+
+Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
+DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
+Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
+Status: Phase complete — ready for verification
+Last activity: 2026-06-27
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -38,7 +46,7 @@ Last activity: 2026-06-21
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 89%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -90,8 +98,29 @@ _Updated after each plan completion_
 | Phase 07-ordering P05 | 90 | 3 tasks | 9 files |
 | Phase 07.5-production-deploy P02 | 90 | 2 tasks | 10 files |
 | Phase 07.5-production-deploy P11 | 45 | 2 tasks | 5 files |
+| Phase 07.6-admin-vite-spa P01 | 20min | 3 tasks | 4 files |
+| Phase 07.6 P02 | 20min | 3 tasks | 3 files |
+| Phase 07.6-admin-vite-spa P03 | 51 | 3 tasks | 27 files |
+| Phase 07.6 P04 | 15m | 3 tasks | 58 files |
+| Phase 07.6-admin-vite-spa P05 | 300 | 4 tasks | 41 files |
+| Phase 07.6-admin-vite-spa P06 | 11min | 3 tasks | 13 files |
+| Phase 07.5-production-deploy P04 | 331 | 2 tasks | 2 files |
+| Phase 07.5-production-deploy P03 | 30 | 3 tasks | 18 files |
+| Phase 07.5-production-deploy P05 | 10 | 4 tasks | 8 files |
+| Phase 08-payments-stripe-connect P01 | 65 | 2 tasks | 9 files |
+| Phase 08-payments-stripe-connect P02 | 100 | 3 tasks | 18 files |
+| Phase 08-payments-stripe-connect P03 | 29 | 2 tasks | 20 files |
+| Phase 08-payments-stripe-connect P07 | 130 | 2 tasks | 10 files |
+| Phase 08-payments-stripe-connect P04a | 55 | 2 tasks | 11 files |
+| Phase 08 P06 | 90 | 2 tasks | 15 files |
+| Phase 08-payments-stripe-connect P04b | 90 | 2 tasks | 13 files |
+| Phase 08 P05 | 90min | 2 tasks | 10 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 08.1 inserted after Phase 8: Payments provider layer + onboarding UX (embedded Connect, Standard OAuth, provider-agnostic PaymentProviderPort); pulled into MVP-1, extends Phase 8, does not block Phase 10 (URGENT)
 
 ### Decisions
 
@@ -132,6 +161,23 @@ Recent decisions affecting current work:
 - [Phase ?]: 07-02: OrderCreatedV1Payload excludes customer PII — GDPR minimisation (T-07-PII)
 - [Phase ?]: No disjunctive fallback; feeds envelope directly to fromEnvelopeWithTx
 - [Phase ?]: Next.js 16 Turbopack monorepo Docker: WORKDIR to app dir + turbopack.root via import.meta.url; server-only env vars need ARG placeholders for build-time page collection
+- [Phase ?]: owner-only permission gate
+- [Phase ?]: admin SPA trusted origin
+- [Phase ?]: better-auth v1.4.22 forgetPassword missing on client — use direct fetch to /api/auth/request-password-reset
+- [Phase ?]: Brand-in-URL ($brandSlug param) replaces HMAC active-brand cookie — D-03 compliant
+- [Phase ?]: dashboard/index.tsx self-contained with TodaysStopListPlaceholder stub; plan 07.6-05 overwrites with live catalog data
+- [Phase ?]: 07.6-05
+- [Phase ?]: 07.6-05
+- [Phase ?]: 07.6-05
+- [Phase ?]: useParams strict:false for parent brandSlug in nested brand routes
+- [Phase 07.5-production-deploy]: D-05: DIRECT_DB_CONNECTION @Optional token; dev falls back to pooled — Prevents Neon PgBouncer zombie-lock in prod
+- [Phase 07.5-production-deploy]: G-03: OutboxDispatcherService.getOutboxLeaderHealth() exposes isLeader+staleMs; /readyz 503 on stall — LB drains wedged leader instead of silently queuing paid-order events
+- [Phase 07.5-production-deploy]: G-04: Sentry init in bootstrap-telemetry.ts/instrumentation.ts/main.tsx, all SENTRY_DSN-guarded — Dev/CI boot unchanged when DSN absent; captures prod exceptions before first customer
+- [Phase 07.5-production-deploy]: G-05: isLocalhostUrl() regex rejects localhost API origin in production for website and admin — A forgotten NEXT_PUBLIC_API_ORIGIN/VITE_API_ORIGIN crashes build, never silently routes users to localhost
+- [Phase ?]: resto_auth NOBYPASSRLS: permissive policies on 4 BA-owned tables via migration 0054 (RDS-compatible, D-04)
+- [Phase ?]: PAY-12: seed lastDispatchAt at lock acquisition to close never-dispatched false-negative; backlog-aware probe distinguishes idle leader from wedged leader
+- [Phase ?]: PAY-11: StripeAccountId z.string().max(255) exported from tenant.aggregate.ts, parsed on account.updated event.account at the trust boundary
+- [Phase ?]: NotificationOrderDrizzleRepository isolates DB queries per ADR-0020 I-1
 
 ### Pending Todos
 
@@ -147,18 +193,22 @@ None yet.
 
 ### Quick Tasks Completed
 
-| #          | Description                                                                                                             | Date       | Commit  | Directory                                                                                                           |
-| ---------- | ----------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
-| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                                                       | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
-| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                                               | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
-| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                 | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
-| 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
-| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                         | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
-| 260621-cyf | Fix red CI on main — prettier format + build-time env for admin/website next builds                                     | 2026-06-21 | f8e18ce | [260621-cyf-fix-red-ci-on-main-prettier-format-missi](./quick/260621-cyf-fix-red-ci-on-main-prettier-format-missi/) |
-| 260621-dai | BLOCK-2: erase ordering tables (orders/items/modifiers/payments) in tenancy_erase_tenant — GDPR PII + orders→brands FK  | 2026-06-21 | 4718d01 | [260621-dai-fix-block-2-tenancy-erase-tenant-must-de](./quick/260621-dai-fix-block-2-tenancy-erase-tenant-must-de/) |
-| 260621-e0m | HIGH-12 order response contract (status/total/currency) + HIGH-9 payments.provider_payment_id unique index              | 2026-06-21 | b3371c5 | [260621-e0m-ordering-highs-order-response-contract-h](./quick/260621-e0m-ordering-highs-order-response-contract-h/) |
-| 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design        | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
-| 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                    | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
+| #          | Description                                                                                                                                  | Date       | Commit  | Directory                                                                                                           |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------- | ---------- | ------- | ------------------------------------------------------------------------------------------------------------------- |
+| 260613-qff | Isolation test suite fail-closed in CI (AUDIT #5)                                                                                            | 2026-06-13 | 961b104 | [260613-qff-isolation-test-fail-closed](./quick/260613-qff-isolation-test-fail-closed/)                             |
+| 260613-qmn | Audit hygiene: 5xx title redaction + db logger redact (AUDIT #22/#23/#24)                                                                    | 2026-06-13 | 81a32c7 | [260613-qmn-audit-hygiene](./quick/260613-qmn-audit-hygiene/)                                                       |
+| 260615-gl7 | Align catalog schema with Syrve `/api/1/nomenclature` (code/weight/measureUnit/min-max)                                                      | 2026-06-15 | 9d26475 | [260615-gl7-catalog-syrve-fields](./quick/260615-gl7-catalog-syrve-fields/)                                         |
+| 260620-vss | BLOCK-1: server-authoritative order pricing (ignore client prices/discount) + pre-existing OrdersController @Inject fix                      | 2026-06-20 | 18ab957 | [260620-vss-fix-block-1-ordering-create-order-trusts](./quick/260620-vss-fix-block-1-ordering-create-order-trusts/) |
+| 260620-wyq | BLOCK-4: close prod-guardrail fail-open on BETTER_AUTH_SECRET / AUDIT_ERASURE_SALT placeholders                                              | 2026-06-20 | a3e935c | [260620-wyq-fix-block-4-prod-guardrail-fail-open-on-](./quick/260620-wyq-fix-block-4-prod-guardrail-fail-open-on-/) |
+| 260621-cyf | Fix red CI on main — prettier format + build-time env for admin/website next builds                                                          | 2026-06-21 | f8e18ce | [260621-cyf-fix-red-ci-on-main-prettier-format-missi](./quick/260621-cyf-fix-red-ci-on-main-prettier-format-missi/) |
+| 260621-dai | BLOCK-2: erase ordering tables (orders/items/modifiers/payments) in tenancy_erase_tenant — GDPR PII + orders→brands FK                       | 2026-06-21 | 4718d01 | [260621-dai-fix-block-2-tenancy-erase-tenant-must-de](./quick/260621-dai-fix-block-2-tenancy-erase-tenant-must-de/) |
+| 260621-e0m | HIGH-12 order response contract (status/total/currency) + HIGH-9 payments.provider_payment_id unique index                                   | 2026-06-21 | b3371c5 | [260621-e0m-ordering-highs-order-response-contract-h](./quick/260621-e0m-ordering-highs-order-response-contract-h/) |
+| 260621-ef1 | HIGH-4 modifier per-unit pricing + HIGH-13 catalog UUID path validation (400 not 500); HIGH-1 resolved by design                             | 2026-06-21 | d95d303 | [260621-ef1-high-4-modifier-per-unit-pricing-high-13](./quick/260621-ef1-high-4-modifier-per-unit-pricing-high-13/) |
+| 260621-est | HIGH-5 modifier group min/max/required + option minAmount validation; HIGH-10 RLS-forced table audit                                         | 2026-06-21 | c15014e | [260621-est-high-5-modifier-group-validation-high-10](./quick/260621-est-high-5-modifier-group-validation-high-10/) |
+| 260623-vwy | 07.6 CR-01: honor x-tenant-id on operator routes in prod (slug stays gated) + prod-mode unit tests                                           | 2026-06-23 | 527969c | [260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout](./quick/260623-vwy-cr-01-honor-x-tenant-id-on-operator-rout/) |
+| 260623-waj | 07.6 CR-03a: PUT /v1/catalog/items/:id/modifier-groups replace-links endpoint (migration 0053 DELETE grant) + e2e                            | 2026-06-23 | be64970 | [260623-waj-cr-03a-item-modifier-group-links-endpoin](./quick/260623-waj-cr-03a-item-modifier-group-links-endpoin/) |
+| 260623-xb6 | 07.6 WR-02 autosave retry ref-stable + WR-04 shared constant-time token compare (closes token-length leak)                                   | 2026-06-24 | c03f6d1 | [260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-](./quick/260623-xb6-wr-02-autosave-retry-ref-wr-04-constant-/) |
+| 260626-mzp | 07.6 CR-04 split: brand-scope 3 catalog reads (draft-diff + modifier-groups + stop-list) — close cross-brand leaks + cross-brand e2e (26/26) | 2026-06-26 | a098c64 | [260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra](./quick/260626-mzp-fix-3-cross-brand-catalog-read-leaks-dra/) |
 
 ## Deferred Items
 
@@ -184,6 +234,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-21T16:21:10.120Z
-Stopped at: Completed 07.5-11-PLAN.md
-Resume file: None
+Last session: 2026-06-28T10:54:35.029Z
+Stopped at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
+Resume file: .planning/phases/08.1-payments-provider-layer-and-onboarding-ux/08.1-CONTEXT.md

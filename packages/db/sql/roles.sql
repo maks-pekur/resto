@@ -75,6 +75,16 @@ BEGIN
 END
 $$;
 
+-- Migration 0053 grants DELETE on the link table so replaceItemModifierGroups can delete+reinsert
+-- links. Restating it here keeps the end state convergent on fresh setups regardless of order.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'menu_item_modifier_groups') THEN
+    EXECUTE 'GRANT DELETE ON menu_item_modifier_groups TO resto_app';
+  END IF;
+END
+$$;
+
 -- RES-206: BA credential tables are resto_auth-only (ADR-0013).
 -- Revoke resto_app to prevent SELECT * leak of password hashes, OAuth
 -- tokens, 2FA secrets, session tokens. Excluded from runtime app role

@@ -25,12 +25,14 @@ export {
   type TenantContext,
 } from './context';
 export {
+  assertAuthRoleNoBypass,
   assertInboxProcessedDeletable,
   assertNoBaCredentialAccess,
   assertNoRlsBypass,
   assertSetConfigRevoked,
   assertTenantLockInstalled,
   assertWithoutTenantCallsiteRegistered,
+  AuthRoleBypassRlsError,
   BaCredentialAccessNotRevokedError,
   InboxProcessedDeleteMissingError,
   RlsBypassError,

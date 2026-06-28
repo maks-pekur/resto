@@ -68,6 +68,6 @@ describe('RES-252 Phase 2b: withoutTenant allowlist parity', () => {
     // NOT on the allowlist: they sweep BA-owned auth tables via resto_auth
     // (AuthDrizzle, which owns those tables), not resto_app's `withoutTenant`
     // (whose privileges on those tables are revoked — migration 0027).
-    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(9);
+    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(10);
   });
 });

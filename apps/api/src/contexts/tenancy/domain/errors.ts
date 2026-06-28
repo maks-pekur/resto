@@ -99,3 +99,14 @@ export class TenantSuspensionNotAllowedError extends Error {
     this.name = 'TenantSuspensionNotAllowedError';
   }
 }
+
+export class StripeOnboardingFailedError extends Error {
+  constructor(
+    public readonly tenantId: string,
+    cause?: Error,
+  ) {
+    super(`Stripe onboarding failed for tenant "${tenantId}".`);
+    this.name = 'StripeOnboardingFailedError';
+    if (cause !== undefined) this.cause = cause;
+  }
+}

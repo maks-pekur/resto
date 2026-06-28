@@ -33,6 +33,8 @@ export const buildOriginMatcher = (patterns: readonly string[]): ((origin: strin
 
 const isInternalRoute = (url: string): boolean => url.startsWith('/internal/v1/');
 
+const STRIPE_WEBHOOK_PATH = '/webhook/stripe';
+
 /**
  * Best-effort email extraction from a parsed BA request body. BA's
  * sign-in/reset endpoints accept JSON or `application/x-www-form-urlencoded`;
@@ -162,7 +164,10 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
       if (req.url.startsWith('/api/auth/sign-in/email')) return env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN;
       return env.RATE_LIMIT_PUBLIC_PER_MIN;
     },
-    allowList: (req: FastifyRequest): boolean => req.url === '/healthz',
+    // Stripe webhook is rate-limit-exempt: a 429 makes Stripe retry
+    // indefinitely (self-DoS).
+    allowList: (req: FastifyRequest): boolean =>
+      req.url === '/healthz' || req.url === STRIPE_WEBHOOK_PATH,
     errorResponseBuilder: (_req: FastifyRequest, context: RateLimitContext): unknown => ({
       // Shape matches NestJS HttpException response convention
       // (`message`, `code`) so `ProblemDetailsFilter` derives title/type

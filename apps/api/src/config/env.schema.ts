@@ -23,6 +23,29 @@ export const envSchema = z
     DATABASE_URL: z.string().url(),
     /** Schema-owner URL — used by migrations only, never by the runtime app. */
     DATABASE_ADMIN_URL: z.string().url().optional(),
+    /**
+     * Unpooled, session-pinned Postgres connection for the outbox
+     * dispatcher's advisory lock (D-05 / Neon PgBouncer transaction-mode
+     * footgun). A session-level advisory lock (`pg_try_advisory_lock`)
+     * must live on a dedicated backend that is never returned to a pooler
+     * between queries. Required outside dev/test (enforced by
+     * superRefine); in dev falls back to DATABASE_URL so the local docker
+     * stack needs no extra env var.
+     */
+    DATABASE_DIRECT_URL: z.string().url().optional(),
+    /**
+     * Sentry Cloud DSN for unhandled-exception capture (G-04). Optional
+     * at all times — Sentry is observability, not a correctness gate.
+     * When absent the init is a silent no-op; api, website, and admin all
+     * boot normally without it.
+     */
+    SENTRY_DSN: z.string().url().optional(),
+    /**
+     * Milliseconds since last successful dispatch before /readyz marks the
+     * outbox leader as stalled (G-03). Default 30s — aligns with PAY-12's
+     * ">30s stall" SLA (SC-5 ROADMAP). Operators may raise for bursty queues.
+     */
+    OUTBOX_STALL_THRESHOLD_MS: z.coerce.number().int().positive().default(30_000),
 
     NATS_URL: z.string().url(),
     /** JetStream stream the app's events flow through. */
@@ -216,6 +239,14 @@ export const envSchema = z
     MAILHOG_HOST: z.string().min(1).default('localhost'),
     /** MailHog SMTP port (dev adapter target). Matches docker-compose.dev.yml. */
     MAILHOG_PORT: z.coerce.number().int().positive().default(1025),
+
+    /** Stripe platform secret key. Never log this value. */
+    STRIPE_SECRET_KEY: z.string().min(1).optional(),
+    STRIPE_APPLICATION_FEE_AMOUNT: z.coerce.number().int().nonnegative().default(0),
+    STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
+    STRIPE_CONNECT_RETURN_URL: z.string().url().default('http://localhost:3001/stripe/return'),
+    STRIPE_CONNECT_REFRESH_URL: z.string().url().default('http://localhost:3001/stripe/refresh'),
+    STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {
@@ -233,6 +264,7 @@ export const envSchema = z
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
         'INTERNAL_API_TOKEN',
+        'DATABASE_DIRECT_URL',
       ] as const) {
         if (!env[key]?.trim()) {
           ctx.addIssue({

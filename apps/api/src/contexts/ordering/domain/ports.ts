@@ -1,9 +1,14 @@
+import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
 import type { Order } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
+  update(order: Order, tx?: RestoTx): Promise<void>;
   findById(id: OrderId): Promise<Order | null>;
+  // ADR-0020 I-6: background/webhook paths run under BYPASSRLS with no ALS tenant —
+  // callers must supply tx + tenantId explicitly instead of using findById.
+  findByIdInTx(tx: RestoTx, id: OrderId, tenantId: string): Promise<Order | null>;
   findByIdempotencyKey(tenantId: TenantId, key: string): Promise<Order | null>;
 }
 

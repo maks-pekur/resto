@@ -24,7 +24,6 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 interface AuthedTenant {
   id: string;
   slug: string;
-  internal: { 'x-internal-token': string; 'x-tenant-slug': string };
   authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
 }
 
@@ -48,12 +47,11 @@ const setupAuthedTenant = async (
   return {
     id: tenant.id,
     slug,
-    internal: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': slug },
     authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug },
   };
 };
 
-suite('Catalog — Phase 4b read + archive HTTP surface', () => {
+suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
   let stack: RealStack;
   let readsA: AuthedTenant;
   let readsB: AuthedTenant;
@@ -84,6 +82,27 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     await stopRealStack(stack);
   });
 
+  it('GET v1/catalog/categories returns 401 when unauthenticated', async () => {
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/categories',
+    });
+    expect(res.statusCode === 401 || res.statusCode === 403).toBe(true);
+  }, 30_000);
+
+  it('GET v1/catalog/categories returns 403 when x-brand-slug is out of scope', async () => {
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/categories',
+      headers: {
+        cookie: readsA.authed.cookie,
+        'x-tenant-id': readsA.authed['x-tenant-id'],
+        'x-brand-slug': readsB.authed['x-brand-slug'],
+      },
+    });
+    expect(res.statusCode).toBe(403);
+  }, 30_000);
+
   it('GET /categories returns own-tenant categories filtered by parentId and sorted by sortOrder', async () => {
     const top1 = await stack.app.inject({
       method: 'POST',
@@ -110,8 +129,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const topRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/categories',
-      headers: readsA.internal,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
     });
     expect(topRes.statusCode).toBe(200);
     const topBody = topRes.json<{
@@ -123,8 +142,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const childRes = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/categories?parentId=${parentId}`,
-      headers: readsA.internal,
+      url: `/v1/catalog/categories?parentId=${parentId}`,
+      headers: readsA.authed,
     });
     expect(childRes.statusCode).toBe(200);
     const childBody = childRes.json<{
@@ -174,8 +193,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const listRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/items',
-      headers: readsA.internal,
+      url: '/v1/catalog/items',
+      headers: readsA.authed,
     });
     expect(listRes.statusCode).toBe(200);
     const listBody = listRes.json<{
@@ -189,11 +208,10 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(row?.status).toBe('draft');
     expect(typeof listBody.total).toBe('number');
 
-    // Filter by status=published (should NOT include our draft item).
     const pubRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/items?status=published',
-      headers: readsA.internal,
+      url: '/v1/catalog/items?status=published',
+      headers: readsA.authed,
     });
     expect(pubRes.statusCode).toBe(200);
     const pubBody = pubRes.json<{ items: { id: string }[] }>();
@@ -246,8 +264,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const detail = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/items/${itemId}`,
-      headers: readsA.internal,
+      url: `/v1/catalog/items/${itemId}`,
+      headers: readsA.authed,
     });
     expect(detail.statusCode).toBe(200);
     const body = detail.json<{
@@ -284,8 +302,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     const itemId = itemA.json<{ id: string }>().id;
     const sniff = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/items/${itemId}`,
-      headers: readsB.internal,
+      url: `/v1/catalog/items/${itemId}`,
+      headers: readsB.authed,
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
@@ -311,8 +329,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const listRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/modifier-groups',
-      headers: readsA.internal,
+      url: '/v1/catalog/modifier-groups',
+      headers: readsA.authed,
     });
     expect(listRes.statusCode).toBe(200);
     const list = listRes.json<{
@@ -344,8 +362,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const detail = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/modifier-groups/${groupId}`,
-      headers: readsA.internal,
+      url: `/v1/catalog/modifier-groups/${groupId}`,
+      headers: readsA.authed,
     });
     expect(detail.statusCode).toBe(200);
     const body = detail.json<{
@@ -359,8 +377,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
   it('GET /modifier-groups/:id returns 404 for unknown id', async () => {
     const res = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/modifier-groups/00000000-0000-0000-0000-000000000000',
-      headers: readsA.internal,
+      url: '/v1/catalog/modifier-groups/00000000-0000-0000-0000-000000000000',
+      headers: readsA.authed,
     });
     expect(res.statusCode).toBe(404);
   }, 60_000);
@@ -396,8 +414,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const listRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/stop-list',
-      headers: readsA.internal,
+      url: '/v1/catalog/stop-list',
+      headers: readsA.authed,
     });
     expect(listRes.statusCode).toBe(200);
     const body = listRes.json<{
@@ -408,11 +426,14 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
     expect(entry?.stoppedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   }, 60_000);
 
-  it('GET /draft-diff returns unpublishedCount and capped items', async () => {
+  it('GET /draft-diff returns unpublishedCount and capped items (tenant-only, no brand required)', async () => {
     const res = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/draft-diff',
-      headers: readsA.internal,
+      url: '/v1/catalog/draft-diff',
+      headers: {
+        cookie: readsA.authed.cookie,
+        'x-tenant-id': readsA.authed['x-tenant-id'],
+      },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
@@ -448,8 +469,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const listRes = await stack.app.inject({
       method: 'GET',
-      url: '/internal/v1/catalog/categories',
-      headers: readsA.internal,
+      url: '/v1/catalog/categories',
+      headers: readsA.authed,
     });
     const list = listRes.json<{ items: { id: string; status: string }[] }>();
     expect(list.items.find((i) => i.id === id)?.status).toBe('archived');
@@ -501,8 +522,8 @@ suite('Catalog — Phase 4b read + archive HTTP surface', () => {
 
     const detail = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/items/${id}`,
-      headers: readsA.internal,
+      url: `/v1/catalog/items/${id}`,
+      headers: readsA.authed,
     });
     const body = detail.json<{ status: string }>();
     expect(body.status).toBe('archived');

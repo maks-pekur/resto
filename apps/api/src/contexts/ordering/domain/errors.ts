@@ -61,6 +61,22 @@ export class OrderModifierSelectionInvalidError extends Error {
   }
 }
 
+export class RefundExceedsCapturedError extends Error {
+  readonly kind = 'RefundExceedsCapturedError' as const;
+  constructor(
+    public readonly orderId: string,
+    public readonly requestedMinor: number,
+    public readonly alreadyRefundedMinor: number,
+    public readonly capturedMinor: number,
+  ) {
+    super(
+      `Refund of ${requestedMinor} minor units on order "${orderId}" would exceed captured total ` +
+        `(already refunded: ${alreadyRefundedMinor}, captured: ${capturedMinor}).`,
+    );
+    this.name = 'RefundExceedsCapturedError';
+  }
+}
+
 export type OrderDomainError =
   | OrderNotFoundError
   | DuplicateOrderKeyError
@@ -68,4 +84,5 @@ export type OrderDomainError =
   | OrderItemUnavailableError
   | OrderItemNotOrderableError
   | OrderModifierNotAvailableError
-  | OrderModifierSelectionInvalidError;
+  | OrderModifierSelectionInvalidError
+  | RefundExceedsCapturedError;

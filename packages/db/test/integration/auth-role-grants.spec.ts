@@ -208,3 +208,252 @@ suite('RES-206: resto_app cannot access BA credential tables', () => {
     await appClient`SELECT 1 FROM "user" LIMIT 1`;
   });
 });
+
+// ─── D-04 / 07.5-05: policy-based access (NOBYPASSRLS) suites ───────────────
+
+const NOBYPASS_AUTH_PWD = 'nobypass_auth_test_pwd_1234';
+const NOBYPASS_APP_PWD = 'nobypass_app_test_pwd_1234';
+
+suite(
+  'D-04: resto_auth operates on RLS-enabled BA tables WITHOUT BYPASSRLS (via permissive policies)',
+  () => {
+    let container: StartedPostgreSqlContainer;
+    let authClient: Sql;
+    let tenantId: string;
+    let orgMemberId: string;
+    let invitationId: string;
+    let orgRoleId: string;
+
+    beforeAll(async () => {
+      container = await new PostgreSqlContainer('postgres:16-alpine')
+        .withDatabase('resto_test')
+        .withUsername('resto_test')
+        .withPassword('resto_test')
+        .start();
+
+      const adminUrl = container.getConnectionUri();
+      const admin = postgres(adminUrl, { max: 1, prepare: false });
+      try {
+        await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
+        await provisionAuthRole(admin, { authPassword: NOBYPASS_AUTH_PWD });
+
+        const [t] = await admin<{ id: string }[]>`
+          INSERT INTO tenants (slug, display_name) VALUES ('nobypass-t', 'NoBypasS T')
+          RETURNING id
+        `;
+        if (!t) throw new Error('failed to seed tenant');
+        tenantId = t.id;
+
+        // Seed a BA "user" row so member/invitation FKs resolve.
+        const userId = `nobypass-u-${Date.now()}`;
+        await admin`
+          INSERT INTO "user" (id, name, email, email_verified, requires_password_change)
+          VALUES (${userId}, 'NoBypass', ${'nb@example.com'}, false, false)
+        `;
+
+        orgMemberId = `nobypass-m-${Date.now()}`;
+        invitationId = `nobypass-i-${Date.now()}`;
+        orgRoleId = `nobypass-r-${Date.now()}`;
+
+        // Pre-seed member/invitation/organization_role as admin so resto_auth
+        // can UPDATE and DELETE them in the CRUD round-trip below.
+        await admin`
+          INSERT INTO member (id, organization_id, user_id, role, created_at)
+          VALUES (${orgMemberId}, ${tenantId}, ${userId}, 'member', now())
+        `;
+        await admin`
+          INSERT INTO invitation (id, organization_id, email, role, status, inviter_id, expires_at)
+          VALUES (${invitationId}, ${tenantId}, 'invite@example.com', 'member', 'pending', ${userId}, now() + interval '1 day')
+        `;
+        await admin`
+          INSERT INTO organization_role (id, organization_id, role, permission)
+          VALUES (${orgRoleId}, ${tenantId}, 'editor', 'create:content')
+        `;
+      } finally {
+        await admin.end({ timeout: 5 });
+      }
+
+      const authUrl = new URL(adminUrl);
+      authUrl.username = RESTO_AUTH_ROLE;
+      authUrl.password = NOBYPASS_AUTH_PWD;
+      // Connect as resto_auth WITHOUT setting app.current_tenant — only the
+      // permissive USING(true) policy can make rows visible.
+      authClient = postgres(authUrl.toString(), { max: 1, prepare: false });
+    }, 90_000);
+
+    afterAll(async () => {
+      await authClient.end({ timeout: 5 });
+      await container.stop({ timeout: 5_000 });
+    });
+
+    it('resto_auth is provisioned NOBYPASSRLS (control: no residual bypass)', async () => {
+      const rows = await authClient<{ rolbypassrls: boolean }[]>`
+        SELECT rolbypassrls FROM pg_roles WHERE rolname = 'resto_auth'
+      `;
+      expect(rows[0]?.rolbypassrls).toBe(false);
+    });
+
+    it('can SELECT / INSERT / UPDATE / DELETE on member WITHOUT setting app.current_tenant', async () => {
+      // SELECT pre-seeded row — permissive USING(true) makes it visible.
+      const sel = await authClient<{ id: string }[]>`
+        SELECT id FROM member WHERE id = ${orgMemberId}
+      `;
+      expect(sel.length).toBe(1);
+
+      const newId = `nobypass-m2-${Date.now()}`;
+      const userId2 = `nobypass-u2-${Date.now()}`;
+      await authClient`
+        INSERT INTO "user" (id, name, email, email_verified, requires_password_change)
+        VALUES (${userId2}, 'U2', ${'u2@example.com'}, false, false)
+      `;
+      await authClient`
+        INSERT INTO member (id, organization_id, user_id, role, created_at)
+        VALUES (${newId}, ${tenantId}, ${userId2}, 'admin', now())
+      `;
+      await authClient`UPDATE member SET role = 'owner' WHERE id = ${newId}`;
+      await authClient`DELETE FROM member WHERE id = ${newId}`;
+    });
+
+    it('can SELECT / INSERT / UPDATE / DELETE on invitation WITHOUT setting app.current_tenant', async () => {
+      const sel = await authClient<{ id: string }[]>`
+        SELECT id FROM invitation WHERE id = ${invitationId}
+      `;
+      expect(sel.length).toBe(1);
+
+      const newInvId = `nobypass-i2-${Date.now()}`;
+      const invUserId = `nobypass-iu-${Date.now()}`;
+      await authClient`
+        INSERT INTO "user" (id, name, email, email_verified, requires_password_change)
+        VALUES (${invUserId}, 'InvU', ${'invu@example.com'}, false, false)
+      `;
+      await authClient`
+        INSERT INTO invitation (id, organization_id, email, role, status, inviter_id, expires_at)
+        VALUES (${newInvId}, ${tenantId}, 'newinvite@example.com', 'member', 'pending', ${invUserId}, now() + interval '1 day')
+      `;
+      await authClient`UPDATE invitation SET status = 'accepted' WHERE id = ${newInvId}`;
+      await authClient`DELETE FROM invitation WHERE id = ${newInvId}`;
+    });
+
+    it('can SELECT / INSERT / UPDATE / DELETE on organization_role WITHOUT setting app.current_tenant', async () => {
+      const sel = await authClient<{ id: string }[]>`
+        SELECT id FROM organization_role WHERE id = ${orgRoleId}
+      `;
+      expect(sel.length).toBe(1);
+
+      const newRoleId = `nobypass-r2-${Date.now()}`;
+      await authClient`
+        INSERT INTO organization_role (id, organization_id, role, permission)
+        VALUES (${newRoleId}, ${tenantId}, 'viewer', 'read:content')
+      `;
+      await authClient`UPDATE organization_role SET role = 'reader' WHERE id = ${newRoleId}`;
+      await authClient`DELETE FROM organization_role WHERE id = ${newRoleId}`;
+    });
+
+    it('can SELECT / UPDATE on tenants WITHOUT setting app.current_tenant', async () => {
+      const sel = await authClient<{ id: string }[]>`
+        SELECT id FROM tenants WHERE id = ${tenantId}
+      `;
+      expect(sel.length).toBe(1);
+      await authClient`UPDATE tenants SET display_name = 'Renamed by auth' WHERE id = ${tenantId}`;
+    });
+
+    it('is still denied on domain tables not granted to resto_auth (member_brand_scope)', async () => {
+      // Proves access comes from grant+policy, not a residual bypass.
+      await expectPermissionDenied(authClient`SELECT 1 FROM member_brand_scope LIMIT 1`);
+    });
+  },
+);
+
+suite('D-04: resto_app isolation is intact after the resto_auth permissive-policy change', () => {
+  let container: StartedPostgreSqlContainer;
+  let appClient: Sql;
+  let tenantAId: string;
+  let tenantBId: string;
+  let memberAId: string;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer('postgres:16-alpine')
+      .withDatabase('resto_test')
+      .withUsername('resto_test')
+      .withPassword('resto_test')
+      .start();
+
+    const adminUrl = container.getConnectionUri();
+    const admin = postgres(adminUrl, { max: 1, prepare: false });
+    try {
+      await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
+      await provisionAuthRole(admin, { authPassword: NOBYPASS_AUTH_PWD });
+      await provisionAppRole(admin, { appPassword: NOBYPASS_APP_PWD });
+
+      const [tA] = await admin<{ id: string }[]>`
+        INSERT INTO tenants (slug, display_name) VALUES ('iso-a', 'Iso A') RETURNING id
+      `;
+      const [tB] = await admin<{ id: string }[]>`
+        INSERT INTO tenants (slug, display_name) VALUES ('iso-b', 'Iso B') RETURNING id
+      `;
+      if (!tA || !tB) throw new Error('failed to seed isolation tenants');
+      tenantAId = tA.id;
+      tenantBId = tB.id;
+
+      // Seed a user + member for tenant A so the member table has a row.
+      const userId = `iso-u-${Date.now()}`;
+      await admin`
+        INSERT INTO "user" (id, name, email, email_verified, requires_password_change)
+        VALUES (${userId}, 'IsoU', ${'isou@example.com'}, false, false)
+      `;
+      memberAId = `iso-m-${Date.now()}`;
+      await admin`
+        INSERT INTO member (id, organization_id, user_id, role, created_at)
+        VALUES (${memberAId}, ${tenantAId}, ${userId}, 'member', now())
+      `;
+    } finally {
+      await admin.end({ timeout: 5 });
+    }
+
+    const appUrl = new URL(adminUrl);
+    appUrl.username = RESTO_APP_ROLE;
+    appUrl.password = NOBYPASS_APP_PWD;
+    appClient = postgres(appUrl.toString(), { max: 1, prepare: false });
+  }, 90_000);
+
+  afterAll(async () => {
+    await appClient.end({ timeout: 5 });
+    await container.stop({ timeout: 5_000 });
+  });
+
+  it('resto_app is denied on account (BA credential table isolation unchanged)', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM account LIMIT 1`);
+  });
+
+  it('resto_app is denied on session', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM session LIMIT 1`);
+  });
+
+  it('resto_app is denied on two_factor', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM two_factor LIMIT 1`);
+  });
+
+  it('resto_app is denied on verification', async () => {
+    await expectPermissionDenied(appClient`SELECT 1 FROM verification LIMIT 1`);
+  });
+
+  it('cross-tenant SELECT on member returns 0 rows for tenant B when bound to tenant A', async () => {
+    // Bind the session to tenant A via app_bind_tenant (the same path
+    // withTenant() uses), then SELECT member filtering by tenant B's id.
+    // The resto_auth permissive policy is NOT applicable to resto_app,
+    // so tenant B's rows remain invisible — FORCE RLS is unaffected.
+    await appClient`SELECT app_bind_tenant(${tenantAId}, false)`;
+    const rows = await appClient<{ id: string }[]>`
+      SELECT id FROM member WHERE organization_id = ${tenantBId}
+    `;
+    expect(rows).toHaveLength(0);
+  });
+
+  it('cross-tenant SELECT on tenants returns 0 rows for tenant B when bound to tenant A', async () => {
+    // Reuse the bound session (app_bind_tenant is idempotent on same tenant).
+    const rows = await appClient<{ id: string }[]>`
+      SELECT id FROM tenants WHERE id = ${tenantBId}
+    `;
+    expect(rows).toHaveLength(0);
+  });
+});

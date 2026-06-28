@@ -372,6 +372,34 @@
       "when": 1782028800000,
       "tag": "0052_payments_provider_payment_id_unique",
       "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1782115200000,
+      "tag": "0053_grant_delete_menu_item_modifier_groups",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1782506190000,
+      "tag": "0054_resto_auth_permissive_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1782600000000,
+      "tag": "0055_payments_money_path",
+      "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1782686400000,
+      "tag": "0056_inbox_event_id_varchar",
+      "breakpoints": true
     }
   ]
 }

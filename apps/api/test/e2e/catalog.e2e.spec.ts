@@ -1067,4 +1067,303 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     expect(r2.statusCode).toBe(409);
   }, 60_000);
+
+  it('PUT items/:id/modifier-groups: set, subset-remove, empty-clear, cross-brand reject', async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'mg-link-cat', name: { en: 'MG Link Cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'mg-link-item',
+        name: { en: 'MG Link Item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const g1Res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Size' }, minSelectable: 1, maxSelectable: 1, isRequired: true },
+    });
+    expect(g1Res.statusCode).toBe(200);
+    const g1 = g1Res.json<{ id: string }>().id;
+
+    const g2Res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Sauce' }, minSelectable: 0, maxSelectable: 2, isRequired: false },
+    });
+    expect(g2Res.statusCode).toBe(200);
+    const g2 = g2Res.json<{ id: string }>().id;
+
+    const put1 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [g1, g2] },
+    });
+    expect(put1.statusCode).toBe(200);
+    expect(put1.json<{ id: string }>().id).toBe(itemId);
+
+    const get1 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get1.statusCode).toBe(200);
+    expect(get1.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([g1, g2]);
+
+    const put2 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [g1] },
+    });
+    expect(put2.statusCode).toBe(200);
+
+    const get2 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get2.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([g1]);
+
+    const put3 = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [] },
+    });
+    expect(put3.statusCode).toBe(200);
+
+    const get3 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get3.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
+
+    const gBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeB.authed,
+      payload: {
+        name: { en: 'Cross-brand' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(gBRes.statusCode).toBe(200);
+    const gB = gBRes.json<{ id: string }>().id;
+
+    const putCross = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [gB] },
+    });
+    expect(putCross.statusCode).toBe(404);
+
+    const get4 = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(get4.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
+  }, 60_000);
+
+  it('draft-diff / modifier-groups / stop-list return only the requesting brand rows', async () => {
+    const tenant = await setupAuthedTenant(stack.app, 'cafe-xbrand');
+
+    const brandBSlug = `brand-${randomUUID().slice(0, 8)}`;
+    const brandBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/me/brands',
+      headers: { cookie: tenant.authed.cookie, 'x-tenant-id': tenant.id },
+      payload: { slug: brandBSlug, displayName: 'Brand B' },
+    });
+    expect(brandBRes.statusCode).toBe(201);
+
+    const headersB = { ...tenant.authed, 'x-brand-slug': brandBSlug };
+
+    const catARes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: tenant.authed,
+      payload: { slug: 'xb-cat-a', name: { en: 'Cat A' }, sortOrder: 0 },
+    });
+    expect(catARes.statusCode).toBe(200);
+    const catAId = catARes.json<{ id: string }>().id;
+
+    const draftARes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: tenant.authed,
+      payload: {
+        categoryId: catAId,
+        slug: 'xb-a-draft',
+        name: { en: 'A Draft' },
+        basePrice: '5.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(draftARes.statusCode).toBe(200);
+    const draftAId = draftARes.json<{ id: string }>().id;
+
+    const groupARes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: tenant.authed,
+      payload: {
+        name: { en: 'A-only group' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(groupARes.statusCode).toBe(200);
+    const groupAId = groupARes.json<{ id: string }>().id;
+
+    const stopItemARes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: tenant.authed,
+      payload: {
+        categoryId: catAId,
+        slug: 'xb-a-stop',
+        name: { en: 'A Stop' },
+        basePrice: '6.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    expect(stopItemARes.statusCode).toBe(200);
+    const stopItemAId = stopItemARes.json<{ id: string }>().id;
+
+    const stopARes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/stop-list',
+      headers: tenant.authed,
+      payload: { itemId: stopItemAId },
+    });
+    expect(stopARes.statusCode).toBe(200);
+
+    const catBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: headersB,
+      payload: { slug: 'xb-cat-b', name: { en: 'Cat B' }, sortOrder: 0 },
+    });
+    expect(catBRes.statusCode).toBe(200);
+    const catBId = catBRes.json<{ id: string }>().id;
+
+    const draftBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: headersB,
+      payload: {
+        categoryId: catBId,
+        slug: 'xb-b-draft',
+        name: { en: 'B Draft' },
+        basePrice: '7.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(draftBRes.statusCode).toBe(200);
+    const draftBId = draftBRes.json<{ id: string }>().id;
+
+    const groupBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: headersB,
+      payload: {
+        name: { en: 'B-only group' },
+        minSelectable: 0,
+        maxSelectable: 1,
+        isRequired: false,
+      },
+    });
+    expect(groupBRes.statusCode).toBe(200);
+    const groupBId = groupBRes.json<{ id: string }>().id;
+
+    const stopItemBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: headersB,
+      payload: {
+        categoryId: catBId,
+        slug: 'xb-b-stop',
+        name: { en: 'B Stop' },
+        basePrice: '8.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    expect(stopItemBRes.statusCode).toBe(200);
+    const stopItemBId = stopItemBRes.json<{ id: string }>().id;
+
+    const stopBRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/stop-list',
+      headers: headersB,
+      payload: { itemId: stopItemBId },
+    });
+    expect(stopBRes.statusCode).toBe(200);
+
+    const diffRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/draft-diff',
+      headers: tenant.authed,
+    });
+    expect(diffRes.statusCode).toBe(200);
+    const diffIds = diffRes.json<{ items: { id: string }[] }>().items.map((i) => i.id);
+    expect(diffIds).toContain(draftAId);
+    expect(diffIds).not.toContain(draftBId);
+
+    const mgRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/modifier-groups',
+      headers: tenant.authed,
+    });
+    expect(mgRes.statusCode).toBe(200);
+    const mgIds = mgRes.json<{ items: { id: string }[] }>().items.map((i) => i.id);
+    expect(mgIds).toContain(groupAId);
+    expect(mgIds).not.toContain(groupBId);
+
+    const slRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/stop-list',
+      headers: tenant.authed,
+    });
+    expect(slRes.statusCode).toBe(200);
+    const slItemIds = slRes.json<{ items: { itemId: string }[] }>().items.map((i) => i.itemId);
+    expect(slItemIds).toContain(stopItemAId);
+    expect(slItemIds).not.toContain(stopItemBId);
+
+    const noBrandRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/draft-diff',
+      headers: { cookie: tenant.authed.cookie, 'x-tenant-id': tenant.id },
+    });
+    expect(noBrandRes.statusCode).toBe(403);
+  }, 60_000);
 });

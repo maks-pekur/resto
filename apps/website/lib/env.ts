@@ -25,6 +25,11 @@ export class WebsiteEnvValidationError extends Error {
 const isPermissive = (nodeEnv: string | undefined): boolean =>
   nodeEnv === 'development' || nodeEnv === 'test';
 
+// G-05: a deploy that forgets the var must crash, never silently route users
+// to localhost. The Zod .url() check accepts localhost — we add a production
+// guard that explicitly rejects any value that matches the dev default.
+const isLocalhostUrl = (url: string): boolean => /^https?:\/\/localhost(:\d+)?(\/|$)/.test(url);
+
 const loadWebsiteEnv = (raw: NodeJS.ProcessEnv = process.env): WebsiteEnv => {
   const candidate: Record<string, string | undefined> = {
     NEXT_PUBLIC_API_ORIGIN: raw.NEXT_PUBLIC_API_ORIGIN,
@@ -44,6 +49,22 @@ const loadWebsiteEnv = (raw: NodeJS.ProcessEnv = process.env): WebsiteEnv => {
   if (!parsed.success) {
     throw new WebsiteEnvValidationError(parsed.error.issues);
   }
+
+  if (!isPermissive(raw.NODE_ENV)) {
+    for (const key of ['NEXT_PUBLIC_API_ORIGIN', 'WEBSITE_URL'] as const) {
+      const val = parsed.data[key];
+      if (isLocalhostUrl(val)) {
+        throw new WebsiteEnvValidationError([
+          {
+            code: z.ZodIssueCode.custom,
+            path: [key],
+            message: `${key} must not be a localhost URL in production (got: ${val}). Set a real HTTPS origin.`,
+          },
+        ]);
+      }
+    }
+  }
+
   return parsed.data;
 };
 

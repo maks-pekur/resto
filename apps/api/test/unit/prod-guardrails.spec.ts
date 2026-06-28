@@ -13,10 +13,9 @@ const okProdValues = {
   AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
   BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
   INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
-  // D-01 / Skeptic HIGH-2 — guard added in Plan 03-02; the prod fixture
-  // must carry a valid RESEND_API_KEY so the pre-existing dev-default
-  // tests still exercise their original failure mode.
   RESEND_API_KEY: 're_real_production_key_xyz',
+  STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
+  STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
 } as const;
 
 const buildEnv = (overrides: Partial<Env> = {}): Env =>

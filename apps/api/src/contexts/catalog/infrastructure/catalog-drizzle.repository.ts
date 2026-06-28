@@ -674,6 +674,65 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async replaceItemModifierGroups(input: {
+    itemId: string;
+    brandId: string;
+    modifierGroupIds: readonly string[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const itemRows = await scoped
+        .selectFrom(
+          schema.menuItems,
+          and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
+        )
+        .limit(1);
+      if (!itemRows[0]) {
+        throw new MenuItemNotFoundError(input.itemId);
+      }
+
+      const dedupedIds = [...new Set(input.modifierGroupIds)];
+
+      if (dedupedIds.length > 0) {
+        const foundGroups = await scoped.selectFrom(
+          schema.menuModifierGroups,
+          and(
+            inArray(schema.menuModifierGroups.id, dedupedIds),
+            eq(schema.menuModifierGroups.brandId, input.brandId),
+          ),
+        );
+        const foundSet = new Set(foundGroups.map((g) => g.id));
+        const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierGroupNotFoundError(firstMissing);
+        }
+      }
+
+      // Migration 0053 grants this DELETE. PK (menu_item_id, modifier_group_id) bounds rows per item
+      // so this is the canonical replace-links inverse of INSERT — not a soft-delete escape (ADR-0020 I-1).
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuItemModifierGroups)
+        .where(
+          and(
+            eq(schema.menuItemModifierGroups.tenantId, ctx.tenantId),
+            eq(schema.menuItemModifierGroups.brandId, input.brandId),
+            eq(schema.menuItemModifierGroups.menuItemId, input.itemId),
+          ),
+        );
+
+      for (const [i, modifierGroupId] of dedupedIds.entries()) {
+        await scoped.insertInto(schema.menuItemModifierGroups, {
+          brandId: input.brandId,
+          menuItemId: input.itemId,
+          modifierGroupId,
+          sortOrder: i,
+        });
+      }
+
+      return { id: input.itemId };
+    });
+  }
+
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
@@ -1078,10 +1137,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listModifierGroups(): Promise<ModifierGroupListRow[]> {
+  async listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const groups = await scoped
-        .selectFrom(schema.menuModifierGroups)
+        .selectFrom(schema.menuModifierGroups, eq(schema.menuModifierGroups.brandId, brandId))
         .orderBy(asc(schema.menuModifierGroups.id));
       if (groups.length === 0) return [];
       const groupIds = groups.map((g) => g.id);
@@ -1141,10 +1200,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listStopListWithStoppedAt(): Promise<StopListEntryRow[]> {
+  async listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const stopRows = await scoped
-        .selectFrom(schema.menuStopList)
+        .selectFrom(schema.menuStopList, eq(schema.menuStopList.brandId, brandId))
         .orderBy(desc(schema.menuStopList.stoppedAt));
       if (stopRows.length === 0) return [];
       const itemIds = stopRows.map((s) => s.itemId);
@@ -1186,7 +1245,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async computeDraftDiff(input: { tenantId: TenantId }): Promise<{
+  async computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }> {
@@ -1198,7 +1257,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const firstPublishedAt = firstPublishedRows[0]?.at ?? null;
 
-      const items = await scoped.selectFrom(schema.menuItems);
+      const items = await scoped.selectFrom(
+        schema.menuItems,
+        eq(schema.menuItems.brandId, input.brandId),
+      );
       const entries: DraftDiffEntryRow[] = [];
       for (const it of items) {
         if (it.status === 'draft') {

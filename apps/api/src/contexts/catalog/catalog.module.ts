@@ -22,6 +22,7 @@ import { UpsertCategoryService } from './application/upsert-category.service';
 import { UpsertItemService } from './application/upsert-item.service';
 import { UpsertItemSizeService } from './application/upsert-item-size.service';
 import { UpsertModifierGroupService } from './application/upsert-modifier-group.service';
+import { SetItemModifierGroupsService } from './application/set-item-modifier-groups.service';
 import { UpsertModifierOptionService } from './application/upsert-modifier-option.service';
 import {
   CATALOG_REPOSITORY,
@@ -33,12 +34,11 @@ import { CatalogDrizzleRepository } from './infrastructure/catalog-drizzle.repos
 import { PostgresMenuVersionAdapter } from './infrastructure/postgres-menu-version.adapter';
 import { S3SignedImageUrlAdapter } from './infrastructure/s3-signed-image-url.adapter';
 import { CatalogController } from './interfaces/http/catalog.controller';
-import { InternalCatalogController } from './interfaces/http/internal-catalog.controller';
 import { PublicMenuController } from './interfaces/http/public-menu.controller';
 
 @Module({
   imports: [TenancyModule],
-  controllers: [PublicMenuController, InternalCatalogController, CatalogController],
+  controllers: [PublicMenuController, CatalogController],
   providers: [
     { provide: CATALOG_REPOSITORY, useClass: CatalogDrizzleRepository },
     PostgresMenuVersionAdapter,
@@ -62,6 +62,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     ReorderCategoriesService,
     UpsertItemService,
     UpsertItemSizeService,
+    SetItemModifierGroupsService,
     UpsertModifierGroupService,
     UpsertModifierOptionService,
     StopListService,

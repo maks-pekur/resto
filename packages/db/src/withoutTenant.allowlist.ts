@@ -59,6 +59,10 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // yet. tenantId IS bound via withTenantId when available — this
   // allowlist entry covers the genuine pre-org-bind branch only.
   'apps/api/src/contexts/identity/infrastructure/email/resend.adapter.ts',
+
+  // PAY-12: outbox backlog age probe scans all tenants' undelivered rows
+  // (cross-tenant by design) outside any HTTP request — no ALS tenant bound.
+  'apps/api/src/infrastructure/outbox-dispatcher.service.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];
