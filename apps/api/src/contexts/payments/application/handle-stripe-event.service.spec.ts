@@ -297,6 +297,86 @@ describe('HandleStripeEventService', () => {
     });
   });
 
+  describe('charge.refunded (BUG-6)', () => {
+    it('BUG-6 (b): real Stripe shape — no refunds.data — still flips payment status to refunded', async () => {
+      const tenant = makeTenant();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenant);
+      paymentRepo.findByPaymentIntentId.mockResolvedValue(
+        makePaymentRow({ status: 'succeeded', amount: '10.00' }),
+      );
+      paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow({ status: 'refunded' }));
+
+      // Real charge.refunded shape: no refunds.data; amount_refunded + amount_captured present
+      const chargeObj = {
+        id: CHARGE_ID,
+        payment_intent: PAYMENT_INTENT_ID,
+        amount_refunded: 1000,
+        amount_captured: 1000,
+        amount: 1000,
+        // deliberately no refunds property
+      };
+      const event = makeStripeEvent('charge.refunded', chargeObj, STRIPE_ACCOUNT_ID);
+      await service.handle(event as never);
+
+      expect(runDedupedMock).toHaveBeenCalled();
+      expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'refunded' }),
+        expect.anything(),
+      );
+    });
+
+    it('BUG-6 (b): partial charge.refunded flips payment status to partially_refunded', async () => {
+      const tenant = makeTenant();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenant);
+      paymentRepo.findByPaymentIntentId.mockResolvedValue(
+        makePaymentRow({ status: 'succeeded', amount: '10.00' }),
+      );
+      paymentRepo.upsertByPaymentIntentId.mockResolvedValue(
+        makePaymentRow({ status: 'partially_refunded' }),
+      );
+
+      const chargeObj = {
+        id: CHARGE_ID,
+        payment_intent: PAYMENT_INTENT_ID,
+        amount_refunded: 500,
+        amount_captured: 1000,
+        amount: 1000,
+      };
+      const event = makeStripeEvent('charge.refunded', chargeObj, STRIPE_ACCOUNT_ID);
+      await service.handle(event as never);
+
+      expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'partially_refunded' }),
+        expect.anything(),
+      );
+    });
+
+    it('BUG-6 (b): charge.refunded with inline refunds.data (old false-green shape) still flips status', async () => {
+      const tenant = makeTenant();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenant);
+      paymentRepo.findByPaymentIntentId.mockResolvedValue(
+        makePaymentRow({ status: 'succeeded', amount: '10.00' }),
+      );
+      paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow({ status: 'refunded' }));
+
+      const chargeObj = {
+        id: CHARGE_ID,
+        payment_intent: PAYMENT_INTENT_ID,
+        amount_refunded: 1000,
+        amount_captured: 1000,
+        amount: 1000,
+        refunds: { data: [{ id: 're_abc', amount: 1000, status: 'succeeded' }] },
+      };
+      const event = makeStripeEvent('charge.refunded', chargeObj, STRIPE_ACCOUNT_ID);
+      await service.handle(event as never);
+
+      expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+        expect.objectContaining({ status: 'refunded' }),
+        expect.anything(),
+      );
+    });
+  });
+
   describe('charge.dispute.created', () => {
     it('records dispute and appends dispute_opened event', async () => {
       const disputeObj = {

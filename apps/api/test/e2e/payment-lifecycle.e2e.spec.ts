@@ -295,7 +295,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     expect(inboxRowsAfterReplay).toHaveLength(1);
   });
 
-  it('step 4: charge.refunded writes payment_refunds row (refund path)', async () => {
+  it('step 4: charge.refunded (real Stripe shape — no refunds.data) flips payment status to refunded (BUG-6)', async () => {
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
 
     const [existingPaymentRow] = await stack.db.withoutTenant(
@@ -312,7 +312,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     );
 
     const piId = existingPaymentRow?.paymentIntentId ?? `pi_fallback`;
-    const refundId = `re_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const chargeEventId = `evt_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
 
     const fakeTenant = makeFakeTenant(tenantId);
@@ -350,6 +349,8 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       stripePortMock,
     );
 
+    // Real Stripe shape: charge.refunded carries amount_refunded (cumulative) and amount_captured,
+    // but does NOT embed refunds.data inline — that is a sub-resource fetched separately.
     const chargeRefundedEvent = {
       id: chargeEventId,
       type: 'charge.refunded' as const,
@@ -358,33 +359,28 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         object: {
           id: `ch_test_refund_${randomUUID().replace(/-/g, '').slice(0, 8)}`,
           payment_intent: piId,
-          refunds: {
-            data: [
-              {
-                id: refundId,
-                amount: 1500,
-                status: 'succeeded',
-              },
-            ],
-          },
+          amount_refunded: 1500,
+          amount_captured: 1500,
+          amount: 1500,
         },
       },
     };
 
     await handlerService.handle(chargeRefundedEvent as never);
 
-    const refundRows = await stack.db.withoutTenant('verify refund row', async (tx) =>
-      tx
-        .select({
-          stripeRefundId: schema.paymentRefunds.stripeRefundId,
-          status: schema.paymentRefunds.status,
-        })
-        .from(schema.paymentRefunds)
-        .where(sql`${schema.paymentRefunds.stripeRefundId} = ${refundId}`),
+    const [paymentRow] = await stack.db.withoutTenant(
+      'verify payment status refunded',
+      async (tx) =>
+        tx
+          .select({
+            status: schema.payments.status,
+            refundedAmount: schema.payments.refundedAmount,
+          })
+          .from(schema.payments)
+          .where(sql`${schema.payments.orderId} = ${orderId}`),
     );
 
-    expect(refundRows).toHaveLength(1);
-    expect(refundRows[0]?.status).toBe('succeeded');
-    expect(refundRows[0]?.stripeRefundId).toBe(refundId);
+    expect(paymentRow?.status).toBe('refunded');
+    expect(paymentRow?.refundedAmount).toBe('15.00');
   });
 });

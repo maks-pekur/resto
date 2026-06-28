@@ -203,6 +203,41 @@ describe('RefundOrderService', () => {
     expect(savedOrder.toSnapshot().status).toBe('refunded');
   });
 
+  it('BUG-6 (a): full refund flips payment status to refunded (not left as succeeded)', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+    paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
+
+    await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reason: 'full refund',
+    });
+
+    expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'refunded' }),
+      expect.anything(),
+    );
+  });
+
+  it('BUG-6 (a): partial refund flips payment status to partially_refunded', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+    paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('5.00'));
+
+    await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      amountMinor: 500,
+      reason: 'partial refund',
+    });
+
+    expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+      expect.objectContaining({ status: 'partially_refunded' }),
+      expect.anything(),
+    );
+  });
+
   it('second refund completing the total transitions order to refunded', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('15.00'));

@@ -93,11 +93,13 @@ export class RefundOrderService {
       );
 
       const newRefundedMinor = alreadyRefundedMinor + amountMinor;
+      const newPaymentStatus =
+        newRefundedMinor >= capturedMinor ? 'refunded' : 'partially_refunded';
       await this.paymentRepo.upsertByPaymentIntentId(
         {
           tenantId: input.tenantId,
           orderId: input.orderId,
-          status: payment.status,
+          status: newPaymentStatus,
           amount: payment.amount,
           currency: payment.currency,
           paymentIntentId: payment.paymentIntentId,

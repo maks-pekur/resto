@@ -302,24 +302,16 @@ export class HandleStripeEventService {
     const charge = event.data.object as {
       id?: string;
       payment_intent?: string | null;
-      refunds?: {
-        data?: {
-          id: string;
-          amount: number;
-          status: string | null;
-        }[];
-      } | null;
+      // amount_refunded is cumulative total refunded in minor units — always present on charge.refunded
+      amount_refunded?: number;
+      // amount_captured is the settled amount; fall back to amount when absent
+      amount_captured?: number;
+      amount?: number;
     };
 
     const piId = charge.payment_intent;
     if (!piId) {
       this.logger.warn({ eventId: event.id }, 'charge.refunded missing payment_intent — ignoring.');
-      return;
-    }
-
-    const refundData = charge.refunds?.data?.[0];
-    if (!refundData) {
-      this.logger.warn({ eventId: event.id }, 'charge.refunded: no refund data — ignoring.');
       return;
     }
 
@@ -344,6 +336,10 @@ export class HandleStripeEventService {
     const tenantId = tenant.toSnapshot().id;
     const pseudoEnvelope = { id: event.id, tenantId };
 
+    // Idempotency: amount_refunded is the cumulative total — SET, not increment.
+    const cumulativeRefundedMinor = charge.amount_refunded ?? 0;
+    const capturedMinorFromCharge = charge.amount_captured ?? charge.amount ?? 0;
+
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (tx) => {
       const payment = await this.paymentRepo.findByPaymentIntentId(tenantId, piId, tx);
       if (!payment) {
@@ -351,35 +347,33 @@ export class HandleStripeEventService {
         return;
       }
 
-      const existingRefund = await this.paymentRepo.findRefundByStripeId(
-        tenantId,
-        refundData.id,
+      const capturedMinor =
+        capturedMinorFromCharge > 0 ? capturedMinorFromCharge : toMinorUnits(payment.amount);
+      const fullyRefunded = cumulativeRefundedMinor >= capturedMinor;
+      const newPaymentStatus = fullyRefunded ? 'refunded' : 'partially_refunded';
+
+      // PAY-BUG6-GAP: charge.refunded carries no stable stripe_refund_id — refund-row insertion
+      // for dashboard-initiated refunds requires refund.created/refund.updated (not implemented).
+      this.logger.log(
+        { piId, tenantId, cumulativeRefundedMinor, fullyRefunded },
+        'charge.refunded: updating payment status from webhook (refund-row gap logged — PAY-BUG6).',
+      );
+
+      await this.paymentRepo.upsertByPaymentIntentId(
+        {
+          tenantId,
+          orderId: payment.orderId,
+          status: newPaymentStatus,
+          amount: payment.amount,
+          currency: payment.currency,
+          paymentIntentId: payment.paymentIntentId,
+          latestChargeId: payment.latestChargeId,
+          refundedAmount: fromMinorUnits(cumulativeRefundedMinor),
+          stripeAccountId: payment.stripeAccountId,
+          applicationFeeAmount: payment.applicationFeeAmount,
+        },
         tx,
       );
-      if (existingRefund) {
-        await this.paymentRepo.updateRefundStatus(
-          tenantId,
-          refundData.id,
-          refundData.status ?? 'succeeded',
-          tx,
-        );
-      } else {
-        await this.paymentRepo.upsertRefund(
-          {
-            tenantId,
-            paymentId: payment.id,
-            stripeRefundId: refundData.id,
-            amount: fromMinorUnits(refundData.amount),
-            reason: 'webhook_reconcile',
-            status: refundData.status ?? 'succeeded',
-          },
-          tx,
-        );
-      }
-
-      const capturedMinor = toMinorUnits(payment.amount);
-      const refundedMinor = refundData.amount;
-      const fullyRefunded = refundedMinor >= capturedMinor;
 
       await appendToOutbox(tx, {
         envelope: buildEnvelope(
@@ -387,8 +381,8 @@ export class HandleStripeEventService {
           {
             orderId: payment.orderId,
             tenantId,
-            refundId: refundData.id,
-            amountMinor: refundedMinor,
+            refundId: event.id,
+            amountMinor: cumulativeRefundedMinor,
             fullyRefunded,
           },
           { tenantId },
