@@ -1,13 +1,10 @@
 import type { CSSProperties } from 'react';
 import { createRoute, Outlet, useNavigate } from '@tanstack/react-router';
-import { Link } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { meQuery, meBrandsQuery, toOperatorSummary } from '@/lib/queries/identity';
 import { AppSidebar } from '@/components/app-sidebar';
 import { SiteHeader } from '@/components/site-header';
-import { EmptyState } from '@/components/empty-state';
-import { Button } from '@/components/ui/button';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 const sidebarStyle: CSSProperties = {
@@ -37,20 +34,8 @@ function DashboardLayout() {
   const activeBrandSlug = brands[0]?.slug ?? null;
 
   if (brands.length === 0) {
-    return (
-      <div className="flex min-h-svh flex-col items-center justify-center">
-        <EmptyState
-          variant="empty"
-          title="Your tenant has no brands yet"
-          description="Create your first brand to get started. Each brand gets its own menu, QR code, and customer site."
-          action={
-            <Button asChild>
-              <Link to="/onboarding/brand">Create your first brand</Link>
-            </Button>
-          }
-        />
-      </div>
-    );
+    void navigate({ to: '/onboarding/brand' });
+    return null;
   }
 
   return (
