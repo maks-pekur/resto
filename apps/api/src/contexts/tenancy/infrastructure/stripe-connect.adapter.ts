@@ -158,6 +158,7 @@ export class StripeConnectAdapter implements StripeConnectPort {
     const account = await withRetry(this.#logger, 'accounts.create', () =>
       this.#client.accounts.create({
         type: 'express',
+        capabilities: { card_payments: { requested: true }, transfers: { requested: true } },
         ...(input.country !== undefined ? { country: input.country } : {}),
         ...(input.displayName !== '' ? { business_profile: { name: input.displayName } } : {}),
         ...(input.defaultCurrency !== undefined ? { default_currency: input.defaultCurrency } : {}),

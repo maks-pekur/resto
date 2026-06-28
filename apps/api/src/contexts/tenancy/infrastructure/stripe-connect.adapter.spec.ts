@@ -306,4 +306,34 @@ describe('StripeConnectAdapter', () => {
       expect(result.requirementsDue).toBeDefined();
     });
   });
+
+  describe('createExpressAccount — capabilities (BUG-3)', () => {
+    it('requests card_payments capability in accounts.create payload', async () => {
+      await adapter.createExpressAccount({
+        tenantId: 'tenant-uuid-001' as Parameters<
+          typeof adapter.createExpressAccount
+        >[0]['tenantId'],
+        displayName: 'Test Restaurant',
+      });
+
+      const [payload] = mocks.accountsCreate.mock.calls[0] as [Record<string, unknown>];
+      expect((payload.capabilities as Record<string, unknown>).card_payments).toMatchObject({
+        requested: true,
+      });
+    });
+
+    it('requests transfers capability in accounts.create payload', async () => {
+      await adapter.createExpressAccount({
+        tenantId: 'tenant-uuid-001' as Parameters<
+          typeof adapter.createExpressAccount
+        >[0]['tenantId'],
+        displayName: 'Test Restaurant',
+      });
+
+      const [payload] = mocks.accountsCreate.mock.calls[0] as [Record<string, unknown>];
+      expect((payload.capabilities as Record<string, unknown>).transfers).toMatchObject({
+        requested: true,
+      });
+    });
+  });
 });
