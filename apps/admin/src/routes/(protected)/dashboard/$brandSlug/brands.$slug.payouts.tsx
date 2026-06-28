@@ -18,7 +18,7 @@ import { VITE_STRIPE_PUBLISHABLE_KEY } from '@/env';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
-  path: '/brands/$slug/payouts',
+  path: '/payouts',
   component: BrandPayoutsPage,
 });
 

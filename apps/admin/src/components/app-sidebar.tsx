@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { LayoutDashboard, Settings2, Users, UtensilsCrossed } from 'lucide-react';
+import { CreditCard, LayoutDashboard, Settings2, Users, UtensilsCrossed } from 'lucide-react';
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -28,7 +28,7 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
-  const brandPrefix = activeBrandSlug ? `/${activeBrandSlug}` : '';
+  const brandPrefix = activeBrandSlug ? `/dashboard/${activeBrandSlug}` : '/dashboard';
   const navMain: NavMainItem[] = [
     {
       title: t('dashboard'),
@@ -38,16 +38,22 @@ export function AppSidebar({
     },
     {
       title: t('menu'),
-      url: `${brandPrefix}/dashboard/menu/items`,
+      url: `${brandPrefix}/menu/items`,
       icon: UtensilsCrossed,
       scope: 'brand',
       isActive: false,
       items: [
-        { title: t('menuCategories'), url: `${brandPrefix}/dashboard/menu/categories` },
-        { title: t('menuItems'), url: `${brandPrefix}/dashboard/menu/items` },
-        { title: t('menuModifiers'), url: `${brandPrefix}/dashboard/menu/modifier-groups` },
-        { title: t('menuStopList'), url: `${brandPrefix}/dashboard/menu/stop-list` },
+        { title: t('menuCategories'), url: `${brandPrefix}/menu/categories` },
+        { title: t('menuItems'), url: `${brandPrefix}/menu/items` },
+        { title: t('menuModifiers'), url: `${brandPrefix}/menu/modifier-groups` },
+        { title: t('menuStopList'), url: `${brandPrefix}/menu/stop-list` },
       ],
+    },
+    {
+      title: t('payments'),
+      url: `${brandPrefix}/payouts`,
+      icon: CreditCard,
+      scope: 'brand',
     },
     {
       title: t('team'),
