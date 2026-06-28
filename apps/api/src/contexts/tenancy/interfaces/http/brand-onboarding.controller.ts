@@ -1,10 +1,24 @@
-import { Controller, Get, HttpCode, HttpStatus, Param, Post } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  Req,
+  Res,
+} from '@nestjs/common';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import { Public } from '../../../../shared/auth/public.decorator';
 import { StartBrandOnboardingService } from '../../application/start-brand-onboarding.service';
+import { OAUTH_NONCE_COOKIE } from '../../domain/oauth-state';
 import { mapDomainError } from './error-mapping';
 
 const AccountSessionResponseSchema = z.object({
@@ -26,6 +40,38 @@ const OnboardingStatusResponseSchema = z.object({
   requirementsDue: z.unknown().nullable(),
 });
 class OnboardingStatusResponseDto extends createZodDto(OnboardingStatusResponseSchema) {}
+
+const OAuthStartResponseSchema = z.object({
+  authorizeUrl: z.string().url(),
+});
+class OAuthStartResponseDto extends createZodDto(OAuthStartResponseSchema) {}
+
+const IS_PROD = process.env.NODE_ENV === 'production';
+
+function buildNonceCookieHeader(nonce: string): string {
+  const attrs = [
+    `${OAUTH_NONCE_COOKIE}=${nonce}`,
+    'HttpOnly',
+    IS_PROD ? 'Secure' : '',
+    'SameSite=Lax',
+    'Path=/',
+  ]
+    .filter((a) => a !== '')
+    .join('; ');
+  return attrs;
+}
+
+function parseCookieHeader(header: string, name: string): string | undefined {
+  for (const part of header.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k?.trim() === name) return rest.join('=').trim();
+  }
+  return undefined;
+}
+
+function buildClearCookieHeader(): string {
+  return `${OAUTH_NONCE_COOKIE}=; HttpOnly; ${IS_PROD ? 'Secure; ' : ''}SameSite=Lax; Path=/; Max-Age=0`;
+}
 
 @ApiTags('tenancy')
 @Controller('v1/tenancy/brands/:slug/onboarding')
@@ -61,5 +107,58 @@ export class BrandOnboardingController {
   @ApiOkResponse({ type: OnboardingStatusResponseDto })
   async getStatus(@Param('slug') slug: string): Promise<OnboardingStatusResponseDto> {
     return this.#wrap(() => this.service.getStatus(slug));
+  }
+
+  @Get('oauth/start')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ tenant: ['transfer'] })
+  @RequireActiveTenant()
+  @RequireBrand()
+  @ApiOkResponse({ type: OAuthStartResponseDto })
+  async startOAuth(
+    @Param('slug') slug: string,
+    @Res({ passthrough: true }) res: FastifyReply,
+  ): Promise<OAuthStartResponseDto> {
+    return this.#wrap(async () => {
+      const result = await this.service.startOAuth(slug);
+      res.raw.setHeader('Set-Cookie', buildNonceCookieHeader(result.nonce));
+      return { authorizeUrl: result.authorizeUrl };
+    });
+  }
+
+  @Get('oauth/callback')
+  @Public()
+  async handleOAuthCallback(
+    @Param('slug') slug: string,
+    @Query('code') code: string,
+    @Query('state') state: string,
+    @Req() req: FastifyRequest,
+    @Res() res: FastifyReply,
+  ): Promise<void> {
+    const cookieHeader = req.headers.cookie ?? '';
+    const nonce = parseCookieHeader(cookieHeader, OAUTH_NONCE_COOKIE);
+
+    if (!nonce) {
+      throw new BadRequestException('OAuth nonce cookie missing — CSRF validation failed.');
+    }
+
+    res.raw.setHeader('Set-Cookie', buildClearCookieHeader());
+
+    const result = await this.#wrap(() =>
+      this.service.handleOAuthCallback({
+        code,
+        state,
+        nonce,
+        slugFromPath: slug,
+      }),
+    );
+
+    const redirectUrl = (result as { redirectUrl: string }).redirectUrl;
+
+    if (!/^https?:\/\//.test(redirectUrl) || /^\/[\\/]/.test(redirectUrl)) {
+      throw new BadRequestException('Invalid redirect URL after OAuth callback.');
+    }
+
+    await res.redirect(redirectUrl, HttpStatus.FOUND);
   }
 }

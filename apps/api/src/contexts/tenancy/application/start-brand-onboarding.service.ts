@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { BrandSlug, TenantId } from '@resto/domain';
 import { ENV_TOKEN } from '../../../config/config.module';
@@ -6,6 +6,7 @@ import type { Env } from '../../../config/env.schema';
 import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../payments/domain/ports';
 import { Brand } from '../domain/brand.aggregate';
 import type { BrandOnboardingStatus } from '../domain/brand.aggregate';
+import { encodeOAuthState, verifyOAuthState } from '../domain/oauth-state';
 import { BRAND_REPOSITORY, type BrandRepository } from '../domain/ports';
 
 export interface GetBrandOnboardingStatusResult {
@@ -23,6 +24,22 @@ export interface CreateEmbeddedSessionResult {
 
 export interface CreateHostedLinkResult {
   readonly onboardingUrl: string;
+}
+
+export interface StartOAuthResult {
+  readonly authorizeUrl: string;
+  readonly nonce: string;
+}
+
+export interface HandleOAuthCallbackInput {
+  readonly code: string;
+  readonly state: string;
+  readonly nonce: string;
+  readonly slugFromPath: string;
+}
+
+export interface HandleOAuthCallbackResult {
+  readonly redirectUrl: string;
 }
 
 @Injectable()
@@ -97,5 +114,98 @@ export class StartBrandOnboardingService {
       canAcceptPayments: brand.canAcceptPayments(),
       requirementsDue: snapshot.stripeRequirementsDue,
     };
+  }
+
+  async startOAuth(slug: string): Promise<StartOAuthResult> {
+    const clientId = this.env.STRIPE_CONNECT_CLIENT_ID;
+    const redirectUrl = this.env.STRIPE_CONNECT_OAUTH_REDIRECT_URL;
+    const secret = this.env.BETTER_AUTH_SECRET;
+    if (!clientId) {
+      throw new BadRequestException('Stripe Connect OAuth is not configured (missing client_id).');
+    }
+    if (!redirectUrl) {
+      throw new BadRequestException('Stripe Connect OAuth redirect URL is not configured.');
+    }
+    if (!secret) {
+      throw new BadRequestException('OAuth state signing secret is not configured.');
+    }
+
+    const { tenantId: rawTenantId } = requireTenantContext();
+    const snapshot = await this.brandRepo.findByTenantAndSlug(
+      TenantId.parse(rawTenantId),
+      BrandSlug.parse(slug),
+    );
+    if (snapshot === null) {
+      throw new NotFoundException(`Brand "${slug}" not found.`);
+    }
+
+    const nonce = crypto.randomUUID();
+    const signedState = encodeOAuthState({ brandId: snapshot.id, nonce }, secret);
+
+    const authorizeUrl =
+      `https://connect.stripe.com/oauth/authorize` +
+      `?response_type=code` +
+      `&client_id=${encodeURIComponent(clientId)}` +
+      `&scope=read_write` +
+      `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
+      `&state=${encodeURIComponent(signedState)}`;
+
+    this.logger.log({ brandId: snapshot.id }, 'OAuth authorize URL built for brand.');
+
+    return { authorizeUrl, nonce };
+  }
+
+  async handleOAuthCallback(input: HandleOAuthCallbackInput): Promise<HandleOAuthCallbackResult> {
+    const secret = this.env.BETTER_AUTH_SECRET;
+    if (!secret) {
+      throw new BadRequestException('OAuth state signing secret is not configured.');
+    }
+
+    const verified = verifyOAuthState(input.state, secret);
+    if (verified === null) {
+      throw new BadRequestException('Invalid or expired OAuth state.');
+    }
+
+    if (verified.nonce !== input.nonce) {
+      throw new BadRequestException('OAuth state nonce mismatch — possible replay attack.');
+    }
+
+    const snapshot = await this.brandRepo.findById(verified.brandId as never);
+    if (snapshot === null) {
+      throw new NotFoundException(`Brand "${verified.brandId}" not found.`);
+    }
+
+    const { accountId } = await this.provider.exchangeOAuthCode({ code: input.code });
+
+    const brand = Brand.fromSnapshot(snapshot);
+    brand.linkPaymentAccount(accountId, 'standard');
+
+    try {
+      const capabilities = await this.provider.retrieveAccount({ accountId });
+      brand.applyPaymentCapabilities({
+        chargesEnabled: capabilities.chargesEnabled,
+        payoutsEnabled: capabilities.payoutsEnabled,
+        onboardingStatus: capabilities.chargesEnabled ? 'complete' : 'pending',
+        requirementsDue: capabilities.requirementsDue,
+      });
+    } catch {
+      this.logger.warn(
+        { brandId: verified.brandId },
+        'Could not retrieve account capabilities after OAuth; will wait for account.updated webhook.',
+      );
+    }
+
+    await this.brandRepo.updatePaymentConnection(brand);
+
+    this.logger.log(
+      { brandId: verified.brandId, accountId },
+      'Brand linked via Connect Standard OAuth.',
+    );
+
+    const adminWebUrl = this.env.ADMIN_WEB_URL ?? '';
+    const brandSnap = brand.toSnapshot();
+    const redirectUrl = `${adminWebUrl}/dashboard/${brandSnap.slug}/brands/${brandSnap.slug}/payouts`;
+
+    return { redirectUrl };
   }
 }
