@@ -29,6 +29,14 @@ const baseBrand: BrandSnapshot = {
   displayName: 'Acme',
   status: 'active',
   theme: { logoUrl: 'https://cdn.acme.com/logo.png', primaryColor: '#16a34a', font: null },
+  paymentProvider: 'stripe',
+  accountType: null,
+  defaultCurrency: null,
+  stripeAccountId: null,
+  stripeChargesEnabled: false,
+  stripePayoutsEnabled: false,
+  stripeOnboardingStatus: 'not_started',
+  stripeRequirementsDue: null,
 };
 
 const makeOrderRepo = (

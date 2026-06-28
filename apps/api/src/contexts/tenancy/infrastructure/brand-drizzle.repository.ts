@@ -5,6 +5,8 @@ import { and, asc, eq, inArray, like, ne, or } from 'drizzle-orm';
 import type { BrandSnapshot } from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
 
+import type { BrandOnboardingStatus } from '../domain/brand.aggregate';
+
 const ROW_TO_SNAPSHOT = (row: {
   id: string;
   tenantId: string;
@@ -12,6 +14,14 @@ const ROW_TO_SNAPSHOT = (row: {
   displayName: string;
   status: string;
   theme: unknown;
+  paymentProvider: string | null;
+  accountType: string | null;
+  defaultCurrency: string | null;
+  stripeAccountId: string | null;
+  stripeChargesEnabled: boolean;
+  stripePayoutsEnabled: boolean;
+  stripeOnboardingStatus: string;
+  stripeRequirementsDue: unknown;
 }): BrandSnapshot => ({
   id: BrandId.parse(row.id),
   tenantId: TenantId.parse(row.tenantId),
@@ -19,6 +29,14 @@ const ROW_TO_SNAPSHOT = (row: {
   displayName: row.displayName,
   status: row.status as BrandSnapshot['status'],
   theme: row.theme === null || row.theme === undefined ? null : BrandTheme.parse(row.theme),
+  paymentProvider: (row.paymentProvider ?? 'stripe') as 'stripe',
+  accountType: row.accountType as BrandSnapshot['accountType'],
+  defaultCurrency: row.defaultCurrency,
+  stripeAccountId: row.stripeAccountId,
+  stripeChargesEnabled: row.stripeChargesEnabled,
+  stripePayoutsEnabled: row.stripePayoutsEnabled,
+  stripeOnboardingStatus: row.stripeOnboardingStatus as BrandOnboardingStatus,
+  stripeRequirementsDue: row.stripeRequirementsDue,
 });
 
 @Injectable()
@@ -37,6 +55,14 @@ export class BrandDrizzleRepository extends TenantScopedRepository implements Br
           displayName: schema.brands.displayName,
           status: schema.brands.status,
           theme: schema.brands.theme,
+          paymentProvider: schema.brands.paymentProvider,
+          accountType: schema.brands.accountType,
+          defaultCurrency: schema.brands.defaultCurrency,
+          stripeAccountId: schema.brands.stripeAccountId,
+          stripeChargesEnabled: schema.brands.stripeChargesEnabled,
+          stripePayoutsEnabled: schema.brands.stripePayoutsEnabled,
+          stripeOnboardingStatus: schema.brands.stripeOnboardingStatus,
+          stripeRequirementsDue: schema.brands.stripeRequirementsDue,
         })
         .from(schema.brandDomains)
         .innerJoin(schema.brands, eq(schema.brands.id, schema.brandDomains.brandId))
@@ -57,6 +83,14 @@ export class BrandDrizzleRepository extends TenantScopedRepository implements Br
           displayName: schema.brands.displayName,
           status: schema.brands.status,
           theme: schema.brands.theme,
+          paymentProvider: schema.brands.paymentProvider,
+          accountType: schema.brands.accountType,
+          defaultCurrency: schema.brands.defaultCurrency,
+          stripeAccountId: schema.brands.stripeAccountId,
+          stripeChargesEnabled: schema.brands.stripeChargesEnabled,
+          stripePayoutsEnabled: schema.brands.stripePayoutsEnabled,
+          stripeOnboardingStatus: schema.brands.stripeOnboardingStatus,
+          stripeRequirementsDue: schema.brands.stripeRequirementsDue,
         })
         .from(schema.brands)
         .where(and(eq(schema.brands.slug, slug), ne(schema.brands.status, 'erased')))
