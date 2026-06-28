@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { fromMinorUnits } from '../../ordering/domain/money-utils';
 import type {
   PaymentRefundRow,
@@ -71,6 +71,7 @@ export class PaymentDrizzleRepository implements PaymentRepository {
       })
       .onConflictDoUpdate({
         target: [schema.payments.tenantId, schema.payments.paymentIntentId],
+        targetWhere: sql`payment_intent_id is not null`,
         set: {
           status: input.status,
           latestChargeId: input.latestChargeId ?? null,
