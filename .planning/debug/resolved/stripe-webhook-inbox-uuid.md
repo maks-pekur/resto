@@ -58,3 +58,13 @@ files_changed:
 ## Live Verification Note
 
 After api restarts with the migrated schema, re-trigger `account.updated` by touching connected account `acct_1TnERu2Kh1rNoqvM` metadata via Stripe API. The webhook should now 2xx and sync `stripe_charges_enabled=true` for demo tenant `1499eff7-3f68-4385-9e5a-31307b65b6e1`, unblocking `POST /v1/checkout/payment-intent`.
+
+## Second Root Cause (confirmed) — payments upsert partial-index ON CONFLICT
+
+Postgres error `42P10` (`infer_arbiter_indexes`, plancat.c) on `POST /v1/checkout/payment-intent`. The unique index `payments_payment_intent_id_uq` is PARTIAL (`WHERE payment_intent_id IS NOT NULL`); Drizzle's `onConflictDoUpdate` requires a matching `targetWhere` predicate for Postgres to select the partial index as the ON CONFLICT arbiter. Without it, Postgres cannot resolve the arbiter and errors before the row is inserted.
+
+Fix: `apps/api/src/contexts/payments/infrastructure/payment-drizzle.repository.ts` — added `targetWhere: sql\`payment_intent_id is not null\``to the`onConflictDoUpdate`call in`upsertByPaymentIntentId`; added `sql` to the drizzle-orm import. No migration required (schema unchanged).
+
+Test added: `apps/api/test/e2e/payments-upsert-partial-index.e2e.spec.ts` — 2 tests against testcontainers Postgres via `withTenantId`: insert path (no 42P10) + conflict-update path (`requires_action` → `succeeded`). Both pass.
+
+TypeScript: `pnpm --filter api exec tsc --noEmit` clean. Commit: `546c56e` (admin-vite-spa).
