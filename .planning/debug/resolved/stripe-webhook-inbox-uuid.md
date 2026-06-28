@@ -59,6 +59,47 @@ files_changed:
 
 After api restarts with the migrated schema, re-trigger `account.updated` by touching connected account `acct_1TnERu2Kh1rNoqvM` metadata via Stripe API. The webhook should now 2xx and sync `stripe_charges_enabled=true` for demo tenant `1499eff7-3f68-4385-9e5a-31307b65b6e1`, unblocking `POST /v1/checkout/payment-intent`.
 
+## Phase 8 hardening (#3 card_payments capability, #4 order-status persistence)
+
+### BUG #3 — Express account created without card_payments capability
+
+Root cause: `StripeConnectAdapter.createExpressAccount` called `accounts.create` without a `capabilities` key. For direct charges (charge created on the connected account with the `Stripe-Account` header), the connected account requires `card_payments`; without it Stripe rejects the charge with "You cannot create a charge on a connected account without the card_payments capability enabled."
+
+Fix: Added `capabilities: { card_payments: { requested: true }, transfers: { requested: true } }` to the `accounts.create` params in `apps/api/src/contexts/tenancy/infrastructure/stripe-connect.adapter.ts`. Two new unit tests in `stripe-connect.adapter.spec.ts` assert both capabilities are present in the payload.
+
+### BUG #4 — Order status transitions never persisted (CRITICAL)
+
+Root cause: `OrderDrizzleRepository.save()` is INSERT-only with `onConflictDoNothing` — it is a no-op for any order that already exists. Both transition callers (`requireAction` in checkout, `markPaid` in the webhook handler) called `save()` on an existing order, so the status change was written to the in-memory aggregate but never persisted to Postgres. Orders stayed `'created'` after checkout and never flipped to `'paid'` after a successful charge.
+
+Fix: Added `update(order: Order, tx?: RestoTx): Promise<void>` to the `OrderRepository` port (`apps/api/src/contexts/ordering/domain/ports.ts`). Implemented in `OrderDrizzleRepository` via a private `#runUpdate` helper: UPDATE `orders` SET `status`, `updatedAt`, `scheduledFor` WHERE `id` AND `tenantId`, assert exactly one row updated, then drain and append `pullEvents()` to the outbox (same pattern as `save()`). Both callers rewired:
+
+- `create-checkout-payment.service.ts`: `requireAction` path → `this.orderRepo.update(order)` (no tx, opens its own `withTenant`).
+- `handle-stripe-event.service.ts`: `markPaid` path → `this.orderRepo.update(order, tx)` — passes the handler's `runDeduped` transaction so the order UPDATE + outbox append commit atomically with the inbox marker + payment upsert.
+
+New method signature: `update(order: Order, tx?: RestoTx): Promise<void>`
+
+No migration required — `update()` runs a plain UPDATE on existing columns (`status`, `updated_at`, `scheduled_for`).
+
+### Lifecycle e2e test
+
+Added `apps/api/test/e2e/payment-lifecycle.e2e.spec.ts` — 3 steps against real Postgres (testcontainers) with real `OrderDrizzleRepository`, `PaymentDrizzleRepository`, and `runDeduped`:
+
+1. Seed: insert tenant, brand, order (status `'created'`) via `withoutTenant`.
+2. Step 2: `CreateCheckoutPaymentService.execute` with stubbed `StripeConnectPort.createPaymentIntent` — asserts order row flips to `'requires_action'` and payment row written (`'requires_action'`). Proves BUG #4 update path + PAY-14 partial-index upsert.
+3. Step 3: `HandleStripeEventService.handle` with crafted `payment_intent.succeeded` event (`evt_` id) — asserts order row flips to `'paid'`, payment row to `'succeeded'`, inbox_processed row written (PAY-13), outbox row present, and second delivery is idempotent (inbox still 1 row). Proves BUG #4 `markPaid` persistence + PAY-13 end-to-end.
+4. Step 4: `HandleStripeEventService.handle` with crafted `charge.refunded` event — asserts `payment_refunds` row written and `status = 'succeeded'`.
+
+### tsc + test status
+
+- `pnpm --filter api exec tsc --noEmit` — clean.
+- `pnpm --filter @resto/db exec tsc --noEmit` — clean.
+- `stripe-connect.adapter.spec.ts` — 13 tests passed (2 new capabilities assertions).
+- `handle-stripe-event.service.spec.ts` — 7 tests passed.
+- `create-checkout-payment.service.spec.ts` — 10 tests passed.
+- `stripe-webhook-inbox-dedup.e2e.spec.ts` — 2 tests passed.
+- `payments-upsert-partial-index.e2e.spec.ts` — 2 tests passed.
+- `payment-lifecycle.e2e.spec.ts` — 3 tests passed.
+
 ## Second Root Cause (confirmed) — payments upsert partial-index ON CONFLICT
 
 Postgres error `42P10` (`infer_arbiter_indexes`, plancat.c) on `POST /v1/checkout/payment-intent`. The unique index `payments_payment_intent_id_uq` is PARTIAL (`WHERE payment_intent_id IS NOT NULL`); Drizzle's `onConflictDoUpdate` requires a matching `targetWhere` predicate for Postgres to select the partial index as the ON CONFLICT arbiter. Without it, Postgres cannot resolve the arbiter and errors before the row is inserted.
