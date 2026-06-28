@@ -88,6 +88,7 @@ const buildSut = () => {
     save: vi.fn().mockResolvedValue(undefined),
     update: vi.fn().mockResolvedValue(undefined),
     findById: vi.fn().mockResolvedValue(order),
+    findByIdInTx: vi.fn().mockResolvedValue(null),
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
   };
 

@@ -167,7 +167,8 @@ export class HandleStripeEventService {
     const pseudoEnvelope = { id: event.id, tenantId };
 
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (tx) => {
-      const order = await this.orderRepo.findById(orderId as OrderId);
+      // ADR-0020 I-6: no ALS tenant in webhook path — use system tx + explicit tenantId.
+      const order = await this.orderRepo.findByIdInTx(tx, orderId as OrderId, parsedTenantId);
       if (!order) {
         this.logger.warn(
           { orderId, eventId: event.id },

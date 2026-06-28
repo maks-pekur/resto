@@ -111,6 +111,9 @@ class FakeOrderRepository implements OrderRepository {
   findById(): Promise<Order | null> {
     return Promise.resolve(null);
   }
+  findByIdInTx(): Promise<Order | null> {
+    return Promise.resolve(null);
+  }
   findByIdempotencyKey(): Promise<Order | null> {
     return Promise.resolve(this.saved.at(-1) ?? null);
   }

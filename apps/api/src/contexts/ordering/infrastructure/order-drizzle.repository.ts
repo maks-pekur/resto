@@ -156,6 +156,10 @@ export class OrderDrizzleRepository implements OrderRepository {
     return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, id, ctx.tenantId));
   }
 
+  async findByIdInTx(tx: RestoTx, id: OrderId, tenantId: string): Promise<Order | null> {
+    return this.loadByIdWithTx(tx, id, tenantId);
+  }
+
   async findByIdempotencyKey(tenantId: TenantId, key: string): Promise<Order | null> {
     return this.db.withTenant(async (tx) => {
       const rows = await tx

@@ -128,6 +128,7 @@ describe('HandleStripeEventService', () => {
       save: vi.fn().mockResolvedValue(undefined),
       update: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn(),
+      findByIdInTx: vi.fn(),
       findByIdempotencyKey: vi.fn(),
     };
 
@@ -191,7 +192,7 @@ describe('HandleStripeEventService', () => {
 
     it('transitions order to paid when status is created', async () => {
       const order = makeOrder('created');
-      orderRepo.findById.mockResolvedValue(order);
+      orderRepo.findByIdInTx.mockResolvedValue(order);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
       paymentRepo.upsertByPaymentIntentId.mockResolvedValue(
         makePaymentRow({ status: 'succeeded', latestChargeId: CHARGE_ID }),
@@ -220,7 +221,7 @@ describe('HandleStripeEventService', () => {
 
     it('double-charge guard: orphan PI on already-paid order triggers auto-refund', async () => {
       const paidOrder = makeOrder('paid');
-      orderRepo.findById.mockResolvedValue(paidOrder);
+      orderRepo.findByIdInTx.mockResolvedValue(paidOrder);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
       paymentRepo.findByOrderId.mockResolvedValue(
         makePaymentRow({ paymentIntentId: 'pi_other_existing', status: 'succeeded' }),
