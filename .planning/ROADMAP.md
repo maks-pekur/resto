@@ -33,6 +33,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
+- [ ] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -468,6 +469,21 @@ Plans:
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
+### Phase 08.1: Payments — Provider Layer & Onboarding UX (INSERTED)
+
+**Goal**: Make the payments layer provider-agnostic and upgrade tenant onboarding UX — embedded Connect onboarding without leaving the admin domain, a "connect existing Stripe" one-click path (Connect Standard OAuth), and a generalized payment-provider abstraction so Mollie/Adyen/local acquirers can be added later via a new adapter + config only, without touching checkout/refund/webhook application code
+**Depends on**: Phase 8
+**Requirements**: PAY-14, PAY-15, PAY-16, PAY-17
+**Success Criteria** (what must be TRUE):
+
+1. Operator completes Stripe KYC without leaving the admin domain (embedded Connect components); pending-KYC state still lets them use catalog, CRM, and admin fully — only the live "Accept payments" switch is gated (PAY-13 preserved)
+2. A tenant who already has Stripe connects it in one click via OAuth (Connect Standard) and can accept payments with the RestOS `application_fee` applied — no secret-key handling, dashboard stays with the tenant
+3. The payments application code (checkout, refund, webhook services) depends only on a provider-agnostic `PaymentProviderPort`; adding a second provider requires a new adapter + config only — proven by a stub second-provider adapter or an architecture test — and the tenant carries a `paymentProvider` discriminator
+4. The onboarding method ("Create new (Express)" vs "Connect existing (Standard)") is selectable in admin and resumable
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+
 ### Phase 10: Admin Order Intake
 
 **Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
@@ -570,15 +586,16 @@ Plans:
 
 ### Phase 14: Finance
 
-**Goal**: Give operators an order list with advanced filtering, CSV export, refund initiation, VAT rate configuration per category, and a RestOS SaaS billing line for the period
+**Goal**: Give operators an order list with advanced filtering, CSV export, refund initiation, VAT rate configuration per category, a RestOS SaaS billing line for the period, and a per-tenant billing plan (per-order commission vs fixed subscription vs hybrid)
 **Depends on**: Phase 7, Phase 8
-**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06
+**Requirements**: FIN-01, FIN-02, FIN-03, FIN-04, FIN-05, FIN-06, FIN-07
 **Success Criteria** (what must be TRUE):
 
 1. Operator filters orders by status, date, payment status, channel, and brand; exported CSV contains all matching rows
 2. Operator initiates a full or partial refund from the order detail view; the refund is reflected in both Stripe and the order state
 3. Operator sets a VAT rate per category; order detail shows a VAT breakdown
 4. Operator sees the RestOS SaaS billing line for the current period alongside Stripe processing fees
+5. A tenant can be placed on a commission plan, a flat-subscription plan, or a hybrid; the chosen plan controls the `application_fee` on Connect charges and any recurring Stripe Billing subscription, and the operator sees their current plan and charges in the finance view
    **Plans**: TBD
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
@@ -634,7 +651,7 @@ Open architectural questions to resolve before MVP-2 activation: vector store ch
 ## Progress
 
 **Execution Order:**
-MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
+MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 8.1 → 10. Phase 8.1 (Payments provider layer + onboarding UX) was pulled into MVP-1 on 2026-06-28; it extends Phase 8 and does not block Phase 10, so it may also run in parallel with Phase 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
 
 Notes:
 
@@ -656,6 +673,7 @@ Notes:
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
+| 8.1. Payments — Provider Layer & Onboarding   | 0/?            | Not started   | -          |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 

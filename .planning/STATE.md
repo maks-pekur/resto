@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: 'Phase 8 (Payments) CODE-COMPLETE + LIVE-VERIFIED partially. All 8 plans executed (~700 tests green; DIRECT charges D-02). Live run caught + fixed 2 real bugs unit/e2e/verifier missed: (a) BOOT-BREAKING webhook raw-body parser conflict — api could NOT start — fixed via NestFactory rawBody:true (18abbe0); (b) orphan-PI invalid status write + email accentColor mapping (verifier, prior). Also fixed nx serve api (missing sql-loader, 7a70015) + dev-env (DB port→5433 via infra/docker/.env, migrated). VERIFIED LIVE: api boots clean (/healthz ok, all DB preflights pass); Stripe webhook end-to-end with REAL signed events (signature+raw-body+dispatch → [201]). Connect ENABLED (Platform model). STILL PENDING (browser-only, founder): Stripe-hosted Express onboarding KYC → charges_enabled account, then test-card checkout + refund. Stack is UP (api :3000 + stripe listen forwarding). Next after smokes → Phase 10.'
-last_updated: '2026-06-27T20:59:56.195Z'
+status: verifying
+stopped_at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
+last_updated: '2026-06-28T10:54:35.040Z'
 last_activity: 2026-06-27
 progress:
-  total_phases: 20
+  total_phases: 21
   completed_phases: 9
   total_plans: 76
   completed_plans: 68
-  percent: 45
+  percent: 43
 ---
 
 # Project State
@@ -117,6 +117,10 @@ _Updated after each plan completion_
 | Phase 08 P05 | 90min | 2 tasks | 10 files |
 
 ## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 08.1 inserted after Phase 8: Payments provider layer + onboarding UX (embedded Connect, Standard OAuth, provider-agnostic PaymentProviderPort); pulled into MVP-1, extends Phase 8, does not block Phase 10 (URGENT)
 
 ### Decisions
 
@@ -230,6 +234,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-27T20:59:56.133Z
-Stopped at: Phase 8 context gathered (founder decisions + persona reviews); charge-model resolved to direct charges (D-02 — confirm)
-Resume file: None
+Last session: 2026-06-28T10:54:35.029Z
+Stopped at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
+Resume file: .planning/phases/08.1-payments-provider-layer-and-onboarding-ux/08.1-CONTEXT.md
