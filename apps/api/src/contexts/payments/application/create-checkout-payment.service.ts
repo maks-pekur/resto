@@ -9,9 +9,6 @@ export interface CheckoutInput {
   readonly tenantId: TenantId;
 }
 
-// D-06/D-07: checkout is disabled until Plan 03 wires brand-level Stripe connected account.
-// Full implementation lives in git history; re-enabled when BrandRepository.findByStripeAccountId
-// and brand payment columns are wired into this service.
 @Injectable()
 export class CreateCheckoutPaymentService {
   constructor(

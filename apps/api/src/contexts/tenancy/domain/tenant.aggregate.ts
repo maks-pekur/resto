@@ -4,7 +4,6 @@ import { z } from 'zod';
 import type { TenantDomain } from './tenant-domain';
 
 // PAY-11: .max(255) bounds oversized externally-supplied ids on the webhook parse path.
-// Re-exported here; Plan 03 moves the primary usage to brand.aggregate.ts.
 export const StripeAccountId = z.string().min(1).max(255);
 import type { TenantDomainEvent } from './events';
 import {
@@ -31,7 +30,6 @@ export const SERVABLE_STATUSES: ReadonlySet<TenantStatus> = new Set<TenantStatus
 
 export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_STATUSES.has(status);
 
-// D-06: StripeOnboardingStatus kept here until Plan 03 removes the last consumer
 // (handle-stripe-event.service.ts imports it from this location).
 export type StripeOnboardingStatus = 'not_started' | 'pending' | 'complete' | 'restricted';
 
@@ -52,7 +50,6 @@ export interface TenantSnapshot {
   readonly offboardingRequestedBy: string | null;
 }
 
-// D-06: ApplyStripeCapabilitiesInput retained until Plan 03 moves it to brand.aggregate.ts.
 export interface ApplyStripeCapabilitiesInput {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
@@ -247,19 +244,17 @@ export class Tenant {
     });
   }
 
-  // D-06: linkStripeAccount/applyStripeCapabilities/canAcceptPayments are stubs retained
-  // until Plan 03 repoints checkout/webhook/onboarding services to the brand aggregate.
   linkStripeAccount(_accountId: string, _now: Date = new Date()): void {
-    // no-op — stripe linkage now lives on the brand (D-06); Plan 03 removes this stub.
+    void _accountId;
+    void _now;
   }
 
   applyStripeCapabilities(_input: ApplyStripeCapabilitiesInput, _now: Date = new Date()): void {
-    // no-op — stripe capabilities now live on the brand (D-06); Plan 03 removes this stub.
+    void _input;
+    void _now;
   }
 
   canAcceptPayments(): boolean {
-    // stub — always false now that stripe is brand-level; Plan 03 removes this and repoints
-    // checkout to brand.canAcceptPayments() (D-07).
     return false;
   }
 

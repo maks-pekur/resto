@@ -21,9 +21,6 @@ describe('StripeAccountId (PAY-11)', () => {
   });
 });
 
-// D-06: canAcceptPayments/applyStripeCapabilities are stubs on Tenant (stripe moved to Brand).
-// The real capability tests live in brand.aggregate.spec.ts (Task 2). These verify the stubs
-// compile and do not throw.
 describe('Tenant.canAcceptPayments (D-06 stub)', () => {
   it('always returns false — stripe capability moved to Brand aggregate', () => {
     const tenant = makeTenant();

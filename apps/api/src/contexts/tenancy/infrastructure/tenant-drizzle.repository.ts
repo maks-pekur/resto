@@ -87,8 +87,6 @@ export class TenantDrizzleRepository implements TenantRepository {
     });
   }
 
-  // D-06: findByStripeAccountId remains on TenantRepository per ports.ts contract
-  // until Plan 03 repoints webhook handlers to use BrandRepository.findByStripeAccountId.
   findByStripeAccountId(_stripeAccountId: string): Promise<Tenant | null> {
     return Promise.resolve(null);
   }

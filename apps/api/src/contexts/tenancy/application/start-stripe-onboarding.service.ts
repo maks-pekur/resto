@@ -23,9 +23,6 @@ export interface GetStripeStatusResult {
   readonly requirementsDue: unknown;
 }
 
-// D-06: this service is per-tenant and is superseded by per-brand onboarding in Plan 04.
-// Stripe fields have moved from TenantSnapshot to BrandSnapshot; this service now returns
-// stub 'not_started' status until Plan 03/04 wires the brand-level onboarding endpoint.
 @Injectable()
 export class StartStripeOnboardingService {
   private readonly logger = new Logger(StartStripeOnboardingService.name);
@@ -72,8 +69,6 @@ export class StartStripeOnboardingService {
   }
 
   getStatus(): Promise<GetStripeStatusResult> {
-    // D-06: stripe status is now per-brand; stub returns 'not_started' until Plan 04
-    // wires the brand-level onboarding status endpoint.
     return Promise.resolve({
       onboardingStatus: 'not_started',
       chargesEnabled: false,

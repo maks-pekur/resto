@@ -168,8 +168,6 @@ const buildSut = () => {
 };
 
 describe('CreateCheckoutPaymentService', () => {
-  // D-06: canAcceptPayments() is a stub on Tenant that always returns false (stripe moved to Brand).
-  // All paths through execute() throw PaymentsNotEnabledError until Plan 03 wires brand-level checkout.
   describe('canAcceptPayments gate (D-12)', () => {
     it('throws PaymentsNotEnabledError (stub — brand-level gate wired in Plan 03)', async () => {
       const { sut, orderSnap, tenantId, stripePort } = buildSut();
@@ -209,7 +207,6 @@ describe('CreateCheckoutPaymentService', () => {
     });
   });
 
-  // D-06: double-charge guard tests re-enabled in Plan 03 when brand-level connected account is wired.
   describe('double-charge guard (D-06)', () => {
     it.skip('cancels prior in-flight PaymentIntent before creating a new one — re-enabled Plan 03', async () => {
       const { sut, paymentRepo, stripePort, orderSnap, tenantId } = buildSut();
@@ -281,7 +278,6 @@ describe('CreateCheckoutPaymentService', () => {
     });
   });
 
-  // D-08: order transition tests re-enabled in Plan 03 when brand-level connected account is wired.
   describe('order status transition + payment row (D-08)', () => {
     it.skip('transitions order to requires_action and writes a payment row — re-enabled Plan 03', async () => {
       const { sut, orderRepo, paymentRepo, orderSnap, tenantId } = buildSut();
