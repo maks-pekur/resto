@@ -18,3 +18,4 @@ export const getEnv = (key: string): string => {
 };
 
 export const VITE_API_ORIGIN = getEnv('VITE_API_ORIGIN');
+export const VITE_STRIPE_PUBLISHABLE_KEY = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
