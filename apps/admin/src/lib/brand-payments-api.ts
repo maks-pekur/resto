@@ -25,3 +25,8 @@ export const startBrandHostedLink = (brandSlug: string) =>
     method: 'POST',
     brandSlug,
   });
+
+export const startBrandOAuth = (brandSlug: string) =>
+  apiFetch<{ authorizeUrl: string }>(`/v1/tenancy/brands/${brandSlug}/onboarding/oauth/start`, {
+    brandSlug,
+  });

@@ -12,6 +12,7 @@ import {
   getBrandPaymentStatus,
   startBrandEmbeddedSession,
   startBrandHostedLink,
+  startBrandOAuth,
 } from '@/lib/brand-payments-api';
 import { VITE_STRIPE_PUBLISHABLE_KEY } from '@/env';
 
@@ -59,10 +60,21 @@ function BrandPayoutsPage() {
     onError: () => toast.error('Request failed. Please try again.'),
   });
 
+  const oauthMutation = useMutation({
+    mutationFn: () => startBrandOAuth(slug),
+    onSuccess: (res) => {
+      if (!res.ok || res.data === null) {
+        toast.error('Failed to start Stripe OAuth. Please try again.');
+        return;
+      }
+      window.location.href = res.data.authorizeUrl;
+    },
+    onError: () => toast.error('Failed to connect Stripe account. Please try again.'),
+  });
+
   const status = statusQuery.data?.data;
   const isLoading = statusQuery.isLoading;
-
-  const isOnboarded = status?.accountType !== null && status?.accountType !== undefined;
+  const accountType = status?.accountType ?? null;
 
   return (
     <>
@@ -78,6 +90,13 @@ function BrandPayoutsPage() {
           <CardContent className="flex flex-col gap-4">
             {isLoading ? (
               <p className="text-muted-foreground text-sm">Loading payment status…</p>
+            ) : accountType === 'standard' ? (
+              <StandardAccountView
+                canAcceptPayments={status?.canAcceptPayments ?? false}
+                chargesEnabled={status?.chargesEnabled ?? false}
+                payoutsEnabled={status?.payoutsEnabled ?? false}
+                onboardingStatus={status?.onboardingStatus ?? 'not_started'}
+              />
             ) : status?.canAcceptPayments ? (
               <div className="flex items-center gap-2">
                 <span className="bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium">
@@ -113,7 +132,7 @@ function BrandPayoutsPage() {
                   resumeLabel="Resume onboarding"
                 />
               </div>
-            ) : isOnboarded ? (
+            ) : accountType === 'express' ? (
               <div className="flex flex-col gap-3">
                 <span className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
                   Onboarding pending — finish Stripe verification
@@ -149,8 +168,15 @@ function BrandPayoutsPage() {
                   >
                     Create new (Express)
                   </Button>
-                  <Button variant="outline" className="w-fit" disabled>
-                    Connect existing (Standard) — coming soon
+                  <Button
+                    variant="outline"
+                    className="w-fit"
+                    onClick={() => {
+                      oauthMutation.mutate();
+                    }}
+                    disabled={oauthMutation.isPending}
+                  >
+                    {oauthMutation.isPending ? 'Redirecting…' : 'Connect existing (Standard)'}
                   </Button>
                 </div>
                 {showEmbedded && (
@@ -171,6 +197,43 @@ function BrandPayoutsPage() {
         </Card>
       </div>
     </>
+  );
+}
+
+interface StandardAccountViewProps {
+  canAcceptPayments: boolean;
+  chargesEnabled: boolean;
+  payoutsEnabled: boolean;
+  onboardingStatus: string;
+}
+
+function StandardAccountView({
+  canAcceptPayments,
+  chargesEnabled,
+  payoutsEnabled,
+  onboardingStatus,
+}: StandardAccountViewProps) {
+  return (
+    <div className="flex flex-col gap-3">
+      {canAcceptPayments ? (
+        <span className="bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
+          Payments active
+        </span>
+      ) : onboardingStatus === 'restricted' ? (
+        <span className="bg-red-100 text-red-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
+          Restricted — additional info required
+        </span>
+      ) : (
+        <span className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
+          {onboardingStatus === 'not_started' ? 'Not connected' : 'Verification pending'}
+        </span>
+      )}
+      <p className="text-muted-foreground text-sm">
+        Manage your Stripe account in your own Stripe Dashboard. Charges enabled:{' '}
+        <strong>{chargesEnabled ? 'Yes' : 'No'}</strong>. Payouts enabled:{' '}
+        <strong>{payoutsEnabled ? 'Yes' : 'No'}</strong>.
+      </p>
+    </div>
   );
 }
 
