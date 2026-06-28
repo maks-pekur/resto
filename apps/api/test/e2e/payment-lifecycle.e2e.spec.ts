@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { schema } from '@resto/db';
-import { Currency, TenantId, TenantSlug } from '@resto/domain';
+import { BrandId, Currency, TenantId, TenantSlug } from '@resto/domain';
 import { runInTenantContext } from '@resto/db';
 import { Tenant } from '../../src/contexts/tenancy/domain/tenant.aggregate';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
@@ -11,6 +11,9 @@ import { CreateCheckoutPaymentService } from '../../src/contexts/payments/applic
 import { HandleStripeEventService } from '../../src/contexts/payments/application/handle-stripe-event.service';
 import { isDockerAvailable, startDbStack, stopDbStack } from './helpers/with-db-stack';
 import type { DbStack } from './helpers/with-db-stack';
+import type { BrandRepository } from '../../src/contexts/tenancy/domain/ports';
+import type { BrandSnapshot } from '../../src/contexts/tenancy/domain/brand.aggregate';
+import type { PaymentProviderPort } from '../../src/contexts/payments/domain/ports';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -98,43 +101,70 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     if (stack) await stopDbStack(stack);
   });
 
-  it.skip('step 2: checkout service transitions order to requires_action and writes payment row — re-enabled Plan 03', async () => {
+  it.skip('step 2: checkout service transitions order to requires_action and writes payment row', async () => {
     const orderRepo = new OrderDrizzleRepository(stack.db);
-    const _paymentRepo = new PaymentDrizzleRepository(stack.db);
+    const paymentRepo = new PaymentDrizzleRepository(stack.db);
 
     const piId = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const clientSecret = `${piId}_secret_test`;
 
-    const fakeTenant = makeFakeTenant(tenantId);
-
-    const tenantRepoMock = {
-      findById: vi.fn().mockResolvedValue(fakeTenant),
-      findBySlug: vi.fn().mockResolvedValue(null),
-      findByDomainHost: vi.fn().mockResolvedValue(null),
-      findByStripeAccountId: vi.fn().mockResolvedValue(fakeTenant),
-      findCurrentTenant: vi.fn().mockResolvedValue(fakeTenant),
-      listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
-      save: vi.fn().mockResolvedValue(undefined),
-      listDomains: vi.fn().mockResolvedValue([]),
-      eraseTenant: vi.fn(),
-      listScheduledForErasure: vi.fn().mockResolvedValue([]),
+    const fakeBrandSnap: BrandSnapshot = {
+      id: BrandId.parse(brandId),
+      tenantId: TenantId.parse(tenantId),
+      slug: `lifecycle-brand-${brandId.slice(0, 8)}`,
+      displayName: 'Test Brand',
+      status: 'active',
+      theme: null,
+      paymentProvider: 'stripe',
+      accountType: 'express',
+      defaultCurrency: 'EUR',
+      stripeAccountId: STRIPE_ACCOUNT_ID,
+      stripeChargesEnabled: true,
+      stripePayoutsEnabled: true,
+      stripeOnboardingStatus: 'complete',
+      stripeRequirementsDue: null,
     };
 
-    const _stripePortMock = {
-      ensureExpressAccount: vi.fn().mockResolvedValue(STRIPE_ACCOUNT_ID),
-      createExpressAccount: vi.fn(),
-      createAccountLink: vi.fn(),
+    const brandRepoMock: BrandRepository = {
+      findById: vi.fn().mockResolvedValue(fakeBrandSnap),
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findByTenantAndSlug: vi.fn().mockResolvedValue(null),
+      findByDomainHost: vi.fn().mockResolvedValue(null),
+      listForTenant: vi.fn().mockResolvedValue([]),
+      save: vi.fn().mockResolvedValue(undefined),
+      findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+      findByStripeAccountId: vi.fn().mockResolvedValue(null),
+      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+    };
+
+    const providerMock: PaymentProviderPort = {
+      ensureOnboardingAccount: vi.fn().mockResolvedValue({ accountId: STRIPE_ACCOUNT_ID }),
+      createOnboardingLink: vi.fn().mockResolvedValue({ url: '', expiresAt: 0 }),
+      createOnboardingSession: vi.fn().mockResolvedValue({ clientSecret: '' }),
+      exchangeOAuthCode: vi.fn().mockResolvedValue({ accountId: STRIPE_ACCOUNT_ID }),
+      retrieveAccount: vi
+        .fn()
+        .mockResolvedValue({ chargesEnabled: true, payoutsEnabled: true, requirementsDue: null }),
       createPaymentIntent: vi.fn().mockResolvedValue({
         paymentIntentId: piId,
         clientSecret,
         status: 'requires_payment_method',
       }),
       cancelPaymentIntent: vi.fn().mockResolvedValue({ status: 'canceled' }),
-      createRefund: vi.fn(),
-      retrieveAccount: vi.fn(),
+      createRefund: vi.fn().mockResolvedValue({ stripeRefundId: 're_test', status: 'succeeded' }),
+      verifyWebhookSignature: vi
+        .fn()
+        .mockReturnValue({ id: 'evt_test', type: 'account.updated', data: {} }),
     };
 
-    const checkoutService = new CreateCheckoutPaymentService(orderRepo, tenantRepoMock);
+    const checkoutService = new CreateCheckoutPaymentService(
+      orderRepo,
+      brandRepoMock,
+      paymentRepo,
+      providerMock,
+      stack.db,
+      0,
+    );
 
     await runInTenantContext({ tenantId }, () =>
       checkoutService.execute({ orderId, tenantId: TenantId.parse(tenantId) }),

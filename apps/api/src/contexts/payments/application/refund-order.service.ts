@@ -6,7 +6,7 @@ import { toMinorUnits, fromMinorUnits } from '../../ordering/domain/money-utils'
 import { ORDER_REPOSITORY, type OrderRepository } from '../../ordering/domain/ports';
 import { OrderNotFoundError } from '../../ordering/domain/errors';
 import { type Order } from '../../ordering/domain/order.aggregate';
-import { STRIPE_CONNECT_PORT, type StripeConnectPort } from '../../tenancy/domain/ports';
+import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../domain/ports';
 import { PAYMENT_REPOSITORY, type PaymentRepository } from '../domain/ports';
 import { RefundReasonRequiredError, PaymentNotRefundableError } from '../domain/errors';
 
@@ -30,7 +30,7 @@ export class RefundOrderService {
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly orderRepo: OrderRepository,
     @Inject(PAYMENT_REPOSITORY) private readonly paymentRepo: PaymentRepository,
-    @Inject(STRIPE_CONNECT_PORT) private readonly stripePort: StripeConnectPort,
+    @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     logger?: Logger,
   ) {
@@ -72,7 +72,7 @@ export class RefundOrderService {
 
       const refundRequestId = `refund:${input.orderId}:${alreadyRefundedMinor}:${amountMinor}`;
 
-      const { stripeRefundId, status } = await this.stripePort.createRefund({
+      const { stripeRefundId, status } = await this.provider.createRefund({
         paymentIntentId: payment.paymentIntentId,
         connectedAccountId: payment.stripeAccountId,
         amountMinor,

@@ -4,7 +4,7 @@ import type { TenantAwareDb, RestoTx } from '@resto/db';
 import { TenantId, OrderId, Currency } from '@resto/domain';
 import { Order } from '../../ordering/domain/order.aggregate';
 import type { OrderRepository } from '../../ordering/domain/ports';
-import type { StripeConnectPort } from '../../tenancy/domain/ports';
+import type { PaymentProviderPort } from '../domain/ports';
 import type { PaymentRepository } from '../domain/ports';
 import { CancelOrderService } from './cancel-order.service';
 import { RefundOrderService } from './refund-order.service';
@@ -69,7 +69,7 @@ describe('CancelOrderService', () => {
   let refundService: RefundOrderService;
   let orderRepo: { [K in keyof OrderRepository]: ReturnType<typeof vi.fn> };
   let paymentRepo: { [K in keyof PaymentRepository]: ReturnType<typeof vi.fn> };
-  let stripePort: { [K in keyof StripeConnectPort]: ReturnType<typeof vi.fn> };
+  let provider: { [K in keyof PaymentProviderPort]: ReturnType<typeof vi.fn> };
   let db: { withTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
@@ -90,16 +90,18 @@ describe('CancelOrderService', () => {
       updateRefundStatus: vi.fn().mockResolvedValue(undefined),
     };
 
-    stripePort = {
-      ensureExpressAccount: vi.fn(),
-      createExpressAccount: vi.fn(),
-      createAccountLink: vi.fn(),
+    provider = {
+      ensureOnboardingAccount: vi.fn(),
+      createOnboardingLink: vi.fn(),
+      createOnboardingSession: vi.fn(),
+      exchangeOAuthCode: vi.fn(),
+      retrieveAccount: vi.fn(),
       createPaymentIntent: vi.fn(),
       cancelPaymentIntent: vi.fn(),
       createRefund: vi
         .fn()
         .mockResolvedValue({ stripeRefundId: 're_test_cancel', status: 'succeeded' }),
-      retrieveAccount: vi.fn(),
+      verifyWebhookSignature: vi.fn(),
     };
 
     db = {
@@ -111,7 +113,7 @@ describe('CancelOrderService', () => {
     refundService = new RefundOrderService(
       orderRepo,
       paymentRepo,
-      stripePort,
+      provider,
       db as unknown as TenantAwareDb,
       new Logger('test'),
     );
@@ -129,7 +131,7 @@ describe('CancelOrderService', () => {
   it('cancel of unpaid (created) order — no refund call', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
     await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'changed mind' });
-    expect(stripePort.createRefund).not.toHaveBeenCalled();
+    expect(provider.createRefund).not.toHaveBeenCalled();
     const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('canceled');
   });
@@ -141,8 +143,8 @@ describe('CancelOrderService', () => {
 
     await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'order canceled' });
 
-    expect(stripePort.createRefund).toHaveBeenCalledTimes(1);
-    expect(stripePort.createRefund).toHaveBeenCalledWith(
+    expect(provider.createRefund).toHaveBeenCalledTimes(1);
+    expect(provider.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({
         paymentIntentId: PAYMENT_INTENT_ID,
         connectedAccountId: STRIPE_ACCOUNT_ID,
@@ -163,7 +165,7 @@ describe('CancelOrderService', () => {
 
     await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'order canceled' });
 
-    expect(stripePort.createRefund).toHaveBeenCalledWith(
+    expect(provider.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({ amountMinor: 1500 }),
     );
   });
