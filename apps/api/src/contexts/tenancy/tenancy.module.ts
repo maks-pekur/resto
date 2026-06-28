@@ -12,6 +12,7 @@ import { BrandQueriesService } from './application/brand-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
 import { TenantAndBrandResolverService } from './application/tenant-and-brand-resolver.service';
 import { StartStripeOnboardingService } from './application/start-stripe-onboarding.service';
+import { StartBrandOnboardingService } from './application/start-brand-onboarding.service';
 import { BRAND_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
 import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
 import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
@@ -20,9 +21,15 @@ import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repositor
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.controller';
+import { BrandOnboardingController } from './interfaces/http/brand-onboarding.controller';
 
 @Module({
-  controllers: [InternalTenantsController, TenantsController, StripeOnboardingController],
+  controllers: [
+    InternalTenantsController,
+    TenantsController,
+    StripeOnboardingController,
+    BrandOnboardingController,
+  ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: BRAND_REPOSITORY, useClass: BrandDrizzleRepository },
@@ -47,6 +54,7 @@ import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.
     TenantResolverService,
     TenantAndBrandResolverService,
     StartStripeOnboardingService,
+    StartBrandOnboardingService,
   ],
   exports: [
     TENANT_REPOSITORY,
