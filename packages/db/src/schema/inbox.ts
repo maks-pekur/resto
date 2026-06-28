@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm';
-import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { index, pgTable, primaryKey, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 
 /**
  * Inbox dedup ledger. Per (event_id, consumer) record indicating an
@@ -21,7 +21,7 @@ import { index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/p
 export const inboxProcessed = pgTable(
   'inbox_processed',
   {
-    eventId: uuid('event_id').notNull(),
+    eventId: varchar('event_id', { length: 255 }).notNull(),
     consumer: text('consumer').notNull(),
     tenantId: uuid('tenant_id'),
     processedAt: timestamp('processed_at', { withTimezone: true, mode: 'date' })
