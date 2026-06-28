@@ -236,7 +236,9 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       },
     };
 
-    await runInTenantContext({ tenantId }, () => handlerService.handle(piSucceededEvent as never));
+    // No tenant ALS — mirrors production: StripeWebhookController is @Public with no
+    // TenantContextMiddleware; handler resolves tenantId from event metadata (ADR-0020 I-6).
+    await handlerService.handle(piSucceededEvent as never);
 
     const [orderRow] = await stack.db.withoutTenant('verify order paid', async (tx) =>
       tx
@@ -278,7 +280,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     );
     expect(outboxRow).toBeDefined();
 
-    await runInTenantContext({ tenantId }, () => handlerService.handle(piSucceededEvent as never));
+    await handlerService.handle(piSucceededEvent as never);
 
     const inboxRowsAfterReplay = await stack.db.withoutTenant(
       'verify inbox dedup on replay',
@@ -369,9 +371,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       },
     };
 
-    await runInTenantContext({ tenantId }, () =>
-      handlerService.handle(chargeRefundedEvent as never),
-    );
+    await handlerService.handle(chargeRefundedEvent as never);
 
     const refundRows = await stack.db.withoutTenant('verify refund row', async (tx) =>
       tx
