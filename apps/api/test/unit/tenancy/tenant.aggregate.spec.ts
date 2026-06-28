@@ -148,7 +148,6 @@ describe('Tenant.executeErasure', () => {
     expect(snapshot.status).toBe('erased');
     expect(snapshot.displayName).toBe('[erased]');
     expect(snapshot.slug).toMatch(/^erased-/);
-    expect(snapshot.stripeAccountId).toBeNull();
     expect(snapshot.offboardingExecutedAt).toEqual(eraseAt);
     expect(tenant.pullEvents()[0]?.kind).toBe('TenantErasureCompleted');
   });

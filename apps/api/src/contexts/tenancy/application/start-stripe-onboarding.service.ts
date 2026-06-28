@@ -9,7 +9,7 @@ import {
   type StripeConnectPort,
   type TenantRepository,
 } from '../domain/ports';
-import type { StripeOnboardingStatus, TenantSnapshot } from '../domain/tenant.aggregate';
+import type { StripeOnboardingStatus } from '../domain/tenant.aggregate';
 
 export interface StartStripeOnboardingResult {
   readonly onboardingUrl: string;
@@ -23,6 +23,9 @@ export interface GetStripeStatusResult {
   readonly requirementsDue: unknown;
 }
 
+// D-06: this service is per-tenant and is superseded by per-brand onboarding in Plan 04.
+// Stripe fields have moved from TenantSnapshot to BrandSnapshot; this service now returns
+// stub 'not_started' status until Plan 03/04 wires the brand-level onboarding endpoint.
 @Injectable()
 export class StartStripeOnboardingService {
   private readonly logger = new Logger(StartStripeOnboardingService.name);
@@ -41,56 +44,42 @@ export class StartStripeOnboardingService {
     }
     const snapshot = tenant.toSnapshot();
 
-    let accountId = snapshot.stripeAccountId;
-    if (accountId === null) {
-      try {
-        const result = await this.stripe.createExpressAccount({
-          tenantId: snapshot.id,
-          displayName: snapshot.displayName,
-          defaultCurrency: snapshot.defaultCurrency,
-        });
-        accountId = result.accountId;
-        tenant.linkStripeAccount(accountId);
-        await this.repo.save(tenant);
-        this.logger.log(
-          { tenantId: snapshot.id, accountId },
-          'Stripe Express account created and persisted.',
-        );
-      } catch (err) {
-        throw new StripeOnboardingFailedError(
-          snapshot.id,
-          err instanceof Error ? err : new Error(String(err)),
-        );
-      }
+    try {
+      const result = await this.stripe.createExpressAccount({
+        tenantId: snapshot.id,
+        displayName: snapshot.displayName,
+        defaultCurrency: snapshot.defaultCurrency,
+      });
+      const accountId = result.accountId;
+      tenant.linkStripeAccount(accountId);
+      await this.repo.save(tenant);
+      this.logger.log(
+        { tenantId: snapshot.id, accountId },
+        'Stripe Express account created and persisted.',
+      );
+      const link = await this.stripe.createAccountLink({
+        accountId,
+        returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
+        refreshUrl: this.env.STRIPE_CONNECT_REFRESH_URL,
+      });
+      return { onboardingUrl: link.url };
+    } catch (err) {
+      throw new StripeOnboardingFailedError(
+        snapshot.id,
+        err instanceof Error ? err : new Error(String(err)),
+      );
     }
-
-    const link = await this.stripe.createAccountLink({
-      accountId,
-      returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
-      refreshUrl: this.env.STRIPE_CONNECT_REFRESH_URL,
-    });
-
-    return { onboardingUrl: link.url };
   }
 
-  async getStatus(): Promise<GetStripeStatusResult> {
-    const tenant = await this.repo.findCurrentTenant();
-    if (tenant === null) {
-      return {
-        onboardingStatus: 'not_started',
-        chargesEnabled: false,
-        payoutsEnabled: false,
-        canAcceptPayments: false,
-        requirementsDue: null,
-      };
-    }
-    const s: TenantSnapshot = tenant.toSnapshot();
-    return {
-      onboardingStatus: s.stripeOnboardingStatus,
-      chargesEnabled: s.stripeChargesEnabled,
-      payoutsEnabled: s.stripePayoutsEnabled,
-      canAcceptPayments: tenant.canAcceptPayments(),
-      requirementsDue: s.stripeRequirementsDue,
-    };
+  getStatus(): Promise<GetStripeStatusResult> {
+    // D-06: stripe status is now per-brand; stub returns 'not_started' until Plan 04
+    // wires the brand-level onboarding status endpoint.
+    return Promise.resolve({
+      onboardingStatus: 'not_started',
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      canAcceptPayments: false,
+      requirementsDue: null,
+    });
   }
 }

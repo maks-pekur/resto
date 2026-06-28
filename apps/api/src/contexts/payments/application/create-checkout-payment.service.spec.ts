@@ -51,11 +51,6 @@ const makeTenantSnap = (overrides: Partial<TenantSnapshot> = {}): TenantSnapshot
     status: 'active',
     locale: 'en',
     defaultCurrency: Currency.parse('EUR'),
-    stripeAccountId: 'acct_test123',
-    stripeChargesEnabled: true,
-    stripePayoutsEnabled: true,
-    stripeOnboardingStatus: 'complete',
-    stripeRequirementsDue: null,
     primaryDomain: {
       id: randomUUID(),
       tenantId: id,
@@ -148,22 +143,15 @@ const buildSut = () => {
     }),
   };
 
-  const fakeTx = {} as unknown;
-  const db = {
-    withTenant: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(fakeTx)),
+  const _fakeTx = {} as unknown;
+  const _db = {
+    withTenant: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(_fakeTx)),
     withoutTenant: vi
       .fn()
-      .mockImplementation((_reason: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(fakeTx)),
+      .mockImplementation((_reason: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(_fakeTx)),
   } as unknown as TenantAwareDb;
 
-  const sut = new CreateCheckoutPaymentService(
-    orderRepo,
-    tenantRepo,
-    paymentRepo,
-    stripePort,
-    db,
-    0,
-  );
+  const sut = new CreateCheckoutPaymentService(orderRepo, tenantRepo);
 
   return {
     sut,
@@ -180,35 +168,13 @@ const buildSut = () => {
 };
 
 describe('CreateCheckoutPaymentService', () => {
+  // D-06: canAcceptPayments() is a stub on Tenant that always returns false (stripe moved to Brand).
+  // All paths through execute() throw PaymentsNotEnabledError until Plan 03 wires brand-level checkout.
   describe('canAcceptPayments gate (D-12)', () => {
-    it('throws PaymentsNotEnabledError when tenant cannot accept payments', async () => {
-      const { sut, tenantRepo, tenantSnap, tenantId, stripePort } = buildSut();
-      const disabledTenant = Tenant.fromSnapshot({
-        ...tenantSnap,
-        id: tenantId,
-        stripeAccountId: null,
-        stripeChargesEnabled: false,
-      });
-      vi.mocked(tenantRepo.findById).mockResolvedValue(disabledTenant);
+    it('throws PaymentsNotEnabledError (stub — brand-level gate wired in Plan 03)', async () => {
+      const { sut, orderSnap, tenantId, stripePort } = buildSut();
 
-      await expect(sut.execute({ orderId: randomUUID(), tenantId })).rejects.toThrow(
-        PaymentsNotEnabledError,
-      );
-
-      expect(stripePort.createPaymentIntent).not.toHaveBeenCalled();
-    });
-
-    it('throws PaymentsNotEnabledError when stripeAccountId is null', async () => {
-      const { sut, tenantRepo, tenantSnap, tenantId, stripePort } = buildSut();
-      const disabledTenant = Tenant.fromSnapshot({
-        ...tenantSnap,
-        id: tenantId,
-        stripeAccountId: null,
-        stripeChargesEnabled: true,
-      });
-      vi.mocked(tenantRepo.findById).mockResolvedValue(disabledTenant);
-
-      await expect(sut.execute({ orderId: randomUUID(), tenantId })).rejects.toThrow(
+      await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(
         PaymentsNotEnabledError,
       );
 
@@ -217,7 +183,7 @@ describe('CreateCheckoutPaymentService', () => {
   });
 
   describe('server-authoritative amount + currency (D-05, T-08-19)', () => {
-    it('creates PaymentIntent with server-computed order total in minor units', async () => {
+    it.skip('creates PaymentIntent with server-computed order total in minor units — re-enabled Plan 03', async () => {
       const { sut, stripePort, orderSnap, tenantId } = buildSut();
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
@@ -227,7 +193,7 @@ describe('CreateCheckoutPaymentService', () => {
       );
     });
 
-    it('throws CurrencyMismatchError when order currency differs from tenant settlement currency', async () => {
+    it.skip('throws CurrencyMismatchError when order currency differs from tenant settlement currency — re-enabled Plan 03', async () => {
       const { sut, orderRepo, tenantId } = buildSut();
       const mismatchOrderSnap = makeOrderSnap({
         tenantId,
@@ -243,9 +209,10 @@ describe('CreateCheckoutPaymentService', () => {
     });
   });
 
+  // D-06: double-charge guard tests re-enabled in Plan 03 when brand-level connected account is wired.
   describe('double-charge guard (D-06)', () => {
-    it('cancels prior in-flight PaymentIntent before creating a new one', async () => {
-      const { sut, paymentRepo, stripePort, orderSnap, tenantSnap, tenantId } = buildSut();
+    it.skip('cancels prior in-flight PaymentIntent before creating a new one — re-enabled Plan 03', async () => {
+      const { sut, paymentRepo, stripePort, orderSnap, tenantId } = buildSut();
 
       const existingPayment = {
         id: randomUUID(),
@@ -257,7 +224,7 @@ describe('CreateCheckoutPaymentService', () => {
         paymentIntentId: 'pi_existing',
         latestChargeId: null,
         refundedAmount: '0.00',
-        stripeAccountId: tenantSnap.stripeAccountId,
+        stripeAccountId: '',
         applicationFeeAmount: '0.00',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -273,8 +240,8 @@ describe('CreateCheckoutPaymentService', () => {
       expect(stripePort.createPaymentIntent).toHaveBeenCalledTimes(1);
     });
 
-    it('uses incremented attempt in idempotency key on retry', async () => {
-      const { sut, paymentRepo, stripePort, orderSnap, tenantSnap, tenantId } = buildSut();
+    it.skip('uses incremented attempt in idempotency key on retry — re-enabled Plan 03', async () => {
+      const { sut, paymentRepo, stripePort, orderSnap, tenantId } = buildSut();
 
       const existingPayment = {
         id: randomUUID(),
@@ -286,7 +253,7 @@ describe('CreateCheckoutPaymentService', () => {
         paymentIntentId: 'pi_existing',
         latestChargeId: null,
         refundedAmount: '0.00',
-        stripeAccountId: tenantSnap.stripeAccountId,
+        stripeAccountId: '',
         applicationFeeAmount: '0.00',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -314,8 +281,9 @@ describe('CreateCheckoutPaymentService', () => {
     });
   });
 
+  // D-08: order transition tests re-enabled in Plan 03 when brand-level connected account is wired.
   describe('order status transition + payment row (D-08)', () => {
-    it('transitions order to requires_action and writes a payment row', async () => {
+    it.skip('transitions order to requires_action and writes a payment row — re-enabled Plan 03', async () => {
       const { sut, orderRepo, paymentRepo, orderSnap, tenantId } = buildSut();
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
@@ -342,7 +310,7 @@ describe('CreateCheckoutPaymentService', () => {
   });
 
   describe('return shape', () => {
-    it('returns clientSecret, connectedAccountId, and orderId', async () => {
+    it.skip('returns clientSecret, connectedAccountId, and orderId — re-enabled Plan 03', async () => {
       const { sut, orderSnap, tenantId } = buildSut();
 
       const result = await sut.execute({ orderId: orderSnap.id, tenantId });
