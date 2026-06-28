@@ -480,9 +480,14 @@ Plans:
 2. A tenant who already has Stripe connects it in one click via OAuth (Connect Standard) and can accept payments with the RestOS `application_fee` applied — no secret-key handling, dashboard stays with the tenant
 3. The payments application code (checkout, refund, webhook services) depends only on a provider-agnostic `PaymentProviderPort`; adding a second provider requires a new adapter + config only — proven by a stub second-provider adapter or an architecture test — and the tenant carries a `paymentProvider` discriminator
 4. The onboarding method ("Create new (Express)" vs "Connect existing (Standard)") is selectable in admin and resumable
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+   **Plans**: 5 plans
+   - [ ] 08.1-01-PLAN.md — Per-brand Stripe schema reshape (migration 0057, brand aggregate payment fields, brand repo findByStripeAccountId, tenant Stripe columns dropped — no backfill)
+   - [ ] 08.1-02-PLAN.md — Provider-agnostic PaymentProviderPort + StripeProviderAdapter rename/extend + stub adapter + ESLint architecture test (PAY-16)
+   - [ ] 08.1-03-PLAN.md — Repoint checkout/refund/webhook to per-brand account+currency; verifyWebhookSignature via port; DI rewired to PAYMENT_PROVIDER_PORT (D-07)
+   - [ ] 08.1-04-PLAN.md — Embedded Express onboarding: per-brand account-session API + admin ConnectAccountOnboarding + method choice + gated @stripe browser packages (PAY-14/17)
+   - [ ] 08.1-05-PLAN.md — Connect Standard OAuth start/callback (signed CSRF state) + admin "Connect existing" path; completes resumable method choice (PAY-15/17)
+         **UI hint**: yes
+         **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
 ### Phase 10: Admin Order Intake
 
