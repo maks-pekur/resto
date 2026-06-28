@@ -1,11 +1,19 @@
 import { Inject, Injectable } from '@nestjs/common';
+import {
+  appendToOutbox,
+  buildEnvelope,
+  BrandPaymentAccountLinkedV1,
+  BrandPaymentCapabilitiesAppliedV1,
+} from '@resto/events';
 import { schema, TenantAwareDb, TenantScopedRepository } from '@resto/db';
 import { BrandId, BrandSlug, BrandTheme, TenantId } from '@resto/domain';
 import { and, asc, eq, inArray, like, ne, or } from 'drizzle-orm';
-import type { BrandSnapshot } from '../domain/brand.aggregate';
+import {
+  type Brand,
+  type BrandOnboardingStatus,
+  type BrandSnapshot,
+} from '../domain/brand.aggregate';
 import type { BrandRepository } from '../domain/ports';
-
-import type { BrandOnboardingStatus } from '../domain/brand.aggregate';
 
 const ROW_TO_SNAPSHOT = (row: {
   id: string;
@@ -169,6 +177,81 @@ export class BrandDrizzleRepository extends TenantScopedRepository implements Br
           isPrimary: true,
         })
         .onConflictDoNothing({ target: schema.brandDomains.domain });
+    });
+  }
+
+  findByStripeAccountId(stripeAccountId: string): Promise<BrandSnapshot | null> {
+    return this.db.withoutTenant('tenancy.brands.findByStripeAccountId', async (tx) => {
+      const rows = await tx
+        .select({
+          id: schema.brands.id,
+          tenantId: schema.brands.tenantId,
+          slug: schema.brands.slug,
+          displayName: schema.brands.displayName,
+          status: schema.brands.status,
+          theme: schema.brands.theme,
+          paymentProvider: schema.brands.paymentProvider,
+          accountType: schema.brands.accountType,
+          defaultCurrency: schema.brands.defaultCurrency,
+          stripeAccountId: schema.brands.stripeAccountId,
+          stripeChargesEnabled: schema.brands.stripeChargesEnabled,
+          stripePayoutsEnabled: schema.brands.stripePayoutsEnabled,
+          stripeOnboardingStatus: schema.brands.stripeOnboardingStatus,
+          stripeRequirementsDue: schema.brands.stripeRequirementsDue,
+        })
+        .from(schema.brands)
+        .where(eq(schema.brands.stripeAccountId, stripeAccountId))
+        .limit(1);
+      const row = rows[0];
+      return row ? ROW_TO_SNAPSHOT(row) : null;
+    });
+  }
+
+  async updatePaymentConnection(brand: Brand): Promise<void> {
+    const snapshot = brand.toSnapshot();
+    const events = brand.pullEvents();
+    await this.withTenant(async (scoped, tx) => {
+      await scoped
+        .updateTable(
+          schema.brands,
+          {
+            paymentProvider: snapshot.paymentProvider,
+            accountType: snapshot.accountType,
+            stripeAccountId: snapshot.stripeAccountId,
+            stripeChargesEnabled: snapshot.stripeChargesEnabled,
+            stripePayoutsEnabled: snapshot.stripePayoutsEnabled,
+            stripeOnboardingStatus: snapshot.stripeOnboardingStatus,
+            stripeRequirementsDue: snapshot.stripeRequirementsDue,
+          },
+          eq(schema.brands.id, snapshot.id),
+        )
+        .execute();
+      for (const event of events) {
+        const envelope =
+          event.kind === 'BrandPaymentAccountLinked'
+            ? buildEnvelope(
+                BrandPaymentAccountLinkedV1,
+                {
+                  brandId: event.brandId,
+                  tenantId: event.tenantId,
+                  stripeAccountId: event.stripeAccountId,
+                  accountType: event.accountType,
+                },
+                { tenantId: event.tenantId, occurredAt: event.occurredAt },
+              )
+            : buildEnvelope(
+                BrandPaymentCapabilitiesAppliedV1,
+                {
+                  brandId: event.brandId,
+                  tenantId: event.tenantId,
+                  chargesEnabled: event.chargesEnabled,
+                  payoutsEnabled: event.payoutsEnabled,
+                  onboardingStatus: event.onboardingStatus,
+                },
+                { tenantId: event.tenantId, occurredAt: event.occurredAt },
+              );
+        await appendToOutbox(tx, { envelope, aggregateId: snapshot.id });
+      }
     });
   }
 }

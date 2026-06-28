@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Currency, TenantId, TenantSlug } from '@resto/domain';
+import { BrandId, Currency, TenantId, TenantSlug } from '@resto/domain';
 import { defineEventContract } from '../envelope';
 
 /**
@@ -90,4 +90,33 @@ export type TenantResumedV1Payload = z.infer<typeof TenantResumedV1Payload>;
 export const TenantResumedV1 = defineEventContract({
   type: 'tenancy.tenant_resumed.v1',
   payload: TenantResumedV1Payload,
+});
+
+export const BrandPaymentAccountLinkedV1Payload = z.object({
+  brandId: BrandId,
+  tenantId: TenantId,
+  stripeAccountId: z.string().min(1).max(255),
+  accountType: z.enum(['express', 'standard']),
+});
+export type BrandPaymentAccountLinkedV1Payload = z.infer<typeof BrandPaymentAccountLinkedV1Payload>;
+
+export const BrandPaymentAccountLinkedV1 = defineEventContract({
+  type: 'tenancy.brand_payment_account_linked.v1',
+  payload: BrandPaymentAccountLinkedV1Payload,
+});
+
+export const BrandPaymentCapabilitiesAppliedV1Payload = z.object({
+  brandId: BrandId,
+  tenantId: TenantId,
+  chargesEnabled: z.boolean(),
+  payoutsEnabled: z.boolean(),
+  onboardingStatus: z.enum(['not_started', 'pending', 'complete', 'restricted']),
+});
+export type BrandPaymentCapabilitiesAppliedV1Payload = z.infer<
+  typeof BrandPaymentCapabilitiesAppliedV1Payload
+>;
+
+export const BrandPaymentCapabilitiesAppliedV1 = defineEventContract({
+  type: 'tenancy.brand_payment_capabilities_applied.v1',
+  payload: BrandPaymentCapabilitiesAppliedV1Payload,
 });

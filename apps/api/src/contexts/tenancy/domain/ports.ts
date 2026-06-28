@@ -1,5 +1,5 @@
 import type { BrandId, BrandSlug, TenantId, TenantSlug } from '@resto/domain';
-import type { BrandSnapshot } from './brand.aggregate';
+import type { Brand, BrandSnapshot } from './brand.aggregate';
 import type { Tenant, TenantSnapshot } from './tenant.aggregate';
 import type { TenantDomain } from './tenant-domain';
 
@@ -161,6 +161,19 @@ export interface BrandRepository {
    * design.
    */
   findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]>;
+  /**
+   * Resolve a brand by its Stripe connected-account id. Used by the webhook
+   * handler to route capability updates. Runs system-context (`withoutTenant`)
+   * because the lookup is cross-tenant by design (ADR-0020 I-6, T-08.1-01-02).
+   */
+  findByStripeAccountId(stripeAccountId: string): Promise<BrandSnapshot | null>;
+  /**
+   * Persist payment-connection changes and drain domain events to the outbox
+   * in one atomic transaction. Callers MUST run inside a tenant context
+   * (`withTenant`). Events are wrapped with `buildEnvelope` from `@resto/events`
+   * (ADR-0020 I-4 — never a hand-built envelope with `randomUUID()` as correlationId).
+   */
+  updatePaymentConnection(brand: Brand): Promise<void>;
 }
 
 export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');

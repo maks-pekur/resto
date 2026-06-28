@@ -38,6 +38,8 @@ describe('TenantAndBrandResolverService', () => {
       listForTenant: vi.fn().mockResolvedValue([]),
       save: vi.fn(),
       findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+      findByStripeAccountId: vi.fn().mockResolvedValue(null),
+      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
     };
     service = new TenantAndBrandResolverService(repo);
   });
