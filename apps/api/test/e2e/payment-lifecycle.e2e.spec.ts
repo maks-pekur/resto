@@ -74,7 +74,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     if (stack) await stopDbStack(stack);
   });
 
-  it.skip('step 2: checkout service transitions order to requires_action and writes payment row', async () => {
+  it('step 2: checkout service transitions order to requires_action and writes payment row', async () => {
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
 

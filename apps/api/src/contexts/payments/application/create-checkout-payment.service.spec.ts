@@ -299,8 +299,8 @@ describe('CreateCheckoutPaymentService', () => {
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(orderRepo.save).toHaveBeenCalledTimes(1);
-      const savedOrder = vi.mocked(orderRepo.save).mock.calls[0]?.[0];
+      expect(orderRepo.update).toHaveBeenCalledTimes(1);
+      const savedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
       expect(savedOrder?.toSnapshot().status).toBe('requires_action');
 
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(

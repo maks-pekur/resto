@@ -114,7 +114,7 @@ export class CreateCheckoutPaymentService {
 
       if (snap.status === 'created') {
         order.requireAction(piResult.paymentIntentId);
-        await this.orderRepo.save(order);
+        await this.orderRepo.update(order, tx);
       }
 
       await this.paymentRepo.upsertByPaymentIntentId(
