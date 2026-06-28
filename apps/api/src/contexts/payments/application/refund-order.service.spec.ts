@@ -74,6 +74,7 @@ describe('RefundOrderService', () => {
   beforeEach(() => {
     orderRepo = {
       save: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn(),
       findByIdempotencyKey: vi.fn(),
     };

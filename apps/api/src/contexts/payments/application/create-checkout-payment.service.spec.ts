@@ -86,6 +86,7 @@ const buildSut = () => {
 
   const orderRepo: OrderRepository = {
     save: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn().mockResolvedValue(undefined),
     findById: vi.fn().mockResolvedValue(order),
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
   };
@@ -318,9 +319,9 @@ describe('CreateCheckoutPaymentService', () => {
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(orderRepo.save).toHaveBeenCalledTimes(1);
-      const savedOrder = vi.mocked(orderRepo.save).mock.calls[0]?.[0];
-      expect(savedOrder?.toSnapshot().status).toBe('requires_action');
+      expect(orderRepo.update).toHaveBeenCalledTimes(1);
+      const updatedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
+      expect(updatedOrder?.toSnapshot().status).toBe('requires_action');
 
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'requires_action' }),

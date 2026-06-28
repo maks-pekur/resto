@@ -115,6 +115,42 @@ export class OrderDrizzleRepository implements OrderRepository {
     });
   }
 
+  async update(order: Order, tx?: RestoTx): Promise<void> {
+    if (tx !== undefined) {
+      await this.#runUpdate(tx, order);
+    } else {
+      await this.db.withTenant(async (innerTx) => this.#runUpdate(innerTx, order));
+    }
+  }
+
+  async #runUpdate(tx: RestoTx, order: Order): Promise<void> {
+    const snapshot = order.toSnapshot();
+    const events = order.pullEvents();
+
+    const updated = await tx
+      .update(schema.orders)
+      .set({
+        status: snapshot.status,
+        updatedAt: snapshot.updatedAt,
+        scheduledFor: snapshot.scheduledFor,
+      })
+      .where(and(eq(schema.orders.id, snapshot.id), eq(schema.orders.tenantId, snapshot.tenantId)))
+      .returning({ id: schema.orders.id });
+
+    if (updated.length === 0) {
+      throw new Error(
+        `Order ${snapshot.id} not found during update — cannot persist status transition.`,
+      );
+    }
+
+    for (const event of events) {
+      await appendToOutbox(tx, {
+        envelope: domainEventToEnvelope(event),
+        aggregateId: snapshot.id,
+      });
+    }
+  }
+
   async findById(id: OrderId): Promise<Order | null> {
     const ctx = requireTenantContext();
     return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, id, ctx.tenantId));

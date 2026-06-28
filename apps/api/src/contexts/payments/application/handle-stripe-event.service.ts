@@ -213,7 +213,7 @@ export class HandleStripeEventService {
         }
         throw err;
       }
-      await this.orderRepo.save(order);
+      await this.orderRepo.update(order, tx);
 
       await this.paymentRepo.upsertByPaymentIntentId(
         {

@@ -1,8 +1,10 @@
+import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
 import type { Order } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
+  update(order: Order, tx?: RestoTx): Promise<void>;
   findById(id: OrderId): Promise<Order | null>;
   findByIdempotencyKey(tenantId: TenantId, key: string): Promise<Order | null>;
 }

@@ -126,6 +126,7 @@ describe('HandleStripeEventService', () => {
 
     orderRepo = {
       save: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn(),
       findByIdempotencyKey: vi.fn(),
     };
@@ -199,9 +200,9 @@ describe('HandleStripeEventService', () => {
       const event = makeStripeEvent('payment_intent.succeeded', piObject);
       await service.handle(event as never);
 
-      expect(orderRepo.save).toHaveBeenCalled();
-      const savedOrder = (orderRepo.save.mock.calls[0] as [Order])[0];
-      expect(savedOrder.toSnapshot().status).toBe('paid');
+      expect(orderRepo.update).toHaveBeenCalled();
+      const updatedOrder = (orderRepo.update.mock.calls[0] as [Order])[0];
+      expect(updatedOrder.toSnapshot().status).toBe('paid');
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'succeeded', latestChargeId: CHARGE_ID }),
         expect.anything(),
@@ -214,7 +215,7 @@ describe('HandleStripeEventService', () => {
       const event = makeStripeEvent('payment_intent.succeeded', piObject);
       await service.handle(event as never);
 
-      expect(orderRepo.save).not.toHaveBeenCalled();
+      expect(orderRepo.update).not.toHaveBeenCalled();
     });
 
     it('double-charge guard: orphan PI on already-paid order triggers auto-refund', async () => {
@@ -232,7 +233,7 @@ describe('HandleStripeEventService', () => {
       });
       await service.handle(event as never);
 
-      expect(orderRepo.save).not.toHaveBeenCalled();
+      expect(orderRepo.update).not.toHaveBeenCalled();
       expect(stripePort.createRefund).toHaveBeenCalledWith(
         expect.objectContaining({
           paymentIntentId: PAYMENT_INTENT_ID,
@@ -259,7 +260,7 @@ describe('HandleStripeEventService', () => {
         expect.objectContaining({ status: 'failed' }),
         expect.anything(),
       );
-      expect(orderRepo.save).not.toHaveBeenCalled();
+      expect(orderRepo.update).not.toHaveBeenCalled();
     });
   });
 

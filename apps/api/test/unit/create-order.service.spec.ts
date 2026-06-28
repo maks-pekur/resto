@@ -105,6 +105,9 @@ class FakeOrderRepository implements OrderRepository {
     this.saved.push(order);
     return Promise.resolve();
   }
+  update(): Promise<void> {
+    return Promise.resolve();
+  }
   findById(): Promise<Order | null> {
     return Promise.resolve(null);
   }

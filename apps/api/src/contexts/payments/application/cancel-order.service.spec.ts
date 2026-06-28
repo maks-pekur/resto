@@ -75,6 +75,7 @@ describe('CancelOrderService', () => {
   beforeEach(() => {
     orderRepo = {
       save: vi.fn().mockResolvedValue(undefined),
+      update: vi.fn().mockResolvedValue(undefined),
       findById: vi.fn(),
       findByIdempotencyKey: vi.fn(),
     };
@@ -114,11 +115,7 @@ describe('CancelOrderService', () => {
       new Logger('test'),
     );
 
-    service = new CancelOrderService(
-      orderRepo,
-      refundService,
-      new Logger('test'),
-    );
+    service = new CancelOrderService(orderRepo, refundService, new Logger('test'));
   });
 
   it('throws if order not found', async () => {
