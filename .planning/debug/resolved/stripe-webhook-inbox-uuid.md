@@ -109,3 +109,75 @@ Fix: `apps/api/src/contexts/payments/infrastructure/payment-drizzle.repository.t
 Test added: `apps/api/test/e2e/payments-upsert-partial-index.e2e.spec.ts` — 2 tests against testcontainers Postgres via `withTenantId`: insert path (no 42P10) + conflict-update path (`requires_action` → `succeeded`). Both pass.
 
 TypeScript: `pnpm --filter api exec tsc --noEmit` clean. Commit: `546c56e` (admin-vite-spa).
+
+## #5 webhook order lookup ALS bug + e2e fidelity fix
+
+**Root cause:** `runDeduped` runs the handler callback under `db.withoutTenant(...)` — a BYPASSRLS system
+transaction with no ALS tenant bound (ADR-0020 I-1). Inside `handlePaymentIntentSucceeded`, the callback called
+`this.orderRepo.findById(orderId)`, which internally calls `requireTenantContext()` and reads the ALS store.
+With no ALS context bound in the webhook background path, this throws "No tenant context bound" and rolls back
+the entire `runDeduped` transaction — order never marked paid, payment never marked succeeded.
+
+The lifecycle e2e (added in the #4 fix) passed despite the real bug because it wrapped every
+`handlerService.handle()` call in `runInTenantContext`, which bound an ALS context that `findById` then read.
+Production `StripeWebhookController` is `@Public` and is never covered by `TenantContextMiddleware`, so no ALS
+is bound there. The e2e was testing a fictional path.
+
+**Fix Part A — `findByIdInTx` on `OrderRepository`:**
+Added `findByIdInTx(tx: RestoTx, id: OrderId, tenantId: string): Promise<Order | null>` to the
+`OrderRepository` port (`ordering/domain/ports.ts`). Implemented in `OrderDrizzleRepository` as a one-line
+delegate to the existing private `loadByIdWithTx(tx, id, tenantId)`, which already explicitly filters both
+`eq(orders.id, id)` AND `eq(orders.tenantId, tenantId)` — safe under BYPASSRLS.
+
+In `handle-stripe-event.service.ts` line 170, replaced:
+
+```
+const order = await this.orderRepo.findById(orderId as OrderId);
+```
+
+with:
+
+```
+const order = await this.orderRepo.findByIdInTx(tx, orderId as OrderId, parsedTenantId);
+```
+
+using the enclosing `runDeduped` callback `tx` and the already-parsed `parsedTenantId`. A `// ADR-0020 I-6`
+comment explains why. No `runInTenantContext` or `db.withTenant` introduced — background code uses the system
+tx + explicit tenantId per ADR-0020 I-6. Grep confirmed this was the only `findById` call in the handler.
+
+**Fix Part B — lifecycle e2e now mirrors production webhook path:**
+In `payment-lifecycle.e2e.spec.ts`, all three webhook handler calls previously wrapped in
+`runInTenantContext({ tenantId }, () => handlerService.handle(...))` were changed to direct
+`await handlerService.handle(...)` calls with no context binding, replicating the production
+`StripeWebhookController` which binds no tenant ALS. The checkout step at line 148 retains its
+`runInTenantContext` wrapper because checkout is an authenticated HTTP endpoint covered by
+`TenantContextMiddleware` in production. The `runInTenantContext` import was kept (still used by checkout).
+
+**Red → green proof:**
+
+- RED (Part B only, Part A reverted to `findById`): step 3 fails with:
+  ```
+  Error: No tenant context bound. Wrap the call in runInTenantContext() or use withoutTenant(reason, op) for system code.
+   ❯ OrderDrizzleRepository.findById order-drizzle.repository.ts:155:17
+   ❯ handle-stripe-event.service.ts:170:42
+   ❯ run-deduped.ts:51:11
+  ```
+- GREEN (Part A + Part B): all 3 lifecycle steps pass.
+
+**No migration required.** `findByIdInTx` runs a plain SELECT on existing columns.
+
+**Test pass counts (final):**
+
+- `payment-lifecycle.e2e.spec.ts` — 3 passed (RED confirmed before Part A, GREEN after).
+- `stripe-webhook-inbox-dedup.e2e.spec.ts` — 2 passed.
+- `payments-upsert-partial-index.e2e.spec.ts` — 2 passed.
+- `handle-stripe-event.service.spec.ts` — 7 passed.
+- `create-checkout-payment.service.spec.ts` — 10 passed.
+- `cancel-order.service.spec.ts` — all passed.
+- `refund-order.service.spec.ts` — all passed.
+- `create-order.service.spec.ts` — all passed.
+- Total across all 8 spec files: 50 passed.
+
+**tsc:** `pnpm --filter api exec tsc --noEmit` — clean.
+
+**Commits:** `4be9ddc` (fix) and `3082f4d` (test) on branch `admin-vite-spa`.
