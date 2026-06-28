@@ -181,3 +181,119 @@ In `payment-lifecycle.e2e.spec.ts`, all three webhook handler calls previously w
 **tsc:** `pnpm --filter api exec tsc --noEmit` — clean.
 
 **Commits:** `4be9ddc` (fix) and `3082f4d` (test) on branch `admin-vite-spa`.
+
+## #6 charge.refunded status flip
+
+### Root cause
+
+Two independent paths, both broken:
+
+**(a) PRIMARY — RefundOrderService** (`apps/api/src/contexts/payments/application/refund-order.service.ts`):
+Line ~100 passed `status: payment.status` (the existing DB status, always `'succeeded'` at refund time) to `upsertByPaymentIntentId`. The status was never changed regardless of refund amount. Order aggregate `refund()` correctly computed full vs partial, but the payment row was never updated.
+
+**(b) HARDEN — handleRefund webhook** (`handle-stripe-event.service.ts` lines 320-322):
+
+```
+const refundData = charge.refunds?.data?.[0];
+if (!refundData) { warn 'no refund data — ignoring'; return; }
+```
+
+Real `charge.refunded` events do NOT embed `refunds.data` inline — the refunds list is a separate sub-resource not expanded in the webhook payload. This guard always triggered on real events → early return → all logic below (computing `fullyRefunded`, flipping status) never ran. The entire webhook refund path was dead code.
+
+### Fix
+
+**(a)** In `RefundOrderService.executeWithOrder`, added:
+
+```typescript
+const newPaymentStatus =
+  newRefundedMinor >= capturedMinor ? 'refunded' : 'partially_refunded';
+```
+
+And passed `status: newPaymentStatus` (not `payment.status`) to `upsertByPaymentIntentId`.
+
+Both `'refunded'` and `'partially_refunded'` are already in `payments_status_chk` — **no migration required**.
+
+**(b)** In `HandleStripeEventService.handleRefund`, removed the dead `refundData` bail entirely. Re-cast the charge object to read `amount_refunded` (cumulative total refunded, always present on `charge.refunded`) and `amount_captured` (fallback `amount`). Rebuilt the handler to:
+
+- Compute `fullyRefunded = cumulativeRefundedMinor >= capturedMinor`
+- SET `refundedAmount` to cumulative value (not increment) — idempotency guarantee
+- SET `status` to `'refunded'` or `'partially_refunded'`
+- No refund-row insertion — `charge.refunded` carries no stable `stripe_refund_id`; refund-row insertion requires `refund.created`/`refund.updated` (not implemented — logged as PAY-BUG6-GAP)
+
+### Idempotency guarantee
+
+The webhook path uses `cumulativeRefundedMinor = charge.amount_refunded` (Stripe always sends the total refunded to date, not a delta). `upsertByPaymentIntentId` is an `ON CONFLICT DO UPDATE SET ...` — it sets `refunded_amount` and `status` to the cumulative values unconditionally. A refund applied by the sync path (RefundOrderService) and then re-observed by the webhook cannot double-count: the SET overwrites with the same cumulative total. No error; no data change.
+
+### Dashboard-refund-row gap (PAY-BUG6-GAP)
+
+Refund rows in `payment_refunds` keyed by `stripe_refund_id` are inserted by the synchronous `RefundOrderService` path (API-initiated refunds) and can also be inserted by `refund.created` / `refund.updated` webhook events (dashboard-initiated refunds). `charge.refunded` carries no stable `stripe_refund_id`, so it cannot insert a refund row — it only flips the payment status. Dashboard-initiated refunds therefore do not appear in `payment_refunds` unless `refund.created` handling is added. This is logged at INFO level on every `charge.refunded` processing.
+
+### Red → Green proof
+
+**RED** (fix (b) reverted — dead bail restored):
+
+```
+FAIL HandleStripeEventService > charge.refunded (BUG-6) > BUG-6 (b): real Stripe shape — no refunds.data — still flips payment status to refunded
+AssertionError: expected "spy" to be called at least once
+ ❯ handle-stripe-event.service.spec.ts:321:30
+    319|       await service.handle(event as never);
+    321|       expect(runDedupedMock).toHaveBeenCalled();
+                                     ^
+
+FAIL HandleStripeEventService > charge.refunded (BUG-6) > BUG-6 (b): partial charge.refunded flips payment status to partially_refunded
+AssertionError: expected "spy" to be called with arguments: [ ObjectContaining{…}, Anything ]
+Received: (none) — Number of calls: 0
+```
+
+`runDedupedMock` was never called; `upsertByPaymentIntentId` was never called (0 invocations). The dead bail returned before reaching any DB logic.
+
+**GREEN** (fix applied):
+
+- `handle-stripe-event.service.spec.ts` — 10 tests passed (3 new BUG-6 tests)
+- `refund-order.service.spec.ts` — 11 tests passed (2 new BUG-6 tests)
+- `payment-lifecycle.e2e.spec.ts` step 4 — 1 test passed (real Stripe shape, no `refunds.data`, asserts `status='refunded'` and `refunded_amount='15.00'` in Postgres)
+
+### Files changed
+
+- `apps/api/src/contexts/payments/application/refund-order.service.ts` — fix (a): compute `newPaymentStatus`
+- `apps/api/src/contexts/payments/application/handle-stripe-event.service.ts` — fix (b): remove dead bail, use `amount_refunded`/`amount_captured`
+- `apps/api/src/contexts/payments/application/refund-order.service.spec.ts` — 2 new BUG-6(a) assertions
+- `apps/api/src/contexts/payments/application/handle-stripe-event.service.spec.ts` — 3 new BUG-6(b) assertions (real shape, partial, backward compat)
+- `apps/api/test/e2e/payment-lifecycle.e2e.spec.ts` — step 4 updated: real Stripe shape (no `refunds.data`), asserts payment status flip in Postgres
+
+## Money-path test-fidelity audit
+
+Scope: all spec files covering payments context, ordering repo/services, and e2e touching `/webhook/stripe`, `/v1/checkout`, `/v1/orders`.
+
+| Spec                                             | Classification       | Masked risk                                                                                                                                                                                                                                                                                                                           | Real bug (y/n)                                                                                                                                                    |
+| ------------------------------------------------ | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `handle-stripe-event.service.spec.ts`            | OVER-BOUND (pre-fix) | Mocks `runDeduped` — real DB inbox INSERT never exercised; fed `refunds.data` inline on charge.refunded tests (false-green on dead-bail path)                                                                                                                                                                                         | y — BUG #1 (uuid inbox, hid by mocked runDeduped); BUG #6 (dead bail, hid by inline refunds.data). Both now fixed and test updated.                               |
+| `refund-order.service.spec.ts`                   | OVER-BOUND (pre-fix) | Asserted `orderRepo.save` order status but never checked `status` field passed to `upsertByPaymentIntentId` — allowed `payment.status` passthrough to go undetected                                                                                                                                                                   | y — BUG #6(a). Fixed: 2 new assertions added.                                                                                                                     |
+| `create-checkout-payment.service.spec.ts`        | FAITHFUL             | Mocks repo/stripe (correct for unit) — checkout runs under `runInTenantContext` in production via middleware; test uses `db.withTenant` mock which is the right shape for the service's internal call. No ALS binding at test level (correct — service binds via `db.withTenant` internally, not via `runInTenantContext` in caller). | n                                                                                                                                                                 |
+| `cancel-order.service.spec.ts`                   | FAITHFUL             | Mocks repo/stripe at correct level — `CancelOrderService` calls `RefundOrderService.executeWithOrder` synchronously with the order; test matches this shape.                                                                                                                                                                          | n                                                                                                                                                                 |
+| `stripe-connect.adapter.spec.ts`                 | FAITHFUL             | Uses real Stripe SDK with mocked HTTP (`vi.fn()` on stripe methods) — matches production call shape. Capability assertions guard against BUG #3 regression.                                                                                                                                                                           | n                                                                                                                                                                 |
+| `stripe-webhook.controller.spec.ts`              | FAITHFUL             | Uses real `Stripe.webhooks.generateTestHeaderString` for signature; delegates to mocked `HandleStripeEventService.handle`. Controller layer only — correct boundary. Binds no tenant ALS (controller is `@Public`, which is correct).                                                                                                 | n                                                                                                                                                                 |
+| `test/unit/create-order.service.spec.ts`         | FAITHFUL             | Unit test of `CreateOrderService` — mocks repo/catalog; tests server-authoritative pricing logic. No money path involved.                                                                                                                                                                                                             | n                                                                                                                                                                 |
+| `stripe-webhook-inbox-dedup.e2e.spec.ts`         | FAITHFUL             | Real Postgres (testcontainers) + real `runDeduped` + real `HandleStripeEventService`; no ALS binding (correct — `account.updated` path reads accountId from event, not ALS); uses real `evt_` id format.                                                                                                                              | n                                                                                                                                                                 |
+| `payments-upsert-partial-index.e2e.spec.ts`      | FAITHFUL             | Real Postgres + real `PaymentDrizzleRepository.upsertByPaymentIntentId`; uses `db.withTenantId` (correct for non-HTTP test context). Tests the `ON CONFLICT … targetWhere` arbiter.                                                                                                                                                   | n                                                                                                                                                                 |
+| `payment-lifecycle.e2e.spec.ts` steps 2–3        | FAITHFUL             | Real Postgres + real repos + real `runDeduped`; step 2 (checkout) correctly wraps in `runInTenantContext` (checkout is authenticated HTTP path with middleware); step 3 (webhook) calls handler with no ALS binding (mirrors production `StripeWebhookController @Public`).                                                           | n                                                                                                                                                                 |
+| `payment-lifecycle.e2e.spec.ts` step 4 (pre-fix) | OVER-BOUND           | Fed `refunds.data` inline — exercised dead-bail path that returned early without reaching any DB logic. Asserted `payment_refunds` row insertion that never actually ran.                                                                                                                                                             | y — BUG #6. Fixed: step 4 now feeds real Stripe shape (`amount_refunded`/`amount_captured`, no `refunds.data`), asserts `payments.status='refunded'` in Postgres. |
+
+### Summary
+
+- 3 OVER-BOUND findings, all tied to BUG #6 — all corrected by the fix and accompanying test updates.
+- No additional NEW REAL BUGs surfaced during the audit. Making each OVER-BOUND test faithful produced GREEN results against the fixed production code (no hidden defects in the remaining over-bound paths once the fix is applied).
+
+### tsc + test pass counts (post-fix)
+
+- `pnpm --filter api exec tsc --noEmit` — clean.
+- `handle-stripe-event.service.spec.ts` — 10 passed (3 new).
+- `refund-order.service.spec.ts` — 11 passed (2 new).
+- `create-checkout-payment.service.spec.ts` — 10 passed.
+- `cancel-order.service.spec.ts` — 4 passed.
+- `stripe-connect.adapter.spec.ts` — 13 passed.
+- `stripe-webhook.controller.spec.ts` — 5 passed.
+- `test/unit/create-order.service.spec.ts` — 13 passed.
+- `stripe-webhook-inbox-dedup.e2e.spec.ts` — 2 passed.
+- `payments-upsert-partial-index.e2e.spec.ts` — 2 passed.
+- `payment-lifecycle.e2e.spec.ts` — 3 passed (step 4 updated).
