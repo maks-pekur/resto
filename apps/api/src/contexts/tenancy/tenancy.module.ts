@@ -21,7 +21,10 @@ import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repositor
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.controller';
-import { BrandOnboardingController } from './interfaces/http/brand-onboarding.controller';
+import {
+  BrandOnboardingController,
+  BrandOAuthCallbackController,
+} from './interfaces/http/brand-onboarding.controller';
 
 @Module({
   controllers: [
@@ -29,6 +32,7 @@ import { BrandOnboardingController } from './interfaces/http/brand-onboarding.co
     TenantsController,
     StripeOnboardingController,
     BrandOnboardingController,
+    BrandOAuthCallbackController,
   ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },

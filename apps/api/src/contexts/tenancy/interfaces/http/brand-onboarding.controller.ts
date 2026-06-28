@@ -125,11 +125,18 @@ export class BrandOnboardingController {
       return { authorizeUrl: result.authorizeUrl };
     });
   }
+}
+
+@ApiTags('tenancy')
+@Controller('v1/tenancy/onboarding')
+export class BrandOAuthCallbackController {
+  readonly #wrap = wrapWith(mapDomainError);
+
+  constructor(private readonly service: StartBrandOnboardingService) {}
 
   @Get('oauth/callback')
   @Public()
   async handleOAuthCallback(
-    @Param('slug') slug: string,
     @Query('code') code: string,
     @Query('state') state: string,
     @Req() req: FastifyRequest,
@@ -144,14 +151,7 @@ export class BrandOnboardingController {
 
     res.raw.setHeader('Set-Cookie', buildClearCookieHeader());
 
-    const result = await this.#wrap(() =>
-      this.service.handleOAuthCallback({
-        code,
-        state,
-        nonce,
-        slugFromPath: slug,
-      }),
-    );
+    const result = await this.#wrap(() => this.service.handleOAuthCallback({ code, state, nonce }));
 
     const redirectUrl = (result as { redirectUrl: string }).redirectUrl;
 

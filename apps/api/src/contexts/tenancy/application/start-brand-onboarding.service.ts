@@ -35,7 +35,7 @@ export interface HandleOAuthCallbackInput {
   readonly code: string;
   readonly state: string;
   readonly nonce: string;
-  readonly slugFromPath: string;
+  readonly slugFromPath?: string;
 }
 
 export interface HandleOAuthCallbackResult {
