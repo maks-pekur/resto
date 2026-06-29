@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Phase 08.2 context gathered (scope split; routing + access-core)
-last_updated: '2026-06-29T06:31:47.710Z'
+last_updated: "2026-06-29T08:37:55.485Z"
 last_activity: 2026-06-28
 progress:
-  total_phases: 22
+  total_phases: 24
   completed_phases: 10
   total_plans: 81
   completed_plans: 73
-  percent: 45
+  percent: 42
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-**ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases (not yet created as roadmap phases — offer to add via /gsd-phase). Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
+**ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.1 (payments-provider-layer-and-onboarding-ux) — EXECUTING
 Plan: 5 of 5
@@ -130,6 +130,8 @@ _Updated after each plan completion_
 - Phase 08.1 inserted after Phase 8: Payments provider layer + onboarding UX (embedded Connect, Standard OAuth, provider-agnostic PaymentProviderPort); pulled into MVP-1, extends Phase 8, does not block Phase 10 (URGENT)
 - Phase 08.2 inserted after Phase 08.1: Brand-first routing + brand-scoped access model (promoted from SEED-001); pulled forward ahead of Phase 10, security-sensitive (member single-active-brand enforcement) (URGENT)
 - Phase 08.2 edited: Narrowed 08.2 to brand-first routing + brand-level access-control core (default-deny flip, server-session active-brand pin, brand RLS). Owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping split into their own follow-on phases — full SEED-001 vision preserved as a sequence
+- Phase 08.3 inserted after Phase 08.2: Owner-managed custom roles (enable better-auth dynamicAccessControl + creator-subset guard + owner role-builder UI) — split from SEED-001 (URGENT)
+- Phase 08.4 inserted after Phase 08.3: Location-scoped access (new locations entity + member_location_scope) — split from SEED-001 (URGENT)
 
 ### Decisions
 

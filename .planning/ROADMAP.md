@@ -517,6 +517,44 @@ Plans:
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
+### Phase 08.3: Owner-managed Roles & Permissions (INSERTED)
+
+**Goal**: Enable owner-authored custom roles (dynamic RBAC) — the founder's headline access feature. Turn on better-auth `dynamicAccessControl` (off today at `auth.config.ts:206` "until tenant role-creation enforces a creator-subset permission check"); build the **creator-subset privilege-escalation guard** (a role's creator may grant ONLY permissions they themselves hold); build the owner-facing admin UI to **create a role → toggle its permissions from the catalog → assign it to staff**; persist tenant-defined roles. Reuse the existing primitives — `@resto/domain` `PERMISSIONS_STATEMENT` + `SYSTEM_ROLES` (owner/admin/staff) + the permission-checker that already anticipates tenant-defined roles. Source: SEED-001 + `08.2-CONTEXT.md` (split-off).
+
+**Depends on**: Phase 08.2 (brand-level access-control core)
+**Requirements**: TBD (derive in discuss/plan)
+**Security review**: REQUIRED — re-enabling dynamic AC is a privilege-escalation surface; the creator-subset guard IS the gate that kept it disabled.
+**Success Criteria** (draft):
+
+1. Owner creates a custom role in admin, selects its permissions from the catalog, saves it (tenant-scoped)
+2. Owner assigns a custom role to a staff member; the member's effective permissions reflect it on the next request
+3. A role's creator cannot grant a permission they do not themselves hold — creator-subset enforced server-side, proven by test
+4. `dynamicAccessControl` enabled without weakening the fixed system roles; permission-checker resolves system role + custom role
+
+**Plans**: TBD (run /gsd-discuss-phase 08.3)
+- [ ] TBD
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic
+
+### Phase 08.4: Location-scoped Access (INSERTED)
+
+**Goal**: Introduce the **locations** entity (a brand has one or more locations/points — none exists today) and refine member scope from brand-level to **location-level**. Add a `locations` table (per brand; composite FK + RLS per the tenancy invariants) + `member_location_scope`; locations admin CRUD; assign staff to one or more locations; a member's effective brand access derives from the brands of their scoped locations. Builds directly on 08.2's brand-level access core (default-deny + server-session active-brand pin + brand RLS) and 08.3's role model. Source: SEED-001 + `08.2-CONTEXT.md` (split-off).
+
+**Depends on**: Phase 08.2 (access core); Phase 08.3 (roles — if location-scoped custom roles are wanted)
+**Requirements**: TBD (derive in discuss/plan)
+**Security review**: REQUIRED — location scope is a data-isolation boundary; extend the default-deny + existence-hiding-404 pattern to location grain.
+**Success Criteria** (draft):
+
+1. A brand has one or more locations manageable in admin (create/list/archive)
+2. A staff member can be scoped to one or more locations; out-of-scope locations/brands return existence-hiding 404/403, proven by an isolation e2e
+3. `member_brand_scope` is refined to / superseded by location-level scope; owner (unrestricted) unaffected
+4. The single-active-brand session from 08.2 interplays correctly with multi-location, multi-brand membership
+
+**Plans**: TBD (run /gsd-discuss-phase 08.4)
+- [ ] TBD
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic
+
 ### Phase 10: Admin Order Intake
 
 **Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
