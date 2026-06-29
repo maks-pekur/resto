@@ -532,9 +532,10 @@ Plans:
 4. `dynamicAccessControl` enabled without weakening the fixed system roles; permission-checker resolves system role + custom role
 
 **Plans**: TBD (run /gsd-discuss-phase 08.3)
+
 - [ ] TBD
-**UI hint**: yes
-**Persona reviewers**: persona-cto, persona-skeptic
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 08.4: Location-scoped Access (INSERTED)
 
@@ -551,9 +552,10 @@ Plans:
 4. The single-active-brand session from 08.2 interplays correctly with multi-location, multi-brand membership
 
 **Plans**: TBD (run /gsd-discuss-phase 08.4)
+
 - [ ] TBD
-**UI hint**: yes
-**Persona reviewers**: persona-cto, persona-skeptic
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 10: Admin Order Intake
 

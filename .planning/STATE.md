@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: verifying
 stopped_at: Phase 08.2 context gathered (scope split; routing + access-core)
-last_updated: "2026-06-29T08:37:55.485Z"
+last_updated: '2026-06-29T08:37:55.485Z'
 last_activity: 2026-06-28
 progress:
   total_phases: 24
