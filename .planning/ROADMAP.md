@@ -494,6 +494,7 @@ Plans:
 **Goal**: Refactor the admin information architecture to brand-first routing AND ship the brand-level access-control core that the later owner-managed-roles and location-scoping phases build on. (1) Drop the `/dashboard` prefix — every admin page under the brand path (`/{brand}/...` or `/b/{brand}/...`, decided in CONTEXT); `/` redirects to the active brand; protect against brand-slug ↔ root-route collisions. (2) Flip member brand-scope from **default-allow to default-deny** — today an empty/unset `member_brand_scope` grants ALL brands; this is the real, shippable security delta. (3) Move the "active brand" from a forgeable cookie into the **server session**, reconciled against the request's brand on every call (anti-tamper, mirroring the existing `auth.tenant_mismatch` cross-check). (4) Owner switches brands freely in-session (no re-login); a non-owner session is **pinned to one active brand**, switching re-issues the session pin (no password). (5) Extend the existing `BrandScopeGuard` coverage to close opt-in gaps; optionally add brand-level RLS (GUC + policy) for defense-in-depth. Tenant stays billing-only (even the owner always works inside a brand). Source: SEED-001 + `08.2-PERSONA-REVIEWS.md`.
 
 **Split-off (founder, 2026-06-29)** — the original SEED-001 vision is delivered as a SEQUENCE; nothing dropped:
+
 - **Owner-managed custom roles** → its own follow-on phase: enable better-auth `dynamicAccessControl` (off today at `auth.config.ts:206` "until tenant role-creation enforces a creator-subset permission check"), build the creator-subset privilege-escalation guard, and the owner UI to create roles → toggle permissions → assign to staff. Primitives already exist (`@resto/domain` `PERMISSIONS_STATEMENT` + `SYSTEM_ROLES` owner/admin/staff; permission-checker already anticipates tenant-defined roles).
 - **Location-level scoping** → its own follow-on phase: introduce a `locations` entity (none exists today) + `member_location_scope`, refine member scope from brand-level to location-level + locations admin UI.
 - Both build ON this phase's access core. Sequence them after 08.2.
@@ -511,9 +512,10 @@ Plans:
 6. (If chosen) brand-level RLS policy active on at least payments/payouts + catalog; otherwise app-layer-only isolation is documented as accepted debt
 
 **Plans**: TBD (run /gsd-plan-phase 08.2)
+
 - [ ] TBD
-**UI hint**: yes
-**Persona reviewers**: persona-cto, persona-skeptic
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 10: Admin Order Intake
 

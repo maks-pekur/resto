@@ -43,11 +43,13 @@ reserved-word slug validation). Likely a dedicated phase, not a quick task.
 ## Model & Decisions (captured)
 
 ### Levels
-- **Tenant** = billing / subscriptions only. No tenant-level admin *workspace* — even the
+
+- **Tenant** = billing / subscriptions only. No tenant-level admin _workspace_ — even the
   owner always works inside a specific brand. (Tenant billing = FIN-07 / Phase 14.)
 - **Brand** = the actual workspace.
 
 ### Routing — brand-first
+
 - Drop the `/dashboard` prefix. All admin pages live under `/{brand}/...`:
   `dashboard, menu, payouts, theme, domains, team, settings`.
 - `/` redirects to the active brand.
@@ -56,13 +58,15 @@ reserved-word slug validation). Likely a dedicated phase, not a quick task.
   per tenant). URL-first, data-scope-later.
 
 ### Reserved-words guard
+
 - With the brand as the top URL segment, brand slugs must not collide with root route
   words: `login, signup, onboarding, forgot-password, reset-password,
-  accept-invitation, api, dashboard, assets, …`.
+accept-invitation, api, dashboard, assets, …`.
 - Enforce **server-side** at brand-slug creation (a brand slug `login` could otherwise
   shadow the login route — correctness + security).
 
 ### Access model
+
 - **Owner:** access to ALL brands of the tenant; switches between them **freely in-session
   (no re-login)**. Active brand stored in a cookie.
 - **Member:** scoped to one or more **locations/points** (location-level, **NOT**
@@ -74,6 +78,7 @@ reserved-word slug validation). Likely a dedicated phase, not a quick task.
   single-active-brand pinning + scope is enforced on the **server**, not just the UI.
 
 ### Reuse / extend existing primitives
+
 - `member_brand_scope` (extend brand → location level).
 - `canViewAllBrands` (owner = `null` scope → unrestricted) — see
   `list-my-brands.service.ts`.
@@ -82,8 +87,9 @@ reserved-word slug validation). Likely a dedicated phase, not a quick task.
   on login via `authClient.organization.setActive`.
 
 ### Admin changes implied
+
 - Route-tree restructure (pathless app shell, brand-first) in `apps/admin/src/main.tsx`
-  + the `(protected)/dashboard/**` route files.
+  - the `(protected)/dashboard/**` route files.
 - Brand-switcher behavior: owner free-switch vs member re-login
   (`apps/admin/src/components/brand-switcher.tsx`).
 - `api-client` sends the active-brand header from the cookie/URL
