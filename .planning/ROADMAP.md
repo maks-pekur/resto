@@ -489,6 +489,32 @@ Plans:
          **UI hint**: yes
          **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
+### Phase 08.2: Brand-first Routing & Access-Control Core (INSERTED)
+
+**Goal**: Refactor the admin information architecture to brand-first routing AND ship the brand-level access-control core that the later owner-managed-roles and location-scoping phases build on. (1) Drop the `/dashboard` prefix — every admin page under the brand path (`/{brand}/...` or `/b/{brand}/...`, decided in CONTEXT); `/` redirects to the active brand; protect against brand-slug ↔ root-route collisions. (2) Flip member brand-scope from **default-allow to default-deny** — today an empty/unset `member_brand_scope` grants ALL brands; this is the real, shippable security delta. (3) Move the "active brand" from a forgeable cookie into the **server session**, reconciled against the request's brand on every call (anti-tamper, mirroring the existing `auth.tenant_mismatch` cross-check). (4) Owner switches brands freely in-session (no re-login); a non-owner session is **pinned to one active brand**, switching re-issues the session pin (no password). (5) Extend the existing `BrandScopeGuard` coverage to close opt-in gaps; optionally add brand-level RLS (GUC + policy) for defense-in-depth. Tenant stays billing-only (even the owner always works inside a brand). Source: SEED-001 + `08.2-PERSONA-REVIEWS.md`.
+
+**Split-off (founder, 2026-06-29)** — the original SEED-001 vision is delivered as a SEQUENCE; nothing dropped:
+- **Owner-managed custom roles** → its own follow-on phase: enable better-auth `dynamicAccessControl` (off today at `auth.config.ts:206` "until tenant role-creation enforces a creator-subset permission check"), build the creator-subset privilege-escalation guard, and the owner UI to create roles → toggle permissions → assign to staff. Primitives already exist (`@resto/domain` `PERMISSIONS_STATEMENT` + `SYSTEM_ROLES` owner/admin/staff; permission-checker already anticipates tenant-defined roles).
+- **Location-level scoping** → its own follow-on phase: introduce a `locations` entity (none exists today) + `member_location_scope`, refine member scope from brand-level to location-level + locations admin UI.
+- Both build ON this phase's access core. Sequence them after 08.2.
+
+**Depends on**: Phase 08.1 (per-brand brand-aggregate work), Phase 3 (auth/RBAC), Phase 1 (tenancy/RLS)
+**Requirements**: TBD (derive in plan-phase from CONTEXT; relates to Phase 17 operator self-service)
+**Security review**: REQUIRED before code — default-deny flip + server-session active-brand pin is security-sensitive (URL/cookie/session tamper resistance); run a threat pass in planning and /gsd-secure-phase after
+**Success Criteria** (draft — refine in CONTEXT/plan):
+
+1. Admin URLs are brand-first: no `/dashboard` prefix; all pages under the brand path; `/` redirects to the active brand; deep links resolve; old `/dashboard/...` links handled per CONTEXT
+2. Brand slug cannot collide with a root route (reserved-word guard extended OR structural `/b/` prefix); server-enforced; any existing colliding slug handled
+3. Member brand-scope is **default-deny**: a member with empty/unset scope reaches NO brand; owner (`canViewAllBrands`/null scope) unaffected
+4. Active brand lives in the **server session**, not just a cookie; forging the cookie/URL to a brand outside the session pin or the member's scope returns existence-hiding 404/403 — proven by an isolation e2e
+5. Owner switches between all tenant brands in-session with no re-login; a non-owner session is bound to exactly one active brand at a time (switch = silent session re-pin, no password)
+6. (If chosen) brand-level RLS policy active on at least payments/payouts + catalog; otherwise app-layer-only isolation is documented as accepted debt
+
+**Plans**: TBD (run /gsd-plan-phase 08.2)
+- [ ] TBD
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic
+
 ### Phase 10: Admin Order Intake
 
 **Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling

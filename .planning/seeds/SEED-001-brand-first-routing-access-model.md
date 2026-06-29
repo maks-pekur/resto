@@ -1,11 +1,15 @@
 ---
 id: SEED-001
-status: dormant
+status: promoted
 planted: 2026-06-29
 planted_during: v1.0 / Phase 08.1 (payments-provider-layer-and-onboarding-ux)
+promoted: 2026-06-29
+promoted_to: Phase 08.2 (brand-first-routing-and-brand-scoped-access-model)
 trigger_when: admin IA refactor, or before onboarding the first multi-member tenant (relates to Phase 17 trigger)
 scope: large
 ---
+
+> **PROMOTED 2026-06-29 → Phase 08.2** (full scope: routing IA + server-enforced access model). Founder pulled the admin-IA-refactor trigger ahead of Phase 10. Next: /gsd-discuss-phase 08.2 (must include a security pass on member single-active-brand enforcement before any code). This seed is now the source-of-record for that phase's captured decisions.
 
 # SEED-001: Brand-first routing + brand-scoped access & session model (admin + api)
 
