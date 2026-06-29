@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 08.1-04-PLAN.md
-last_updated: '2026-06-28T21:02:13.882Z'
+stopped_at: Phase 08.2 context gathered (scope split; routing + access-core)
+last_updated: "2026-06-29T06:31:47.710Z"
 last_activity: 2026-06-28
 progress:
-  total_phases: 21
+  total_phases: 22
   completed_phases: 10
   total_plans: 81
   completed_plans: 73
-  percent: 48
+  percent: 45
 ---
 
 # Project State
@@ -21,10 +21,12 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 08.1 — payments-provider-layer-and-onboarding-ux
+**Current focus:** Phase 08.2 — brand-first routing + brand-scoped access model (promoted from SEED-001, 2026-06-29; ahead of Phase 10). Phase 08.1 complete (5/5); its formal verification is deferred — founder chose to advance to 08.2 next.
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
+
+**ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases (not yet created as roadmap phases — offer to add via /gsd-phase). Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.1 (payments-provider-layer-and-onboarding-ux) — EXECUTING
 Plan: 5 of 5
@@ -126,6 +128,8 @@ _Updated after each plan completion_
 ### Roadmap Evolution
 
 - Phase 08.1 inserted after Phase 8: Payments provider layer + onboarding UX (embedded Connect, Standard OAuth, provider-agnostic PaymentProviderPort); pulled into MVP-1, extends Phase 8, does not block Phase 10 (URGENT)
+- Phase 08.2 inserted after Phase 08.1: Brand-first routing + brand-scoped access model (promoted from SEED-001); pulled forward ahead of Phase 10, security-sensitive (member single-active-brand enforcement) (URGENT)
+- Phase 08.2 edited: Narrowed 08.2 to brand-first routing + brand-level access-control core (default-deny flip, server-session active-brand pin, brand RLS). Owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping split into their own follow-on phases — full SEED-001 vision preserved as a sequence
 
 ### Decisions
 
@@ -244,6 +248,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-28T21:02:13.872Z
-Stopped at: Completed 08.1-04-PLAN.md
-Resume file: None
+Last session: 2026-06-29T06:31:47.699Z
+Stopped at: Phase 08.2 context gathered (scope split; routing + access-core)
+Resume file: .planning/phases/08.2-brand-first-routing-and-brand-scoped-access-model/08.2-CONTEXT.md
