@@ -3,7 +3,7 @@ phase: 08-payments-stripe-connect
 plan: 04b
 type: execute
 wave: 5
-depends_on: ["08-04a", "08-03"]
+depends_on: ['08-04a', '08-03']
 files_modified:
   - apps/website/components/checkout/checkout-form.tsx
   - apps/website/components/checkout/payment-element.tsx
@@ -18,27 +18,27 @@ user_setup: []
 
 must_haves:
   truths:
-    - "SITE-08: after payment the guest lands on /checkout/confirmation/[orderId] showing order #, items, total, ETA, and a LIVE status that flips to paid when the webhook lands"
-    - "D-08: a card needing 3DS drives the order to requires_action; the guest completes the challenge via the Stripe Payment Element, then the webhook flips it to paid"
-    - "D-06: on payment failure the guest retries on the SAME order — a new PaymentIntent; the order + cart are preserved (no new order on retry)"
+    - 'SITE-08: after payment the guest lands on /checkout/confirmation/[orderId] showing order #, items, total, ETA, and a LIVE status that flips to paid when the webhook lands'
+    - 'D-08: a card needing 3DS drives the order to requires_action; the guest completes the challenge via the Stripe Payment Element, then the webhook flips it to paid'
+    - 'D-06: on payment failure the guest retries on the SAME order — a new PaymentIntent; the order + cart are preserved (no new order on retry)'
     - "B2: the checkout contact form persists the guest email to the order's customer_email at order creation (recipient source for GNOTIF-01/03 in 08-06)"
-    - "the confirmation page is a READ-ONLY poll of order status (webhook is the single writer of paid)"
+    - 'the confirmation page is a READ-ONLY poll of order status (webhook is the single writer of paid)'
   artifacts:
-    - path: "apps/website/app/checkout/confirmation/[orderId]/page.tsx"
-      provides: "SITE-08 confirmation page"
-      contains: "confirmation"
-    - path: "apps/website/components/checkout/checkout-form.tsx"
-      provides: "wired Place-order button (no longer disabled) + guest email capture + Stripe Payment Element + SCA handling"
-      contains: "PaymentElement"
+    - path: 'apps/website/app/checkout/confirmation/[orderId]/page.tsx'
+      provides: 'SITE-08 confirmation page'
+      contains: 'confirmation'
+    - path: 'apps/website/components/checkout/checkout-form.tsx'
+      provides: 'wired Place-order button (no longer disabled) + guest email capture + Stripe Payment Element + SCA handling'
+      contains: 'PaymentElement'
   key_links:
-    - from: "checkout-form.tsx"
-      to: "POST /v1/checkout/payment-intent (08-04a)"
-      via: "create order (with customer_email) then create PaymentIntent"
-      pattern: "payment-intent"
-    - from: "order-status-poller.tsx"
-      to: "GET /v1/orders/:id/status (08-04a)"
-      via: "poll-with-backoff until paid/failed"
-      pattern: "poll"
+    - from: 'checkout-form.tsx'
+      to: 'POST /v1/checkout/payment-intent (08-04a)'
+      via: 'create order (with customer_email) then create PaymentIntent'
+      pattern: 'payment-intent'
+    - from: 'order-status-poller.tsx'
+      to: 'GET /v1/orders/:id/status (08-04a)'
+      via: 'poll-with-backoff until paid/failed'
+      pattern: 'poll'
 ---
 
 <objective>
@@ -76,12 +76,14 @@ Output: SITE-08 + the wired website checkout flow (Payment Element, retry, confi
 <!-- Website seams + the 08-04a endpoints. -->
 
 From apps/website/components/checkout/checkout-form.tsx (the stub to wire):
+
 - 'use client'; react-hook-form + zodResolver(createCheckoutSchema(mode)); useCartStore (@resto/cart) for items/mode.
 - onSubmit currently only preventDefault(); the Place-order Button is `disabled aria-disabled` with a "coming soon" tooltip.
 - OrderSummary, AddressInput, OrderTimeSelector already present. The contact form fields (name/phone) exist — ADD an email field
   whose value flows into the create-order body so it lands in orders.customer_email (B2).
 
 From apps/website/lib/api-client.ts:
+
 - 'server-only'; fetchMenuPublic/fetchAvailabilityPublic use apiOrigin() + x-forwarded-host. Add CLIENT-callable
   helpers for create-order + create-payment-intent + get-order-status in a NEW non-'server-only' module (lib/checkout-api.ts)
   because these run from the browser.
@@ -183,21 +185,23 @@ connected-account option for stripe.js before wiring (Context7 stripe-js if unsu
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                             | Description                                                                        |
+| ------------------------------------ | ---------------------------------------------------------------------------------- |
 | browser → checkout (08-04a) endpoint | client cart + amounts are untrusted; server recomputes total + gates on capability |
-| guest browser return → confirmation | the return is read-only; it must not be able to mark an order paid |
+| guest browser return → confirmation  | the return is read-only; it must not be able to mark an order paid                 |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-08-21 | Tampering | browser marks order paid | mitigate | confirmation page is read-only poll; webhook is the single writer of paid (CTO HIGH #4) |
-| T-08-22 | Tampering/financial | double-charge on retry | mitigate | retry re-creates only the PaymentIntent on the same order; 08-04a cancels the prior PI + increments the attempt key (D-06) |
-| T-08-23 | Information disclosure | publishable key vs secret confusion | mitigate | only the publishable key (NEXT_PUBLIC_*) reaches the browser; secret stays server-side |
-| T-08-23b | Information disclosure / GDPR | guest email captured at checkout | mitigate | persisted to orders.customer_email which the GDPR erasure pipeline covers (08-01 acceptance criterion proves DELETE FROM orders) |
+| Threat ID | Category                      | Component                           | Disposition | Mitigation Plan                                                                                                                  |
+| --------- | ----------------------------- | ----------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| T-08-21   | Tampering                     | browser marks order paid            | mitigate    | confirmation page is read-only poll; webhook is the single writer of paid (CTO HIGH #4)                                          |
+| T-08-22   | Tampering/financial           | double-charge on retry              | mitigate    | retry re-creates only the PaymentIntent on the same order; 08-04a cancels the prior PI + increments the attempt key (D-06)       |
+| T-08-23   | Information disclosure        | publishable key vs secret confusion | mitigate    | only the publishable key (NEXT*PUBLIC*\*) reaches the browser; secret stays server-side                                          |
+| T-08-23b  | Information disclosure / GDPR | guest email captured at checkout    | mitigate    | persisted to orders.customer_email which the GDPR erasure pipeline covers (08-01 acceptance criterion proves DELETE FROM orders) |
+
 </threat_model>
 
 <verification>
@@ -207,9 +211,10 @@ connected-account option for stripe.js before wiring (Context7 stripe-js if unsu
 </verification>
 
 <success_criteria>
+
 - SITE-08 confirmation page live with order #, items, total, ETA, and live status; PAY-06 checkout (via 08-04a) creates a direct-charge PaymentIntent; PAY-08 failure → same-order retry.
 - Guest email captured into orders.customer_email (B2); SCA requires_action handled; same-order retry double-charge-safe; confirmation page survives the webhook race via polling.
-</success_criteria>
+  </success_criteria>
 
 <output>
 Create `.planning/phases/08-payments-stripe-connect/08-04b-SUMMARY.md` when done

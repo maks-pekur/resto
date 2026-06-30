@@ -42,9 +42,9 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
   charges — there the **connected account is merchant-of-record** and bears Stripe fees +
   **dispute/chargeback liability**. Destination charges would silently make RestOS the
   fee-payer + dispute insurer on every order (≈1.5–3.3% + Connect platform fees) — the
-  opposite of D-01. PAY-06's "destination" wording is superseded by this. *(Flagged to the
+  opposite of D-01. PAY-06's "destination" wording is superseded by this. _(Flagged to the
   founder; confirm before build. Trade-off: direct charges = less RestOS liability/control,
-  restaurant owns disputes.)*
+  restaurant owns disputes.)_
 - **D-03:** (investor HIGH) The application fee MUST be a **config value (default 0)**, never
   a hardcoded `0`. Keeps the highest-margin lever (payments take-rate) open without a code
   change. Reconcile PAY-06's "RestOS application_fee_amount" wording with the 0 default.
@@ -53,8 +53,8 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 
 - **D-04:** (founder, LOCKED) Refunds are **owner-only**, a **reason is mandatory** (audit),
   and **full + partial** are both supported. Order **cancel/reject of a paid order →
-  automatic refund**. *(Persona note: owner-only is operationally brittle — no manager
-  break-glass; a `payments:refund` permission is a candidate fast-follow, see `<deferred>`.)*
+  automatic refund**. _(Persona note: owner-only is operationally brittle — no manager
+  break-glass; a `payments:refund` permission is a candidate fast-follow, see `<deferred>`.)_
 
 ### Currency
 
@@ -84,7 +84,7 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
   Customer Authentication don't silently fail. PaymentIntent `requires_action` must be
   representable.
 - **D-09:** (CTO HIGH) **Stripe idempotency keys** on every PaymentIntent and Refund
-  *creation* call — retries without keys are a double-spend generator. This is separate from
+  _creation_ call — retries without keys are a double-spend generator. This is separate from
   webhook inbox-dedup.
 - **D-10:** (CTO HIGH) Webhook handler: configure **Fastify raw-body** capture on the Stripe
   route (else signature verification silently breaks), verify signature (400 on invalid),
@@ -119,17 +119,19 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 ### Claude's Discretion (planner/researcher decide)
 
 - Exact Stripe SDK version + adapter shape (mirror the Resend adapter's retry/timeout/
-  idempotency pattern); PaymentIntent confirmation flow (Payment Element vs hosted); account_
+  idempotency pattern); PaymentIntent confirmation flow (Payment Element vs hosted); account\_
   link refresh/return URL handling; how the KYC capability predicate is cached; refund/dispute
   event → order-state mapping details; email template engine + per-locale structure.
-</decisions>
+  </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before researching or planning.**
 
 ### Phase scope + reviews
+
 - `.planning/ROADMAP.md` §"Phase 8: Payments (Stripe Connect)" — goal + 5 success criteria + the 18 requirement IDs.
 - `.planning/REQUIREMENTS.md` — PAY-01..13, SITE-08, GNOTIF-01..04 (full text).
 - `.planning/phases/08-payments-stripe-connect/08-PERSONA-CTO.md` — money-path correctness, charge-model BLOCK, schema/aggregate redesign, webhook raw-body + races, PAY-12 status.
@@ -137,10 +139,12 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 - `.planning/phases/08-payments-stripe-connect/08-PERSONA-INVESTOR.md` — unit economics of fee=0 (Toast 48bps; payments ARR ≈ subscription ARR), SCA/3DS, dispute liability, fiscalization deferral, fee-as-config.
 
 ### Project constraints
+
 - `.planning/PROJECT.md` — monetization = subscription not commission; Stripe Connect for restaurant↔guest; PCI never touched; fiscalization deferred; persona-review policy.
 - `./CLAUDE.md` + `apps/CLAUDE.md` + `packages/db/CLAUDE.md` — tenancy/RLS invariants, ScopedTx, outbox/inbox rules, no-hard-deletes (status-as-soft-delete).
 
 ### Money-path code (read before designing the redesign)
+
 - `apps/api/src/contexts/tenancy/infrastructure/stripe-connect.adapter.ts` + `apps/api/src/contexts/tenancy/domain/ports.ts` (`StripeConnectPort`) — the Noop to replace.
 - `apps/api/src/contexts/ordering/domain/order.aggregate.ts` — `markPaid` (create-only guard), `refund()` (full-only — must support partial), state machine.
 - `packages/db/src/schema/ordering.ts` — `orders` status enum + `payments` table (needs redesign for D-07).
@@ -152,28 +156,33 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 - `apps/api/src/config/env.schema.ts` — leader stale-threshold default (60_000 ms vs PAY-12 >30s).
 
 ### External (Stripe — researcher MUST verify current)
+
 - Stripe Connect **direct charges** + fee-payer/liability model (D-02).
 - Stripe **SCA / 3DS for Connect platforms** (D-08).
 - Stripe **disputes / risk management with Connect** (D-11).
 - Stripe **idempotency keys** (D-09).
-</canonical_refs>
+  </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets
+
 - Transactional **outbox + inbox-dedup** (`@resto/events`) — webhook idempotency keyed on Stripe event id; the dispatcher + leader election are live.
 - **Resend email transport** (`resend.adapter.ts` + factory + mailhog/captured dev/test adapters) — reuse for GNOTIF; the notification METHODS + brand templates are net-new.
 - **PAY-12 ~80% built** — advisory-lock leader election + heartbeat + `/readyz` stale-leader drain already shipped (07.5-03).
 - `payments`/`orders` schema + `stripeAccountId` columns exist — but `payments` + `Order.refund()` need redesign for partial refunds / PI+Refund ids / SCA state (D-07/D-08).
 
 ### Established Patterns
+
 - Status-as-soft-delete (no hard deletes); RLS + ScopedTx double-enforcement on every tenant-scoped table; adapters implement domain ports wired by Symbol token.
 - `runDeduped(db, envelope, consumer, fn)` for at-most-once handler invocation.
 
 ### Integration Points
+
 - Stripe (Connect Express, webhooks) ↔ api; PaymentIntent/Refund ↔ `payments`/`orders`; webhook ↔ outbox/inbox; guest emails ↔ Resend; confirmation page ↔ `apps/website` + (Phase 10) public order-status endpoint.
-</code_context>
+  </code_context>
 
 <specifics>
 ## Specific Ideas (locked direction for the planner)
@@ -186,7 +195,7 @@ deferral), Telegram/other payment channels. Operator order-transition UI is **Ph
 - **Stripe idempotency keys on every PI/Refund create** (D-09); webhook raw-body + signature + event-id dedup (D-10).
 - **Disputes**: catch `charge.dispute.created` → record + notify (D-11).
 - **GNOTIF-01/03 in Phase 8; GNOTIF-02 machinery in 8, fires from Phase 10 transitions** (D-13).
-</specifics>
+  </specifics>
 
 <deferred>
 ## Deferred Ideas
