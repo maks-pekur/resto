@@ -76,7 +76,7 @@ export interface CreateRefundResult {
 export interface RetrieveAccountResult {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
-  readonly requirementsDue: unknown;
+  readonly requirementsDue: string[] | null;
 }
 
 export interface PaymentProviderPort {

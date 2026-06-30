@@ -15,7 +15,7 @@ export interface GetBrandOnboardingStatusResult {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
   readonly canAcceptPayments: boolean;
-  readonly requirementsDue: unknown;
+  readonly requirementsDue: string[] | null;
 }
 
 export interface CreateEmbeddedSessionResult {

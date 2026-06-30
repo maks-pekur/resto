@@ -6,7 +6,7 @@ export interface ApplyBrandPaymentCapabilitiesInput {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
   readonly onboardingStatus: BrandOnboardingStatus;
-  readonly requirementsDue: unknown;
+  readonly requirementsDue: string[] | null;
 }
 
 export interface BrandPaymentAccountLinkedEvent {
@@ -46,7 +46,7 @@ export interface BrandSnapshot {
   readonly stripeChargesEnabled: boolean;
   readonly stripePayoutsEnabled: boolean;
   readonly stripeOnboardingStatus: BrandOnboardingStatus;
-  readonly stripeRequirementsDue: unknown;
+  readonly stripeRequirementsDue: string[] | null;
 }
 
 export class Brand {

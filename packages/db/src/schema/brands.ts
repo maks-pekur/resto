@@ -43,7 +43,7 @@ export const brands = pgTable(
     stripeChargesEnabled: boolean('stripe_charges_enabled').notNull().default(false),
     stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
     stripeOnboardingStatus: text('stripe_onboarding_status').notNull().default('not_started'),
-    stripeRequirementsDue: jsonb('stripe_requirements_due').$type<unknown>(),
+    stripeRequirementsDue: jsonb('stripe_requirements_due').$type<string[] | null>(),
     fiscalizationConfig: jsonb('fiscalization_config').$type<Record<string, unknown>>(),
     ...timestampsColumns(),
   },

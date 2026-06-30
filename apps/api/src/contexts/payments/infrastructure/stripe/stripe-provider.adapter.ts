@@ -217,10 +217,11 @@ export class StripeProviderAdapter implements PaymentProviderPort {
     const account = await withRetry(this.#logger, 'accounts.retrieve', () =>
       this.#client.accounts.retrieve(input.accountId),
     );
+    const currentlyDue = account.requirements?.currently_due ?? null;
     return {
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
-      requirementsDue: account.requirements?.currently_due ?? null,
+      requirementsDue: currentlyDue ? [...currentlyDue] : null,
     };
   }
 

@@ -29,7 +29,7 @@ const ROW_TO_SNAPSHOT = (row: {
   stripeChargesEnabled: boolean;
   stripePayoutsEnabled: boolean;
   stripeOnboardingStatus: string;
-  stripeRequirementsDue: unknown;
+  stripeRequirementsDue: string[] | null;
 }): BrandSnapshot => ({
   id: BrandId.parse(row.id),
   tenantId: TenantId.parse(row.tenantId),

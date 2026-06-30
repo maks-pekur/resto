@@ -37,7 +37,7 @@ const OnboardingStatusResponseSchema = z.object({
   chargesEnabled: z.boolean(),
   payoutsEnabled: z.boolean(),
   canAcceptPayments: z.boolean(),
-  requirementsDue: z.unknown().nullable(),
+  requirementsDue: z.array(z.string()).nullable(),
 });
 class OnboardingStatusResponseDto extends createZodDto(OnboardingStatusResponseSchema) {}
 

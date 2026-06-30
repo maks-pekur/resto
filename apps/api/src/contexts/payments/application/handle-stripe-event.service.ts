@@ -130,11 +130,12 @@ export class HandleStripeEventService {
     const pseudoEnvelope = { id: event.id, tenantId };
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (_tx) => {
       const brand = Brand.fromSnapshot(brandSnap);
+      const currentlyDue = acct.requirements?.currently_due ?? null;
       brand.applyPaymentCapabilities({
         chargesEnabled,
         payoutsEnabled,
         onboardingStatus,
-        requirementsDue: acct.requirements?.currently_due ?? null,
+        requirementsDue: currentlyDue ? [...currentlyDue] : null,
       });
       await this.brandRepo.updatePaymentConnection(brand);
     });
