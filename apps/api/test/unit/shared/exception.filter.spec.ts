@@ -16,6 +16,7 @@ interface CapturedResponse {
 
 const captureResponse = () => {
   const captured: CapturedResponse = { headers: {} };
+  const replyHeaders: Record<string, string> = {};
   const raw = {
     set statusCode(value: number) {
       captured.statusCode = value;
@@ -23,14 +24,23 @@ const captureResponse = () => {
     setHeader(name: string, value: string): void {
       captured.headers[name.toLowerCase()] = value;
     },
+    hasHeader(name: string): boolean {
+      return name.toLowerCase() in captured.headers;
+    },
     end(body: string): void {
       captured.body = body;
     },
   };
-  return { raw, captured };
+  const reply = {
+    raw,
+    getHeader(name: string): string | undefined {
+      return replyHeaders[name.toLowerCase()];
+    },
+  };
+  return { raw, reply, replyHeaders, captured };
 };
 
-const makeHost = (response: { raw: unknown }, request: { url: string }): ArgumentsHost =>
+const makeHost = (response: unknown, request: { url: string }): ArgumentsHost =>
   ({
     switchToHttp: () => ({
       getResponse: () => response,
@@ -39,8 +49,8 @@ const makeHost = (response: { raw: unknown }, request: { url: string }): Argumen
   }) as unknown as ArgumentsHost;
 
 const runFilter = (exception: unknown, url = '/v1/foo') => {
-  const { raw, captured } = captureResponse();
-  const host = makeHost({ raw }, { url });
+  const { reply, captured } = captureResponse();
+  const host = makeHost(reply, { url });
   new ProblemDetailsFilter().catch(exception, host);
   if (captured.body === undefined) throw new Error('filter did not write a body');
   return { captured, problem: JSON.parse(captured.body) as Record<string, unknown> };
@@ -135,30 +145,35 @@ describe('ProblemDetailsFilter', () => {
       warn: warnSpy,
     });
 
-    const { raw } = captureResponse();
-    filter.catch(new Error('boom'), makeHost({ raw }, { url: '/' }));
+    const { reply } = captureResponse();
+    filter.catch(new Error('boom'), makeHost(reply, { url: '/' }));
     expect(errorSpy).toHaveBeenCalledTimes(1);
     expect(warnSpy).not.toHaveBeenCalled();
 
-    const { raw: raw2 } = captureResponse();
-    filter.catch(new ConflictException('dup'), makeHost({ raw: raw2 }, { url: '/' }));
+    const { reply: reply2 } = captureResponse();
+    filter.catch(new ConflictException('dup'), makeHost(reply2, { url: '/' }));
     expect(warnSpy).toHaveBeenCalledTimes(1);
   });
 
   it('handles a FastifyReply that exposes a `raw` wrapper', () => {
-    const { raw, captured } = captureResponse();
-    const fastifyReply = { raw } as unknown;
-    const host = makeHost({ raw: (fastifyReply as { raw: unknown }).raw }, { url: '/' });
-    // Re-wrap as a reply with `raw` to exercise the FastifyReply path
-    const filterHost = {
-      switchToHttp: () => ({
-        getResponse: () => fastifyReply,
-        getRequest: () => ({ url: '/' }),
-      }),
-    } as unknown as ArgumentsHost;
-    new ProblemDetailsFilter().catch(new HttpException('teapot', 418), filterHost);
+    const { reply, captured } = captureResponse();
+    new ProblemDetailsFilter().catch(
+      new HttpException('teapot', 418),
+      makeHost(reply, { url: '/' }),
+    );
     expect(captured.statusCode).toBe(418);
     expect(captured.headers['content-type']).toBe('application/problem+json');
-    void host;
+  });
+
+  it('mirrors @fastify/cors headers from the reply onto the raw error response', () => {
+    const { reply, replyHeaders, captured } = captureResponse();
+    replyHeaders['access-control-allow-origin'] = 'https://app.example.com';
+    replyHeaders['access-control-allow-credentials'] = 'true';
+    new ProblemDetailsFilter().catch(
+      new NotFoundException('missing'),
+      makeHost(reply, { url: '/' }),
+    );
+    expect(captured.headers['access-control-allow-origin']).toBe('https://app.example.com');
+    expect(captured.headers['access-control-allow-credentials']).toBe('true');
   });
 });
