@@ -818,7 +818,7 @@ export interface components {
             chargesEnabled: boolean;
             payoutsEnabled: boolean;
             canAcceptPayments: boolean;
-            requirementsDue: unknown;
+            requirementsDue: string[] | null;
         };
         AccountSessionResponseDto: {
             clientSecret: string;
@@ -835,7 +835,7 @@ export interface components {
             chargesEnabled: boolean;
             payoutsEnabled: boolean;
             canAcceptPayments: boolean;
-            requirementsDue: unknown;
+            requirementsDue: string[] | null;
         };
         OAuthStartResponseDto: {
             /** Format: uri */
@@ -1433,7 +1433,8 @@ export interface components {
             total: string;
             currency: string;
             orderNumber: string;
-            eta?: unknown;
+            /** Format: date-time */
+            eta?: string | null;
         };
         CreatePaymentIntentInputDto: {
             /** Format: uuid */
