@@ -303,6 +303,93 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenancy/stripe-onboarding:
+    post:
+      operationId: StripeOnboardingController_startOnboarding
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/stripe-status:
+    get:
+      operationId: StripeOnboardingController_getStripeStatus
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StripeStatusResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/brands/{slug}/onboarding/account-session:
+    post:
+      operationId: BrandOnboardingController_createAccountSession
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountSessionResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/brands/{slug}/onboarding/account-link:
+    post:
+      operationId: BrandOnboardingController_createAccountLink
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountLinkResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/brands/{slug}/onboarding/status:
+    get:
+      operationId: BrandOnboardingController_getStatus
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatusResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/brands/{slug}/onboarding/oauth/start:
+    get:
+      operationId: BrandOnboardingController_startOAuth
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OAuthStartResponseDto"
+      tags:
+        - tenancy
+  /v1/tenancy/onboarding/oauth/callback:
+    get:
+      operationId: BrandOAuthCallbackController_handleOAuthCallback
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - tenancy
   /v1/me:
     get:
       operationId: MeController_me
@@ -959,6 +1046,62 @@ paths:
                 $ref: "#/components/schemas/OrderResponseDto"
       tags:
         - ordering
+  /v1/orders/{id}/status:
+    get:
+      operationId: OrdersController_getStatus
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderStatusResponseDto"
+      tags:
+        - ordering
+  /webhook/stripe:
+    post:
+      operationId: StripeWebhookController_handleWebhook
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags:
+        - StripeWebhook
+  /v1/checkout/payment-intent:
+    post:
+      operationId: CheckoutController_createPaymentIntent
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaymentIntentInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreatePaymentIntentResponseDto"
+      tags:
+        - checkout
+  /v1/orders/{orderId}/refund:
+    post:
+      operationId: RefundsController_refundOrder
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundInputDto"
+      responses:
+        "200":
+          description: ""
+      tags:
+        - orders
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.
@@ -1012,9 +1155,6 @@ components:
           type: string
         primaryDomain:
           type: string
-        stripeAccountId:
-          type: string
-          nullable: true
         createdAt:
           type: string
         updatedAt:
@@ -1039,7 +1179,6 @@ components:
         - locale
         - defaultCurrency
         - primaryDomain
-        - stripeAccountId
         - createdAt
         - updatedAt
         - archivedAt
@@ -1110,6 +1249,92 @@ components:
         - kind
         - isPrimary
         - verifiedAt
+    OnboardingResponseDto:
+      type: object
+      properties:
+        onboardingUrl:
+          type: string
+          format: uri
+      required:
+        - onboardingUrl
+    StripeStatusResponseDto:
+      type: object
+      properties:
+        onboardingStatus:
+          type: string
+          enum:
+            - not_started
+            - pending
+            - complete
+            - restricted
+        chargesEnabled:
+          type: boolean
+        payoutsEnabled:
+          type: boolean
+        canAcceptPayments:
+          type: boolean
+        requirementsDue:
+          nullable: true
+      required:
+        - onboardingStatus
+        - chargesEnabled
+        - payoutsEnabled
+        - canAcceptPayments
+        - requirementsDue
+    AccountSessionResponseDto:
+      type: object
+      properties:
+        clientSecret:
+          type: string
+      required:
+        - clientSecret
+    AccountLinkResponseDto:
+      type: object
+      properties:
+        onboardingUrl:
+          type: string
+          format: uri
+      required:
+        - onboardingUrl
+    OnboardingStatusResponseDto:
+      type: object
+      properties:
+        accountType:
+          type: string
+          enum:
+            - express
+            - standard
+          nullable: true
+        onboardingStatus:
+          type: string
+          enum:
+            - not_started
+            - pending
+            - complete
+            - restricted
+        chargesEnabled:
+          type: boolean
+        payoutsEnabled:
+          type: boolean
+        canAcceptPayments:
+          type: boolean
+        requirementsDue:
+          nullable: true
+      required:
+        - accountType
+        - onboardingStatus
+        - chargesEnabled
+        - payoutsEnabled
+        - canAcceptPayments
+        - requirementsDue
+    OAuthStartResponseDto:
+      type: object
+      properties:
+        authorizeUrl:
+          type: string
+          format: uri
+      required:
+        - authorizeUrl
     MeBrandsResponseDto:
       type: object
       properties:
@@ -2735,6 +2960,10 @@ components:
         customerPhone:
           type: string
           maxLength: 30
+        customerEmail:
+          type: string
+          format: email
+          maxLength: 254
         idempotencyKey:
           type: string
           format: uuid
@@ -2768,3 +2997,57 @@ components:
         - status
         - total
         - currency
+    OrderStatusResponseDto:
+      type: object
+      properties:
+        status:
+          type: string
+        total:
+          type: string
+        currency:
+          type: string
+        orderNumber:
+          type: string
+        eta:
+          nullable: true
+      required:
+        - status
+        - total
+        - currency
+        - orderNumber
+    CreatePaymentIntentInputDto:
+      type: object
+      properties:
+        orderId:
+          type: string
+          format: uuid
+      required:
+        - orderId
+    CreatePaymentIntentResponseDto:
+      type: object
+      properties:
+        clientSecret:
+          type: string
+          minLength: 1
+        connectedAccountId:
+          type: string
+          minLength: 1
+        orderId:
+          type: string
+          format: uuid
+      required:
+        - clientSecret
+        - connectedAccountId
+        - orderId
+    RefundInputDto:
+      type: object
+      properties:
+        amountMinor:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        reason:
+          type: string
+          minLength: 1
+      required:
+        - reason
