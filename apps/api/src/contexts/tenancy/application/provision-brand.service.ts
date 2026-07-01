@@ -35,6 +35,14 @@ export class ProvisionBrandService {
       displayName: input.displayName,
       status: 'active',
       theme: null,
+      paymentProvider: 'stripe',
+      accountType: null,
+      defaultCurrency: null,
+      stripeAccountId: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
     };
 
     const primaryDomainHostname = `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`;

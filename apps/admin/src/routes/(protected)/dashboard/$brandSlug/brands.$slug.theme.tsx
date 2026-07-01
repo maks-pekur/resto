@@ -4,7 +4,7 @@ import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
-  path: '/brands/$slug/theme',
+  path: '/theme',
   component: BrandThemePage,
 });
 

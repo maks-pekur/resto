@@ -1,0 +1,19 @@
+# Gitleaks configuration for RestOS.
+#
+# `useDefault = true` keeps the entire built-in ruleset active — every real
+# secret detector still fires. The allowlist below only excuses known-FAKE
+# fixture values used in tests, stub adapters, and planning docs. None of
+# these are real credentials; they exist so suites/examples are self-contained.
+title = "RestOS gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-fake payment fixtures (test mocks, stub adapter, planning placeholders) — never real credentials"
+regexTarget = "line"
+regexes = [
+  '''sk_live_DEPRECATED''',
+  '''sk_test_placeholder''',
+  '''pi_stub_123_secret''',
+]

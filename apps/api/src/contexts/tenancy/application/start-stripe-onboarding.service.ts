@@ -3,13 +3,9 @@ import { requireTenantContext } from '@resto/db';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
 import { StripeOnboardingFailedError } from '../domain/errors';
-import {
-  STRIPE_CONNECT_PORT,
-  TENANT_REPOSITORY,
-  type StripeConnectPort,
-  type TenantRepository,
-} from '../domain/ports';
-import type { StripeOnboardingStatus, TenantSnapshot } from '../domain/tenant.aggregate';
+import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
+import type { StripeOnboardingStatus } from '../domain/tenant.aggregate';
+import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../payments/domain/ports';
 
 export interface StartStripeOnboardingResult {
   readonly onboardingUrl: string;
@@ -20,7 +16,7 @@ export interface GetStripeStatusResult {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
   readonly canAcceptPayments: boolean;
-  readonly requirementsDue: unknown;
+  readonly requirementsDue: string[] | null;
 }
 
 @Injectable()
@@ -29,7 +25,7 @@ export class StartStripeOnboardingService {
 
   constructor(
     @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
-    @Inject(STRIPE_CONNECT_PORT) private readonly stripe: StripeConnectPort,
+    @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
@@ -41,56 +37,41 @@ export class StartStripeOnboardingService {
     }
     const snapshot = tenant.toSnapshot();
 
-    let accountId = snapshot.stripeAccountId;
-    if (accountId === null) {
-      try {
-        const result = await this.stripe.createExpressAccount({
-          tenantId: snapshot.id,
-          displayName: snapshot.displayName,
-          defaultCurrency: snapshot.defaultCurrency,
-        });
-        accountId = result.accountId;
-        tenant.linkStripeAccount(accountId);
-        await this.repo.save(tenant);
-        this.logger.log(
-          { tenantId: snapshot.id, accountId },
-          'Stripe Express account created and persisted.',
-        );
-      } catch (err) {
-        throw new StripeOnboardingFailedError(
-          snapshot.id,
-          err instanceof Error ? err : new Error(String(err)),
-        );
-      }
+    try {
+      const result = await this.provider.ensureOnboardingAccount({
+        brandId: snapshot.id,
+        displayName: snapshot.displayName,
+        defaultCurrency: snapshot.defaultCurrency,
+        accountType: 'express',
+      });
+      const accountId = result.accountId;
+      tenant.linkStripeAccount(accountId);
+      await this.repo.save(tenant);
+      this.logger.log(
+        { tenantId: snapshot.id, accountId },
+        'Stripe Express account created and persisted.',
+      );
+      const link = await this.provider.createOnboardingLink({
+        accountId,
+        returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
+        refreshUrl: this.env.STRIPE_CONNECT_REFRESH_URL,
+      });
+      return { onboardingUrl: link.url };
+    } catch (err) {
+      throw new StripeOnboardingFailedError(
+        snapshot.id,
+        err instanceof Error ? err : new Error(String(err)),
+      );
     }
-
-    const link = await this.stripe.createAccountLink({
-      accountId,
-      returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
-      refreshUrl: this.env.STRIPE_CONNECT_REFRESH_URL,
-    });
-
-    return { onboardingUrl: link.url };
   }
 
-  async getStatus(): Promise<GetStripeStatusResult> {
-    const tenant = await this.repo.findCurrentTenant();
-    if (tenant === null) {
-      return {
-        onboardingStatus: 'not_started',
-        chargesEnabled: false,
-        payoutsEnabled: false,
-        canAcceptPayments: false,
-        requirementsDue: null,
-      };
-    }
-    const s: TenantSnapshot = tenant.toSnapshot();
-    return {
-      onboardingStatus: s.stripeOnboardingStatus,
-      chargesEnabled: s.stripeChargesEnabled,
-      payoutsEnabled: s.stripePayoutsEnabled,
-      canAcceptPayments: tenant.canAcceptPayments(),
-      requirementsDue: s.stripeRequirementsDue,
-    };
+  getStatus(): Promise<GetStripeStatusResult> {
+    return Promise.resolve({
+      onboardingStatus: 'not_started',
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      canAcceptPayments: false,
+      requirementsDue: null,
+    });
   }
 }

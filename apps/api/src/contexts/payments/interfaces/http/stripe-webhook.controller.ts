@@ -8,18 +8,16 @@ import {
   Req,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import Stripe from 'stripe';
-import { ENV_TOKEN } from '../../../../config/config.module';
-import type { Env } from '../../../../config/env.schema';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { HandleStripeEventService } from '../../application/handle-stripe-event.service';
+import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../domain/ports';
 
 @Controller()
 export class StripeWebhookController {
   private readonly logger = new Logger(StripeWebhookController.name);
 
   constructor(
-    @Inject(ENV_TOKEN) private readonly env: Env,
+    @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(HandleStripeEventService) private readonly handler: HandleStripeEventService,
   ) {}
 
@@ -36,15 +34,10 @@ export class StripeWebhookController {
     if (!sig) {
       throw new BadRequestException('Missing stripe-signature header');
     }
-    const secret = this.env.STRIPE_WEBHOOK_SECRET;
-    if (!secret) {
-      this.logger.warn('STRIPE_WEBHOOK_SECRET not configured — rejecting webhook');
-      throw new BadRequestException('Webhook not configured');
-    }
 
-    let event: Stripe.Event;
+    let event;
     try {
-      event = Stripe.webhooks.constructEvent(rawBody, sig, secret);
+      event = this.provider.verifyWebhookSignature({ rawBody, signature: sig });
     } catch {
       throw new BadRequestException('Invalid Stripe signature');
     }

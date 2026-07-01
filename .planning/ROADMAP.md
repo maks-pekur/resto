@@ -33,7 +33,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
-- [ ] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_
+- [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -480,9 +480,96 @@ Plans:
 2. A tenant who already has Stripe connects it in one click via OAuth (Connect Standard) and can accept payments with the RestOS `application_fee` applied — no secret-key handling, dashboard stays with the tenant
 3. The payments application code (checkout, refund, webhook services) depends only on a provider-agnostic `PaymentProviderPort`; adding a second provider requires a new adapter + config only — proven by a stub second-provider adapter or an architecture test — and the tenant carries a `paymentProvider` discriminator
 4. The onboarding method ("Create new (Express)" vs "Connect existing (Standard)") is selectable in admin and resumable
-   **Plans**: TBD
-   **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+   **Plans**: 5 plans
+   - [x] 08.1-01-PLAN.md — Per-brand Stripe schema reshape (migration 0057, brand aggregate payment fields, brand repo findByStripeAccountId, tenant Stripe columns dropped — no backfill)
+   - [x] 08.1-02-PLAN.md — Provider-agnostic PaymentProviderPort + StripeProviderAdapter rename/extend + stub adapter + ESLint architecture test (PAY-16)
+   - [x] 08.1-03-PLAN.md — Repoint checkout/refund/webhook to per-brand account+currency; verifyWebhookSignature via port; DI rewired to PAYMENT_PROVIDER_PORT (D-07)
+   - [x] 08.1-04-PLAN.md — Embedded Express onboarding: per-brand account-session API + admin ConnectAccountOnboarding + method choice + gated @stripe browser packages (PAY-14/17)
+   - [x] 08.1-05-PLAN.md — Connect Standard OAuth start/callback (signed CSRF state) + admin "Connect existing" path; completes resumable method choice (PAY-15/17)
+         **UI hint**: yes
+         **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+
+### Phase 08.2: Brand-first Routing & Access-Control Core (INSERTED)
+
+**Goal**: Refactor the admin information architecture to brand-first routing AND ship the brand-level access-control core that the later owner-managed-roles and location-scoping phases build on. (1) Drop the `/dashboard` prefix — every admin page under the brand path (`/{brand}/...` or `/b/{brand}/...`, decided in CONTEXT); `/` redirects to the active brand; protect against brand-slug ↔ root-route collisions. (2) Flip member brand-scope from **default-allow to default-deny** — today an empty/unset `member_brand_scope` grants ALL brands; this is the real, shippable security delta. (3) Move the "active brand" from a forgeable cookie into the **server session**, reconciled against the request's brand on every call (anti-tamper, mirroring the existing `auth.tenant_mismatch` cross-check). (4) Owner switches brands freely in-session (no re-login); a non-owner session is **pinned to one active brand**, switching re-issues the session pin (no password). (5) Extend the existing `BrandScopeGuard` coverage to close opt-in gaps; optionally add brand-level RLS (GUC + policy) for defense-in-depth. Tenant stays billing-only (even the owner always works inside a brand). Source: SEED-001 + `08.2-PERSONA-REVIEWS.md`.
+
+**Split-off (founder, 2026-06-29)** — the original SEED-001 vision is delivered as a SEQUENCE; nothing dropped:
+
+- **Owner-managed custom roles** → its own follow-on phase: enable better-auth `dynamicAccessControl` (off today at `auth.config.ts:206` "until tenant role-creation enforces a creator-subset permission check"), build the creator-subset privilege-escalation guard, and the owner UI to create roles → toggle permissions → assign to staff. Primitives already exist (`@resto/domain` `PERMISSIONS_STATEMENT` + `SYSTEM_ROLES` owner/admin/staff; permission-checker already anticipates tenant-defined roles).
+- **Location-level scoping** → its own follow-on phase: introduce a `locations` entity (none exists today) + `member_location_scope`, refine member scope from brand-level to location-level + locations admin UI.
+- Both build ON this phase's access core. Sequence them after 08.2.
+
+**Depends on**: Phase 08.1 (per-brand brand-aggregate work), Phase 3 (auth/RBAC), Phase 1 (tenancy/RLS)
+**Requirements**: TBD (derive in plan-phase from CONTEXT; relates to Phase 17 operator self-service)
+**Security review**: REQUIRED before code — default-deny flip + server-session active-brand pin is security-sensitive (URL/cookie/session tamper resistance); run a threat pass in planning and /gsd-secure-phase after
+**Success Criteria** (draft — refine in CONTEXT/plan):
+
+1. Admin URLs are brand-first: no `/dashboard` prefix; all pages under the brand path; `/` redirects to the active brand; deep links resolve; old `/dashboard/...` links handled per CONTEXT
+2. Brand slug cannot collide with a root route (reserved-word guard extended OR structural `/b/` prefix); server-enforced; any existing colliding slug handled
+3. Member brand-scope is **default-deny**: a member with empty/unset scope reaches NO brand; owner (`canViewAllBrands`/null scope) unaffected
+4. Active brand lives in the **server session**, not just a cookie; forging the cookie/URL to a brand outside the session pin or the member's scope returns existence-hiding 404/403 — proven by an isolation e2e
+5. Owner switches between all tenant brands in-session with no re-login; a non-owner session is bound to exactly one active brand at a time (switch = silent session re-pin, no password)
+6. (If chosen) brand-level RLS policy active on at least payments/payouts + catalog; otherwise app-layer-only isolation is documented as accepted debt
+
+**Plans**: 6 plans in 3 waves
+
+Plans:
+**Wave 1** _(parallel — no file overlap: domain pkg / db pkg / identity session)_
+
+- [ ] 08.2-01-PLAN.md — Reserved-slug expansion + ADMIN_ROOT_ROUTE_SEGMENTS contract + drift spec + D-07 collision detector (D-06/D-07/SC-2)
+- [ ] 08.2-02-PLAN.md — Brand RLS migration 0058 (app_bind_brand GUC + policies on 9 menu tables + orders) + withTenant brand-bind + boot preflight + [BLOCKING] db:migrate; payments documented as app-layer-only accepted debt (D-14/SC-6)
+- [ ] 08.2-03-PLAN.md — Server-session active-brand pin: session.activeBrandId additionalField (input:false) + set-active hook + POST /v1/identity/me/set-active-brand (owner free-switch / non-owner scoped re-pin) + AuthGuard surfacing (D-09/D-12/D-13/SC-5)
+
+**Wave 2** _(after Wave 1)_
+
+- [ ] 08.2-04-PLAN.md — SPA brand-first routing refactor (drop /dashboard, / → active brand, team/settings brand-neutral) + Stripe Connect return-URL fix + brand-switcher API wire (D-03/D-04/D-05/D-12/D-13/SC-1/SC-5) [human-verify checkpoint]
+- [ ] 08.2-05-PLAN.md — Default-deny flip + BrandScopeGuard default-on (@BrandNeutral opt-out) + D-10 session-pin reconciliation (existence-hiding 404) + inverted unit matrix (D-08/D-10/D-11/SC-3/SC-4)
+
+**Wave 3** _(after Waves 1+2 — runs against the migrated DB)_
+
+- [ ] 08.2-06-PLAN.md — SC-4 isolation e2e (forge cookie/URL → existence-hiding 404/403) + cross-brand RLS read matrix (live) + Stripe return-URL regression unit test (D-08/D-09/D-10/D-14/SC-4/SC-6)
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
+
+### Phase 08.3: Owner-managed Roles & Permissions (INSERTED)
+
+**Goal**: Enable owner-authored custom roles (dynamic RBAC) — the founder's headline access feature. Turn on better-auth `dynamicAccessControl` (off today at `auth.config.ts:206` "until tenant role-creation enforces a creator-subset permission check"); build the **creator-subset privilege-escalation guard** (a role's creator may grant ONLY permissions they themselves hold); build the owner-facing admin UI to **create a role → toggle its permissions from the catalog → assign it to staff**; persist tenant-defined roles. Reuse the existing primitives — `@resto/domain` `PERMISSIONS_STATEMENT` + `SYSTEM_ROLES` (owner/admin/staff) + the permission-checker that already anticipates tenant-defined roles. Source: SEED-001 + `08.2-CONTEXT.md` (split-off).
+
+**Depends on**: Phase 08.2 (brand-level access-control core)
+**Requirements**: TBD (derive in discuss/plan)
+**Security review**: REQUIRED — re-enabling dynamic AC is a privilege-escalation surface; the creator-subset guard IS the gate that kept it disabled.
+**Success Criteria** (draft):
+
+1. Owner creates a custom role in admin, selects its permissions from the catalog, saves it (tenant-scoped)
+2. Owner assigns a custom role to a staff member; the member's effective permissions reflect it on the next request
+3. A role's creator cannot grant a permission they do not themselves hold — creator-subset enforced server-side, proven by test
+4. `dynamicAccessControl` enabled without weakening the fixed system roles; permission-checker resolves system role + custom role
+
+**Plans**: TBD (run /gsd-discuss-phase 08.3)
+
+- [ ] TBD
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
+
+### Phase 08.4: Location-scoped Access (INSERTED)
+
+**Goal**: Introduce the **locations** entity (a brand has one or more locations/points — none exists today) and refine member scope from brand-level to **location-level**. Add a `locations` table (per brand; composite FK + RLS per the tenancy invariants) + `member_location_scope`; locations admin CRUD; assign staff to one or more locations; a member's effective brand access derives from the brands of their scoped locations. Builds directly on 08.2's brand-level access core (default-deny + server-session active-brand pin + brand RLS) and 08.3's role model. Source: SEED-001 + `08.2-CONTEXT.md` (split-off).
+
+**Depends on**: Phase 08.2 (access core); Phase 08.3 (roles — if location-scoped custom roles are wanted)
+**Requirements**: TBD (derive in discuss/plan)
+**Security review**: REQUIRED — location scope is a data-isolation boundary; extend the default-deny + existence-hiding-404 pattern to location grain.
+**Success Criteria** (draft):
+
+1. A brand has one or more locations manageable in admin (create/list/archive)
+2. A staff member can be scoped to one or more locations; out-of-scope locations/brands return existence-hiding 404/403, proven by an isolation e2e
+3. `member_brand_scope` is refined to / superseded by location-level scope; owner (unrestricted) unaffected
+4. The single-active-brand session from 08.2 interplays correctly with multi-location, multi-brand membership
+
+**Plans**: TBD (run /gsd-discuss-phase 08.4)
+
+- [ ] TBD
+      **UI hint**: yes
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 10: Admin Order Intake
 
@@ -673,7 +760,7 @@ Notes:
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
-| 8.1. Payments — Provider Layer & Onboarding   | 0/?            | Not started   | -          |
+| 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
 | 10. Admin Order Intake                        | 0/?            | Not started   | -          |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 

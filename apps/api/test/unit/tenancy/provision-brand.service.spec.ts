@@ -15,6 +15,14 @@ const buildSnapshot = (over: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
   displayName: 'Cafe Roma',
   status: 'active',
   theme: null,
+  paymentProvider: 'stripe',
+  accountType: null,
+  defaultCurrency: null,
+  stripeAccountId: null,
+  stripeChargesEnabled: false,
+  stripePayoutsEnabled: false,
+  stripeOnboardingStatus: 'not_started',
+  stripeRequirementsDue: null,
   ...over,
 });
 
@@ -26,6 +34,8 @@ const buildRepo = (): BrandRepository => ({
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
   findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+  findByStripeAccountId: vi.fn().mockResolvedValue(null),
+  updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
 });
 
 describe('ProvisionBrandService', () => {

@@ -66,7 +66,6 @@ const buildRepo = (): TenantRepository => ({
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
   listScheduledForErasure: vi.fn().mockResolvedValue([]),
-  findByStripeAccountId: vi.fn(),
   findCurrentTenant: vi.fn(),
   listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
@@ -79,6 +78,8 @@ const buildBrandRepo = (): BrandRepository => ({
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn(),
   findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+  findByStripeAccountId: vi.fn().mockResolvedValue(null),
+  updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
 });
 
 const setup = (env: Env, repoOverride?: TenantRepository) => {

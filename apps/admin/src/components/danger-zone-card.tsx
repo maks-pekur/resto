@@ -122,7 +122,9 @@ export function DangerZoneCard({
         <CardContent>
           <Button
             variant="outline"
-            onClick={() => { cancelMutation.mutate(); }}
+            onClick={() => {
+              cancelMutation.mutate();
+            }}
             disabled={cancelMutation.isPending}
           >
             {cancelMutation.isPending ? 'Cancelling…' : 'Cancel offboarding'}
@@ -176,15 +178,25 @@ export function DangerZoneCard({
               <Input
                 id="confirm-slug"
                 value={confirmInput}
-                onChange={(e) => { setConfirmInput(e.target.value); }}
+                onChange={(e) => {
+                  setConfirmInput(e.target.value);
+                }}
                 autoComplete="off"
               />
             </div>
             <AlertDialogFooter>
-              <AlertDialogCancel onClick={() => { setConfirmInput(''); }}>Cancel</AlertDialogCancel>
+              <AlertDialogCancel
+                onClick={() => {
+                  setConfirmInput('');
+                }}
+              >
+                Cancel
+              </AlertDialogCancel>
               <AlertDialogAction
                 disabled={confirmInput !== tenant.slug || scheduleMutation.isPending}
-                onClick={() => { scheduleMutation.mutate(); }}
+                onClick={() => {
+                  scheduleMutation.mutate();
+                }}
               >
                 {scheduleMutation.isPending ? 'Scheduling…' : 'Schedule offboarding'}
               </AlertDialogAction>

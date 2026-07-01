@@ -30,6 +30,7 @@ export const SERVABLE_STATUSES: ReadonlySet<TenantStatus> = new Set<TenantStatus
 
 export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_STATUSES.has(status);
 
+// (handle-stripe-event.service.ts imports it from this location).
 export type StripeOnboardingStatus = 'not_started' | 'pending' | 'complete' | 'restricted';
 
 export interface TenantSnapshot {
@@ -39,11 +40,6 @@ export interface TenantSnapshot {
   readonly status: TenantStatus;
   readonly locale: string;
   readonly defaultCurrency: Currency;
-  readonly stripeAccountId: string | null;
-  readonly stripeChargesEnabled: boolean;
-  readonly stripePayoutsEnabled: boolean;
-  readonly stripeOnboardingStatus: StripeOnboardingStatus;
-  readonly stripeRequirementsDue: unknown;
   readonly primaryDomain: TenantDomain;
   readonly customDomains: readonly TenantDomain[];
   readonly createdAt: Date;
@@ -107,11 +103,6 @@ export class Tenant {
       status: 'active',
       locale: input.locale ?? 'en',
       defaultCurrency: input.defaultCurrency,
-      stripeAccountId: null,
-      stripeChargesEnabled: false,
-      stripePayoutsEnabled: false,
-      stripeOnboardingStatus: 'not_started',
-      stripeRequirementsDue: null,
       primaryDomain,
       customDomains: [],
       createdAt: now,
@@ -242,11 +233,6 @@ export class Tenant {
       status: 'erased',
       displayName: '[erased]',
       slug: TenantSlug.parse(`erased-${this.snapshot.id.slice(0, 8)}-${Date.now().toString(36)}`),
-      stripeAccountId: null,
-      stripeChargesEnabled: false,
-      stripePayoutsEnabled: false,
-      stripeOnboardingStatus: 'not_started',
-      stripeRequirementsDue: null,
       offboardingExecutedAt: now,
       updatedAt: now,
     };
@@ -258,28 +244,18 @@ export class Tenant {
     });
   }
 
-  linkStripeAccount(accountId: string, now: Date = new Date()): void {
-    this.snapshot = {
-      ...this.snapshot,
-      stripeAccountId: accountId,
-      stripeOnboardingStatus: 'pending',
-      updatedAt: now,
-    };
+  linkStripeAccount(_accountId: string, _now: Date = new Date()): void {
+    void _accountId;
+    void _now;
   }
 
-  applyStripeCapabilities(input: ApplyStripeCapabilitiesInput, now: Date = new Date()): void {
-    this.snapshot = {
-      ...this.snapshot,
-      stripeChargesEnabled: input.chargesEnabled,
-      stripePayoutsEnabled: input.payoutsEnabled,
-      stripeOnboardingStatus: input.onboardingStatus,
-      stripeRequirementsDue: input.requirementsDue,
-      updatedAt: now,
-    };
+  applyStripeCapabilities(_input: ApplyStripeCapabilitiesInput, _now: Date = new Date()): void {
+    void _input;
+    void _now;
   }
 
   canAcceptPayments(): boolean {
-    return this.snapshot.stripeAccountId !== null && this.snapshot.stripeChargesEnabled;
+    return false;
   }
 
   isPubliclyServable(): boolean {

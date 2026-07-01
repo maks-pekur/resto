@@ -183,14 +183,20 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
             <Button
               variant="destructive"
               size="sm"
-              onClick={() => { setPhase({ kind: 'password-disable', pending: false, error: null }); }}
+              onClick={() => {
+                setPhase({ kind: 'password-disable', pending: false, error: null });
+              }}
             >
               Disable 2FA
             </Button>
           </div>
         </div>
       ) : (
-        <Button onClick={() => { setPhase({ kind: 'password-enable', pending: false, error: null }); }}>
+        <Button
+          onClick={() => {
+            setPhase({ kind: 'password-enable', pending: false, error: null });
+          }}
+        >
           Enable 2FA
         </Button>
       )}
@@ -238,7 +244,13 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
               </p>
             ) : null}
             <AlertDialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setPhase({ kind: 'idle' }); }}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setPhase({ kind: 'idle' });
+                }}
+              >
                 Cancel
               </Button>
               <Button
@@ -315,13 +327,13 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
                   type="checkbox"
                   className="mt-1"
                   checked={phase.checkboxChecked}
-                  onChange={() =>
-                    { setPhase((p) =>
+                  onChange={() => {
+                    setPhase((p) =>
                       p.kind === 'showing-codes'
                         ? { ...p, checkboxChecked: !p.checkboxChecked }
                         : p,
-                    ); }
-                  }
+                    );
+                  }}
                 />
                 <Label htmlFor="tfa-saved" className="text-sm leading-snug">
                   I have saved these recovery codes somewhere I can recover them if I lose my
@@ -338,16 +350,16 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
                   maxLength={6}
                   autoComplete="one-time-code"
                   value={phase.totpInput}
-                  onChange={(e) =>
-                    { setPhase((p) =>
+                  onChange={(e) => {
+                    setPhase((p) =>
                       p.kind === 'showing-codes'
                         ? {
                             ...p,
                             totpInput: e.currentTarget.value.replace(/\D/gu, '').slice(0, 6),
                           }
                         : p,
-                    ); }
-                  }
+                    );
+                  }}
                 />
               </div>
 
@@ -360,7 +372,13 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
           ) : null}
 
           <AlertDialogFooter>
-            <Button type="button" variant="outline" onClick={() => { setPhase({ kind: 'idle' }); }}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setPhase({ kind: 'idle' });
+              }}
+            >
               Cancel
             </Button>
             <Button type="button" disabled={!confirmEnabled} onClick={onConfirm}>

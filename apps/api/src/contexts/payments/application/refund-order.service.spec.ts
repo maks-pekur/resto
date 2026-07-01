@@ -4,7 +4,7 @@ import type { TenantAwareDb, RestoTx } from '@resto/db';
 import { TenantId, OrderId, Currency } from '@resto/domain';
 import { Order } from '../../ordering/domain/order.aggregate';
 import type { OrderRepository } from '../../ordering/domain/ports';
-import type { StripeConnectPort } from '../../tenancy/domain/ports';
+import type { PaymentProviderPort } from '../domain/ports';
 import type { PaymentRepository } from '../domain/ports';
 import { RefundOrderService } from './refund-order.service';
 import { RefundReasonRequiredError, PaymentNotRefundableError } from '../domain/errors';
@@ -68,7 +68,7 @@ describe('RefundOrderService', () => {
   let service: RefundOrderService;
   let orderRepo: { [K in keyof OrderRepository]: ReturnType<typeof vi.fn> };
   let paymentRepo: { [K in keyof PaymentRepository]: ReturnType<typeof vi.fn> };
-  let stripePort: { [K in keyof StripeConnectPort]: ReturnType<typeof vi.fn> };
+  let provider: { [K in keyof PaymentProviderPort]: ReturnType<typeof vi.fn> };
   let db: { withTenant: ReturnType<typeof vi.fn> };
 
   beforeEach(() => {
@@ -89,16 +89,18 @@ describe('RefundOrderService', () => {
       updateRefundStatus: vi.fn().mockResolvedValue(undefined),
     };
 
-    stripePort = {
-      ensureExpressAccount: vi.fn(),
-      createExpressAccount: vi.fn(),
-      createAccountLink: vi.fn(),
+    provider = {
+      ensureOnboardingAccount: vi.fn(),
+      createOnboardingLink: vi.fn(),
+      createOnboardingSession: vi.fn(),
+      exchangeOAuthCode: vi.fn(),
+      retrieveAccount: vi.fn(),
       createPaymentIntent: vi.fn(),
       cancelPaymentIntent: vi.fn(),
       createRefund: vi
         .fn()
         .mockResolvedValue({ stripeRefundId: 're_test_123', status: 'succeeded' }),
-      retrieveAccount: vi.fn(),
+      verifyWebhookSignature: vi.fn(),
     };
 
     db = {
@@ -110,7 +112,7 @@ describe('RefundOrderService', () => {
     service = new RefundOrderService(
       orderRepo,
       paymentRepo,
-      stripePort,
+      provider,
       db as unknown as TenantAwareDb,
       new Logger('test'),
     );
@@ -160,7 +162,7 @@ describe('RefundOrderService', () => {
       reason: 'item out of stock',
     });
 
-    expect(stripePort.createRefund).toHaveBeenCalledWith(
+    expect(provider.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({
         paymentIntentId: PAYMENT_INTENT_ID,
         connectedAccountId: STRIPE_ACCOUNT_ID,
@@ -266,7 +268,7 @@ describe('RefundOrderService', () => {
         reason: 'too much',
       }),
     ).rejects.toBeInstanceOf(RefundExceedsCapturedError);
-    expect(stripePort.createRefund).not.toHaveBeenCalled();
+    expect(provider.createRefund).not.toHaveBeenCalled();
   });
 
   it('idempotency key is deterministic (same request = same key)', async () => {
@@ -281,7 +283,7 @@ describe('RefundOrderService', () => {
       reason: 'test',
     });
 
-    const key1 = stripePort.createRefund.mock.calls[0]?.[0].refundRequestId as string;
+    const key1 = provider.createRefund.mock.calls[0]?.[0].refundRequestId as string;
 
     orderRepo.save.mockClear();
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
@@ -294,7 +296,7 @@ describe('RefundOrderService', () => {
       reason: 'test',
     });
 
-    const key2 = stripePort.createRefund.mock.calls[1]?.[0].refundRequestId as string;
+    const key2 = provider.createRefund.mock.calls[1]?.[0].refundRequestId as string;
     expect(key1).toBe(key2);
   });
 });

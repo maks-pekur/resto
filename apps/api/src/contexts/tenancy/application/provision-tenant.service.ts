@@ -1,50 +1,24 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Tenant, type TenantSnapshot } from '../domain/tenant.aggregate';
-import {
-  STRIPE_CONNECT_PORT,
-  TENANT_REPOSITORY,
-  type StripeConnectPort,
-  type TenantRepository,
-} from '../domain/ports';
+import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { Currency } from '@resto/domain';
 import { TenantSlugArchivedError } from '../domain/errors';
 import type { ProvisionTenantInput } from './dto';
 
 const PRIMARY_DOMAIN_SUFFIX = 'menu.resto.app';
 
-/**
- * Provision a tenant.
- *
- * Idempotent: calling with a slug that already maps to an `active`
- * tenant returns that tenant unchanged, with no new outbox event.
- * Returns the up-to-date snapshot.
- *
- * The domain and the outbox event are committed in the same DB
- * transaction (the repository owns that boundary), so a successful
- * return guarantees the broker will eventually deliver
- * `tenancy.tenant_provisioned.v1`.
- */
 @Injectable()
 export class ProvisionTenantService {
   private readonly logger = new Logger(ProvisionTenantService.name);
 
-  constructor(
-    @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
-    @Inject(STRIPE_CONNECT_PORT) private readonly stripe: StripeConnectPort,
-  ) {}
+  constructor(@Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository) {}
 
   async execute(input: ProvisionTenantInput): Promise<TenantSnapshot> {
-    // RestoZodValidationPipe already validated the regex via CurrencyValue
-    // (packages/domain/src/money.ts). Brand is purely TS; cast at the
-    // HTTP→service boundary per ADR-0020 I-7.
     const defaultCurrency = input.defaultCurrency as Currency;
     const existing = await this.repo.findBySlug(input.slug);
     if (existing) {
       const snapshot = existing.toSnapshot();
       if (snapshot.status === 'archived') {
-        // Re-provisioning an archived slug is policy-deferred: surface a
-        // domain error rather than silently reactivate. Caller picks a
-        // new slug or runs an explicit "reactivate" flow (future ticket).
         throw new TenantSlugArchivedError(input.slug);
       }
       this.logger.log(
@@ -60,12 +34,6 @@ export class ProvisionTenantService {
       locale: input.locale,
       defaultCurrency: defaultCurrency,
       primaryDomainHostname: `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`,
-    });
-
-    // Stripe placeholder — adapter is no-op until MVP-2.
-    await this.stripe.ensureExpressAccount({
-      tenantId: tenant.toSnapshot().id,
-      displayName: input.displayName,
     });
 
     await this.repo.save(tenant);

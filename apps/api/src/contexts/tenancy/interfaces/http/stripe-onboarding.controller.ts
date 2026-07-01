@@ -15,7 +15,7 @@ const StripeStatusResponseSchema = z.object({
   chargesEnabled: z.boolean(),
   payoutsEnabled: z.boolean(),
   canAcceptPayments: z.boolean(),
-  requirementsDue: z.unknown().nullable(),
+  requirementsDue: z.array(z.string()).nullable(),
 });
 class StripeStatusResponseDto extends createZodDto(StripeStatusResponseSchema) {}
 

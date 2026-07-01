@@ -130,12 +130,29 @@ export class ProblemDetailsFilter implements ExceptionFilter {
  * (FastifyReply) wrapper or the raw Node response — landing on the raw
  * response is portable and avoids relying on adapter internals.
  */
+const CORS_RESPONSE_HEADERS = [
+  'access-control-allow-origin',
+  'access-control-allow-credentials',
+  'access-control-expose-headers',
+  'vary',
+] as const;
+
 const sendProblem = (
   res: FastifyReply | ServerResponse,
   status: number,
   problem: unknown,
 ): void => {
   const raw: ServerResponse = 'raw' in res ? res.raw : res;
+  // raw.end() bypasses Fastify's onSend hook, where @fastify/cors writes the
+  // CORS headers — mirror them so error responses stay readable cross-origin.
+  if ('raw' in res) {
+    for (const name of CORS_RESPONSE_HEADERS) {
+      const value = res.getHeader(name);
+      if (value !== undefined && !raw.hasHeader(name)) {
+        raw.setHeader(name, value);
+      }
+    }
+  }
   raw.statusCode = status;
   raw.setHeader('content-type', 'application/problem+json');
   raw.end(JSON.stringify(problem));

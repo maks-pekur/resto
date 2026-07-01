@@ -3,7 +3,7 @@ phase: 08-payments-stripe-connect
 plan: 04a
 type: execute
 wave: 4
-depends_on: ["08-01", "08-02", "08-03"]
+depends_on: ['08-01', '08-02', '08-03']
 files_modified:
   - apps/api/src/contexts/payments/application/create-checkout-payment.service.ts
   - apps/api/src/contexts/payments/interfaces/http/checkout.controller.ts
@@ -17,27 +17,27 @@ user_setup: []
 
 must_haves:
   truths:
-    - "D-12/PAY-13: the checkout endpoint enforces tenant.canAcceptPayments() SERVER-SIDE before creating a PaymentIntent — UI gating alone is bypassable"
-    - "D-08: a card needing 3DS drives the order to requires_action; the server creates the PaymentIntent + transitions the order, the browser (08-04b) completes the challenge"
-    - "D-06: on payment failure the guest retries on the SAME order — a new PaymentIntent with an incremented attempt; the prior in-flight PI is canceled first (double-charge guard)"
+    - 'D-12/PAY-13: the checkout endpoint enforces tenant.canAcceptPayments() SERVER-SIDE before creating a PaymentIntent — UI gating alone is bypassable'
+    - 'D-08: a card needing 3DS drives the order to requires_action; the server creates the PaymentIntent + transitions the order, the browser (08-04b) completes the challenge'
+    - 'D-06: on payment failure the guest retries on the SAME order — a new PaymentIntent with an incremented attempt; the prior in-flight PI is canceled first (double-charge guard)'
     - "amount/currency integrity: the PaymentIntent amount = the server-computed order total and currency = the tenant's settlement currency; client amounts are never trusted"
-    - "SITE-08 substrate: GET /v1/orders/:id/status is a READ-ONLY poll of order status (webhook is the single writer of paid) consumed by the 08-04b confirmation page"
+    - 'SITE-08 substrate: GET /v1/orders/:id/status is a READ-ONLY poll of order status (webhook is the single writer of paid) consumed by the 08-04b confirmation page'
   artifacts:
-    - path: "apps/api/src/contexts/payments/application/create-checkout-payment.service.ts"
-      provides: "server-authoritative PaymentIntent creation gated on canAcceptPayments + cancel-prior-PI"
-      contains: "canAcceptPayments"
-    - path: "apps/api/src/contexts/payments/interfaces/http/checkout.controller.ts"
-      provides: "POST /v1/checkout/payment-intent (server gate)"
-      contains: "payment-intent"
+    - path: 'apps/api/src/contexts/payments/application/create-checkout-payment.service.ts'
+      provides: 'server-authoritative PaymentIntent creation gated on canAcceptPayments + cancel-prior-PI'
+      contains: 'canAcceptPayments'
+    - path: 'apps/api/src/contexts/payments/interfaces/http/checkout.controller.ts'
+      provides: 'POST /v1/checkout/payment-intent (server gate)'
+      contains: 'payment-intent'
   key_links:
-    - from: "checkout.controller.ts"
-      to: "create-checkout-payment.service"
-      via: "POST /v1/checkout/payment-intent gated by canAcceptPayments"
-      pattern: "payment-intent"
-    - from: "orders.controller.ts"
-      to: "GetOrderService"
-      via: "GET /v1/orders/:id/status read-only"
-      pattern: "status"
+    - from: 'checkout.controller.ts'
+      to: 'create-checkout-payment.service'
+      via: 'POST /v1/checkout/payment-intent gated by canAcceptPayments'
+      pattern: 'payment-intent'
+    - from: 'orders.controller.ts'
+      to: 'GetOrderService'
+      via: 'GET /v1/orders/:id/status read-only'
+      pattern: 'status'
 ---
 
 <objective>
@@ -148,21 +148,23 @@ From 08-03: payments table tracks the order's PaymentIntents (+ attempt); paymen
 </tasks>
 
 <threat_model>
+
 ## Trust Boundaries
 
-| Boundary | Description |
-|----------|-------------|
+| Boundary                    | Description                                                                        |
+| --------------------------- | ---------------------------------------------------------------------------------- |
 | browser → checkout endpoint | client cart + amounts are untrusted; server recomputes total + gates on capability |
-| browser → order-status read | the status read is read-only; it must not be able to mark an order paid |
+| browser → order-status read | the status read is read-only; it must not be able to mark an order paid            |
 
 ## STRIDE Threat Register
 
-| Threat ID | Category | Component | Disposition | Mitigation Plan |
-|-----------|----------|-----------|-------------|-----------------|
-| T-08-19 | Tampering | client sends a forged/low amount | mitigate | server uses the recomputed order total + tenant settlement currency; client amounts never trusted; currency-mismatch rejected |
-| T-08-20 | Elevation of privilege | un-KYC'd tenant takes money | mitigate | server-side canAcceptPayments() gate at the checkout endpoint (D-12, PAY-13) — not UI-only |
-| T-08-21 | Tampering | status read mutates order | mitigate | GET /v1/orders/:id/status is read-only; webhook is the single writer of paid (CTO HIGH #4) |
-| T-08-22 | Tampering/financial | double-charge on retry | mitigate | cancel prior in-flight PI + incremented-attempt idempotency key before creating a new PI (D-06) |
+| Threat ID | Category               | Component                        | Disposition | Mitigation Plan                                                                                                               |
+| --------- | ---------------------- | -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| T-08-19   | Tampering              | client sends a forged/low amount | mitigate    | server uses the recomputed order total + tenant settlement currency; client amounts never trusted; currency-mismatch rejected |
+| T-08-20   | Elevation of privilege | un-KYC'd tenant takes money      | mitigate    | server-side canAcceptPayments() gate at the checkout endpoint (D-12, PAY-13) — not UI-only                                    |
+| T-08-21   | Tampering              | status read mutates order        | mitigate    | GET /v1/orders/:id/status is read-only; webhook is the single writer of paid (CTO HIGH #4)                                    |
+| T-08-22   | Tampering/financial    | double-charge on retry           | mitigate    | cancel prior in-flight PI + incremented-attempt idempotency key before creating a new PI (D-06)                               |
+
 </threat_model>
 
 <verification>
@@ -172,9 +174,10 @@ From 08-03: payments table tracks the order's PaymentIntents (+ attempt); paymen
 </verification>
 
 <success_criteria>
+
 - PAY-06 checkout creates a direct-charge PaymentIntent server-side; PAY-13 enforced server-side; PAY-08 failure path sets up same-order retry (browser in 08-04b).
 - SCA requires_action handled; same-order retry is double-charge-safe; the SITE-08 status read exists for the 08-04b confirmation page.
-</success_criteria>
+  </success_criteria>
 
 <output>
 Create `.planning/phases/08-payments-stripe-connect/08-04a-SUMMARY.md` when done

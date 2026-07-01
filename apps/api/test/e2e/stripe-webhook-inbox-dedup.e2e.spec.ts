@@ -25,11 +25,6 @@ const makeFakeTenant = (tenantId: string): Tenant =>
     status: 'active',
     locale: 'en',
     defaultCurrency: Currency.parse('EUR'),
-    stripeAccountId: STRIPE_ACCOUNT_ID,
-    stripeChargesEnabled: false,
-    stripePayoutsEnabled: false,
-    stripeOnboardingStatus: 'pending',
-    stripeRequirementsDue: null,
     primaryDomain: {
       id: randomUUID(),
       tenantId: TenantId.parse(tenantId),
@@ -78,7 +73,6 @@ suite('stripe webhook inbox dedup — evt_ id accepted after 0056 migration (PAY
         displayName: 'Inbox Dedup Test Tenant',
         locale: 'en',
         defaultCurrency: 'EUR',
-        stripeAccountId: STRIPE_ACCOUNT_ID,
       });
     });
   }, 120_000);

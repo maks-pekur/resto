@@ -151,10 +151,10 @@
 - [x] **PAY-11**: `stripeAccountId` Zod schema gets `.max(255)` constraint
 - [x] **PAY-12**: `OutboxDispatcher` exposes `outbox.is_leader` OTel gauge (1/0); `/health/readiness` probe marks pod NOT ready when leader hasn't dispatched in >30s; closes silent leader-failover gap before real Stripe events flow
 - [x] **PAY-13**: Operator can use catalog, CRM, and admin fully while Stripe Connect KYC is in progress; only the "Accept payments" live switch is gated — pending-onboarding state does not block the rest of the product
-- [ ] **PAY-14**: Embedded Connect onboarding — KYC completed via Stripe embedded components rendered inside admin (no full off-domain redirect); pending-KYC state (PAY-13) preserved _(Phase 08.1)_
-- [ ] **PAY-15**: Connect Standard OAuth path — "connect existing Stripe" one-click for tenants who already have a Stripe account; `application_fee` still applied; tenant retains their own Stripe dashboard; no secret-key handling _(Phase 08.1)_
-- [ ] **PAY-16**: Provider-agnostic payment port — generalize `StripeConnectPort` → `PaymentProviderPort` (account onboarding, payment intent, refund, webhook verify); tenant carries a `paymentProvider` discriminator; a second provider slots in via adapter + config only, with no changes to checkout/refund/webhook services. Unblocks PAYMP-01/02/03 _(Phase 08.1)_
-- [ ] **PAY-17**: Admin onboarding-method choice — operator picks "Create new (Express)" vs "Connect existing (Standard)"; selection is resumable _(Phase 08.1)_
+- [x] **PAY-14**: Embedded Connect onboarding — KYC completed via Stripe embedded components rendered inside admin (no full off-domain redirect); pending-KYC state (PAY-13) preserved _(Phase 08.1)_
+- [x] **PAY-15**: Connect Standard OAuth path — "connect existing Stripe" one-click for tenants who already have a Stripe account; `application_fee` still applied; tenant retains their own Stripe dashboard; no secret-key handling _(Phase 08.1)_
+- [x] **PAY-16**: Provider-agnostic payment port — generalize `StripeConnectPort` → `PaymentProviderPort` (account onboarding, payment intent, refund, webhook verify); tenant carries a `paymentProvider` discriminator; a second provider slots in via adapter + config only, with no changes to checkout/refund/webhook services. Unblocks PAYMP-01/02/03 _(Phase 08.1)_
+- [x] **PAY-17**: Admin onboarding-method choice — operator picks "Create new (Express)" vs "Connect existing (Standard)"; selection is resumable _(Phase 08.1)_
 
 ### Guest Notifications (`GNOTIF`)
 
@@ -477,10 +477,10 @@
 | PAY-11      | Phase 8       | Complete |
 | PAY-12      | Phase 8       | Complete |
 | PAY-13      | Phase 8       | Complete |
-| PAY-14      | Phase 08.1    | Pending  |
-| PAY-15      | Phase 08.1    | Pending  |
-| PAY-16      | Phase 08.1    | Pending  |
-| PAY-17      | Phase 08.1    | Pending  |
+| PAY-14      | Phase 08.1    | Complete |
+| PAY-15      | Phase 08.1    | Complete |
+| PAY-16      | Phase 08.1    | Complete |
+| PAY-17      | Phase 08.1    | Complete |
 | SITE-08     | Phase 8       | Complete |
 | GNOTIF-01   | Phase 8       | Complete |
 | GNOTIF-02   | Phase 8       | Complete |

@@ -52,6 +52,10 @@ export {
 } from './infrastructure/nats-subscriber';
 
 export {
+  BrandPaymentAccountLinkedV1,
+  BrandPaymentAccountLinkedV1Payload,
+  BrandPaymentCapabilitiesAppliedV1,
+  BrandPaymentCapabilitiesAppliedV1Payload,
   TenantArchivedV1,
   TenantArchivedV1Payload,
   TenantErasureCompletedV1,

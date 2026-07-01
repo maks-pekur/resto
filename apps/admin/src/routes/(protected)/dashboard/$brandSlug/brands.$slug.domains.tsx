@@ -6,7 +6,7 @@ import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
-  path: '/brands/$slug/domains',
+  path: '/domains',
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(tenantDomainsQuery()),
   component: BrandDomainsPage,
 });

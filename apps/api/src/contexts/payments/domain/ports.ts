@@ -1,6 +1,100 @@
 import type { TenantId } from '@resto/domain';
 import type { RestoTx } from '@resto/db';
 
+export interface WebhookEvent {
+  id: string;
+  type: string;
+  data: unknown;
+}
+
+export interface CreateOnboardingAccountInput {
+  readonly brandId: string;
+  readonly displayName: string;
+  readonly country?: string;
+  readonly defaultCurrency?: string;
+  readonly accountType: string;
+}
+
+export interface CreateOnboardingLinkInput {
+  readonly accountId: string;
+  readonly refreshUrl: string;
+  readonly returnUrl: string;
+}
+
+export interface CreatePaymentIntentInput {
+  readonly orderId: string;
+  readonly connectedAccountId: string;
+  readonly amountMinor: number;
+  readonly currency: string;
+  readonly applicationFeeMinor: number;
+  readonly attempt: number;
+  readonly metadata: Record<string, string>;
+}
+
+export interface CancelPaymentIntentInput {
+  readonly paymentIntentId: string;
+  readonly connectedAccountId: string;
+  readonly reason?: string;
+}
+
+export interface CreateRefundInput {
+  readonly paymentIntentId: string;
+  readonly connectedAccountId: string;
+  readonly amountMinor?: number;
+  readonly reason: string;
+  readonly refundRequestId: string;
+}
+
+export interface RetrieveAccountInput {
+  readonly accountId: string;
+}
+
+export interface CreateOnboardingAccountResult {
+  readonly accountId: string;
+}
+
+export interface CreateOnboardingLinkResult {
+  readonly url: string;
+  readonly expiresAt: number;
+}
+
+export interface CreatePaymentIntentResult {
+  readonly paymentIntentId: string;
+  readonly clientSecret: string;
+  readonly status: string;
+}
+
+export interface CancelPaymentIntentResult {
+  readonly status: string;
+}
+
+export interface CreateRefundResult {
+  readonly stripeRefundId: string;
+  readonly status: string;
+}
+
+export interface RetrieveAccountResult {
+  readonly chargesEnabled: boolean;
+  readonly payoutsEnabled: boolean;
+  readonly requirementsDue: string[] | null;
+}
+
+export interface PaymentProviderPort {
+  ensureOnboardingAccount(
+    input: CreateOnboardingAccountInput,
+  ): Promise<CreateOnboardingAccountResult>;
+  createOnboardingLink(input: CreateOnboardingLinkInput): Promise<CreateOnboardingLinkResult>;
+  createOnboardingSession(input: { accountId: string }): Promise<{ clientSecret: string }>;
+  exchangeOAuthCode(input: { code: string }): Promise<{ accountId: string }>;
+  retrieveAccount(input: RetrieveAccountInput): Promise<RetrieveAccountResult>;
+  createPaymentIntent(input: CreatePaymentIntentInput): Promise<CreatePaymentIntentResult>;
+  cancelPaymentIntent(input: CancelPaymentIntentInput): Promise<CancelPaymentIntentResult>;
+  createRefund(input: CreateRefundInput): Promise<CreateRefundResult>;
+  verifyWebhookSignature(input: { rawBody: Buffer; signature: string }): WebhookEvent;
+}
+
+export const PAYMENT_PROVIDER_PORT = Symbol('PAYMENT_PROVIDER_PORT');
+
 export interface PaymentRow {
   readonly id: string;
   readonly tenantId: TenantId;

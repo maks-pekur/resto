@@ -1,21 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
-import type Stripe from 'stripe';
-import type { Env } from '../../../config/env.schema';
+import Stripe from 'stripe';
+import type { Env } from '../../../../config/env.schema';
 import type {
   CancelPaymentIntentInput,
   CancelPaymentIntentResult,
-  CreateAccountLinkInput,
-  CreateAccountLinkResult,
-  CreateExpressAccountInput,
-  CreateExpressAccountResult,
+  CreateOnboardingAccountInput,
+  CreateOnboardingAccountResult,
+  CreateOnboardingLinkInput,
+  CreateOnboardingLinkResult,
   CreatePaymentIntentInput,
   CreatePaymentIntentResult,
   CreateRefundInput,
   CreateRefundResult,
+  PaymentProviderPort,
   RetrieveAccountInput,
   RetrieveAccountResult,
-  StripeConnectPort,
-} from '../domain/ports';
+  WebhookEvent,
+} from '../../domain/ports';
 
 const RETRY_DELAYS_MS = [0, 250, 1000, 4000] as const;
 const CALL_TIMEOUT_MS = 5500;
@@ -60,6 +61,12 @@ export interface StripeClientLike {
       options?: Stripe.RequestOptions,
     ): Promise<{ url: string; expires_at: number }>;
   };
+  readonly accountSessions: {
+    create(
+      params: Stripe.AccountSessionCreateParams,
+      options?: Stripe.RequestOptions,
+    ): Promise<{ client_secret: string }>;
+  };
   readonly paymentIntents: {
     create(
       params: Stripe.PaymentIntentCreateParams,
@@ -77,11 +84,20 @@ export interface StripeClientLike {
       options?: Stripe.RequestOptions,
     ): Promise<{ id: string; status: string | null }>;
   };
+  readonly oauth: {
+    token(params: {
+      grant_type: string;
+      code: string;
+    }): Promise<{ stripe_user_id?: string | null }>;
+  };
 }
 
 type StripeEnv = Pick<
   Env,
-  'STRIPE_APPLICATION_FEE_AMOUNT' | 'STRIPE_CONNECT_RETURN_URL' | 'STRIPE_CONNECT_REFRESH_URL'
+  | 'STRIPE_APPLICATION_FEE_AMOUNT'
+  | 'STRIPE_CONNECT_RETURN_URL'
+  | 'STRIPE_CONNECT_REFRESH_URL'
+  | 'STRIPE_WEBHOOK_SECRET'
 >;
 
 async function withTimeout<T>(fn: () => Promise<T>): Promise<T> {
@@ -132,29 +148,20 @@ async function withRetry<T>(logger: Logger, label: string, fn: () => Promise<T>)
 }
 
 @Injectable()
-export class StripeConnectAdapter implements StripeConnectPort {
+export class StripeProviderAdapter implements PaymentProviderPort {
   readonly #client: StripeClientLike;
   readonly #logger: Logger;
+  readonly #webhookSecret: string;
 
-  constructor(client: StripeClientLike, _env: StripeEnv, logger?: Logger) {
+  constructor(client: StripeClientLike, env: StripeEnv, logger?: Logger) {
     this.#client = client;
-    this.#logger = logger ?? new Logger(StripeConnectAdapter.name);
+    this.#webhookSecret = env.STRIPE_WEBHOOK_SECRET ?? '';
+    this.#logger = logger ?? new Logger(StripeProviderAdapter.name);
   }
 
-  async ensureExpressAccount(input: {
-    tenantId: string;
-    displayName: string;
-  }): Promise<string | null> {
-    const result = await this.createExpressAccount({
-      tenantId: input.tenantId as Parameters<typeof this.createExpressAccount>[0]['tenantId'],
-      displayName: input.displayName,
-    });
-    return result.accountId;
-  }
-
-  async createExpressAccount(
-    input: CreateExpressAccountInput,
-  ): Promise<CreateExpressAccountResult> {
+  async ensureOnboardingAccount(
+    input: CreateOnboardingAccountInput,
+  ): Promise<CreateOnboardingAccountResult> {
     const account = await withRetry(this.#logger, 'accounts.create', () =>
       this.#client.accounts.create({
         type: 'express',
@@ -165,13 +172,15 @@ export class StripeConnectAdapter implements StripeConnectPort {
       }),
     );
     this.#logger.log(
-      { tenantId: input.tenantId, accountId: account.id },
+      { brandId: input.brandId, accountId: account.id },
       'Stripe Express account created.',
     );
     return { accountId: account.id };
   }
 
-  async createAccountLink(input: CreateAccountLinkInput): Promise<CreateAccountLinkResult> {
+  async createOnboardingLink(
+    input: CreateOnboardingLinkInput,
+  ): Promise<CreateOnboardingLinkResult> {
     const link = await withRetry(this.#logger, 'accountLinks.create', () =>
       this.#client.accountLinks.create({
         account: input.accountId,
@@ -181,6 +190,39 @@ export class StripeConnectAdapter implements StripeConnectPort {
       }),
     );
     return { url: link.url, expiresAt: link.expires_at };
+  }
+
+  async createOnboardingSession(input: { accountId: string }): Promise<{ clientSecret: string }> {
+    const session = await withRetry(this.#logger, 'accountSessions.create', () =>
+      this.#client.accountSessions.create({
+        account: input.accountId,
+        components: { account_onboarding: { enabled: true } },
+      }),
+    );
+    return { clientSecret: session.client_secret };
+  }
+
+  async exchangeOAuthCode(input: { code: string }): Promise<{ accountId: string }> {
+    const resp = await withRetry(this.#logger, 'oauth.token', () =>
+      this.#client.oauth.token({ grant_type: 'authorization_code', code: input.code }),
+    );
+    const accountId = resp.stripe_user_id;
+    if (accountId === null || accountId === undefined || accountId === '') {
+      throw new Error('OAuth token exchange did not return a stripe_user_id');
+    }
+    return { accountId };
+  }
+
+  async retrieveAccount(input: RetrieveAccountInput): Promise<RetrieveAccountResult> {
+    const account = await withRetry(this.#logger, 'accounts.retrieve', () =>
+      this.#client.accounts.retrieve(input.accountId),
+    );
+    const currentlyDue = account.requirements?.currently_due ?? null;
+    return {
+      chargesEnabled: account.charges_enabled,
+      payoutsEnabled: account.payouts_enabled,
+      requirementsDue: currentlyDue ? [...currentlyDue] : null,
+    };
   }
 
   async createPaymentIntent(input: CreatePaymentIntentInput): Promise<CreatePaymentIntentResult> {
@@ -240,23 +282,16 @@ export class StripeConnectAdapter implements StripeConnectPort {
     return { stripeRefundId: refund.id, status: refund.status ?? 'unknown' };
   }
 
-  async retrieveAccount(input: RetrieveAccountInput): Promise<RetrieveAccountResult> {
-    const account = await withRetry(this.#logger, 'accounts.retrieve', () =>
-      this.#client.accounts.retrieve(input.accountId),
-    );
-    return {
-      chargesEnabled: account.charges_enabled,
-      payoutsEnabled: account.payouts_enabled,
-      requirementsDue: account.requirements?.currently_due ?? null,
-    };
+  verifyWebhookSignature(input: { rawBody: Buffer; signature: string }): WebhookEvent {
+    return Stripe.webhooks.constructEvent(input.rawBody, input.signature, this.#webhookSecret);
   }
 }
 
-export const createStripeClientAdapter = (
+export const createStripeProviderAdapter = (
   stripe: Stripe,
   env: StripeEnv,
   logger?: Logger,
-): StripeConnectAdapter => {
+): StripeProviderAdapter => {
   const client: StripeClientLike = {
     accounts: {
       create: (params, opts) => stripe.accounts.create(params, opts),
@@ -265,6 +300,9 @@ export const createStripeClientAdapter = (
     accountLinks: {
       create: (params, opts) => stripe.accountLinks.create(params, opts),
     },
+    accountSessions: {
+      create: (params, opts) => stripe.accountSessions.create(params, opts),
+    },
     paymentIntents: {
       create: (params, opts) => stripe.paymentIntents.create(params, opts),
       cancel: (id, params, opts) => stripe.paymentIntents.cancel(id, params, opts),
@@ -272,6 +310,10 @@ export const createStripeClientAdapter = (
     refunds: {
       create: (params, opts) => stripe.refunds.create(params, opts),
     },
+    oauth: {
+      token: (params) =>
+        stripe.oauth.token({ grant_type: 'authorization_code', code: params.code }),
+    },
   };
-  return new StripeConnectAdapter(client, env, logger);
+  return new StripeProviderAdapter(client, env, logger);
 };

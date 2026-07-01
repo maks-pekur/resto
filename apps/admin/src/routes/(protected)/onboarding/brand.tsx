@@ -1,14 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { createRoute, useNavigate } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { apiFetch } from '@/lib/api-client';
-import { authClient } from '@/lib/auth-client';
+import { meBrandsQuery } from '@/lib/queries/identity';
 import { slugifyBrandName } from '@/lib/slugify-brand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
@@ -44,6 +45,8 @@ type Availability =
 function OnboardingBrandPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { data: brandsResult } = useQuery(meBrandsQuery());
+  const isFirstBrand = (brandsResult?.data?.brands.length ?? 0) === 0;
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
@@ -97,7 +100,9 @@ function OnboardingBrandPage() {
         if (!slugTouched && suggestion !== null) setSlug(suggestion);
       });
     }, DEBOUNCE_MS);
-    return () => { clearTimeout(handle); };
+    return () => {
+      clearTimeout(handle);
+    };
   }, [slug, slugTouched]);
 
   const onSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
@@ -124,8 +129,8 @@ function OnboardingBrandPage() {
       return;
     }
     const brand = res.data as BrandResponse;
-    await authClient.organization.setActive({ organizationId: brand.id });
     await queryClient.invalidateQueries({ queryKey: ['identity'] });
+    toast.success(`Brand "${displayName.trim()}" created.`);
     void navigate({ to: '/dashboard/$brandSlug', params: { brandSlug: brand.slug } });
   };
 
@@ -134,7 +139,9 @@ function OnboardingBrandPage() {
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Create your first brand</CardTitle>
+            <CardTitle className="text-xl">
+              {isFirstBrand ? 'Create your first brand' : 'Create a new brand'}
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
@@ -146,7 +153,9 @@ function OnboardingBrandPage() {
                   minLength={1}
                   maxLength={120}
                   value={displayName}
-                  onChange={(e) => { onDisplayNameChange(e.target.value); }}
+                  onChange={(e) => {
+                    onDisplayNameChange(e.target.value);
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -159,7 +168,9 @@ function OnboardingBrandPage() {
                   pattern="[a-z0-9][a-z0-9-]{1,62}[a-z0-9]"
                   placeholder="z-burger"
                   value={slug}
-                  onChange={(e) => { onSlugChange(e.target.value); }}
+                  onChange={(e) => {
+                    onSlugChange(e.target.value);
+                  }}
                   aria-describedby="slug-availability"
                 />
                 <SlugAvailabilityHint state={availability} onApplySuggestion={applySuggestion} />
@@ -211,7 +222,9 @@ function SlugAvailabilityHint({ state, onApplySuggestion }: SlugAvailabilityHint
             <button
               type="button"
               className="underline underline-offset-2"
-              onClick={() => { onApplySuggestion(suggestion); }}
+              onClick={() => {
+                onApplySuggestion(suggestion);
+              }}
             >
               {suggestion}
             </button>{' '}

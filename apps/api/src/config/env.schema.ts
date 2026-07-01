@@ -247,6 +247,7 @@ export const envSchema = z
     STRIPE_CONNECT_RETURN_URL: z.string().url().default('http://localhost:3001/stripe/return'),
     STRIPE_CONNECT_REFRESH_URL: z.string().url().default('http://localhost:3001/stripe/refresh'),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
+    STRIPE_CONNECT_OAUTH_REDIRECT_URL: z.string().url().optional(),
   })
   .superRefine((env, ctx) => {
     if (env.NODE_ENV !== 'development' && env.NODE_ENV !== 'test') {

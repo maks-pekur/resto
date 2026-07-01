@@ -23,7 +23,7 @@ const OrderStatusResponseSchema = z.object({
   total: z.string(),
   currency: z.string(),
   orderNumber: z.string(),
-  eta: z.date().nullable().optional(),
+  eta: z.string().datetime({ offset: true }).nullable().optional(),
 });
 type OrderStatusResponse = z.infer<typeof OrderStatusResponseSchema>;
 class OrderStatusResponseDto extends createZodDto(OrderStatusResponseSchema) {}
@@ -60,7 +60,7 @@ export class OrdersController {
         total: snap.total,
         currency: snap.currency,
         orderNumber: snap.orderNumber,
-        eta: snap.scheduledFor ?? null,
+        eta: snap.scheduledFor ? snap.scheduledFor.toISOString() : null,
       };
     });
   }

@@ -12,28 +12,40 @@ import { BrandQueriesService } from './application/brand-queries.service';
 import { TenantResolverService } from './application/tenant-resolver.service';
 import { TenantAndBrandResolverService } from './application/tenant-and-brand-resolver.service';
 import { StartStripeOnboardingService } from './application/start-stripe-onboarding.service';
-import { BRAND_REPOSITORY, STRIPE_CONNECT_PORT, TENANT_REPOSITORY } from './domain/ports';
-import { createStripeClientAdapter } from './infrastructure/stripe-connect.adapter';
+import { StartBrandOnboardingService } from './application/start-brand-onboarding.service';
+import { BRAND_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
+import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
+import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
 import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repository';
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.controller';
+import {
+  BrandOnboardingController,
+  BrandOAuthCallbackController,
+} from './interfaces/http/brand-onboarding.controller';
 
 @Module({
-  controllers: [InternalTenantsController, TenantsController, StripeOnboardingController],
+  controllers: [
+    InternalTenantsController,
+    TenantsController,
+    StripeOnboardingController,
+    BrandOnboardingController,
+    BrandOAuthCallbackController,
+  ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: BRAND_REPOSITORY, useClass: BrandDrizzleRepository },
     {
-      provide: STRIPE_CONNECT_PORT,
+      provide: PAYMENT_PROVIDER_PORT,
       inject: [ENV_TOKEN],
       useFactory: (env: Env) => {
         const stripe = new Stripe(env.STRIPE_SECRET_KEY ?? 'sk_test_placeholder', {
           apiVersion: '2025-02-24.acacia',
           typescript: true,
         });
-        return createStripeClientAdapter(stripe, env, new Logger('StripeConnectAdapter'));
+        return createStripeProviderAdapter(stripe, env, new Logger('StripeProviderAdapter'));
       },
     },
     ProvisionTenantService,
@@ -46,10 +58,12 @@ import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.
     TenantResolverService,
     TenantAndBrandResolverService,
     StartStripeOnboardingService,
+    StartBrandOnboardingService,
   ],
   exports: [
     TENANT_REPOSITORY,
-    STRIPE_CONNECT_PORT,
+    BRAND_REPOSITORY,
+    PAYMENT_PROVIDER_PORT,
     TenantResolverService,
     TenantAndBrandResolverService,
     TenantQueriesService,

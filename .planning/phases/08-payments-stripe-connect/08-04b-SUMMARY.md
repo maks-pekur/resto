@@ -32,15 +32,15 @@ affects:
 
 tech-stack:
   added:
-    - "@stripe/stripe-js@9.8.0"
-    - "@stripe/react-stripe-js@6.6.0"
+    - '@stripe/stripe-js@9.8.0'
+    - '@stripe/react-stripe-js@6.6.0'
   patterns:
-    - "Direct charge on connected account: loadStripe(pk, { stripeAccount: connectedAccountId }) per PI"
-    - "SCA: stripe.confirmPayment with redirect=always; on success Stripe redirects; on error (only case it returns) surface message + retry"
-    - "Same-order retry (D-06): retry re-calls POST /v1/checkout/payment-intent on existing orderId; server cancels prior PI; order + cart preserved"
-    - "Confirmation page: RSC shell fetches initial status server-side; OrderStatusPoller client component polls with backoff [1s,2s,3s,5s,10s] until terminal"
-    - "Read-only confirmation: page never marks paid; webhook is the single writer (CTO HIGH #4)"
-    - "client-env.ts: fail-loud for NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY — throws on empty; rejects non-live keys in production"
+    - 'Direct charge on connected account: loadStripe(pk, { stripeAccount: connectedAccountId }) per PI'
+    - 'SCA: stripe.confirmPayment with redirect=always; on success Stripe redirects; on error (only case it returns) surface message + retry'
+    - 'Same-order retry (D-06): retry re-calls POST /v1/checkout/payment-intent on existing orderId; server cancels prior PI; order + cart preserved'
+    - 'Confirmation page: RSC shell fetches initial status server-side; OrderStatusPoller client component polls with backoff [1s,2s,3s,5s,10s] until terminal'
+    - 'Read-only confirmation: page never marks paid; webhook is the single writer (CTO HIGH #4)'
+    - 'client-env.ts: fail-loud for NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY — throws on empty; rejects non-live keys in production'
 
 key-files:
   created:
@@ -60,11 +60,11 @@ key-files:
     - apps/api/src/contexts/ordering/application/create-order.service.ts
 
 key-decisions:
-  - "loadStripe is called per-PI (not at module init) with { stripeAccount: connectedAccountId } — required for direct charges on connected accounts; StripeElementsOptions does not expose stripeAccount"
-  - "confirmPayment with redirect=always: on success the page never receives control (redirect happens); on error it returns { error: StripeError } unconditionally — no conditional check needed"
-  - "checkout-api.ts is NOT server-only; getOrderStatus accepts an optional host param so RSC confirmation page can pass the Next.js request host for tenant resolution"
-  - "customerEmail added to CreateOrderInputSchema (was missing despite the DB column and Order aggregate supporting it) — Rule 2 auto-fix"
-  - "/_global-error next build prerender failure is pre-existing (confirmed by reproducing on clean baseline); not caused by this plan"
+  - 'loadStripe is called per-PI (not at module init) with { stripeAccount: connectedAccountId } — required for direct charges on connected accounts; StripeElementsOptions does not expose stripeAccount'
+  - 'confirmPayment with redirect=always: on success the page never receives control (redirect happens); on error it returns { error: StripeError } unconditionally — no conditional check needed'
+  - 'checkout-api.ts is NOT server-only; getOrderStatus accepts an optional host param so RSC confirmation page can pass the Next.js request host for tenant resolution'
+  - 'customerEmail added to CreateOrderInputSchema (was missing despite the DB column and Order aggregate supporting it) — Rule 2 auto-fix'
+  - '/_global-error next build prerender failure is pre-existing (confirmed by reproducing on clean baseline); not caused by this plan'
 
 metrics:
   duration: 90min
@@ -105,10 +105,10 @@ metrics:
 
 ## Task Commits
 
-| Task | Name                                                                                   | Commit    | Key Files                                                                                           |
-| ---- | -------------------------------------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------- |
-| 1    | Wire checkout form (guest email + Payment Element + SCA + same-order retry)            | `adcb4b7` | checkout-form.tsx, payment-element.tsx, checkout-api.ts, client-env.ts, checkout-schema.ts, dto.ts |
-| 2    | SITE-08 confirmation page + read-only status poller                                    | `d492df3` | confirmation/[orderId]/page.tsx, order-status-poller.tsx                                            |
+| Task | Name                                                                        | Commit    | Key Files                                                                                          |
+| ---- | --------------------------------------------------------------------------- | --------- | -------------------------------------------------------------------------------------------------- |
+| 1    | Wire checkout form (guest email + Payment Element + SCA + same-order retry) | `adcb4b7` | checkout-form.tsx, payment-element.tsx, checkout-api.ts, client-env.ts, checkout-schema.ts, dto.ts |
+| 2    | SITE-08 confirmation page + read-only status poller                         | `d492df3` | confirmation/[orderId]/page.tsx, order-status-poller.tsx                                           |
 
 ## Test Results
 
@@ -217,6 +217,7 @@ No new threat surface beyond what the plan's threat model covers.
 ## Self-Check: PASSED
 
 Files exist:
+
 - `apps/website/components/checkout/payment-element.tsx` — FOUND
 - `apps/website/components/checkout/order-status-poller.tsx` — FOUND
 - `apps/website/app/checkout/confirmation/[orderId]/page.tsx` — FOUND

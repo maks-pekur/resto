@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Currency, TenantId } from '@resto/domain';
+import { BrandId, Currency, TenantId } from '@resto/domain';
 import type { OrderRepository } from '../../ordering/domain/ports';
-import type { TenantRepository, StripeConnectPort } from '../../tenancy/domain/ports';
-import type { PaymentRepository, UpsertPaymentInput } from '../domain/ports';
+import type { BrandRepository } from '../../tenancy/domain/ports';
+import type { PaymentProviderPort, PaymentRepository, UpsertPaymentInput } from '../domain/ports';
 import type { TenantAwareDb } from '@resto/db';
 import { CreateCheckoutPaymentService } from './create-checkout-payment.service';
 import {
@@ -11,16 +11,33 @@ import {
   OrderNotCheckoutableError,
 } from '../domain/errors';
 import { Order } from '../../ordering/domain/order.aggregate';
-import { Tenant } from '../../tenancy/domain/tenant.aggregate';
+import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
 import type { OrderSnapshot } from '../../ordering/domain/order.aggregate';
-import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
-import { TenantSlug, OrderId } from '@resto/domain';
+import { OrderId } from '@resto/domain';
 import { randomUUID } from 'node:crypto';
 
-const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot => ({
+const makeBrandSnap = (overrides: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
+  id: BrandId.parse(randomUUID()),
+  tenantId: TenantId.parse(randomUUID()),
+  slug: 'test-brand',
+  displayName: 'Test Restaurant',
+  status: 'active',
+  theme: null,
+  paymentProvider: 'stripe',
+  accountType: 'express',
+  defaultCurrency: 'EUR',
+  stripeAccountId: 'acct_test123',
+  stripeChargesEnabled: true,
+  stripePayoutsEnabled: true,
+  stripeOnboardingStatus: 'complete',
+  stripeRequirementsDue: null,
+  ...overrides,
+});
+
+const makeOrderSnap = (brandId: string, overrides: Partial<OrderSnapshot> = {}): OrderSnapshot => ({
   id: OrderId.parse(randomUUID()),
   tenantId: TenantId.parse(randomUUID()),
-  brandId: randomUUID(),
+  brandId,
   idempotencyKey: randomUUID(),
   orderNumber: 'ORD-001',
   status: 'created',
@@ -42,47 +59,12 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   ...overrides,
 });
 
-const makeTenantSnap = (overrides: Partial<TenantSnapshot> = {}): TenantSnapshot => {
-  const id = TenantId.parse(randomUUID());
-  return {
-    id,
-    slug: TenantSlug.parse('test-tenant'),
-    displayName: 'Test Restaurant',
-    status: 'active',
-    locale: 'en',
-    defaultCurrency: Currency.parse('EUR'),
-    stripeAccountId: 'acct_test123',
-    stripeChargesEnabled: true,
-    stripePayoutsEnabled: true,
-    stripeOnboardingStatus: 'complete',
-    stripeRequirementsDue: null,
-    primaryDomain: {
-      id: randomUUID(),
-      tenantId: id,
-      domain: 'test.menu.resto.app',
-      kind: 'subdomain' as const,
-      isPrimary: true,
-      verifiedAt: new Date(),
-      createdAt: new Date(),
-    },
-    customDomains: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    archivedAt: null,
-    offboardingScheduledAt: null,
-    offboardingExecutedAt: null,
-    offboardingRequestedBy: null,
-    ...overrides,
-  };
-};
-
-const buildSut = () => {
-  const tenantId = TenantId.parse(randomUUID());
-  const orderSnap = makeOrderSnap({ tenantId });
-  const tenantSnap = makeTenantSnap({ id: tenantId });
+const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
+  const brandSnap = makeBrandSnap(brandSnapOverrides);
+  const orderSnap = makeOrderSnap(brandSnap.id);
+  const tenantId = orderSnap.tenantId;
 
   const order = Order.fromSnapshot(orderSnap);
-  const tenant = Tenant.fromSnapshot(tenantSnap);
 
   const orderRepo: OrderRepository = {
     save: vi.fn().mockResolvedValue(undefined),
@@ -92,17 +74,16 @@ const buildSut = () => {
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
   };
 
-  const tenantRepo: TenantRepository = {
-    findById: vi.fn().mockResolvedValue(tenant),
+  const brandRepo: BrandRepository = {
+    findById: vi.fn().mockResolvedValue(brandSnap),
     findBySlug: vi.fn().mockResolvedValue(null),
+    findByTenantAndSlug: vi.fn().mockResolvedValue(null),
     findByDomainHost: vi.fn().mockResolvedValue(null),
-    findByStripeAccountId: vi.fn().mockResolvedValue(null),
+    listForTenant: vi.fn().mockResolvedValue([]),
     save: vi.fn().mockResolvedValue(undefined),
-    listDomains: vi.fn().mockResolvedValue([]),
-    findCurrentTenant: vi.fn().mockResolvedValue(tenant),
-    listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
-    eraseTenant: vi.fn().mockResolvedValue(tenantSnap),
-    listScheduledForErasure: vi.fn().mockResolvedValue([]),
+    findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+    findByStripeAccountId: vi.fn().mockResolvedValue(null),
+    updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
   };
 
   const paymentRepo: PaymentRepository = {
@@ -130,10 +111,18 @@ const buildSut = () => {
     updateRefundStatus: vi.fn().mockResolvedValue(undefined),
   };
 
-  const stripePort: StripeConnectPort = {
-    ensureExpressAccount: vi.fn().mockResolvedValue(null),
-    createExpressAccount: vi.fn().mockResolvedValue({ accountId: 'acct_test123' }),
-    createAccountLink: vi.fn().mockResolvedValue({ url: 'https://stripe.com/link', expiresAt: 0 }),
+  const provider: PaymentProviderPort = {
+    ensureOnboardingAccount: vi.fn().mockResolvedValue({ accountId: 'acct_test123' }),
+    createOnboardingLink: vi
+      .fn()
+      .mockResolvedValue({ url: 'https://stripe.com/link', expiresAt: 0 }),
+    createOnboardingSession: vi.fn().mockResolvedValue({ clientSecret: 'cs_test' }),
+    exchangeOAuthCode: vi.fn().mockResolvedValue({ accountId: 'acct_test123' }),
+    retrieveAccount: vi.fn().mockResolvedValue({
+      chargesEnabled: true,
+      payoutsEnabled: true,
+      requirementsDue: null,
+    }),
     createPaymentIntent: vi.fn().mockResolvedValue({
       paymentIntentId: 'pi_test123',
       clientSecret: 'pi_test123_secret',
@@ -141,95 +130,85 @@ const buildSut = () => {
     }),
     cancelPaymentIntent: vi.fn().mockResolvedValue({ status: 'canceled' }),
     createRefund: vi.fn().mockResolvedValue({ stripeRefundId: 'ref_test', status: 'succeeded' }),
-    retrieveAccount: vi.fn().mockResolvedValue({
-      chargesEnabled: true,
-      payoutsEnabled: true,
-      requirementsDue: null,
-    }),
+    verifyWebhookSignature: vi
+      .fn()
+      .mockReturnValue({ id: 'evt_test', type: 'account.updated', data: {} }),
   };
 
-  const fakeTx = {} as unknown;
+  const _fakeTx = {} as unknown;
   const db = {
-    withTenant: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(fakeTx)),
+    withTenant: vi.fn().mockImplementation((fn: (tx: unknown) => Promise<unknown>) => fn(_fakeTx)),
     withoutTenant: vi
       .fn()
-      .mockImplementation((_reason: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(fakeTx)),
+      .mockImplementation((_reason: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(_fakeTx)),
   } as unknown as TenantAwareDb;
 
-  const sut = new CreateCheckoutPaymentService(
-    orderRepo,
-    tenantRepo,
-    paymentRepo,
-    stripePort,
-    db,
-    0,
-  );
+  const sut = new CreateCheckoutPaymentService(orderRepo, brandRepo, paymentRepo, provider, db, 0);
 
   return {
     sut,
     orderRepo,
-    tenantRepo,
+    brandRepo,
     paymentRepo,
-    stripePort,
+    provider,
     order,
-    tenant,
+    brandSnap,
     orderSnap,
-    tenantSnap,
     tenantId,
   };
 };
 
 describe('CreateCheckoutPaymentService', () => {
-  describe('canAcceptPayments gate (D-12)', () => {
-    it('throws PaymentsNotEnabledError when tenant cannot accept payments', async () => {
-      const { sut, tenantRepo, tenantSnap, tenantId, stripePort } = buildSut();
-      const disabledTenant = Tenant.fromSnapshot({
-        ...tenantSnap,
-        id: tenantId,
+  describe('canAcceptPayments gate (D-07)', () => {
+    it('throws PaymentsNotEnabledError when brand has no stripeAccountId', async () => {
+      const { sut, orderSnap, tenantId } = buildSut({
         stripeAccountId: null,
         stripeChargesEnabled: false,
       });
-      vi.mocked(tenantRepo.findById).mockResolvedValue(disabledTenant);
 
-      await expect(sut.execute({ orderId: randomUUID(), tenantId })).rejects.toThrow(
+      await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(
         PaymentsNotEnabledError,
       );
-
-      expect(stripePort.createPaymentIntent).not.toHaveBeenCalled();
     });
 
-    it('throws PaymentsNotEnabledError when stripeAccountId is null', async () => {
-      const { sut, tenantRepo, tenantSnap, tenantId, stripePort } = buildSut();
-      const disabledTenant = Tenant.fromSnapshot({
-        ...tenantSnap,
-        id: tenantId,
-        stripeAccountId: null,
-        stripeChargesEnabled: true,
+    it('throws PaymentsNotEnabledError when brand has account but chargesEnabled=false', async () => {
+      const { sut, orderSnap, tenantId } = buildSut({
+        stripeAccountId: 'acct_test123',
+        stripeChargesEnabled: false,
       });
-      vi.mocked(tenantRepo.findById).mockResolvedValue(disabledTenant);
 
-      await expect(sut.execute({ orderId: randomUUID(), tenantId })).rejects.toThrow(
+      await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(
         PaymentsNotEnabledError,
       );
+    });
 
-      expect(stripePort.createPaymentIntent).not.toHaveBeenCalled();
+    it('throws PaymentsNotEnabledError when brand has no defaultCurrency', async () => {
+      const { sut, orderSnap, tenantId } = buildSut({
+        defaultCurrency: null,
+        stripeAccountId: 'acct_test123',
+        stripeChargesEnabled: true,
+      });
+
+      await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(
+        PaymentsNotEnabledError,
+      );
     });
   });
 
-  describe('server-authoritative amount + currency (D-05, T-08-19)', () => {
+  describe('server-authoritative amount + currency (D-07, brand-level)', () => {
     it('creates PaymentIntent with server-computed order total in minor units', async () => {
-      const { sut, stripePort, orderSnap, tenantId } = buildSut();
+      const { sut, provider, orderSnap, tenantId } = buildSut();
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(stripePort.createPaymentIntent).toHaveBeenCalledWith(
+      expect(provider.createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ amountMinor: 1000 }),
       );
     });
 
-    it('throws CurrencyMismatchError when order currency differs from tenant settlement currency', async () => {
-      const { sut, orderRepo, tenantId } = buildSut();
-      const mismatchOrderSnap = makeOrderSnap({
+    it('throws CurrencyMismatchError when order currency differs from brand settlement currency', async () => {
+      const { sut, orderRepo, orderSnap, tenantId } = buildSut();
+      const mismatchOrderSnap = makeOrderSnap(orderSnap.brandId, {
         tenantId,
         currency: Currency.parse('USD'),
         total: '10.00',
@@ -245,7 +224,7 @@ describe('CreateCheckoutPaymentService', () => {
 
   describe('double-charge guard (D-06)', () => {
     it('cancels prior in-flight PaymentIntent before creating a new one', async () => {
-      const { sut, paymentRepo, stripePort, orderSnap, tenantSnap, tenantId } = buildSut();
+      const { sut, paymentRepo, provider, orderSnap, tenantId } = buildSut();
 
       const existingPayment = {
         id: randomUUID(),
@@ -257,7 +236,7 @@ describe('CreateCheckoutPaymentService', () => {
         paymentIntentId: 'pi_existing',
         latestChargeId: null,
         refundedAmount: '0.00',
-        stripeAccountId: tenantSnap.stripeAccountId,
+        stripeAccountId: 'acct_test123',
         applicationFeeAmount: '0.00',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -267,14 +246,14 @@ describe('CreateCheckoutPaymentService', () => {
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(stripePort.cancelPaymentIntent).toHaveBeenCalledWith(
+      expect(provider.cancelPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ paymentIntentId: 'pi_existing' }),
       );
-      expect(stripePort.createPaymentIntent).toHaveBeenCalledTimes(1);
+      expect(provider.createPaymentIntent).toHaveBeenCalledTimes(1);
     });
 
     it('uses incremented attempt in idempotency key on retry', async () => {
-      const { sut, paymentRepo, stripePort, orderSnap, tenantSnap, tenantId } = buildSut();
+      const { sut, paymentRepo, provider, orderSnap, tenantId } = buildSut();
 
       const existingPayment = {
         id: randomUUID(),
@@ -286,7 +265,7 @@ describe('CreateCheckoutPaymentService', () => {
         paymentIntentId: 'pi_existing',
         latestChargeId: null,
         refundedAmount: '0.00',
-        stripeAccountId: tenantSnap.stripeAccountId,
+        stripeAccountId: 'acct_test123',
         applicationFeeAmount: '0.00',
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -296,19 +275,19 @@ describe('CreateCheckoutPaymentService', () => {
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(stripePort.createPaymentIntent).toHaveBeenCalledWith(
+      expect(provider.createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ attempt: 1 }),
       );
     });
 
     it('does not cancel when no prior PaymentIntent exists (first attempt)', async () => {
-      const { sut, paymentRepo, stripePort, orderSnap, tenantId } = buildSut();
+      const { sut, paymentRepo, provider, orderSnap, tenantId } = buildSut();
       vi.mocked(paymentRepo.findByOrderId).mockResolvedValue(null);
 
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
-      expect(stripePort.cancelPaymentIntent).not.toHaveBeenCalled();
-      expect(stripePort.createPaymentIntent).toHaveBeenCalledWith(
+      expect(provider.cancelPaymentIntent).not.toHaveBeenCalled();
+      expect(provider.createPaymentIntent).toHaveBeenCalledWith(
         expect.objectContaining({ attempt: 0 }),
       );
     });
@@ -321,8 +300,8 @@ describe('CreateCheckoutPaymentService', () => {
       await sut.execute({ orderId: orderSnap.id, tenantId });
 
       expect(orderRepo.update).toHaveBeenCalledTimes(1);
-      const updatedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
-      expect(updatedOrder?.toSnapshot().status).toBe('requires_action');
+      const savedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
+      expect(savedOrder?.toSnapshot().status).toBe('requires_action');
 
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'requires_action' }),

@@ -186,6 +186,24 @@ export default [
     },
   },
   {
+    files: ['src/contexts/payments/application/**/*.ts', 'src/contexts/payments/domain/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'stripe',
+              message:
+                'PAY-16: payments app/domain must depend on PaymentProviderPort, not the Stripe SDK. Stripe stays in infrastructure/stripe/.',
+            },
+          ],
+          patterns: ['**/infrastructure/stripe/**'],
+        },
+      ],
+    },
+  },
+  {
     ignores: ['dist/**', 'dist-spec/**', 'eslint.config.mjs', 'vitest.config.ts', 'build.mjs'],
   },
 ];

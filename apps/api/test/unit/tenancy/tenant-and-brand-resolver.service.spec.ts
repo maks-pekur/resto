@@ -14,6 +14,14 @@ const buildBrand = (over: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
   displayName: 'Z Burger',
   status: 'active',
   theme: null,
+  paymentProvider: 'stripe',
+  accountType: null,
+  defaultCurrency: null,
+  stripeAccountId: null,
+  stripeChargesEnabled: false,
+  stripePayoutsEnabled: false,
+  stripeOnboardingStatus: 'not_started',
+  stripeRequirementsDue: null,
   ...over,
 });
 
@@ -30,6 +38,8 @@ describe('TenantAndBrandResolverService', () => {
       listForTenant: vi.fn().mockResolvedValue([]),
       save: vi.fn(),
       findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
+      findByStripeAccountId: vi.fn().mockResolvedValue(null),
+      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
     };
     service = new TenantAndBrandResolverService(repo);
   });

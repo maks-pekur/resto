@@ -38,6 +38,12 @@ export const brands = pgTable(
     legalForm: text('legal_form'),
     taxId: text('tax_id'),
     stripeAccountId: text('stripe_account_id'),
+    paymentProvider: text('payment_provider').notNull().default('stripe'),
+    accountType: text('account_type'),
+    stripeChargesEnabled: boolean('stripe_charges_enabled').notNull().default(false),
+    stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
+    stripeOnboardingStatus: text('stripe_onboarding_status').notNull().default('not_started'),
+    stripeRequirementsDue: jsonb('stripe_requirements_due').$type<string[] | null>(),
     fiscalizationConfig: jsonb('fiscalization_config').$type<Record<string, unknown>>(),
     ...timestampsColumns(),
   },
@@ -70,6 +76,15 @@ export const brands = pgTable(
     check(
       'brands_locale_format_chk',
       sql`${table.locale} IS NULL OR ${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`,
+    ),
+    check('brands_payment_provider_chk', sql`${table.paymentProvider} IN ('stripe')`),
+    check(
+      'brands_account_type_chk',
+      sql`${table.accountType} IS NULL OR ${table.accountType} IN ('express', 'standard')`,
+    ),
+    check(
+      'brands_stripe_onboarding_status_chk',
+      sql`${table.stripeOnboardingStatus} IN ('not_started', 'pending', 'complete', 'restricted')`,
     ),
     tenantParentUniqueIndex('brands', { id: table.id, tenantId: table.tenantId }),
   ],

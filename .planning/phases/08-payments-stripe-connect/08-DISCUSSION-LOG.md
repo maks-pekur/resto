@@ -10,12 +10,12 @@ All four presented gray areas: Commission, Refunds, Currency, Guest UX.
 
 ## Decisions
 
-| # | Area | Options presented | Founder choice |
-|---|------|-------------------|----------------|
-| 1 | RestOS commission per order | 0% (restaurant pays Stripe fees) · small fixed · RestOS covers Stripe fees | **0% — restaurant pays Stripe fees** (recommended) |
-| 2 | Refunds | owner-only + reason + auto-on-cancel · payments:refund perm + reason · payments:refund perm, reason optional | **owner-only, reason mandatory, auto on cancel/reject** (recommended) |
-| 3 | Currency | one per tenant · multi-currency | **one currency per tenant** (recommended) |
-| 4 | Guest UX | full page + retry-on-same-order · minimal + new order on fail | **full confirmation page + retry on same order** (recommended) |
+| #   | Area                        | Options presented                                                                                            | Founder choice                                                        |
+| --- | --------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
+| 1   | RestOS commission per order | 0% (restaurant pays Stripe fees) · small fixed · RestOS covers Stripe fees                                   | **0% — restaurant pays Stripe fees** (recommended)                    |
+| 2   | Refunds                     | owner-only + reason + auto-on-cancel · payments:refund perm + reason · payments:refund perm, reason optional | **owner-only, reason mandatory, auto on cancel/reject** (recommended) |
+| 3   | Currency                    | one per tenant · multi-currency                                                                              | **one currency per tenant** (recommended)                             |
+| 4   | Guest UX                    | full page + retry-on-same-order · minimal + new order on fail                                                | **full confirmation page + retry on same order** (recommended)        |
 
 ## Persona reviews (CTO / skeptic / investor)
 

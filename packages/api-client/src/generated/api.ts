@@ -180,6 +180,118 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenancy/stripe-onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StripeOnboardingController_startOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/stripe-status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["StripeOnboardingController_getStripeStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/brands/{slug}/onboarding/account-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BrandOnboardingController_createAccountSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/brands/{slug}/onboarding/account-link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["BrandOnboardingController_createAccountLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/brands/{slug}/onboarding/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrandOnboardingController_getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/brands/{slug}/onboarding/oauth/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrandOnboardingController_startOAuth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/onboarding/oauth/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["BrandOAuthCallbackController_handleOAuthCallback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/me": {
         parameters: {
             query?: never;
@@ -580,6 +692,70 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OrdersController_getStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/webhook/stripe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["StripeWebhookController_handleWebhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/checkout/payment-intent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["CheckoutController_createPaymentIntent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{orderId}/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["RefundsController_refundOrder"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -600,7 +776,6 @@ export interface components {
             locale: string;
             defaultCurrency: string;
             primaryDomain: string;
-            stripeAccountId: string | null;
             createdAt: string;
             updatedAt: string;
             archivedAt: string | null;
@@ -632,6 +807,39 @@ export interface components {
             kind: string;
             isPrimary: boolean;
             verifiedAt: string | null;
+        };
+        OnboardingResponseDto: {
+            /** Format: uri */
+            onboardingUrl: string;
+        };
+        StripeStatusResponseDto: {
+            /** @enum {string} */
+            onboardingStatus: "not_started" | "pending" | "complete" | "restricted";
+            chargesEnabled: boolean;
+            payoutsEnabled: boolean;
+            canAcceptPayments: boolean;
+            requirementsDue: string[] | null;
+        };
+        AccountSessionResponseDto: {
+            clientSecret: string;
+        };
+        AccountLinkResponseDto: {
+            /** Format: uri */
+            onboardingUrl: string;
+        };
+        OnboardingStatusResponseDto: {
+            /** @enum {string|null} */
+            accountType: "express" | "standard" | null;
+            /** @enum {string} */
+            onboardingStatus: "not_started" | "pending" | "complete" | "restricted";
+            chargesEnabled: boolean;
+            payoutsEnabled: boolean;
+            canAcceptPayments: boolean;
+            requirementsDue: string[] | null;
+        };
+        OAuthStartResponseDto: {
+            /** Format: uri */
+            authorizeUrl: string;
         };
         MeBrandsResponseDto: {
             brands: {
@@ -1205,6 +1413,8 @@ export interface components {
             table?: string;
             customerName?: string;
             customerPhone?: string;
+            /** Format: email */
+            customerEmail?: string;
             /** Format: uuid */
             idempotencyKey: string;
             /** Format: date-time */
@@ -1217,6 +1427,28 @@ export interface components {
             status: string;
             total: string;
             currency: string;
+        };
+        OrderStatusResponseDto: {
+            status: string;
+            total: string;
+            currency: string;
+            orderNumber: string;
+            /** Format: date-time */
+            eta?: string | null;
+        };
+        CreatePaymentIntentInputDto: {
+            /** Format: uuid */
+            orderId: string;
+        };
+        CreatePaymentIntentResponseDto: {
+            clientSecret: string;
+            connectedAccountId: string;
+            /** Format: uuid */
+            orderId: string;
+        };
+        RefundInputDto: {
+            amountMinor?: number;
+            reason: string;
         };
     };
     responses: never;
@@ -1642,6 +1874,137 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProblemDetailsDto"];
                 };
+            };
+        };
+    };
+    StripeOnboardingController_startOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResponseDto"];
+                };
+            };
+        };
+    };
+    StripeOnboardingController_getStripeStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StripeStatusResponseDto"];
+                };
+            };
+        };
+    };
+    BrandOnboardingController_createAccountSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountSessionResponseDto"];
+                };
+            };
+        };
+    };
+    BrandOnboardingController_createAccountLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountLinkResponseDto"];
+                };
+            };
+        };
+    };
+    BrandOnboardingController_getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingStatusResponseDto"];
+                };
+            };
+        };
+    };
+    BrandOnboardingController_startOAuth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OAuthStartResponseDto"];
+                };
+            };
+        };
+    };
+    BrandOAuthCallbackController_handleOAuthCallback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2531,6 +2894,86 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrderResponseDto"];
                 };
+            };
+        };
+    };
+    OrdersController_getStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderStatusResponseDto"];
+                };
+            };
+        };
+    };
+    StripeWebhookController_handleWebhook: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    CheckoutController_createPaymentIntent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePaymentIntentInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatePaymentIntentResponseDto"];
+                };
+            };
+        };
+    };
+    RefundsController_refundOrder: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

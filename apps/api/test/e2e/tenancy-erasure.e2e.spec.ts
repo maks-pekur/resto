@@ -162,7 +162,6 @@ suite('Tenancy — GDPR erasure end-to-end', () => {
     expect(erased.status).toBe('erased');
     expect(erased.displayName).toBe('[erased]');
     expect(erased.slug).toMatch(/^erased-/);
-    expect(erased.stripeAccountId).toBeNull();
     expect(erased.offboardingExecutedAt).not.toBeNull();
 
     const tenantRows = await db.withoutTenant('inspect tombstone', (tx) =>

@@ -102,6 +102,6 @@ describe('OrdersController GET /:id/status', () => {
 
     const result = await controller.getStatus(snap.id);
 
-    expect(result.eta).toEqual(scheduledFor);
+    expect(result.eta).toEqual(scheduledFor.toISOString());
   });
 });

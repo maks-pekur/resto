@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: verifying
-stopped_at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
-last_updated: '2026-06-28T10:54:35.040Z'
-last_activity: 2026-06-27
+status: executing
+stopped_at: Phase 08.2 context gathered (scope split; routing + access-core)
+last_updated: '2026-06-29T21:50:15.355Z'
+last_activity: 2026-06-29 -- Phase 08.2 planning complete
 progress:
-  total_phases: 21
-  completed_phases: 9
-  total_plans: 76
-  completed_plans: 68
-  percent: 43
+  total_phases: 24
+  completed_phases: 10
+  total_plans: 87
+  completed_plans: 73
+  percent: 42
 ---
 
 # Project State
@@ -21,13 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 8 (Payments) **CODE-COMPLETE** — all 8 plans executed (full money path: schema, adapter, webhooks, checkout API+web, emails, refunds; ~700 tests green). PENDING = 3 live founder smokes (Stripe Connect test setup + Stripe CLI + test card): onboarding click-through, test-card payment, refund. After smokes → Phase 8 done; next = Phase 10 (Admin Order Intake). (Phase 7.5 prod stand-up still DEFERRED to first customer; target VPS+Cloudflare.)
+**Current focus:** Phase 08.2 — brand-first routing + brand-scoped access model (promoted from SEED-001, 2026-06-29; ahead of Phase 10). Phase 08.1 complete (5/5); its formal verification is deferred — founder chose to advance to 08.2 next.
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
-Phase: 7.6 (admin-vite-spa) — EXECUTING (code-complete)
-Plan: 7 of 7 done; CR-04 SPLIT after cross-lens review (07.6-REVIEWS.md, verdict FIX-THEN-EXECUTE — 2 blockers + HIGH security gap + scope concern in the full rework).
+**ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
+
+Phase: 08.1 (payments-provider-layer-and-onboarding-ux) — EXECUTING
+Plan: 5 of 5
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -37,8 +39,8 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Phase complete — ready for verification
-Last activity: 2026-06-27
+Status: Ready to execute
+Last activity: 2026-06-29 -- Phase 08.2 planning complete
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -46,7 +48,7 @@ Last activity: 2026-06-27
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -115,12 +117,21 @@ _Updated after each plan completion_
 | Phase 08 P06 | 90 | 2 tasks | 15 files |
 | Phase 08-payments-stripe-connect P04b | 90 | 2 tasks | 13 files |
 | Phase 08 P05 | 90min | 2 tasks | 10 files |
+| Phase 08.1 P01 | 90min | 3 tasks | 25 files |
+| Phase 08.1 P02 | 9m | 3 tasks | 6 files |
+| Phase 08.1 P03 | 820 | 3 tasks | 14 files |
+| Phase 08.1 P04 | 45 | 3 tasks | 7 files |
+| Phase 08.1 P05 | 10 | 3 tasks | 7 files |
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 08.1 inserted after Phase 8: Payments provider layer + onboarding UX (embedded Connect, Standard OAuth, provider-agnostic PaymentProviderPort); pulled into MVP-1, extends Phase 8, does not block Phase 10 (URGENT)
+- Phase 08.2 inserted after Phase 08.1: Brand-first routing + brand-scoped access model (promoted from SEED-001); pulled forward ahead of Phase 10, security-sensitive (member single-active-brand enforcement) (URGENT)
+- Phase 08.2 edited: Narrowed 08.2 to brand-first routing + brand-level access-control core (default-deny flip, server-session active-brand pin, brand RLS). Owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping split into their own follow-on phases — full SEED-001 vision preserved as a sequence
+- Phase 08.3 inserted after Phase 08.2: Owner-managed custom roles (enable better-auth dynamicAccessControl + creator-subset guard + owner role-builder UI) — split from SEED-001 (URGENT)
+- Phase 08.4 inserted after Phase 08.3: Location-scoped access (new locations entity + member_location_scope) — split from SEED-001 (URGENT)
 
 ### Decisions
 
@@ -178,6 +189,11 @@ Recent decisions affecting current work:
 - [Phase ?]: PAY-12: seed lastDispatchAt at lock acquisition to close never-dispatched false-negative; backlog-aware probe distinguishes idle leader from wedged leader
 - [Phase ?]: PAY-11: StripeAccountId z.string().max(255) exported from tenant.aggregate.ts, parsed on account.updated event.account at the trust boundary
 - [Phase ?]: NotificationOrderDrizzleRepository isolates DB queries per ADR-0020 I-1
+- [Phase ?]: Stripe connect linkage moved from Tenant to Brand aggregate (D-04/D-05/D-06)
+- [Phase ?]: Tenant stub methods retained until Plan 03 removes last callers
+- [Phase ?]: PAY-16: PaymentProviderPort + PAYMENT_PROVIDER_PORT in payments domain; StripeProviderAdapter in infrastructure; ESLint no-restricted-imports arch-test blocks stripe import in payments app/domain
+- [Phase ?]: onExit triggers status refetch only; account.updated webhook is completion authority for per-brand KYC
+- [Phase ?]: 08.1-05
 
 ### Pending Todos
 
@@ -234,6 +250,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-28T10:54:35.029Z
-Stopped at: Phase 08.1 context gathered (per-brand payment connection + provider-agnostic port + embedded/Standard onboarding)
-Resume file: .planning/phases/08.1-payments-provider-layer-and-onboarding-ux/08.1-CONTEXT.md
+Last session: 2026-06-29T06:31:47.699Z
+Stopped at: Phase 08.2 context gathered (scope split; routing + access-core)
+Resume file: .planning/phases/08.2-brand-first-routing-and-brand-scoped-access-model/08.2-CONTEXT.md

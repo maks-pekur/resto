@@ -124,7 +124,9 @@ export function CheckoutForm() {
           clientSecret={payment.clientSecret}
           connectedAccountId={payment.connectedAccountId}
           returnUrl={confirmationUrl(payment.orderId)}
-          onError={(message) => { setPayment({ stage: 'error', orderId: payment.orderId, message }); }}
+          onError={(message) => {
+            setPayment({ stage: 'error', orderId: payment.orderId, message });
+          }}
           onSubmitting={setIsSubmitting}
           isSubmitting={isSubmitting}
         />
@@ -148,7 +150,9 @@ export function CheckoutForm() {
           </Button>
         ) : (
           <Button
-            onClick={() => { setPayment({ stage: 'idle' }); }}
+            onClick={() => {
+              setPayment({ stage: 'idle' });
+            }}
             className="w-full bg-(--primary,#16a34a) text-white"
           >
             Try again
