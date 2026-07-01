@@ -20,7 +20,7 @@ export {
 export { Currency, CurrencyValue, Money, MoneyAmount, MoneyAmountValue, PriceDelta } from './money';
 export { LocalizedText } from './localized-text';
 export { Slug } from './slug';
-export { RESERVED_SLUGS, RESERVED_SLUG_SET } from './reserved-slugs';
+export { ADMIN_ROOT_ROUTE_SEGMENTS, RESERVED_SLUGS, RESERVED_SLUG_SET } from './reserved-slugs';
 export { TENANT_RESERVED_SLUGS, TenantSlug } from './tenant-slug';
 export { BrandSlug, BrandSlugValue } from './brand-slug';
 export { BrandTheme } from './brand-theme';
