@@ -407,6 +407,13 @@
       "when": 1782772800000,
       "tag": "0057_brand_stripe_connect",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1782859200000,
+      "tag": "0058_brand_rls",
+      "breakpoints": true
     }
   ]
 }
