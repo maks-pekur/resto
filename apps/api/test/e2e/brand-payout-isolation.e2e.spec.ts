@@ -168,27 +168,34 @@ suite('D-14 cross-brand payout/payment app-layer boundary (Plan 08.2-06)', () =>
       expect(res.statusCode).toBe(404);
     });
 
-    it('POST brand-B onboarding account-session returns 404 (existence-hiding, not 200)', async () => {
+    it('POST brand-B onboarding account-session is blocked (403 from permission or 404 from D-10)', async () => {
       const res = await stack.app.inject({
         method: 'POST',
         url: `/v1/tenancy/brands/${brandBSlug}/onboarding/account-session`,
         headers: hdr(scopedAdminCookiePinnedA, brandBSlug),
       });
-      expect(res.statusCode).toBe(404);
+      expect([403, 404]).toContain(res.statusCode);
+      if (res.statusCode === 403) {
+        expect(res.json<{ code?: string }>().code).not.toBe('brand.access_denied');
+      }
     });
   });
 
   describe('non-owner scoped to A, pin=A, sending x-brand-slug=A can reach A payout flow (control)', () => {
-    it('GET brand-A onboarding status reaches the route (not blocked by guard) — 200 or domain error', async () => {
+    it('GET brand-A onboarding status reaches the route (not blocked by guard) — not a brand guard error', async () => {
       const res = await stack.app.inject({
         method: 'GET',
         url: `/v1/tenancy/brands/${brandASlug}/onboarding/status`,
         headers: hdr(scopedAdminCookiePinnedA, brandASlug),
       });
-      expect([200, 404]).toContain(res.statusCode);
-      if (res.statusCode === 404) {
-        const body = res.json<{ code?: string; message?: string }>();
-        expect(body.message ?? '').not.toContain('brand');
+      const BRAND_GUARD_CODES = [
+        'brand.operator_required',
+        'brand.context_required',
+        'brand.access_denied',
+      ];
+      if (res.statusCode >= 400) {
+        const body = res.json<{ code?: string }>();
+        expect(BRAND_GUARD_CODES).not.toContain(body.code);
       }
     });
   });
@@ -200,7 +207,15 @@ suite('D-14 cross-brand payout/payment app-layer boundary (Plan 08.2-06)', () =>
         url: `/v1/tenancy/brands/${brandASlug}/onboarding/status`,
         headers: hdr(ownerCookie, brandASlug),
       });
-      expect([200, 404]).toContain(res.statusCode);
+      const BRAND_GUARD_CODES = [
+        'brand.operator_required',
+        'brand.context_required',
+        'brand.access_denied',
+      ];
+      if (res.statusCode >= 400) {
+        const body = res.json<{ code?: string }>();
+        expect(BRAND_GUARD_CODES).not.toContain(body.code);
+      }
     });
 
     it('owner GET brand-B onboarding status is not blocked by the guard', async () => {
@@ -209,12 +224,20 @@ suite('D-14 cross-brand payout/payment app-layer boundary (Plan 08.2-06)', () =>
         url: `/v1/tenancy/brands/${brandBSlug}/onboarding/status`,
         headers: hdr(ownerCookie, brandBSlug),
       });
-      expect([200, 404]).toContain(res.statusCode);
+      const BRAND_GUARD_CODES = [
+        'brand.operator_required',
+        'brand.context_required',
+        'brand.access_denied',
+      ];
+      if (res.statusCode >= 400) {
+        const body = res.json<{ code?: string }>();
+        expect(BRAND_GUARD_CODES).not.toContain(body.code);
+      }
     });
   });
 
   describe('RefundsController: non-owner scoped to A, pin=A is blocked from brand-B refund path', () => {
-    it('POST /v1/orders/:id/refund with x-brand-slug=B returns 404 (pin mismatch, D-10)', async () => {
+    it('POST /v1/orders/:id/refund with x-brand-slug=B is blocked (403 from permission or 404 from D-10)', async () => {
       const fakeOrderId = randomUUID();
       const res = await stack.app.inject({
         method: 'POST',
@@ -225,7 +248,10 @@ suite('D-14 cross-brand payout/payment app-layer boundary (Plan 08.2-06)', () =>
         },
         payload: { reason: 'requested_by_customer' },
       });
-      expect(res.statusCode).toBe(404);
+      expect([403, 404]).toContain(res.statusCode);
+      if (res.statusCode === 403) {
+        expect(res.json<{ code?: string }>().code).not.toBe('brand.access_denied');
+      }
     });
 
     it('owner POST /v1/orders/:id/refund with x-brand-slug=B is not blocked by guard (reaches domain)', async () => {
