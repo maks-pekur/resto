@@ -1,6 +1,7 @@
 import { Link, useNavigate } from '@tanstack/react-router';
 import { ChevronsUpDown, Plus } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
+import { toast } from 'sonner';
+import { apiFetch } from '@/lib/api-client';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,8 +32,16 @@ export function BrandSwitcher({ brands, activeBrandSlug }: BrandSwitcherProps) {
   const triggerSubLabel = activeBrand?.slug ?? '—';
 
   const switchTo = async (brand: BrandOption) => {
-    await authClient.organization.setActive({ organizationId: brand.id });
-    void navigate({ to: '/$brandSlug', params: { brandSlug: brand.slug } });
+    const res = await apiFetch<{ slug: string }>('/v1/me/set-active-brand', {
+      method: 'POST',
+      body: { brandId: brand.id },
+    });
+    if (res.status === 403) {
+      toast.error('You do not have access to this brand.');
+      return;
+    }
+    const slug = res.data?.slug ?? brand.slug;
+    void navigate({ to: '/$brandSlug', params: { brandSlug: slug } });
   };
 
   return (

@@ -204,7 +204,7 @@ export class StartBrandOnboardingService {
 
     const adminWebUrl = this.env.ADMIN_WEB_URL ?? '';
     const brandSnap = brand.toSnapshot();
-    const redirectUrl = `${adminWebUrl}/dashboard/${brandSnap.slug}/payouts`;
+    const redirectUrl = `${adminWebUrl}/${brandSnap.slug}/payouts`;
 
     return { redirectUrl };
   }
