@@ -527,7 +527,7 @@ Plans:
 
 **Wave 3** _(after Waves 1+2 — runs against the migrated DB)_
 
-- [ ] 08.2-06-PLAN.md — SC-4 isolation e2e (forge cookie/URL → existence-hiding 404/403) + cross-brand RLS read matrix (live) + Stripe return-URL regression unit test (D-08/D-09/D-10/D-14/SC-4/SC-6)
+- [x] 08.2-06-PLAN.md — SC-4 isolation e2e (forge cookie/URL → existence-hiding 404/403) + cross-brand RLS read matrix (live) + Stripe return-URL regression unit test (D-08/D-09/D-10/D-14/SC-4/SC-6)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
