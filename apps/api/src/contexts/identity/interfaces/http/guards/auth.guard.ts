@@ -90,18 +90,20 @@ export class AuthGuard implements CanActivate {
     // plugin augments the session object with activeOrganizationId at runtime
     // but the cast above (`as unknown as BetterAuthPlugin`) in auth.config.ts
     // loses that type information. Cast to the narrower shape we depend on.
-    const principal = buildPrincipal(
-      session as {
-        user: {
-          id: string;
-          email: string;
-          phoneNumber?: string | null;
-          twoFactorEnabled?: boolean | null;
-        };
-        session: { activeOrganizationId?: string | null };
-      },
-      alsTenantId,
-    );
+    const sessionData = session as {
+      user: {
+        id: string;
+        email: string;
+        phoneNumber?: string | null;
+        twoFactorEnabled?: boolean | null;
+      };
+      session: {
+        activeOrganizationId?: string | null;
+        activeBrandId?: string | null;
+        token: string;
+      };
+    };
+    const principal = buildPrincipal(sessionData, alsTenantId);
 
     // Existing cross-check: when BOTH the principal and the request
     // resolved a tenant, they MUST match — otherwise an operator with
@@ -143,6 +145,8 @@ export class AuthGuard implements CanActivate {
     }
 
     req.principal = principal;
+    req.activeBrandId = sessionData.session.activeBrandId ?? null;
+    req.sessionToken = sessionData.session.token;
     return true;
   }
 
@@ -192,7 +196,11 @@ const buildPrincipal = (
       phoneNumber?: string | null;
       twoFactorEnabled?: boolean | null;
     };
-    session: { activeOrganizationId?: string | null };
+    session: {
+      activeOrganizationId?: string | null;
+      activeBrandId?: string | null;
+      token: string;
+    };
   },
   alsTenantId: string | undefined,
 ): Principal => {
