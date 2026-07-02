@@ -12,7 +12,7 @@ import { TenantAwareDb } from '@resto/db';
 import type { EventPublisher } from '@resto/events';
 import { EVENT_PUBLISHER } from '../infrastructure/nats.module';
 import { OutboxDispatcherService } from '../infrastructure/outbox-dispatcher.service';
-import { Public } from '../shared/auth';
+import { BrandNeutral, Public } from '../shared/auth';
 
 export const OUTBOX_STALL_THRESHOLD_MS = 'OUTBOX_STALL_THRESHOLD_MS';
 
@@ -24,6 +24,7 @@ interface CheckResult {
 
 @ApiTags('health')
 @Public()
+@BrandNeutral()
 @Controller()
 export class HealthController {
   private readonly logger = new Logger(HealthController.name);

@@ -4,7 +4,7 @@ import { createZodDto } from 'nestjs-zod';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Public, RequireActiveTenant } from '../../../../shared/auth';
+import { BrandNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   CreatePaymentIntentInputDto,
@@ -21,6 +21,7 @@ class CreatePaymentIntentResponseDto extends createZodDto(CreatePaymentIntentRes
 
 @ApiTags('checkout')
 @Public()
+@BrandNeutral()
 @Controller('v1/checkout')
 export class CheckoutController {
   constructor(

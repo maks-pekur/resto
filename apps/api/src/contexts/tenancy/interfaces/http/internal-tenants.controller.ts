@@ -37,7 +37,7 @@ import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
 import { mapDomainError } from './error-mapping';
-import { Public } from '../../../../shared/auth';
+import { BrandNeutral, Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
@@ -51,6 +51,7 @@ const parseTenantIdOr404 = (raw: string): TenantId => {
 
 @ApiTags('tenancy')
 @Public()
+@BrandNeutral()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/tenants')
 export class InternalTenantsController {

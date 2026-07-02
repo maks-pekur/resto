@@ -15,7 +15,12 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import {
+  BrandNeutral,
+  Permissions,
+  RequireActiveTenant,
+  RequireBrand,
+} from '../../../../shared/auth';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { StartBrandOnboardingService } from '../../application/start-brand-onboarding.service';
 import { OAUTH_NONCE_COOKIE } from '../../domain/oauth-state';
@@ -128,6 +133,7 @@ export class BrandOnboardingController {
 }
 
 @ApiTags('tenancy')
+@BrandNeutral()
 @Controller('v1/tenancy/onboarding')
 export class BrandOAuthCallbackController {
   readonly #wrap = wrapWith(mapDomainError);

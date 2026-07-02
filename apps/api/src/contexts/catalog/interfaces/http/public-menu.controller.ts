@@ -13,7 +13,7 @@ import { MENU_VERSION_PORT, type MenuVersionPort } from '../../domain/ports';
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
-import { Public, RequireActiveTenant } from '../../../../shared/auth';
+import { BrandNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
@@ -130,6 +130,7 @@ const wrap = wrapWith(mapCatalogError);
  */
 @ApiTags('catalog')
 @Public()
+@BrandNeutral()
 @Controller('v1/menu')
 export class PublicMenuController {
   constructor(

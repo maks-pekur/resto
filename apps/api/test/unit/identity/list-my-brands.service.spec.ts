@@ -30,7 +30,7 @@ const buildBrands = (rows: readonly IdentityBrandView[]): BrandProvisioningPort 
 });
 
 describe('ListMyBrandsService', () => {
-  it('returns all tenant brands and canViewAllBrands=true when scope is empty (null)', async () => {
+  it('owner with null scope gets canViewAllBrands=true (default-allow for owners)', async () => {
     const reader = buildScopeReader(null);
     const brands = buildBrands([
       buildBrand({ id: BRAND_A }),
@@ -38,11 +38,21 @@ describe('ListMyBrandsService', () => {
     ]);
     const service = new ListMyBrandsService(reader, brands);
 
-    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID });
+    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID, isOwner: true });
 
     expect(result.canViewAllBrands).toBe(true);
     expect(result.brands).toHaveLength(2);
     expect(brands.listForTenant).toHaveBeenCalledWith(TENANT_ID, undefined);
+  });
+
+  it('non-owner with null scope gets canViewAllBrands=false (default-deny for non-owners)', async () => {
+    const reader = buildScopeReader(null);
+    const brands = buildBrands([]);
+    const service = new ListMyBrandsService(reader, brands);
+
+    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID, isOwner: false });
+
+    expect(result.canViewAllBrands).toBe(false);
   });
 
   it('returns the scoped subset when the member has explicit scope rows', async () => {
@@ -50,7 +60,7 @@ describe('ListMyBrandsService', () => {
     const brands = buildBrands([buildBrand({ id: BRAND_A })]);
     const service = new ListMyBrandsService(reader, brands);
 
-    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID });
+    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID, isOwner: false });
 
     expect(result.brands).toHaveLength(1);
     expect(result.brands[0]?.id).toBe(BRAND_A);
@@ -62,7 +72,7 @@ describe('ListMyBrandsService', () => {
     const brands = buildBrands([buildBrand({ id: BRAND_A }), buildBrand({ id: BRAND_B })]);
     const service = new ListMyBrandsService(reader, brands);
 
-    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID });
+    const result = await service.execute({ userId: 'user-1', tenantId: TENANT_ID, isOwner: false });
 
     expect(result.canViewAllBrands).toBe(false);
   });

@@ -1,5 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { BrandNeutral } from '../../../../shared/auth';
 import { CurrentPrincipal } from './decorators/current-principal.decorator';
 import type { Principal } from '../../domain/principal';
 
@@ -30,6 +31,7 @@ interface MeResponse {
  * and the admin client narrows by `kind`.
  */
 @ApiTags('identity')
+@BrandNeutral()
 @Controller('/v1/me')
 export class MeController {
   @Get()

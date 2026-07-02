@@ -15,7 +15,7 @@ import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { SetActiveBrandService } from '../../application/set-active-brand.service';
 import { BrandOutOfScopeError } from '../../domain/errors';
 import type { OperatorPrincipal } from '../../domain/principal';
@@ -45,6 +45,7 @@ const mapError = (err: unknown): unknown => {
 const wrap = wrapWith(mapError);
 
 @ApiTags('identity')
+@BrandNeutral()
 @Controller('v1/me')
 export class SetActiveBrandController {
   constructor(@Inject(SetActiveBrandService) private readonly service: SetActiveBrandService) {}

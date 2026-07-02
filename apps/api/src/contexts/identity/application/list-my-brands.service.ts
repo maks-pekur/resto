@@ -13,6 +13,7 @@ import {
 export interface ListMyBrandsInput {
   readonly userId: string;
   readonly tenantId: TenantId;
+  readonly isOwner: boolean;
 }
 
 export interface ListMyBrandsResult {
@@ -32,7 +33,7 @@ export class ListMyBrandsService {
       userId: input.userId,
       tenantId: input.tenantId,
     });
-    const canViewAllBrands = scopeRows === null;
+    const canViewAllBrands = input.isOwner && scopeRows === null;
     const brands = await this.brands.listForTenant(input.tenantId, scopeRows ?? undefined);
     return { brands, canViewAllBrands };
   }
