@@ -16,24 +16,6 @@ import {
 } from '../../../application/ports/member-brand-scope-reader.port';
 import { BRAND_NEUTRAL_KEY } from '../../../../../shared/auth';
 
-/**
- * Brand-scope authorization. Default-on: runs on EVERY route unless @BrandNeutral opts out.
- * Runs after AuthGuard + PermissionsGuard so it can rely on `req.principal`.
- *
- * Decision tree (D-08 / D-10 / D-11):
- *   1. @BrandNeutral present → pass (opt-out).
- *   2. ALS has no brand → 403 brand.context_required.
- *   3. Principal is not an operator → 403 brand.operator_required.
- *   4. Operator has no tenantId → 403 brand.tenant_required.
- *   5. Operator baseRole is `owner` → pass (bypass; owner free-switch, skips pin check).
- *   6. D-10 pin reconciliation (non-owner only):
- *      - req.activeBrandId === null (no pin) → 404 (existence-hiding, closes null-pin bypass).
- *      - req.activeBrandId !== ALS brand → 404 (existence-hiding cross-brand mismatch).
- *   7. Look up member_brand_scope for (userId, tenantId):
- *      - null (no scope rows) → 403 brand.access_denied (default-deny, D-08).
- *      - brandId IN scope → pass.
- *      - brandId NOT IN scope → 403 brand.access_denied.
- */
 @Injectable()
 export class BrandScopeGuard implements CanActivate {
   constructor(
