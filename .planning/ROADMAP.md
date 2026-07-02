@@ -518,7 +518,7 @@ Plans:
 
 - [x] 08.2-01-PLAN.md — Reserved-slug expansion + ADMIN_ROOT_ROUTE_SEGMENTS contract + drift spec + D-07 collision detector (D-06/D-07/SC-2)
 - [x] 08.2-02-PLAN.md — Brand RLS migration 0058 (app_bind_brand GUC + policies on 9 menu tables + orders) + withTenant brand-bind + boot preflight + [BLOCKING] db:migrate; payments documented as app-layer-only accepted debt (D-14/SC-6)
-- [ ] 08.2-03-PLAN.md — Server-session active-brand pin: session.activeBrandId additionalField (input:false) + set-active hook + POST /v1/identity/me/set-active-brand (owner free-switch / non-owner scoped re-pin) + AuthGuard surfacing (D-09/D-12/D-13/SC-5)
+- [x] 08.2-03-PLAN.md — Server-session active-brand pin: session.activeBrandId additionalField (input:false) + set-active hook + POST /v1/identity/me/set-active-brand (owner free-switch / non-owner scoped re-pin) + AuthGuard surfacing (D-09/D-12/D-13/SC-5)
 
 **Wave 2** _(after Wave 1)_
 
