@@ -190,9 +190,10 @@ export class TenantAwareDb {
   }
 
   /**
-   * RES-243 drift sentinel: assert `app.current_tenant` still matches the
-   * value bound at transaction start. Catches `SET LOCAL` / `RESET` forge
-   * forms that `REVOKE EXECUTE` on `set_config` cannot block.
+   * RES-243 drift sentinel: assert `app.current_tenant` (and optionally
+   * `app.current_brand`) still match the values bound at transaction start.
+   * Catches `SET LOCAL` / `RESET` forge forms that `REVOKE EXECUTE` on
+   * `set_config` cannot block.
    *
    * Called at end of every `withTenant` / `withTenantId` / `withoutTenant`
    * callback before the result is returned, so a drift throws while
@@ -206,7 +207,12 @@ export class TenantAwareDb {
    * from reaching the HTTP response — out-of-band leakage is a separate
    * class of bug addressed by the I-1 mandatory tenant filter / ScopedTx.
    */
-  async #assertGucUnchanged(tx: RestoTx, expected: string, scope: string): Promise<void> {
+  async #assertGucUnchanged(
+    tx: RestoTx,
+    expected: string,
+    scope: string,
+    expectedBrand?: string,
+  ): Promise<void> {
     const rows = await tx.execute<{ v: string | null }>(
       sql`SELECT current_setting('app.current_tenant', true) AS v`,
     );
@@ -215,6 +221,17 @@ export class TenantAwareDb {
       throw new Error(
         `Tenant GUC drift detected in ${scope}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. Transaction rolled back.`,
       );
+    }
+    if (expectedBrand !== undefined) {
+      const brandRows = await tx.execute<{ v: string | null }>(
+        sql`SELECT current_setting('app.current_brand', true) AS v`,
+      );
+      const actualBrand = brandRows[0]?.v ?? '';
+      if (actualBrand !== expectedBrand) {
+        throw new Error(
+          `Brand GUC drift detected in ${scope}: expected ${JSON.stringify(expectedBrand)}, got ${JSON.stringify(actualBrand)}. Transaction rolled back.`,
+        );
+      }
     }
   }
 
@@ -225,13 +242,21 @@ export class TenantAwareDb {
    * Binding goes through the `app_bind_tenant` SECURITY DEFINER wrapper
    * (RES-243). The wrapper raises on rebind to a different tenant;
    * same-tenant rebind is idempotent.
+   *
+   * When `ctx.brandId` is present (set by TenantContextMiddleware for
+   * brand-scoped routes), `app_bind_brand` is called AFTER `app_bind_tenant`
+   * so the brand RLS policy can filter rows by current_brand_id(). The
+   * drift sentinel is extended to cover `app.current_brand` in that case.
    */
   async withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T> {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
+      if (ctx.brandId !== undefined) {
+        await tx.execute(sql`SELECT app_bind_brand(${ctx.brandId}, false)`);
+      }
       const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
-      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant');
+      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.brandId);
       return result;
     });
   }
