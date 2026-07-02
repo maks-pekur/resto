@@ -13,22 +13,22 @@ import { Route as forgotPasswordRoute } from './routes/(auth)/forgot-password';
 import { Route as resetPasswordRoute } from './routes/(auth)/reset-password';
 import { Route as acceptInvitationRoute } from './routes/(auth)/accept-invitation.$id';
 import { Route as protectedLayoutRoute } from './routes/(protected)/_layout';
-import { Route as dashboardLayoutRoute } from './routes/(protected)/dashboard/_layout';
-import { Route as dashboardIndexRoute } from './routes/(protected)/dashboard/index';
-import { Route as brandSlugLayoutRoute } from './routes/(protected)/dashboard/$brandSlug/_layout';
+import { Route as brandSlugLayoutRoute } from './routes/(protected)/$brandSlug/_layout';
+import { Route as brandSlugIndexRoute } from './routes/(protected)/$brandSlug/index';
+import { Route as settingsRoute } from './routes/(protected)/$brandSlug/settings';
+import { Route as teamRoute } from './routes/(protected)/$brandSlug/team';
 import { Route as onboardingBrandRoute } from './routes/(protected)/onboarding/brand';
-import { Route as dashboardSettingsRoute } from './routes/(protected)/dashboard/settings';
-import { Route as dashboardTeamRoute } from './routes/(protected)/dashboard/team';
-import { Route as menuLayoutRoute } from './routes/(protected)/dashboard/$brandSlug/menu/_layout';
-import { Route as menuCategoriesRoute } from './routes/(protected)/dashboard/$brandSlug/menu/categories';
-import { Route as menuItemsRoute } from './routes/(protected)/dashboard/$brandSlug/menu/items';
-import { Route as menuItemDetailRoute } from './routes/(protected)/dashboard/$brandSlug/menu/items.$id';
-import { Route as menuStopListRoute } from './routes/(protected)/dashboard/$brandSlug/menu/stop-list';
-import { Route as menuModifierGroupsRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups';
-import { Route as menuModifierGroupDetailRoute } from './routes/(protected)/dashboard/$brandSlug/menu/modifier-groups.$id';
-import { Route as brandDomainsRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.domains';
-import { Route as brandThemeRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.theme';
-import { Route as brandPayoutsRoute } from './routes/(protected)/dashboard/$brandSlug/brands.$slug.payouts';
+import { Route as dashboardRedirectRoute } from './routes/(protected)/dashboard-redirect.$';
+import { Route as menuLayoutRoute } from './routes/(protected)/$brandSlug/menu/_layout';
+import { Route as menuCategoriesRoute } from './routes/(protected)/$brandSlug/menu/categories';
+import { Route as menuItemsRoute } from './routes/(protected)/$brandSlug/menu/items';
+import { Route as menuItemDetailRoute } from './routes/(protected)/$brandSlug/menu/items.$id';
+import { Route as menuStopListRoute } from './routes/(protected)/$brandSlug/menu/stop-list';
+import { Route as menuModifierGroupsRoute } from './routes/(protected)/$brandSlug/menu/modifier-groups';
+import { Route as menuModifierGroupDetailRoute } from './routes/(protected)/$brandSlug/menu/modifier-groups.$id';
+import { Route as brandDomainsRoute } from './routes/(protected)/$brandSlug/brands.$slug.domains';
+import { Route as brandThemeRoute } from './routes/(protected)/$brandSlug/brands.$slug.theme';
+import { Route as brandPayoutsRoute } from './routes/(protected)/$brandSlug/brands.$slug.payouts';
 import '@resto/config-tailwind/tokens.css';
 import './styles.css';
 
@@ -63,22 +63,19 @@ const menuRouteTree = menuLayoutRoute.addChildren([
 ]);
 
 const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([
+  brandSlugIndexRoute,
+  settingsRoute,
+  teamRoute,
   menuRouteTree,
   brandDomainsRoute,
   brandThemeRoute,
   brandPayoutsRoute,
 ]);
 
-const dashboardRouteTree = dashboardLayoutRoute.addChildren([
-  dashboardIndexRoute,
-  dashboardSettingsRoute,
-  dashboardTeamRoute,
-  brandSlugRouteTree,
-]);
-
 const protectedRouteTree = protectedLayoutRoute.addChildren([
-  dashboardRouteTree,
+  brandSlugRouteTree,
   onboardingBrandRoute,
+  dashboardRedirectRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([indexRoute, authRouteTree, protectedRouteTree]);

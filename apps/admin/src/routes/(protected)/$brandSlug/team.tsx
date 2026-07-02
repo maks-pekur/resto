@@ -1,7 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { Route as dashboardLayoutRoute } from './_layout';
+import { Route as brandSlugLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { invitationListQuery } from '@/lib/queries/team';
 import { PageHeading } from '@/components/page-heading';
@@ -9,7 +9,7 @@ import { EmptyState } from '@/components/empty-state';
 import { TeamInviteButton } from '@/components/team/team-invite-button';
 
 export const Route = createRoute({
-  getParentRoute: () => dashboardLayoutRoute,
+  getParentRoute: () => brandSlugLayoutRoute,
   path: '/team',
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(meQuery()),
   component: TeamPage,

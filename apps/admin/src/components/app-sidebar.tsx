@@ -28,11 +28,11 @@ export function AppSidebar({
   ...props
 }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
-  const brandPrefix = activeBrandSlug ? `/dashboard/${activeBrandSlug}` : '/dashboard';
+  const brandPrefix = activeBrandSlug ? `/${activeBrandSlug}` : '';
   const navMain: NavMainItem[] = [
     {
       title: t('dashboard'),
-      url: '/dashboard',
+      url: activeBrandSlug ? `/${activeBrandSlug}` : '/',
       icon: LayoutDashboard,
       scope: 'any',
     },
@@ -57,13 +57,13 @@ export function AppSidebar({
     },
     {
       title: t('team'),
-      url: '/dashboard/team',
+      url: `${brandPrefix}/team`,
       icon: Users,
       scope: 'tenant',
     },
     {
       title: t('settings'),
-      url: '/dashboard/settings',
+      url: `${brandPrefix}/settings`,
       icon: Settings2,
       scope: 'tenant',
     },

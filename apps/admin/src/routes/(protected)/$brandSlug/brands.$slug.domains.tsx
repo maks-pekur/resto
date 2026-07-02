@@ -1,6 +1,6 @@
 import { createRoute, useParams } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Route as brandSlugLayoutRoute } from '../_layout';
+import { Route as brandSlugLayoutRoute } from './_layout';
 import { tenantDomainsQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/page-heading';
 

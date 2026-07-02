@@ -1,5 +1,5 @@
 import { BadgeCheck, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
-import { Link } from '@tanstack/react-router';
+import { Link, useParams } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/hooks/use-theme';
@@ -35,6 +35,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
   const { setTheme } = useTheme();
   const { t } = useTranslation('translation', { keyPrefix: 'nav.user' });
   const navigate = useNavigate();
+  const { brandSlug } = useParams({ strict: false });
   const initial = avatarInitial(operator.email);
   const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
 
@@ -82,7 +83,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to="/dashboard/settings">
+                <Link to="/$brandSlug/settings" params={{ brandSlug: brandSlug ?? '' }}>
                   <BadgeCheck />
                   {t('accountItem')}
                 </Link>

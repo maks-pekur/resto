@@ -15,11 +15,11 @@ const sidebarStyle: CSSProperties = {
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
-  path: '/dashboard',
-  component: DashboardLayout,
+  path: '/$brandSlug',
+  component: BrandLayout,
 });
 
-function DashboardLayout() {
+function BrandLayout() {
   const navigate = useNavigate();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: brandsResult } = useSuspenseQuery(meBrandsQuery());
@@ -31,7 +31,7 @@ function DashboardLayout() {
   }
 
   const brands = brandsResult.data?.brands ?? [];
-  const activeBrandSlug = brands[0]?.slug ?? null;
+  const { brandSlug: activeBrandSlug } = Route.useParams();
 
   if (brands.length === 0) {
     void navigate({ to: '/onboarding/brand' });

@@ -131,7 +131,7 @@ function OnboardingBrandPage() {
     const brand = res.data as BrandResponse;
     await queryClient.invalidateQueries({ queryKey: ['identity'] });
     toast.success(`Brand "${displayName.trim()}" created.`);
-    void navigate({ to: '/dashboard/$brandSlug', params: { brandSlug: brand.slug } });
+    void navigate({ to: '/$brandSlug', params: { brandSlug: brand.slug } });
   };
 
   return (

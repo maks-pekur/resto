@@ -1,6 +1,6 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Route as dashboardLayoutRoute } from './_layout';
+import { Route as brandSlugLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/page-heading';
@@ -8,7 +8,7 @@ import { DangerZoneCard } from '@/components/danger-zone-card';
 import { TwoFactorSection } from '@/components/settings/two-factor-section';
 
 export const Route = createRoute({
-  getParentRoute: () => dashboardLayoutRoute,
+  getParentRoute: () => brandSlugLayoutRoute,
   path: '/settings',
   loader: ({ context: { queryClient } }) =>
     Promise.all([

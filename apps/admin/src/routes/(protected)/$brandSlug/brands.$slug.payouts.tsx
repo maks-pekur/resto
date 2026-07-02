@@ -4,7 +4,7 @@ import { createRoute, useParams } from '@tanstack/react-router';
 import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { toast } from 'sonner';
-import { Route as brandSlugLayoutRoute } from '../_layout';
+import { Route as brandSlugLayoutRoute } from './_layout';
 import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

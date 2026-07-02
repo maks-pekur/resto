@@ -26,7 +26,7 @@ function AcceptInvitationPage() {
       setError('Could not accept the invitation. It may have expired.');
       return;
     }
-    void navigate({ to: '/dashboard' });
+    void navigate({ to: '/' });
   };
 
   return (

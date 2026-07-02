@@ -1,5 +1,5 @@
 import { createRoute, useParams } from '@tanstack/react-router';
-import { Route as brandSlugLayoutRoute } from '../_layout';
+import { Route as brandSlugLayoutRoute } from './_layout';
 import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({

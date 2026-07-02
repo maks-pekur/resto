@@ -32,7 +32,7 @@ export function BrandSwitcher({ brands, activeBrandSlug }: BrandSwitcherProps) {
 
   const switchTo = async (brand: BrandOption) => {
     await authClient.organization.setActive({ organizationId: brand.id });
-    void navigate({ to: '/dashboard/$brandSlug', params: { brandSlug: brand.slug } });
+    void navigate({ to: '/$brandSlug', params: { brandSlug: brand.slug } });
   };
 
   return (
