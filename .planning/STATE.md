@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 08.2 context gathered (scope split; routing + access-core)
-last_updated: '2026-07-01T19:13:34.902Z'
-last_activity: 2026-07-01
+stopped_at: Completed 08.2-02-PLAN.md (brand RLS + preflight)
+last_updated: '2026-07-02T09:43:21.465Z'
+last_activity: 2026-07-02
 progress:
   total_phases: 24
   completed_phases: 10
   total_plans: 87
-  completed_plans: 74
+  completed_plans: 75
   percent: 42
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.2 (brand-first-routing-and-brand-scoped-access-model) — EXECUTING
-Plan: 2 of 6
+Plan: 3 of 6
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -40,7 +40,7 @@ Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surf
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
 Status: Ready to execute
-Last activity: 2026-07-01
+Last activity: 2026-07-02
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-01
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 85%
+Progress: [█████████░] 86%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -123,6 +123,7 @@ _Updated after each plan completion_
 | Phase 08.1 P04 | 45 | 3 tasks | 7 files |
 | Phase 08.1 P05 | 10 | 3 tasks | 7 files |
 | Phase 08.2 P01 | 17 | 4 tasks | 5 files |
+| Phase 08.2 P02 | 35 | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -195,6 +196,7 @@ Recent decisions affecting current work:
 - [Phase ?]: PAY-16: PaymentProviderPort + PAYMENT_PROVIDER_PORT in payments domain; StripeProviderAdapter in infrastructure; ESLint no-restricted-imports arch-test blocks stripe import in payments app/domain
 - [Phase ?]: onExit triggers status refetch only; account.updated webhook is completion authority for per-brand KYC
 - [Phase ?]: 08.1-05
+- [Phase ?]: D-14 brand RLS: 9 tables covered (menu\_\* + orders); payments accepted debt (SC-6); pass-through IS NULL preserves tenant-level reads
 
 ### Pending Todos
 
@@ -251,6 +253,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-01T19:13:34.892Z
-Stopped at: Phase 08.2 context gathered (scope split; routing + access-core)
+Last session: 2026-07-02T09:43:21.456Z
+Stopped at: Completed 08.2-02-PLAN.md (brand RLS + preflight)
 Resume file: None
