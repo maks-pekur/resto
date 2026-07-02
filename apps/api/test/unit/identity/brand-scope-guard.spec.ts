@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { type ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { type ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BrandScopeGuard } from '../../../src/contexts/identity/interfaces/http/guards/brand-scope.guard';
 import type { MemberBrandScopeReader } from '../../../src/contexts/identity/application/ports/member-brand-scope-reader.port';
@@ -26,7 +26,10 @@ const operator = (over: Partial<Extract<Principal, { kind: 'operator' }>> = {}) 
   ...over,
 });
 
-const buildContext = (req: { principal?: Principal }): ExecutionContext =>
+const buildContext = (req: {
+  principal?: Principal;
+  activeBrandId?: string | null;
+}): ExecutionContext =>
   ({
     switchToHttp: () => ({ getRequest: () => req }),
     getHandler: () => () => undefined,
@@ -35,12 +38,12 @@ const buildContext = (req: { principal?: Principal }): ExecutionContext =>
 
 const buildGuard = (
   options: {
-    requireBrand?: boolean;
+    brandNeutral?: boolean;
     scope?: readonly string[] | null;
   } = {},
 ) => {
   const reflector = new Reflector();
-  vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options.requireBrand ?? false);
+  vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options.brandNeutral ?? false);
   const reader: MemberBrandScopeReader = {
     findBrandScopeForMember: vi.fn().mockResolvedValue(options.scope ?? null),
   };
@@ -48,75 +51,146 @@ const buildGuard = (
 };
 
 describe('BrandScopeGuard', () => {
-  it('passes when the route is not annotated @RequireBrand', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({ requireBrand: false });
-    await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
-  });
-
-  it('rejects when @RequireBrand is set but no brand is bound to ALS', async () => {
-    mockGetBrandId.mockReturnValue(undefined);
-    const { guard } = buildGuard({ requireBrand: true });
-    await expect(guard.canActivate(buildContext({ principal: operator() }))).rejects.toBeInstanceOf(
-      ForbiddenException,
-    );
-  });
-
-  it('rejects when the principal is not an operator', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({ requireBrand: true });
-    await expect(
-      guard.canActivate(
-        buildContext({
-          principal: {
-            kind: 'customer',
-            userId: 'c1',
-            phone: '+1',
-            tenantId: TENANT_ID,
-          },
-        }),
-      ),
-    ).rejects.toBeInstanceOf(ForbiddenException);
-  });
-
-  it('bypasses scope check when the operator baseRole is owner', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard, reader } = buildGuard({ requireBrand: true, scope: [OTHER_BRAND_ID] });
-    await expect(
-      guard.canActivate(buildContext({ principal: operator({ baseRole: 'owner' }) })),
-    ).resolves.toBe(true);
-    expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
-  });
-
-  it('passes for non-owner when scope is empty (default-allow)', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({ requireBrand: true, scope: null });
-    await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
-  });
-
-  it('passes for non-owner when the brand is in the explicit scope', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({
-      requireBrand: true,
-      scope: [BRAND_ID, OTHER_BRAND_ID],
-    });
-    await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
-  });
-
-  it('rejects with brand.access_denied when the brand is not in scope', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({ requireBrand: true, scope: [OTHER_BRAND_ID] });
-    await expect(guard.canActivate(buildContext({ principal: operator() }))).rejects.toMatchObject({
-      response: { code: 'brand.access_denied' },
+  describe('@BrandNeutral opt-out', () => {
+    it('passes when the route is @BrandNeutral (opt-out)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: true });
+      await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
     });
   });
 
-  it('rejects when the operator has no tenantId on the principal', async () => {
-    mockGetBrandId.mockReturnValue(BRAND_ID);
-    const { guard } = buildGuard({ requireBrand: true });
-    const { tenantId: _omit, ...operatorWithoutTenant } = operator();
-    await expect(
-      guard.canActivate(buildContext({ principal: operatorWithoutTenant })),
-    ).rejects.toBeInstanceOf(ForbiddenException);
+  describe('default-on (no @BrandNeutral)', () => {
+    it('rejects with brand.context_required when no brand is bound to ALS', async () => {
+      mockGetBrandId.mockReturnValue(undefined);
+      const { guard } = buildGuard({ brandNeutral: false });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator() })),
+      ).rejects.toMatchObject({ response: { code: 'brand.context_required' } });
+    });
+
+    it('rejects with brand.operator_required for anonymous principal (no @BrandNeutral, brand resolves)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false });
+      await expect(
+        guard.canActivate(
+          buildContext({
+            principal: { kind: 'anonymous' },
+          }),
+        ),
+      ).rejects.toMatchObject({ response: { code: 'brand.operator_required' } });
+    });
+
+    it('rejects with brand.operator_required for customer principal without @BrandNeutral', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false });
+      await expect(
+        guard.canActivate(
+          buildContext({
+            principal: {
+              kind: 'customer',
+              userId: 'c1',
+              phone: '+1',
+              tenantId: TENANT_ID,
+            },
+          }),
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('rejects when the operator has no tenantId on the principal', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false });
+      const { tenantId: _omit, ...operatorWithoutTenant } = operator();
+      await expect(
+        guard.canActivate(
+          buildContext({ principal: operatorWithoutTenant, activeBrandId: BRAND_ID }),
+        ),
+      ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+  });
+
+  describe('owner bypass', () => {
+    it('passes for owner with zero scope rows (owner free-switch, not locked out)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard, reader } = buildGuard({ brandNeutral: false, scope: null });
+      await expect(
+        guard.canActivate(
+          buildContext({ principal: operator({ baseRole: 'owner' }), activeBrandId: null }),
+        ),
+      ).resolves.toBe(true);
+      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+    });
+
+    it('passes for owner even when brand != activeBrandId pin (owner free-switch)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard, reader } = buildGuard({ brandNeutral: false, scope: [OTHER_BRAND_ID] });
+      await expect(
+        guard.canActivate(
+          buildContext({
+            principal: operator({ baseRole: 'owner' }),
+            activeBrandId: OTHER_BRAND_ID,
+          }),
+        ),
+      ).resolves.toBe(true);
+      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+    });
+
+    it('passes for owner with null pin (owner free-switch, pin check skipped)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard, reader } = buildGuard({ brandNeutral: false, scope: null });
+      await expect(
+        guard.canActivate(
+          buildContext({ principal: operator({ baseRole: 'owner' }), activeBrandId: null }),
+        ),
+      ).resolves.toBe(true);
+      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('D-10 pin reconciliation (non-owner)', () => {
+    it('throws NotFoundException for non-owner with null activeBrandId (null-pin bypass closed)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false, scope: [BRAND_ID] });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator(), activeBrandId: null })),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+
+    it('throws NotFoundException for non-owner when ALS brand != session pin', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false, scope: [BRAND_ID] });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator(), activeBrandId: OTHER_BRAND_ID })),
+      ).rejects.toBeInstanceOf(NotFoundException);
+    });
+  });
+
+  describe('D-08 default-deny (non-owner)', () => {
+    it('rejects with brand.access_denied for non-owner when scope is empty (default-deny, was default-allow)', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false, scope: null });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator(), activeBrandId: BRAND_ID })),
+      ).rejects.toMatchObject({ response: { code: 'brand.access_denied' } });
+    });
+
+    it('passes for non-owner when brand is in scope AND pin matches', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({
+        brandNeutral: false,
+        scope: [BRAND_ID, OTHER_BRAND_ID],
+      });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator(), activeBrandId: BRAND_ID })),
+      ).resolves.toBe(true);
+    });
+
+    it('rejects with brand.access_denied when brand is not in scope', async () => {
+      mockGetBrandId.mockReturnValue(BRAND_ID);
+      const { guard } = buildGuard({ brandNeutral: false, scope: [OTHER_BRAND_ID] });
+      await expect(
+        guard.canActivate(buildContext({ principal: operator(), activeBrandId: BRAND_ID })),
+      ).rejects.toMatchObject({ response: { code: 'brand.access_denied' } });
+    });
   });
 });
