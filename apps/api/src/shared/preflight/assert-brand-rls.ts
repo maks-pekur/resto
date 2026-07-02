@@ -13,14 +13,6 @@ export class BrandRlsNotInstalledError extends Error {
   }
 }
 
-/**
- * Verify that the SECURITY DEFINER wrapper `app_bind_brand(text,boolean)` exists
- * and a brand isolation policy is present on the `orders` table.
- *
- * Mirrors `assertTenantLockInstalled` — called at boot before controllers mount
- * so a deploy that missed migration 0058 fails fast instead of silently serving
- * cross-brand rows (T-08.2-04).
- */
 export const assertBrandRlsInstalled = async (url: string): Promise<void> => {
   const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
   try {
