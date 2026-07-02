@@ -22,6 +22,7 @@ import {
 } from '@resto/db';
 import { AppModule } from './app.module';
 import { assertSystemRolesPresent } from './bootstrap/assert-system-roles-present';
+import { assertBrandRlsInstalled } from './shared/preflight/assert-brand-rls';
 import { ENV_TOKEN } from './config/config.module';
 import { loadEnv, type Env } from './config/env.schema';
 import { assertProdGuardrails } from './config/prod-guardrails';
@@ -56,6 +57,11 @@ const bootstrap = async (): Promise<void> => {
   // new image rolls before `pnpm db:migrate` completes.
   await assertTenantLockInstalled(env.DATABASE_URL);
   await assertSetConfigRevoked(env.DATABASE_URL);
+
+  // D-14 / T-08.2-04: refuse to start if migration 0058 has not been applied.
+  // A deploy that missed 0058 would serve cross-brand rows under brand-scoped
+  // requests — the only DB-layer defence is the brand RLS policy.
+  await assertBrandRlsInstalled(env.DATABASE_URL);
 
   // TEN-07: refuse to start if migration 0027 has silently regressed and
   // resto_app retains any SELECT/INSERT/UPDATE on the BA credential
