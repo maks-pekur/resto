@@ -32,3 +32,9 @@ export class NoActiveTenantError extends IdentityDomainError {
     super('auth.no_active_tenant', 'Operator principal has no active tenant membership.');
   }
 }
+
+export class BrandOutOfScopeError extends IdentityDomainError {
+  constructor() {
+    super('brand.out_of_scope', 'Brand is not within the operator scope.');
+  }
+}

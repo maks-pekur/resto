@@ -30,6 +30,8 @@ import { IS_PUBLIC_KEY, REQUIRES_TENANT_CONTEXT_KEY } from '../../../../../share
 declare module 'fastify' {
   interface FastifyRequest {
     principal?: Principal;
+    activeBrandId?: string | null;
+    sessionToken?: string;
   }
 }
 
