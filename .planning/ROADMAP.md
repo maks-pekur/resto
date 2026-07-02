@@ -522,7 +522,7 @@ Plans:
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 08.2-04-PLAN.md — SPA brand-first routing refactor (drop /dashboard, / → active brand, team/settings brand-neutral) + Stripe Connect return-URL fix + brand-switcher API wire (D-03/D-04/D-05/D-12/D-13/SC-1/SC-5) [human-verify checkpoint]
+- [x] 08.2-04-PLAN.md — SPA brand-first routing refactor (drop /dashboard, / → active brand, team/settings brand-neutral) + Stripe Connect return-URL fix + brand-switcher API wire (D-03/D-04/D-05/D-12/D-13/SC-1/SC-5) [human-verify checkpoint]
 - [x] 08.2-05-PLAN.md — Default-deny flip + BrandScopeGuard default-on (@BrandNeutral opt-out) + D-10 session-pin reconciliation (existence-hiding 404) + inverted unit matrix (D-08/D-10/D-11/SC-3/SC-4)
 
 **Wave 3** _(after Waves 1+2 — runs against the migrated DB)_
