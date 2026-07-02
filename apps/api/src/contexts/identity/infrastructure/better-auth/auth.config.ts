@@ -3,8 +3,10 @@ import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where }
 import { createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { and, asc, eq } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
+import { brands as brandsTable, member as memberTable, memberBrandScope } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -157,6 +159,44 @@ const resolvePrimaryTenantId = async (
   }
 };
 
+const resolveInitialBrandId = async (
+  authDb: AuthDrizzle,
+  userId: string,
+  tenantId: string,
+): Promise<string | null> => {
+  try {
+    const memberRows = await authDb.db
+      .select({ role: memberTable.role })
+      .from(memberTable)
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, tenantId)))
+      .limit(1);
+    const role = memberRows[0]?.role;
+    if (role === 'owner') {
+      const rows = await authDb.db
+        .select({ id: brandsTable.id })
+        .from(brandsTable)
+        .where(eq(brandsTable.tenantId, tenantId))
+        .orderBy(asc(brandsTable.createdAt), asc(brandsTable.id))
+        .limit(1);
+      return rows[0]?.id ?? null;
+    }
+    const scopedRows = await authDb.db
+      .select({ id: brandsTable.id })
+      .from(memberBrandScope)
+      .innerJoin(brandsTable, eq(memberBrandScope.brandId, brandsTable.id))
+      .innerJoin(
+        memberTable,
+        and(eq(memberTable.id, memberBrandScope.memberId), eq(memberTable.userId, userId)),
+      )
+      .where(eq(memberBrandScope.tenantId, tenantId))
+      .orderBy(asc(brandsTable.createdAt), asc(brandsTable.id))
+      .limit(1);
+    return scopedRows[0]?.id ?? null;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Composition root for Better Auth.
  *
@@ -269,41 +309,81 @@ export const buildAuth = (opts: BuildOpts) =>
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling
+      additionalFields: {
+        activeBrandId: {
+          type: 'string',
+          defaultValue: null,
+          input: false,
+          returned: true,
+        },
+      },
     },
     databaseHooks: {
       session: {
         update: {
           after: async (session, ctx) => {
-            if (!opts.onActiveOrganizationSet) return;
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
-            // WR-07: exact-equality on the BA-mounted path. `endsWith` would
-            // match a nested route like `/proxy/foo/api/auth/organization/set-active`
-            // if a future deployment mounts BA under a path prefix.
+            // WR-07: exact-equality on the BA-mounted path.
             if (path !== '/api/auth/organization/set-active') return;
-            try {
-              const reqHeaders = rawRequest?.headers;
-              await opts.onActiveOrganizationSet(
-                {
-                  userId: session.userId,
-                  activeOrganizationId: session.activeOrganizationId,
-                },
-                {
-                  ...(reqHeaders ? { headers: reqHeaders } : {}),
-                },
-              );
-            } catch (err) {
-              new Logger('IdentityEventHook').error(
-                {
-                  err,
-                  type: 'identity.signed_in.v1',
-                  userId: session.userId,
-                  tenantId: session.activeOrganizationId,
-                },
-                'Failed to emit identity event — audit row may be missing',
-              );
+
+            const internalAdapter = (
+              ctx as {
+                context?: {
+                  internalAdapter?: {
+                    updateSession?: (
+                      token: string,
+                      data: Record<string, unknown>,
+                    ) => Promise<unknown>;
+                  };
+                };
+              } | null
+            )?.context?.internalAdapter;
+            if (internalAdapter?.updateSession) {
+              try {
+                const initialBrandId = await resolveInitialBrandId(
+                  opts.authDb,
+                  session.userId,
+                  session.activeOrganizationId,
+                );
+                if (initialBrandId !== null) {
+                  await internalAdapter.updateSession(session.token, {
+                    activeBrandId: initialBrandId,
+                  });
+                }
+              } catch (err) {
+                new Logger('IdentityEventHook').error(
+                  { err, userId: session.userId, tenantId: session.activeOrganizationId },
+                  'Failed to set initial activeBrandId on org-switch',
+                );
+              }
+            }
+
+            if (opts.onActiveOrganizationSet) {
+              try {
+                const reqHeaders = rawRequest?.headers;
+                await opts.onActiveOrganizationSet(
+                  {
+                    userId: session.userId,
+                    activeOrganizationId: session.activeOrganizationId,
+                  },
+                  {
+                    ...(reqHeaders ? { headers: reqHeaders } : {}),
+                  },
+                );
+              } catch (err) {
+                new Logger('IdentityEventHook').error(
+                  {
+                    err,
+                    type: 'identity.signed_in.v1',
+                    userId: session.userId,
+                    tenantId: session.activeOrganizationId,
+                  },
+                  'Failed to emit identity event — audit row may be missing',
+                );
+              }
             }
           },
         },
