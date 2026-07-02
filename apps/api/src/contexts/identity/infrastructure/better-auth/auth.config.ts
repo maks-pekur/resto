@@ -326,7 +326,6 @@ export const buildAuth = (opts: BuildOpts) =>
               return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
-            // WR-07: exact-equality on the BA-mounted path.
             if (path !== '/api/auth/organization/set-active') return;
 
             const internalAdapter = (
