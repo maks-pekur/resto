@@ -24,7 +24,7 @@
 //   `test_rls_fence` table created in the spec, four rows seeded across
 //   two tenants, and symmetric assertions under both tenants.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -251,6 +251,280 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
       expect(rowsUnderA.length).toBeGreaterThanOrEqual(1);
       expect(allRows.length).toBeGreaterThanOrEqual(3);
       expect(allRows.length).toBeGreaterThan(rowsUnderA.length);
+    });
+  });
+});
+
+suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () => {
+  let stack: RealStack;
+  let tenantId: string;
+  let brandAId: string;
+  let brandBId: string;
+  let categoryAId: string;
+  let categoryBId: string;
+  let itemAId: string;
+  let itemBId: string;
+  let modGroupAId: string;
+  let modGroupBId: string;
+
+  beforeAll(async () => {
+    stack = await startRealStack({ natsEnabledInApp: false });
+    const db = stack.app.get(TenantAwareDb);
+
+    const seeded = await db.withoutTenant('seed cross-brand RLS matrix', async (tx) => {
+      const [tenantA] = await tx
+        .insert(schema.tenants)
+        .values({
+          slug: 'brand-rls-tenant',
+          displayName: 'Brand RLS Tenant',
+          defaultCurrency: 'USD',
+          locale: 'en',
+        })
+        .returning({ id: schema.tenants.id });
+      if (!tenantA) throw new Error('tenant insert failed');
+
+      const [bA] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA.id, slug: 'rls-brand-a', displayName: 'RLS A' })
+        .returning({ id: schema.brands.id });
+      const [bB] = await tx
+        .insert(schema.brands)
+        .values({ tenantId: tenantA.id, slug: 'rls-brand-b', displayName: 'RLS B' })
+        .returning({ id: schema.brands.id });
+      if (!bA || !bB) throw new Error('brand insert failed');
+
+      const [catA] = await tx
+        .insert(schema.menuCategories)
+        .values({
+          tenantId: tenantA.id,
+          brandId: bA.id,
+          slug: 'cat-rls-a',
+          name: { en: 'A' },
+          sortOrder: 0,
+        })
+        .returning({ id: schema.menuCategories.id });
+      const [catB] = await tx
+        .insert(schema.menuCategories)
+        .values({
+          tenantId: tenantA.id,
+          brandId: bB.id,
+          slug: 'cat-rls-b',
+          name: { en: 'B' },
+          sortOrder: 0,
+        })
+        .returning({ id: schema.menuCategories.id });
+      if (!catA || !catB) throw new Error('category insert failed');
+
+      const [itemA] = await tx
+        .insert(schema.menuItems)
+        .values({
+          tenantId: tenantA.id,
+          brandId: bA.id,
+          categoryId: catA.id,
+          slug: 'item-rls-a',
+          name: { en: 'Item A' },
+          basePrice: '5.00',
+          currency: 'USD',
+          status: 'published',
+        })
+        .returning({ id: schema.menuItems.id });
+      const [itemB] = await tx
+        .insert(schema.menuItems)
+        .values({
+          tenantId: tenantA.id,
+          brandId: bB.id,
+          categoryId: catB.id,
+          slug: 'item-rls-b',
+          name: { en: 'Item B' },
+          basePrice: '5.00',
+          currency: 'USD',
+          status: 'published',
+        })
+        .returning({ id: schema.menuItems.id });
+      if (!itemA || !itemB) throw new Error('item insert failed');
+
+      const [mgA, mgB] = await tx
+        .insert(schema.menuModifierGroups)
+        .values([
+          {
+            tenantId: tenantA.id,
+            brandId: bA.id,
+            name: { en: 'MG A' },
+            minSelectable: 0,
+            maxSelectable: 1,
+            isRequired: false,
+          },
+          {
+            tenantId: tenantA.id,
+            brandId: bB.id,
+            name: { en: 'MG B' },
+            minSelectable: 0,
+            maxSelectable: 1,
+            isRequired: false,
+          },
+        ])
+        .returning({ id: schema.menuModifierGroups.id });
+
+      await tx.insert(schema.catalogBrandStopVersion).values([
+        { tenantId: tenantA.id, brandId: bA.id },
+        { tenantId: tenantA.id, brandId: bB.id },
+      ]);
+
+      if (!mgA || !mgB) throw new Error('modifier group insert failed');
+      return {
+        tenantId: tenantA.id,
+        brandAId: bA.id,
+        brandBId: bB.id,
+        categoryAId: catA.id,
+        categoryBId: catB.id,
+        itemAId: itemA.id,
+        itemBId: itemB.id,
+        modGroupAId: mgA.id,
+        modGroupBId: mgB.id,
+      };
+    });
+
+    tenantId = seeded.tenantId;
+    brandAId = seeded.brandAId;
+    brandBId = seeded.brandBId;
+    categoryAId = seeded.categoryAId;
+    categoryBId = seeded.categoryBId;
+    itemAId = seeded.itemAId;
+    itemBId = seeded.itemBId;
+    modGroupAId = seeded.modGroupAId;
+    modGroupBId = seeded.modGroupBId;
+  }, 120_000);
+
+  afterAll(async () => {
+    if (stack) await stopRealStack(stack);
+  });
+
+  describe('brand-bound reads return only the bound brand rows (RLS live)', () => {
+    it('menu_categories: brand-A binding returns A rows only, zero B rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
+        return tx
+          .select({ id: schema.menuCategories.id })
+          .from(schema.menuCategories)
+          .where(eq(schema.menuCategories.tenantId, tenantId));
+      });
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(categoryAId);
+      expect(ids).not.toContain(categoryBId);
+    });
+
+    it('menu_items: brand-A binding returns A rows only, zero B rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
+        return tx
+          .select({ id: schema.menuItems.id })
+          .from(schema.menuItems)
+          .where(eq(schema.menuItems.tenantId, tenantId));
+      });
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(itemAId);
+      expect(ids).not.toContain(itemBId);
+    });
+
+    it('menu_modifier_groups: brand-A binding returns A rows only, zero B rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
+        return tx
+          .select({ id: schema.menuModifierGroups.id })
+          .from(schema.menuModifierGroups)
+          .where(eq(schema.menuModifierGroups.tenantId, tenantId));
+      });
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(modGroupAId);
+      expect(ids).not.toContain(modGroupBId);
+    });
+
+    it('catalog_brand_stop_version: brand-A binding returns A row only, zero B rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
+        return tx
+          .select({ brandId: schema.catalogBrandStopVersion.brandId })
+          .from(schema.catalogBrandStopVersion)
+          .where(eq(schema.catalogBrandStopVersion.tenantId, tenantId));
+      });
+      const brandIds = rows.map((r) => r.brandId);
+      expect(brandIds).toContain(brandAId);
+      expect(brandIds).not.toContain(brandBId);
+    });
+  });
+
+  describe('IS NULL pass-through — tenant-level (no brand bound) reads see both brands rows', () => {
+    it('menu_categories: no brand binding (IS NULL) returns rows for BOTH brands', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) =>
+        tx
+          .select({ id: schema.menuCategories.id })
+          .from(schema.menuCategories)
+          .where(eq(schema.menuCategories.tenantId, tenantId)),
+      );
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(categoryAId);
+      expect(ids).toContain(categoryBId);
+    });
+
+    it('menu_items: no brand binding returns rows for BOTH brands', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) =>
+        tx
+          .select({ id: schema.menuItems.id })
+          .from(schema.menuItems)
+          .where(eq(schema.menuItems.tenantId, tenantId)),
+      );
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(itemAId);
+      expect(ids).toContain(itemBId);
+    });
+
+    it('catalog_brand_stop_version: no brand binding returns both brands rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) =>
+        tx
+          .select({ brandId: schema.catalogBrandStopVersion.brandId })
+          .from(schema.catalogBrandStopVersion)
+          .where(eq(schema.catalogBrandStopVersion.tenantId, tenantId)),
+      );
+      const brandIds = rows.map((r) => r.brandId);
+      expect(brandIds).toContain(brandAId);
+      expect(brandIds).toContain(brandBId);
+    });
+  });
+
+  describe('symmetric brand-B binding — B rows visible, A rows invisible', () => {
+    it('menu_categories: brand-B binding returns B rows only, zero A rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandBId}, false)`);
+        return tx
+          .select({ id: schema.menuCategories.id })
+          .from(schema.menuCategories)
+          .where(eq(schema.menuCategories.tenantId, tenantId));
+      });
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(categoryBId);
+      expect(ids).not.toContain(categoryAId);
+    });
+
+    it('menu_items: brand-B binding returns B rows only, zero A rows', async () => {
+      const db = stack.app.get(TenantAwareDb);
+      const rows = await db.withTenantId(tenantId, async (tx) => {
+        await tx.execute(sql`SELECT app_bind_brand(${brandBId}, false)`);
+        return tx
+          .select({ id: schema.menuItems.id })
+          .from(schema.menuItems)
+          .where(eq(schema.menuItems.tenantId, tenantId));
+      });
+      const ids = rows.map((r) => r.id);
+      expect(ids).toContain(itemBId);
+      expect(ids).not.toContain(itemAId);
     });
   });
 });

@@ -421,6 +421,13 @@
       "when": 1782945600000,
       "tag": "0059_session_active_brand",
       "breakpoints": true
+    },
+    {
+      "idx": 60,
+      "version": "7",
+      "when": 1783032000000,
+      "tag": "0060_brand_rls_restrictive",
+      "breakpoints": true
     }
   ]
 }
