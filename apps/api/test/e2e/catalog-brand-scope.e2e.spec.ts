@@ -9,7 +9,12 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
-import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
+import {
+  extractCookies,
+  provisionTenant,
+  runBootstrap,
+  signInAsOperator,
+} from './helpers/operator-fixture';
 import { AUTH_DRIZZLE_TOKEN } from '../../src/contexts/identity/identity.tokens';
 import type { AuthDrizzle } from '../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
@@ -134,6 +139,21 @@ suite('Catalog — per-operator brand-scope enforcement (AUDIT #15)', () => {
         tenantId,
       }),
     );
+
+    const pinRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/me/set-active-brand',
+      headers: {
+        'content-type': 'application/json',
+        cookie: adminCookie,
+        'x-tenant-id': tenantId,
+      },
+      payload: { brandId: brandAId },
+    });
+    if (pinRes.statusCode !== 200) {
+      throw new Error(`Failed to pin brand for admin: ${pinRes.statusCode} ${pinRes.body}`);
+    }
+    adminCookie = extractCookies(pinRes.headers['set-cookie']) || adminCookie;
   }, 180_000);
 
   afterAll(async () => {
@@ -145,10 +165,9 @@ suite('Catalog — per-operator brand-scope enforcement (AUDIT #15)', () => {
     expect(res.statusCode).toBe(200);
   });
 
-  it('forbids a brand-scoped operator from writing in an out-of-scope brand (403)', async () => {
+  it('forbids a brand-scoped operator from writing in an out-of-scope brand (404 existence-hiding)', async () => {
     const res = await postItem(adminCookie, brandBSlug, categoryBId);
-    expect(res.statusCode).toBe(403);
-    expect(res.json<{ code?: string }>().code).toBe('brand.access_denied');
+    expect(res.statusCode).toBe(404);
   });
 
   it('lets an owner write in any brand (baseRole bypass)', async () => {
