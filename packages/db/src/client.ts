@@ -253,7 +253,7 @@ export class TenantAwareDb {
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
       if (ctx.brandId !== undefined) {
-        await tx.execute(sql`SELECT app_bind_brand(${ctx.brandId})`);
+        await tx.execute(sql`SELECT app_bind_brand(${ctx.brandId}::text)`);
       }
       const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
       await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.brandId);

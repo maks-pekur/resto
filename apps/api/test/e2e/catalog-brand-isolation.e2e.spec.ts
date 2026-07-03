@@ -18,7 +18,6 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
   let stack: RealStack;
   let ownerCookie: string;
   let tenantId: string;
-  let tenantSlug: string;
   let brandASlug: string;
   let brandBSlug: string;
 
@@ -78,7 +77,6 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
     process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
     stack = await startRealStack();
     const slug = `cafe-${randomUUID().slice(0, 8)}`;
-    tenantSlug = slug;
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     const password = 'Sup3r-Secret-Pw!';
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
@@ -124,8 +122,8 @@ suite('Catalog — brand data isolation (AUDIT #2/#3)', () => {
 
     const survivor = await stack.app.inject({
       method: 'GET',
-      url: `/internal/v1/catalog/items/${a.id}`,
-      headers: { 'x-internal-token': INTERNAL_TOKEN, 'x-tenant-slug': tenantSlug },
+      url: `/v1/catalog/items/${a.id}`,
+      headers: hdr(brandASlug),
     });
     expect(survivor.statusCode).toBe(200);
     const survivorBody = survivor.json<{ id: string; slug: string }>();
