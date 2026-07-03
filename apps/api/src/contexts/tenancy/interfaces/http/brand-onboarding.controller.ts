@@ -60,6 +60,7 @@ function buildNonceCookieHeader(nonce: string): string {
     IS_PROD ? 'Secure' : '',
     'SameSite=Lax',
     'Path=/',
+    'Max-Age=900',
   ]
     .filter((a) => a !== '')
     .join('; ');
