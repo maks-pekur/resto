@@ -378,36 +378,44 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           oldSlug = existingRow?.slug ?? null;
 
           if (existing.length === 0) {
-            const [row] = await scoped
-              .insertInto(schema.menuItems, {
-                id: input.id,
-                brandId: input.brandId,
-                categoryId: input.categoryId,
-                slug: input.slug,
-                name: input.name,
-                description: input.description,
-                basePrice: input.basePrice,
-                currency: input.currency,
-                photos,
-                allergens: input.allergens ? [...input.allergens] : null,
-                ingredients: input.ingredients ? [...input.ingredients] : null,
-                metaTitle: input.metaTitle,
-                metaDescription: input.metaDescription,
-                proteins: input.proteins === null ? null : input.proteins.toString(),
-                fats: input.fats === null ? null : input.fats.toString(),
-                carbs: input.carbs === null ? null : input.carbs.toString(),
-                kcal: input.kcal,
-                nutritionEstimated: input.nutritionEstimated,
-                source: input.source,
-                needsReview: input.needsReview,
-                sourceExternalId: input.sourceExternalId,
-                status: input.status,
-                sortOrder: input.sortOrder,
-                code: input.code,
-                weight: input.weight === null ? null : input.weight.toString(),
-                measureUnit: input.measureUnit,
-              })
-              .returning({ id: schema.menuItems.id });
+            let row: { id: string } | undefined;
+            try {
+              [row] = await scoped
+                .insertInto(schema.menuItems, {
+                  id: input.id,
+                  brandId: input.brandId,
+                  categoryId: input.categoryId,
+                  slug: input.slug,
+                  name: input.name,
+                  description: input.description,
+                  basePrice: input.basePrice,
+                  currency: input.currency,
+                  photos,
+                  allergens: input.allergens ? [...input.allergens] : null,
+                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  metaTitle: input.metaTitle,
+                  metaDescription: input.metaDescription,
+                  proteins: input.proteins === null ? null : input.proteins.toString(),
+                  fats: input.fats === null ? null : input.fats.toString(),
+                  carbs: input.carbs === null ? null : input.carbs.toString(),
+                  kcal: input.kcal,
+                  nutritionEstimated: input.nutritionEstimated,
+                  source: input.source,
+                  needsReview: input.needsReview,
+                  sourceExternalId: input.sourceExternalId,
+                  status: input.status,
+                  sortOrder: input.sortOrder,
+                  code: input.code,
+                  weight: input.weight === null ? null : input.weight.toString(),
+                  measureUnit: input.measureUnit,
+                })
+                .returning({ id: schema.menuItems.id });
+            } catch (insertErr) {
+              if (isCodeUniqueViolation(insertErr, 'menu_items_pkey')) {
+                throw new MenuItemNotFoundError(input.id);
+              }
+              throw insertErr;
+            }
             if (!row) throw new Error('upsertItem: insert returned no row');
             rowId = row.id;
           } else {
@@ -444,7 +452,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
               )
               .returning({ id: schema.menuItems.id });
-            if (!row) throw new Error('upsertItem: update returned no row');
+            if (!row) throw new MenuItemNotFoundError(input.id);
             rowId = row.id;
           }
         } else {
