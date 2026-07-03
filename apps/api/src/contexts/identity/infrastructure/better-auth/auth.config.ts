@@ -78,14 +78,6 @@ interface BuildOpts {
   minPasswordLength?: number;
   /** From env — see config/env.schema.ts. Default 128. */
   maxPasswordLength?: number;
-  /**
-   * CR-01 (08.2-gap): resolves the initial brand to pin after org-switch.
-   * Called from `databaseHooks.session.update.after` instead of querying
-   * `authDb` directly — `resto_auth` has no SELECT on `brands` or
-   * `member_brand_scope`. The callback MUST run under `resto_app` (e.g.
-   * via `TenantAwareDb.withTenantId`). Returns null when no brand is
-   * resolvable (new tenant, no brands yet).
-   */
   onInitialBrandPin?: (userId: string, tenantId: string) => Promise<string | null>;
   /**
    * Invoked when an operator sets the active organization on their session
@@ -133,8 +125,6 @@ interface BuildOpts {
 // WeakMap prevents property pollution on BA internals and allows GC to drop
 // entries when the context is dropped. Replaces the prior `as { __resto* }`
 // cast pattern that mutated enumerable properties on an internal BA object.
-// CR-01 (08.2-gap): brandPinDone prevents re-entry when internalAdapter.updateSession
-// triggers the same session.update.after hook recursively.
 interface BrandPinDoneStash {
   readonly done: true;
 }
@@ -300,8 +290,6 @@ export const buildAuth = (opts: BuildOpts) =>
           after: async (session, ctx) => {
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
-            // CR-01 (08.2-gap): skip when activeBrandId is already pinned — this hook
-            // fires again for the internal updateSession call that sets activeBrandId.
             if ((session as { activeBrandId?: string | null }).activeBrandId) return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
