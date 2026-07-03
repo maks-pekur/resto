@@ -85,12 +85,14 @@ BEGIN
 END
 $$;
 
--- RES-206: BA credential tables are resto_auth-only (ADR-0013).
--- Revoke resto_app to prevent SELECT * leak of password hashes, OAuth
--- tokens, 2FA secrets, session tokens. Excluded from runtime app role
--- because no legitimate app code path should reach them directly —
--- BA's session lookups run under resto_auth (BYPASSRLS).
-REVOKE SELECT, INSERT, UPDATE, DELETE ON account FROM resto_app;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON two_factor FROM resto_app;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON verification FROM resto_app;
-REVOKE SELECT, INSERT, UPDATE, DELETE ON session FROM resto_app;
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['account','two_factor','verification','session'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = t) THEN
+      EXECUTE format('REVOKE SELECT, INSERT, UPDATE, DELETE ON %I FROM resto_app', t);
+    END IF;
+  END LOOP;
+END
+$$;
