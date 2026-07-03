@@ -11,20 +11,25 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE ALL ON FUNCTIONS FROM resto_aut
 
 GRANT USAGE ON SCHEMA public TO resto_auth;
 
-GRANT SELECT, INSERT, UPDATE, DELETE ON
-  "user",
-  session,
-  account,
-  verification,
-  two_factor,
-  member,
-  invitation,
-  organization_role
-TO resto_auth;
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY['"user"','session','account','verification','two_factor','member','invitation','organization_role'] LOOP
+    IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = trim('"' FROM t)) THEN
+      EXECUTE format('GRANT SELECT, INSERT, UPDATE, DELETE ON %s TO resto_auth', t);
+    END IF;
+  END LOOP;
+END
+$$;
 
--- tenants is BA's "organization" mapping (ADR-0013). SELECT+UPDATE only;
--- INSERT/DELETE stay with the tenancy bounded context.
-GRANT SELECT, UPDATE ON tenants TO resto_auth;
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'tenants') THEN
+    EXECUTE 'GRANT SELECT, UPDATE ON tenants TO resto_auth';
+  END IF;
+END
+$$;
 
 -- ────────────────────────────────────────────────────────────────────────────
 -- Permissive RLS policies (Option A, D-04 / RDS).
