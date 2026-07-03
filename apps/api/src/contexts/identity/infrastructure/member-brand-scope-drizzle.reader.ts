@@ -19,6 +19,7 @@ export class MemberBrandScopeDrizzleReader implements MemberBrandScopeReader {
         .innerJoin(schema.member, eq(schema.memberBrandScope.memberId, schema.member.id))
         .where(
           and(
+            eq(schema.memberBrandScope.tenantId, input.tenantId),
             eq(schema.member.userId, input.userId),
             eq(schema.member.organizationId, input.tenantId),
           ),
