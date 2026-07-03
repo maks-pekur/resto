@@ -403,7 +403,7 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     expect(res.statusCode).toBe(403);
   }, 90_000);
 
-  it('non-owner staff with no scope rows: 200 (null scope = unrestricted within tenant)', async () => {
+  it('non-owner staff with no scope rows: 403 (null scope = no access, D-08 default-deny)', async () => {
     const slug = `sab-noscope-${randomUUID().slice(0, 6)}`;
     const ownerEmail = `owner-${slug}@example.com`;
     const staffEmail = `staff-${slug}@example.com`;
@@ -467,6 +467,8 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
       },
       payload: { brandId },
     });
-    expect(res.statusCode).toBe(200);
+    expect(res.statusCode).toBe(403);
+    const body = res.json<{ code?: string }>();
+    expect(body.code).toBe('brand.out_of_scope');
   }, 90_000);
 });

@@ -50,13 +50,10 @@ export class SetActiveBrandService {
       userId: input.userId,
       tenantId: input.tenantId,
     });
-    if (scope !== null && !scope.includes(input.brandId)) {
+    if (!scope?.includes(input.brandId)) {
       throw new BrandOutOfScopeError();
     }
-    if (scope !== null && scope.length === 0) {
-      throw new BrandOutOfScopeError();
-    }
-    const tenantBrands = await this.brands.listForTenant(input.tenantId, scope ?? undefined);
+    const tenantBrands = await this.brands.listForTenant(input.tenantId, scope);
     const match = tenantBrands.find((b) => b.id === input.brandId);
     if (!match) throw new BrandOutOfScopeError();
     await this.writer.writeActiveBrand({
