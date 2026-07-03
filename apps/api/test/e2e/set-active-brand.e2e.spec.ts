@@ -36,10 +36,10 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     const adminUrl = container.getConnectionUri();
 
     const adminClient = postgres(adminUrl);
-    await provisionAppRole(adminClient, { appPassword: APP_PASSWORD });
-    await provisionAuthRole(adminClient, { authPassword: AUTH_PASSWORD });
     const adminDb = drizzle(adminClient);
     await migrate(adminDb, { migrationsFolder: MIGRATIONS_DIR });
+    await provisionAppRole(adminClient, { appPassword: APP_PASSWORD });
+    await provisionAuthRole(adminClient, { authPassword: AUTH_PASSWORD });
     await adminClient.end();
 
     const appUrl = new URL(adminUrl);
