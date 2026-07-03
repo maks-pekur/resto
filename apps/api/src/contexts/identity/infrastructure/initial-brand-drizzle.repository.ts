@@ -1,10 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import { and, asc, eq } from 'drizzle-orm';
 
 @Injectable()
 export class InitialBrandDrizzleRepository {
-  constructor(private readonly db: TenantAwareDb) {}
+  private readonly logger = new Logger(InitialBrandDrizzleRepository.name);
+
+  constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
   async resolveForUserInTenant(userId: string, tenantId: string): Promise<string | null> {
     try {
@@ -40,7 +42,8 @@ export class InitialBrandDrizzleRepository {
           .limit(1);
         return scopedRows[0]?.id ?? null;
       });
-    } catch {
+    } catch (err) {
+      this.logger.error({ err, userId, tenantId }, 'resolveForUserInTenant failed');
       return null;
     }
   }

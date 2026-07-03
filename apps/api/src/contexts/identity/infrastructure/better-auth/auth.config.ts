@@ -133,6 +133,13 @@ interface BuildOpts {
 // WeakMap prevents property pollution on BA internals and allows GC to drop
 // entries when the context is dropped. Replaces the prior `as { __resto* }`
 // cast pattern that mutated enumerable properties on an internal BA object.
+// CR-01 (08.2-gap): brandPinDone prevents re-entry when internalAdapter.updateSession
+// triggers the same session.update.after hook recursively.
+interface BrandPinDoneStash {
+  readonly done: true;
+}
+
+const brandPinDone = new WeakMap<object, BrandPinDoneStash>();
 interface SignOutStash {
   readonly userId: string;
   readonly tenantId: string;
@@ -293,9 +300,15 @@ export const buildAuth = (opts: BuildOpts) =>
           after: async (session, ctx) => {
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
+            // CR-01 (08.2-gap): skip when activeBrandId is already pinned — this hook
+            // fires again for the internal updateSession call that sets activeBrandId.
+            if ((session as { activeBrandId?: string | null }).activeBrandId) return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
             if (path !== '/api/auth/organization/set-active') return;
+
+            const ctxContext = (ctx as { context?: object } | null)?.context;
+            if (ctxContext && brandPinDone.has(ctxContext)) return;
 
             const internalAdapter = (
               ctx as {
@@ -310,6 +323,7 @@ export const buildAuth = (opts: BuildOpts) =>
               } | null
             )?.context?.internalAdapter;
             if (internalAdapter?.updateSession && opts.onInitialBrandPin) {
+              if (ctxContext) brandPinDone.set(ctxContext, { done: true });
               try {
                 const initialBrandId = await opts.onInitialBrandPin(
                   session.userId,
