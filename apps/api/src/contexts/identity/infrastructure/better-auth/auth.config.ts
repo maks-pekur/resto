@@ -3,10 +3,8 @@ import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where }
 import { createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
-import { and, asc, eq } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
-import { brands as brandsTable, member as memberTable, memberBrandScope } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -81,6 +79,15 @@ interface BuildOpts {
   /** From env — see config/env.schema.ts. Default 128. */
   maxPasswordLength?: number;
   /**
+   * CR-01 (08.2-gap): resolves the initial brand to pin after org-switch.
+   * Called from `databaseHooks.session.update.after` instead of querying
+   * `authDb` directly — `resto_auth` has no SELECT on `brands` or
+   * `member_brand_scope`. The callback MUST run under `resto_app` (e.g.
+   * via `TenantAwareDb.withTenantId`). Returns null when no brand is
+   * resolvable (new tenant, no brands yet).
+   */
+  onInitialBrandPin?: (userId: string, tenantId: string) => Promise<string | null>;
+  /**
    * Invoked when an operator sets the active organization on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
    * the canonical "operator signed in" moment. The callback runs in a
@@ -154,44 +161,6 @@ const resolvePrimaryTenantId = async (
     });
     const first = rows[0] as { organizationId?: string } | undefined;
     return first?.organizationId ?? null;
-  } catch {
-    return null;
-  }
-};
-
-const resolveInitialBrandId = async (
-  authDb: AuthDrizzle,
-  userId: string,
-  tenantId: string,
-): Promise<string | null> => {
-  try {
-    const memberRows = await authDb.db
-      .select({ role: memberTable.role })
-      .from(memberTable)
-      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, tenantId)))
-      .limit(1);
-    const role = memberRows[0]?.role;
-    if (role === 'owner') {
-      const rows = await authDb.db
-        .select({ id: brandsTable.id })
-        .from(brandsTable)
-        .where(eq(brandsTable.tenantId, tenantId))
-        .orderBy(asc(brandsTable.createdAt), asc(brandsTable.id))
-        .limit(1);
-      return rows[0]?.id ?? null;
-    }
-    const scopedRows = await authDb.db
-      .select({ id: brandsTable.id })
-      .from(memberBrandScope)
-      .innerJoin(brandsTable, eq(memberBrandScope.brandId, brandsTable.id))
-      .innerJoin(
-        memberTable,
-        and(eq(memberTable.id, memberBrandScope.memberId), eq(memberTable.userId, userId)),
-      )
-      .where(eq(memberBrandScope.tenantId, tenantId))
-      .orderBy(asc(brandsTable.createdAt), asc(brandsTable.id))
-      .limit(1);
-    return scopedRows[0]?.id ?? null;
   } catch {
     return null;
   }
@@ -340,10 +309,9 @@ export const buildAuth = (opts: BuildOpts) =>
                 };
               } | null
             )?.context?.internalAdapter;
-            if (internalAdapter?.updateSession) {
+            if (internalAdapter?.updateSession && opts.onInitialBrandPin) {
               try {
-                const initialBrandId = await resolveInitialBrandId(
-                  opts.authDb,
+                const initialBrandId = await opts.onInitialBrandPin(
                   session.userId,
                   session.activeOrganizationId,
                 );

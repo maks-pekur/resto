@@ -27,6 +27,7 @@ import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permis
 import { createEmailAdapter } from './infrastructure/email/email-adapter.factory';
 import { getLocale } from './infrastructure/email/get-locale';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
+import { InitialBrandDrizzleRepository } from './infrastructure/initial-brand-drizzle.repository';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
@@ -217,6 +218,7 @@ export const buildAuthFromEnv = (
   env: Env,
   emitter: IdentityEventEmitterPort,
   emailAdapter: EmailAdapterPort,
+  brandResolver: InitialBrandDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
   // Admin (and other browser callers) hit BA from a different origin
@@ -292,6 +294,7 @@ export const buildAuthFromEnv = (
         ),
       );
     },
+    onInitialBrandPin: (userId, tenantId) => brandResolver.resolveForUserInTenant(userId, tenantId),
     onActiveOrganizationSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
       const xff = readHeader(ctx.headers, 'x-forwarded-for');
@@ -319,7 +322,13 @@ export const buildAuthFromEnv = (
 
 const authProvider: Provider = {
   provide: AUTH_TOKEN,
-  inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN, IDENTITY_EVENT_EMITTER, EMAIL_ADAPTER_PORT],
+  inject: [
+    AUTH_DRIZZLE_TOKEN,
+    ENV_TOKEN,
+    IDENTITY_EVENT_EMITTER,
+    EMAIL_ADAPTER_PORT,
+    InitialBrandDrizzleRepository,
+  ],
   useFactory: buildAuthFromEnv,
 };
 
@@ -332,6 +341,7 @@ const permissionCheckerProvider: Provider = {
   providers: [
     authDrizzleProvider,
     emailAdapterProvider,
+    InitialBrandDrizzleRepository,
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
