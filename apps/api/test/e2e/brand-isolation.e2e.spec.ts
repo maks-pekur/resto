@@ -147,7 +147,19 @@ suite('SC-4 brand-isolation e2e (Plan 08.2-06)', () => {
       name: 'Unscoped',
       role: 'admin',
     });
-    unscopedAdminCookiePinnedA = await setPin(unscopedBase, brandAId);
+    const authDbForPin = stack.app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+    const userRow = await authDbForPin.db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.email, unscopedEmail))
+      .limit(1);
+    const unscopedUserId = userRow[0]?.id;
+    if (!unscopedUserId) throw new Error('unscopedAdmin user not found after addMemberWithRole');
+    await authDbForPin.db
+      .update(schema.session)
+      .set({ activeBrandId: brandAId })
+      .where(eq(schema.session.userId, unscopedUserId));
+    unscopedAdminCookiePinnedA = unscopedBase;
   }, 240_000);
 
   afterAll(async () => {

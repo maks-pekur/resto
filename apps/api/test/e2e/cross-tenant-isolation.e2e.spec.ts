@@ -204,7 +204,7 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
       const res = await stack.app.inject({
         method: 'GET',
         url: '/v1/menu',
-        headers: { 'x-tenant-slug': fixture.tenantA.slug },
+        headers: { 'x-tenant-slug': fixture.tenantA.slug, 'x-brand-slug': 'flagship-i1a' },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json<{ items: { id: string; slug: string }[] }>();
