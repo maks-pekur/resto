@@ -545,9 +545,14 @@ Plans:
 3. A role's creator cannot grant a permission they do not themselves hold — creator-subset enforced server-side, proven by test
 4. `dynamicAccessControl` enabled without weakening the fixed system roles; permission-checker resolves system role + custom role
 
-**Plans**: TBD (run /gsd-discuss-phase 08.3)
+**Plans**: 5 plans in 5 waves
 
-- [ ] TBD
+Plans:
+- [ ] 08.3-01-PLAN.md — domain RBAC prereqs: `ac` resource + colon-action rename, owner-only grant, NON_DELEGATABLE, role-definition event contracts, flip `dynamicAccessControl` + role cap
+- [ ] 08.3-02-PLAN.md — RestOS `/v1/roles` wrapper (create/update/archive/list), NON_DELEGATABLE + reserved-name guards, soft-archive, `lookupBaseRole` fix, role-definition audit
+- [ ] 08.3-03-PLAN.md — assignment-subset + self-escalation guard, `MemberRolesController` assign surface, definitive `beforeUpdateMemberRole` backstop, preset seed-at-provision
+- [ ] 08.3-04-PLAN.md — owner-facing admin UI: Roles list, preset-first role editor (NON_DELEGATABLE hidden), Team assignment surface
+- [ ] 08.3-05-PLAN.md — security-regression e2e: privilege-escalation (SC#3/D-04), brand-scope orthogonality (D-03/RBAC-09), cross-tenant isolation (RBAC-14)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
