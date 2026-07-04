@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 08.3 UI-SPEC approved
-last_updated: '2026-07-04T17:43:17.295Z'
+last_updated: '2026-07-04T18:03:42.213Z'
 last_activity: 2026-07-04 -- Phase 08.3 planning complete
 progress:
   total_phases: 24
   completed_phases: 11
   total_plans: 92
-  completed_plans: 79
+  completed_plans: 80
   percent: 46
 ---
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-04 -- Phase 08.3 planning complete
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 87%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -128,6 +128,7 @@ _Updated after each plan completion_
 | Phase 08.2 P03 | 90 | 3 tasks | 12 files |
 | Phase 08.2 P05 | 15 | 3 tasks | 20 files |
 | Phase 08.2 P06 | 25m | 4 tasks | 7 files |
+| Phase 08.3 P01 | 7min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-04T11:36:47.595Z
+Last session: 2026-07-04T18:03:42.202Z
 Stopped at: Phase 08.3 UI-SPEC approved
-Resume file: .planning/phases/08.3-owner-managed-roles-and-permissions/08.3-UI-SPEC.md
+Resume file: None
