@@ -8,6 +8,11 @@ import { IdentityCoreModule } from './identity-core.module';
 import { AUTH_TOKEN } from './identity.tokens';
 import type { Auth } from './infrastructure/better-auth/auth.config';
 import { BootstrapOwnerService } from './application/bootstrap-owner.service';
+import { CreateRoleService } from './application/create-role.service';
+import { UpdateRoleService } from './application/update-role.service';
+import { ArchiveRoleService } from './application/archive-role.service';
+import { ListRolesService } from './application/list-roles.service';
+import { RolesController } from './interfaces/http/roles.controller';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
@@ -50,9 +55,14 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     SetActiveBrandController,
     InternalBootstrapController,
     SignUpController,
+    RolesController,
   ],
   providers: [
     BootstrapOwnerService,
+    CreateRoleService,
+    UpdateRoleService,
+    ArchiveRoleService,
+    ListRolesService,
     SignUpService,
     ListMyBrandsService,
     CreateMyBrandService,
