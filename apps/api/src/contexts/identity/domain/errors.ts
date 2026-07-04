@@ -65,3 +65,18 @@ export class InsufficientPermissionsToMintError extends IdentityDomainError {
     super('role.insufficient_permissions', 'You cannot grant permissions you do not hold.');
   }
 }
+
+export class SelfRoleAssignmentError extends IdentityDomainError {
+  constructor() {
+    super('role.self_assignment', 'You cannot assign a role to yourself.');
+  }
+}
+
+export class AssignmentExceedsAuthorityError extends IdentityDomainError {
+  constructor() {
+    super(
+      'role.assignment_exceeds_authority',
+      'The target role contains permissions you do not hold.',
+    );
+  }
+}

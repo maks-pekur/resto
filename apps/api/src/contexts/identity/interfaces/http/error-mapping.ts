@@ -12,12 +12,14 @@ import {
   WeakPasswordError,
 } from '../../domain/bootstrap-errors';
 import {
+  AssignmentExceedsAuthorityError,
   InsufficientPermissionsToMintError,
   NoActiveTenantError,
   PrincipalKindMismatchError,
   RoleNameReservedError,
   RoleNotFoundError,
   RoleOccupiedError,
+  SelfRoleAssignmentError,
   TenantMismatchError,
 } from '../../domain/errors';
 import { SignupBetterAuthFailureError, SlugUnavailableError } from '../../domain/signup-errors';
@@ -77,6 +79,12 @@ export const mapIdentityError = (err: unknown): unknown => {
     return new BadRequestException({ code: err.code, message: err.message });
   }
   if (err instanceof InsufficientPermissionsToMintError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+  if (err instanceof SelfRoleAssignmentError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+  if (err instanceof AssignmentExceedsAuthorityError) {
     return new ForbiddenException({ code: err.code, message: err.message });
   }
 
