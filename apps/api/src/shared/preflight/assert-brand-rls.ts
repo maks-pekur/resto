@@ -17,10 +17,10 @@ export const assertBrandRlsInstalled = async (url: string): Promise<void> => {
   const client = postgres(url, { max: 1, prepare: false, onnotice: () => undefined });
   try {
     const fnRows = await client<{ exists: boolean }[]>`
-      SELECT to_regprocedure('public.app_bind_brand(text,boolean)') IS NOT NULL AS exists
+      SELECT to_regprocedure('public.app_bind_brand(text)') IS NOT NULL AS exists
     `;
     if (!fnRows[0]?.exists) {
-      throw new BrandRlsNotInstalledError('app_bind_brand(text,boolean) is missing');
+      throw new BrandRlsNotInstalledError('app_bind_brand(text) is missing');
     }
     const policyRows = await client<{ count: number }[]>`
       SELECT count(*)::int AS count
