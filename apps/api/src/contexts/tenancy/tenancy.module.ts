@@ -2,6 +2,8 @@ import { Logger, Module } from '@nestjs/common';
 import Stripe from 'stripe';
 import { ENV_TOKEN } from '../../config/config.module';
 import type { Env } from '../../config/env.schema';
+import { IdentityCoreModule } from '../identity/identity-core.module';
+import { SeedPresetRolesService } from '../identity/application/seed-preset-roles.service';
 import { ProvisionTenantService } from './application/provision-tenant.service';
 import { ProvisionBrandService } from './application/provision-brand.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
@@ -27,6 +29,7 @@ import {
 } from './interfaces/http/brand-onboarding.controller';
 
 @Module({
+  imports: [IdentityCoreModule],
   controllers: [
     InternalTenantsController,
     TenantsController,
@@ -59,6 +62,7 @@ import {
     TenantAndBrandResolverService,
     StartStripeOnboardingService,
     StartBrandOnboardingService,
+    SeedPresetRolesService,
   ],
   exports: [
     TENANT_REPOSITORY,

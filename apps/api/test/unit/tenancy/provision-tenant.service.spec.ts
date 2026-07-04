@@ -4,6 +4,10 @@ import { ProvisionTenantService } from '../../../src/contexts/tenancy/applicatio
 import { TenantSlugArchivedError } from '../../../src/contexts/tenancy/domain/errors';
 import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
+import type { SeedPresetRolesService } from '../../../src/contexts/identity/application/seed-preset-roles.service';
+
+const makeSeedPresets = (): SeedPresetRolesService =>
+  ({ execute: vi.fn().mockResolvedValue(undefined) }) as unknown as SeedPresetRolesService;
 
 const NOW = new Date('2026-05-01T00:00:00.000Z');
 
@@ -32,7 +36,7 @@ describe('ProvisionTenantService', () => {
 
   beforeEach(() => {
     repo = buildRepo();
-    service = new ProvisionTenantService(repo);
+    service = new ProvisionTenantService(repo, makeSeedPresets());
   });
 
   it('saves a new aggregate with a TenantProvisioned event in the outbox', async () => {
