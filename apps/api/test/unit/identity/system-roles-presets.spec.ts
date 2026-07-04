@@ -5,23 +5,6 @@ import {
   SystemRoleDriftError,
 } from '../../../src/bootstrap/assert-system-roles-present';
 
-/**
- * AUTH-09 / D-16 (Phase 3 / Plan 05) regression net.
- *
- * REINTERPRETED per plan-checker B-4 2026-05-30: the BA `organization_role`
- * table is DYNAMIC tenant-creatable role storage; static presets live in
- * `apps/api/src/contexts/identity/infrastructure/better-auth/access-control.ts`.
- * This spec pins:
- *
- * 1. owner ⊇ admin ⊇ staff at the resource/action level (containment).
- * 2. admin DOES NOT contain dangerous permissions reserved for owner
- *    (`tenant:delete`, `tenant:transfer`, `staff:role:create`).
- * 3. staff is read-only on tenant/brand (no create / update / delete).
- * 4. `assertSystemRolesPresent` passes silently when access-control.ts
- *    matches SYSTEM_ROLES (i.e. at the current commit, with no drift).
- *
- * Drift simulation tests live next to this one (see test 5 onward).
- */
 describe('AUTH-09 D-16: SYSTEM_ROLES regression', () => {
   describe('admin denied permissions (packages/domain CLAUDE.md mandate)', () => {
     it('does NOT contain tenant:delete', () => {
@@ -33,13 +16,20 @@ describe('AUTH-09 D-16: SYSTEM_ROLES regression', () => {
     });
 
     it('does NOT receive billing:update (owner-only)', () => {
-      // billing entirely owner-scope: admin should not even have `read`
-      // until a future plan explicitly grants it (skeptic guardrail). The
-      // `as Record<...>` cast is necessary because SYSTEM_ROLES is `satisfies`
-      // a narrowed type per slug — TS knows admin.billing is structurally
-      // absent at compile time, but we still want a runtime regression net.
       const admin = SYSTEM_ROLES.admin as Record<string, readonly string[] | undefined>;
       expect(admin.billing).toBeUndefined();
+    });
+
+    it('does NOT have ac resource — owner-only per D-01 (08.3)', () => {
+      const admin = SYSTEM_ROLES.admin as Record<string, readonly string[] | undefined>;
+      expect(admin.ac).toBeUndefined();
+    });
+  });
+
+  describe('owner-only resources (D-01 08.3)', () => {
+    it('owner has ac resource with create/read/update/delete', () => {
+      const owner = SYSTEM_ROLES.owner as Record<string, readonly string[] | undefined>;
+      expect(owner.ac).toEqual(['create', 'read', 'update', 'delete']);
     });
   });
 
@@ -70,12 +60,11 @@ describe('AUTH-09 D-16: SYSTEM_ROLES regression', () => {
       }
     });
 
-    it('owner additionally contains staff:role:create (admin keeps it too — Phase 17 TEAM-03)', () => {
-      // staff:role:create stays in admin per current SYSTEM_ROLES design;
-      // pin both shapes so a future change to remove it from admin is a
-      // deliberate decision, not a silent regression.
-      expect(SYSTEM_ROLES.owner.staff ?? []).toContain('role:create');
-      expect(SYSTEM_ROLES.admin.staff ?? []).toContain('role:create');
+    it('owner and admin both contain staff:roleCreate (D-13 08.3 — renamed from role:create)', () => {
+      expect(SYSTEM_ROLES.owner.staff ?? []).toContain('roleCreate');
+      expect(SYSTEM_ROLES.admin.staff ?? []).toContain('roleCreate');
+      expect(SYSTEM_ROLES.owner.staff ?? []).not.toContain('role:create');
+      expect(SYSTEM_ROLES.admin.staff ?? []).not.toContain('role:create');
     });
   });
 

@@ -208,8 +208,8 @@ export const buildAuth = (opts: BuildOpts) =>
       organization({
         ac,
         roles: { owner: ownerRole, admin: adminRole, staff: staffRole },
-        // Off until tenant role-creation enforces a creator-subset permission check.
-        dynamicAccessControl: { enabled: false },
+        // D-13/D-17 (08.3): flag on; cap prevents unbounded per-request findMany cost
+        dynamicAccessControl: { enabled: true, maximumRolesPerOrganization: 25 },
         // Pitfall 8 (RESEARCH.md): a malicious actor cannot invite a
         // mailbox they do not own and accept the invitation from a fresh
         // unverified account. Defends spoofing pre-AUTH-06 land.
