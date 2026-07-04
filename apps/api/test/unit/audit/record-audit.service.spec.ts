@@ -121,4 +121,62 @@ describe('RecordAuditService.fromEnvelopeWithTx', () => {
     expect(inserted.targetId).toBeNull();
     expect(inserted.tenantId).toBeNull();
   });
+
+  it('projects identity.role_created.v1 with targetType=role and targetId=roleSlug (D-16 08.3)', async () => {
+    const insert = vi.fn();
+    const service = new RecordAuditService();
+    const envelope = buildEnvelope({
+      type: 'identity.role_created.v1',
+      payload: {
+        tenantId: TENANT_UUID,
+        roleSlug: 'manager',
+        permission: { menu: ['read'] },
+        actorUserId: '00000000-0000-4000-8000-0000000000bb',
+      },
+    });
+    await service.fromEnvelopeWithTx(envelope, buildTx(insert));
+
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.targetType).toBe('role');
+    expect(inserted.targetId).toBe('manager');
+    expect(inserted.actorSubject).toBe('00000000-0000-4000-8000-0000000000bb');
+  });
+
+  it('projects identity.role_permissions_changed.v1 with targetType=role (D-16 08.3)', async () => {
+    const insert = vi.fn();
+    const service = new RecordAuditService();
+    const envelope = buildEnvelope({
+      type: 'identity.role_permissions_changed.v1',
+      payload: {
+        tenantId: TENANT_UUID,
+        roleSlug: 'cashier',
+        previousPermission: { menu: ['read'] },
+        newPermission: { menu: ['read', 'update'] },
+        actorUserId: '00000000-0000-4000-8000-0000000000bb',
+      },
+    });
+    await service.fromEnvelopeWithTx(envelope, buildTx(insert));
+
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.targetType).toBe('role');
+    expect(inserted.targetId).toBe('cashier');
+  });
+
+  it('projects identity.role_deleted.v1 with targetType=role (D-16 08.3)', async () => {
+    const insert = vi.fn();
+    const service = new RecordAuditService();
+    const envelope = buildEnvelope({
+      type: 'identity.role_deleted.v1',
+      payload: {
+        tenantId: TENANT_UUID,
+        roleSlug: 'kitchen',
+        actorUserId: '00000000-0000-4000-8000-0000000000bb',
+      },
+    });
+    await service.fromEnvelopeWithTx(envelope, buildTx(insert));
+
+    const inserted = insert.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(inserted.targetType).toBe('role');
+    expect(inserted.targetId).toBe('kitchen');
+  });
 });

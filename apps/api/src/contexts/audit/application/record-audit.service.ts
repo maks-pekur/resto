@@ -18,6 +18,10 @@ const ACTION_TARGET_KIND: Record<string, string> = {
   // AUTH-09 / D-16a (Phase 3 / Plan 05): role-change audit row closes the
   // Phase 1 BLOCKED entry in audit-gap.md. Payload always carries `userId`.
   'identity.role_changed': 'user',
+  // D-16 (08.3): role-definition lifecycle audit; targetId is roleSlug (roles have no UUID surface)
+  'identity.role_created': 'role',
+  'identity.role_permissions_changed': 'role',
+  'identity.role_deleted': 'role',
   // AUTH-10 / D-05: platform-level alert. DLQ branch may have no userId
   // (poison envelope unparseable) so this is NOT 'user'.
   'identity.email_dispatch_failed': 'platform',
@@ -88,6 +92,11 @@ export class RecordAuditService {
       if (targetType === 'order') {
         return typeof payload.orderId === 'string' && payload.orderId.length > 0
           ? payload.orderId
+          : null;
+      }
+      if (targetType === 'role') {
+        return typeof payload.roleSlug === 'string' && payload.roleSlug.length > 0
+          ? payload.roleSlug
           : null;
       }
       return null;
