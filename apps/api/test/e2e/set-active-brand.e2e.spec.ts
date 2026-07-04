@@ -335,6 +335,120 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     expect(session.session?.activeBrandId).toBe(brandId);
   }, 90_000);
 
+  it('D-13: non-owner scoped to 2 brands gets deterministic initial pin = earliest brand (created_at ASC, id ASC)', async () => {
+    const slug = `sab-d13-${randomUUID().slice(0, 6)}`;
+    const ownerEmail = `owner-${slug}@example.com`;
+    const staffEmail = `staff-${slug}@example.com`;
+    const password = 'correct-horse-battery-staple-sab-d13';
+    const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slug, email: ownerEmail, password, name: 'D13 Owner' });
+
+    const brandEarlierCreatedAt = new Date(Date.now() - 5_000);
+    const brandLaterCreatedAt = new Date(Date.now() - 1_000);
+    const brandAId = randomUUID();
+    const brandBId = randomUUID();
+    await db.withoutTenant('seed 2 brands for d13 test', async (tx) => {
+      await tx.insert(schema.brands).values([
+        {
+          id: brandAId,
+          tenantId: tenant.id,
+          slug: `${slug}-a`,
+          displayName: 'Brand A',
+          createdAt: brandEarlierCreatedAt,
+        },
+        {
+          id: brandBId,
+          tenantId: tenant.id,
+          slug: `${slug}-b`,
+          displayName: 'Brand B',
+          createdAt: brandLaterCreatedAt,
+        },
+      ]);
+    });
+
+    const staffSignupRes = await app.inject({
+      method: 'POST',
+      url: '/v1/signup',
+      headers: { 'content-type': 'application/json' },
+      payload: {
+        email: staffEmail,
+        password,
+        displayName: `D13 Staff ${slug}`,
+        defaultCurrency: 'USD',
+        locale: 'en',
+      },
+    });
+    expect(staffSignupRes.statusCode).toBe(201);
+
+    const staffUserRows = await db.withoutTenant('find d13 staff user', (tx) =>
+      tx.select({ id: schema.user.id }).from(schema.user).where(eq(schema.user.email, staffEmail)),
+    );
+    const staffUserId = staffUserRows[0]?.id;
+    if (!staffUserId) throw new Error('staff user not found after signup');
+
+    const staffMemberId = randomUUID();
+    await db.withoutTenant('insert d13 staff member + 2 brand scopes', async (tx) => {
+      await tx.insert(schema.member).values({
+        id: staffMemberId,
+        organizationId: tenant.id,
+        userId: staffUserId,
+        role: 'staff',
+        createdAt: new Date(),
+      });
+      await tx.insert(schema.memberBrandScope).values([
+        { memberId: staffMemberId, brandId: brandAId, tenantId: tenant.id },
+        { memberId: staffMemberId, brandId: brandBId, tenantId: tenant.id },
+      ]);
+      await tx
+        .update(schema.user)
+        .set({ emailVerified: true })
+        .where(eq(schema.user.id, staffUserId));
+    });
+
+    const cookie = await signIn(app, staffEmail, password);
+    const setActiveRes = await app.inject({
+      method: 'POST',
+      url: '/api/auth/organization/set-active',
+      headers: { 'content-type': 'application/json', cookie },
+      payload: { organizationId: tenant.id },
+    });
+    expect(setActiveRes.statusCode).toBe(200);
+    const freshCookie = extractCookies(setActiveRes.headers['set-cookie']) || cookie;
+
+    const sessionRes = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: freshCookie },
+    });
+    expect(sessionRes.statusCode).toBe(200);
+    const session = sessionRes.json<{
+      session?: { activeBrandId?: string | null; activeOrganizationId?: string | null };
+    }>();
+    expect(session.session?.activeOrganizationId).toBe(tenant.id);
+    expect(session.session?.activeBrandId).not.toBeNull();
+    expect(session.session?.activeBrandId).toBe(brandAId);
+
+    const setActiveRes2 = await app.inject({
+      method: 'POST',
+      url: '/api/auth/organization/set-active',
+      headers: { 'content-type': 'application/json', cookie: freshCookie },
+      payload: { organizationId: tenant.id },
+    });
+    expect(setActiveRes2.statusCode).toBe(200);
+    const stableCookie = extractCookies(setActiveRes2.headers['set-cookie']) || freshCookie;
+
+    const sessionRes2 = await app.inject({
+      method: 'GET',
+      url: '/api/auth/get-session',
+      headers: { cookie: stableCookie },
+    });
+    expect(sessionRes2.statusCode).toBe(200);
+    const session2 = sessionRes2.json<{
+      session?: { activeBrandId?: string | null };
+    }>();
+    expect(session2.session?.activeBrandId).toBe(brandAId);
+  }, 120_000);
+
   it('401 when unauthenticated', async () => {
     const res = await app.inject({
       method: 'POST',
