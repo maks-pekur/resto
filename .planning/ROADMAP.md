@@ -548,6 +548,7 @@ Plans:
 **Plans**: 5 plans in 5 waves
 
 Plans:
+
 - [ ] 08.3-01-PLAN.md — domain RBAC prereqs: `ac` resource + colon-action rename, owner-only grant, NON_DELEGATABLE, role-definition event contracts, flip `dynamicAccessControl` + role cap
 - [ ] 08.3-02-PLAN.md — RestOS `/v1/roles` wrapper (create/update/archive/list), NON_DELEGATABLE + reserved-name guards, soft-archive, `lookupBaseRole` fix, role-definition audit
 - [ ] 08.3-03-PLAN.md — assignment-subset + self-escalation guard, `MemberRolesController` assign surface, definitive `beforeUpdateMemberRole` backstop, preset seed-at-provision
