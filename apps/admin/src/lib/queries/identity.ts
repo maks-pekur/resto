@@ -7,6 +7,7 @@ export interface MeResponse {
   readonly tenantId?: string;
   readonly baseRole?: 'owner' | 'admin' | 'staff';
   readonly twoFactorEnabled?: boolean;
+  readonly activeBrandId?: string | null;
 }
 
 export interface OperatorSummary {
