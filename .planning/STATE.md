@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 08.3 UI-SPEC approved
-last_updated: '2026-07-04T20:11:33.463Z'
-last_activity: 2026-07-04 -- Phase 08.3 planning complete
+stopped_at: Completed 08.3-03-PLAN.md
+last_updated: '2026-07-04T21:30:00.000Z'
+last_activity: 2026-07-04 -- Phase 08.3 Plan 03 complete
 progress:
   total_phases: 24
   completed_phases: 11
   total_plans: 92
-  completed_plans: 81
+  completed_plans: 82
   percent: 46
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 08.3 — owner managed roles and permissions (Plan 02 complete)
+**Current focus:** Phase 08.3 — owner managed roles and permissions (Plan 03 complete)
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.3
-Plan: 02 complete
+Plan: 03 complete
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -130,6 +130,7 @@ _Updated after each plan completion_
 | Phase 08.2 P06 | 25m | 4 tasks | 7 files |
 | Phase 08.3 P01 | 7min | 3 tasks | 11 files |
 | Phase 08.3 P02 | 48min | 3 tasks | 15 files |
+| Phase 08.3 P03 | 19min | 3 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -207,6 +208,10 @@ Recent decisions affecting current work:
 - [Phase 08.3-P02]: D-14: RolesController is the sole role mutation surface; organizationId always from requireTenantContext() ALS (never from request body)
 - [Phase 08.3-P02]: D-15: lookupBaseRole CSV-split for BA member.role format (custom-role member holds 'staff,custom-slug' CSV); priority owner>admin>staff; custom-only → undefined
 - [Phase 08.3-P02]: ArchiveRoleService injects only AUTH_DRIZZLE_TOKEN (no AUTH_TOKEN) — soft-delete is a direct SQL UPDATE, no BA API call needed
+- [Phase 08.3-P03]: D-06: isSubsetOf(targetPerms, actorEffective) + self-assignment guard — both fire before BA updateMemberRole; unit-proven via assign-role.spec.ts
+- [Phase 08.3-P03]: D-04 (assign path): containsNonDelegatable on target role in AssignRoleService + beforeUpdateMemberRole backstop (T-083-17)
+- [Phase 08.3-P03]: D-07: 3 preset roles (manager/cashier-foh/kitchen) seeded at provisioning; non-blocking; idempotent via slug pre-check; none contain NON_DELEGATABLE
+- [Phase 08.3-P03]: actorUserId on assignment events captured via WeakMap stash in hooks.before on /update-member-role path (D-16)
 
 ### Pending Todos
 
@@ -263,6 +268,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-04T20:40:00.000Z
-Stopped at: Completed 08.3-02-PLAN.md
+Last session: 2026-07-04T21:30:00.000Z
+Stopped at: Completed 08.3-03-PLAN.md
 Resume file: None
