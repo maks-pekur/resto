@@ -38,3 +38,30 @@ export class BrandOutOfScopeError extends IdentityDomainError {
     super('brand.out_of_scope', 'Brand is not within the operator scope.');
   }
 }
+
+export class RoleOccupiedError extends IdentityDomainError {
+  constructor(roleSlug: string, memberCount: number) {
+    super(
+      'role.occupied',
+      `Role "${roleSlug}" has ${memberCount.toString()} assigned member(s) and cannot be archived.`,
+    );
+  }
+}
+
+export class RoleNotFoundError extends IdentityDomainError {
+  constructor(roleSlug: string) {
+    super('role.not_found', `Role "${roleSlug}" not found.`);
+  }
+}
+
+export class RoleNameReservedError extends IdentityDomainError {
+  constructor(name: string) {
+    super('role.name_reserved', `"${name}" is a system role name and cannot be used.`);
+  }
+}
+
+export class InsufficientPermissionsToMintError extends IdentityDomainError {
+  constructor() {
+    super('role.insufficient_permissions', 'You cannot grant permissions you do not hold.');
+  }
+}

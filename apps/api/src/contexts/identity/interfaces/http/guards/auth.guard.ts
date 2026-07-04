@@ -160,7 +160,13 @@ export class AuthGuard implements CanActivate {
       .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
       .limit(1);
     const role = rows[0]?.role;
-    if (role === 'owner' || role === 'admin' || role === 'staff') return role;
+    if (!role) return undefined;
+    // D-15 (08.3): BA stores member.role as CSV when a member holds both a system
+    // role and a custom role slug. Split and return the highest system role present.
+    const parts = role.split(',').map((r) => r.trim());
+    if (parts.includes('owner')) return 'owner';
+    if (parts.includes('admin')) return 'admin';
+    if (parts.includes('staff')) return 'staff';
     return undefined;
   }
 }

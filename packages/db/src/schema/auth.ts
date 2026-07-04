@@ -74,6 +74,7 @@ export const organizationRole = pgTable('organization_role', {
   permission: text('permission').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').$onUpdate(() => /* @__PURE__ */ new Date()),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
 });
 
 /**
