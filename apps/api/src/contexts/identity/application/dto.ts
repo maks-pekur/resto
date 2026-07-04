@@ -22,6 +22,13 @@ export const UpdateRoleInputSchema = z.object({
 export type UpdateRoleInput = z.infer<typeof UpdateRoleInputSchema>;
 export class UpdateRoleInputDto extends createZodDto(UpdateRoleInputSchema) {}
 
+export const AssignRoleInputSchema = z.object({
+  memberId: z.string().uuid(),
+  role: z.string().min(1).max(64),
+});
+export type AssignRoleInput = z.infer<typeof AssignRoleInputSchema>;
+export class AssignRoleInputDto extends createZodDto(AssignRoleInputSchema) {}
+
 export const SignUpInputSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(12).max(128),

@@ -1,10 +1,13 @@
-import { Logger } from '@nestjs/common';
+import { ForbiddenException, Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
 import { createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { eq, and } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
+import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
+import { organizationRole as organizationRoleTable } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -29,6 +32,12 @@ export type AfterUpdateMemberRoleHook = NonNullable<
   NonNullable<OrganizationOptions['organizationHooks']>['afterUpdateMemberRole']
 >;
 export type AfterUpdateMemberRoleData = Parameters<AfterUpdateMemberRoleHook>[0];
+
+// D-16 (08.3): beforeUpdateMemberRole types mirror the after hook pattern above
+export type BeforeUpdateMemberRoleHook = NonNullable<
+  NonNullable<OrganizationOptions['organizationHooks']>['beforeUpdateMemberRole']
+>;
+export type BeforeUpdateMemberRoleData = Parameters<BeforeUpdateMemberRoleHook>[0];
 
 interface BuildOpts {
   authDb: AuthDrizzle;
@@ -141,8 +150,13 @@ interface PasswordResetStash {
   readonly sessionCount: number;
 }
 
+interface MemberRoleUpdateStash {
+  readonly actorUserId: string;
+}
+
 const signOutStash = new WeakMap<object, SignOutStash>();
 const passwordResetStash = new WeakMap<object, PasswordResetStash>();
+const memberRoleUpdateStash = new WeakMap<object, MemberRoleUpdateStash>();
 
 const resolvePrimaryTenantId = async (
   adapter: {
@@ -229,8 +243,56 @@ export const buildAuth = (opts: BuildOpts) =>
         // consistent observability; we never block the BA role-change
         // response on an audit-write failure.
         organizationHooks: {
+          // T-083-17 (08.3): defense-in-depth backstop — fires even when a caller
+          // bypasses assign-role.service and hits BA's endpoint directly.
+          beforeUpdateMemberRole: async (data: BeforeUpdateMemberRoleData) => {
+            const newRole = data.newRole;
+            const orgId = data.organization.id;
+            let targetPermission: Record<string, string[]> | null = null;
+            const systemRole = (SYSTEM_ROLES as Record<string, Record<string, readonly string[]>>)[
+              newRole
+            ];
+            if (systemRole) {
+              targetPermission = Object.fromEntries(
+                Object.entries(systemRole).map(([r, a]) => [r, [...a]]),
+              );
+            } else {
+              try {
+                const rows = await opts.authDb.db
+                  .select({ permission: organizationRoleTable.permission })
+                  .from(organizationRoleTable)
+                  .where(
+                    and(
+                      eq(organizationRoleTable.organizationId, orgId),
+                      eq(organizationRoleTable.role, newRole),
+                    ),
+                  )
+                  .limit(1);
+                const raw = rows[0]?.permission;
+                if (typeof raw === 'string') {
+                  targetPermission = JSON.parse(raw) as Record<string, string[]>;
+                }
+              } catch {
+                // If we cannot resolve the role, deny by default (fail closed)
+                throw new ForbiddenException({
+                  code: 'role.insufficient_permissions',
+                  message: 'Cannot verify target role permissions.',
+                });
+              }
+            }
+            if (targetPermission && containsNonDelegatable(targetPermission)) {
+              throw new ForbiddenException({
+                code: 'role.insufficient_permissions',
+                message: 'You cannot assign a role bearing non-delegatable permissions.',
+              });
+            }
+          },
           afterUpdateMemberRole: async (data: AfterUpdateMemberRoleData) => {
             if (!opts.emitter) return;
+            // D-16 (08.3): capture actorUserId stashed in hooks.before
+            const stash = memberRoleUpdateStash.get(
+              (data as unknown as { ctx?: { context?: object } }).ctx?.context ?? {},
+            );
             try {
               const tenantId = TenantId.parse(data.member.organizationId);
               await opts.emitter.emit(
@@ -241,6 +303,7 @@ export const buildAuth = (opts: BuildOpts) =>
                     tenantId,
                     previousRole: data.previousRole,
                     newRole: data.member.role,
+                    ...(stash ? { actorUserId: stash.actorUserId } : {}),
                   },
                   { tenantId },
                 ),
@@ -402,6 +465,16 @@ export const buildAuth = (opts: BuildOpts) =>
             userId,
             sessionCount,
           });
+        }
+        // D-16 (08.3): stash actor for afterUpdateMemberRole actorUserId capture
+        if (path.endsWith('/update-member-role')) {
+          const token = await ctx
+            .getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret)
+            .catch(() => null);
+          if (!token) return;
+          const found = await ctx.context.internalAdapter.findSession(token).catch(() => null);
+          if (!found) return;
+          memberRoleUpdateStash.set(ctx.context, { actorUserId: found.user.id });
         }
       }),
       after: createAuthMiddleware(async (ctx) => {
