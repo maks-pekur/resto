@@ -22,13 +22,6 @@ export interface RolePluginApi {
     body: { organizationId: string; roleName?: string; roleId?: string };
     headers: Headers;
   }) => Promise<unknown>;
-  listOrgRoles: (opts: { query: { organizationId: string }; headers: Headers }) => Promise<{
-    roles: {
-      id: string;
-      role: string;
-      permission: Record<string, string[]>;
-    }[];
-  }>;
   updateMemberRole: (opts: {
     body: { memberId: string; role: string; organizationId: string };
     headers: Headers;

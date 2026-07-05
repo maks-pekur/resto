@@ -24,7 +24,6 @@ const makeRoleApi = (overrides: Record<string, unknown> = {}) => ({
   createOrgRole: vi.fn(),
   updateOrgRole: vi.fn(),
   deleteOrgRole: vi.fn(),
-  listOrgRoles: vi.fn().mockResolvedValue({ roles: [] }),
   updateMemberRole: vi.fn().mockResolvedValue({}),
   ...overrides,
 });
@@ -32,17 +31,31 @@ const makeRoleApi = (overrides: Record<string, unknown> = {}) => ({
 const makeAuth = (roleApi: ReturnType<typeof makeRoleApi>): Auth =>
   ({ api: roleApi }) as unknown as Auth;
 
-const makeAuthDb = (actorMember: { id: string; role: string } | null) => ({
-  db: {
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue(actorMember ? [actorMember] : []),
+// where() serves both the member lookup (.limit(1)) and the direct roles query
+// (awaited via .then) that listActiveCustomRoles issues against organization_role.
+const makeAuthDb = (
+  actorMember: { id: string; role: string } | null,
+  roleRows: { id: string; role: string; permission: Record<string, string[]> }[] = [],
+) => {
+  const roleResult = roleRows.map((r) => ({
+    id: r.id,
+    role: r.role,
+    permission: JSON.stringify(r.permission),
+  }));
+  return {
+    db: {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue(actorMember ? [actorMember] : []),
+            then: (onFulfilled: (v: unknown) => unknown, onRejected?: (e: unknown) => unknown) =>
+              Promise.resolve(roleResult).then(onFulfilled, onRejected),
+          }),
         }),
       }),
-    }),
-  },
-});
+    },
+  };
+};
 
 describe('isSubsetOf', () => {
   it('returns true when target is a subset of actor effective set', () => {
@@ -122,12 +135,10 @@ describe('AssignRoleService', () => {
   });
 
   it('throws SelfRoleAssignmentError when actor assigns to their own memberId', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }],
-      }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, [
+      { id: 'r1', role: 'cashier', permission: { menu: ['read'] } },
+    ]);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
@@ -142,10 +153,8 @@ describe('AssignRoleService', () => {
   });
 
   it('throws RoleNotFoundError when target role slug does not exist', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({ roles: [] }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, []);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
@@ -160,19 +169,8 @@ describe('AssignRoleService', () => {
   });
 
   it('throws RoleNotFoundError when target role is archived', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [
-          {
-            id: 'r1',
-            role: 'cashier',
-            permission: { menu: ['read'] },
-            archivedAt: new Date().toISOString(),
-          },
-        ],
-      }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, []);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
@@ -187,12 +185,10 @@ describe('AssignRoleService', () => {
   });
 
   it('throws InsufficientPermissionsToMintError when target role has billing:update (NON_DELEGATABLE)', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'cashier', permission: { billing: ['update'] } }],
-      }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, [
+      { id: 'r1', role: 'cashier', permission: { billing: ['update'] } },
+    ]);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
@@ -207,12 +203,10 @@ describe('AssignRoleService', () => {
   });
 
   it('throws AssignmentExceedsAuthorityError when target role has menu:delete and actor lacks it', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'super-cashier', permission: { menu: ['delete'] } }],
-      }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'staff' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'staff' }, [
+      { id: 'r1', role: 'super-cashier', permission: { menu: ['delete'] } },
+    ]);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
@@ -227,12 +221,10 @@ describe('AssignRoleService', () => {
   });
 
   it('calls updateMemberRole exactly once with ALS organizationId on valid assignment', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }],
-      }),
-    });
-    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' });
+    const api = makeRoleApi();
+    const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, [
+      { id: 'r1', role: 'cashier', permission: { menu: ['read'] } },
+    ]);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await svc.execute({
       organizationId: ORG_ID,

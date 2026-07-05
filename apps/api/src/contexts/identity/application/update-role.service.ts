@@ -2,10 +2,12 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { buildEnvelope, IdentityRolePermissionsChangedV1 } from '@resto/events';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable } from '@resto/domain';
-import { AUTH_TOKEN } from '../identity.tokens';
+import { AUTH_TOKEN, AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
+import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { roleApi } from '../infrastructure/better-auth/role-api.bridge';
 import { InsufficientPermissionsToMintError, RoleNotFoundError } from '../domain/errors';
+import { listActiveCustomRoles } from './list-active-custom-roles';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
@@ -25,16 +27,14 @@ export class UpdateRoleService {
 
   constructor(
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
+    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
     @Inject(IDENTITY_EVENT_EMITTER) private readonly emitter: IdentityEventEmitterPort,
   ) {}
 
   async execute(input: UpdateRoleServiceInput): Promise<void> {
-    const listResult = await roleApi(this.auth).listOrgRoles({
-      query: { organizationId: input.organizationId },
-      headers: input.headers,
-    });
-
-    const existing = listResult.roles.find((r) => r.role === input.roleSlug);
+    const existing = (await listActiveCustomRoles(this.authDb, input.organizationId)).find(
+      (r) => r.role === input.roleSlug,
+    );
     if (!existing) {
       throw new RoleNotFoundError(input.roleSlug);
     }

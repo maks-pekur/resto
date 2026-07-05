@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AUTH_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import { roleApi } from '../infrastructure/better-auth/role-api.bridge';
+import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
+import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { listActiveCustomRoles } from './list-active-custom-roles';
 
 export interface ListRolesInput {
   readonly organizationId: string;
@@ -16,21 +16,10 @@ export interface RoleView {
 
 @Injectable()
 export class ListRolesService {
-  constructor(@Inject(AUTH_TOKEN) private readonly auth: Auth) {}
+  constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
 
   async execute(input: ListRolesInput): Promise<{ roles: RoleView[] }> {
-    const result = await roleApi(this.auth).listOrgRoles({
-      query: { organizationId: input.organizationId },
-      headers: input.headers,
-    });
-
-    // D-12 (08.3): exclude archived roles — BA list may include archivedAt in raw row data
-    const active = (result.roles as (RoleView & { archivedAt?: string | null })[]).filter(
-      (r) => !r.archivedAt,
-    );
-
-    return {
-      roles: active.map((r) => ({ id: r.id, role: r.role, permission: r.permission })),
-    };
+    const roles = await listActiveCustomRoles(this.authDb, input.organizationId);
+    return { roles };
   }
 }

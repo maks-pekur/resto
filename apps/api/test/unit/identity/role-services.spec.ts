@@ -19,13 +19,28 @@ const makeRoleApi = (overrides: Record<string, unknown> = {}) => ({
   createOrgRole: vi.fn().mockResolvedValue({ role: 'manager' }),
   updateOrgRole: vi.fn().mockResolvedValue({}),
   deleteOrgRole: vi.fn().mockResolvedValue({}),
-  listOrgRoles: vi.fn().mockResolvedValue({ roles: [] }),
   updateMemberRole: vi.fn().mockResolvedValue({}),
   ...overrides,
 });
 
 const makeAuth = (roleApi: ReturnType<typeof makeRoleApi>): Auth =>
   ({ api: roleApi }) as unknown as Auth;
+
+const makeRolesDb = (
+  rows: { id: string; role: string; permission: Record<string, string[]> }[],
+) => ({
+  db: {
+    select: vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi
+          .fn()
+          .mockResolvedValue(
+            rows.map((r) => ({ id: r.id, role: r.role, permission: JSON.stringify(r.permission) })),
+          ),
+      }),
+    }),
+  },
+});
 
 describe('CreateRoleService', () => {
   it('throws InsufficientPermissionsToMintError when billing:update in permission — and does NOT call BA', async () => {
@@ -110,12 +125,9 @@ describe('CreateRoleService', () => {
 
 describe('UpdateRoleService', () => {
   it('throws InsufficientPermissionsToMintError when new permission includes tenant:delete', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }],
-      }),
-    });
-    const svc = new UpdateRoleService(makeAuth(api), makeEmitter());
+    const api = makeRoleApi();
+    const authDb = makeRolesDb([{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }]);
+    const svc = new UpdateRoleService(makeAuth(api), authDb as never, makeEmitter());
     await expect(
       svc.execute({
         roleSlug: 'cashier',
@@ -129,10 +141,9 @@ describe('UpdateRoleService', () => {
   });
 
   it('throws RoleNotFoundError when the role slug does not exist in the list', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({ roles: [] }),
-    });
-    const svc = new UpdateRoleService(makeAuth(api), makeEmitter());
+    const api = makeRoleApi();
+    const authDb = makeRolesDb([]);
+    const svc = new UpdateRoleService(makeAuth(api), authDb as never, makeEmitter());
     await expect(
       svc.execute({
         roleSlug: 'nonexistent',
@@ -145,13 +156,10 @@ describe('UpdateRoleService', () => {
   });
 
   it('emits role_permissions_changed.v1 with previousPermission and newPermission', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }],
-      }),
-    });
+    const api = makeRoleApi();
+    const authDb = makeRolesDb([{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }]);
     const emitter = makeEmitter();
-    const svc = new UpdateRoleService(makeAuth(api), emitter);
+    const svc = new UpdateRoleService(makeAuth(api), authDb as never, emitter);
     await svc.execute({
       roleSlug: 'cashier',
       permission: { order: ['read'] },
@@ -232,34 +240,23 @@ describe('ArchiveRoleService', () => {
 });
 
 describe('ListRolesService', () => {
-  it('filters out archived roles (those returned by BA with a truthy archivedAt)', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [
-          { id: 'r1', role: 'cashier', permission: { menu: ['read'] }, archivedAt: null },
-          { id: 'r2', role: 'old-role', permission: {}, archivedAt: new Date().toISOString() },
-        ],
-      }),
-    });
-    const svc = new ListRolesService(makeAuth(api));
+  it('maps organization_role rows to RoleView with JSON-parsed permission', async () => {
+    const authDb = makeRolesDb([{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }]);
+    const svc = new ListRolesService(authDb as never);
     const result = await svc.execute({
       organizationId: '00000000-0000-0000-0000-000000000001',
       headers: makeHeaders(),
     });
     expect(result.roles).toHaveLength(1);
-    expect(result.roles[0]?.role).toBe('cashier');
+    expect(result.roles[0]).toEqual({ id: 'r1', role: 'cashier', permission: { menu: ['read'] } });
   });
 
-  it('returns all roles when none are archived', async () => {
-    const api = makeRoleApi({
-      listOrgRoles: vi.fn().mockResolvedValue({
-        roles: [
-          { id: 'r1', role: 'cashier', permission: { menu: ['read'] } },
-          { id: 'r2', role: 'manager', permission: { order: ['read'] } },
-        ],
-      }),
-    });
-    const svc = new ListRolesService(makeAuth(api));
+  it('returns every active role the query yields', async () => {
+    const authDb = makeRolesDb([
+      { id: 'r1', role: 'cashier', permission: { menu: ['read'] } },
+      { id: 'r2', role: 'manager', permission: { order: ['read'] } },
+    ]);
+    const svc = new ListRolesService(authDb as never);
     const result = await svc.execute({
       organizationId: '00000000-0000-0000-0000-000000000001',
       headers: makeHeaders(),

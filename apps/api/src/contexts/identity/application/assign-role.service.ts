@@ -13,6 +13,7 @@ import {
   AssignmentExceedsAuthorityError,
 } from '../domain/errors';
 import { computeEffectivePermissions, isSubsetOf } from './effective-permissions';
+import { listActiveCustomRoles } from './list-active-custom-roles';
 
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);
 
@@ -56,19 +57,9 @@ export class AssignRoleService {
       throw new SelfRoleAssignmentError();
     }
 
-    const rolesResult = await roleApi(this.auth).listOrgRoles({
-      query: { organizationId: input.organizationId },
-      headers: input.headers,
-    });
+    const activeRoles = await listActiveCustomRoles(this.authDb, input.organizationId);
 
-    const targetRole = (
-      rolesResult.roles as {
-        id: string;
-        role: string;
-        permission: Record<string, string[]>;
-        archivedAt?: string | null;
-      }[]
-    ).find((r) => r.role === input.roleSlug && !r.archivedAt);
+    const targetRole = activeRoles.find((r) => r.role === input.roleSlug);
 
     if (!targetRole) {
       throw new RoleNotFoundError(input.roleSlug);
@@ -81,13 +72,7 @@ export class AssignRoleService {
     }
 
     const customRoleLookup = (slug: string): Record<string, string[]> | null => {
-      const found = (
-        rolesResult.roles as {
-          role: string;
-          permission: Record<string, string[]>;
-          archivedAt?: string | null;
-        }[]
-      ).find((r) => r.role === slug && !r.archivedAt);
+      const found = activeRoles.find((r) => r.role === slug);
       return found?.permission ?? null;
     };
 
