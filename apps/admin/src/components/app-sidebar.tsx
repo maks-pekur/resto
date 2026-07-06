@@ -1,6 +1,13 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { CreditCard, LayoutDashboard, Settings2, Users, UtensilsCrossed } from 'lucide-react';
+import {
+  CreditCard,
+  KeyRound,
+  LayoutDashboard,
+  Settings2,
+  Users,
+  UtensilsCrossed,
+} from 'lucide-react';
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -59,6 +66,12 @@ export function AppSidebar({
       title: t('team'),
       url: `${brandPrefix}/team`,
       icon: Users,
+      scope: 'tenant',
+    },
+    {
+      title: 'Roles',
+      url: `${brandPrefix}/roles`,
+      icon: KeyRound,
       scope: 'tenant',
     },
     {
