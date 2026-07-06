@@ -28,6 +28,7 @@ import { CreateRoleService } from '../../application/create-role.service';
 import { UpdateRoleService } from '../../application/update-role.service';
 import { ArchiveRoleService } from '../../application/archive-role.service';
 import { ListRolesService } from '../../application/list-roles.service';
+import { RoleNotFoundError } from '../../domain/errors';
 import { mapIdentityError } from './error-mapping';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import type { OperatorPrincipal } from '../../domain/principal';
@@ -43,7 +44,9 @@ const toWebHeaders = (raw: FastifyRequest['headers']): Headers => {
       continue;
     }
     if (Array.isArray(v)) {
-      v.forEach((vv) => { headers.append(k, vv); });
+      v.forEach((vv) => {
+        headers.append(k, vv);
+      });
     } else if (typeof v === 'string') {
       headers.set(k, v);
     }
@@ -139,5 +142,24 @@ export class RolesController {
         headers: toWebHeaders(req.headers),
       }),
     );
+  }
+
+  @Get(':roleSlug')
+  @RequiresTenantContext()
+  @Permissions({ ac: ['read'] })
+  getRoleHandler(@Param('roleSlug') roleSlug: string, @Req() req: FastifyRequest) {
+    const ctx = requireTenantContext();
+    const organizationId = TenantId.parse(ctx.tenantId);
+    return wrap(async () => {
+      const { roles } = await this.listRoles.execute({
+        organizationId,
+        headers: toWebHeaders(req.headers),
+      });
+      const role = roles.find((r) => r.role === roleSlug);
+      if (!role) {
+        throw new RoleNotFoundError(roleSlug);
+      }
+      return role;
+    });
   }
 }

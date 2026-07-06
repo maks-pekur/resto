@@ -9,15 +9,19 @@ const RoleNameSchema = z
   .regex(/^[a-zA-Z0-9\s\-_]+$/)
   .transform((s) => s.toLowerCase());
 
+const PermissionSchema = z
+  .record(z.string().min(1).max(64), z.array(z.string().min(1).max(64)).max(64))
+  .refine((p) => Object.keys(p).length <= 64, { message: 'too many permission resources' });
+
 export const CreateRoleInputSchema = z.object({
   roleName: RoleNameSchema,
-  permission: z.record(z.string(), z.array(z.string())),
+  permission: PermissionSchema,
 });
 export type CreateRoleInput = z.infer<typeof CreateRoleInputSchema>;
 export class CreateRoleInputDto extends createZodDto(CreateRoleInputSchema) {}
 
 export const UpdateRoleInputSchema = z.object({
-  permission: z.record(z.string(), z.array(z.string())),
+  permission: PermissionSchema,
 });
 export type UpdateRoleInput = z.infer<typeof UpdateRoleInputSchema>;
 export class UpdateRoleInputDto extends createZodDto(UpdateRoleInputSchema) {}

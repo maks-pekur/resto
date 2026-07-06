@@ -5,7 +5,8 @@ import { TenantId } from '@resto/domain';
 import { member as memberTable, organizationRole } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { RoleOccupiedError } from '../domain/errors';
+import { RoleNotFoundError, RoleOccupiedError } from '../domain/errors';
+import { listActiveCustomRoles } from './list-active-custom-roles';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
@@ -28,6 +29,11 @@ export class ArchiveRoleService {
   ) {}
 
   async execute(input: ArchiveRoleServiceInput): Promise<void> {
+    const activeRoles = await listActiveCustomRoles(this.authDb, input.organizationId);
+    if (!activeRoles.some((r) => r.role === input.roleSlug)) {
+      throw new RoleNotFoundError(input.roleSlug);
+    }
+
     // D-12 (08.3): exact CSV-split member count — LIKE would false-positive on slug substrings
     const memberRows = await this.authDb.db
       .select({ id: memberTable.id, role: memberTable.role })

@@ -149,5 +149,15 @@ suite(
       const bRoles = res.json<{ roles: { role: string }[] }>().roles;
       expect(bRoles.some((r) => r.role === bRoleSlug)).toBe(true);
     });
+
+    it('GET /v1/roles/members routes to the members handler, not the :roleSlug lookup', async () => {
+      const res = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/roles/members',
+        headers: { cookie: cookieB, 'x-tenant-id': tenantBId },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(Array.isArray(res.json<{ members?: unknown[] }>().members)).toBe(true);
+    });
   },
 );

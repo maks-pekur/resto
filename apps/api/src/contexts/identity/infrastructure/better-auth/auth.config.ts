@@ -3,7 +3,7 @@ import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where }
 import { createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, isNull } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
@@ -265,6 +265,7 @@ export const buildAuth = (opts: BuildOpts) =>
                     and(
                       eq(organizationRoleTable.organizationId, orgId),
                       eq(organizationRoleTable.role, newRole),
+                      isNull(organizationRoleTable.archivedAt),
                     ),
                   )
                   .limit(1);
@@ -273,14 +274,20 @@ export const buildAuth = (opts: BuildOpts) =>
                   targetPermission = JSON.parse(raw) as Record<string, string[]>;
                 }
               } catch {
-                // If we cannot resolve the role, deny by default (fail closed)
                 throw new ForbiddenException({
                   code: 'role.insufficient_permissions',
                   message: 'Cannot verify target role permissions.',
                 });
               }
+              // T-083-17 (08.3): unknown/archived slug → deny by default (fail closed)
+              if (targetPermission === null) {
+                throw new ForbiddenException({
+                  code: 'role.insufficient_permissions',
+                  message: 'Unknown or archived target role.',
+                });
+              }
             }
-            if (targetPermission && containsNonDelegatable(targetPermission)) {
+            if (containsNonDelegatable(targetPermission)) {
               throw new ForbiddenException({
                 code: 'role.insufficient_permissions',
                 message: 'You cannot assign a role bearing non-delegatable permissions.',

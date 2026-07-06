@@ -177,20 +177,29 @@ describe('UpdateRoleService', () => {
 });
 
 describe('ArchiveRoleService', () => {
-  const makeAuthDrizzle = (members: { id: string; role: string }[]) => ({
-    db: {
-      select: vi.fn().mockReturnValue({
-        from: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue(members),
+  const makeAuthDrizzle = (
+    members: { id: string; role: string }[],
+    activeRoleSlugs: string[] = ['cashier'],
+  ) => {
+    const roleRows = activeRoleSlugs.map((slug, i) => ({
+      id: `role-${i}`,
+      role: slug,
+      permission: JSON.stringify({ menu: ['read'] }),
+    }));
+    const whereMock = vi.fn().mockResolvedValueOnce(roleRows).mockResolvedValueOnce(members);
+    return {
+      db: {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({ where: whereMock }),
         }),
-      }),
-      update: vi.fn().mockReturnValue({
-        set: vi.fn().mockReturnValue({
-          where: vi.fn().mockResolvedValue([]),
+        update: vi.fn().mockReturnValue({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockResolvedValue([]),
+          }),
         }),
-      }),
-    },
-  });
+      },
+    };
+  };
 
   it('throws RoleOccupiedError when members hold the role — never issues UPDATE', async () => {
     const authDb = makeAuthDrizzle([
@@ -236,6 +245,22 @@ describe('ArchiveRoleService', () => {
     });
     expect(authDb.db.update).toHaveBeenCalledOnce();
     expect(emitter.emit).toHaveBeenCalledOnce();
+  });
+
+  it('throws RoleNotFoundError for a slug that is not an active custom role — no UPDATE, no event', async () => {
+    const authDb = makeAuthDrizzle([], []);
+    const emitter = makeEmitter();
+    const svc = new ArchiveRoleService(authDb as never, emitter);
+    await expect(
+      svc.execute({
+        roleSlug: 'ghost',
+        organizationId: '00000000-0000-0000-0000-000000000001',
+        actorUserId: '00000000-0000-0000-0000-000000000002',
+        headers: makeHeaders(),
+      }),
+    ).rejects.toBeInstanceOf(RoleNotFoundError);
+    expect(authDb.db.update).not.toHaveBeenCalled();
+    expect(emitter.emit).not.toHaveBeenCalled();
   });
 });
 

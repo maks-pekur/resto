@@ -46,6 +46,12 @@ const runBeforeHook = async (
     if (typeof raw === 'string') {
       targetPermission = JSON.parse(raw) as Record<string, string[]>;
     }
+    if (targetPermission === null) {
+      throw new ForbiddenException({
+        code: 'role.insufficient_permissions',
+        message: 'Unknown or archived target role.',
+      });
+    }
   }
 
   if (targetPermission && containsNonDelegatable(targetPermission)) {
@@ -83,8 +89,10 @@ describe('beforeUpdateMemberRole hook logic', () => {
     await expect(runBeforeHook('manager', ORG_ID, authDb)).resolves.toBeUndefined();
   });
 
-  it('returns void (no throw) when role slug not found in db (null permission)', async () => {
+  it('throws ForbiddenException when role slug not found in db (fail closed)', async () => {
     const authDb = makeAuthDb(null);
-    await expect(runBeforeHook('unknown-slug', ORG_ID, authDb)).resolves.toBeUndefined();
+    await expect(runBeforeHook('unknown-slug', ORG_ID, authDb)).rejects.toBeInstanceOf(
+      ForbiddenException,
+    );
   });
 });
