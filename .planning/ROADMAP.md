@@ -571,9 +571,40 @@ Plans:
 3. `member_brand_scope` is refined to / superseded by location-level scope; owner (unrestricted) unaffected
 4. The single-active-brand session from 08.2 interplays correctly with multi-location, multi-brand membership
 
-**Plans**: TBD (run /gsd-discuss-phase 08.4)
+**Plans**: 11 plans in 7 waves
 
-- [ ] TBD
+Plans:
+**Wave 1** _(parallel — db pkg / domain pkg, no file overlap)_
+
+- [ ] 08.4-01-PLAN.md — DB foundation: locations + member_location_scope tables, app_bind_location GUC, session active_location_id, isolation net (D-01/D-04/D-05/D-11/D-13)
+- [ ] 08.4-02-PLAN.md — Domain contracts: LocationId + location RBAC resource + system-role perms + admin-escalation regression (D-06/D-07)
+
+**Wave 2** _(identity vs tenancy, no file overlap)_
+
+- [ ] 08.4-03-PLAN.md — Active-location session pin (asymmetric owner/staff), scope reader + reachable-brand derivation, GET /v1/me/locations (D-04/D-08/D-09/D-10/D-11)
+- [ ] 08.4-04-PLAN.md — Tenancy Locations CRUD + archive blast-radius warning, no auto-create (D-01/D-12/D-14/D-17)
+
+**Wave 3**
+
+- [ ] 08.4-05-PLAN.md — LocationScopeGuard (owner-bypass + existence-hiding 404) + BrandScopeGuard reachable-brand re-point (D-04/D-05)
+- [ ] 08.4-06-PLAN.md — Availability/stop-list re-grain to location + default-location resolver + CDN runbook note (D-02)
+
+**Wave 4**
+
+- [ ] 08.4-07-PLAN.md — Per-location role assignment (owner-only, NON_DELEGATABLE guard) + LocationPermissionChecker (D-06/D-07/D-08)
+- [ ] 08.4-08-PLAN.md — Orders location re-grain (NOT NULL location_id + RLS) + checkout default-location binding (D-03/D-12/D-13)
+
+**Wave 5**
+
+- [ ] 08.4-09-PLAN.md — Admin: Locations CRUD page + locationSwitcher + staff pick-location + x-location-id echo [human-verify] (D-09/D-10/D-14/D-16/D-17)
+
+**Wave 6**
+
+- [ ] 08.4-10-PLAN.md — Admin: Team (location → role) matrix + stale-copy fix [human-verify] (D-15)
+
+**Wave 7**
+
+- [ ] 08.4-11-PLAN.md — Location isolation e2e: out-of-scope 404/403, staff no-self-switch, owner bypass, archive access-loss (D-04/D-05/D-10/D-11/D-17)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
