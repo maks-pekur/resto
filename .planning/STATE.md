@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Completed 08.4-02-PLAN.md
-last_updated: "2026-07-10T07:54:30.696Z"
+last_updated: '2026-07-10T07:54:30.696Z'
 last_activity: 2026-07-10
 progress:
   total_phases: 24
