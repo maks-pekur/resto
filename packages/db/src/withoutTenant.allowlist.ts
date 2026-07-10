@@ -63,6 +63,11 @@ export const WITHOUT_TENANT_ALLOWLIST = [
   // PAY-12: outbox backlog age probe scans all tenants' undelivered rows
   // (cross-tenant by design) outside any HTTP request — no ALS tenant bound.
   'apps/api/src/infrastructure/outbox-dispatcher.service.ts',
+
+  // 08.4: pins the operator's initial active location during session
+  // bootstrap, before ALS tenant binding — mirrors the brand-resolution
+  // bootstrap path.
+  'apps/api/src/contexts/identity/infrastructure/initial-location-drizzle.repository.ts',
 ] as const;
 
 export type WithoutTenantAllowedFile = (typeof WITHOUT_TENANT_ALLOWLIST)[number];

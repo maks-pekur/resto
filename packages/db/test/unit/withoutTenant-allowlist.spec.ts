@@ -57,17 +57,20 @@ describe('RES-252 Phase 2b: withoutTenant allowlist parity', () => {
     expect(extracted).toEqual(tsConst);
   });
 
-  it('TS const contains exactly nine entries (sanity check on scope creep)', () => {
+  it('TS const contains exactly ten entries (sanity check on scope creep)', () => {
     // Phase 3 / AUTH-10 (Plan 03-01) adds
     // packages/events/src/infrastructure/nats-subscriber.ts — DLQ branch.
     // Phase 3 / AUTH-01 (Plan 03-02) adds
     // apps/api/src/contexts/identity/infrastructure/email/resend.adapter.ts
     // — terminal-failure outbox emission for the BA pre-org-bind path.
+    // Phase 08.4 adds
+    // apps/api/src/contexts/identity/infrastructure/initial-location-drizzle.repository.ts
+    // — initial active-location pin during session bootstrap.
     //
     // The two GDPR retention sweep schedulers (invitation + verification) are
     // NOT on the allowlist: they sweep BA-owned auth tables via resto_auth
     // (AuthDrizzle, which owns those tables), not resto_app's `withoutTenant`
     // (whose privileges on those tables are revoked — migration 0027).
-    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(10);
+    expect(WITHOUT_TENANT_ALLOWLIST).toHaveLength(11);
   });
 });

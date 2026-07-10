@@ -129,6 +129,9 @@ export default [
       // PAY-12: outbox backlog age probe. See
       // packages/db/src/withoutTenant.allowlist.ts for the matching entry.
       'src/infrastructure/outbox-dispatcher.service.ts',
+      // 08.4: initial-location session bootstrap. See
+      // packages/db/src/withoutTenant.allowlist.ts for the matching entry.
+      'src/contexts/identity/infrastructure/initial-location-drizzle.repository.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
