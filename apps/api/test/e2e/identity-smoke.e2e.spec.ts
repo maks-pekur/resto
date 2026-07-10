@@ -24,12 +24,12 @@ describe('Better Auth /api/auth/* smoke', () => {
     container = await new PostgreSqlContainer('postgres:16').start();
     const adminUrl = container.getConnectionUri();
 
-    // Provision both roles + run migrations under the bootstrap superuser.
+    // Run migrations, then provision both roles under the bootstrap superuser.
     const adminClient = postgres(adminUrl);
-    await provisionAppRole(adminClient, { appPassword: APP_PASSWORD });
-    await provisionAuthRole(adminClient, { authPassword: AUTH_PASSWORD });
     const adminDb = drizzle(adminClient);
     await migrate(adminDb, { migrationsFolder: MIGRATIONS_DIR });
+    await provisionAppRole(adminClient, { appPassword: APP_PASSWORD });
+    await provisionAuthRole(adminClient, { authPassword: AUTH_PASSWORD });
     await adminClient.end();
 
     // Build per-role connection strings.
