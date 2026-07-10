@@ -101,6 +101,21 @@ export class CatalogCodeConflictError extends Error {
   }
 }
 
+// D-02/D-12: a brand with zero active locations has no location to resolve
+// availability against; no location is ever synthesized to satisfy this.
+export class NoLocationForBrandError extends Error {
+  readonly kind = 'NoLocationForBrandError' as const;
+  constructor(
+    public readonly brandId: string,
+    public readonly tenantId: string,
+  ) {
+    super(
+      `Brand "${brandId}" (tenant "${tenantId}") has no active location to resolve availability against.`,
+    );
+    this.name = 'NoLocationForBrandError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
@@ -113,4 +128,5 @@ export type CatalogDomainError =
   | MenuItemAlreadyArchivedError
   | BrandContextRequiredError
   | CategoryNestingDepthError
-  | CatalogCodeConflictError;
+  | CatalogCodeConflictError
+  | NoLocationForBrandError;

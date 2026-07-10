@@ -1,5 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireBrandContext, requireTenantContext, withLocation } from '@resto/db';
+import { TenantId } from '@resto/domain';
+import { DefaultLocationResolverService } from './default-location-resolver.service';
 import {
   CATALOG_REPOSITORY,
   STOP_VERSION_PORT,
@@ -17,17 +19,23 @@ export class GetMenuAvailabilityService {
   constructor(
     @Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository,
     @Inject(STOP_VERSION_PORT) private readonly stopVersions: StopVersionPort,
+    @Inject(DefaultLocationResolverService)
+    private readonly defaultLocation: DefaultLocationResolverService,
   ) {}
 
   async execute(): Promise<MenuAvailabilityResult> {
-    requireTenantContext();
+    const ctx = requireTenantContext();
     const brandId = requireBrandContext();
+    const tenantId = TenantId.parse(ctx.tenantId);
+    const locationId = await this.defaultLocation.resolveForBrand(brandId, tenantId);
 
-    const [stoppedItemIds, stopVersion] = await Promise.all([
-      this.repo.listStoppedItemIds(brandId),
-      this.stopVersions.currentStop(brandId),
-    ]);
+    return withLocation(locationId, async () => {
+      const [stoppedItemIds, stopVersion] = await Promise.all([
+        this.repo.listStoppedItemIds(locationId),
+        this.stopVersions.currentStop(locationId),
+      ]);
 
-    return { stoppedItemIds, stopVersion };
+      return { stoppedItemIds, stopVersion };
+    });
   }
 }

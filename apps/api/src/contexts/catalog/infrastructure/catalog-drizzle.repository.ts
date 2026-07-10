@@ -744,11 +744,11 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
+      // Item lookup is not brand-filtered explicitly — the item's brand-grain RLS
+      // (current_brand_id(), still bound via the operator's brand-routing context)
+      // is the fence here; the stop-list row itself is keyed on locationId below.
       const existingItem = await scoped
-        .selectFrom(
-          schema.menuItems,
-          and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
-        )
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
         .limit(1);
       const itemRow = existingItem[0];
       if (!itemRow) {
@@ -758,21 +758,31 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
       const inserted = await scoped
         .insertInto(schema.menuStopList, {
-          brandId: input.brandId,
+          locationId: input.locationId,
           itemId: input.itemId,
           reason: input.reason,
           stoppedByUserId: input.stoppedByUserId,
         })
         .onConflictDoNothing({
-          target: [schema.menuStopList.tenantId, schema.menuStopList.itemId],
+          target: [
+            schema.menuStopList.tenantId,
+            schema.menuStopList.locationId,
+            schema.menuStopList.itemId,
+          ],
         })
         .returning({ id: schema.menuStopList.id });
-      await this.#bumpStopVersion(scoped, input.brandId);
+      await this.#bumpStopVersion(scoped, input.locationId);
       if (inserted[0]) {
         return { id: inserted[0].id, itemSlug };
       }
       const existing = await scoped
-        .selectFrom(schema.menuStopList, eq(schema.menuStopList.itemId, input.itemId))
+        .selectFrom(
+          schema.menuStopList,
+          and(
+            eq(schema.menuStopList.itemId, input.itemId),
+            eq(schema.menuStopList.locationId, input.locationId),
+          ),
+        )
         .limit(1);
       const existingRow = existing[0];
       if (!existingRow) {
@@ -784,34 +794,29 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async removeFromStopList(input: {
     itemId: string;
-    brandId: string;
+    locationId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }> {
     return this.db.withTenant(async (tx, scoped) => {
       const itemRow = (
-        await scoped
-          .selectFrom(
-            schema.menuItems,
-            and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
-          )
-          .limit(1)
+        await scoped.selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId)).limit(1)
       )[0];
       const itemSlug = itemRow?.slug ?? null;
 
       // Sole sanctioned hard DELETE on a tenant-scoped table — migration 0040 grants the privilege.
-      // Two-column predicate satisfies RLS + ScopedTx auto-filter contract (ADR-0020 I-1).
+      // Three-column predicate satisfies RLS + ScopedTx auto-filter contract (ADR-0020 I-1).
       const ctx = requireTenantContext();
       const result = await tx
         .delete(schema.menuStopList)
         .where(
           and(
             eq(schema.menuStopList.tenantId, ctx.tenantId),
-            eq(schema.menuStopList.brandId, input.brandId),
+            eq(schema.menuStopList.locationId, input.locationId),
             eq(schema.menuStopList.itemId, input.itemId),
           ),
         )
         .returning({ id: schema.menuStopList.id });
 
-      await this.#bumpStopVersion(scoped, input.brandId);
+      await this.#bumpStopVersion(scoped, input.locationId);
 
       return { removed: result.length > 0, itemSlug };
     });
@@ -819,13 +824,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async #bumpStopVersion(
     scoped: Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[1],
-    brandId: string,
+    locationId: string,
   ): Promise<void> {
     await scoped
-      .insertInto(schema.catalogBrandStopVersion, { brandId, stopVersion: 2 })
+      .insertInto(schema.catalogLocationStopVersion, { locationId, stopVersion: 2 })
       .onConflictDoUpdate({
-        target: [schema.catalogBrandStopVersion.brandId, schema.catalogBrandStopVersion.tenantId],
-        set: { stopVersion: sql`${schema.catalogBrandStopVersion.stopVersion} + 1` },
+        target: [
+          schema.catalogLocationStopVersion.locationId,
+          schema.catalogLocationStopVersion.tenantId,
+        ],
+        set: { stopVersion: sql`${schema.catalogLocationStopVersion.stopVersion} + 1` },
       });
   }
 
@@ -1208,10 +1216,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]> {
+  async listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const stopRows = await scoped
-        .selectFrom(schema.menuStopList, eq(schema.menuStopList.brandId, brandId))
+        .selectFrom(schema.menuStopList, eq(schema.menuStopList.locationId, locationId))
         .orderBy(desc(schema.menuStopList.stoppedAt));
       if (stopRows.length === 0) return [];
       const itemIds = stopRows.map((s) => s.itemId);
@@ -1243,11 +1251,11 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listStoppedItemIds(brandId: string): Promise<string[]> {
+  async listStoppedItemIds(locationId: string): Promise<string[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped.selectFrom(
         schema.menuStopList,
-        eq(schema.menuStopList.brandId, brandId),
+        eq(schema.menuStopList.locationId, locationId),
       );
       return rows.map((r) => r.itemId);
     });

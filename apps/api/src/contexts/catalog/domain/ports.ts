@@ -18,7 +18,7 @@ export interface CatalogRepository {
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
-    brandId: string;
+    locationId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
 
   listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
@@ -32,8 +32,8 @@ export interface CatalogRepository {
   getItemById(id: string): Promise<ItemDetailRow | null>;
   listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
-  listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]>;
-  listStoppedItemIds(brandId: string): Promise<string[]>;
+  listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
+  listStoppedItemIds(locationId: string): Promise<string[]>;
   computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
@@ -64,7 +64,7 @@ export interface MenuVersionPort {
 export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
 
 export interface StopVersionPort {
-  currentStop(brandId: string): Promise<number>;
+  currentStop(locationId: string): Promise<number>;
 }
 
 export const STOP_VERSION_PORT = Symbol('STOP_VERSION_PORT');
@@ -163,7 +163,7 @@ export interface UpsertItemSizeRow {
 export interface StopListInsertRow {
   readonly itemId: string;
   readonly tenantId: string;
-  readonly brandId: string;
+  readonly locationId: string;
   readonly reason: string | null;
   readonly stoppedByUserId: string | null;
 }

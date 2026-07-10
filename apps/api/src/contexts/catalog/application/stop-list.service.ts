@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext, TenantAwareDb } from '@resto/db';
+import { requireLocationContext, requireTenantContext, TenantAwareDb } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { appendToOutbox, buildEnvelope, ItemStoppedV1, ItemUnstoppedV1 } from '@resto/events';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
@@ -18,13 +18,13 @@ export class StopListService {
   async stop(input: StopItemInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = requireBrandContext();
+    const locationId = requireLocationContext();
 
     const { id, itemSlug } = await this.db.withTenant(async (tx) => {
       const result = await this.repo.addToStopList({
         itemId: input.itemId,
         tenantId,
-        brandId,
+        locationId,
         reason: input.reason,
         stoppedByUserId: null,
       });
@@ -51,10 +51,10 @@ export class StopListService {
   async unstop(itemId: string): Promise<void> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = requireBrandContext();
+    const locationId = requireLocationContext();
 
     const itemSlug = await this.db.withTenant(async (tx) => {
-      const result = await this.repo.removeFromStopList({ itemId, brandId });
+      const result = await this.repo.removeFromStopList({ itemId, locationId });
       if (!result.removed) {
         throw new StopListItemNotFoundError(itemId);
       }

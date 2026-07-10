@@ -16,6 +16,7 @@ import {
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
   MenuModifierOptionNotFoundError,
+  NoLocationForBrandError,
   StopListItemNotFoundError,
   type CatalogDomainError,
 } from '../../domain/errors';
@@ -32,7 +33,8 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof MenuItemAlreadyArchivedError ||
   err instanceof BrandContextRequiredError ||
   err instanceof CategoryNestingDepthError ||
-  err instanceof CatalogCodeConflictError;
+  err instanceof CatalogCodeConflictError ||
+  err instanceof NoLocationForBrandError;
 
 const isMissingBrandContextError = (err: unknown): err is Error =>
   err instanceof Error && err.message.startsWith('No brand context bound.');
@@ -97,6 +99,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'CatalogCodeConflictError':
       return new ConflictException({
         code: 'catalog.code_conflict',
+        message: err.message,
+      });
+    case 'NoLocationForBrandError':
+      return new NotFoundException({
+        code: 'catalog.no_location_for_brand',
         message: err.message,
       });
     default: {

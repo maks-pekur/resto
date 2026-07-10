@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireLocationContext, requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { StopListResponse } from './dto';
 
@@ -9,8 +9,8 @@ export class GetStopListService {
 
   async execute(): Promise<StopListResponse> {
     requireTenantContext();
-    const brandId = requireBrandContext();
-    const rows = await this.repo.listStopListWithStoppedAt(brandId);
+    const locationId = requireLocationContext();
+    const rows = await this.repo.listStopListWithStoppedAt(locationId);
     return {
       items: rows.map((r) => ({
         id: r.id,

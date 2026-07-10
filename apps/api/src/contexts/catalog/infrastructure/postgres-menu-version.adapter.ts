@@ -15,12 +15,12 @@ export class PostgresMenuVersionAdapter implements MenuVersionPort, StopVersionP
     });
   }
 
-  async currentStop(brandId: string): Promise<number> {
+  async currentStop(locationId: string): Promise<number> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped
         .selectFrom(
-          schema.catalogBrandStopVersion,
-          eq(schema.catalogBrandStopVersion.brandId, brandId),
+          schema.catalogLocationStopVersion,
+          eq(schema.catalogLocationStopVersion.locationId, locationId),
         )
         .limit(1);
       return rows[0]?.stopVersion ?? 1;

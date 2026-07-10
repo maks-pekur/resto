@@ -3,6 +3,7 @@ import { TenancyModule } from '../tenancy/tenancy.module';
 import { RequireActiveTenantGuard } from '../../shared/auth/require-active-tenant.guard';
 import { ArchiveCategoryService } from './application/archive-category.service';
 import { ArchiveItemService } from './application/archive-item.service';
+import { DefaultLocationResolverService } from './application/default-location-resolver.service';
 import { DelayedPublishService } from './application/delayed-publish.service';
 import { GetDraftDiffService } from './application/get-draft-diff.service';
 import { GetItemService } from './application/get-item.service';
@@ -57,6 +58,7 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     GetPhotoUploadUrlService,
     GetPublishedMenuService,
     GetMenuItemService,
+    DefaultLocationResolverService,
     GetMenuAvailabilityService,
     UpsertCategoryService,
     ReorderCategoriesService,
@@ -70,6 +72,6 @@ import { PublicMenuController } from './interfaces/http/public-menu.controller';
     PublishMenuService,
     RequireActiveTenantGuard,
   ],
-  exports: [CATALOG_REPOSITORY, MENU_VERSION_PORT],
+  exports: [CATALOG_REPOSITORY, MENU_VERSION_PORT, DefaultLocationResolverService],
 })
 export class CatalogModule {}
