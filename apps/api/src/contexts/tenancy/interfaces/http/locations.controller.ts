@@ -22,7 +22,12 @@ import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import {
+  LocationNeutral,
+  Permissions,
+  RequireActiveTenant,
+  RequireBrand,
+} from '../../../../shared/auth';
 import { ProvisionLocationService } from '../../application/provision-location.service';
 import { ListLocationsService } from '../../application/list-locations.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
@@ -78,6 +83,7 @@ const toResponse = (s: LocationSnapshot) => ({
 });
 
 @ApiTags('tenancy')
+@LocationNeutral()
 @Controller('v1/tenancy/locations')
 export class LocationsController {
   constructor(

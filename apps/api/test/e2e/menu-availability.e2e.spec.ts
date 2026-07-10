@@ -71,11 +71,24 @@ suite('GET /v1/menu/availability — stop-version ETag', () => {
   const seedPublishedItems = async (params: {
     brandSlug: string;
   }): Promise<{ authed: Record<string, string>; firstItemId: string; secondItemId: string }> => {
-    const authed = {
+    const preLocationAuthed = {
       cookie: ownerCookie,
       'x-tenant-id': tenantId,
       'x-brand-slug': params.brandSlug,
     };
+    const locationRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/tenancy/locations',
+      headers: preLocationAuthed,
+      payload: { name: `${params.brandSlug} location` },
+    });
+    if (locationRes.statusCode !== 200) {
+      throw new Error(
+        `location seed failed: ${locationRes.statusCode.toString()} ${locationRes.body}`,
+      );
+    }
+    const locationId = locationRes.json<{ id: string }>().id;
+    const authed = { ...preLocationAuthed, 'x-location-id': locationId };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',

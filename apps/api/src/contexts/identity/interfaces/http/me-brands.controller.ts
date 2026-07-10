@@ -33,7 +33,12 @@ import { BrandDisplayNameTakenError, BrandSlugConflictError } from '../../domain
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { BrandSlugRateLimitGuard } from './guards/brand-slug-rate-limit.guard';
-import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import {
+  BrandNeutral,
+  LocationNeutral,
+  Permissions,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
 
 const MeBrandSchema = z.object({
   id: z.string().uuid(),
@@ -65,6 +70,7 @@ class SlugAvailabilityResponseDto extends createZodDto(SlugAvailabilityResponseS
 @ApiTags('identity')
 @Controller('v1/me')
 @BrandNeutral()
+@LocationNeutral()
 export class MeBrandsController {
   constructor(
     @Inject(ListMyBrandsService) private readonly list: ListMyBrandsService,

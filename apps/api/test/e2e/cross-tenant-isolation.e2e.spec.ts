@@ -266,6 +266,8 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
   let itemBId: string;
   let modGroupAId: string;
   let modGroupBId: string;
+  let locationAId: string;
+  let locationBId: string;
 
   beforeAll(async () => {
     stack = await startRealStack({ natsEnabledInApp: false });
@@ -365,9 +367,18 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
         ])
         .returning({ id: schema.menuModifierGroups.id });
 
-      await tx.insert(schema.catalogBrandStopVersion).values([
-        { tenantId: tenantA.id, brandId: bA.id },
-        { tenantId: tenantA.id, brandId: bB.id },
+      const [locA, locB] = await tx
+        .insert(schema.locations)
+        .values([
+          { tenantId: tenantA.id, brandId: bA.id, name: 'Loc A' },
+          { tenantId: tenantA.id, brandId: bB.id, name: 'Loc B' },
+        ])
+        .returning({ id: schema.locations.id });
+      if (!locA || !locB) throw new Error('location insert failed');
+
+      await tx.insert(schema.catalogLocationStopVersion).values([
+        { tenantId: tenantA.id, locationId: locA.id },
+        { tenantId: tenantA.id, locationId: locB.id },
       ]);
 
       if (!mgA || !mgB) throw new Error('modifier group insert failed');
@@ -381,6 +392,8 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
         itemBId: itemB.id,
         modGroupAId: mgA.id,
         modGroupBId: mgB.id,
+        locationAId: locA.id,
+        locationBId: locB.id,
       };
     });
 
@@ -393,6 +406,8 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
     itemBId = seeded.itemBId;
     modGroupAId = seeded.modGroupAId;
     modGroupBId = seeded.modGroupBId;
+    locationAId = seeded.locationAId;
+    locationBId = seeded.locationBId;
   }, 120_000);
 
   afterAll(async () => {
@@ -442,18 +457,18 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
       expect(ids).not.toContain(modGroupBId);
     });
 
-    it('catalog_brand_stop_version: brand-A binding returns A row only, zero B rows', async () => {
+    it('catalog_location_stop_version: location-A binding returns A row only, zero B rows', async () => {
       const db = stack.app.get(TenantAwareDb);
       const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
+        await tx.execute(sql`SELECT app_bind_location(${locationAId})`);
         return tx
-          .select({ brandId: schema.catalogBrandStopVersion.brandId })
-          .from(schema.catalogBrandStopVersion)
-          .where(eq(schema.catalogBrandStopVersion.tenantId, tenantId));
+          .select({ locationId: schema.catalogLocationStopVersion.locationId })
+          .from(schema.catalogLocationStopVersion)
+          .where(eq(schema.catalogLocationStopVersion.tenantId, tenantId));
       });
-      const brandIds = rows.map((r) => r.brandId);
-      expect(brandIds).toContain(brandAId);
-      expect(brandIds).not.toContain(brandBId);
+      const locationIds = rows.map((r) => r.locationId);
+      expect(locationIds).toContain(locationAId);
+      expect(locationIds).not.toContain(locationBId);
     });
   });
 
@@ -484,17 +499,17 @@ suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () 
       expect(ids).toContain(itemBId);
     });
 
-    it('catalog_brand_stop_version: no brand binding returns both brands rows', async () => {
+    it('catalog_location_stop_version: no location binding returns both locations rows', async () => {
       const db = stack.app.get(TenantAwareDb);
       const rows = await db.withTenantId(tenantId, async (tx) =>
         tx
-          .select({ brandId: schema.catalogBrandStopVersion.brandId })
-          .from(schema.catalogBrandStopVersion)
-          .where(eq(schema.catalogBrandStopVersion.tenantId, tenantId)),
+          .select({ locationId: schema.catalogLocationStopVersion.locationId })
+          .from(schema.catalogLocationStopVersion)
+          .where(eq(schema.catalogLocationStopVersion.tenantId, tenantId)),
       );
-      const brandIds = rows.map((r) => r.brandId);
-      expect(brandIds).toContain(brandAId);
-      expect(brandIds).toContain(brandBId);
+      const locationIds = rows.map((r) => r.locationId);
+      expect(locationIds).toContain(locationAId);
+      expect(locationIds).toContain(locationBId);
     });
   });
 

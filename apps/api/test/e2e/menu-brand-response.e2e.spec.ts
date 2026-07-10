@@ -117,7 +117,25 @@ suite('GET /v1/menu — brand object in response', () => {
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     await runBootstrap({ tenantSlug, email, password: PASSWORD, name: 'RES-154 Owner' });
     const ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
-    authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+    const preLocationAuthed = {
+      cookie: ownerCookie,
+      'x-tenant-id': tenantId,
+      'x-brand-slug': brandSlug,
+    };
+
+    const locationRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/tenancy/locations',
+      headers: preLocationAuthed,
+      payload: { name: 'RES-154 Location' },
+    });
+    if (locationRes.statusCode !== 200) {
+      throw new Error(
+        `location seed failed: ${locationRes.statusCode.toString()} ${locationRes.body}`,
+      );
+    }
+    const locationId = locationRes.json<{ id: string }>().id;
+    authed = { ...preLocationAuthed, 'x-location-id': locationId };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
