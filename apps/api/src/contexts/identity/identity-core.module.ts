@@ -14,6 +14,8 @@ import {
   type IdentityEventEmitterPort,
 } from './application/ports/identity-event-emitter.port';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
+import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
+import { LocationPermissionChecker } from './application/location-permission-checker';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from './domain/ports';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import {
@@ -29,6 +31,7 @@ import { getLocale } from './infrastructure/email/get-locale';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
 import { InitialBrandDrizzleRepository } from './infrastructure/initial-brand-drizzle.repository';
 import { InitialLocationDrizzleRepository } from './infrastructure/initial-location-drizzle.repository';
+import { MemberLocationScopeDrizzleReader } from './infrastructure/member-location-scope-drizzle.reader';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
@@ -342,6 +345,16 @@ const permissionCheckerProvider: Provider = {
   useClass: BetterAuthPermissionChecker,
 };
 
+// D-08/T-084-21: registered here (not identity-http.module.ts, where the
+// same MEMBER_LOCATION_SCOPE_READER token is also bound) so
+// LocationPermissionChecker resolves within IdentityCoreModule's own DI
+// scope — module-child providers cannot reach up into an importer's
+// bindings.
+const memberLocationScopeReaderProvider: Provider = {
+  provide: MEMBER_LOCATION_SCOPE_READER,
+  useClass: MemberLocationScopeDrizzleReader,
+};
+
 @Module({
   providers: [
     authDrizzleProvider,
@@ -351,6 +364,9 @@ const permissionCheckerProvider: Provider = {
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
+    memberLocationScopeReaderProvider,
+    MemberLocationScopeDrizzleReader,
+    LocationPermissionChecker,
     {
       provide: IDENTITY_EVENT_EMITTER,
       useClass: IdentityEventEmitterAdapter,
@@ -364,6 +380,7 @@ const permissionCheckerProvider: Provider = {
     permissionCheckerProvider,
     IDENTITY_EVENT_EMITTER,
     InitialLocationDrizzleRepository,
+    LocationPermissionChecker,
   ],
 })
 export class IdentityCoreModule {}
