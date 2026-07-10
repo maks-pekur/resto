@@ -16,6 +16,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
   let pg: TestPg;
   let tenantId: string;
   let brandId: string;
+  let locationId: string;
   let orderId: string;
 
   beforeAll(async () => {
@@ -35,11 +36,19 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
       if (!b) throw new Error('seed brand failed');
       brandId = b.id;
 
+      const [loc] = await tx
+        .insert(schema.locations)
+        .values({ tenantId, brandId, name: 'EraseOrd Location' })
+        .returning({ id: schema.locations.id });
+      if (!loc) throw new Error('seed location failed');
+      locationId = loc.id;
+
       const [o] = await tx
         .insert(schema.orders)
         .values({
           tenantId,
           brandId,
+          locationId,
           idempotencyKey: 'erase-ord-idem',
           orderNumber: '20260621-ERS',
           status: 'created',

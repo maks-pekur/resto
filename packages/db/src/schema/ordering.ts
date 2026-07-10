@@ -13,7 +13,7 @@ import {
 import { money } from './_types';
 import { compositeTenantFk, pkUuid, tenantIdColumn, tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
-import { brands } from './brands';
+import { brands, locations } from './brands';
 
 export const orders = pgTable(
   'orders',
@@ -21,6 +21,7 @@ export const orders = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     orderNumber: text('order_number').notNull(),
     // status acts as soft-delete: 'canceled'/'refunded' replace archived_at (no hard deletes)
@@ -54,6 +55,11 @@ export const orders = pgTable(
       name: 'orders_brand_fk',
       child: { id: table.brandId, tenantId: table.tenantId },
       parent: { id: brands.id, tenantId: brands.tenantId },
+    }).onDelete('restrict'),
+    compositeTenantFk({
+      name: 'orders_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('orders_idempotency_key_uq').on(table.tenantId, table.idempotencyKey),
     tenantParentUniqueIndex('orders', { id: table.id, tenantId: table.tenantId }),

@@ -679,14 +679,29 @@ suite('Row-Level Security — tenant isolation', () => {
 
   describe('ORD-06: cross-tenant matrix for orders / order_items', () => {
     let aOrderId: string;
+    let aOrderLocationId: string;
+    let bOrderLocationId: string;
 
     beforeAll(async () => {
       await pg.db.withoutTenant('seed order for ORD-06 cross-tenant matrix', async (tx) => {
+        const [aLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, brandId: brandA, name: 'ORD-06 A Location' })
+          .returning({ id: schema.locations.id });
+        const [bLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantB, brandId: brandB, name: 'ORD-06 B Location' })
+          .returning({ id: schema.locations.id });
+        if (!aLoc || !bLoc) throw new Error('ORD-06 seed: location insert failed.');
+        aOrderLocationId = aLoc.id;
+        bOrderLocationId = bLoc.id;
+
         const [order] = await tx
           .insert(schema.orders)
           .values({
             tenantId: tenantA,
             brandId: brandA,
+            locationId: aOrderLocationId,
             idempotencyKey: 'ord06-idem-key-a',
             orderNumber: '20260614-ORD06',
             status: 'created',
@@ -736,6 +751,7 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.orders).values({
             tenantId: tenantB,
             brandId: brandA,
+            locationId: bOrderLocationId,
             idempotencyKey: 'ord06-idem-cross',
             orderNumber: '20260614-CROSS',
             status: 'created',
@@ -755,6 +771,58 @@ suite('Row-Level Security — tenant isolation', () => {
         (e: unknown) => e,
       );
       expect(error).toBeInstanceOf(Error);
+    });
+
+    it('orders: tenant B INSERT with tenant A location_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.orders).values({
+            tenantId: tenantB,
+            brandId: brandB,
+            locationId: aOrderLocationId,
+            idempotencyKey: 'ord06-idem-cross-location',
+            orderNumber: '20260614-CROSS-LOC',
+            status: 'created',
+            fulfillmentMode: 'pickup',
+            customerName: 'Cross Location Tester',
+            customerPhone: '+10000000002',
+            subtotal: '5.00',
+            deliveryFee: '0.00',
+            serviceFee: '0.00',
+            discount: '0.00',
+            total: '5.00',
+            currency: 'USD',
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('orders: location-grain binding to A returns A row only, hidden when bound to sibling location', async () => {
+      const boundToA = await runInTenantContext(
+        { tenantId: tenantA, locationId: aOrderLocationId },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.orders)),
+      );
+      expect(boundToA.map((r) => r.id)).toContain(aOrderId);
+
+      const [siblingLocation] = await pg.db.withoutTenant(
+        'seed sibling location for orders location-grain check',
+        async (tx) =>
+          tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, brandId: brandA, name: 'ORD-06 Sibling Location' })
+            .returning({ id: schema.locations.id }),
+      );
+      if (!siblingLocation) throw new Error('ORD-06 seed: sibling location insert failed.');
+
+      const boundToSibling = await runInTenantContext(
+        { tenantId: tenantA, locationId: siblingLocation.id },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.orders)),
+      );
+      expect(boundToSibling.map((r) => r.id)).not.toContain(aOrderId);
     });
 
     it('order_items: tenant B sees zero of tenant A order_items rows', async () => {
