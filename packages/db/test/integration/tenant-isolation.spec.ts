@@ -725,6 +725,107 @@ suite('Row-Level Security — tenant isolation', () => {
     });
   });
 
+  /*
+   * ── 08.4-01: cross-tenant matrix for locations + member_location_scope ──
+   *
+   * `locations` is brand-grain isolated (composite FK to brands, same
+   * shape as menu_categories/orders): tenant B's SELECT returns zero rows
+   * and a cross-tenant INSERT carrying tenant A's brand_id is rejected by
+   * the composite FK.
+   *
+   * `member_location_scope` is tenant-grain ONLY (Tier 3 — mirrors the
+   * absence of any scoped policy for member_brand_scope): tenant B's
+   * SELECT returns zero rows of tenant A's scope.
+   */
+  describe('08.4 locations: brand-grain isolation', () => {
+    let aLocationId: string;
+
+    beforeAll(async () => {
+      await pg.db.withoutTenant('seed location for 08.4 cross-tenant matrix', async (tx) => {
+        const [location] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, brandId: brandA, name: 'Iso A Location' })
+          .returning({ id: schema.locations.id });
+        if (!location) throw new Error('08.4 seed: location insert failed.');
+        aLocationId = location.id;
+      });
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A locations', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.locations)
+            .where(sql`${schema.locations.id} = ${aLocationId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('tenant B INSERT with tenant A brand_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.locations).values({
+            tenantId: tenantB,
+            brandId: brandA,
+            name: 'Cross Tenant Location',
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+  });
+
+  describe('08.4 member_location_scope: tenant-grain isolation', () => {
+    beforeAll(async () => {
+      await pg.db.withoutTenant(
+        'seed member_location_scope for 08.4 cross-tenant matrix',
+        async (tx) => {
+          const [location] = await tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, brandId: brandA, name: 'Iso A Scope Location' })
+            .returning({ id: schema.locations.id });
+          if (!location) throw new Error('08.4 seed: scope location insert failed.');
+
+          const userId = 'user-08-4-01-mls';
+          await tx.insert(schema.user).values({
+            id: userId,
+            email: 'mls-08-4-01@test',
+            emailVerified: true,
+            name: '08.4-01 MLS test',
+          });
+
+          const memberId = 'member-08-4-01-mls';
+          await tx.insert(schema.member).values({
+            id: memberId,
+            userId,
+            organizationId: tenantA,
+            role: 'staff',
+            createdAt: new Date(),
+          });
+
+          await tx.insert(schema.memberLocationScope).values({
+            tenantId: tenantA,
+            locationId: location.id,
+            memberId,
+            role: 'staff',
+          });
+        },
+      );
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A member_location_scope rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.memberLocationScope)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+  });
+
   describe('preflight (RES-243)', () => {
     it('assertTenantLockInstalled passes on a freshly-migrated DB', async () => {
       await expect(assertTenantLockInstalled(pg.url)).resolves.toBeUndefined();

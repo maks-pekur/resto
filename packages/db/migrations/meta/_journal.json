@@ -470,6 +470,13 @@
       "when": 1783468800000,
       "tag": "0066_session_active_location",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1783555200000,
+      "tag": "0067_location_tenant_iso",
+      "breakpoints": true
     }
   ]
 }
