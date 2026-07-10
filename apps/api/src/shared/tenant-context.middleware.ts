@@ -1,6 +1,6 @@
 import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import { runInTenantContext, type TenantContext } from '@resto/db';
-import { TenantId } from '@resto/domain';
+import { LocationId, TenantId } from '@resto/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
@@ -12,6 +12,7 @@ import { TenantResolverService } from '../contexts/tenancy/application/tenant-re
 const HEADER_TENANT = 'x-tenant-slug';
 const HEADER_TENANT_ID = 'x-tenant-id';
 const HEADER_BRAND = 'x-brand-slug';
+const HEADER_LOCATION = 'x-location-id';
 
 /**
  * Resolve the tenant (and brand, when available) for an inbound request
@@ -56,10 +57,15 @@ export class TenantContextMiddleware implements NestMiddleware {
   private async resolveContext(req: FastifyRequest['raw']): Promise<TenantContext | null> {
     const trustProxy = this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0;
     const host = effectiveHost(req.headers, trustProxy);
+    const locationId = this.resolveLocationHeader(req);
 
     const customer = await this.brands.resolveByCustomerHost(host);
     if (customer) {
-      return { tenantId: customer.tenantId, brandId: customer.brandId };
+      return {
+        tenantId: customer.tenantId,
+        brandId: customer.brandId,
+        ...(locationId ? { locationId } : {}),
+      };
     }
 
     const tenantId = await this.resolveTenantOnly(req);
@@ -68,10 +74,18 @@ export class TenantContextMiddleware implements NestMiddleware {
     const brandHeader = req.headers[HEADER_BRAND];
     if (typeof brandHeader === 'string' && brandHeader.length > 0) {
       const brand = await this.brands.resolveBrandBySlug(TenantId.parse(tenantId), brandHeader);
-      if (brand) return { tenantId, brandId: brand.id };
+      if (brand) return { tenantId, brandId: brand.id, ...(locationId ? { locationId } : {}) };
     }
 
-    return { tenantId };
+    return { tenantId, ...(locationId ? { locationId } : {}) };
+  }
+
+  // T-084-09: header is a client-echoed hint, not a trust boundary — the
+  // per-request LocationScopeGuard cross-check (plan 05) is the real gate.
+  private resolveLocationHeader(req: FastifyRequest['raw']): string | undefined {
+    const header = req.headers[HEADER_LOCATION];
+    if (typeof header !== 'string' || header.length === 0) return undefined;
+    return LocationId.safeParse(header).success ? header : undefined;
   }
 
   private async resolveTenantOnly(req: FastifyRequest['raw']): Promise<string | undefined> {

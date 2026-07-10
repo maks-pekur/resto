@@ -31,6 +31,7 @@ declare module 'fastify' {
   interface FastifyRequest {
     principal?: Principal;
     activeBrandId?: string | null;
+    activeLocationId?: string | null;
     sessionToken?: string;
   }
 }
@@ -100,6 +101,7 @@ export class AuthGuard implements CanActivate {
       session: {
         activeOrganizationId?: string | null;
         activeBrandId?: string | null;
+        activeLocationId?: string | null;
         token: string;
       };
     };
@@ -146,6 +148,7 @@ export class AuthGuard implements CanActivate {
 
     req.principal = principal;
     req.activeBrandId = sessionData.session.activeBrandId ?? null;
+    req.activeLocationId = sessionData.session.activeLocationId ?? null;
     req.sessionToken = sessionData.session.token;
     return true;
   }

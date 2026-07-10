@@ -88,6 +88,7 @@ interface BuildOpts {
   /** From env — see config/env.schema.ts. Default 128. */
   maxPasswordLength?: number;
   onInitialBrandPin?: (userId: string, tenantId: string) => Promise<string | null>;
+  onInitialLocationPin?: (userId: string, brandId: string) => Promise<string | null>;
   /**
    * Invoked when an operator sets the active organization on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
@@ -347,6 +348,12 @@ export const buildAuth = (opts: BuildOpts) =>
       updateAge: 60 * 60 * 24, // 1d rolling
       additionalFields: {
         activeBrandId: {
+          type: 'string',
+          defaultValue: null,
+          input: false,
+          returned: true,
+        },
+        activeLocationId: {
           type: 'string',
           defaultValue: null,
           input: false,
