@@ -586,7 +586,7 @@ Plans:
 
 **Wave 3**
 
-- [ ] 08.4-05-PLAN.md — LocationScopeGuard (owner-bypass + existence-hiding 404) + BrandScopeGuard reachable-brand re-point (D-04/D-05)
+- [x] 08.4-05-PLAN.md — LocationScopeGuard (owner-bypass + existence-hiding 404) + BrandScopeGuard reachable-brand re-point (D-04/D-05)
 - [ ] 08.4-06-PLAN.md — Availability/stop-list re-grain to location + default-location resolver + CDN runbook note (D-02)
 
 **Wave 4**
