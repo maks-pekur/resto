@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-06-PLAN.md
-last_updated: '2026-07-10T09:39:57.948Z'
+stopped_at: 'Paused: 08.4-09 Tasks 1-2 committed, awaiting checkpoint:human-verify (Task 3)'
+last_updated: '2026-07-10T10:38:59.472Z'
 last_activity: 2026-07-10
 progress:
   total_phases: 24
@@ -233,6 +233,7 @@ Recent decisions affecting current work:
 - [Phase 08.4-06]: menu_stop_list/catalog_location_stop_version re-keyed brandId->locationId with location-grain RESTRICTIVE RLS (0068/0069); no location synthesized (D-12/D-13)
 - [Phase 08.4-06]: operator stop/unstop targets requireLocationContext() (active-location pin); guest availability resolves DefaultLocationResolverService.resolveForBrand (earliest active location)
 - [Phase 08.4-06]: CRITICAL: LocationScopeGuard rollout (08.4-05) left ~16 controllers without @LocationNeutral(), throwing 403 before owner-bypass; fixed 4 needed for this plan (public-menu, internal-tenants, me-brands, locations), ~12 remain incl. guest checkout -- see deferred-items.md
+- [Phase ?]: 08.4-09 Tasks 1-2 committed (dce3010, 150b07b): x-location-id echo + Locations CRUD page; owner locationSwitcher + staff pick-location interstitial + login flow. Paused at Task 3 human-verify checkpoint awaiting founder browser verification.
 
 ### Pending Todos
 
@@ -291,6 +292,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T09:39:57.935Z
-Stopped at: Completed 08.4-06-PLAN.md
-Resume file: None
+Last session: 2026-07-10T10:38:59.459Z
+Stopped at: Paused: 08.4-09 Tasks 1-2 committed, awaiting checkpoint:human-verify (Task 3)
+Resume file: .planning/phases/08.4-location-scoped-access/08.4-09-PLAN.md
