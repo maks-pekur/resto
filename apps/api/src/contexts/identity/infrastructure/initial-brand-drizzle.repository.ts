@@ -28,16 +28,23 @@ export class InitialBrandDrizzleRepository {
         }
         const scopedRows = await tx
           .select({ id: schema.brands.id })
-          .from(schema.memberBrandScope)
-          .innerJoin(schema.brands, eq(schema.memberBrandScope.brandId, schema.brands.id))
+          .from(schema.memberLocationScope)
+          .innerJoin(
+            schema.locations,
+            and(
+              eq(schema.memberLocationScope.locationId, schema.locations.id),
+              eq(schema.locations.status, 'active'),
+            ),
+          )
+          .innerJoin(schema.brands, eq(schema.locations.brandId, schema.brands.id))
           .innerJoin(
             schema.member,
             and(
-              eq(schema.member.id, schema.memberBrandScope.memberId),
+              eq(schema.member.id, schema.memberLocationScope.memberId),
               eq(schema.member.userId, userId),
             ),
           )
-          .where(eq(schema.memberBrandScope.tenantId, tenantId))
+          .where(eq(schema.memberLocationScope.tenantId, tenantId))
           .orderBy(asc(schema.brands.createdAt), asc(schema.brands.id))
           .limit(1);
         return scopedRows[0]?.id ?? null;

@@ -387,6 +387,7 @@ export const buildAuth = (opts: BuildOpts) =>
                 };
               } | null
             )?.context?.internalAdapter;
+            let pinnedBrandId: string | null = null;
             if (internalAdapter?.updateSession && opts.onInitialBrandPin) {
               if (ctxContext) brandPinDone.set(ctxContext, { done: true });
               try {
@@ -395,6 +396,7 @@ export const buildAuth = (opts: BuildOpts) =>
                   session.activeOrganizationId,
                 );
                 if (initialBrandId !== null) {
+                  pinnedBrandId = initialBrandId;
                   await internalAdapter.updateSession(session.token, {
                     activeBrandId: initialBrandId,
                   });
@@ -403,6 +405,27 @@ export const buildAuth = (opts: BuildOpts) =>
                 new Logger('IdentityEventHook').error(
                   { err, userId: session.userId, tenantId: session.activeOrganizationId },
                   'Failed to set initial activeBrandId on org-switch',
+                );
+              }
+            }
+
+            // D-11: shares the brandPinDone per-ctx gate above — single-fire, only
+            // once a brand was freshly pinned this call (owner: brand-global null OK).
+            if (internalAdapter?.updateSession && opts.onInitialLocationPin && pinnedBrandId) {
+              try {
+                const initialLocationId = await opts.onInitialLocationPin(
+                  session.userId,
+                  pinnedBrandId,
+                );
+                if (initialLocationId !== null) {
+                  await internalAdapter.updateSession(session.token, {
+                    activeLocationId: initialLocationId,
+                  });
+                }
+              } catch (err) {
+                new Logger('IdentityEventHook').error(
+                  { err, userId: session.userId, brandId: pinnedBrandId },
+                  'Failed to set initial activeLocationId on org-switch',
                 );
               }
             }
