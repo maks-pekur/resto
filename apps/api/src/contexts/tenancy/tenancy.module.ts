@@ -15,14 +15,19 @@ import { TenantResolverService } from './application/tenant-resolver.service';
 import { TenantAndBrandResolverService } from './application/tenant-and-brand-resolver.service';
 import { StartStripeOnboardingService } from './application/start-stripe-onboarding.service';
 import { StartBrandOnboardingService } from './application/start-brand-onboarding.service';
-import { BRAND_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
+import { ProvisionLocationService } from './application/provision-location.service';
+import { ListLocationsService } from './application/list-locations.service';
+import { ArchiveLocationService } from './application/archive-location.service';
+import { BRAND_REPOSITORY, LOCATION_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
 import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
 import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
 import { BrandDrizzleRepository } from './infrastructure/brand-drizzle.repository';
+import { LocationDrizzleRepository } from './infrastructure/location-drizzle.repository';
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { StripeOnboardingController } from './interfaces/http/stripe-onboarding.controller';
+import { LocationsController } from './interfaces/http/locations.controller';
 import {
   BrandOnboardingController,
   BrandOAuthCallbackController,
@@ -36,10 +41,12 @@ import {
     StripeOnboardingController,
     BrandOnboardingController,
     BrandOAuthCallbackController,
+    LocationsController,
   ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: BRAND_REPOSITORY, useClass: BrandDrizzleRepository },
+    { provide: LOCATION_REPOSITORY, useClass: LocationDrizzleRepository },
     {
       provide: PAYMENT_PROVIDER_PORT,
       inject: [ENV_TOKEN],
@@ -62,11 +69,15 @@ import {
     TenantAndBrandResolverService,
     StartStripeOnboardingService,
     StartBrandOnboardingService,
+    ProvisionLocationService,
+    ListLocationsService,
+    ArchiveLocationService,
     SeedPresetRolesService,
   ],
   exports: [
     TENANT_REPOSITORY,
     BRAND_REPOSITORY,
+    LOCATION_REPOSITORY,
     PAYMENT_PROVIDER_PORT,
     TenantResolverService,
     TenantAndBrandResolverService,
@@ -75,6 +86,9 @@ import {
     OffboardTenantService,
     ProvisionTenantService,
     ProvisionBrandService,
+    ProvisionLocationService,
+    ListLocationsService,
+    ArchiveLocationService,
   ],
 })
 export class TenancyModule {}

@@ -6,6 +6,8 @@ import {
   type HttpException,
 } from '@nestjs/common';
 import {
+  LocationAlreadyArchivedError,
+  LocationNotFoundError,
   StripeOnboardingFailedError,
   TenantAlreadyArchivedError,
   TenantAlreadySuspendedError,
@@ -68,6 +70,18 @@ export const mapDomainError = (err: unknown): unknown => {
   if (err instanceof TenantSuspensionNotAllowedError) {
     return new ConflictException({
       code: 'tenancy.tenant_suspension_not_allowed',
+      message: err.message,
+    });
+  }
+  if (err instanceof LocationNotFoundError) {
+    return new NotFoundException({
+      code: 'tenancy.location_not_found',
+      message: err.message,
+    });
+  }
+  if (err instanceof LocationAlreadyArchivedError) {
+    return new ConflictException({
+      code: 'tenancy.location_already_archived',
       message: err.message,
     });
   }
