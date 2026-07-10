@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-01-PLAN.md
-last_updated: '2026-07-10T07:43:51.487Z'
+stopped_at: Completed 08.4-02-PLAN.md
+last_updated: "2026-07-10T07:54:30.696Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 85
+  completed_plans: 86
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 2 of 11
+Plan: 3 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -132,6 +132,7 @@ _Updated after each plan completion_
 | Phase 08.3 P02 | 48min | 3 tasks | 15 files |
 | Phase 08.3 P03 | 19min | 3 tasks | 17 files |
 | Phase 08.4 P01 | 13min | 3 tasks | 11 files |
+| Phase 08.4 P02 | 8min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -216,6 +217,8 @@ Recent decisions affecting current work:
 - [Phase 08.4-01]: locations FK to brands onDelete restrict (never hard-deleted); member_location_scope location FK restrict, member/tenant FKs cascade (mirrors member_brand_scope except this one value)
 - [Phase 08.4-01]: member_location_scope is tenant-grain-only RLS (Tier 3), no brand/location scoped policy -- mirrors member_brand_scope's absence from the 0058 brand-policy table list
 - [Phase 08.4-01]: drizzle-kit generate unusable past migration ~0018 (snapshot drift since hand-written migrations bypassed it) -- hand-author SQL + manual meta/\_journal.json entries for 0063-0067
+- [Phase 08.4-02]: admin.location = ['read'] (owner-only location writes); staff.location = ['read'] — Location create/update/delete stays owner-exclusive, matching D-15's owner-only assignment-matrix gate
+- [Phase 08.4-02]: NON_DELEGATABLE regression check scoped to tenant/billing/ac — excludes staff:remove, a pre-existing legitimate 08.3 admin grant unrelated to this phase's escalation surface (per packages/domain/CLAUDE.md's own canonical example)
 
 ### Pending Todos
 
@@ -272,6 +275,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T07:43:51.478Z
-Stopped at: Completed 08.4-01-PLAN.md
+Last session: 2026-07-10T07:54:30.687Z
+Stopped at: Completed 08.4-02-PLAN.md
 Resume file: None
