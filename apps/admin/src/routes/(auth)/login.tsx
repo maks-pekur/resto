@@ -7,6 +7,8 @@ import { z } from 'zod';
 import { Loader2 } from 'lucide-react';
 import { Route as authLayoutRoute } from './_layout';
 import { authClient } from '@/lib/auth-client';
+import { apiFetch } from '@/lib/api-client';
+import type { MeResponse } from '@/lib/queries/identity';
 import { safeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +53,18 @@ function LoginPage() {
     const orgs = await authClient.organization.list();
     if (orgs.data?.[0]) {
       await authClient.organization.setActive({ organizationId: orgs.data[0].id });
+    }
+    const meResult = await apiFetch<MeResponse>('/v1/me');
+    const baseRole = meResult.data?.baseRole;
+    const session = await authClient.getSession();
+    const sessionData =
+      session.data !== null
+        ? (session.data as { session?: { activeLocationId?: string | null } }).session
+        : undefined;
+    const activeLocationId = sessionData?.activeLocationId ?? null;
+    if (baseRole !== undefined && baseRole !== 'owner' && activeLocationId === null) {
+      void navigate({ to: '/pick-location', search: { next } });
+      return;
     }
     void navigate({ to: safeNext(next ?? '/dashboard') });
   };

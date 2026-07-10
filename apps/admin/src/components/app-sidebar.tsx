@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQuery } from '@tanstack/react-query';
 import {
   CreditCard,
   KeyRound,
@@ -10,9 +11,11 @@ import {
   UtensilsCrossed,
 } from 'lucide-react';
 import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
+import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import type { OperatorSummary } from '@/lib/queries/identity';
+import { meLocationsQuery, activeLocationIdQuery } from '@/lib/queries/locations';
 import {
   Sidebar,
   SidebarContent,
@@ -37,6 +40,17 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
   const brandPrefix = activeBrandSlug ? `/${activeBrandSlug}` : '';
+  const isOwner = operator.baseRole === 'owner';
+  const locationsEnabled = isOwner && activeBrandSlug !== null;
+  const { data: locationsResult } = useQuery({
+    ...meLocationsQuery(),
+    enabled: locationsEnabled,
+  });
+  const { data: activeLocationId } = useQuery({
+    ...activeLocationIdQuery(),
+    enabled: locationsEnabled,
+  });
+  const locations = locationsResult?.data?.locations ?? [];
   const navMain: NavMainItem[] = [
     {
       title: t('dashboard'),
@@ -92,6 +106,11 @@ export function AppSidebar({
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader>
         <BrandSwitcher brands={brands} activeBrandSlug={activeBrandSlug} />
+        <LocationSwitcher
+          isOwner={isOwner}
+          locations={locations}
+          activeLocationId={activeLocationId ?? null}
+        />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />

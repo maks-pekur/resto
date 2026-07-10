@@ -12,6 +12,7 @@ import { Route as signupRoute } from './routes/(auth)/signup';
 import { Route as forgotPasswordRoute } from './routes/(auth)/forgot-password';
 import { Route as resetPasswordRoute } from './routes/(auth)/reset-password';
 import { Route as acceptInvitationRoute } from './routes/(auth)/accept-invitation.$id';
+import { Route as pickLocationRoute } from './routes/(auth)/pick-location';
 import { Route as protectedLayoutRoute } from './routes/(protected)/_layout';
 import { Route as brandSlugLayoutRoute } from './routes/(protected)/$brandSlug/_layout';
 import { Route as brandSlugIndexRoute } from './routes/(protected)/$brandSlug/index';
@@ -54,6 +55,7 @@ const authRouteTree = authLayoutRoute.addChildren([
   forgotPasswordRoute,
   resetPasswordRoute,
   acceptInvitationRoute,
+  pickLocationRoute,
 ]);
 
 const menuRouteTree = menuLayoutRoute.addChildren([
