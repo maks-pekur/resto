@@ -20,7 +20,12 @@ import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequireBrand, RequiresTenantContext } from '../../../../shared/auth';
+import {
+  LocationNeutral,
+  Permissions,
+  RequireBrand,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
 import {
   CategoryListResponseDto,
   DraftDiffResponseDto,
@@ -115,6 +120,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertCategoryInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -128,6 +134,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: ReorderCategoriesInputDto })
   @ApiOkResponse({ type: ReorderCategoriesResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -141,6 +148,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -154,6 +162,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertModifierGroupInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -168,6 +177,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertModifierOptionInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -182,6 +192,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertItemSizeInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -195,6 +206,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: SetItemModifierGroupsInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -233,6 +245,7 @@ export class CatalogController {
   @Post('photo-upload-url')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiBody({ type: PhotoUploadUrlInputDto })
   @ApiOkResponse({ type: PhotoUploadUrlResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -245,6 +258,7 @@ export class CatalogController {
   @Post('publish')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiOkResponse({ type: PublishScheduledResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   publishMenu(): Promise<PublishScheduledResponseDto> {
@@ -262,6 +276,7 @@ export class CatalogController {
   @Delete('publish')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiOkResponse({ type: PublishCancelResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   cancelPublishMenu(): Promise<PublishCancelResponseDto> {
@@ -277,6 +292,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveCategory(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveCategoryService.execute(id));
@@ -286,6 +302,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
@@ -295,6 +312,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
@@ -307,6 +325,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ItemListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listItems(
@@ -348,6 +367,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ItemDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getItem(@Param('id', ParseUUIDPipe) id: string): Promise<ItemDetailResponseDto> {
@@ -358,6 +378,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listModifierGroups(): Promise<ModifierGroupListResponseDto> {
@@ -368,6 +389,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getModifierGroup(
@@ -390,6 +412,7 @@ export class CatalogController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
   @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: DraftDiffResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getDraftDiff(): Promise<DraftDiffResponseDto> {
