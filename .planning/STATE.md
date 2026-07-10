@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: "08.4-07 complete (per-location role assignment + LocationPermissionChecker, unit-proven, not yet live-wired). Still pending: 08.4-09 Task 3 checkpoint:human-verify (founder browser check)"
-last_updated: "2026-07-10T12:09:15.235Z"
+stopped_at: '08.4-07 complete (per-location role assignment + LocationPermissionChecker, unit-proven, not yet live-wired). Still pending: 08.4-09 Task 3 checkpoint:human-verify (founder browser check)'
+last_updated: '2026-07-10T12:09:15.235Z'
 last_activity: 2026-07-10
 progress:
   total_phases: 24
