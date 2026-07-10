@@ -576,7 +576,7 @@ Plans:
 Plans:
 **Wave 1** _(parallel — db pkg / domain pkg, no file overlap)_
 
-- [ ] 08.4-01-PLAN.md — DB foundation: locations + member_location_scope tables, app_bind_location GUC, session active_location_id, isolation net (D-01/D-04/D-05/D-11/D-13)
+- [x] 08.4-01-PLAN.md — DB foundation: locations + member_location_scope tables, app_bind_location GUC, session active_location_id, isolation net (D-01/D-04/D-05/D-11/D-13)
 - [ ] 08.4-02-PLAN.md — Domain contracts: LocationId + location RBAC resource + system-role perms + admin-escalation regression (D-06/D-07)
 
 **Wave 2** _(identity vs tenancy, no file overlap)_
