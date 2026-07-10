@@ -39,11 +39,15 @@ const buildContext = (req: {
 const buildGuard = (
   options: {
     locationNeutral?: boolean;
+    brandNeutral?: boolean;
     scope?: readonly string[] | null;
   } = {},
 ) => {
   const reflector = new Reflector();
-  vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options.locationNeutral ?? false);
+  vi.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) => {
+    if (key === 'identity:brand-neutral') return options.brandNeutral ?? false;
+    return options.locationNeutral ?? false;
+  });
   const reader: MemberLocationScopeReader = {
     findLocationScopeForMember: vi.fn().mockResolvedValue(options.scope ?? null),
     findReachableBrandsForMember: vi.fn().mockResolvedValue(null),
@@ -59,6 +63,15 @@ describe('LocationScopeGuard', () => {
       mockGetLocationId.mockReturnValue(LOCATION_ID);
       const { guard } = buildGuard({ locationNeutral: true });
       await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
+    });
+  });
+
+  describe('@BrandNeutral opt-out', () => {
+    it('passes when the route is @BrandNeutral even though location is unbound', async () => {
+      mockGetLocationId.mockReturnValue(undefined);
+      const { guard, reader } = buildGuard({ locationNeutral: false, brandNeutral: true });
+      await expect(guard.canActivate(buildContext({ principal: operator() }))).resolves.toBe(true);
+      expect(reader.findLocationScopeForMember).not.toHaveBeenCalled();
     });
   });
 
