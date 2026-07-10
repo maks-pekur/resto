@@ -7,6 +7,7 @@ import { runInTenantContext } from '@resto/db';
 import { OutboxDispatcher, type EventEnvelope } from '@resto/events';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
+import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
 import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
 import {
@@ -80,7 +81,8 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
   beforeAll(async () => {
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo, pricing);
+    const defaultLocation = new DefaultLocationResolverService(stack.db);
+    service = new CreateOrderService(repo, pricing, defaultLocation);
 
     await stack.db.withoutTenant('seed tenant for outbox-nats-decoupling e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
@@ -96,6 +98,11 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
         slug: `brand-${brandId.slice(0, 8)}`,
         displayName: 'Decoupling Test Brand',
         status: 'active',
+      });
+      await tx.insert(schema.locations).values({
+        tenantId,
+        brandId,
+        name: 'Decoupling Test Location',
       });
     });
   }, 120_000);

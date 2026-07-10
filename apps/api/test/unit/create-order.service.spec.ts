@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { runInTenantContext } from '@resto/db';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
+import type { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
 import type {
   MenuPricingPort,
@@ -18,6 +19,7 @@ import type { Order } from '../../src/contexts/ordering/domain/order.aggregate';
 
 const tenantId = randomUUID();
 const brandId = randomUUID();
+const locationId = randomUUID();
 
 const pizzaId = randomUUID();
 const categoryId = randomUUID();
@@ -121,9 +123,13 @@ class FakeOrderRepository implements OrderRepository {
 
 const pricing: MenuPricingPort = { loadSnapshot: () => Promise.resolve(snapshot) };
 
+const defaultLocation = {
+  resolveForBrand: () => Promise.resolve(locationId),
+} as unknown as DefaultLocationResolverService;
+
 const makeService = (): { service: CreateOrderService; repo: FakeOrderRepository } => {
   const repo = new FakeOrderRepository();
-  return { service: new CreateOrderService(repo, pricing), repo };
+  return { service: new CreateOrderService(repo, pricing, defaultLocation), repo };
 };
 
 const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId, brandId }, op);

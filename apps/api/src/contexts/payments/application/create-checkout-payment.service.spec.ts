@@ -38,6 +38,7 @@ const makeOrderSnap = (brandId: string, overrides: Partial<OrderSnapshot> = {}):
   id: OrderId.parse(randomUUID()),
   tenantId: TenantId.parse(randomUUID()),
   brandId,
+  locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: 'ORD-001',
   status: 'created',

@@ -28,6 +28,7 @@ const makeOrder = (status: string, total = '20.00') =>
     id: ORDER_ID,
     tenantId: TENANT_ID,
     brandId: '00000000-0000-0000-0000-000000000003',
+    locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status: status as Parameters<typeof Order.fromSnapshot>[0]['status'],

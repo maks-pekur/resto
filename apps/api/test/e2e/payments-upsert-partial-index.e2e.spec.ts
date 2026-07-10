@@ -42,10 +42,17 @@ suite(
           displayName: 'Test Brand',
         });
 
+        const [location] = await tx
+          .insert(schema.locations)
+          .values({ tenantId, brandId, name: 'Payments Upsert Test Location' })
+          .returning({ id: schema.locations.id });
+        if (!location) throw new Error('seed for payments partial-index e2e: location failed.');
+
         await tx.insert(schema.orders).values({
           id: orderId,
           tenantId,
           brandId,
+          locationId: location.id,
           idempotencyKey: randomUUID(),
           orderNumber: 'ORD-001',
           status: 'requires_action',

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireBrandContext, requireTenantContext, withLocation } from '@resto/db';
 import { Currency, TenantId } from '@resto/domain';
+import { DefaultLocationResolverService } from '../../catalog/application/default-location-resolver.service';
 import {
   MENU_PRICING_PORT,
   ORDER_REPOSITORY,
@@ -24,12 +25,15 @@ export class CreateOrderService {
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly repo: OrderRepository,
     @Inject(MENU_PRICING_PORT) private readonly pricing: MenuPricingPort,
+    @Inject(DefaultLocationResolverService)
+    private readonly defaultLocation: DefaultLocationResolverService,
   ) {}
 
   async execute(input: CreateOrderInput): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
     const brandId = requireBrandContext();
+    const locationId = await this.defaultLocation.resolveForBrand(brandId, tenantId);
 
     const snapshot = await this.pricing.loadSnapshot(tenantId, brandId);
     const currency = Currency.parse(snapshot.currency);
@@ -112,6 +116,7 @@ export class CreateOrderService {
     const order = Order.create({
       tenantId,
       brandId,
+      locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber,
       fulfillmentMode: input.fulfillmentMode,
@@ -125,7 +130,7 @@ export class CreateOrderService {
       scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : null,
     });
 
-    await this.repo.save(order);
+    await withLocation(locationId, () => this.repo.save(order));
 
     const existing = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     const snap = existing?.toSnapshot() ?? order.toSnapshot();

@@ -30,6 +30,7 @@ const makeOrder = (status: string): Order => {
     id: OrderId.parse(ORDER_ID),
     tenantId: TENANT_ID,
     brandId: BRAND_ID,
+    locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status,

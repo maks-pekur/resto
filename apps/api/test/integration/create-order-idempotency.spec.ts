@@ -11,6 +11,7 @@ import {
 } from '../e2e/helpers/with-db-stack';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
+import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
 import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
 
@@ -96,7 +97,8 @@ suite('CreateOrderService — idempotency', () => {
   beforeAll(async () => {
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo, pricing);
+    const defaultLocation = new DefaultLocationResolverService(stack.db);
+    service = new CreateOrderService(repo, pricing, defaultLocation);
 
     await stack.db.withoutTenant('seed idempotency spec fixtures', async (tx) => {
       await tx.insert(schema.tenants).values([
@@ -118,6 +120,10 @@ suite('CreateOrderService — idempotency', () => {
       await tx.insert(schema.brands).values([
         { id: brandA, tenantId: tenantIdA, slug: 'brand-a', displayName: 'Brand A' },
         { id: brandB, tenantId: tenantIdB, slug: 'brand-b', displayName: 'Brand B' },
+      ]);
+      await tx.insert(schema.locations).values([
+        { tenantId: tenantIdA, brandId: brandA, name: 'Idem Location A' },
+        { tenantId: tenantIdB, brandId: brandB, name: 'Idem Location B' },
       ]);
     });
   }, 180_000);

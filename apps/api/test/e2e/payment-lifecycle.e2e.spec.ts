@@ -55,10 +55,17 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         stripeOnboardingStatus: 'complete',
       });
 
+      const [location] = await tx
+        .insert(schema.locations)
+        .values({ tenantId, brandId, name: 'Lifecycle Test Location' })
+        .returning({ id: schema.locations.id });
+      if (!location) throw new Error('seed lifecycle e2e: location insert failed.');
+
       await tx.insert(schema.orders).values({
         id: orderId,
         tenantId,
         brandId,
+        locationId: location.id,
         idempotencyKey: randomUUID(),
         orderNumber: 'ORD-LIFECYCLE-001',
         status: 'created',

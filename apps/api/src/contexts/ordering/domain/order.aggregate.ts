@@ -41,6 +41,7 @@ export interface OrderSnapshot {
   readonly id: OrderId;
   readonly tenantId: TenantId;
   readonly brandId: string;
+  readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
@@ -64,6 +65,7 @@ export interface OrderSnapshot {
 export interface CreateOrderInput {
   readonly tenantId: TenantId;
   readonly brandId: string;
+  readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
@@ -166,6 +168,7 @@ export class Order {
       id,
       tenantId: input.tenantId,
       brandId: input.brandId,
+      locationId: input.locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
       status: 'created',

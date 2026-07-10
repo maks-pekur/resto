@@ -9,6 +9,7 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
   return {
     tenantId: TenantId.parse('00000000-0000-0000-0000-000000000001'),
     brandId: '00000000-0000-0000-0000-000000000002',
+    locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
     fulfillmentMode: 'dine_in',
