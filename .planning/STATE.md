@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-03-PLAN.md
-last_updated: '2026-07-10T08:19:15.219Z'
+stopped_at: Completed 08.4-04-PLAN.md
+last_updated: "2026-07-10T08:37:44.027Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 87
+  completed_plans: 88
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 4 of 11
+Plan: 5 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-10
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [████████░░] 84%
+Progress: [█████████░] 85%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -134,6 +134,7 @@ _Updated after each plan completion_
 | Phase 08.4 P01 | 13min | 3 tasks | 11 files |
 | Phase 08.4 P02 | 8min | 2 tasks | 6 files |
 | Phase 08.4-location-scoped-access P03 | 14min | 4 tasks | 18 files |
+| Phase 08.4-location-scoped-access P04 | 9min | 3 tasks | 12 files |
 
 ## Accumulated Context
 
@@ -223,6 +224,8 @@ Recent decisions affecting current work:
 - [Phase 08.4-03]: InitialLocationDrizzleRepository.resolveForUserInBrand has no tenantId param (locked interface); bootstraps tenantId via db.withoutTenant filtered by globally-unique brandId, then re-binds via db.withTenantId
 - [Phase 08.4-03]: onInitialLocationPin reuses the existing brandPinDone WeakMap gate (no separate locationPinDone stash) -- fires only when a brand was freshly pinned in the same hook invocation
 - [Phase 08.4-03]: SetActiveBrandService reset of activeLocationId happens on EVERY successful brand switch (owner AND non-owner), not just initial login, closing the D-08 dangling-location gap
+- [Phase 08.4-04]: LocationsController placed at v1/tenancy/locations (no :slug in URL) — brand resolved from ALS context via x-brand-slug header, mirroring catalog.controller.ts's brand-scoped-without-URL-param pattern
+- [Phase 08.4-04]: countScopedMembers(locationId) counts every member_location_scope row for that location (blast-radius warning); archive never touches scope rows (D-17)
 
 ### Pending Todos
 
@@ -279,6 +282,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T08:19:15.210Z
-Stopped at: Completed 08.4-03-PLAN.md
+Last session: 2026-07-10T08:37:44.017Z
+Stopped at: Completed 08.4-04-PLAN.md
 Resume file: None

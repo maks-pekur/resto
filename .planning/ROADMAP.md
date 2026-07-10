@@ -582,7 +582,7 @@ Plans:
 **Wave 2** _(identity vs tenancy, no file overlap)_
 
 - [x] 08.4-03-PLAN.md — Active-location session pin (asymmetric owner/staff), scope reader + reachable-brand derivation, GET /v1/me/locations (D-04/D-08/D-09/D-10/D-11)
-- [ ] 08.4-04-PLAN.md — Tenancy Locations CRUD + archive blast-radius warning, no auto-create (D-01/D-12/D-14/D-17)
+- [x] 08.4-04-PLAN.md — Tenancy Locations CRUD + archive blast-radius warning, no auto-create (D-01/D-12/D-14/D-17)
 
 **Wave 3**
 
