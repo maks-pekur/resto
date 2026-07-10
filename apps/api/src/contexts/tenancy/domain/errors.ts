@@ -100,6 +100,20 @@ export class TenantSuspensionNotAllowedError extends Error {
   }
 }
 
+export class LocationNotFoundError extends Error {
+  constructor(public readonly identifier: string) {
+    super(`Location "${identifier}" was not found.`);
+    this.name = 'LocationNotFoundError';
+  }
+}
+
+export class LocationAlreadyArchivedError extends Error {
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" is already archived.`);
+    this.name = 'LocationAlreadyArchivedError';
+  }
+}
+
 export class StripeOnboardingFailedError extends Error {
   constructor(
     public readonly tenantId: string,

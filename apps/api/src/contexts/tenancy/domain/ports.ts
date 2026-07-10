@@ -1,5 +1,6 @@
-import type { BrandId, BrandSlug, TenantId, TenantSlug } from '@resto/domain';
+import type { BrandId, BrandSlug, LocationId, TenantId, TenantSlug } from '@resto/domain';
 import type { Brand, BrandSnapshot } from './brand.aggregate';
+import type { LocationSnapshot } from './location.aggregate';
 import type { Tenant, TenantSnapshot } from './tenant.aggregate';
 import type { TenantDomain } from './tenant-domain';
 
@@ -33,3 +34,12 @@ export interface BrandRepository {
 }
 
 export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');
+
+export interface LocationRepository {
+  findById(id: LocationId): Promise<LocationSnapshot | null>;
+  listForBrand(brandId: BrandId, tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
+  save(snapshot: LocationSnapshot): Promise<void>;
+  countScopedMembers(locationId: LocationId): Promise<number>;
+}
+
+export const LOCATION_REPOSITORY = Symbol('LOCATION_REPOSITORY');
