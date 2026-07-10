@@ -35,6 +35,7 @@ import { MeBrandsController } from './interfaces/http/me-brands.controller';
 import { SetActiveBrandController } from './interfaces/http/set-active-brand.controller';
 import { SetActiveLocationController } from './interfaces/http/set-active-location.controller';
 import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
+import { LocationScopeGuard } from './interfaces/http/guards/location-scope.guard';
 import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
 import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
 import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
@@ -87,6 +88,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_GUARD, useClass: BrandScopeGuard },
+    { provide: APP_GUARD, useClass: LocationScopeGuard },
     { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
     MemberBrandScopeDrizzleReader,
     { provide: MEMBER_LOCATION_SCOPE_READER, useClass: MemberLocationScopeDrizzleReader },

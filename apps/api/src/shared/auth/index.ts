@@ -8,3 +8,4 @@ export { REQUIRE_ACTIVE_TENANT, RequireActiveTenant } from './require-active-ten
 export { RequireActiveTenantGuard } from './require-active-tenant.guard';
 export { REQUIRE_BRAND_KEY, RequireBrand } from './require-brand.decorator';
 export { BRAND_NEUTRAL_KEY, BrandNeutral } from './brand-neutral.decorator';
+export { LOCATION_NEUTRAL_KEY, LocationNeutral } from './location-neutral.decorator';
