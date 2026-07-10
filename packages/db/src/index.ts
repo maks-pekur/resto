@@ -22,6 +22,9 @@ export {
   getBrandId,
   requireBrandContext,
   withBrand,
+  getLocationId,
+  requireLocationContext,
+  withLocation,
   type TenantContext,
 } from './context';
 export {

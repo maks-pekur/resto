@@ -212,6 +212,7 @@ export class TenantAwareDb {
     expected: string,
     scope: string,
     expectedBrand?: string,
+    expectedLocation?: string,
   ): Promise<void> {
     const rows = await tx.execute<{ v: string | null }>(
       sql`SELECT current_setting('app.current_tenant', true) AS v`,
@@ -233,6 +234,17 @@ export class TenantAwareDb {
         );
       }
     }
+    if (expectedLocation !== undefined) {
+      const locationRows = await tx.execute<{ v: string | null }>(
+        sql`SELECT current_setting('app.current_location', true) AS v`,
+      );
+      const actualLocation = locationRows[0]?.v ?? '';
+      if (actualLocation !== expectedLocation) {
+        throw new Error(
+          `Location GUC drift detected in ${scope}: expected ${JSON.stringify(expectedLocation)}, got ${JSON.stringify(actualLocation)}. Transaction rolled back.`,
+        );
+      }
+    }
   }
 
   /**
@@ -247,6 +259,12 @@ export class TenantAwareDb {
    * brand-scoped routes), `app_bind_brand` is called AFTER `app_bind_tenant`
    * so the brand RLS policy can filter rows by current_brand_id(). The
    * drift sentinel is extended to cover `app.current_brand` in that case.
+   *
+   * When `ctx.locationId` is present (set via `withLocation`/session pin
+   * for location-scoped routes), `app_bind_location` is called AFTER
+   * `app_bind_brand` so the location RLS policy can filter rows by
+   * current_location_id(). The drift sentinel is extended to cover
+   * `app.current_location` in that case.
    */
   async withTenant<T>(op: (tx: RestoTx, scoped: ScopedTx) => Promise<T>): Promise<T> {
     const ctx = requireTenantContext();
@@ -255,8 +273,11 @@ export class TenantAwareDb {
       if (ctx.brandId !== undefined) {
         await tx.execute(sql`SELECT app_bind_brand(${ctx.brandId}::text)`);
       }
+      if (ctx.locationId !== undefined) {
+        await tx.execute(sql`SELECT app_bind_location(${ctx.locationId}::text)`);
+      }
       const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
-      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.brandId);
+      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.brandId, ctx.locationId);
       return result;
     });
   }

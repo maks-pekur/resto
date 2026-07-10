@@ -10,6 +10,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 export interface TenantContext {
   readonly tenantId: string;
   readonly brandId?: string;
+  readonly locationId?: string;
   /**
    * Optional correlation id propagated end-to-end (HTTP middleware → DB
    * → outbox → events). Mirrors OpenTelemetry baggage; populated on
@@ -37,6 +38,11 @@ export const runInTenantContext = <T>(context: TenantContext, op: () => Promise<
   if (context.brandId !== undefined && !isUuid(context.brandId)) {
     return Promise.reject(
       new Error(`Invalid brand id: expected a uuid, got ${JSON.stringify(context.brandId)}.`),
+    );
+  }
+  if (context.locationId !== undefined && !isUuid(context.locationId)) {
+    return Promise.reject(
+      new Error(`Invalid location id: expected a uuid, got ${JSON.stringify(context.locationId)}.`),
     );
   }
   return storage.run(context, op);
@@ -94,4 +100,34 @@ export const requireBrandContext = (): string => {
     );
   }
   return brandId;
+};
+
+export const getLocationId = (): string | undefined => storage.getStore()?.locationId;
+
+export const withLocation = <T>(locationId: string, op: () => Promise<T>): Promise<T> => {
+  if (!isUuid(locationId)) {
+    return Promise.reject(
+      new Error(`Invalid location id: expected a uuid, got ${JSON.stringify(locationId)}.`),
+    );
+  }
+  const parent = storage.getStore();
+  if (parent === undefined) {
+    return Promise.reject(
+      new Error(
+        'withLocation requires a parent tenant context. Wrap in runInTenantContext() first.',
+      ),
+    );
+  }
+  return storage.run({ ...parent, locationId }, op);
+};
+
+export const requireLocationContext = (): string => {
+  const locationId = storage.getStore()?.locationId;
+  if (locationId === undefined) {
+    throw new Error(
+      'No location context bound. Wrap the call in a request that resolves a location ' +
+        '(via TenantContextMiddleware) or use withLocation(locationId, op) explicitly.',
+    );
+  }
+  return locationId;
 };
