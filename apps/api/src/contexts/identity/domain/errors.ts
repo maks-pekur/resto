@@ -39,6 +39,21 @@ export class BrandOutOfScopeError extends IdentityDomainError {
   }
 }
 
+export class LocationOutOfScopeError extends IdentityDomainError {
+  constructor() {
+    super('location.out_of_scope', 'Location is not within the operator scope.');
+  }
+}
+
+export class LocationAlreadyPinnedError extends IdentityDomainError {
+  constructor() {
+    super(
+      'location.already_pinned',
+      'Active location is already pinned for this session; re-login to switch.',
+    );
+  }
+}
+
 export class RoleOccupiedError extends IdentityDomainError {
   constructor(roleSlug: string, memberCount: number) {
     super(

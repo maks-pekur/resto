@@ -30,13 +30,19 @@ import { ListMyBrandsService } from './application/list-my-brands.service';
 import { CreateMyBrandService } from './application/create-my-brand.service';
 import { CheckBrandSlugAvailabilityService } from './application/check-brand-slug-availability.service';
 import { SetActiveBrandService } from './application/set-active-brand.service';
+import { SetActiveLocationService } from './application/set-active-location.service';
 import { MeBrandsController } from './interfaces/http/me-brands.controller';
 import { SetActiveBrandController } from './interfaces/http/set-active-brand.controller';
+import { SetActiveLocationController } from './interfaces/http/set-active-location.controller';
 import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
 import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
 import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
+import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
+import { MemberLocationScopeDrizzleReader } from './infrastructure/member-location-scope-drizzle.reader';
 import { SESSION_ACTIVE_BRAND_WRITER } from './application/ports/session-active-brand-writer.port';
 import { BetterAuthSessionActiveBrandWriter } from './infrastructure/better-auth/session-active-brand.adapter';
+import { SESSION_ACTIVE_LOCATION_WRITER } from './application/ports/session-active-location-writer.port';
+import { BetterAuthSessionActiveLocationWriter } from './infrastructure/better-auth/session-active-location.adapter';
 import { BA_USER_READER } from './application/ports/ba-user-reader.port';
 import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';
 import { TENANT_PROVISIONING_PORT } from './application/ports/tenant-provisioning.port';
@@ -56,6 +62,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     MeController,
     MeBrandsController,
     SetActiveBrandController,
+    SetActiveLocationController,
     InternalBootstrapController,
     SignUpController,
     RolesController,
@@ -74,6 +81,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     CreateMyBrandService,
     CheckBrandSlugAvailabilityService,
     SetActiveBrandService,
+    SetActiveLocationService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
     { provide: APP_GUARD, useClass: AuthGuard },
@@ -81,8 +89,12 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     { provide: APP_GUARD, useClass: BrandScopeGuard },
     { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
     MemberBrandScopeDrizzleReader,
+    { provide: MEMBER_LOCATION_SCOPE_READER, useClass: MemberLocationScopeDrizzleReader },
+    MemberLocationScopeDrizzleReader,
     { provide: SESSION_ACTIVE_BRAND_WRITER, useClass: BetterAuthSessionActiveBrandWriter },
     BetterAuthSessionActiveBrandWriter,
+    { provide: SESSION_ACTIVE_LOCATION_WRITER, useClass: BetterAuthSessionActiveLocationWriter },
+    BetterAuthSessionActiveLocationWriter,
     { provide: BA_USER_READER, useClass: BaUserDrizzleReader },
     BaUserDrizzleReader,
     { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },

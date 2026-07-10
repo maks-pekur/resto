@@ -28,6 +28,7 @@ import { createEmailAdapter } from './infrastructure/email/email-adapter.factory
 import { getLocale } from './infrastructure/email/get-locale';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
 import { InitialBrandDrizzleRepository } from './infrastructure/initial-brand-drizzle.repository';
+import { InitialLocationDrizzleRepository } from './infrastructure/initial-location-drizzle.repository';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
@@ -219,6 +220,7 @@ export const buildAuthFromEnv = (
   emitter: IdentityEventEmitterPort,
   emailAdapter: EmailAdapterPort,
   brandResolver: InitialBrandDrizzleRepository,
+  locationResolver: InitialLocationDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
   // Admin (and other browser callers) hit BA from a different origin
@@ -295,6 +297,8 @@ export const buildAuthFromEnv = (
       );
     },
     onInitialBrandPin: (userId, tenantId) => brandResolver.resolveForUserInTenant(userId, tenantId),
+    onInitialLocationPin: (userId, brandId) =>
+      locationResolver.resolveForUserInBrand(userId, brandId),
     onActiveOrganizationSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
       const xff = readHeader(ctx.headers, 'x-forwarded-for');
@@ -328,6 +332,7 @@ const authProvider: Provider = {
     IDENTITY_EVENT_EMITTER,
     EMAIL_ADAPTER_PORT,
     InitialBrandDrizzleRepository,
+    InitialLocationDrizzleRepository,
   ],
   useFactory: buildAuthFromEnv,
 };
@@ -342,6 +347,7 @@ const permissionCheckerProvider: Provider = {
     authDrizzleProvider,
     emailAdapterProvider,
     InitialBrandDrizzleRepository,
+    InitialLocationDrizzleRepository,
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
@@ -357,6 +363,7 @@ const permissionCheckerProvider: Provider = {
     emailAdapterProvider,
     permissionCheckerProvider,
     IDENTITY_EVENT_EMITTER,
+    InitialLocationDrizzleRepository,
   ],
 })
 export class IdentityCoreModule {}

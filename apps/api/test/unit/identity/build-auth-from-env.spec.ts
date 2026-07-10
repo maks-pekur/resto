@@ -4,6 +4,7 @@ import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/
 import type { IdentityEventEmitterPort } from '../../../src/contexts/identity/application/ports/identity-event-emitter.port';
 import type { EmailAdapterPort } from '../../../src/contexts/identity/domain/ports';
 import type { InitialBrandDrizzleRepository } from '../../../src/contexts/identity/infrastructure/initial-brand-drizzle.repository';
+import type { InitialLocationDrizzleRepository } from '../../../src/contexts/identity/infrastructure/initial-location-drizzle.repository';
 
 vi.mock('../../../src/contexts/identity/infrastructure/better-auth/auth.config', () => ({
   buildAuth: vi.fn(() => ({ kind: 'stub-auth' })),
@@ -64,6 +65,9 @@ const stubEmitter: IdentityEventEmitterPort = { emit: vi.fn() };
 const stubBrandResolver = {
   resolveForUserInTenant: vi.fn().mockResolvedValue(null),
 } as unknown as InitialBrandDrizzleRepository;
+const stubLocationResolver = {
+  resolveForUserInBrand: vi.fn().mockResolvedValue(null),
+} as unknown as InitialLocationDrizzleRepository;
 const stubEmailAdapter: EmailAdapterPort = {
   adapterName: 'resend',
   sendInvitation: vi.fn(() => Promise.resolve()),
@@ -86,6 +90,7 @@ describe('buildAuthFromEnv (D-13 + RES-187)', () => {
         stubEmitter,
         stubEmailAdapter,
         stubBrandResolver,
+        stubLocationResolver,
       ),
     ).not.toThrow();
   });
@@ -98,6 +103,7 @@ describe('buildAuthFromEnv (D-13 + RES-187)', () => {
         stubEmitter,
         stubEmailAdapter,
         stubBrandResolver,
+        stubLocationResolver,
       ),
     ).not.toThrow();
   });
@@ -109,6 +115,7 @@ describe('buildAuthFromEnv (D-13 + RES-187)', () => {
       stubEmitter,
       stubEmailAdapter,
       stubBrandResolver,
+      stubLocationResolver,
     );
     expect(buildAuth).toHaveBeenCalledTimes(1);
     const opts = vi.mocked(buildAuth).mock.calls[0]?.[0];
