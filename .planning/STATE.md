@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-02-PLAN.md
-last_updated: '2026-07-10T07:54:30.696Z'
+stopped_at: Completed 08.4-03-PLAN.md
+last_updated: "2026-07-10T08:19:15.219Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 86
+  completed_plans: 87
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 3 of 11
+Plan: 4 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-10
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [████████░░] 83%
+Progress: [████████░░] 84%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -133,6 +133,7 @@ _Updated after each plan completion_
 | Phase 08.3 P03 | 19min | 3 tasks | 17 files |
 | Phase 08.4 P01 | 13min | 3 tasks | 11 files |
 | Phase 08.4 P02 | 8min | 2 tasks | 6 files |
+| Phase 08.4-location-scoped-access P03 | 14min | 4 tasks | 18 files |
 
 ## Accumulated Context
 
@@ -219,6 +220,9 @@ Recent decisions affecting current work:
 - [Phase 08.4-01]: drizzle-kit generate unusable past migration ~0018 (snapshot drift since hand-written migrations bypassed it) -- hand-author SQL + manual meta/\_journal.json entries for 0063-0067
 - [Phase 08.4-02]: admin.location = ['read'] (owner-only location writes); staff.location = ['read'] — Location create/update/delete stays owner-exclusive, matching D-15's owner-only assignment-matrix gate
 - [Phase 08.4-02]: NON_DELEGATABLE regression check scoped to tenant/billing/ac — excludes staff:remove, a pre-existing legitimate 08.3 admin grant unrelated to this phase's escalation surface (per packages/domain/CLAUDE.md's own canonical example)
+- [Phase 08.4-03]: InitialLocationDrizzleRepository.resolveForUserInBrand has no tenantId param (locked interface); bootstraps tenantId via db.withoutTenant filtered by globally-unique brandId, then re-binds via db.withTenantId
+- [Phase 08.4-03]: onInitialLocationPin reuses the existing brandPinDone WeakMap gate (no separate locationPinDone stash) -- fires only when a brand was freshly pinned in the same hook invocation
+- [Phase 08.4-03]: SetActiveBrandService reset of activeLocationId happens on EVERY successful brand switch (owner AND non-owner), not just initial login, closing the D-08 dangling-location gap
 
 ### Pending Todos
 
@@ -275,6 +279,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T07:54:30.687Z
-Stopped at: Completed 08.4-02-PLAN.md
+Last session: 2026-07-10T08:19:15.210Z
+Stopped at: Completed 08.4-03-PLAN.md
 Resume file: None
