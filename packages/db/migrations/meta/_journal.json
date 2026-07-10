@@ -442,6 +442,34 @@
       "when": 1783123200000,
       "tag": "0062_identity_roles_archived_at",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "7",
+      "when": 1783209600000,
+      "tag": "0063_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "7",
+      "when": 1783296000000,
+      "tag": "0064_member_location_scope",
+      "breakpoints": true
+    },
+    {
+      "idx": 65,
+      "version": "7",
+      "when": 1783382400000,
+      "tag": "0065_location_guc",
+      "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1783468800000,
+      "tag": "0066_session_active_location",
+      "breakpoints": true
     }
   ]
 }
