@@ -348,9 +348,23 @@ suite('Row-Level Security — tenant isolation', () => {
   describe('Plan 04a-07: cross-tenant matrix for renamed + new tables', () => {
     let aItemId: string;
     let aModifierGroupId: string;
+    let aLocationId: string;
+    let bLocationId: string;
 
     beforeAll(async () => {
       await pg.db.withoutTenant('seed items for plan 04a-07 cross-tenant matrix', async (tx) => {
+        const [aLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, brandId: brandA, name: 'Plan 04a-07 A Location' })
+          .returning({ id: schema.locations.id });
+        const [bLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantB, brandId: brandB, name: 'Plan 04a-07 B Location' })
+          .returning({ id: schema.locations.id });
+        if (!aLoc || !bLoc) throw new Error('Cross-tenant seed: location create failed.');
+        aLocationId = aLoc.id;
+        bLocationId = bLoc.id;
+
         const [aCat] = await tx
           .insert(schema.menuCategories)
           .values({ tenantId: tenantA, brandId: brandA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
@@ -410,7 +424,7 @@ suite('Row-Level Security — tenant isolation', () => {
           await tx.insert(schema.menuStopList).values({
             tenantId: tenantA,
             itemId: aItemId,
-            brandId: brandA,
+            locationId: aLocationId,
             reason: 'iso fixture',
             stoppedByUserId: null,
           });
@@ -452,9 +466,62 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.menuStopList).values({
             tenantId: tenantB,
             itemId: aItemId,
-            brandId: brandB,
+            locationId: bLocationId,
             reason: null,
             stoppedByUserId: null,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_stop_list: location-grain binding to A returns A row only, hidden when bound to B', async () => {
+      const boundToA = await runInTenantContext(
+        { tenantId: tenantA, locationId: aLocationId },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuStopList)),
+      );
+      expect(boundToA.map((r) => r.itemId)).toContain(aItemId);
+
+      const [otherLocation] = await pg.db.withoutTenant(
+        'seed sibling location for menu_stop_list location-grain check',
+        async (tx) =>
+          tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, brandId: brandA, name: 'Sibling Location' })
+            .returning({ id: schema.locations.id }),
+      );
+      if (!otherLocation) throw new Error('sibling location seed failed');
+
+      const boundToSibling = await runInTenantContext(
+        { tenantId: tenantA, locationId: otherLocation.id },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuStopList)),
+      );
+      expect(boundToSibling.map((r) => r.itemId)).not.toContain(aItemId);
+    });
+
+    it('catalog_location_stop_version: tenant B sees zero of tenant A rows', async () => {
+      await pg.db.withoutTenant('bump A location stop version for isolation check', async (tx) => {
+        await tx
+          .insert(schema.catalogLocationStopVersion)
+          .values({ locationId: aLocationId, tenantId: tenantA })
+          .onConflictDoNothing();
+      });
+
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.catalogLocationStopVersion)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('catalog_location_stop_version: tenant B INSERT with tenant A location_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.catalogLocationStopVersion).values({
+            locationId: aLocationId,
+            tenantId: tenantB,
           }),
         ),
       ).then(

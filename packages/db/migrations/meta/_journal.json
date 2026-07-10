@@ -477,6 +477,20 @@
       "when": 1783555200000,
       "tag": "0067_location_tenant_iso",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1783641600000,
+      "tag": "0068_stop_list_location_regrain",
+      "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1783728000000,
+      "tag": "0069_stop_list_location_rls",
+      "breakpoints": true
     }
   ]
 }

@@ -16,6 +16,8 @@ suite('catalog version tables', () => {
   let tenantB: string;
   let brandA: string;
   let brandB: string;
+  let locationA: string;
+  let locationB: string;
 
   beforeAll(async () => {
     pg = await startPostgres();
@@ -45,15 +47,27 @@ suite('catalog version tables', () => {
       brandA = ba.id;
       brandB = bb.id;
 
+      const [la] = await tx
+        .insert(schema.locations)
+        .values({ tenantId: tenantA, brandId: brandA, name: 'Ver A Location' })
+        .returning({ id: schema.locations.id });
+      const [lb] = await tx
+        .insert(schema.locations)
+        .values({ tenantId: tenantB, brandId: brandB, name: 'Ver B Location' })
+        .returning({ id: schema.locations.id });
+      if (!la || !lb) throw new Error('Failed to seed locations.');
+      locationA = la.id;
+      locationB = lb.id;
+
       await tx
         .insert(schema.catalogMenuVersion)
         .values([{ tenantId: tenantA }, { tenantId: tenantB }])
         .onConflictDoNothing();
       await tx
-        .insert(schema.catalogBrandStopVersion)
+        .insert(schema.catalogLocationStopVersion)
         .values([
-          { brandId: brandA, tenantId: tenantA },
-          { brandId: brandB, tenantId: tenantB },
+          { locationId: locationA, tenantId: tenantA },
+          { locationId: locationB, tenantId: tenantB },
         ])
         .onConflictDoNothing();
     });
@@ -76,13 +90,13 @@ suite('catalog version tables', () => {
     expect(rows[0]?.menuVersion).toBe(1);
   });
 
-  it('seeds a brand stop_version of 1', async () => {
+  it('seeds a location stop_version of 1', async () => {
     const rows = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) =>
         tx
           .select()
-          .from(schema.catalogBrandStopVersion)
-          .where(eq(schema.catalogBrandStopVersion.brandId, brandA)),
+          .from(schema.catalogLocationStopVersion)
+          .where(eq(schema.catalogLocationStopVersion.locationId, locationA)),
       ),
     );
     expect(rows).toHaveLength(1);
@@ -100,13 +114,13 @@ suite('catalog version tables', () => {
     expect(Number(bumped[0]?.menu_version)).toBe(2);
   });
 
-  it('blocks a cross-tenant read of catalog_brand_stop_version', async () => {
+  it('blocks a cross-tenant read of catalog_location_stop_version', async () => {
     const fromA = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) =>
         tx
           .select()
-          .from(schema.catalogBrandStopVersion)
-          .where(eq(schema.catalogBrandStopVersion.brandId, brandB)),
+          .from(schema.catalogLocationStopVersion)
+          .where(eq(schema.catalogLocationStopVersion.locationId, locationB)),
       ),
     );
     expect(fromA).toHaveLength(0);

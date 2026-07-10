@@ -25,7 +25,7 @@ import {
   timestampsColumns,
 } from './_columns';
 import { tenants } from './tenants';
-import { brands } from './brands';
+import { brands, locations } from './brands';
 
 export const menuCategories = pgTable(
   'menu_categories',
@@ -326,7 +326,7 @@ export const menuStopList = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     itemId: uuid('item_id').notNull(),
     stoppedAt: timestamp('stopped_at', { withTimezone: true, mode: 'date' })
       .notNull()
@@ -346,11 +346,15 @@ export const menuStopList = pgTable(
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_stop_list_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
+      name: 'menu_stop_list_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
     }).onDelete('restrict'),
-    uniqueIndex('menu_stop_list_item_tenant_uq').on(table.tenantId, table.itemId),
+    uniqueIndex('menu_stop_list_location_item_tenant_uq').on(
+      table.tenantId,
+      table.locationId,
+      table.itemId,
+    ),
     tenantParentUniqueIndex('menu_stop_list', { id: table.id, tenantId: table.tenantId }),
   ],
 );
@@ -407,27 +411,27 @@ export const catalogMenuVersion = pgTable(
   ],
 );
 
-export const catalogBrandStopVersion = pgTable(
-  'catalog_brand_stop_version',
+export const catalogLocationStopVersion = pgTable(
+  'catalog_location_stop_version',
   {
-    brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     tenantId: tenantIdColumn(),
     stopVersion: bigint('stop_version', { mode: 'number' }).notNull().default(1),
   },
   (table) => [
     primaryKey({
-      name: 'catalog_brand_stop_version_pk',
-      columns: [table.brandId, table.tenantId],
+      name: 'catalog_location_stop_version_pk',
+      columns: [table.locationId, table.tenantId],
     }),
     foreignKey({
-      name: 'catalog_brand_stop_version_tenant_fk',
+      name: 'catalog_location_stop_version_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }),
     compositeTenantFk({
-      name: 'catalog_brand_stop_version_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('cascade'),
+      name: 'catalog_location_stop_version_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
   ],
 );
