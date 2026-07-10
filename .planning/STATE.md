@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-05-PLAN.md
-last_updated: '2026-07-10T08:48:08.013Z'
+stopped_at: Completed 08.4-06-PLAN.md
+last_updated: '2026-07-10T09:39:57.948Z'
 last_activity: 2026-07-10
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 89
+  completed_plans: 90
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 6 of 11
+Plan: 7 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-10
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 87%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -136,6 +136,7 @@ _Updated after each plan completion_
 | Phase 08.4-location-scoped-access P03 | 14min | 4 tasks | 18 files |
 | Phase 08.4-location-scoped-access P04 | 9min | 3 tasks | 12 files |
 | Phase 08.4-location-scoped-access P05 | 8min | 2 tasks | 7 files |
+| Phase 08.4 P06 | 100min | 3 tasks | 27 files |
 
 ## Accumulated Context
 
@@ -229,6 +230,9 @@ Recent decisions affecting current work:
 - [Phase 08.4-04]: countScopedMembers(locationId) counts every member_location_scope row for that location (blast-radius warning); archive never touches scope rows (D-17)
 - [Phase 08.4-05]: brand-scope-guard.spec.ts (not in file-list) updated to mock MemberLocationScopeReader/findReachableBrandsForMember — required by Task 2's own acceptance criterion after guard constructor signature changed
 - [Phase 08.4-05]: BrandScopeGuard fully drops MEMBER_BRAND_SCOPE_READER injection (not alongside) — non-owner branch does exactly one scope check via findReachableBrandsForMember; member_brand_scope token/table stay wired for ListMyBrandsService
+- [Phase 08.4-06]: menu_stop_list/catalog_location_stop_version re-keyed brandId->locationId with location-grain RESTRICTIVE RLS (0068/0069); no location synthesized (D-12/D-13)
+- [Phase 08.4-06]: operator stop/unstop targets requireLocationContext() (active-location pin); guest availability resolves DefaultLocationResolverService.resolveForBrand (earliest active location)
+- [Phase 08.4-06]: CRITICAL: LocationScopeGuard rollout (08.4-05) left ~16 controllers without @LocationNeutral(), throwing 403 before owner-bypass; fixed 4 needed for this plan (public-menu, internal-tenants, me-brands, locations), ~12 remain incl. guest checkout -- see deferred-items.md
 
 ### Pending Todos
 
@@ -241,6 +245,7 @@ None yet.
 - Phase 9 (Delivery Zones) must complete before Phase 10 (Admin Order Intake) so zone validation is enforced for live delivery orders
 - `feature-flags` package is an empty placeholder (CONCERNS.md) — defer until needed; do not import from `@resto/feature-flags` in any Phase 1–16 work; ONB-05 dev-mode toggle should be implemented as `SKIP_PAYMENT_FLOW=true` env var, not a feature-flag dependency
 - **Dependency CVEs (high/critical) require a framework-major migration** — Fastify 4→5 + NestJS platform-fastify 10→11 + better-auth 1.4→1.6; no in-major patch exists. Zero current exposure (no prod deploy). **Deferred to a pre-launch milestone**; full analysis + Dependabot PR dispositions in `.planning/notes/dependency-cve-deferral.md`. `Dependency audit` CI is non-blocking by design.
+- URGENT (08.4-06 discovery): ~12 controllers still missing @LocationNeutral() post-08.4-05 LocationScopeGuard rollout -- guest checkout (orders.controller.ts) 403s on every POST /v1/orders. Full list + remediation plan in .planning/phases/08.4-location-scoped-access/deferred-items.md
 
 ### Quick Tasks Completed
 
@@ -285,6 +290,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T08:48:08.004Z
-Stopped at: Completed 08.4-05-PLAN.md
+Last session: 2026-07-10T09:39:57.935Z
+Stopped at: Completed 08.4-06-PLAN.md
 Resume file: None
