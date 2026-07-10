@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: 'Paused: 08.4-09 Tasks 1-2 committed, awaiting checkpoint:human-verify (Task 3)'
-last_updated: '2026-07-10T10:38:59.472Z'
+stopped_at: "08.4-07 complete (per-location role assignment + LocationPermissionChecker, unit-proven, not yet live-wired). Still pending: 08.4-09 Task 3 checkpoint:human-verify (founder browser check)"
+last_updated: "2026-07-10T12:09:15.235Z"
 last_activity: 2026-07-10
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 90
+  completed_plans: 91
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 7 of 11
+Plan: 8 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-10
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 87%
+Progress: [█████████░] 88%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -137,6 +137,7 @@ _Updated after each plan completion_
 | Phase 08.4-location-scoped-access P04 | 9min | 3 tasks | 12 files |
 | Phase 08.4-location-scoped-access P05 | 8min | 2 tasks | 7 files |
 | Phase 08.4 P06 | 100min | 3 tasks | 27 files |
+| Phase 08.4 P07 | 20min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -234,6 +235,9 @@ Recent decisions affecting current work:
 - [Phase 08.4-06]: operator stop/unstop targets requireLocationContext() (active-location pin); guest availability resolves DefaultLocationResolverService.resolveForBrand (earliest active location)
 - [Phase 08.4-06]: CRITICAL: LocationScopeGuard rollout (08.4-05) left ~16 controllers without @LocationNeutral(), throwing 403 before owner-bypass; fixed 4 needed for this plan (public-menu, internal-tenants, me-brands, locations), ~12 remain incl. guest checkout -- see deferred-items.md
 - [Phase ?]: 08.4-09 Tasks 1-2 committed (dce3010, 150b07b): x-location-id echo + Locations CRUD page; owner locationSwitcher + staff pick-location interstitial + login flow. Paused at Task 3 human-verify checkpoint awaiting founder browser verification.
+- [Phase 08.4-07]: D-06 AssignLocationRoleService accepts system OR custom role slugs (inverts AssignRoleService's SYSTEM_ROLE_SLUGS rejection); upserts member_location_scope.role directly via Drizzle, never BA updateMemberRole
+- [Phase 08.4-07]: MemberLocationRolesController is @BrandNeutral() (mirrors member-roles.controller.ts) — manages (member, location) role pairs across a brand's locations from a Team-matrix UI, not scoped to one pinned active location
+- [Phase 08.4-07]: LocationPermissionChecker built + unit-proven (owner-bypass, non-owner via findRoleForMemberAtLocation) but deliberately NOT wired as the live PERMISSION_CHECKER token — PermissionsGuard doesn't thread activeLocationId yet; live route integration is a flagged follow-up
 
 ### Pending Todos
 
@@ -292,6 +296,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T10:38:59.459Z
-Stopped at: Paused: 08.4-09 Tasks 1-2 committed, awaiting checkpoint:human-verify (Task 3)
+Last session: 2026-07-10T12:09:15.225Z
+Stopped at: 08.4-07 complete (per-location role assignment + LocationPermissionChecker, unit-proven, not yet live-wired). Still pending: 08.4-09 Task 3 checkpoint:human-verify (founder browser check)
 Resume file: .planning/phases/08.4-location-scoped-access/08.4-09-PLAN.md

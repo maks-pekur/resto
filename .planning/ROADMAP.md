@@ -591,7 +591,7 @@ Plans:
 
 **Wave 4**
 
-- [ ] 08.4-07-PLAN.md — Per-location role assignment (owner-only, NON_DELEGATABLE guard) + LocationPermissionChecker (D-06/D-07/D-08)
+- [x] 08.4-07-PLAN.md — Per-location role assignment (owner-only, NON_DELEGATABLE guard) + LocationPermissionChecker (D-06/D-07/D-08)
 - [ ] 08.4-08-PLAN.md — Orders location re-grain (NOT NULL location_id + RLS) + checkout default-location binding (D-03/D-12/D-13)
 
 **Wave 5**
