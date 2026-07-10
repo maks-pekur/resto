@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { type ExecutionContext, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { BrandScopeGuard } from '../../../src/contexts/identity/interfaces/http/guards/brand-scope.guard';
-import type { MemberBrandScopeReader } from '../../../src/contexts/identity/application/ports/member-brand-scope-reader.port';
+import type { MemberLocationScopeReader } from '../../../src/contexts/identity/application/ports/member-location-scope-reader.port';
 import type { Principal } from '../../../src/contexts/identity/domain/principal';
 
 vi.mock('@resto/db', () => ({
@@ -44,8 +44,11 @@ const buildGuard = (
 ) => {
   const reflector = new Reflector();
   vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(options.brandNeutral ?? false);
-  const reader: MemberBrandScopeReader = {
-    findBrandScopeForMember: vi.fn().mockResolvedValue(options.scope ?? null),
+  const reader: MemberLocationScopeReader = {
+    findLocationScopeForMember: vi.fn().mockResolvedValue(null),
+    findReachableBrandsForMember: vi.fn().mockResolvedValue(options.scope ?? null),
+    findRoleForMemberAtLocation: vi.fn().mockResolvedValue(null),
+    findPinnableLocations: vi.fn().mockResolvedValue([]),
   };
   return { guard: new BrandScopeGuard(reflector, reader), reader };
 };
@@ -118,7 +121,7 @@ describe('BrandScopeGuard', () => {
           buildContext({ principal: operator({ baseRole: 'owner' }), activeBrandId: null }),
         ),
       ).resolves.toBe(true);
-      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+      expect(reader.findReachableBrandsForMember).not.toHaveBeenCalled();
     });
 
     it('passes for owner even when brand != activeBrandId pin (owner free-switch)', async () => {
@@ -132,7 +135,7 @@ describe('BrandScopeGuard', () => {
           }),
         ),
       ).resolves.toBe(true);
-      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+      expect(reader.findReachableBrandsForMember).not.toHaveBeenCalled();
     });
 
     it('passes for owner with null pin (owner free-switch, pin check skipped)', async () => {
@@ -143,7 +146,7 @@ describe('BrandScopeGuard', () => {
           buildContext({ principal: operator({ baseRole: 'owner' }), activeBrandId: null }),
         ),
       ).resolves.toBe(true);
-      expect(reader.findBrandScopeForMember).not.toHaveBeenCalled();
+      expect(reader.findReachableBrandsForMember).not.toHaveBeenCalled();
     });
   });
 

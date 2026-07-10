@@ -11,16 +11,16 @@ import type { FastifyRequest } from 'fastify';
 import { getBrandId } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import {
-  MEMBER_BRAND_SCOPE_READER,
-  type MemberBrandScopeReader,
-} from '../../../application/ports/member-brand-scope-reader.port';
+  MEMBER_LOCATION_SCOPE_READER,
+  type MemberLocationScopeReader,
+} from '../../../application/ports/member-location-scope-reader.port';
 import { BRAND_NEUTRAL_KEY } from '../../../../../shared/auth';
 
 @Injectable()
 export class BrandScopeGuard implements CanActivate {
   constructor(
     @Inject(Reflector) private readonly reflector: Reflector,
-    @Inject(MEMBER_BRAND_SCOPE_READER) private readonly reader: MemberBrandScopeReader,
+    @Inject(MEMBER_LOCATION_SCOPE_READER) private readonly reader: MemberLocationScopeReader,
   ) {}
 
   async canActivate(ctx: ExecutionContext): Promise<boolean> {
@@ -61,7 +61,7 @@ export class BrandScopeGuard implements CanActivate {
       throw new NotFoundException();
     }
 
-    const scope = await this.reader.findBrandScopeForMember({
+    const scope = await this.reader.findReachableBrandsForMember({
       userId: principal.userId,
       tenantId: TenantId.parse(principal.tenantId),
     });
