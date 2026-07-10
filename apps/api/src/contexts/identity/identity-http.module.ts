@@ -13,9 +13,11 @@ import { UpdateRoleService } from './application/update-role.service';
 import { ArchiveRoleService } from './application/archive-role.service';
 import { ListRolesService } from './application/list-roles.service';
 import { AssignRoleService } from './application/assign-role.service';
+import { AssignLocationRoleService } from './application/assign-location-role.service';
 import { ListMembersService } from './application/list-members.service';
 import { RolesController } from './interfaces/http/roles.controller';
 import { MemberRolesController } from './interfaces/http/member-roles.controller';
+import { MemberLocationRolesController } from './interfaces/http/member-location-roles.controller';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
@@ -68,6 +70,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     SignUpController,
     RolesController,
     MemberRolesController,
+    MemberLocationRolesController,
   ],
   providers: [
     BootstrapOwnerService,
@@ -76,6 +79,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     ArchiveRoleService,
     ListRolesService,
     AssignRoleService,
+    AssignLocationRoleService,
     ListMembersService,
     SignUpService,
     ListMyBrandsService,
