@@ -9,6 +9,7 @@
 export {
   TenantId,
   BrandId,
+  LocationId,
   MenuCategoryId,
   MenuItemId,
   MenuModifierId,

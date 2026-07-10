@@ -8,10 +8,25 @@ import {
 } from '../src/rbac';
 
 describe('RBAC permission catalogue', () => {
-  it('exposes the expected resources including ac', () => {
+  it('exposes the expected resources including ac and location', () => {
     expect(Object.keys(PERMISSIONS_STATEMENT).sort()).toEqual(
-      ['ac', 'billing', 'brand', 'menu', 'order', 'reports', 'settings', 'staff', 'tenant'].sort(),
+      [
+        'ac',
+        'billing',
+        'brand',
+        'location',
+        'menu',
+        'order',
+        'reports',
+        'settings',
+        'staff',
+        'tenant',
+      ].sort(),
     );
+  });
+
+  it('location resource has read/create/update/delete actions with no colon', () => {
+    expect(PERMISSIONS_STATEMENT.location).toEqual(['read', 'create', 'update', 'delete']);
   });
 
   it('ac resource has create/read/update/delete actions', () => {
@@ -64,10 +79,19 @@ describe('RBAC permission catalogue', () => {
     expect(SYSTEM_ROLES.admin.brand).toEqual(['read', 'create', 'update', 'delete']);
   });
 
-  it('staff can only read tenant + brand', () => {
-    expect(Object.keys(SYSTEM_ROLES.staff).sort()).toEqual(['brand', 'tenant']);
+  it('staff can only read tenant + brand + location', () => {
+    expect(Object.keys(SYSTEM_ROLES.staff).sort()).toEqual(['brand', 'location', 'tenant']);
     expect(SYSTEM_ROLES.staff.tenant).toEqual(['read']);
     expect(SYSTEM_ROLES.staff.brand).toEqual(['read']);
+    expect(SYSTEM_ROLES.staff.location).toEqual(['read']);
+  });
+
+  it('owner has full location permissions', () => {
+    expect(SYSTEM_ROLES.owner.location).toEqual(['read', 'create', 'update', 'delete']);
+  });
+
+  it('admin can only read locations', () => {
+    expect(SYSTEM_ROLES.admin.location).toEqual(['read']);
   });
 
   it('Permission type is well-typed', () => {
