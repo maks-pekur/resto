@@ -4,6 +4,7 @@ import {
   CreditCard,
   KeyRound,
   LayoutDashboard,
+  MapPin,
   Settings2,
   Users,
   UtensilsCrossed,
@@ -55,6 +56,12 @@ export function AppSidebar({
         { title: t('menuModifiers'), url: `${brandPrefix}/menu/modifier-groups` },
         { title: t('menuStopList'), url: `${brandPrefix}/menu/stop-list` },
       ],
+    },
+    {
+      title: 'Locations',
+      url: `${brandPrefix}/locations`,
+      icon: MapPin,
+      scope: 'brand',
     },
     {
       title: t('payments'),

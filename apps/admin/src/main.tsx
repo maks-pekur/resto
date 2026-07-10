@@ -17,6 +17,7 @@ import { Route as brandSlugLayoutRoute } from './routes/(protected)/$brandSlug/_
 import { Route as brandSlugIndexRoute } from './routes/(protected)/$brandSlug/index';
 import { Route as settingsRoute } from './routes/(protected)/$brandSlug/settings';
 import { Route as teamRoute } from './routes/(protected)/$brandSlug/team';
+import { Route as locationsRoute } from './routes/(protected)/$brandSlug/locations';
 import { Route as rolesRoute } from './routes/(protected)/$brandSlug/roles';
 import { Route as roleDetailRoute } from './routes/(protected)/$brandSlug/roles.$roleId';
 import { Route as onboardingBrandRoute } from './routes/(protected)/onboarding/brand';
@@ -70,6 +71,7 @@ const brandSlugRouteTree = brandSlugLayoutRoute.addChildren([
   teamRoute,
   rolesRoute,
   roleDetailRoute,
+  locationsRoute,
   menuRouteTree,
   brandDomainsRoute,
   brandThemeRoute,

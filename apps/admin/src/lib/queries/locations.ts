@@ -1,0 +1,83 @@
+import { apiFetch } from '@/lib/api-client';
+import { authClient } from '@/lib/auth-client';
+
+export interface LocationContactsView {
+  readonly phone?: string;
+  readonly email?: string;
+}
+
+export interface LocationView {
+  readonly id: string;
+  readonly brandId: string;
+  readonly name: string;
+  readonly address: string | null;
+  readonly timezone: string | null;
+  readonly contacts: LocationContactsView | null;
+  readonly status: 'active' | 'archived';
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly archivedAt: string | null;
+}
+
+export interface PinnableLocation {
+  readonly id: string;
+  readonly name: string;
+  readonly brandId: string;
+}
+
+export interface CreateLocationInput {
+  readonly name: string;
+  readonly address: string | null;
+  readonly timezone: string | null;
+  readonly contacts: LocationContactsView | null;
+}
+
+interface ProblemDetails {
+  readonly code?: string;
+  readonly message?: string;
+  readonly detail?: string;
+}
+
+export const brandLocationsQuery = (brandSlug: string) => ({
+  queryKey: ['locations', brandSlug] as const,
+  queryFn: () => apiFetch<LocationView[]>('/v1/tenancy/locations', { brandSlug }),
+  staleTime: 30_000,
+});
+
+export const meLocationsQuery = () => ({
+  queryKey: ['identity', 'me-locations'] as const,
+  queryFn: () => apiFetch<{ locations: PinnableLocation[] }>('/v1/me/locations'),
+  staleTime: 30_000,
+});
+
+export const activeLocationIdQuery = () => ({
+  queryKey: ['identity', 'active-location'] as const,
+  queryFn: async (): Promise<string | null> => {
+    const session = await authClient.getSession();
+    const sessionData =
+      session.data !== null
+        ? (session.data as { session?: { activeLocationId?: string | null } }).session
+        : undefined;
+    return sessionData?.activeLocationId ?? null;
+  },
+  staleTime: 0,
+});
+
+export const createLocationMutation = (brandSlug: string, input: CreateLocationInput) =>
+  apiFetch<LocationView>('/v1/tenancy/locations', {
+    method: 'POST',
+    body: input,
+    brandSlug,
+  });
+
+export const archiveLocationMutation = (brandSlug: string, id: string) =>
+  apiFetch<{ scopedMemberCount: number }>(`/v1/tenancy/locations/${id}/archive`, {
+    method: 'PATCH',
+    brandSlug,
+  });
+
+export const friendlyLocationError = (status: number, body: ProblemDetails | null): string => {
+  if (status === 403) return 'Owner access required.';
+  if (status === 404) return 'Location not found.';
+  return body?.detail ?? body?.message ?? `Request failed (${status.toString()}).`;
+};

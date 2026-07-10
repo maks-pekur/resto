@@ -23,11 +23,16 @@ export const apiFetch = async <T>(
   } = {},
 ): Promise<ApiFetchResult<T>> => {
   const session = await authClient.getSession();
-  const tenantId: string | undefined =
+  const sessionData =
     session.data !== null
-      ? (session.data as { session?: { activeOrganizationId?: string } }).session
-          ?.activeOrganizationId
+      ? (
+          session.data as {
+            session?: { activeOrganizationId?: string; activeLocationId?: string | null };
+          }
+        ).session
       : undefined;
+  const tenantId = sessionData?.activeOrganizationId;
+  const activeLocationId = sessionData?.activeLocationId;
   const isGet = (opts.method ?? 'GET') === 'GET';
   const timeoutMs = isGet ? TIMEOUT_GET_MS : TIMEOUT_MUTATION_MS;
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -37,6 +42,7 @@ export const apiFetch = async <T>(
     accept: 'application/json',
     ...(tenantId !== undefined ? { 'x-tenant-id': tenantId } : {}),
     ...(opts.brandSlug !== undefined ? { 'x-brand-slug': opts.brandSlug } : {}),
+    ...(typeof activeLocationId === 'string' ? { 'x-location-id': activeLocationId } : {}),
     ...(opts.body !== undefined ? { 'content-type': 'application/json' } : {}),
   };
   const maxAttempts = isGet ? 2 : 1;
