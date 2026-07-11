@@ -596,7 +596,7 @@ Plans:
 
 **Wave 5**
 
-- [ ] 08.4-09-PLAN.md — Admin: Locations CRUD page + locationSwitcher + staff pick-location + x-location-id echo [human-verify] (D-09/D-10/D-14/D-16/D-17)
+- [x] 08.4-09-PLAN.md — Admin: Locations CRUD page + locationSwitcher + staff pick-location + x-location-id echo [human-verify] (D-09/D-10/D-14/D-16/D-17)
 
 **Wave 6**
 

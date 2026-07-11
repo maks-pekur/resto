@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: '08.4-08 complete (orders location-grain: NOT NULL + FK + RLS + checkout write-path resolution). Next: 08.4-09'
-last_updated: '2026-07-10T14:18:02.272Z'
-last_activity: 2026-07-10
+stopped_at: Completed 08.4-09-PLAN.md (Task 3 checkpoint resolved via delegated Playwright verification; founder Locations-CRUD click-through deferred to 08.4-11)
+last_updated: '2026-07-11T17:07:35.104Z'
+last_activity: 2026-07-11
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 92
+  completed_plans: 93
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 9 of 11
+Plan: 10 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -40,7 +40,7 @@ Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surf
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
 Status: Ready to execute
-Last activity: 2026-07-10
+Last activity: 2026-07-11
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-10
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -139,6 +139,7 @@ _Updated after each plan completion_
 | Phase 08.4 P06 | 100min | 3 tasks | 27 files |
 | Phase 08.4 P07 | 20min | 2 tasks | 7 files |
 | Phase 08.4-location-scoped-access P08 | 55min | 2 tasks | 22 files |
+| Phase 08.4 P09 | 9min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -241,6 +242,7 @@ Recent decisions affecting current work:
 - [Phase 08.4-07]: LocationPermissionChecker built + unit-proven (owner-bypass, non-owner via findRoleForMemberAtLocation) but deliberately NOT wired as the live PERMISSION_CHECKER token — PermissionsGuard doesn't thread activeLocationId yet; live route integration is a flagged follow-up
 - [Phase 08.4-08]: orders.location_id NOT NULL + composite FK + orders_location_iso RESTRICTIVE RLS; CreateOrderService resolves+persists location via DefaultLocationResolverService — D-03/D-12/D-13; row-count check found 5 non-zero dev-only orders with zero legitimate locations -- cleared not backfilled
 - [Phase 08.4-08]: tenancy_erase_tenant extended to erase catalog_location_stop_version/member_location_scope/locations before brands — plan 06's brand-cascade -> location-restrict FK change on catalog_location_stop_version left GDPR erasure silently incomplete; surfaced by this plan's own fixture needing a location
+- [Phase ?]: 08.4-09: x-location-id echoed from session.activeLocationId on every apiFetch call; locationSwitcher owner-only + brand-global(null) option; staff post-login pick-location interstitial gated on baseRole!=owner && activeLocationId==null; Locations CRUD archive shows post-archive blast-radius toast (no pre-archive preview endpoint exists) (D-09/D-10/D-14/D-16/D-17)
 
 ### Pending Todos
 
@@ -255,6 +257,8 @@ None yet.
 - **Dependency CVEs (high/critical) require a framework-major migration** — Fastify 4→5 + NestJS platform-fastify 10→11 + better-auth 1.4→1.6; no in-major patch exists. Zero current exposure (no prod deploy). **Deferred to a pre-launch milestone**; full analysis + Dependabot PR dispositions in `.planning/notes/dependency-cve-deferral.md`. `Dependency audit` CI is non-blocking by design.
 - RESOLVED (08.4 remediation, commits e4c8ef7/723f5ae/9b6cf29): the ~12-controller LocationScopeGuard 403 breakage is fixed. Root fix: LocationScopeGuard now honors @BrandNeutral (brand-neutral ⟹ location-neutral, since location ⊂ brand) — unblocks all 13 @BrandNeutral controllers incl. guest checkout. catalog.controller.ts got method-level @LocationNeutral on 18 brand-grain routes; stop-list add/remove/list stay location-enforced. withoutTenant allowlist reconciled (initial-location). signup/payment-lifecycle/catalog/catalog-rbac/cross-tenant-isolation e2e green.
 - TEST DEBT (08.4, needs fixture update): set-active-brand.e2e (2) + related brand-scope e2e assert the pre-08.4 member_brand_scope model; after D-04 brand reachability derives from member_location_scope, so these fixtures must seed member_location_scope. NOT a derivation bug (proven by me-brands/catalog/cross-tenant-isolation green). Fold into plan 11 / phase verification. Also note: identity-bootstrap/identity-invitation/offboard-cancel/signup-enumeration residual e2e failures are confirmed pre-existing, unrelated to location scope.
+- 08.4-09: founder manual click-through of /{brand}/locations CRUD page (create/list) + archive blast-radius toast is PENDING — deferred to end-of-phase verification (08.4-11) per founder decision; automated Playwright coverage only exercised owner-dashboard-no-crash + manager pick-location + cashier auto-pin, not the Locations page UI itself.
+- apps/admin/test/env.spec.ts fails 1/44 (admin:test) since commit 890f7f8 changed the VITE_API_ORIGIN dev default from :3000 to :5001 without updating the test's hardcoded assertion — out of scope for 08.4-09 (port ownership belongs to a separate concern), needs a follow-up quick-task.
 
 ### Quick Tasks Completed
 
@@ -299,6 +303,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-10T14:18:02.261Z
-Stopped at: 08.4-08 complete (orders location-grain: NOT NULL + FK + RLS + checkout write-path resolution). Next: 08.4-09
-Resume file: .planning/phases/08.4-location-scoped-access/08.4-09-PLAN.md
+Last session: 2026-07-11T17:07:35.093Z
+Stopped at: Completed 08.4-09-PLAN.md (Task 3 checkpoint resolved via delegated Playwright verification; founder Locations-CRUD click-through deferred to 08.4-11)
+Resume file: None
