@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { ChevronsUpDown } from 'lucide-react';
+import { ChevronsUpDown, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { apiFetch } from '@/lib/api-client';
 import {
@@ -52,6 +52,7 @@ export function LocationSwitcher({ isOwner, locations, activeLocationId }: Locat
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton size="sm" data-testid="location-switcher-trigger">
+              <MapPin className="size-4 opacity-60" />
               <span className="truncate">{triggerLabel}</span>
               <ChevronsUpDown className="ml-auto size-4 opacity-60" />
             </SidebarMenuButton>

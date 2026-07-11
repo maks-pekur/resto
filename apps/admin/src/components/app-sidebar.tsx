@@ -14,7 +14,6 @@ import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
 import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
-import { ModeToggle } from '@/components/mode-toggle';
 import type { OperatorSummary } from '@/lib/queries/identity';
 import { meLocationsQuery, activeLocationIdQuery } from '@/lib/queries/locations';
 import {
@@ -117,9 +116,6 @@ export function AppSidebar({
         <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />
       </SidebarContent>
       <SidebarFooter>
-        <div className="flex justify-end px-1 group-data-[collapsible=icon]:justify-center">
-          <ModeToggle />
-        </div>
         <NavUser operator={operator} />
       </SidebarFooter>
       <SidebarRail />
