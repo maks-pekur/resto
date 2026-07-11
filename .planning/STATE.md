@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.4-09-PLAN.md (Task 3 checkpoint resolved via delegated Playwright verification; founder Locations-CRUD click-through deferred to 08.4-11)
-last_updated: '2026-07-11T17:07:35.104Z'
+stopped_at: Completed 08.4-10-PLAN.md
+last_updated: "2026-07-11T20:04:46.830Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 24
   completed_phases: 12
   total_plans: 103
-  completed_plans: 93
+  completed_plans: 94
   percent: 50
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 10 of 11
+Plan: 11 of 11
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-11
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -140,6 +140,7 @@ _Updated after each plan completion_
 | Phase 08.4 P07 | 20min | 2 tasks | 7 files |
 | Phase 08.4-location-scoped-access P08 | 55min | 2 tasks | 22 files |
 | Phase 08.4 P09 | 9min | 3 tasks | 9 files |
+| Phase 08.4 P10 | 38min | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -243,6 +244,8 @@ Recent decisions affecting current work:
 - [Phase 08.4-08]: orders.location_id NOT NULL + composite FK + orders_location_iso RESTRICTIVE RLS; CreateOrderService resolves+persists location via DefaultLocationResolverService — D-03/D-12/D-13; row-count check found 5 non-zero dev-only orders with zero legitimate locations -- cleared not backfilled
 - [Phase 08.4-08]: tenancy_erase_tenant extended to erase catalog_location_stop_version/member_location_scope/locations before brands — plan 06's brand-cascade -> location-restrict FK change on catalog_location_stop_version left GDPR erasure silently incomplete; surfaced by this plan's own fixture needing a location
 - [Phase ?]: 08.4-09: x-location-id echoed from session.activeLocationId on every apiFetch call; locationSwitcher owner-only + brand-global(null) option; staff post-login pick-location interstitial gated on baseRole!=owner && activeLocationId==null; Locations CRUD archive shows post-archive blast-radius toast (no pre-archive preview endpoint exists) (D-09/D-10/D-14/D-16/D-17)
+- [Phase 08.4]: 08.4-10: added GET /v1/members/:memberId/location-roles (plan 07 shipped write-only; the Team matrix needs a read path for current pairs), gated identically (ac:['update']) to the write endpoints
+- [Phase 08.4]: 08.4-10: MemberRoleRow (old tenant-wide role Select) fully replaced by MemberLocationRoleMatrix and deleted, not layered alongside it, per D-15's consolidation goal; the Base role Badge is kept read-only for context
 
 ### Pending Todos
 
@@ -303,6 +306,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-11T17:07:35.093Z
-Stopped at: Completed 08.4-09-PLAN.md (Task 3 checkpoint resolved via delegated Playwright verification; founder Locations-CRUD click-through deferred to 08.4-11)
+Last session: 2026-07-11T20:04:46.821Z
+Stopped at: Completed 08.4-10-PLAN.md
 Resume file: None

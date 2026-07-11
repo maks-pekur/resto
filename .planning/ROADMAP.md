@@ -600,7 +600,7 @@ Plans:
 
 **Wave 6**
 
-- [ ] 08.4-10-PLAN.md — Admin: Team (location → role) matrix + stale-copy fix [human-verify] (D-15)
+- [x] 08.4-10-PLAN.md — Admin: Team (location → role) matrix + stale-copy fix [human-verify] (D-15)
 
 **Wave 7**
 
