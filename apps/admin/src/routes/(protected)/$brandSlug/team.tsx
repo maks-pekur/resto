@@ -5,29 +5,34 @@ import { Route as brandSlugLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { invitationListQuery } from '@/lib/queries/team';
 import { roleMembersQuery, rolesQuery } from '@/lib/queries/roles';
+import { brandLocationsQuery } from '@/lib/queries/locations';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
+import { Badge } from '@/components/ui/badge';
 import { TeamInviteButton } from '@/components/team/team-invite-button';
-import { MemberRoleRow } from '@/components/team/member-role-row';
+import { MemberLocationRoleMatrix } from '@/components/team/member-location-role-matrix';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
   path: '/team',
-  loader: ({ context: { queryClient } }) =>
+  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),
       queryClient.ensureQueryData(roleMembersQuery()),
       queryClient.ensureQueryData(rolesQuery()),
+      queryClient.ensureQueryData(brandLocationsQuery(brandSlug)),
     ]),
   component: TeamPage,
 });
 
 function TeamPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
+  const { brandSlug } = Route.useParams();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: invitationsResult } = useQuery(invitationListQuery());
   const { data: membersResult } = useQuery(roleMembersQuery());
   const { data: rolesResult } = useQuery(rolesQuery());
+  const { data: locationsResult } = useQuery(brandLocationsQuery(brandSlug));
 
   const me = meResult.data;
   if (me?.kind !== 'operator') return null;
@@ -38,6 +43,7 @@ function TeamPage() {
   const customRoles = (rolesResult?.data?.roles ?? []).filter(
     (r) => r.system !== true && !['owner', 'admin', 'staff'].includes(r.role),
   );
+  const locations = (locationsResult?.data ?? []).filter((l) => l.status === 'active');
 
   return (
     <>
@@ -53,31 +59,41 @@ function TeamPage() {
                       Member
                     </th>
                     <th scope="col" className="px-4 py-2 text-left font-medium">
-                      Current role
+                      Base role
                     </th>
                     {isOwner && (
                       <th scope="col" className="px-4 py-2 text-left font-medium">
-                        Actions
+                        Location roles
                       </th>
                     )}
                   </tr>
                 </thead>
                 <tbody>
                   {activeMembers.map((member) => (
-                    <MemberRoleRow
-                      key={member.id}
-                      member={member}
-                      isOwner={isOwner}
-                      currentUserId={me.userId ?? ''}
-                      availableRoles={customRoles}
-                    />
+                    <tr key={member.id} className="border-b last:border-0">
+                      <td className="px-4 py-2 text-sm">{member.email}</td>
+                      <td className="px-4 py-2">
+                        <Badge variant="outline">{member.role}</Badge>
+                      </td>
+                      {isOwner && (
+                        <td className="px-4 py-2">
+                          <MemberLocationRoleMatrix
+                            member={member}
+                            isOwner={isOwner}
+                            availableRoles={customRoles}
+                            locations={locations}
+                          />
+                        </td>
+                      )}
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
             <p className="text-muted-foreground text-xs">
-              Role permissions apply across all brands. Brand access is controlled separately via
-              brand scope.
+              Roles are assigned per location, not tenant-wide. A member&apos;s brand access is
+              derived from the brands of the locations they are scoped to — there is no separate
+              brand-scope setting.
             </p>
           </>
         )}
