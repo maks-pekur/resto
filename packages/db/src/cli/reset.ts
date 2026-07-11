@@ -11,6 +11,13 @@ import {
 /**
  * Drop and recreate the `public` schema, then re-run migrations. Dev only.
  *
+ * The `drizzle` schema (which holds `__drizzle_migrations`, the migration
+ * tracker) is dropped alongside `public`. Without this, a subsequent
+ * `db:migrate` sees the tracker still listing every migration as applied
+ * and silently skips them, leaving `public` empty — the schema never gets
+ * rebuilt. Dropping both makes `db:reset && db:migrate` rebuild from zero
+ * in one pass.
+ *
  * Three layers of defense via `cli/reset-guards.ts` (testable without
  * mocking `process.exit`):
  *   1. `NODE_ENV` must be `development` or `test` (allowlist).
@@ -31,8 +38,10 @@ const main = async (): Promise<void> => {
   const client = postgres(url, { max: 1, prepare: false });
 
   try {
-    logger.warn('Dropping public schema and recreating…');
-    await client.unsafe('DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public;');
+    logger.warn('Dropping public + drizzle schemas and recreating…');
+    await client.unsafe(
+      'DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public;',
+    );
     logger.info('Schema reset complete. Run `pnpm db:migrate` next.');
   } finally {
     await client.end({ timeout: 5 });
