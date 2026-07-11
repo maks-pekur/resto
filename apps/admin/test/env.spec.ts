@@ -24,7 +24,7 @@ describe('getEnv (G-05 fail-loud)', () => {
     delete metaEnv.VITE_API_ORIGIN;
 
     const { getEnv } = await import('@/env');
-    expect(getEnv('VITE_API_ORIGIN')).toBe('http://localhost:3000');
+    expect(getEnv('VITE_API_ORIGIN')).toBe('http://localhost:5001');
   });
 
   it('throws when VITE_API_ORIGIN is empty in PROD mode', async () => {
