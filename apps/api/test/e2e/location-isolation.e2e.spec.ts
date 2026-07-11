@@ -119,6 +119,27 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
       },
     });
 
+  const setActiveLocation = async (
+    cookie: string,
+    locationId: string | null,
+  ): Promise<{
+    cookie: string;
+    status: number;
+    body: { code?: string; locationId?: string | null };
+  }> => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/me/set-active-location',
+      headers: { cookie, 'x-tenant-id': tenantId },
+      payload: { locationId },
+    });
+    return {
+      cookie: extractCookies(res.headers['set-cookie']) || cookie,
+      status: res.statusCode,
+      body: res.json(),
+    };
+  };
+
   beforeAll(async () => {
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
@@ -200,6 +221,43 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
         expect(res.statusCode).toBe(200);
         const body = res.json<{ locations: { id: string }[] }>();
         expect(body.locations.map((l) => l.id)).toEqual([locationAId]);
+      });
+    });
+  });
+
+  describe('Task 2 — staff no-self-switch + archive access-loss', () => {
+    describe('D-11 non-owner cannot self-switch active location without re-login', () => {
+      it('staff already pinned to A re-pinning to B returns 403 location.already_pinned', async () => {
+        const result = await setActiveLocation(staffCookie, locationBId);
+        expect(result.status).toBe(403);
+        expect(result.body.code).toBe('location.already_pinned');
+      });
+    });
+
+    describe('owner re-pin — unrestricted, no re-login required', () => {
+      it('owner pins A then re-pins to B, both succeed (200)', async () => {
+        let cookie = await setActiveBrand(ownerCookie, brand1Id);
+        const first = await setActiveLocation(cookie, locationAId);
+        expect(first.status).toBe(200);
+        cookie = first.cookie;
+        const second = await setActiveLocation(cookie, locationBId);
+        expect(second.status).toBe(200);
+      });
+    });
+
+    describe('D-17 archiving a location removes scoped-only staff access (default-deny)', () => {
+      it('after owner archives location A, staff loses access on the next request (their only location was also their only reachable brand)', async () => {
+        const archiveRes = await stack.app.inject({
+          method: 'PATCH',
+          url: `/v1/tenancy/locations/${locationAId}/archive`,
+          headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brand1Slug },
+        });
+        expect(archiveRes.statusCode).toBe(200);
+        expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(1);
+
+        const res = await getStopList(staffCookie, brand1Slug, locationAId);
+        expect(res.statusCode).toBe(403);
+        expect(res.json<{ code?: string }>().code).toBe('brand.access_denied');
       });
     });
   });
