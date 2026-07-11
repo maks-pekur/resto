@@ -2,6 +2,7 @@
 import { ZodError } from 'zod';
 import { runBootstrapOwner } from './commands/bootstrap-owner';
 import { runProvisionTenant } from './commands/provision-tenant';
+import { runSeedDemo } from './commands/seed-demo';
 import { runSeedMenu } from './commands/seed-menu';
 import { logError } from './lib/logger';
 import { resolveRuntimeOptions } from './lib/options';
@@ -19,6 +20,9 @@ Commands:
   bootstrap-owner    --tenant <slug> --email <email>
                      [--name "Owner Name"] [--password-stdin]
                      [--owner-password ... (dev only)]
+  seed-demo          Idempotently seeds the "demo" tenant fixture:
+                     2 brands, 4 locations, 2 staff roles, 2 categories +
+                     4 items per brand. Dev only (NODE_ENV=development).
 
 Global flags:
   --dry-run          Print intended changes without writing.
@@ -29,6 +33,10 @@ Required env vars:
 
 Optional env vars:
   RESTO_API_URL       Default http://localhost:3000
+
+seed-demo additionally requires:
+  NODE_ENV=development
+  BETTER_AUTH_DATABASE_URL  Direct resto_auth connection (staff member rows).
 `;
 
 const main = async (): Promise<void> => {
@@ -50,6 +58,9 @@ const main = async (): Promise<void> => {
       return;
     case 'bootstrap-owner':
       await runBootstrapOwner(rest, options);
+      return;
+    case 'seed-demo':
+      await runSeedDemo(rest, options);
       return;
     default:
       throw new Error(`Unknown command "${command ?? ''}". Run with --help for usage.`);
