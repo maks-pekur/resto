@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { schema, TenantAwareDb } from '@resto/db';
+import { getTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
 import { and, asc, eq } from 'drizzle-orm';
 
 @Injectable()
@@ -10,6 +10,13 @@ export class InitialLocationDrizzleRepository {
 
   async resolveForUserInBrand(userId: string, brandId: string): Promise<string | null> {
     try {
+      const boundTenantId = getTenantContext()?.tenantId;
+      if (boundTenantId) {
+        return await this.db.withTenant((tx) =>
+          this.#resolveScoped(tx, userId, brandId, boundTenantId),
+        );
+      }
+
       const tenantId = await this.db.withoutTenant(
         'identity.initial-location-pin: resolve tenant for brand',
         async (tx) => {
@@ -23,35 +30,50 @@ export class InitialLocationDrizzleRepository {
       );
       if (!tenantId) return null;
 
-      return await this.db.withTenantId(tenantId, async (tx) => {
-        const memberRows = await tx
-          .select({ role: schema.member.role })
-          .from(schema.member)
-          .where(and(eq(schema.member.userId, userId), eq(schema.member.organizationId, tenantId)))
-          .limit(1);
-        if (memberRows[0]?.role === 'owner') return null;
-
-        const scopedRows = await tx
-          .select({ id: schema.locations.id })
-          .from(schema.memberLocationScope)
-          .innerJoin(schema.member, eq(schema.memberLocationScope.memberId, schema.member.id))
-          .innerJoin(
-            schema.locations,
-            and(
-              eq(schema.memberLocationScope.locationId, schema.locations.id),
-              eq(schema.locations.status, 'active'),
-              eq(schema.locations.brandId, brandId),
-            ),
-          )
-          .where(eq(schema.member.userId, userId))
-          .orderBy(asc(schema.locations.createdAt), asc(schema.locations.id));
-
-        if (scopedRows.length !== 1) return null;
-        return scopedRows[0]?.id ?? null;
-      });
+      return await this.db.withTenantId(tenantId, (tx) =>
+        this.#resolveScoped(tx, userId, brandId, tenantId),
+      );
     } catch (err) {
       this.logger.error({ err, userId, brandId }, 'resolveForUserInBrand failed');
       return null;
     }
+  }
+
+  async #resolveScoped(
+    tx: RestoTx,
+    userId: string,
+    brandId: string,
+    tenantId: string,
+  ): Promise<string | null> {
+    const memberRows = await tx
+      .select({ role: schema.member.role })
+      .from(schema.member)
+      .where(and(eq(schema.member.userId, userId), eq(schema.member.organizationId, tenantId)))
+      .limit(1);
+    if (memberRows[0]?.role === 'owner') return null;
+
+    const scopedRows = await tx
+      .select({ id: schema.locations.id })
+      .from(schema.memberLocationScope)
+      .innerJoin(schema.member, eq(schema.memberLocationScope.memberId, schema.member.id))
+      .innerJoin(
+        schema.locations,
+        and(
+          eq(schema.memberLocationScope.locationId, schema.locations.id),
+          eq(schema.locations.status, 'active'),
+          eq(schema.locations.brandId, brandId),
+        ),
+      )
+      .where(
+        and(
+          eq(schema.member.userId, userId),
+          eq(schema.member.organizationId, tenantId),
+          eq(schema.memberLocationScope.tenantId, tenantId),
+        ),
+      )
+      .orderBy(asc(schema.locations.createdAt), asc(schema.locations.id));
+
+    if (scopedRows.length !== 1) return null;
+    return scopedRows[0]?.id ?? null;
   }
 }
