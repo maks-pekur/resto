@@ -2,7 +2,7 @@ import { BadgeCheck, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-r
 import { Link, useParams } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/hooks/use-theme';
+import { useTheme } from '@/components/theme-provider';
 import { authClient } from '@/lib/auth-client';
 import type { OperatorSummary } from '@/lib/queries/identity';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

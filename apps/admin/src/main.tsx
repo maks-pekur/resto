@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
+import { ThemeProvider } from './components/theme-provider';
 import { Route as rootRoute } from './routes/__root';
 import { Route as indexRoute } from './routes/index';
 import { Route as authLayoutRoute } from './routes/(auth)/_layout';
@@ -105,8 +106,10 @@ if (!container) throw new Error('Root element not found.');
 
 createRoot(container).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} context={{ queryClient }} />
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} context={{ queryClient }} />
+      </QueryClientProvider>
+    </ThemeProvider>
   </StrictMode>,
 );
