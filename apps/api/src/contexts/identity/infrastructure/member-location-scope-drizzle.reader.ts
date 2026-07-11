@@ -146,4 +146,32 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
         ),
     );
   }
+
+  async listLocationRolesForMember(input: {
+    memberId: string;
+    tenantId: TenantId;
+  }): Promise<readonly { locationId: string; role: string }[]> {
+    const rows = await this.db.withTenant(async (tx) =>
+      tx
+        .select({
+          locationId: schema.memberLocationScope.locationId,
+          role: schema.memberLocationScope.role,
+        })
+        .from(schema.memberLocationScope)
+        .innerJoin(
+          schema.locations,
+          and(
+            eq(schema.memberLocationScope.locationId, schema.locations.id),
+            eq(schema.locations.status, 'active'),
+          ),
+        )
+        .where(
+          and(
+            eq(schema.memberLocationScope.memberId, input.memberId),
+            eq(schema.memberLocationScope.tenantId, input.tenantId),
+          ),
+        ),
+    );
+    return rows.filter((r): r is { locationId: string; role: string } => r.role !== null);
+  }
 }

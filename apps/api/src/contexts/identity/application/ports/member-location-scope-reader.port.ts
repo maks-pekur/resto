@@ -27,4 +27,8 @@ export interface MemberLocationScopeReader {
     brandId: string;
     isOwner: boolean;
   }): Promise<readonly PinnableLocation[]>;
+  listLocationRolesForMember(input: {
+    memberId: string;
+    tenantId: TenantId;
+  }): Promise<readonly { locationId: string; role: string }[]>;
 }

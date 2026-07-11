@@ -13,6 +13,7 @@ const makeReader = (roleSlug: string | null): MemberLocationScopeReader => ({
   findReachableBrandsForMember: vi.fn(),
   findRoleForMemberAtLocation: vi.fn().mockResolvedValue(roleSlug),
   findPinnableLocations: vi.fn(),
+  listLocationRolesForMember: vi.fn(),
 });
 
 const makeAuthDb = (

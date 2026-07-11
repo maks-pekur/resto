@@ -14,6 +14,7 @@ import { ArchiveRoleService } from './application/archive-role.service';
 import { ListRolesService } from './application/list-roles.service';
 import { AssignRoleService } from './application/assign-role.service';
 import { AssignLocationRoleService } from './application/assign-location-role.service';
+import { ListMemberLocationRolesService } from './application/list-member-location-roles.service';
 import { ListMembersService } from './application/list-members.service';
 import { RolesController } from './interfaces/http/roles.controller';
 import { MemberRolesController } from './interfaces/http/member-roles.controller';
@@ -80,6 +81,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     ListRolesService,
     AssignRoleService,
     AssignLocationRoleService,
+    ListMemberLocationRolesService,
     ListMembersService,
     SignUpService,
     ListMyBrandsService,

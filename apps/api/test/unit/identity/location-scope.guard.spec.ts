@@ -53,6 +53,7 @@ const buildGuard = (
     findReachableBrandsForMember: vi.fn().mockResolvedValue(null),
     findRoleForMemberAtLocation: vi.fn().mockResolvedValue(null),
     findPinnableLocations: vi.fn().mockResolvedValue([]),
+    listLocationRolesForMember: vi.fn().mockResolvedValue([]),
   };
   return { guard: new LocationScopeGuard(reflector, reader), reader };
 };
