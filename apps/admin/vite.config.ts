@@ -18,10 +18,10 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3001,
+    port: 4000,
     proxy: {
-      '/api': { target: 'http://localhost:3000', changeOrigin: false },
-      '/v1': { target: 'http://localhost:3000', changeOrigin: false },
+      '/api': { target: 'http://localhost:5001', changeOrigin: false },
+      '/v1': { target: 'http://localhost:5001', changeOrigin: false },
     },
   },
   resolve: {

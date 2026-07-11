@@ -17,7 +17,7 @@ export const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
     DEPLOYMENT_ENVIRONMENT: z.string().default('development'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-    API_PORT: z.coerce.number().int().positive().default(3000),
+    API_PORT: z.coerce.number().int().positive().default(5001),
 
     /** Runtime-role URL — non-superuser, NOBYPASSRLS (RES-83). */
     DATABASE_URL: z.string().url(),
@@ -154,7 +154,7 @@ export const envSchema = z
      */
     CORS_ALLOWED_ORIGINS: z
       .string()
-      .default('http://localhost:3001,http://localhost:3003')
+      .default('http://localhost:4000,http://localhost:3003')
       .transform((raw) =>
         raw
           .split(',')

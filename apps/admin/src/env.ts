@@ -1,5 +1,5 @@
 const devDefaults: Partial<Record<string, string>> = {
-  VITE_API_ORIGIN: 'http://localhost:3000',
+  VITE_API_ORIGIN: 'http://localhost:5001',
 };
 
 // G-05: reject localhost values in production (same family as ADR-0020 I-3).
