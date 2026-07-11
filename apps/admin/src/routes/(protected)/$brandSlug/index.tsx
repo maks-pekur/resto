@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Route as brandSlugLayoutRoute } from './_layout';
 import { meBrandsQuery } from '@/lib/queries/identity';
 import { stopListQuery } from '@/lib/queries/catalog';
+import { activeLocationIdQuery } from '@/lib/queries/locations';
 import { SetupChecklistCard } from '@/components/setup-checklist-card';
 import { PageHeading } from '@/components/page-heading';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
@@ -18,14 +19,19 @@ function BrandIndexPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
   const { brandSlug } = Route.useParams();
   const { data: brandsResult } = useQuery(meBrandsQuery());
-  const brandsCount = brandsResult?.data?.brands.length ?? 0;
+  const brandsCount = (brandsResult?.data?.brands ?? []).length;
 
-  const { data: stopListResult } = useQuery({
-    ...stopListQuery(brandSlug),
+  const { data: activeLocationId } = useQuery({
+    ...activeLocationIdQuery(),
     enabled: brandSlug !== '',
   });
 
-  const stopCount = stopListResult?.data?.items.length ?? 0;
+  const { data: stopListResult } = useQuery({
+    ...stopListQuery(brandSlug),
+    enabled: brandSlug !== '' && activeLocationId != null,
+  });
+
+  const stopCount = (stopListResult?.data?.items ?? []).length;
 
   return (
     <>

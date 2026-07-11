@@ -46,7 +46,7 @@ function OnboardingBrandPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: brandsResult } = useQuery(meBrandsQuery());
-  const isFirstBrand = (brandsResult?.data?.brands.length ?? 0) === 0;
+  const isFirstBrand = (brandsResult?.data?.brands ?? []).length === 0;
   const [displayName, setDisplayName] = useState('');
   const [slug, setSlug] = useState('');
   const [slugTouched, setSlugTouched] = useState(false);
