@@ -604,7 +604,7 @@ Plans:
 
 **Wave 7**
 
-- [ ] 08.4-11-PLAN.md — Location isolation e2e: out-of-scope 404/403, staff no-self-switch, owner bypass, archive access-loss (D-04/D-05/D-10/D-11/D-17)
+- [x] 08.4-11-PLAN.md — Location isolation e2e: out-of-scope 404/403, staff no-self-switch, owner bypass, archive access-loss (D-04/D-05/D-10/D-11/D-17)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 

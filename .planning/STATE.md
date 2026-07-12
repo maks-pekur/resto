@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08.4-10-PLAN.md
-last_updated: "2026-07-11T20:04:46.830Z"
+status: verifying
+stopped_at: Completed 08.4-11-PLAN.md — phase 08.4 fully verified
+last_updated: "2026-07-12T08:34:15.791Z"
 last_activity: 2026-07-11
 progress:
   total_phases: 24
-  completed_phases: 12
+  completed_phases: 13
   total_plans: 103
-  completed_plans: 94
-  percent: 50
+  completed_plans: 95
+  percent: 54
 ---
 
 # Project State
@@ -39,7 +39,7 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-11
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
@@ -48,7 +48,7 @@ Last activity: 2026-07-11
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -141,6 +141,7 @@ _Updated after each plan completion_
 | Phase 08.4-location-scoped-access P08 | 55min | 2 tasks | 22 files |
 | Phase 08.4 P09 | 9min | 3 tasks | 9 files |
 | Phase 08.4 P10 | 38min | 2 tasks | 14 files |
+| Phase 08.4 P11 | 92min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -246,6 +247,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 08.4-09: x-location-id echoed from session.activeLocationId on every apiFetch call; locationSwitcher owner-only + brand-global(null) option; staff post-login pick-location interstitial gated on baseRole!=owner && activeLocationId==null; Locations CRUD archive shows post-archive blast-radius toast (no pre-archive preview endpoint exists) (D-09/D-10/D-14/D-16/D-17)
 - [Phase 08.4]: 08.4-10: added GET /v1/members/:memberId/location-roles (plan 07 shipped write-only; the Team matrix needs a read path for current pairs), gated identically (ac:['update']) to the write endpoints
 - [Phase 08.4]: 08.4-10: MemberRoleRow (old tenant-wide role Select) fully replaced by MemberLocationRoleMatrix and deleted, not layered alongside it, per D-15's consolidation goal; the Base role Badge is kept read-only for context
+- [Phase 08.4-11]: InitialLocationDrizzleRepository.resolveForUserInBrand now branches on getTenantContext() (withTenant vs withTenantId) — the withTenantId-only version silently returned null (via its own catch) whenever called from an HTTP request already ALS-bound (SetActiveBrandService.resetActiveLocation), nulling activeLocationId on every explicit brand switch in production
+- [Phase 08.4-11]: location-isolation.e2e.spec.ts non-owner persona uses base role admin, not staff — SYSTEM_ROLES.staff has zero menu permission and the only default-on location-scoped HTTP routes in the app are the catalog stop-list endpoints (menu:read/update); admin is guard-equivalent to staff for LocationScopeGuard/BrandScopeGuard
 
 ### Pending Todos
 
@@ -262,6 +265,7 @@ None yet.
 - TEST DEBT (08.4, needs fixture update): set-active-brand.e2e (2) + related brand-scope e2e assert the pre-08.4 member_brand_scope model; after D-04 brand reachability derives from member_location_scope, so these fixtures must seed member_location_scope. NOT a derivation bug (proven by me-brands/catalog/cross-tenant-isolation green). Fold into plan 11 / phase verification. Also note: identity-bootstrap/identity-invitation/offboard-cancel/signup-enumeration residual e2e failures are confirmed pre-existing, unrelated to location scope.
 - 08.4-09: founder manual click-through of /{brand}/locations CRUD page (create/list) + archive blast-radius toast is PENDING — deferred to end-of-phase verification (08.4-11) per founder decision; automated Playwright coverage only exercised owner-dashboard-no-crash + manager pick-location + cashier auto-pin, not the Locations page UI itself.
 - apps/admin/test/env.spec.ts fails 1/44 (admin:test) since commit 890f7f8 changed the VITE_API_ORIGIN dev default from :3000 to :5001 without updating the test's hardcoded assertion — out of scope for 08.4-09 (port ownership belongs to a separate concern), needs a follow-up quick-task.
+- TEST DEBT still open after 08.4-11 (phase verification plan): set-active-brand.e2e.spec.ts + brand-isolation.e2e.spec.ts still seed the pre-D-04 member_brand_scope model and were NOT updated by plan 11 (out of its file-list scope; location-isolation.e2e.spec.ts is fully self-contained and does not depend on them). Needs a separate follow-up quick-task to reseed those fixtures via member_location_scope.
 
 ### Quick Tasks Completed
 
@@ -306,6 +310,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-11T20:04:46.821Z
-Stopped at: Completed 08.4-10-PLAN.md
+Last session: 2026-07-12T08:34:15.780Z
+Stopped at: Completed 08.4-11-PLAN.md — phase 08.4 fully verified
 Resume file: None
