@@ -608,6 +608,19 @@ Plans:
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
+### Phase 08.5: Owner location filter UX (URL-param + all-aggregate) (INSERTED)
+
+**Goal:** Rework admin location selection from the 08.4 server-session pin + relogin model into an OWNER-ONLY URL search-param filter (`?location=all|<id>`). `all` = aggregate summary across all brand locations (dashboard + stop-list); a specific location filters dashboard / menu / all surfaces by it. Adds backend aggregate endpoints for the `all` case — resolves the documented 08.4 owner-brand-global stop-list gap. Reworks LocationScopeGuard to drop the session-pin-vs-request 404 comparison on the owner filter path (pure member-scope check remains the gate). PRESERVES 08.4 D-10/D-11 for STAFF: staff stay pinned to a single location (pick-location at login, change via re-login) — the URL filter is owner-only; staff session stays scoped to a single brand (login-to-brand).
+**Requirements**: TBD (derive in discuss/plan)
+**Depends on:** Phase 08.4
+**Plans:** 0 plans
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic (security-sensitive — touches LocationScopeGuard + session model)
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 08.5 to break down)
+
 ### Phase 10: Admin Order Intake
 
 **Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
