@@ -19,6 +19,10 @@ export const apiFetch = async <T>(
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
     brandSlug?: string;
+    // 'all' or a uuid; absent/'all' -> omit header. D-12: apiFetch is a dumb
+    // passthrough — the caller (use-effective-location hook) resolves the
+    // per-role value; no session read for location happens in here.
+    locationId?: string;
     signal?: AbortSignal;
   } = {},
 ): Promise<ApiFetchResult<T>> => {
@@ -27,12 +31,11 @@ export const apiFetch = async <T>(
     session.data !== null
       ? (
           session.data as {
-            session?: { activeOrganizationId?: string; activeLocationId?: string | null };
+            session?: { activeOrganizationId?: string };
           }
         ).session
       : undefined;
   const tenantId = sessionData?.activeOrganizationId;
-  const activeLocationId = sessionData?.activeLocationId;
   const isGet = (opts.method ?? 'GET') === 'GET';
   const timeoutMs = isGet ? TIMEOUT_GET_MS : TIMEOUT_MUTATION_MS;
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
@@ -42,7 +45,9 @@ export const apiFetch = async <T>(
     accept: 'application/json',
     ...(tenantId !== undefined ? { 'x-tenant-id': tenantId } : {}),
     ...(opts.brandSlug !== undefined ? { 'x-brand-slug': opts.brandSlug } : {}),
-    ...(typeof activeLocationId === 'string' ? { 'x-location-id': activeLocationId } : {}),
+    ...(opts.locationId !== undefined && opts.locationId !== 'all'
+      ? { 'x-location-id': opts.locationId }
+      : {}),
     ...(opts.body !== undefined ? { 'content-type': 'application/json' } : {}),
   };
   const maxAttempts = isGet ? 2 : 1;
