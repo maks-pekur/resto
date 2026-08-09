@@ -36,12 +36,8 @@ const makeWriter = (
 });
 
 describe('SetActiveLocationService', () => {
-  it('owner: validates target against active brand locations and writes unconditionally', async () => {
-    const reader = makeReader({
-      findPinnableLocations: vi
-        .fn()
-        .mockResolvedValue([{ id: LOCATION_A, name: 'Kitchen A', brandId: BRAND_ID }]),
-    });
+  it('owner: set-active-location is a no-op — returns { locationId: null }, no write, no scope lookup (D-13)', async () => {
+    const reader = makeReader();
     const writer = makeWriter();
     const svc = new SetActiveLocationService(reader, writer);
 
@@ -54,15 +50,13 @@ describe('SetActiveLocationService', () => {
       sessionToken: SESSION_TOKEN,
     });
 
-    expect(result).toEqual({ locationId: LOCATION_A });
-    expect(writer.writeActiveLocation).toHaveBeenCalledWith({
-      sessionToken: SESSION_TOKEN,
-      activeLocationId: LOCATION_A,
-    });
+    expect(result).toEqual({ locationId: null });
+    expect(writer.writeActiveLocation).not.toHaveBeenCalled();
     expect(writer.readActiveLocationId).not.toHaveBeenCalled();
+    expect(reader.findPinnableLocations).not.toHaveBeenCalled();
   });
 
-  it('owner: passing null writes activeLocationId=null (brand-global clear)', async () => {
+  it('owner: passing null is still a no-op — returns { locationId: null }', async () => {
     const reader = makeReader();
     const writer = makeWriter();
     const svc = new SetActiveLocationService(reader, writer);
@@ -77,33 +71,8 @@ describe('SetActiveLocationService', () => {
     });
 
     expect(result).toEqual({ locationId: null });
-    expect(writer.writeActiveLocation).toHaveBeenCalledWith({
-      sessionToken: SESSION_TOKEN,
-      activeLocationId: null,
-    });
-    expect(reader.findPinnableLocations).not.toHaveBeenCalled();
-  });
-
-  it('owner: throws LocationOutOfScopeError when target is not one of the active brand locations', async () => {
-    const reader = makeReader({
-      findPinnableLocations: vi
-        .fn()
-        .mockResolvedValue([{ id: LOCATION_A, name: 'Kitchen A', brandId: BRAND_ID }]),
-    });
-    const writer = makeWriter();
-    const svc = new SetActiveLocationService(reader, writer);
-
-    await expect(
-      svc.execute({
-        userId: USER_ID,
-        tenantId: TENANT_ID,
-        baseRole: 'owner',
-        brandId: BRAND_ID,
-        locationId: LOCATION_B,
-        sessionToken: SESSION_TOKEN,
-      }),
-    ).rejects.toBeInstanceOf(LocationOutOfScopeError);
     expect(writer.writeActiveLocation).not.toHaveBeenCalled();
+    expect(reader.findPinnableLocations).not.toHaveBeenCalled();
   });
 
   it('non-owner: throws LocationAlreadyPinnedError when session already has a non-null activeLocationId', async () => {

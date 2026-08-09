@@ -41,6 +41,17 @@ since D-14 fires before any scope check). Both now pass.
   `member_brand_scope`; already 403'd pre-08.5 for the same reason (statusCode
   assertion fails identically before and after D-14 — verified, not assumed).
 
+### Unrelated pre-existing flake noticed while running `test/unit/identity/`
+
+`identity-boot-integration.spec.ts` — "Plan 03-02 D-14: boot-time email-adapter
+misconfiguration regression > happy path: staging with real key +
+adapterName=resend → assertProdGuardrails passes" fails in isolation
+(`ProdGuardrailsError: ... STRIPE_CONNECT_RETURN_URL is unset ...`), on a
+clean checkout, unrelated to any file this plan touches (Stripe Connect env
+guardrails, not identity/location/brand). Confirmed via `git diff HEAD~4 HEAD`
+— zero changes to this spec file or `src/config/` from this plan's commits.
+Not fixed here — out of scope (Scope Boundary rule).
+
 **New wrinkle for whoever picks up the existing test debt:** once
 `member_brand_scope` fixtures are reseeded via `member_location_scope`, the
 `non-owner in-scope: can re-pin to a scoped brand (200)` test in
