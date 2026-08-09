@@ -20,6 +20,7 @@ import {
 import { and, asc, desc, eq, ilike, inArray, isNull, ne, or, sql } from 'drizzle-orm';
 import {
   IMAGE_URL_PORT,
+  type AggregateStopListRow,
   type CategoryListRow,
   type CatalogRepository,
   type DraftDiffEntryRow,
@@ -1258,6 +1259,75 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         eq(schema.menuStopList.locationId, locationId),
       );
       return rows.map((r) => r.itemId);
+    });
+  }
+
+  async listStopListAggregateAcrossLocations(
+    tenantId: TenantId,
+    activeLocationIds: readonly string[],
+  ): Promise<AggregateStopListRow[]> {
+    if (activeLocationIds.length === 0) return [];
+    return this.db.withTenant(async (tx) => {
+      // ScopedTx.selectFrom() cannot express GROUP BY — raw tx + explicit
+      // eq(tenantId) is the sanctioned escape hatch (ADR-0020 I-1), same
+      // family as removeFromStopList's raw DELETE above.
+      const grouped = await tx
+        .select({
+          itemId: schema.menuStopList.itemId,
+          // postgres.js returns bigint (count()) as a string at runtime; sql<string>
+          // keeps the TS type honest so the Number() conversion below is not flagged
+          // as a no-op by @typescript-eslint/no-unnecessary-type-conversion.
+          stoppedLocationCount: sql<string>`count(distinct ${schema.menuStopList.locationId})`,
+          lastStoppedAt: sql<Date>`max(${schema.menuStopList.stoppedAt})`,
+        })
+        .from(schema.menuStopList)
+        .where(
+          and(
+            eq(schema.menuStopList.tenantId, tenantId),
+            inArray(schema.menuStopList.locationId, activeLocationIds),
+          ),
+        )
+        .groupBy(schema.menuStopList.itemId)
+        .orderBy(desc(sql`max(${schema.menuStopList.stoppedAt})`))
+        .limit(50)
+        .offset(0);
+      if (grouped.length === 0) return [];
+
+      const itemIds = grouped.map((g) => g.itemId);
+      const items = await tx
+        .select({
+          id: schema.menuItems.id,
+          name: schema.menuItems.name,
+          categoryId: schema.menuItems.categoryId,
+        })
+        .from(schema.menuItems)
+        .where(and(eq(schema.menuItems.tenantId, tenantId), inArray(schema.menuItems.id, itemIds)));
+      const itemById = new Map(items.map((i) => [i.id, i]));
+      const categoryIds = Array.from(new Set(items.map((i) => i.categoryId)));
+      const categories =
+        categoryIds.length > 0
+          ? await tx
+              .select({ id: schema.menuCategories.id, name: schema.menuCategories.name })
+              .from(schema.menuCategories)
+              .where(
+                and(
+                  eq(schema.menuCategories.tenantId, tenantId),
+                  inArray(schema.menuCategories.id, categoryIds),
+                ),
+              )
+          : [];
+      const catById = new Map(categories.map((c) => [c.id, c.name]));
+
+      return grouped.map<AggregateStopListRow>((g) => {
+        const item = itemById.get(g.itemId);
+        return {
+          itemId: g.itemId,
+          itemName: item?.name ?? null,
+          categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
+          stoppedLocationCount: Number(g.stoppedLocationCount),
+          lastStoppedAt: new Date(g.lastStoppedAt).toISOString(),
+        };
+      });
     });
   }
 

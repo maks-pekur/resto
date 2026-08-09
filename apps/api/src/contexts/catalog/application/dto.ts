@@ -275,6 +275,21 @@ export const StopListResponseSchema = z.object({
 export type StopListResponse = z.infer<typeof StopListResponseSchema>;
 export class StopListResponseDto extends createZodDto(StopListResponseSchema) {}
 
+export const AggregateStopListEntrySchema = z.object({
+  itemId: z.string().uuid(),
+  itemName: LocalizedText.nullable(),
+  categoryName: LocalizedText.nullable(),
+  stoppedLocationCount: z.number().int().nonnegative(),
+  lastStoppedAt: z.string().datetime(),
+});
+export type AggregateStopListEntry = z.infer<typeof AggregateStopListEntrySchema>;
+export const AggregateStopListResponseSchema = z.object({
+  items: z.array(AggregateStopListEntrySchema),
+  totalActiveLocations: z.number().int().nonnegative(),
+});
+export type AggregateStopListResponse = z.infer<typeof AggregateStopListResponseSchema>;
+export class AggregateStopListResponseDto extends createZodDto(AggregateStopListResponseSchema) {}
+
 export const DraftDiffEntitySchema = z.enum(['item', 'category', 'modifier-group']);
 export const DraftDiffStatusSchema = z.enum(['draft', 'modified', 'archived']);
 export const DraftDiffItemSchema = z.object({

@@ -34,6 +34,10 @@ export interface CatalogRepository {
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
+  listStopListAggregateAcrossLocations(
+    tenantId: TenantId,
+    activeLocationIds: readonly string[],
+  ): Promise<AggregateStopListRow[]>;
   computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
@@ -269,6 +273,16 @@ export interface StopListEntryRow {
   readonly categoryName: Record<string, string> | null;
   readonly stoppedAt: string;
   readonly reason: string | null;
+}
+
+// D-05: aggregate is read-only across locations; per-location `reason` values
+// can differ, so it is not surfaced here (unlike StopListEntryRow).
+export interface AggregateStopListRow {
+  readonly itemId: string;
+  readonly itemName: Record<string, string> | null;
+  readonly categoryName: Record<string, string> | null;
+  readonly stoppedLocationCount: number;
+  readonly lastStoppedAt: string;
 }
 
 export interface DraftDiffEntryRow {
