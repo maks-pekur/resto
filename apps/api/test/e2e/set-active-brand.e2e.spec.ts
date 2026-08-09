@@ -221,7 +221,7 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     void ownerBootstrap;
   }, 90_000);
 
-  it('non-owner out-of-scope: returns 403', async () => {
+  it('non-owner out-of-scope: returns 403 identity.non_owner_brand_switch_forbidden (D-14, 08.5)', async () => {
     const slug = `sab-scope-${randomUUID().slice(0, 6)}`;
     const ownerEmail = `owner-${slug}@example.com`;
     const staffEmail = `staff-${slug}@example.com`;
@@ -292,7 +292,10 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     });
     expect(res.statusCode).toBe(403);
     const body = res.json<{ code?: string }>();
-    expect(body.code).toBe('brand.out_of_scope');
+    // D-14 (08.5): non-owner set-active-brand is closed outright — the 403 now
+    // fires before any scope check, so out-of-scope and in-scope non-owners
+    // get the identical identity.non_owner_brand_switch_forbidden code.
+    expect(body.code).toBe('identity.non_owner_brand_switch_forbidden');
   }, 90_000);
 
   it('deterministic initial pin: after set-active, activeBrandId is non-null on session', async () => {
@@ -517,7 +520,7 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     expect(res.statusCode).toBe(403);
   }, 90_000);
 
-  it('non-owner staff with no scope rows: 403 (null scope = no access, D-08 default-deny)', async () => {
+  it('non-owner staff with no scope rows: 403 identity.non_owner_brand_switch_forbidden (D-14, 08.5)', async () => {
     const slug = `sab-noscope-${randomUUID().slice(0, 6)}`;
     const ownerEmail = `owner-${slug}@example.com`;
     const staffEmail = `staff-${slug}@example.com`;
@@ -583,6 +586,7 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     });
     expect(res.statusCode).toBe(403);
     const body = res.json<{ code?: string }>();
-    expect(body.code).toBe('brand.out_of_scope');
+    // D-14 (08.5): closed for every non-owner regardless of scope state.
+    expect(body.code).toBe('identity.non_owner_brand_switch_forbidden');
   }, 90_000);
 });
