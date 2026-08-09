@@ -42,8 +42,8 @@ export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) 
   const triggerLabel = mode === 'all' ? 'All locations' : (activeLocation?.name ?? 'All locations');
 
   // D-01/D-04: pure client-side URL filter — no apiFetch, no server
-  // round-trip, no window.location.reload. Preserve other search params via
-  // the updater form (D-01/RESEARCH.md Pattern 3).
+  // round-trip, no full-page reload. Preserve other search params via the
+  // updater form (D-01/RESEARCH.md Pattern 3).
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 'all' documents the ?location sentinel (D-01)
   const switchTo = (value: 'all' | string): void => {
     void navigate({ to: pathname, search: (prev) => ({ ...prev, location: value }) });
