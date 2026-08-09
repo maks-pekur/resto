@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Completed 08.5-04-PLAN.md
-last_updated: '2026-08-09T23:15:35.965Z'
+status: verifying
+stopped_at: Completed 08.5-05-PLAN.md
+last_updated: "2026-08-09T23:57:50.601Z"
 last_activity: 2026-08-09
 progress:
   total_phases: 25
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 108
-  completed_plans: 99
-  percent: 52
+  completed_plans: 100
+  percent: 56
 ---
 
 # Project State
@@ -39,7 +39,7 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-08-09
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
@@ -48,7 +48,7 @@ Last activity: 2026-08-09
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -146,6 +146,7 @@ _Updated after each plan completion_
 | Phase 08.5 P02 | 16min | 3 tasks | 8 files |
 | Phase 08.5 P03 | 18min | 3 tasks | 8 files |
 | Phase 08.5 P04 | 25min | 3 tasks | 7 files |
+| Phase 08.5 P05 | 55min | 3 tasks | 16 files |
 
 ## Accumulated Context
 
@@ -266,6 +267,11 @@ Recent decisions affecting current work:
 - [Phase 08.5-04]: apiFetch is a pure passthrough for x-location-id via opts.locationId; no session read for location remains (D-12)
 - [Phase 08.5-04]: useEffectiveLocation is self-contained (derives isOwner via meQuery internally) -- the single per-role location authority every query call site uses; meLocationsQuery already returns only active locations of the active brand for an owner
 - [Phase 08.5-04]: stopListQuery's new required locationId param broke index.tsx/menu/stop-list.tsx (relying on the 08.5-02-retired owner pin) plus 2 unit-test assertions -- fixed inline (Rule 3); menu/stop-list.tsx's loader removed (loaders can't call hooks), full aggregate/loaderDeps wiring deferred to plan 05
+- [Phase 08.5-05]: location-switcher is a pure ?location URL filter (navigate on select) — no apiFetch/set-active-location/window.location.reload; useEffectiveLocation drives the trigger label
+- [Phase 08.5-05]: dashboard + menu/stop-list both get the all-mode aggregate branch (stopListAggregateQuery); menu/stop-list adds loaderDeps on ?location and a read-only StopListAggregateTable with N/M badge in all mode (D-05/D-06/D-17)
+- [Phase 08.5-05]: fixed a real navigate-to-wrong-page bug found by the browser smoke: useNavigate({from: staticRoute}) + navigate({search}) with no 'to' resolves relative to 'from', not the current page; fixed via explicit to: useRouterState(...).pathname in location-switcher.tsx and use-effective-location.ts's D-18 fallback
+- [Phase 08.5-05]: toggleStopList/resetStopList require an explicit locationId now that apiFetch has no session fallback; threaded through StopListTable/TodaysWidgetResetButton/ItemsTable (08.5-04-flagged follow-up)
+- [Phase 08.5-05]: playwright.config.ts corrected to the real dev topology (admin :4000 / api :5001) — prior :3001 + Next.js-era env vars predated the Vite SPA migration and could not boot the app
 
 ### Pending Todos
 
@@ -335,6 +341,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-09T23:15:35.955Z
-Stopped at: Completed 08.5-04-PLAN.md
+Last session: 2026-08-09T23:57:50.587Z
+Stopped at: Completed 08.5-05-PLAN.md
 Resume file: None
