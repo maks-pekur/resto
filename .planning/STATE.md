@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.5-02-PLAN.md
-last_updated: '2026-08-09T22:03:24.392Z'
+stopped_at: Completed 08.5-03-PLAN.md
+last_updated: "2026-08-09T22:56:36.382Z"
 last_activity: 2026-08-09
 progress:
   total_phases: 25
   completed_phases: 13
   total_plans: 108
-  completed_plans: 97
+  completed_plans: 98
   percent: 52
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.5 (owner-location-filter-ux-url-param-all-aggregate) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-08-09
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -144,6 +144,7 @@ _Updated after each plan completion_
 | Phase 08.4 P11 | 92min | 2 tasks | 2 files |
 | Phase 08.5 P01 | 12min | 2 tasks | 5 files |
 | Phase 08.5 P02 | 16min | 3 tasks | 8 files |
+| Phase 08.5 P03 | 18min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -257,6 +258,10 @@ Recent decisions affecting current work:
 - [Phase 08.5-02]: D-13: owner branch of SetActiveLocationService retired to a no-op (return {locationId:null}); staff branch and resetActiveLocation left byte-unchanged
 - [Phase 08.5-02]: D-14: non-owner set-active-brand now throws NonOwnerBrandSwitchForbiddenError (403) as first statement; dead reachable-brands branch deleted, not gated
 - [Phase 08.5-02]: LOW-11 explicitly ACCEPTED not fixed: afterUpdateMemberRole still does not reset activeLocationId/activeBrandId on role change (demoted owner->staff fails closed; promoted staff->owner neutralized by URL-authority design)
+- [Phase 08.5-03]: No new migration: menu_stop_list has no brand_id (dropped in migration 0068); existing menu_stop_list_location_item_tenant_uq index serves the aggregate GROUP BY
+- [Phase 08.5-03]: stop-list/aggregate carries @Permissions(menu:read) + @RequireBrand + @LocationNeutral + @OwnerOnly together — LocationNeutral is the 08.4-gap fix, OwnerOnly is the load-bearing BOLA gate (BLOCK-1)
+- [Phase 08.5-03]: D-10 validation added to GetStopListService: owner ?location=<id> reads and the aggregate both resolve active locations from LOCATION_REPOSITORY.listForBrand, so a forged/foreign/archived x-location-id 404s
+- [Phase 08.5-03]: D-11 re-confirmed as explicit re-defer: no PermissionsGuard changes, no LocationPermissionChecker wiring; aggregate confinement is LocationScopeGuard + OwnerOnlyGuard only
 
 ### Pending Todos
 
@@ -274,6 +279,7 @@ None yet.
 - 08.4-09: founder manual click-through of /{brand}/locations CRUD page (create/list) + archive blast-radius toast is PENDING — deferred to end-of-phase verification (08.4-11) per founder decision; automated Playwright coverage only exercised owner-dashboard-no-crash + manager pick-location + cashier auto-pin, not the Locations page UI itself.
 - RESOLVED (commit 1cd9a80): apps/admin/test/env.spec.ts VITE_API_ORIGIN dev-default assertion updated :3000 → :5001 (was broken by port change 890f7f8). admin:test env.spec 4/4 green.
 - TEST DEBT still open after 08.4-11 (phase verification plan): set-active-brand.e2e.spec.ts + brand-isolation.e2e.spec.ts still seed the pre-D-04 member_brand_scope model and were NOT updated by plan 11 (out of its file-list scope; location-isolation.e2e.spec.ts is fully self-contained and does not depend on them). Needs a separate follow-up quick-task to reseed those fixtures via member_location_scope.
+- TEST DEBT (found during 08.5-03): catalog-reads.e2e.spec.ts (2 tests) + catalog-brand-read-isolation.e2e.spec.ts (1 test) fail with 403 location.context_required — owner fixtures never create a location / never send x-location-id, relying on an ambient location context that no longer resolves after the 08.5 owner-pin retirement. Confirmed unrelated to 08.5-03's own changes (isolated + reverted). See 08.5 deferred-items.md for full analysis.
 
 ### Phase 08.4 COMPLETE (2026-07-12) — all 11 plans, ROADMAP marked Complete
 
@@ -325,6 +331,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-09T22:03:24.381Z
-Stopped at: Completed 08.5-02-PLAN.md
+Last session: 2026-08-09T22:56:26.494Z
+Stopped at: Completed 08.5-03-PLAN.md
 Resume file: None
