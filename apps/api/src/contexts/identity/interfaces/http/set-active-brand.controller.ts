@@ -17,7 +17,7 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { wrapWith } from '../../../../shared/api/wrap';
 import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { SetActiveBrandService } from '../../application/set-active-brand.service';
-import { BrandOutOfScopeError } from '../../domain/errors';
+import { BrandOutOfScopeError, NonOwnerBrandSwitchForbiddenError } from '../../domain/errors';
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { mapIdentityError } from './error-mapping';
@@ -37,6 +37,9 @@ class SetActiveBrandResponseDto extends createZodDto(SetActiveBrandResponseSchem
 
 const mapError = (err: unknown): unknown => {
   if (err instanceof BrandOutOfScopeError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+  if (err instanceof NonOwnerBrandSwitchForbiddenError) {
     return new ForbiddenException({ code: err.code, message: err.message });
   }
   return mapIdentityError(err);

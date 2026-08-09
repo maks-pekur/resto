@@ -39,6 +39,15 @@ export class BrandOutOfScopeError extends IdentityDomainError {
   }
 }
 
+export class NonOwnerBrandSwitchForbiddenError extends IdentityDomainError {
+  constructor() {
+    super(
+      'identity.non_owner_brand_switch_forbidden',
+      'Only the owner may switch the active brand.',
+    );
+  }
+}
+
 export class LocationOutOfScopeError extends IdentityDomainError {
   constructor() {
     super('location.out_of_scope', 'Location is not within the operator scope.');
