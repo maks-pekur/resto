@@ -32,26 +32,9 @@ export class SetActiveLocationService {
 
   async execute(input: SetActiveLocationInput): Promise<SetActiveLocationResult> {
     if (input.baseRole === 'owner') {
-      if (input.locationId === null) {
-        await this.writer.writeActiveLocation({
-          sessionToken: input.sessionToken,
-          activeLocationId: null,
-        });
-        return { locationId: null };
-      }
-      const candidates = await this.scopeReader.findPinnableLocations({
-        userId: input.userId,
-        tenantId: input.tenantId,
-        brandId: input.brandId,
-        isOwner: true,
-      });
-      const match = candidates.find((l) => l.id === input.locationId);
-      if (!match) throw new LocationOutOfScopeError();
-      await this.writer.writeActiveLocation({
-        sessionToken: input.sessionToken,
-        activeLocationId: input.locationId,
-      });
-      return { locationId: input.locationId };
+      // D-13: owner location authority is the `?location` URL param (08.5) —
+      // the server-side pin is retired; no write, no scope lookup.
+      return { locationId: null };
     }
 
     const current = await this.writer.readActiveLocationId(input.sessionToken);
