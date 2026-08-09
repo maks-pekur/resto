@@ -28,6 +28,12 @@ if (!dockerOk) {
   console.warn('[location-isolation.e2e] Docker not available — skipping.');
 }
 
+// LOW-11 (08.5, ACCEPTED not fixed): afterUpdateMemberRole does not reset
+// activeLocationId/activeBrandId on role change. Demoted owner->staff fails
+// closed (null pin -> 404 until re-login). Promoted staff->owner is
+// neutralized by this phase's own design — owners derive location authority
+// from the URL and bypass LocationScopeGuard entirely, so a stale staff pin
+// on a promoted owner has no effect.
 suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
   let stack: RealStack;
   let tenantId: string;
@@ -163,9 +169,12 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     locationBId = await createLocation(brand1Slug, 'Location B');
     locationCId = await createLocation(brand2Slug, 'Location C');
 
+    // D-14: non-owner set-active-brand is now closed (403), so staff can no
+    // longer be pinned via an explicit call here — sign-in's built-in
+    // onInitialBrandPin/onInitialLocationPin hooks (auth.config.ts) already
+    // auto-pin the single reachable brand/location from member_location_scope.
     const staffEmail = `staff-${randomUUID().slice(0, 8)}@example.com`;
-    const staffRawCookie = await seedScopedStaff(staffEmail, locationAId);
-    staffCookie = await setActiveBrand(staffRawCookie, brand1Id);
+    staffCookie = await seedScopedStaff(staffEmail, locationAId);
   }, 240_000);
 
   afterAll(async () => {
@@ -234,14 +243,34 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
       });
     });
 
-    describe('owner re-pin — unrestricted, no re-login required', () => {
-      it('owner pins A then re-pins to B, both succeed (200)', async () => {
-        let cookie = await setActiveBrand(ownerCookie, brand1Id);
-        const first = await setActiveLocation(cookie, locationAId);
-        expect(first.status).toBe(200);
-        cookie = first.cookie;
-        const second = await setActiveLocation(cookie, locationBId);
-        expect(second.status).toBe(200);
+    describe('D-13 owner server-side location pin retired — set-active-location is a no-op', () => {
+      it('owner posting a valid location id gets 200 with locationId: null (no server pin; URL is the authority)', async () => {
+        const cookie = await setActiveBrand(ownerCookie, brand1Id);
+        const result = await setActiveLocation(cookie, locationAId);
+        expect(result.status).toBe(200);
+        expect(result.body.locationId).toBeNull();
+      });
+
+      it('owner posting null also gets 200 with locationId: null', async () => {
+        const cookie = await setActiveBrand(ownerCookie, brand1Id);
+        const result = await setActiveLocation(cookie, null);
+        expect(result.status).toBe(200);
+        expect(result.body.locationId).toBeNull();
+      });
+    });
+
+    describe('D-14 non-owner set-active-brand is closed outright (403)', () => {
+      it('staff calling POST /v1/me/set-active-brand receives 403 identity.non_owner_brand_switch_forbidden', async () => {
+        const res = await stack.app.inject({
+          method: 'POST',
+          url: '/v1/me/set-active-brand',
+          headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+          payload: { brandId: brand1Id },
+        });
+        expect(res.statusCode).toBe(403);
+        expect(res.json<{ code?: string }>().code).toBe(
+          'identity.non_owner_brand_switch_forbidden',
+        );
       });
     });
 
