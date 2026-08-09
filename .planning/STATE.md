@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 08.5 context gathered
-last_updated: "2026-07-12T21:20:03.705Z"
-last_activity: 2026-07-12 -- Phase 08.5 planning complete
+last_updated: '2026-08-09T21:37:24.824Z'
+last_activity: 2026-08-09
 progress:
   total_phases: 25
   completed_phases: 13
   total_plans: 108
-  completed_plans: 95
+  completed_plans: 96
   percent: 52
 ---
 
@@ -21,15 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 08.4 — location-scoped-access
+**Current focus:** Phase 08.5 — owner-location-filter-ux-url-param-all-aggregate
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
 
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
-Phase: 08.4 (location-scoped-access) — EXECUTING
-Plan: 11 of 11
+Phase: 08.5 (owner-location-filter-ux-url-param-all-aggregate) — EXECUTING
+Plan: 2 of 5
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -40,7 +40,7 @@ Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surf
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
 Status: Ready to execute
-Last activity: 2026-07-12 -- Phase 08.5 planning complete
+Last activity: 2026-08-09
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -48,7 +48,7 @@ Last activity: 2026-07-12 -- Phase 08.5 planning complete
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 89%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -142,6 +142,7 @@ _Updated after each plan completion_
 | Phase 08.4 P09 | 9min | 3 tasks | 9 files |
 | Phase 08.4 P10 | 38min | 2 tasks | 14 files |
 | Phase 08.4 P11 | 92min | 2 tasks | 2 files |
+| Phase 08.5 P01 | 12min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -249,6 +250,9 @@ Recent decisions affecting current work:
 - [Phase 08.4]: 08.4-10: MemberRoleRow (old tenant-wide role Select) fully replaced by MemberLocationRoleMatrix and deleted, not layered alongside it, per D-15's consolidation goal; the Base role Badge is kept read-only for context
 - [Phase 08.4-11]: InitialLocationDrizzleRepository.resolveForUserInBrand now branches on getTenantContext() (withTenant vs withTenantId) — the withTenantId-only version silently returned null (via its own catch) whenever called from an HTTP request already ALS-bound (SetActiveBrandService.resetActiveLocation), nulling activeLocationId on every explicit brand switch in production
 - [Phase 08.4-11]: location-isolation.e2e.spec.ts non-owner persona uses base role admin, not staff — SYSTEM_ROLES.staff has zero menu permission and the only default-on location-scoped HTTP routes in the app are the catalog stop-list endpoints (menu:read/update); admin is guard-equivalent to staff for LocationScopeGuard/BrandScopeGuard
+- [Phase 08.5]: OwnerOnlyGuard is synchronous — no repository lookup needed, matches RESEARCH.md guidance
+- [Phase 08.5]: Guard registered as 5th APP_GUARD, after LocationScopeGuard, per D-09
+- [Phase 08.5]: location-scope.guard.ts left byte-unchanged per D-08/BLOCK-2 — confirmed via git diff --stat and 10/10 green location-isolation.e2e.spec.ts
 
 ### Pending Todos
 
@@ -317,6 +321,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-07-12T09:34:29.671Z
+Last session: 2026-08-09T21:32:30.863Z
 Stopped at: Phase 08.5 context gathered
-Resume file: .planning/phases/08.5-owner-location-filter-ux-url-param-all-aggregate/08.5-CONTEXT.md
+Resume file: None
