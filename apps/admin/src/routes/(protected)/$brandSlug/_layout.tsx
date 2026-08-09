@@ -1,6 +1,7 @@
 import type { CSSProperties } from 'react';
 import { createRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { z } from 'zod';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { meQuery, meBrandsQuery, toOperatorSummary } from '@/lib/queries/identity';
 import { AppSidebar } from '@/components/app-sidebar';
@@ -13,9 +14,17 @@ const sidebarStyle: CSSProperties = {
   '--header-height': 'calc(var(--spacing) * 14)',
 } as CSSProperties;
 
+// D-01: owner location filter. Any value outside this union is dropped by
+// zod at the edge, leaving `location` undefined -> use-effective-location
+// resolves the D-03 default.
+const locationSearchSchema = z.object({
+  location: z.union([z.literal('all'), z.string().uuid()]).optional(),
+});
+
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/$brandSlug',
+  validateSearch: locationSearchSchema,
   component: BrandLayout,
 });
 
