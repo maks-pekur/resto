@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 08.5 context gathered
-last_updated: '2026-08-09T21:37:24.824Z'
+stopped_at: Completed 08.5-02-PLAN.md
+last_updated: "2026-08-09T22:03:24.392Z"
 last_activity: 2026-08-09
 progress:
   total_phases: 25
   completed_phases: 13
   total_plans: 108
-  completed_plans: 96
+  completed_plans: 97
   percent: 52
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.5 (owner-location-filter-ux-url-param-all-aggregate) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-08-09
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 89%
+Progress: [█████████░] 90%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -143,6 +143,7 @@ _Updated after each plan completion_
 | Phase 08.4 P10 | 38min | 2 tasks | 14 files |
 | Phase 08.4 P11 | 92min | 2 tasks | 2 files |
 | Phase 08.5 P01 | 12min | 2 tasks | 5 files |
+| Phase 08.5 P02 | 16min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -253,6 +254,9 @@ Recent decisions affecting current work:
 - [Phase 08.5]: OwnerOnlyGuard is synchronous — no repository lookup needed, matches RESEARCH.md guidance
 - [Phase 08.5]: Guard registered as 5th APP_GUARD, after LocationScopeGuard, per D-09
 - [Phase 08.5]: location-scope.guard.ts left byte-unchanged per D-08/BLOCK-2 — confirmed via git diff --stat and 10/10 green location-isolation.e2e.spec.ts
+- [Phase 08.5-02]: D-13: owner branch of SetActiveLocationService retired to a no-op (return {locationId:null}); staff branch and resetActiveLocation left byte-unchanged
+- [Phase 08.5-02]: D-14: non-owner set-active-brand now throws NonOwnerBrandSwitchForbiddenError (403) as first statement; dead reachable-brands branch deleted, not gated
+- [Phase 08.5-02]: LOW-11 explicitly ACCEPTED not fixed: afterUpdateMemberRole still does not reset activeLocationId/activeBrandId on role change (demoted owner->staff fails closed; promoted staff->owner neutralized by URL-authority design)
 
 ### Pending Todos
 
@@ -321,6 +325,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-09T21:32:30.863Z
-Stopped at: Phase 08.5 context gathered
+Last session: 2026-08-09T22:03:24.381Z
+Stopped at: Completed 08.5-02-PLAN.md
 Resume file: None
