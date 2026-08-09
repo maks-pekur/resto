@@ -42,6 +42,10 @@ export interface ItemsTableProps {
     readonly pageSize: number;
   };
   readonly onPageChange: (page: number) => void;
+  // D-05: the inline stop/resume toggle is a write action — it requires a
+  // concrete location the same way the dedicated stop-list page does.
+  // undefined (owner in `all`/zero-location mode) disables the toggle.
+  readonly stopListLocationId?: string;
 }
 
 type OptimisticState = Record<string, 'paused' | 'published' | undefined>;
@@ -65,11 +69,13 @@ export function ItemsTable({
   totalCount,
   pagination,
   onPageChange,
+  stopListLocationId,
 }: ItemsTableProps): React.ReactElement {
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
+  const canToggleStopList = stopListLocationId !== undefined;
 
   const formatPrice = (basePrice: string, hasSizes: boolean): string => {
     const trimmed = trimPrice(basePrice);
@@ -83,7 +89,7 @@ export function ItemsTable({
 
   const toggleMutation = useMutation({
     mutationFn: ({ itemId, next }: { itemId: string; next: 'paused' | 'published' }) =>
-      toggleStopList(brandSlug, itemId, next),
+      toggleStopList(brandSlug, itemId, next, stopListLocationId ?? ''),
     onSettled: (_data, _err, { itemId }) => {
       setPendingIds((prev) => {
         const copy = new Set(prev);
@@ -132,7 +138,7 @@ export function ItemsTable({
   };
 
   const handleToggleStop = (item: ItemListItemApi): void => {
-    if (pendingIds.has(item.id)) return;
+    if (pendingIds.has(item.id) || !canToggleStopList) return;
     const currentEffective = optimistic[item.id] ?? item.status;
     const isCurrentlyPaused = currentEffective === 'paused';
     const next: 'paused' | 'published' = isCurrentlyPaused ? 'published' : 'paused';
@@ -247,7 +253,7 @@ export function ItemsTable({
                         handleToggleStop(item);
                       }}
                       aria-label={switchLabel}
-                      disabled={isPending}
+                      disabled={isPending || !canToggleStopList}
                     />
                   </div>
                 </TableCell>

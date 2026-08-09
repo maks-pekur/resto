@@ -261,7 +261,12 @@
       "resetSuccess": "Стоп-лист сбросен",
       "resetPartial": "{{ok}} возобновлены, {{failed}} не удалось",
       "resetFailed": "Не удалось сбросить стоп-лист.",
-      "resetFetchFailed": "Не удалось получить стоп-лист."
+      "resetFetchFailed": "Не удалось получить стоп-лист.",
+      "pageTitle": "Стоп-лист",
+      "tableLocationsHeader": "Точки",
+      "aggregateReadOnlyHint": "Показаны все точки. Выберите точку, чтобы остановить или возобновить позиции.",
+      "aggregateBadge": "{{count}}/{{total}} точек",
+      "aggregateBadgeAria": "Остановлено в {{count}} из {{total}} точек"
     },
     "status": {
       "draft": "Черновик",
@@ -300,6 +305,9 @@
     "noBrands": "У вас пока нет брендов",
     "noBrandsDescription": "Создайте первый бренд, чтобы начать.",
     "title": "Дашборд",
+    "noLocationsTitle": "У вас пока нет точек",
+    "noLocationsDescription": "Создайте первую точку, чтобы начать отслеживать стоп-лист.",
+    "createLocationCta": "Создать точку",
     "settingsTitle": "Настройки",
     "teamTitle": "Команда",
     "teamInviteBtn": "Пригласить",

@@ -261,7 +261,12 @@
       "resetSuccess": "Stop list cleared",
       "resetPartial": "{{ok}} resumed, {{failed}} failed",
       "resetFailed": "Couldn't reset the stop list.",
-      "resetFetchFailed": "Couldn't load the stop list."
+      "resetFetchFailed": "Couldn't load the stop list.",
+      "pageTitle": "Stop list",
+      "tableLocationsHeader": "Locations",
+      "aggregateReadOnlyHint": "Showing all locations. Select a location to stop or resume items.",
+      "aggregateBadge": "{{count}}/{{total}} locations",
+      "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations"
     },
     "status": {
       "draft": "Draft",
@@ -298,6 +303,9 @@
     "noBrands": "You don't have any brands yet",
     "noBrandsDescription": "Create your first brand to begin.",
     "title": "Dashboard",
+    "noLocationsTitle": "You don't have any locations yet",
+    "noLocationsDescription": "Create your first location to start tracking today's stop list.",
+    "createLocationCta": "Create a location",
     "settingsTitle": "Settings",
     "teamTitle": "Team",
     "teamInviteBtn": "Invite",

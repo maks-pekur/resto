@@ -20,6 +20,7 @@ import type { StopListItemApi } from '@/lib/queries/catalog';
 export interface StopListTableProps {
   readonly brandSlug: string;
   readonly items: readonly StopListItemApi[];
+  readonly locationId: string;
 }
 
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
@@ -30,14 +31,18 @@ const buildCategoryPath = (item: StopListItemApi): string => {
   return parent.length > 0 ? `${parent} → ${child}` : child;
 };
 
-export function StopListTable({ brandSlug, items }: StopListTableProps): React.ReactElement {
+export function StopListTable({
+  brandSlug,
+  items,
+  locationId,
+}: StopListTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const queryClient = useQueryClient();
   const [removedIds, setRemovedIds] = React.useState<ReadonlySet<string>>(new Set());
 
   const toggleMutation = useMutation({
-    mutationFn: (itemId: string) => toggleStopList(brandSlug, itemId, 'published'),
+    mutationFn: (itemId: string) => toggleStopList(brandSlug, itemId, 'published', locationId),
     onSuccess: (res, itemId) => {
       if (res.ok) {
         setRemovedIds((prev) => {

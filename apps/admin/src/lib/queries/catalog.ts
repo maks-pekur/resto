@@ -283,25 +283,41 @@ export const upsertItemModifierGroups = (
     brandSlug,
   });
 
-export const toggleStopList = (brandSlug: string, itemId: string, next: 'paused' | 'published') => {
+// D-05: stop/unstop write endpoints stay location-scoped — locationId is
+// required (never 'all') and is the operator's currently selected location.
+export const toggleStopList = (
+  brandSlug: string,
+  itemId: string,
+  next: 'paused' | 'published',
+  locationId: string,
+) => {
   if (next === 'paused') {
     return apiFetch('/v1/catalog/stop-list', {
       method: 'POST',
       body: { itemId },
       brandSlug,
+      locationId,
     });
   }
   return apiFetch(`/v1/catalog/stop-list/${itemId}`, {
     method: 'DELETE',
     brandSlug,
+    locationId,
   });
 };
 
-export const resetStopList = async (brandSlug: string): Promise<{ ok: boolean }> => {
-  const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug });
+export const resetStopList = async (
+  brandSlug: string,
+  locationId: string,
+): Promise<{ ok: boolean }> => {
+  const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug, locationId });
   if (!res.ok) return { ok: false };
   for (const item of res.data?.items ?? []) {
-    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, { method: 'DELETE', brandSlug });
+    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, {
+      method: 'DELETE',
+      brandSlug,
+      locationId,
+    });
     if (!del.ok) return { ok: false };
   }
   return { ok: true };
