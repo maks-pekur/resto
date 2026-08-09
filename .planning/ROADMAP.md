@@ -613,7 +613,7 @@ Plans:
 **Goal:** Rework admin location selection from the 08.4 server-session pin + relogin model into an OWNER-ONLY URL search-param filter (`?location=all|<id>`). `all` = aggregate summary across all brand locations (dashboard + stop-list); a specific location filters dashboard / menu / all surfaces by it. Adds backend aggregate endpoints for the `all` case — resolves the documented 08.4 owner-brand-global stop-list gap. Reworks LocationScopeGuard to drop the session-pin-vs-request 404 comparison on the owner filter path (pure member-scope check remains the gate). PRESERVES 08.4 D-10/D-11 for STAFF: staff stay pinned to a single location (pick-location at login, change via re-login) — the URL filter is owner-only; staff session stays scoped to a single brand (login-to-brand).
 **Requirements**: TBD (derive in discuss/plan)
 **Depends on:** Phase 08.4
-**Plans:** 3/5 plans executed
+**Plans:** 4/5 plans executed
 **UI hint**: yes
 **Persona reviewers**: persona-cto, persona-skeptic (security-sensitive — touches LocationScopeGuard + session model)
 
@@ -622,7 +622,7 @@ Plans:
 - [x] 08.5-01-PLAN.md — Backend owner-only gate primitive (@OwnerOnly decorator + OwnerOnlyGuard, 5th APP_GUARD) + guard-untouched regression (D-02/D-08/D-09)
 - [x] 08.5-02-PLAN.md — Backend session-pin cleanup: retire owner pin, 403 non-owner brand-switch, LOW-11 accept (D-13/D-14/D-15)
 - [x] 08.5-03-PLAN.md — `all` aggregate endpoint (@LocationNeutral @OwnerOnly, no-store, N/M badge) + owner single-location server validation (D-05/D-06/D-07/D-09/D-10/D-11/D-16)
-- [ ] 08.5-04-PLAN.md — Client location-authority split: apiFetch locationId opt, ?location typed search param, use-effective-location hook (D-01/D-03/D-04/D-12/D-18)
+- [x] 08.5-04-PLAN.md — Client location-authority split: apiFetch locationId opt, ?location typed search param, use-effective-location hook (D-01/D-03/D-04/D-12/D-18)
 - [ ] 08.5-05-PLAN.md — Surfaces + URL-filter switcher + all-mode completeness sweep + real browser smoke (D-05/D-17/D-19)
 
 ### Phase 10: Admin Order Intake

@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 08.5-03-PLAN.md
-last_updated: '2026-08-09T22:56:36.382Z'
+stopped_at: Completed 08.5-04-PLAN.md
+last_updated: "2026-08-09T23:15:35.965Z"
 last_activity: 2026-08-09
 progress:
   total_phases: 25
   completed_phases: 13
   total_plans: 108
-  completed_plans: 98
+  completed_plans: 99
   percent: 52
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 **ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
 
 Phase: 08.5 (owner-location-filter-ux-url-param-all-aggregate) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -48,7 +48,7 @@ Last activity: 2026-08-09
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -145,6 +145,7 @@ _Updated after each plan completion_
 | Phase 08.5 P01 | 12min | 2 tasks | 5 files |
 | Phase 08.5 P02 | 16min | 3 tasks | 8 files |
 | Phase 08.5 P03 | 18min | 3 tasks | 8 files |
+| Phase 08.5 P04 | 25min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -262,6 +263,9 @@ Recent decisions affecting current work:
 - [Phase 08.5-03]: stop-list/aggregate carries @Permissions(menu:read) + @RequireBrand + @LocationNeutral + @OwnerOnly together — LocationNeutral is the 08.4-gap fix, OwnerOnly is the load-bearing BOLA gate (BLOCK-1)
 - [Phase 08.5-03]: D-10 validation added to GetStopListService: owner ?location=<id> reads and the aggregate both resolve active locations from LOCATION_REPOSITORY.listForBrand, so a forged/foreign/archived x-location-id 404s
 - [Phase 08.5-03]: D-11 re-confirmed as explicit re-defer: no PermissionsGuard changes, no LocationPermissionChecker wiring; aggregate confinement is LocationScopeGuard + OwnerOnlyGuard only
+- [Phase 08.5-04]: apiFetch is a pure passthrough for x-location-id via opts.locationId; no session read for location remains (D-12)
+- [Phase 08.5-04]: useEffectiveLocation is self-contained (derives isOwner via meQuery internally) -- the single per-role location authority every query call site uses; meLocationsQuery already returns only active locations of the active brand for an owner
+- [Phase 08.5-04]: stopListQuery's new required locationId param broke index.tsx/menu/stop-list.tsx (relying on the 08.5-02-retired owner pin) plus 2 unit-test assertions -- fixed inline (Rule 3); menu/stop-list.tsx's loader removed (loaders can't call hooks), full aggregate/loaderDeps wiring deferred to plan 05
 
 ### Pending Todos
 
@@ -331,6 +335,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-09T22:56:26.494Z
-Stopped at: Completed 08.5-03-PLAN.md
+Last session: 2026-08-09T23:15:35.955Z
+Stopped at: Completed 08.5-04-PLAN.md
 Resume file: None
