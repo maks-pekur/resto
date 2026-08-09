@@ -1,4 +1,4 @@
-import { useNavigate } from '@tanstack/react-router';
+import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { ChevronsUpDown, MapPin } from 'lucide-react';
 import { Route as brandSlugLayoutRoute } from '@/routes/(protected)/$brandSlug/_layout';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
@@ -23,7 +23,14 @@ export interface LocationSwitcherProps {
 }
 
 export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) {
+  // `from` is for the search-updater's type narrowing only — the switcher is
+  // a cross-cutting sidebar component that renders under many different leaf
+  // routes, so navigation must target the CURRENT pathname (an explicit
+  // absolute `to`), not `from` re-interpolated (which would always land on
+  // the brand-layout's own index route regardless of the page the operator
+  // was actually on).
   const navigate = useNavigate({ from: brandSlugLayoutRoute.fullPath });
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode, locationId } = useEffectiveLocation();
 
   if (!isOwner || locations.length === 0) return null;
@@ -39,7 +46,7 @@ export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) 
   // the updater form (D-01/RESEARCH.md Pattern 3).
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 'all' documents the ?location sentinel (D-01)
   const switchTo = (value: 'all' | string): void => {
-    void navigate({ search: (prev) => ({ ...prev, location: value }) });
+    void navigate({ to: pathname, search: (prev) => ({ ...prev, location: value }) });
   };
 
   return (

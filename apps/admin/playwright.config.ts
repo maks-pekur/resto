@@ -1,8 +1,14 @@
 import { defineConfig, devices } from '@playwright/test';
 
-const adminPort = 3001;
+// Vite (apps/admin) serves on :4000 (vite.config.ts) — this also matches
+// the api's default CORS_ALLOWED_ORIGINS/ADMIN_WEB_URL dev defaults
+// (env.schema.ts), so no server-side env overrides are needed to run this
+// suite locally. The prior :3001 value + NEXT_PUBLIC_*/ACTIVE_BRAND_COOKIE_*
+// env vars were Next.js-era leftovers from before the Vite SPA migration
+// (07.6) and did not match this app's real dev topology.
+const adminPort = 4000;
 const baseURL = process.env.ADMIN_E2E_BASE_URL ?? `http://localhost:${adminPort}`;
-const apiOrigin = process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:3000';
+const apiOrigin = process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
 
 export default defineConfig({
   testDir: './e2e',
@@ -18,16 +24,12 @@ export default defineConfig({
     viewport: { width: 1280, height: 720 },
   },
   webServer: {
-    command: 'pnpm --filter @resto/admin dev',
+    command: `pnpm --filter @resto/admin exec vite --port ${String(adminPort)}`,
     url: `${baseURL}/login`,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,
     env: {
-      NEXT_PUBLIC_API_ORIGIN: apiOrigin,
-      ADMIN_WEB_URL: baseURL,
-      INTERNAL_API_TOKEN: process.env.INTERNAL_API_TOKEN ?? 'dev-internal-token-min-16-chars',
-      ACTIVE_BRAND_COOKIE_SECRET:
-        process.env.ACTIVE_BRAND_COOKIE_SECRET ?? 'e2e-only-active-brand-secret-AAAA',
+      VITE_API_ORIGIN: apiOrigin,
     },
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
