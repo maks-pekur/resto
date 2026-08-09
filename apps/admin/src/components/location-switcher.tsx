@@ -1,7 +1,7 @@
-import { useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 import { ChevronsUpDown, MapPin } from 'lucide-react';
-import { toast } from 'sonner';
-import { apiFetch } from '@/lib/api-client';
+import { Route as brandSlugLayoutRoute } from '@/routes/(protected)/$brandSlug/_layout';
+import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,30 +20,26 @@ export interface LocationSwitcherOption {
 export interface LocationSwitcherProps {
   readonly isOwner: boolean;
   readonly locations: readonly LocationSwitcherOption[];
-  readonly activeLocationId: string | null;
 }
 
-export function LocationSwitcher({ isOwner, locations, activeLocationId }: LocationSwitcherProps) {
-  const qc = useQueryClient();
+export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) {
+  const navigate = useNavigate({ from: brandSlugLayoutRoute.fullPath });
+  const { mode, locationId } = useEffectiveLocation();
 
   if (!isOwner || locations.length === 0) return null;
 
-  const activeLocation = activeLocationId
-    ? locations.find((l) => l.id === activeLocationId)
-    : undefined;
-  const triggerLabel = activeLocation?.name ?? 'Brand-global';
+  const activeLocation =
+    mode === 'single' && locationId !== undefined
+      ? locations.find((l) => l.id === locationId)
+      : undefined;
+  const triggerLabel = mode === 'all' ? 'All locations' : (activeLocation?.name ?? 'All locations');
 
-  const switchTo = async (locationId: string | null) => {
-    const res = await apiFetch<{ locationId: string | null }>('/v1/me/set-active-location', {
-      method: 'POST',
-      body: { locationId },
-    });
-    if (res.status === 403) {
-      toast.error('You do not have access to this location.');
-      return;
-    }
-    void qc.invalidateQueries({ queryKey: ['identity', 'active-location'] });
-    window.location.reload();
+  // D-01/D-04: pure client-side URL filter — no apiFetch, no server
+  // round-trip, no window.location.reload. Preserve other search params via
+  // the updater form (D-01/RESEARCH.md Pattern 3).
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 'all' documents the ?location sentinel (D-01)
+  const switchTo = (value: 'all' | string): void => {
+    void navigate({ search: (prev) => ({ ...prev, location: value }) });
   };
 
   return (
@@ -59,18 +55,20 @@ export function LocationSwitcher({ isOwner, locations, activeLocationId }: Locat
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
             <DropdownMenuItem
+              data-testid="location-switcher-all"
               onSelect={() => {
-                void switchTo(null);
+                switchTo('all');
               }}
             >
-              <span className="truncate">Brand-global (all locations)</span>
+              <span className="truncate">All locations</span>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             {locations.map((location) => (
               <DropdownMenuItem
                 key={location.id}
+                data-testid={`location-switcher-option-${location.id}`}
                 onSelect={() => {
-                  void switchTo(location.id);
+                  switchTo(location.id);
                 }}
               >
                 <span className="truncate">{location.name}</span>

@@ -15,7 +15,7 @@ import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import type { OperatorSummary } from '@/lib/queries/identity';
-import { meLocationsQuery, activeLocationIdQuery } from '@/lib/queries/locations';
+import { meLocationsQuery } from '@/lib/queries/locations';
 import {
   Sidebar,
   SidebarContent,
@@ -44,10 +44,6 @@ export function AppSidebar({
   const locationsEnabled = isOwner && activeBrandSlug !== null;
   const { data: locationsResult } = useQuery({
     ...meLocationsQuery(),
-    enabled: locationsEnabled,
-  });
-  const { data: activeLocationId } = useQuery({
-    ...activeLocationIdQuery(),
     enabled: locationsEnabled,
   });
   const locations = locationsResult?.data?.locations ?? [];
@@ -106,11 +102,7 @@ export function AppSidebar({
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader>
         <BrandSwitcher brands={brands} activeBrandSlug={activeBrandSlug} />
-        <LocationSwitcher
-          isOwner={isOwner}
-          locations={locations}
-          activeLocationId={activeLocationId ?? null}
-        />
+        <LocationSwitcher isOwner={isOwner} locations={locations} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />
