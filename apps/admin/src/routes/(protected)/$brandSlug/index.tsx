@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Route as brandSlugLayoutRoute } from './_layout';
 import { meBrandsQuery } from '@/lib/queries/identity';
 import { stopListQuery } from '@/lib/queries/catalog';
-import { activeLocationIdQuery } from '@/lib/queries/locations';
+import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { SetupChecklistCard } from '@/components/setup-checklist-card';
 import { PageHeading } from '@/components/page-heading';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
@@ -21,14 +21,14 @@ function BrandIndexPage() {
   const { data: brandsResult } = useQuery(meBrandsQuery());
   const brandsCount = (brandsResult?.data?.brands ?? []).length;
 
-  const { data: activeLocationId } = useQuery({
-    ...activeLocationIdQuery(),
-    enabled: brandSlug !== '',
-  });
+  // D-12/D-17: the `all` aggregate branch (merged count + N/M badge) is wired
+  // in plan 05; this plumbing-only wave keeps the single-location count and
+  // degrades to 0 in `all`/`none` mode, matching the pre-08.5 behavior.
+  const { mode, locationId } = useEffectiveLocation();
 
   const { data: stopListResult } = useQuery({
-    ...stopListQuery(brandSlug),
-    enabled: brandSlug !== '' && activeLocationId != null,
+    ...stopListQuery(brandSlug, locationId ?? ''),
+    enabled: brandSlug !== '' && mode === 'single' && locationId !== undefined,
   });
 
   const stopCount = (stopListResult?.data?.items ?? []).length;

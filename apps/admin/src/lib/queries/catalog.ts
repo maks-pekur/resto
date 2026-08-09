@@ -115,6 +115,19 @@ export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
 }
 
+export interface AggregateStopListItemApi {
+  readonly itemId: string;
+  readonly itemName: Record<string, string> | null;
+  readonly categoryName: Record<string, string> | null;
+  readonly stoppedLocationCount: number;
+  readonly lastStoppedAt: string;
+}
+
+export interface AggregateStopListResponse {
+  readonly items: readonly AggregateStopListItemApi[];
+  readonly totalActiveLocations: number;
+}
+
 export interface DraftDiffEntryApi {
   readonly entityType: 'item' | 'category' | 'modifier-group';
   readonly id: string;
@@ -186,9 +199,19 @@ export const modifierGroupQuery = (brandSlug: string, id: string) => ({
   staleTime: STALE_STABLE,
 });
 
-export const stopListQuery = (brandSlug: string) => ({
-  queryKey: ['catalog', 'stop-list', brandSlug] as const,
-  queryFn: () => apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug }),
+export const stopListQuery = (brandSlug: string, locationId: string) => ({
+  queryKey: ['catalog', 'stop-list', brandSlug, locationId] as const,
+  queryFn: () => apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug, locationId }),
+  staleTime: STALE_STABLE,
+});
+
+export const stopListAggregateQuery = (brandSlug: string) => ({
+  queryKey: ['catalog', 'stop-list-aggregate', brandSlug] as const,
+  queryFn: () =>
+    apiFetch<AggregateStopListResponse>('/v1/catalog/stop-list/aggregate', {
+      brandSlug,
+      locationId: 'all',
+    }),
   staleTime: STALE_STABLE,
 });
 

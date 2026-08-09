@@ -100,8 +100,8 @@ describe('catalog query key factories (Plan 07.6-05 Task 4)', () => {
     expect(key[1]).toBe('items');
   });
 
-  it('stopListQuery key is ["catalog","stop-list",brandSlug]', () => {
-    expect(stopListQuery(slug).queryKey).toEqual(['catalog', 'stop-list', slug]);
+  it('stopListQuery key is ["catalog","stop-list",brandSlug,locationId]', () => {
+    expect(stopListQuery(slug, 'loc-1').queryKey).toEqual(['catalog', 'stop-list', slug, 'loc-1']);
   });
 
   it('draftDiffQuery key is ["catalog","draft-diff",brandSlug]', () => {
@@ -329,10 +329,11 @@ describe('dashboard TodaysWidget count from stopListQuery (Plan 07.6-05 Task 4)'
   });
 
   it('stopListQuery key prefix is "catalog" (confirms apiFetch routing)', () => {
-    const key = stopListQuery('my-brand').queryKey;
+    const key = stopListQuery('my-brand', 'loc-1').queryKey;
     expect(key[0]).toBe('catalog');
     expect(key[1]).toBe('stop-list');
     expect(key[2]).toBe('my-brand');
+    expect(key[3]).toBe('loc-1');
   });
 
   it('dashboard index maps stopListQuery result.data.items.length to widget count', () => {
