@@ -12,21 +12,25 @@ import {
   Post,
   Put,
   Query,
+  Res,
 } from '@nestjs/common';
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import type { FastifyReply } from 'fastify';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import {
   LocationNeutral,
+  OwnerOnly,
   Permissions,
   RequireBrand,
   RequiresTenantContext,
 } from '../../../../shared/auth';
 import {
+  AggregateStopListResponseDto,
   CategoryListResponseDto,
   DraftDiffResponseDto,
   ItemDetailResponseDto,
@@ -53,6 +57,7 @@ import { GetDraftDiffService } from '../../application/get-draft-diff.service';
 import { GetItemService } from '../../application/get-item.service';
 import { GetModifierGroupService } from '../../application/get-modifier-group.service';
 import { GetPhotoUploadUrlService } from '../../application/get-photo-upload-url.service';
+import { GetStopListAggregateService } from '../../application/get-stop-list-aggregate.service';
 import { GetStopListService } from '../../application/get-stop-list.service';
 import { ListCategoriesService } from '../../application/list-categories.service';
 import { ListItemsService } from '../../application/list-items.service';
@@ -113,6 +118,8 @@ export class CatalogController {
     @Inject(GetModifierGroupService)
     private readonly getModifierGroupService: GetModifierGroupService,
     @Inject(GetStopListService) private readonly getStopListService: GetStopListService,
+    @Inject(GetStopListAggregateService)
+    private readonly getStopListAggregateService: GetStopListAggregateService,
     @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
   ) {}
 
@@ -406,6 +413,21 @@ export class CatalogController {
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listStopList(): Promise<StopListResponseDto> {
     return wrap(() => this.getStopListService.execute());
+  }
+
+  @Get('stop-list/aggregate')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @RequireBrand()
+  @LocationNeutral()
+  @OwnerOnly()
+  @ApiOkResponse({ type: AggregateStopListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  stopListAggregate(
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AggregateStopListResponseDto> {
+    reply.header('Cache-Control', 'private, no-store');
+    return wrap(() => this.getStopListAggregateService.execute());
   }
 
   @Get('draft-diff')

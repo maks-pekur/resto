@@ -59,3 +59,39 @@ Not fixed here — out of scope (Scope Boundary rule).
 permanently impossible for any non-owner regardless of scope. That test case
 must be deleted or repurposed to assert
 403 `identity.non_owner_brand_switch_forbidden` instead, not reseeded to pass.
+
+## Plan 08.5-03 (aggregate endpoint) — pre-existing owner-fixture regression, confirmed unrelated
+
+While verifying this plan's D-10 change to `get-stop-list.service.ts`, ran
+`catalog-reads.e2e.spec.ts` + `catalog-brand-read-isolation.e2e.spec.ts` as an
+extra regression check (not in this plan's file-list). 3 tests fail:
+
+- `catalog-reads.e2e.spec.ts` > `GET /stop-list surfaces stoppedAt per item, sorted DESC`
+- `catalog-reads.e2e.spec.ts` > `GET /draft-diff returns unpublishedCount and capped items (tenant-only, no brand required)`
+- `catalog-brand-read-isolation.e2e.spec.ts` > `stopping a brand-A item does not affect brand B's menu (#9)`
+
+All three fail with `403 location.context_required` (from `LocationScopeGuard`,
+`location-scope.guard.ts:39-45`, unchanged by this plan). Root cause: these
+files' `setupAuthedTenant` fixture never creates a location or sends an
+`x-location-id` header for the owner — before Phase 08.5, this apparently
+relied on an ambient location context that no longer resolves (candidate:
+08.5-02's owner-pin retirement, `de911ef`, or a `TenantContextMiddleware`
+behavior change; not investigated further — out of scope for this plan).
+
+**Confirmed NOT caused by this plan's changes**: isolated the 3 files this
+plan touched (`get-stop-list.service.ts`, `catalog.module.ts`,
+`catalog.controller.ts`) back to their pre-Task-2 state (commit `400f14d`,
+before the D-10 validation and the aggregate endpoint existed) and reran
+`catalog-reads.e2e.spec.ts` — identical 2 failures, identical 403
+`location.context_required`, before any Task 2/3 code existed. The guard file
+that actually throws is untouched by any 08.5-03 commit. Changes were then
+restored to their Task-2/3 state (`git checkout 802815d -- ...` + reapplied
+the Task 3 controller diff) and reverified green
+(`stop-list-aggregate.e2e.spec.ts` 6/6, `location-isolation.e2e.spec.ts` 12/12).
+
+Not fixed here — pre-existing, out of scope (Scope Boundary rule). Flagging
+for whoever next touches `catalog-reads.e2e.spec.ts` /
+`catalog-brand-read-isolation.e2e.spec.ts`: their owner fixtures need an
+explicit location (create one + send `x-location-id`, mirroring
+`catalog.e2e.spec.ts`'s `setupAuthedTenant`) now that owners no longer get an
+ambient location context.
