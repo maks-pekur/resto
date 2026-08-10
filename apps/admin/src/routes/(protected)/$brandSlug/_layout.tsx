@@ -17,8 +17,11 @@ const sidebarStyle: CSSProperties = {
 // D-01: owner location filter. Any value outside this union is dropped by
 // zod at the edge, leaving `location` undefined -> use-effective-location
 // resolves the D-03 default.
-const locationSearchSchema = z.object({
-  location: z.union([z.literal('all'), z.string().uuid()]).optional(),
+export const locationSearchSchema = z.object({
+  location: z
+    .union([z.literal('all'), z.string().uuid()])
+    .optional()
+    .catch(undefined),
 });
 
 export const Route = createRoute({
