@@ -266,7 +266,8 @@
       "tableLocationsHeader": "Locations",
       "aggregateReadOnlyHint": "Showing all locations. Select a location to stop or resume items.",
       "aggregateBadge": "{{count}}/{{total}} locations",
-      "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations"
+      "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations",
+      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items"
     },
     "status": {
       "draft": "Draft",

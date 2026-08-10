@@ -37,7 +37,7 @@ export interface CatalogRepository {
   listStopListAggregateAcrossLocations(
     tenantId: TenantId,
     activeLocationIds: readonly string[],
-  ): Promise<AggregateStopListRow[]>;
+  ): Promise<{ rows: AggregateStopListRow[]; totalStoppedItems: number }>;
   computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;

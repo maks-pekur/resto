@@ -266,7 +266,8 @@
       "tableLocationsHeader": "Точки",
       "aggregateReadOnlyHint": "Показаны все точки. Выберите точку, чтобы остановить или возобновить позиции.",
       "aggregateBadge": "{{count}}/{{total}} точек",
-      "aggregateBadgeAria": "Остановлено в {{count}} из {{total}} точек"
+      "aggregateBadgeAria": "Остановлено в {{count}} из {{total}} точек",
+      "aggregateTruncatedNote": "Показаны первые {{shown}} из {{total}} остановленных позиций"
     },
     "status": {
       "draft": "Черновик",

@@ -61,6 +61,8 @@ import type {
 // Signed image URLs must match the catalog cache TTL (GetPublishedMenuService).
 const IMAGE_URL_TTL_SECONDS = 300;
 
+const AGGREGATE_STOP_LIST_PAGE_SIZE = 50;
+
 @Injectable()
 export class CatalogDrizzleRepository implements CatalogRepository {
   constructor(
@@ -1265,12 +1267,25 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async listStopListAggregateAcrossLocations(
     tenantId: TenantId,
     activeLocationIds: readonly string[],
-  ): Promise<AggregateStopListRow[]> {
-    if (activeLocationIds.length === 0) return [];
+  ): Promise<{ rows: AggregateStopListRow[]; totalStoppedItems: number }> {
+    if (activeLocationIds.length === 0) return { rows: [], totalStoppedItems: 0 };
     return this.db.withTenant(async (tx) => {
       // ScopedTx.selectFrom() cannot express GROUP BY — raw tx + explicit
       // eq(tenantId) is the sanctioned escape hatch (ADR-0020 I-1), same
       // family as removeFromStopList's raw DELETE above.
+      const totalRows = await tx
+        .select({
+          totalStoppedItems: sql<string>`count(distinct ${schema.menuStopList.itemId})`,
+        })
+        .from(schema.menuStopList)
+        .where(
+          and(
+            eq(schema.menuStopList.tenantId, tenantId),
+            inArray(schema.menuStopList.locationId, activeLocationIds),
+          ),
+        );
+      const totalStoppedItems = Number(totalRows[0]?.totalStoppedItems ?? '0');
+
       const grouped = await tx
         .select({
           itemId: schema.menuStopList.itemId,
@@ -1289,9 +1304,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         )
         .groupBy(schema.menuStopList.itemId)
         .orderBy(desc(sql`max(${schema.menuStopList.stoppedAt})`))
-        .limit(50)
+        .limit(AGGREGATE_STOP_LIST_PAGE_SIZE)
         .offset(0);
-      if (grouped.length === 0) return [];
+      if (grouped.length === 0) return { rows: [], totalStoppedItems };
 
       const itemIds = grouped.map((g) => g.itemId);
       const items = await tx
@@ -1318,7 +1333,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           : [];
       const catById = new Map(categories.map((c) => [c.id, c.name]));
 
-      return grouped.map<AggregateStopListRow>((g) => {
+      const rows = grouped.map<AggregateStopListRow>((g) => {
         const item = itemById.get(g.itemId);
         return {
           itemId: g.itemId,
@@ -1328,6 +1343,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           lastStoppedAt: new Date(g.lastStoppedAt).toISOString(),
         };
       });
+      return { rows, totalStoppedItems };
     });
   }
 

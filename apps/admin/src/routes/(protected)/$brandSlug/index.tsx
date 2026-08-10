@@ -40,7 +40,7 @@ function BrandIndexPage() {
 
   const stopCount =
     mode === 'all'
-      ? (aggregateResult?.data?.items ?? []).length
+      ? (aggregateResult?.data?.totalStoppedItems ?? 0)
       : (singleResult?.data?.items ?? []).length;
 
   return (

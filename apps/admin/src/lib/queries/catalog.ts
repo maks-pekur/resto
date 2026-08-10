@@ -126,6 +126,7 @@ export interface AggregateStopListItemApi {
 export interface AggregateStopListResponse {
   readonly items: readonly AggregateStopListItemApi[];
   readonly totalActiveLocations: number;
+  readonly totalStoppedItems: number;
 }
 
 export interface DraftDiffEntryApi {

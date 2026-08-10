@@ -17,6 +17,7 @@ import type { AggregateStopListItemApi } from '@/lib/queries/catalog';
 export interface StopListAggregateTableProps {
   readonly items: readonly AggregateStopListItemApi[];
   readonly totalActiveLocations: number;
+  readonly totalStoppedItems: number;
 }
 
 // D-05/D-06: `all` shows every item stopped at ANY location with a per-item
@@ -25,6 +26,7 @@ export interface StopListAggregateTableProps {
 export function StopListAggregateTable({
   items,
   totalActiveLocations,
+  totalStoppedItems,
 }: StopListAggregateTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const now = Date.now();
@@ -88,6 +90,11 @@ export function StopListAggregateTable({
           })}
         </TableBody>
       </Table>
+      {totalStoppedItems > items.length ? (
+        <p className="text-xs text-muted-foreground" data-testid="stop-list-truncated-note">
+          {t('aggregateTruncatedNote', { shown: items.length, total: totalStoppedItems })}
+        </p>
+      ) : null}
     </div>
   );
 }

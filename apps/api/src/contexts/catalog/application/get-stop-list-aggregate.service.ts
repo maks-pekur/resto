@@ -22,7 +22,7 @@ export class GetStopListAggregateService {
     const all = await this.locations.listForBrand(brandId, tenantId);
     const active = all.filter((l) => l.status === 'active');
 
-    const rows = await this.repo.listStopListAggregateAcrossLocations(
+    const { rows, totalStoppedItems } = await this.repo.listStopListAggregateAcrossLocations(
       tenantId,
       active.map((l) => l.id),
     );
@@ -37,6 +37,7 @@ export class GetStopListAggregateService {
       })),
       // D-06: M is active locations at read time, computed fresh per request.
       totalActiveLocations: active.length,
+      totalStoppedItems,
     };
   }
 }

@@ -286,6 +286,7 @@ export type AggregateStopListEntry = z.infer<typeof AggregateStopListEntrySchema
 export const AggregateStopListResponseSchema = z.object({
   items: z.array(AggregateStopListEntrySchema),
   totalActiveLocations: z.number().int().nonnegative(),
+  totalStoppedItems: NonNegInt,
 });
 export type AggregateStopListResponse = z.infer<typeof AggregateStopListResponseSchema>;
 export class AggregateStopListResponseDto extends createZodDto(AggregateStopListResponseSchema) {}

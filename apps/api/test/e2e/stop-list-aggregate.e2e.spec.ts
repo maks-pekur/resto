@@ -222,11 +222,25 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     it('owner GET aggregate returns 200 with totalActiveLocations excluding the archived location', async () => {
       const res = await getAggregate(ownerCookie, brand1Slug);
       expect(res.statusCode).toBe(200);
-      const body = res.json<{ items: AggregateStopListItem[]; totalActiveLocations: number }>();
+      const body = res.json<{
+        items: AggregateStopListItem[];
+        totalActiveLocations: number;
+        totalStoppedItems: number;
+      }>();
       expect(body.totalActiveLocations).toBe(2);
       const entry = body.items.find((i) => i.itemId === itemId);
       expect(entry).toBeDefined();
       expect(entry?.stoppedLocationCount).toBe(2);
+    });
+  });
+
+  describe('WR-01 — totalStoppedItems reflects the true distinct-item total, not the page size', () => {
+    it('totalStoppedItems equals the distinct stopped-item count across active locations', async () => {
+      const res = await getAggregate(ownerCookie, brand1Slug);
+      expect(res.statusCode).toBe(200);
+      const body = res.json<{ items: AggregateStopListItem[]; totalStoppedItems: number }>();
+      expect(body.totalStoppedItems).toBe(body.items.length);
+      expect(body.totalStoppedItems).toBe(1);
     });
   });
 

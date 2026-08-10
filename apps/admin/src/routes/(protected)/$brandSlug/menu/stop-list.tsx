@@ -47,7 +47,8 @@ function StopListPage() {
   const items = singleResult?.data?.items ?? [];
   const aggregateItems = aggregateResult?.data?.items ?? [];
   const totalActiveLocations = aggregateResult?.data?.totalActiveLocations ?? 0;
-  const count = mode === 'all' ? aggregateItems.length : items.length;
+  const totalStoppedItems = aggregateResult?.data?.totalStoppedItems ?? 0;
+  const count = mode === 'all' ? totalStoppedItems : items.length;
 
   return (
     <>
@@ -65,6 +66,7 @@ function StopListPage() {
           <StopListAggregateTable
             items={aggregateItems}
             totalActiveLocations={totalActiveLocations}
+            totalStoppedItems={totalStoppedItems}
           />
         ) : (
           <StopListTable brandSlug={brandSlug} items={items} locationId={locationId ?? ''} />
