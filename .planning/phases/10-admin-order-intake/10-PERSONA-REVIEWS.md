@@ -18,12 +18,12 @@ This file is the convergence index + disposition. It does not replace the four r
 
 All four claims below were re-checked against the working tree during discuss. They are facts, not findings.
 
-| Claim | Verified at | Result |
-| --- | --- | --- |
-| `cancel`/`refund` never persist a status change or emit events | `order-drizzle.repository.ts:47-78`, `cancel-order.service.ts:55`, `refund-order.service.ts:114` | **CONFIRMED.** `save()` is `INSERT … ON CONFLICT (tenant_id, idempotency_key) DO NOTHING RETURNING id` with `if (result.length === 0) return;`. `order.pullEvents()` drains at line 48, *before* that return, so the outbox append at the bottom is unreachable for an existing order. `update()` exists and is the correct method. |
-| Refund is owner-only | `refunds.controller.ts:21` (`@Permissions({ billing: ['update'] })`) + `packages/domain/src/rbac/system-roles.ts:10` | **CONFIRMED.** `billing` appears only under `owner`. `admin` has `order: ['read','update-status']` but no `billing`. `staff` has **no `order` permission at all**. |
-| Guest status page stops updating at `paid` | `apps/website/components/checkout/order-status-poller.tsx:10` | **CONFIRMED.** `TERMINAL_STATUSES = new Set(['paid','failed','canceled','refunded'])`. |
-| Cancel-after-accept is impossible | `order.aggregate.ts:307` (cancel requires `created`\|`paid`), `:321` (refund requires exactly `paid`) | **CONFIRMED.** |
+| Claim                                                          | Verified at                                                                                                          | Result                                                                                                                                                                                                                                                                                                                              |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cancel`/`refund` never persist a status change or emit events | `order-drizzle.repository.ts:47-78`, `cancel-order.service.ts:55`, `refund-order.service.ts:114`                     | **CONFIRMED.** `save()` is `INSERT … ON CONFLICT (tenant_id, idempotency_key) DO NOTHING RETURNING id` with `if (result.length === 0) return;`. `order.pullEvents()` drains at line 48, _before_ that return, so the outbox append at the bottom is unreachable for an existing order. `update()` exists and is the correct method. |
+| Refund is owner-only                                           | `refunds.controller.ts:21` (`@Permissions({ billing: ['update'] })`) + `packages/domain/src/rbac/system-roles.ts:10` | **CONFIRMED.** `billing` appears only under `owner`. `admin` has `order: ['read','update-status']` but no `billing`. `staff` has **no `order` permission at all**.                                                                                                                                                                  |
+| Guest status page stops updating at `paid`                     | `apps/website/components/checkout/order-status-poller.tsx:10`                                                        | **CONFIRMED.** `TERMINAL_STATUSES = new Set(['paid','failed','canceled','refunded'])`.                                                                                                                                                                                                                                              |
+| Cancel-after-accept is impossible                              | `order.aggregate.ts:307` (cancel requires `created`\|`paid`), `:321` (refund requires exactly `paid`)                | **CONFIRMED.**                                                                                                                                                                                                                                                                                                                      |
 
 Additional facts confirmed while scouting: `orders` has no `channel` column, no per-state timestamps, no cancel-reason column (`packages/db/src/schema/ordering.ts:18-46`); `GET /v1/orders/:id/status` already exists and is `@Public()` (`orders.controller.ts:52-67`).
 
@@ -33,38 +33,38 @@ Additional facts confirmed while scouting: `orders` has no `channel` column, no 
 
 These carry the most weight; they are not one reviewer's opinion.
 
-| # | Finding | Raised by | Disposition |
-| --- | --- | --- | --- |
-| C-1 | `orders.status` never updates on cancel/refund — live prod bug | CTO BLOCK-1, Skeptic BLOCK-1 | **Fixed pre-phase as a separate quick task** (founder decision). Phase 10 assumes it is green. |
-| C-2 | Aggregate forbids cancel/refund after `accepted` | Skeptic BLOCK-2, Product BLOCK-1, CTO HIGH-7 | **In scope.** D-08/D-09. |
-| C-3 | Reject/cancel auto-refund is owner-only; `staff` has no order permission | CTO HIGH-8, Skeptic BLOCK-4, Product BLOCK-2 | **In scope.** D-06. |
-| C-4 | Browser SSE cannot carry the tenancy headers the API resolves from | CTO BLOCK-2 + BLOCK-3, Skeptic BLOCK-3 | **Avoided.** Polling this phase; SSE deferred to its own phase (D-11/D-12). |
-| C-5 | Guest status page stops at `paid` — the whole phase is invisible to the guest | Growth BLOCK-1, Product HIGH-9, Skeptic MED-1 | **In scope.** D-16. |
-| C-6 | No `channel` column; ORDINT-08's channel filter has no data behind it | CTO MED-3, Skeptic HIGH-4, Product MED-11, Growth BLOCK-3 | **In scope** (column now, single value until qr-menu can order). D-04. |
-| C-7 | No per-state timestamps — accept latency / prep duration destroyed on every transition | CTO MED-5, Product HIGH-8, Growth HIGH-5 | **In scope.** D-04. |
-| C-8 | No audible/persistent new-order alert; a silent feed is missed in a real restaurant | Skeptic HIGH-8, Product HIGH-6, Growth HIGH-8 | **In scope.** D-13. |
-| C-9 | Cancel reason not persisted and free-text-only | CTO MED-5, Product MED-12, Growth HIGH-6 | **In scope** — reason chips + persisted reason + actor. D-04/D-10. |
-| C-10 | Order number `20260810-A7K2M` is unusable at a counter | Skeptic HIGH-5, Product HIGH-7, Growth MED-14 | **In scope** — short per-day, per-location number. D-04. |
-| C-11 | ORDINT-06 "partial refund of specific items" has no item-level model | CTO MED-4, Skeptic MED-2, Product MED-13 | **Scoped down** to arbitrary amount + reason (the API that exists). D-10. |
-| C-12 | No ETA anywhere; two surfaces already pretend one exists | Growth BLOCK-2, Product HIGH-10 | **In scope** — operator sets it on accept. D-15. |
-| C-13 | Feed should own the landing screen once orders exist | Product HIGH-5, Growth HIGH-9 | **Rejected for this phase** — dedicated page (founder decision D-01). Revisit post-first-customer. |
-| C-14 | No ticket/kitchen print path | Skeptic MED-6, Product MED-19 | **Deferred.** |
+| #    | Finding                                                                                | Raised by                                                 | Disposition                                                                                        |
+| ---- | -------------------------------------------------------------------------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| C-1  | `orders.status` never updates on cancel/refund — live prod bug                         | CTO BLOCK-1, Skeptic BLOCK-1                              | **Fixed pre-phase as a separate quick task** (founder decision). Phase 10 assumes it is green.     |
+| C-2  | Aggregate forbids cancel/refund after `accepted`                                       | Skeptic BLOCK-2, Product BLOCK-1, CTO HIGH-7              | **In scope.** D-08/D-09.                                                                           |
+| C-3  | Reject/cancel auto-refund is owner-only; `staff` has no order permission               | CTO HIGH-8, Skeptic BLOCK-4, Product BLOCK-2              | **In scope.** D-06.                                                                                |
+| C-4  | Browser SSE cannot carry the tenancy headers the API resolves from                     | CTO BLOCK-2 + BLOCK-3, Skeptic BLOCK-3                    | **Avoided.** Polling this phase; SSE deferred to its own phase (D-13).                             |
+| C-5  | Guest status page stops at `paid` — the whole phase is invisible to the guest          | Growth BLOCK-1, Product HIGH-9, Skeptic MED-1             | **In scope.** D-16.                                                                                |
+| C-6  | No `channel` column; ORDINT-08's channel filter has no data behind it                  | CTO MED-3, Skeptic HIGH-4, Product MED-11, Growth BLOCK-3 | **In scope** (column now, single value until qr-menu can order). D-04.                             |
+| C-7  | No per-state timestamps — accept latency / prep duration destroyed on every transition | CTO MED-5, Product HIGH-8, Growth HIGH-5                  | **In scope.** D-04.                                                                                |
+| C-8  | No audible/persistent new-order alert; a silent feed is missed in a real restaurant    | Skeptic HIGH-8, Product HIGH-6, Growth HIGH-8             | **In scope.** D-14.                                                                                |
+| C-9  | Cancel reason not persisted and free-text-only                                         | CTO MED-5, Product MED-12, Growth HIGH-6                  | **In scope** — reason chips + persisted reason + actor. D-04/D-10.                                 |
+| C-10 | Order number `20260810-A7K2M` is unusable at a counter                                 | Skeptic HIGH-5, Product HIGH-7, Growth MED-14             | **In scope** — short per-day, per-location number. D-04.                                           |
+| C-11 | ORDINT-06 "partial refund of specific items" has no item-level model                   | CTO MED-4, Skeptic MED-2, Product MED-13                  | **Scoped down** to arbitrary amount + reason (the API that exists). D-10.                          |
+| C-12 | No ETA anywhere; two surfaces already pretend one exists                               | Growth BLOCK-2, Product HIGH-10                           | **In scope** — operator sets it on accept. D-15.                                                   |
+| C-13 | Feed should own the landing screen once orders exist                                   | Product HIGH-5, Growth HIGH-9                             | **Rejected for this phase** — dedicated page (founder decision D-01). Revisit post-first-customer. |
+| C-14 | No ticket/kitchen print path                                                           | Skeptic MED-6, Product MED-19                             | **Deferred.**                                                                                      |
 
 ---
 
 ## BLOCKs the founder resolved during discuss
 
-| Persona BLOCK | Founder decision |
-| --- | --- |
-| CTO BLOCK-1 / Skeptic BLOCK-1 (status never persists) | Fix now, separate quick task, before Phase 10 planning. |
+| Persona BLOCK                                                              | Founder decision                                                                                                             |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| CTO BLOCK-1 / Skeptic BLOCK-1 (status never persists)                      | Fix now, separate quick task, before Phase 10 planning.                                                                      |
 | CTO BLOCK-2 + BLOCK-3 / Skeptic BLOCK-3 (SSE tenancy + connect-time authz) | Sidestepped — 5s polling this phase; SSE + graceful-shutdown moved to their own phase. ORDINT-02 and ORDINT-09 move with it. |
-| Skeptic BLOCK-2 / Product BLOCK-1 (cancel after accept) | Cancel allowed at every stage up to `completed`. |
-| Skeptic BLOCK-4 / Product BLOCK-2 (owner-only reject) | Reject/cancel becomes an order-status permission; discretionary refund stays `billing:update` / owner. |
-| Product BLOCK-3 (no pause / closed control) | **Deferred to its own phase** ("location schedule + pause ordering"). Founder accepted the stated risk. |
-| Growth BLOCK-1 (guest sees nothing) | In scope this phase. |
-| Growth BLOCK-2 (no ETA) | In scope — operator sets prep time on accept. |
-| Growth BLOCK-3 (no `channel`) | Column added now. |
-| Growth BLOCK-4 (no consent capture) | Consent checkbox + column added now. |
+| Skeptic BLOCK-2 / Product BLOCK-1 (cancel after accept)                    | Cancel allowed at every stage up to `completed`.                                                                             |
+| Skeptic BLOCK-4 / Product BLOCK-2 (owner-only reject)                      | Reject/cancel becomes an order-status permission; discretionary refund stays `billing:update` / owner.                       |
+| Product BLOCK-3 (no pause / closed control)                                | **Deferred to its own phase** ("location schedule + pause ordering"). Founder accepted the stated risk.                      |
+| Growth BLOCK-1 (guest sees nothing)                                        | In scope this phase.                                                                                                         |
+| Growth BLOCK-2 (no ETA)                                                    | In scope — operator sets prep time on accept.                                                                                |
+| Growth BLOCK-3 (no `channel`)                                              | Column added now.                                                                                                            |
+| Growth BLOCK-4 (no consent capture)                                        | Consent checkbox + column added now.                                                                                         |
 
 ---
 

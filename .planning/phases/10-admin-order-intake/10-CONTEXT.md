@@ -16,7 +16,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 **This phase delivers:**
 
 1. **Orders page in admin** — a dedicated `/{brandSlug}/orders` route with a live-ish list, order detail, and the full status workflow (`paid → accepted → preparing → ready → completed`), plus reject and cancel.
-2. **5-second polling feed** with an audible + tab-title alert on new orders. **Not SSE** — see D-11.
+2. **5-second polling feed** with an audible + tab-title alert on new orders. **Not SSE** — see D-13.
 3. **Order state machine extension** — a reject path, cancel allowed at every stage up to `completed`, and refund no longer restricted to a just-paid order.
 4. **Order data model extension (one migration)** — short daily order number, channel, per-state timestamps, cancel reason + actor, operator-set ETA, guest marketing consent.
 5. **Permission split** — reject/cancel (with automatic full refund) becomes an order-status permission available to everyone who works with orders; discretionary arbitrary-amount refund stays owner-only `billing:update`.
@@ -24,7 +24,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 
 **Explicitly OUT of scope (deferred, each with a home):**
 
-- **Server-Sent Events + graceful SSE shutdown** (ORDINT-02, ORDINT-09) → their own later phase. Founder decision D-11.
+- **Server-Sent Events + graceful SSE shutdown** (ORDINT-02, ORDINT-09) → their own later phase. Founder decision D-13.
 - **"We're closed" / pause ordering / location opening hours** → its own phase. Founder accepted the stated risk (a tenant can take paid orders at 04:00 until that phase ships).
 - **Kitchen ticket / receipt printing** → deferred with the future kitchen-display work.
 - **Item-level partial refund** (ORDINT-06 as literally worded) → shipped as arbitrary-amount refund instead (D-10).
@@ -40,15 +40,15 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 
 ### Feed placement & scope
 
-- **D-01 — Dedicated Orders page, not the landing screen, not a kiosk mode.** New route `/{brandSlug}/orders` with a sidebar entry carrying an unaccepted-order counter. It sits inside the existing admin shell (sidebar, brand/location switchers, theme). *Recorded disagreement:* `persona-product-strategist` HIGH-4 and `persona-growth-marketer` HIGH-9 both argue the feed should own the landing screen and/or be a full-screen operational mode. Founder chose the page for MVP-1 delivery speed. Do not silently "improve" this; revisit after a real restaurant runs a service on it.
+- **D-01 — Dedicated Orders page, not the landing screen, not a kiosk mode.** New route `/{brandSlug}/orders` with a sidebar entry carrying an unaccepted-order counter. It sits inside the existing admin shell (sidebar, brand/location switchers, theme). _Recorded disagreement:_ `persona-product-strategist` HIGH-4 and `persona-growth-marketer` HIGH-9 both argue the feed should own the landing screen and/or be a full-screen operational mode. Founder chose the page for MVP-1 delivery speed. Do not silently "improve" this; revisit after a real restaurant runs a service on it.
 - **D-02 — The feed inherits the existing location filter; it does not invent its own.** Owner: `?location=all|<id>` per 08.5 D-01/D-12. In `all` mode the feed is **one merged list across the brand's active locations, each row labelled with its location** — and it is fully actionable (unlike the 08.5 stop-list, which is read-only in `all`). Staff: their server-pinned location only, per 08.4/08.5 D-15. Planner MUST audit `@BrandNeutral` / `@LocationNeutral` on every new and touched order route against the 08.4/08.5 model — `RefundsController` today has neither and 403s an owner in `all` mode (CTO MED-1, Skeptic MED-3).
-- **D-03 — One list with filters on top; default filter = today.** Not a two-tab active/history split. Filters: status, date, channel. Completed / canceled / refunded orders live in the same list behind the filter. *Planner note:* Product HIGH-8 / MED-16 warn that an active order gets lost among completed ones by end of service — mitigate with sort order and the time-in-state chip (D-14), not with a second tab.
+- **D-03 — One list with filters on top; default filter = today.** Not a two-tab active/history split. Filters: status, date, channel. Completed / canceled / refunded orders live in the same list behind the filter. _Planner note:_ Product HIGH-8 / MED-16 warn that an active order gets lost among completed ones by end of service — mitigate with sort order and the time-in-state chip (D-14), not with a second tab.
 
 ### Order data model — ONE migration, before any real orders exist
 
 - **D-04 — All of the following land in a single migration.** Every one of these is permanently unrecoverable if added after the first real orders (all four personas converged on this).
   - **Short daily order number** — human-callable, resets daily, per location. Today's `generateOrderNumber()` emits `20260810-A7K2M`, which cannot be shouted across a counter or read over the phone. Keep the existing key as the internal/idempotency identifier; the short number is what humans see. (Skeptic HIGH-5, Product HIGH-7, Growth MED-14)
-  - **`channel`** — `site` \| `qr-menu`. ORDINT-08's channel filter has no data behind it today. *Be honest in the UI:* `apps/qr-menu` has no order-submission path at all, so the column has exactly one value in production until QR ordering ships. The column is cheap now and impossible to backfill. (Growth BLOCK-3, CTO MED-3, Skeptic HIGH-4, Product MED-11)
+  - **`channel`** — `site` \| `qr-menu`. ORDINT-08's channel filter has no data behind it today. _Be honest in the UI:_ `apps/qr-menu` has no order-submission path at all, so the column has exactly one value in production until QR ordering ships. The column is cheap now and impossible to backfill. (Growth BLOCK-3, CTO MED-3, Skeptic HIGH-4, Product MED-11)
   - **Per-state timestamps** — `accepted_at`, `preparing_at`, `ready_at`, `completed_at`. Today every transition overwrites `updated_at`, destroying accept latency, prep duration, and time-in-state. Without these there is no urgency chip (D-14) and Phase 13 analytics cannot be built retroactively. (Growth HIGH-5, Product HIGH-8, CTO MED-5)
   - **Cancel reason (from a fixed set) + `canceled_from_status` + actor.** Reason is not free text — "top cancel reason" must be buildable. `canceled_from_status` is what distinguishes reject-intent from cancel-intent without adding a second terminal status (D-09). (Growth HIGH-6, Product MED-12, CTO MED-5)
   - **Operator-set ETA** — see D-15.
@@ -69,7 +69,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 - **D-09 — One terminal status `canceled`, two operator intents distinguished by `canceled_from_status`.** Do NOT add a `rejected` status. **Reject** = a card-face button on a not-yet-accepted order, one tap → reason chips → always full auto-refund. **Cancel** = deliberately harder to reach (inside the order detail, confirm dialog naming the amount) so it is not mis-tapped next to "Ready". The word "rejected" never reaches the guest.
 - **D-10 — Cancel always issues a full refund. Partial/none is a separate owner action.** The cashier makes no financial judgement calls. If the restaurant wants to withhold part, the owner performs a separate refund operation. Partial refund itself ships as **arbitrary amount + reason** (the API that already exists at `refunds.controller.ts`), not as item checkboxes — ORDINT-06's literal "specific items" wording is scoped down (CTO MED-4, Skeptic MED-2, Product MED-13). `refund()` must stop requiring status to be exactly `paid` (`order.aggregate.ts:321`) and must stop collapsing fulfillment state into `refunded` on a partial.
   - **CTO HIGH-7 money bug — MUST fix with D-08:** `cancel-order.service.ts:33` derives `wasPaid = snap.status === 'paid'`. Once cancel is allowed from `accepted`/`preparing`/`ready`, that predicate reads false on a paid order and the refund is silently skipped. Derive from the captured payment amount, not from the order status.
-- **D-11 — Refund failure never blocks the kitchen.** If Stripe cannot refund (outage, funds already paid out), the **order still cancels**; the refund is recorded as failed and surfaced as a red "refund did not go through" flag with a one-click retry, until someone resolves it. *Planner:* the Stripe call currently sits **inside** the DB transaction (Skeptic MED-5) — restructure to persist the cancel, attempt the refund outside the tx, then record the outcome.
+- **D-11 — Refund failure never blocks the kitchen.** If Stripe cannot refund (outage, funds already paid out), the **order still cancels**; the refund is recorded as failed and surfaced as a red "refund did not go through" flag with a one-click retry, until someone resolves it. _Planner:_ the Stripe call currently sits **inside** the DB transaction (Skeptic MED-5) — restructure to persist the cancel, attempt the refund outside the tx, then record the outcome.
 - **D-12 — An unaccepted order escalates loudly but the system never touches the guest's money on its own.** After a fixed threshold (hardcoded, no settings screen) the card turns red, shows "waiting 20 min", and the sound repeats. No auto-reject, no auto-refund. (Skeptic HIGH-7)
 
 ### Refresh & alerting
@@ -83,7 +83,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 
 ### Guest-facing loop
 
-- **D-15 — The operator sets the prep time when accepting.** "Accept" opens a quick choice (e.g. 15 / 25 / 40 min, or a custom value); that becomes the order's ETA, shown on the guest status page and passed into the guest email. Chosen over a per-location default because it reflects actual kitchen load. *Planner:* `orders.controller.ts:64` currently maps `eta` from `scheduledFor` (the guest's requested schedule — `null` for every ASAP order), and `guest-email-templates.ts` accepts an `eta` variable that `send-guest-notification.service.ts:83-89` never passes. Both dead slots get wired to the new field. (Growth BLOCK-2, Product HIGH-10)
+- **D-15 — The operator sets the prep time when accepting.** "Accept" opens a quick choice (e.g. 15 / 25 / 40 min, or a custom value); that becomes the order's ETA, shown on the guest status page and passed into the guest email. Chosen over a per-location default because it reflects actual kitchen load. _Planner:_ `orders.controller.ts:64` currently maps `eta` from `scheduledFor` (the guest's requested schedule — `null` for every ASAP order), and `guest-email-templates.ts` accepts an `eta` variable that `send-guest-notification.service.ts:83-89` never passes. Both dead slots get wired to the new field. (Growth BLOCK-2, Product HIGH-10)
 - **D-16 — The guest live-status page is IN SCOPE this phase.** Without it the entire phase is invisible to the guest and there is nothing to demo to a prospective restaurant. The endpoint (`orders.controller.ts:52`) and the poller (`apps/website/components/checkout/order-status-poller.tsx`) already exist; the core fix is that `TERMINAL_STATUSES` at line 10 includes `'paid'`, so polling stops the instant payment confirms and `accepted → preparing → ready` never render. Also: the page prints raw status enums — give the guest human wording, not `status.replace('_',' ')`. (Growth BLOCK-1, Product HIGH-9, Skeptic MED-1)
 - **D-17 — Marketing consent checkbox at checkout, plus a consent column on the order.** One unchecked checkbox at checkout and a consent-timestamp column. Today there is zero consent capture repo-wide, so Phase 12 CRM would build a mailing list from `orders.customer_email` with no lawful basis under GDPR — and consent cannot be granted retroactively. (Growth BLOCK-4; PROJECT.md GDPR constraint)
 
@@ -104,6 +104,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 </decisions>
 
 <canonical_refs>
+
 ## Canonical References
 
 **Downstream agents MUST read these before planning or implementing.**
@@ -147,6 +148,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 </canonical_refs>
 
 <code_context>
+
 ## Existing Code Insights
 
 ### Reusable Assets (extend, don't rebuild)
@@ -176,7 +178,7 @@ Give operators a working **order-intake surface in the admin SPA** so a restaura
 
 ### Test fidelity — non-negotiable for this phase
 
-The pre-requisite bug survived to production because the specs asserted a **mocked repository** and an **in-memory aggregate**, and the one e2e touching the refund endpoint asserted cross-tenant *denial* rather than the happy path. Every status transition in this phase needs an assertion that reads the row back from the database, and the phase needs a real-browser smoke of the operator workflow. This matches project memory `verify-feature-not-call-shape` and the Phase 8 live-smoke lesson. (Skeptic, "Test-fidelity requirement", non-negotiable.)
+The pre-requisite bug survived to production because the specs asserted a **mocked repository** and an **in-memory aggregate**, and the one e2e touching the refund endpoint asserted cross-tenant _denial_ rather than the happy path. Every status transition in this phase needs an assertion that reads the row back from the database, and the phase needs a real-browser smoke of the operator workflow. This matches project memory `verify-feature-not-call-shape` and the Phase 8 live-smoke lesson. (Skeptic, "Test-fidelity requirement", non-negotiable.)
 
 </code_context>
 
@@ -206,7 +208,7 @@ The pre-requisite bug survived to production because the specs asserted a **mock
 
 ### Reviewed Todos (not folded)
 
-- **"Restructure ROADMAP under AI-driven positioning (MVP-1 / MVP-2 / MVP-3)"** (`.planning/todos/restructure-roadmap-ai-driven.md`, keyword score 0.6) — matched on generic words (`mvp`, `phase`, `2026`), not on subject. It is a planning-document restructure, unrelated to order intake. Not folded. *Note:* the D-13 SSE deferral does require a ROADMAP edit to Phase 10's criteria 1 and 5 and a new phase entry — that is a separate, smaller change.
+- **"Restructure ROADMAP under AI-driven positioning (MVP-1 / MVP-2 / MVP-3)"** (`.planning/todos/restructure-roadmap-ai-driven.md`, keyword score 0.6) — matched on generic words (`mvp`, `phase`, `2026`), not on subject. It is a planning-document restructure, unrelated to order intake. Not folded. _Note:_ the D-13 SSE deferral does require a ROADMAP edit to Phase 10's criteria 1 and 5 and a new phase entry — that is a separate, smaller change.
 
 </deferred>
 
