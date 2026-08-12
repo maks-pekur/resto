@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 10 context gathered (persona reviews folded; pre-phase quick task pending)
-last_updated: "2026-08-12T07:29:25.577Z"
+last_updated: "2026-08-12T07:42:03.301Z"
 last_activity: 2026-08-10
 progress:
-  total_phases: 25
+  total_phases: 27
   completed_phases: 14
   total_plans: 108
   completed_plans: 100
-  percent: 56
+  percent: 52
 ---
 
 # Project State
@@ -80,7 +80,7 @@ Still deferred to Phase 03:
 | 03    | 5     | -     | -        |
 | 04a   | 7     | -     | -        |
 | 08.2  | 6     | -     | -        |
-| 08.5 | 5 | - | - |
+| 08.5  | 5     | -     | -        |
 
 **Recent Trend:**
 
@@ -158,6 +158,9 @@ _Updated after each plan completion_
 - Phase 08.2 edited: Narrowed 08.2 to brand-first routing + brand-level access-control core (default-deny flip, server-session active-brand pin, brand RLS). Owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping split into their own follow-on phases — full SEED-001 vision preserved as a sequence
 - Phase 08.3 inserted after Phase 08.2: Owner-managed custom roles (enable better-auth dynamicAccessControl + creator-subset guard + owner role-builder UI) — split from SEED-001 (URGENT)
 - Phase 08.4 inserted after Phase 08.3: Location-scoped access (new locations entity + member_location_scope) — split from SEED-001 (URGENT)
+- Phase 10.1 inserted after Phase 10: Location schedule and pause ordering — split out of Phase 10 at discuss (persona-product BLOCK-3); stays in MVP-1, runs AFTER Phase 10 (next-phase pointer intentionally NOT repointed)
+- Phase 18 added: Real-time Order Feed (SSE) — carries ORDINT-02 + ORDINT-09 split out of Phase 10 at discuss (browser EventSource cannot send the tenancy headers; long-lived streams break per-request authz). Placed in MVP-2 Track A; Phase 10 ships 5s polling
+- Phase 10 edited: goal, requirements (ORDINT-02/09 out), and all success criteria rewritten to match 10-CONTEXT.md; criterion 6 added (single migration + read-back-from-DB test fidelity); pre-requisite quick task noted
 
 ### Decisions
 

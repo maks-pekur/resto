@@ -34,7 +34,8 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
-- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
+- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
+- [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -627,19 +628,44 @@ Plans:
 
 ### Phase 10: Admin Order Intake
 
-**Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
-**Depends on**: Phase 7, Phase 8 _(Phase 9 Delivery Zones moved to MVP-2 in the 2026-06-12 rebalance; the delivery-zone enforcement in criterion 1 activates only once Phase 9 ships)_
-**Requirements**: ORDINT-01, ORDINT-02, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-09, ORDINT-10
+**Goal**: Give operators a working order-intake surface in admin — a polled incoming-orders feed with audible alerting, the full status workflow including reject and cancel-after-accept, refunds, filtering, and a live guest-facing order-status page — so a restaurant can run a service on RestOS end to end
+**Depends on**: Phase 7, Phase 8 _(Phase 9 Delivery Zones moved to MVP-2 in the 2026-06-12 rebalance, so delivery orders carry no zone, fee, address validation, or dispatch state — the feed must not render a delivery lifecycle the backend cannot back)_
+**Requirements**: ORDINT-01, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-10 _(ORDINT-02 + ORDINT-09 moved to Phase 18 on 2026-08-11 — see below)_
 **Success Criteria** (what must be TRUE):
 
-1. New orders appear in the admin feed in real time via Server-Sent Events without a page refresh; incoming orders are visually flagged; pickup orders work end-to-end, and delivery orders are accepted without polygon enforcement until Phase 9 (Delivery Zones) ships in MVP-2
-2. Operator accepts or rejects an incoming order; rejection auto-triggers a refund via Stripe
-3. Operator transitions an accepted order through `accepted → preparing → ready → completed`
-4. Operator cancels an order with a reason; if the order was paid, auto-refund is triggered; operator can filter orders by status, date, and channel; operator sees full order details (items, modifiers, customer info, delivery address, total breakdown)
-5. Graceful shutdown closes all active SSE connections with a `retry:` event so clients auto-reconnect; public `GET /v1/orders/:id/status` endpoint returns current order state for guest-facing confirmation page polling
+1. New orders appear in the admin Orders page without a page refresh (5-second polling), are visually flagged, and raise an audible alert plus a tab-title counter so a backgrounded tab still signals; an unaccepted order escalates visually after a threshold but nothing automatic ever touches the guest's money; pickup orders work end to end
+2. Operator accepts or rejects an incoming order and sets the ready time on accept; rejection auto-triggers a full Stripe refund — and reject/cancel is available to everyone who works with orders, not only the owner (discretionary arbitrary-amount refund stays owner-only `billing:update`)
+3. Operator transitions an accepted order through `accepted → preparing → ready → completed`, with each transition timestamped separately
+4. Operator cancels an order with a reason at any stage up to `completed`, always with a full auto-refund; a failed Stripe refund still cancels the order and surfaces a retryable red flag rather than blocking the kitchen; operator can filter by status, date, and channel and see full order details
+5. The guest sees live status on their phone (`accepted → preparing → ready`) with the operator-set ready time, via the existing public `GET /v1/orders/:id/status`; the checkout captures marketing consent
+6. One migration lands every new order field before the first real orders exist — short daily order number, channel, per-state timestamps, cancel reason + actor, ready time, consent — and every status transition is asserted by reading the row back from the database, not from a mocked repository
    **Plans**: TBD
    **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer _(run 2026-08-11 — see `.planning/phases/10-admin-order-intake/10-PERSONA-REVIEWS.md`)_
+
+**Scope decisions from `/gsd:discuss-phase 10` (2026-08-11) — planner MUST read `10-CONTEXT.md`:**
+
+- **Real-time SSE + graceful SSE shutdown (ORDINT-02, ORDINT-09) moved to Phase 18.** Browser `EventSource` cannot send the `x-tenant-id` / `x-brand-slug` / `x-location-id` headers `TenantContextMiddleware` resolves tenancy from, and a long-lived stream converts per-request authorization into an unbounded connect-time check — both would rework the access-control core built across Phases 08.2–08.5. This phase ships 5-second polling. The shared 60-req/min per-IP rate limit must be fixed for polling to work from several devices behind one restaurant NAT.
+- **Pause ordering / opening hours moved to Phase 10.1** (persona-product BLOCK-3).
+- **ORDINT-06 narrowed**: "partial refund of specific items" ships as an arbitrary-amount refund (the API that already exists); item-level accounting is deferred.
+- **ORDINT-10 is ~90% already shipped** — the endpoint and the website poller exist; the delta is that the poller treats `paid` as terminal.
+- **HARD PRE-REQUISITE:** a verified live bug — `CancelOrderService`/`RefundOrderService` call the INSERT-only `save()`, so `orders.status` never flips and `ordering.order_canceled.v1` / `ordering.order_refunded.v1` are dropped. Fixed as a separate quick task before this phase is planned.
+
+### Phase 10.1: Location schedule and pause ordering (INSERTED)
+
+**Goal**: Give a location a way to stop taking orders — one-tap pause from the order feed and a weekly opening schedule — so a restaurant cannot accept paid orders while closed or overwhelmed
+**Depends on**: Phase 8, Phase 10 _(origin: `persona-product-strategist` BLOCK-3 at `/gsd:discuss-phase 10`, 2026-08-11 — `locations` has no hours and no accepting-orders flag, and `CreateOrderService` never checks, so MVP-1 would otherwise close with tenants taking paid orders 24/7. Founder deferred it out of Phase 10 with the risk stated. Spec: `.planning/phases/10-admin-order-intake/10-PERSONA-PRODUCT.md` BLOCK-3.)_
+**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
+**Success Criteria** (what must be TRUE):
+
+1. Operator pauses order intake for a location in one tap from the order-feed header (20 min / 40 min / rest of day), sees the remaining time, and can resume early
+2. While a location is paused, a guest on the site cannot reach checkout for that location and is shown a human-readable reason with the resume time; an in-flight payment already authorized is unaffected
+3. Operator sets a weekly opening schedule per location (per-day open/close, closed days), and orders attempted outside those hours are rejected at checkout with the next opening time
+4. Pause and schedule state is location-scoped (`ScopedTx` + RLS, consistent with the 08.4 location model) and an owner in `?location=all` mode can see and set it per location
+5. Guest-facing rejection happens server-side at order creation, not only in the UI — a forged or stale client cannot create an order at a paused or closed location
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-product-strategist, persona-skeptic
 
 ### Phase 17: Operator Self-service Polish (post-MVP-1)
 
@@ -772,6 +798,25 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
 
+### Phase 18: Real-time Order Feed (SSE)
+
+**Goal**: Replace the Phase 10 polling feed with a Server-Sent Events stream fed from `ordering.>` events, including a re-authorization model for long-lived connections and graceful drain on deploy
+**Depends on**: Phase 10 _(split out of Phase 10 on 2026-08-11 at `/gsd:discuss-phase 10`. Phase 10 ships the feed on 5-second polling; this phase is a transport upgrade on top of a working product, not a prerequisite for it. Activation trigger: a paying tenant reports the polling delay as a problem, OR a kitchen-display surface is scheduled — whichever comes first.)_
+**Requirements**: ORDINT-02, ORDINT-09 _(moved here from Phase 10)_
+**Success Criteria** (what must be TRUE):
+
+1. New orders appear in the admin feed without a page refresh, pushed from the server, with no polling fallback needed during normal operation
+2. The stream resolves tenant, brand, and location without relying on request headers a browser `EventSource` cannot send — and the chosen mechanism is not a forgeable client-supplied identifier
+3. Authorization is re-evaluated during the connection's life, not only at connect time: a revoked location scope, a brand re-pin, a session revocation, and a tenant archival each terminate or re-scope the stream within a bounded window, proven by e2e
+4. Graceful shutdown drains every active connection with a `retry:` event before the HTTP adapter closes, so a rolling deploy does not hang on an open socket and clients auto-reconnect
+5. The stream survives the real production edge (Cloudflare buffering / idle timeouts) and a NATS outage degrades to polling rather than to a silently dead feed with a green readiness probe
+
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic
+
+**Design brief already written:** `.planning/phases/10-admin-order-intake/10-PERSONA-CTO.md` BLOCK-2, BLOCK-3, HIGH-1..HIGH-6 (transport shape, in-process fan-out vs NATS-per-connection, `LISTEN/NOTIFY` rejection, shutdown-hook ordering, rate limiting, Cloudflare) and `10-PERSONA-SKEPTIC.md` BLOCK-3, HIGH-1, HIGH-2 (subscriber soft-fail, durable-consumer/queue-group collision at 2 instances). Do not re-derive these.
+
 ### Track B — AI Agent Platform + 3 Surfaces
 
 - [ ] **MVP-2 Phase A: AI agent platform foundation** — LLM gateway (Anthropic primary, fallback TBD), per-tenant RAG knowledge base, per-customer profile/memory, conversation/thread storage, tool registry honoring `ScopedTx` + RBAC, NATS event subscriptions, eval harness
@@ -792,7 +837,7 @@ Open architectural questions to resolve before MVP-2 activation: vector store ch
 ## Progress
 
 **Execution Order:**
-MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 8.1 → 10. Phase 8.1 (Payments provider layer + onboarding UX) was pulled into MVP-1 on 2026-06-28; it extends Phase 8 and does not block Phase 10, so it may also run in parallel with Phase 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
+MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 8.1 → 10 → 10.1. Phase 8.1 (Payments provider layer + onboarding UX) was pulled into MVP-1 on 2026-06-28; it extends Phase 8 and does not block Phase 10, so it may also run in parallel with Phase 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
 
 Notes:
 

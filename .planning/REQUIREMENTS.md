@@ -168,17 +168,29 @@
 ### Admin Order Intake (`ORDINT`)
 
 > Where orders land (no Staff app in MVP-1). Now Phase 10 — executes after Delivery Zones (Phase 9).
+>
+> **2026-08-11 split (`/gsd:discuss-phase 10`):** ORDINT-02 and ORDINT-09 moved to **Phase 18 (MVP-2)**. Browser `EventSource` cannot send the `x-tenant-id` / `x-brand-slug` / `x-location-id` headers `TenantContextMiddleware` resolves tenancy from, and a long-lived stream turns per-request authorization into an unbounded connect-time check — reworking the access-control core built across Phases 08.2–08.5. Phase 10 ships the feed on 5-second polling instead. ORDINT-06 also narrowed: "specific items" ships as an arbitrary-amount refund (Phase 10 CONTEXT D-10).
 
 - [ ] **ORDINT-01**: Operator sees incoming-orders feed in admin; new orders visually flagged
-- [ ] **ORDINT-02**: Real-time updates (Server-Sent Events stream from api on `ordering.>` events) push new orders without refresh
+- [ ] **ORDINT-02**: Real-time updates (Server-Sent Events stream from api on `ordering.>` events) push new orders without refresh — **moved to Phase 18**
 - [ ] **ORDINT-03**: Operator accepts or rejects incoming order; rejection auto-refunds via Stripe
 - [ ] **ORDINT-04**: Operator transitions order through states (`accepted → preparing → ready → completed`)
 - [ ] **ORDINT-05**: Operator cancels order with reason; auto-refund triggered if order was paid
 - [ ] **ORDINT-06**: Operator initiates partial refund (specific items)
 - [ ] **ORDINT-07**: Operator sees order details (items, modifiers, customer info, delivery address, total breakdown)
 - [ ] **ORDINT-08**: Operator filters orders by status / date / channel (qr-menu vs site)
-- [ ] **ORDINT-09**: Graceful shutdown closes all active SSE connections with a `retry:` event; clients auto-reconnect after rolling deploy
+- [ ] **ORDINT-09**: Graceful shutdown closes all active SSE connections with a `retry:` event; clients auto-reconnect after rolling deploy — **moved to Phase 18**
 - [ ] **ORDINT-10**: Public `GET /v1/orders/:id/status` endpoint (or SSE stream) returns current order state (`accepted / preparing / ready / on its way`); used by guest-facing confirmation page for live status polling
+
+### Location Schedule & Pause Ordering (`SCHED`)
+
+> Added 2026-08-12 (Phase 10.1). Origin: `persona-product-strategist` BLOCK-3 during `/gsd:discuss-phase 10` — nothing in the product could stop a location taking paid orders. Deferred out of Phase 10 by the founder with the risk stated; kept in MVP-1 because the first paying customer hits it in week one.
+
+- [ ] **SCHED-01**: Operator pauses order intake for a location in one tap from the order-feed header (20 min / 40 min / rest of day), sees remaining time, and can resume early
+- [ ] **SCHED-02**: While paused, a guest cannot reach checkout for that location and sees a human-readable reason plus the resume time
+- [ ] **SCHED-03**: Operator sets a weekly opening schedule per location (per-day open/close, closed days)
+- [ ] **SCHED-04**: Orders attempted outside opening hours are rejected at checkout with the next opening time
+- [ ] **SCHED-05**: Pause and schedule enforcement is server-side at order creation (`ScopedTx` + RLS, location-scoped per the 08.4 model) — a forged or stale client cannot create an order at a paused or closed location
 
 ### Delivery Zones — basic (`DELV`)
 
@@ -495,15 +507,20 @@
 | DELV-07     | Phase 9       | Pending  |
 | DELV-08     | Phase 9       | Pending  |
 | ORDINT-01   | Phase 10      | Pending  |
-| ORDINT-02   | Phase 10      | Pending  |
+| ORDINT-02   | Phase 18      | Pending  |
 | ORDINT-03   | Phase 10      | Pending  |
 | ORDINT-04   | Phase 10      | Pending  |
 | ORDINT-05   | Phase 10      | Pending  |
 | ORDINT-06   | Phase 10      | Pending  |
 | ORDINT-07   | Phase 10      | Pending  |
 | ORDINT-08   | Phase 10      | Pending  |
-| ORDINT-09   | Phase 10      | Pending  |
+| ORDINT-09   | Phase 18      | Pending  |
 | ORDINT-10   | Phase 10      | Pending  |
+| SCHED-01    | Phase 10.1    | Pending  |
+| SCHED-02    | Phase 10.1    | Pending  |
+| SCHED-03    | Phase 10.1    | Pending  |
+| SCHED-04    | Phase 10.1    | Pending  |
+| SCHED-05    | Phase 10.1    | Pending  |
 | PROMO-01    | Phase 11      | Pending  |
 | PROMO-02    | Phase 11      | Pending  |
 | PROMO-03    | Phase 11      | Pending  |
