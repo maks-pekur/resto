@@ -2,7 +2,7 @@
 
 **Reviewer lens:** Head of Product, restaurant-tech B2B SaaS. Judged against how a counter/kitchen person actually behaves during a Friday dinner rush, and against what makes an operator say "we can run service on this" instead of "this is a demo."
 **Reviewed:** 2026-08-10, before `10-PLAN` exists.
-**Verdict:** ORDINT-01..10 as written builds a correct *admin CRUD page over orders*. It does not yet build an *operational surface*. Four of the gaps below are hard blockers for "MVP-1 closes and a restaurant runs real service on it" — none of them are large, but none of them are in the current requirement list.
+**Verdict:** ORDINT-01..10 as written builds a correct _admin CRUD page over orders_. It does not yet build an _operational surface_. Four of the gaps below are hard blockers for "MVP-1 closes and a restaurant runs real service on it" — none of them are large, but none of them are in the current requirement list.
 
 ---
 
@@ -20,9 +20,10 @@
 
 **Evidence.** `apps/api/src/contexts/ordering/domain/order.aggregate.ts:307` — `cancel()` throws `InvalidOrderTransitionError` unless status is `created` or `paid`. Line 321 — `refund()` throws unless status is exactly `paid`. `CancelOrderService` (`apps/api/src/contexts/payments/application/cancel-order.service.ts:52`) inherits both constraints.
 
-**Consequence.** ORDINT-05 ("operator cancels order with reason; auto-refund if paid") is only implementable for orders the operator has *not yet accepted*. But the cancel that actually happens in a restaurant happens **after** accept: the last portion of the duck went to another table, the courier no-showed, the guest phoned to cancel while it was on the pass. Today the operator's only exit is to press Ready → Completed on food that will never exist, then chase a refund out-of-band. That is the exact scenario that generates a chargeback, and chargebacks on a brand-new Stripe Connect account are a real account-health risk for the tenant.
+**Consequence.** ORDINT-05 ("operator cancels order with reason; auto-refund if paid") is only implementable for orders the operator has _not yet accepted_. But the cancel that actually happens in a restaurant happens **after** accept: the last portion of the duck went to another table, the courier no-showed, the guest phoned to cancel while it was on the pass. Today the operator's only exit is to press Ready → Completed on food that will never exist, then chase a refund out-of-band. That is the exact scenario that generates a chargeback, and chargebacks on a brand-new Stripe Connect account are a real account-health risk for the tenant.
 
 **Recommendation (plannable).**
+
 - Widen `cancel(reason)` to accept `created | paid | accepted | preparing | ready`.
 - Widen `refund()` to accept `paid | accepted | preparing | ready | completed`. Post-completion refund is a real, frequent case (guest complains the next morning) and is currently impossible.
 - Persist on the `orders` row (one migration, together with MED-12 and HIGH-8): `cancel_reason text`, `canceled_from_status text`, `canceled_by_user_id text`.
@@ -38,6 +39,7 @@
 **Consequence.** Phases 08.3/08.4 built exactly the right roles for this phase — `cashier-foh` and `kitchen` already hold `order: ['read','update-status']`. But the moment the cashier presses Reject on an incoming order, the auto-refund path demands `billing:update` and 403s. The only human on the premises who can refuse an order is the owner, who is not at the counter at 20:40 on a Friday. The operator's workaround is to accept everything and sort it out later — which silently converts a product problem into a guest-experience problem.
 
 **Recommendation (plannable).**
+
 - Treat the reject/cancel auto-refund as a **system-initiated consequence of a status transition**, gated on `order: ['update-status']` — not as an operator-initiated refund. The reject/cancel endpoint lives in the ordering controller with that gate; it calls `CancelOrderService` internally.
 - Keep `billing: ['update']` on the **discretionary** refund surface only: arbitrary amount, partial refund, post-completion goodwill refund. That is genuinely an owner/manager decision.
 - If a finer split is wanted, add `order: ['cancel']` to `PERMISSIONS_STATEMENT` and grant it to `owner`, `admin`, `manager`, `cashier-foh` — **not** `kitchen` (kitchen advances tickets; it does not touch money).
@@ -52,6 +54,7 @@
 **Consequence.** This is the finding I'd escalate hardest. MVP-1 closes with a restaurant publishing an ordering link that accepts paid orders **24/7, unboundedly**. Week one produces: orders paid at 02:00 for a kitchen that closed at 23:00; a 40-minute backlog during which twelve more guests pay; and a fire-alarm evacuation with no way to stop the funnel. The operator's only tool is refund-one-by-one, which is exactly the "this product created work for me" experience that kills a first reference customer. Snooze/pause is table stakes on every incumbent — Toast ships snooze at 20 min / 40 min / rest-of-day plus a prep-time delay that doesn't stop orders.
 
 **Recommendation (plannable, minimal shape for this phase).**
+
 - `locations.orders_paused_until timestamptz null` + `locations.pause_reason text null`.
 - `POST /v1/locations/:id/pause { minutes: 20 | 40 | untilNextDay, reason? }` and `POST .../resume`, gated `order: ['update-status']` (the person who can see the flood can stop it).
 - `CreateOrderService` rejects with a distinct, guest-readable error; the website checkout renders "The kitchen is paused — ordering reopens at 21:20" and offers scheduled-for-later if `scheduledFor` is available.
@@ -67,6 +70,7 @@
 **Answer to "page or kiosk":** both, one route. Do **not** build a separate app — the SPA route keeps auth, brand/location plumbing and the `?location` filter for free.
 
 **Recommendation (plannable).**
+
 - Route `/{brand}/orders` renders in a layout that collapses the sidebar to icon rail by default and drops the breadcrumb chrome.
 - A **Focus mode** toggle (persisted per device in `localStorage`): full viewport, no sidebar, no header, `navigator.wakeLock` held so the tablet doesn't sleep mid-service, exit via a small corner affordance + `Esc`.
 - Board layout, not a table: three columns — **New** (paid, unacknowledged) / **In progress** (accepted, preparing) / **Ready**. Cards, not rows. Minimum 56px tap targets; primary action is one tap with no confirmation on the happy path (Accept, Preparing, Ready, Completed). Destructive actions get confirmation; happy-path actions must not.
@@ -89,6 +93,7 @@
 **Consequence.** The single highest-ROI item in this phase. A tablet on a shelf behind the pass is not being watched; a visual flag on an unwatched screen is a missed order, and a missed order is a refund plus a bad review. Every KDS and every aggregator tablet in existence beeps until acknowledged, for this reason.
 
 **Recommendation (plannable).**
+
 - Looping alert sound on a new unacknowledged order, stops on Accept (or explicit Acknowledge). Web Audio context must be unlocked on a user gesture — add a one-time "Enable sound" prompt on first entry to the feed, because browser autoplay policy will otherwise silently no-op and the operator will believe it works.
 - Per-device mute + volume persisted in `localStorage`; a visible speaker icon showing current state (a silently-muted device is its own failure mode).
 - Tab title badge `(3) Orders — RestOS` so a backgrounded tab still signals.
@@ -110,7 +115,7 @@
 
 **Evidence.** `packages/db/src/schema/ordering.ts:18-46` — the `orders` row carries only `created_at` / `updated_at`. Every transition overwrites `updated_at`.
 
-**Consequence.** A kitchen feed lives on one question: *how long has this ticket been sitting?* Without per-state timestamps, no card can show an age, no card can escalate, and the operator has no way to spot the ticket that fell through. It also means Phase 13 (Analytics) has no prep-time data for any order taken before the column is added — the data loss is permanent and starts at order #1.
+**Consequence.** A kitchen feed lives on one question: _how long has this ticket been sitting?_ Without per-state timestamps, no card can show an age, no card can escalate, and the operator has no way to spot the ticket that fell through. It also means Phase 13 (Analytics) has no prep-time data for any order taken before the column is added — the data loss is permanent and starts at order #1.
 
 **Recommendation (plannable).** Same migration as BLOCK-1/MED-12: `accepted_at`, `preparing_at`, `ready_at`, `completed_at`, `canceled_at` (all nullable `timestamptz`), written by the aggregate transitions. Feed renders an always-ticking age chip per card with color escalation (green <5 min, amber 5–10, red >10; thresholds hardcoded for MVP, per-location config later). Free side-effect: median prep time and accept latency become available to Phase 13 with zero extra work.
 
@@ -123,7 +128,8 @@
 **Answer to "is this Phase 10 or the website phase":** **Phase 10.** ORDINT-10's endpoint exists; what is missing is a one-line terminal-set change and a small tracker component. Shipping the operator half without the guest half means the operator presses Accept and nothing observable happens anywhere in the world — which is precisely the "this is a demo" feeling. It is also the cheapest delight in the whole milestone.
 
 **What the guest must actually see for the loop to feel finished:**
-1. A 4-step tracker: **Paid → Accepted → Preparing → Ready** (label the last step per fulfilment mode: *Ready for pickup* / *On its way* / *Bring to table*).
+
+1. A 4-step tracker: **Paid → Accepted → Preparing → Ready** (label the last step per fulfilment mode: _Ready for pickup_ / _On its way_ / _Bring to table_).
 2. The **daily number** (HIGH-7) large, because that is what staff will call out.
 3. A **time** — see HIGH-10. "Accepted" with no time is worse than useless; it prompts the guest to phone the restaurant.
 4. A **declined/canceled** state carrying the restaurant's reason in guest-safe language plus the refund line: "Full refund of €31.00 issued — it will appear on your card in 5–10 business days." Silence after a failed order is the #1 driver of chargebacks and one-star reviews.
@@ -139,7 +145,7 @@
 
 **Consequence.** "Did they even see my order?" is the single most common inbound call to a restaurant doing online orders, and every one of those calls interrupts service.
 
-**Recommendation (plannable).** On **Accept**, the operator picks a prep time — default from a new `locations.default_prep_minutes` (seeded 20), with one-tap chips 10 / 15 / 20 / 30 / 45. Server computes and stores `orders.promised_ready_at`. That value flows to: the guest tracker, the `order_accepted` email, and the feed card (so the kitchen sees its own commitment). Accepting with a default and no interaction must remain possible in one tap — the chips are a *modifier*, not a required dialog.
+**Recommendation (plannable).** On **Accept**, the operator picks a prep time — default from a new `locations.default_prep_minutes` (seeded 20), with one-tap chips 10 / 15 / 20 / 30 / 45. Server computes and stores `orders.promised_ready_at`. That value flows to: the guest tracker, the `order_accepted` email, and the feed card (so the kitchen sees its own commitment). Accepting with a default and no interaction must remain possible in one tap — the chips are a _modifier_, not a required dialog.
 
 ---
 
@@ -155,7 +161,7 @@
 
 **Evidence.** `order.aggregate.ts:307-319` puts `reason` in the domain event only; no column exists.
 
-**Recommendation.** Persist per BLOCK-1. In the UI, use a **fixed reason enum as tap chips** plus optional free text: *out of stock · kitchen overloaded · guest called to cancel · address not serviceable · suspected fraud · other*. Free-text-only is slow at a counter (nobody types on a greasy tablet) and produces nothing analysable for Phase 13/14. Map each enum to a guest-safe phrase for the tracker/email — the guest must never see "suspected fraud".
+**Recommendation.** Persist per BLOCK-1. In the UI, use a **fixed reason enum as tap chips** plus optional free text: _out of stock · kitchen overloaded · guest called to cancel · address not serviceable · suspected fraud · other_. Free-text-only is slow at a counter (nobody types on a greasy tablet) and produces nothing analysable for Phase 13/14. Map each enum to a guest-safe phrase for the tracker/email — the guest must never see "suspected fraud".
 
 ---
 
@@ -186,6 +192,7 @@ Independent restaurants at a mid-to-high average check take a meaningful share o
 **Evidence.** `apps/admin/src/lib/hooks/use-effective-location.ts` already provides exactly the right primitive: owner reads `?location=all|<uuid>` from the URL; non-owners are server-pinned to their active location.
 
 **Recommendation.**
+
 - The feed defaults to the **effective single location** for everyone — including the owner. Do **not** default an owner to `all`: a 3-location owner's counter tablet showing other kitchens' tickets is an operational hazard, and the owner is usually standing in one specific restaurant.
 - `?location=all` gets an aggregate feed with a location chip on every card, sorted by age. Per-card actions still resolve against that card's own location.
 - Add a **per-device sticky preference** (`localStorage`): a tablet bolted to one counter reopens on that location regardless of who last signed in on it. This is the difference between "owner watching 3 locations from the office" and "the tablet at Location B" — same account, different device intent.
@@ -228,7 +235,7 @@ There is no Staff app in MVP-1, so the pass has nothing physical. A meaningful s
 
 After signup the feed is empty until a real guest orders — which may be days. That screen is the highest-leverage real estate in the product for time-to-first-order.
 
-**Recommendation.** Empty state that doubles as a launch checklist: *Payments live ✓ · Menu published ✓ · Location open ✓* → **your ordering link** with a copy button and a downloadable QR PNG, plus a "Send a test order" affordance in non-production. Time-to-first-order is the number that predicts whether this tenant activates or quietly churns.
+**Recommendation.** Empty state that doubles as a launch checklist: _Payments live ✓ · Menu published ✓ · Location open ✓_ → **your ordering link** with a copy button and a downloadable QR PNG, plus a "Send a test order" affordance in non-production. Time-to-first-order is the number that predicts whether this tenant activates or quietly churns.
 
 ---
 
@@ -244,18 +251,18 @@ After signup the feed is empty until a real guest orders — which may be days. 
 
 Two operator intents, **one** terminal domain status. Do not add a `rejected` status — it doubles the state machine to carry a label.
 
-| | **Reject** | **Cancel** |
-|---|---|---|
-| Applies to | A **new** order (`paid`, not yet accepted) | An **accepted** order (`accepted / preparing / ready`) |
-| Where it lives | Secondary button on the incoming card face, beside Accept | Overflow menu inside the order **detail** — deliberately harder to reach than Ready |
-| Friction | One tap → reason chips sheet → done | Confirm dialog naming the refund amount + mandatory reason |
-| Money | Full auto-refund, always | Refund choice: **Full** (default) · **Partial** (item picker, MED-13) · **None** |
-| Permission | `order: ['update-status']` (BLOCK-2) | `order: ['update-status']`; **`None` and Partial require `billing: ['update']`** — that is the abuse surface |
-| Row state | `status='canceled'`, `canceled_from='paid'` | `status='canceled'`, `canceled_from='<accepted\|preparing\|ready>'` |
+|                | **Reject**                                                | **Cancel**                                                                                                   |
+| -------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| Applies to     | A **new** order (`paid`, not yet accepted)                | An **accepted** order (`accepted / preparing / ready`)                                                       |
+| Where it lives | Secondary button on the incoming card face, beside Accept | Overflow menu inside the order **detail** — deliberately harder to reach than Ready                          |
+| Friction       | One tap → reason chips sheet → done                       | Confirm dialog naming the refund amount + mandatory reason                                                   |
+| Money          | Full auto-refund, always                                  | Refund choice: **Full** (default) · **Partial** (item picker, MED-13) · **None**                             |
+| Permission     | `order: ['update-status']` (BLOCK-2)                      | `order: ['update-status']`; **`None` and Partial require `billing: ['update']`** — that is the abuse surface |
+| Row state      | `status='canceled'`, `canceled_from='paid'`               | `status='canceled'`, `canceled_from='<accepted\|preparing\|ready>'`                                          |
 
-**What the guest is told — Reject:** tracker flips to *"Your order was declined by the restaurant."* + the guest-safe reason (out of stock / kitchen at capacity / outside delivery area) + *"Full refund of €X issued — it will appear on your card in 5–10 business days."* + a CTA back to the menu. Email reuses the existing `order_refunded` template with a decline line. **The word "rejected" never reaches the guest.**
+**What the guest is told — Reject:** tracker flips to _"Your order was declined by the restaurant."_ + the guest-safe reason (out of stock / kitchen at capacity / outside delivery area) + _"Full refund of €X issued — it will appear on your card in 5–10 business days."_ + a CTA back to the menu. Email reuses the existing `order_refunded` template with a decline line. **The word "rejected" never reaches the guest.**
 
-**What the guest is told — Cancel:** *"Your order was canceled by the restaurant."* + reason + the refund state actually chosen. If `None`, the copy must say *no refund was issued* and give a contact route — never silently imply money is coming back.
+**What the guest is told — Cancel:** _"Your order was canceled by the restaurant."_ + reason + the refund state actually chosen. If `None`, the copy must say _no refund was issued_ and give a contact route — never silently imply money is coming back.
 
 ---
 
@@ -263,13 +270,13 @@ Two operator intents, **one** terminal domain status. Do not add a `rejected` st
 
 **Tier 1 — without these it is a demo, not a service tool**
 
-| Rank | Item | Note |
-|---|---|---|
-| 1 | ORDINT-01 feed + ORDINT-07 detail | Only meaningful **with** BLOCK-3 pause, HIGH-6 sound, HIGH-8 age timers, HIGH-7 daily number |
-| 2 | ORDINT-03 accept / reject | Blocked by BLOCK-2 (permissions) — otherwise owner-only |
-| 3 | ORDINT-04 status transitions | Plus MED-17 idempotency |
-| 4 | ORDINT-10 **+ guest tracker wiring** | HIGH-9 + HIGH-10; the loop closes here or nowhere |
-| 5 | ORDINT-05 cancel with reason | Blocked by BLOCK-1 (domain) — cancel-after-accept is the real case |
+| Rank | Item                                 | Note                                                                                         |
+| ---- | ------------------------------------ | -------------------------------------------------------------------------------------------- |
+| 1    | ORDINT-01 feed + ORDINT-07 detail    | Only meaningful **with** BLOCK-3 pause, HIGH-6 sound, HIGH-8 age timers, HIGH-7 daily number |
+| 2    | ORDINT-03 accept / reject            | Blocked by BLOCK-2 (permissions) — otherwise owner-only                                      |
+| 3    | ORDINT-04 status transitions         | Plus MED-17 idempotency                                                                      |
+| 4    | ORDINT-10 **+ guest tracker wiring** | HIGH-9 + HIGH-10; the loop closes here or nowhere                                            |
+| 5    | ORDINT-05 cancel with reason         | Blocked by BLOCK-1 (domain) — cancel-after-accept is the real case                           |
 
 **Tier 2 — needed, survivable if late**
 
@@ -288,11 +295,11 @@ Two operator intents, **one** terminal domain status. Do not add a `rejected` st
 
 ## Time-to-value: where the last mile actually breaks
 
-Signup → bootstrap owner → brand → location → Stripe Connect → menu → publish → share link → **guest pays** → *(Phase 10)* **operator sees it and fulfils it**.
+Signup → bootstrap owner → brand → location → Stripe Connect → menu → publish → share link → **guest pays** → _(Phase 10)_ **operator sees it and fulfils it**.
 
 Friction points introduced or left open at that last hop, in order of severity:
 
-1. The operator must *know to navigate* to the orders page and keep a tab open → **HIGH-5** (redirect) + **HIGH-6** (sound + wake lock).
+1. The operator must _know to navigate_ to the orders page and keep a tab open → **HIGH-5** (redirect) + **HIGH-6** (sound + wake lock).
 2. The operator has no way to stop the funnel when closed or slammed → **BLOCK-3**.
 3. The operator cannot refuse an order without the owner → **BLOCK-2**.
 4. The operator cannot undo an accepted order → **BLOCK-1**.
@@ -305,16 +312,16 @@ Fix those six and the loop is genuinely closed. Everything else in this review i
 
 ## Readiness scorecard (phase-scoped, as currently specified in ORDINT-01..10)
 
-| Dimension | Score | Note |
-|---|---|---|
-| Restaurant primitives (real workflow fit) | 3 / 10 | No pause, no prep time, no daily number, no ticket age, no note field |
-| Operator ergonomics (rush usability) | 3 / 10 | Dashboard-shell page, no sound, no kiosk mode, no print |
-| Order lifecycle correctness | 4 / 10 | Aggregate cannot cancel or refund after accept (BLOCK-1) |
-| Permissions fit for the role that does the work | 3 / 10 | Reject/cancel is owner-only in practice (BLOCK-2) |
-| Guest-side loop closure | 4 / 10 | Endpoint + emails exist; the poller stops at `paid` |
-| Multi-location / multi-device | 7 / 10 | 08.4/08.5 primitives are right; needs per-device stickiness + concurrency semantics |
-| Real-time delivery | 6 / 10 | SSE + graceful shutdown specified; reconnect backfill missing |
-| Data foundation for Phases 12–14 | 4 / 10 | Missing channel, per-state timestamps, cancel reason, refunded total — all permanently lossy if added later |
+| Dimension                                       | Score  | Note                                                                                                        |
+| ----------------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------- |
+| Restaurant primitives (real workflow fit)       | 3 / 10 | No pause, no prep time, no daily number, no ticket age, no note field                                       |
+| Operator ergonomics (rush usability)            | 3 / 10 | Dashboard-shell page, no sound, no kiosk mode, no print                                                     |
+| Order lifecycle correctness                     | 4 / 10 | Aggregate cannot cancel or refund after accept (BLOCK-1)                                                    |
+| Permissions fit for the role that does the work | 3 / 10 | Reject/cancel is owner-only in practice (BLOCK-2)                                                           |
+| Guest-side loop closure                         | 4 / 10 | Endpoint + emails exist; the poller stops at `paid`                                                         |
+| Multi-location / multi-device                   | 7 / 10 | 08.4/08.5 primitives are right; needs per-device stickiness + concurrency semantics                         |
+| Real-time delivery                              | 6 / 10 | SSE + graceful shutdown specified; reconnect backfill missing                                               |
+| Data foundation for Phases 12–14                | 4 / 10 | Missing channel, per-state timestamps, cancel reason, refunded total — all permanently lossy if added later |
 
 **Overall: 34 / 80** as specified. With the three BLOCKs and HIGH-6/7/8/9/10 folded into the plan, this lands comfortably in the 60s — which is the bar for "a restaurant runs Friday service on it."
 

@@ -29,17 +29,17 @@ Fix the blockers, cut ~40% of the requirements, and this is a 5–6 plan phase i
 
 ## Claim vs Evidence Audit
 
-| Claim (ROADMAP / REQUIREMENTS) | Reality in code | Verdict |
-|---|---|---|
-| SC-2 "rejection auto-triggers a refund via Stripe" | Refund is gated on `billing:['update']` (`apps/api/src/contexts/payments/interfaces/http/refunds.controller.ts:21`), which is `NON_DELEGATABLE` (`packages/domain/src/rbac/non-delegatable.ts:6`) and owner-only (`packages/domain/src/rbac/system-roles.ts:10`). `cashier-foh` / `kitchen` presets have `order:['read','update-status']` only (`apps/api/src/contexts/identity/application/preset-roles.ts:26,36`). | **Broken by design.** The person at the counter cannot reject an order. |
-| SC-3 "transitions accepted → preparing → ready → completed" | Aggregate supports it (`order.aggregate.ts:243-305`), but no persisted order can ever reach `accepted` — see BLOCK-1. | **Untestable until BLOCK-1 is fixed.** |
-| SC-4 "cancels with reason; auto-refund if paid" | `CancelOrderService` calls `orderRepo.save()` (`cancel-order.service.ts:55`) → INSERT-only no-op (`order-drizzle.repository.ts:52-78`). Row unchanged, event dropped. And `cancel()` rejects any status past `paid` (`order.aggregate.ts:308`). | **Silently broken today.** |
-| SC-5 "public GET /v1/orders/:id/status returns current order state" | Already exists (`ordering/interfaces/http/orders.controller.ts:52-67`) and is already consumed by a working backoff poller (`apps/website/components/checkout/order-status-poller.tsx`). | **Already done.** Delta ≈ 20 lines. |
-| ORDINT-10 states "`accepted / preparing / ready / on its way`" | `on its way` is not a member of `OrderStatus` (`order.aggregate.ts:8-18`). No courier concept anywhere. Same phantom state in GNOTIF-02. | **Naming drift / phantom requirement.** |
-| ORDINT-06 "partial refund (specific items)" | Service takes an opaque `amountMinor` (`refund-order.service.ts:16`). No item↔refund link, no per-item math, no UI (`grep refund apps/admin/src/lib` → nothing). | **"Already done" is a false read.** |
-| ORDINT-08 "filter by channel (qr-menu vs site)" | No `channel` column in `packages/db/src/schema/ordering.ts`. `apps/qr-menu` never calls `/v1/orders` (grep: zero hits in `apps/qr-menu/src`). | **Filter on a dimension with one value and no column.** |
-| SC-1 "delivery orders accepted without polygon enforcement until Phase 9" | `deliveryFee: '0.00'` is hard-coded at creation and never set (`order.aggregate.ts:182`). Website shows "Calculated at delivery" (`apps/website/components/checkout/order-summary.tsx:58-61`). No courier state, no address validation. | **Not "degraded" — actively loses the restaurant money on every delivery order.** |
-| ROADMAP "Real-time updates (SSE stream from api on `ordering.>` events)" | `EVENT_SUBSCRIBER` soft-fails to `null` at boot (`apps/api/src/infrastructure/nats.module.ts:111-131`); `RunningSubscription.#run()` stops permanently on iterator failure with no re-subscribe (`packages/events/src/infrastructure/nats-subscriber.ts:250-267`). | **Feed dies silently on a NATS restart, forever, until API restart.** |
+| Claim (ROADMAP / REQUIREMENTS)                                            | Reality in code                                                                                                                                                                                                                                                                                                                                                                                                      | Verdict                                                                           |
+| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| SC-2 "rejection auto-triggers a refund via Stripe"                        | Refund is gated on `billing:['update']` (`apps/api/src/contexts/payments/interfaces/http/refunds.controller.ts:21`), which is `NON_DELEGATABLE` (`packages/domain/src/rbac/non-delegatable.ts:6`) and owner-only (`packages/domain/src/rbac/system-roles.ts:10`). `cashier-foh` / `kitchen` presets have `order:['read','update-status']` only (`apps/api/src/contexts/identity/application/preset-roles.ts:26,36`). | **Broken by design.** The person at the counter cannot reject an order.           |
+| SC-3 "transitions accepted → preparing → ready → completed"               | Aggregate supports it (`order.aggregate.ts:243-305`), but no persisted order can ever reach `accepted` — see BLOCK-1.                                                                                                                                                                                                                                                                                                | **Untestable until BLOCK-1 is fixed.**                                            |
+| SC-4 "cancels with reason; auto-refund if paid"                           | `CancelOrderService` calls `orderRepo.save()` (`cancel-order.service.ts:55`) → INSERT-only no-op (`order-drizzle.repository.ts:52-78`). Row unchanged, event dropped. And `cancel()` rejects any status past `paid` (`order.aggregate.ts:308`).                                                                                                                                                                      | **Silently broken today.**                                                        |
+| SC-5 "public GET /v1/orders/:id/status returns current order state"       | Already exists (`ordering/interfaces/http/orders.controller.ts:52-67`) and is already consumed by a working backoff poller (`apps/website/components/checkout/order-status-poller.tsx`).                                                                                                                                                                                                                             | **Already done.** Delta ≈ 20 lines.                                               |
+| ORDINT-10 states "`accepted / preparing / ready / on its way`"            | `on its way` is not a member of `OrderStatus` (`order.aggregate.ts:8-18`). No courier concept anywhere. Same phantom state in GNOTIF-02.                                                                                                                                                                                                                                                                             | **Naming drift / phantom requirement.**                                           |
+| ORDINT-06 "partial refund (specific items)"                               | Service takes an opaque `amountMinor` (`refund-order.service.ts:16`). No item↔refund link, no per-item math, no UI (`grep refund apps/admin/src/lib` → nothing).                                                                                                                                                                                                                                                     | **"Already done" is a false read.**                                               |
+| ORDINT-08 "filter by channel (qr-menu vs site)"                           | No `channel` column in `packages/db/src/schema/ordering.ts`. `apps/qr-menu` never calls `/v1/orders` (grep: zero hits in `apps/qr-menu/src`).                                                                                                                                                                                                                                                                        | **Filter on a dimension with one value and no column.**                           |
+| SC-1 "delivery orders accepted without polygon enforcement until Phase 9" | `deliveryFee: '0.00'` is hard-coded at creation and never set (`order.aggregate.ts:182`). Website shows "Calculated at delivery" (`apps/website/components/checkout/order-summary.tsx:58-61`). No courier state, no address validation.                                                                                                                                                                              | **Not "degraded" — actively loses the restaurant money on every delivery order.** |
+| ROADMAP "Real-time updates (SSE stream from api on `ordering.>` events)"  | `EVENT_SUBSCRIBER` soft-fails to `null` at boot (`apps/api/src/infrastructure/nats.module.ts:111-131`); `RunningSubscription.#run()` stops permanently on iterator failure with no re-subscribe (`packages/events/src/infrastructure/nats-subscriber.ts:250-267`).                                                                                                                                                   | **Feed dies silently on a NATS restart, forever, until API restart.**             |
 
 ---
 
@@ -48,6 +48,7 @@ Fix the blockers, cut ~40% of the requirements, and this is a 5–6 plan phase i
 ## BLOCK-1 — `orders.status` never changes in production. Both operator write paths are no-ops.
 
 **Evidence.**
+
 - `apps/api/src/contexts/ordering/infrastructure/order-drizzle.repository.ts:47-78`
   `save()` is `INSERT … ON CONFLICT (tenant_id, idempotency_key) DO NOTHING RETURNING id`,
   followed by `if (result.length === 0) return;` (line 78).
@@ -69,11 +70,12 @@ on day one, and the operator's cancel button would do nothing visible.
 **Why the tests missed it.** Textbook mock theater:
 `cancel-order.service.spec.ts:78` mocks `save: vi.fn()`; line 136-137 asserts the
 **in-memory aggregate's** status. `refund-order.service.spec.ts:77,190,205,256` same pattern.
-The only e2e touching the operator refund endpoint asserts cross-tenant *denial*
+The only e2e touching the operator refund endpoint asserts cross-tenant _denial_
 (`payments-isolation.e2e.spec.ts:122,179`) — there is no happy-path e2e at all.
 This is exactly the failure class the founder already logged after the Phase 8 live smoke.
 
 **Recommendation.**
+
 1. Fix as a **quick task before Phase 10 planning**, not inside it. Swap both call sites to
    `update()`.
 2. Remove `save()` from `OrderRepository` and replace with `create()` + `update()` so the
@@ -87,6 +89,7 @@ This is exactly the failure class the founder already logged after the Phase 8 l
 ## BLOCK-2 — The aggregate forbids cancel and refund after `accepted`. ORDINT-03/05/06 cannot be built on it.
 
 **Evidence.**
+
 - `apps/api/src/contexts/ordering/domain/order.aggregate.ts:307-310` — `cancel()` throws unless
   status is `created` or `paid`.
 - `apps/api/src/contexts/ordering/domain/order.aggregate.ts:321-324` — `refund()` throws unless
@@ -95,16 +98,18 @@ This is exactly the failure class the founder already logged after the Phase 8 l
   refund sets `status = 'refunded'`, erasing the fact that the food is in the oven.
 
 **Consequence.** The moment the operator presses Accept (ORDINT-04's very first action):
+
 - ORDINT-05 (cancel with reason + auto-refund) → `InvalidOrderTransitionError`.
 - ORDINT-06 (partial refund) → `InvalidOrderTransitionError`.
 - The single most common real-world refund — "the guest complained about the dish after we
   served it", i.e. a `completed` order — is impossible.
 
-This is the founder's own skeptic brief verbatim: *"MVP omissions: returns, cook-side
-cancellations, post-order mutations."* The state machine currently encodes the assumption
+This is the founder's own skeptic brief verbatim: _"MVP omissions: returns, cook-side
+cancellations, post-order mutations."_ The state machine currently encodes the assumption
 that nothing goes wrong after acceptance. Kitchens are the opposite of that.
 
 **Recommendation.** Split fulfillment state from payment state as **Plan 01 of this phase**:
+
 - `orders.status` becomes fulfillment-only: `created → paid → accepted → ready → completed`,
   plus `canceled`. Drop `refunded` from it.
 - Payment/refund state already lives correctly in `payments.status`
@@ -112,13 +117,14 @@ that nothing goes wrong after acceptance. Kitchens are the opposite of that.
   `packages/db/src/schema/ordering.ts:167-170`). Read it there.
 - `cancel()` legal from `paid | accepted | preparing | ready`, with a mandatory reason.
 - `refund()` legal from any post-`paid` state.
-Do NOT discover this mid-phase. It is a migration + aggregate + repository + event change.
+  Do NOT discover this mid-phase. It is a migration + aggregate + repository + event change.
 
 ---
 
 ## BLOCK-3 — SSE cannot carry the tenant/brand/location headers the whole API depends on.
 
 **Evidence.**
+
 - `apps/admin/src/lib/api-client.ts:44-52` — every admin call carries `x-tenant-id`,
   `x-brand-slug`, and conditionally `x-location-id`.
 - `apps/api/src/shared/tenant-context.middleware.ts:57-122` — tenant resolves from
@@ -130,6 +136,7 @@ Do NOT discover this mid-phase. It is a migration + aggregate + repository + eve
 - Browser `EventSource` supports exactly one option: `withCredentials`. **No custom headers.**
 
 **Consequence — pick your poison:**
+
 - **(a) Move tenant/brand/location into query params.** You have just created a new forgeable
   input surface on a long-lived connection, and both scope guards must be reworked to read
   from query instead of ALS. That is precisely the class of work 08.2–08.5 spent five phases
@@ -154,6 +161,7 @@ instance. Write that trigger down.
 ## BLOCK-4 — Auto-refund on reject/cancel collides with the non-delegatable permission model.
 
 **Evidence.**
+
 - `apps/api/src/contexts/payments/interfaces/http/refunds.controller.ts:21` — `@Permissions({ billing: ['update'] })`
 - `packages/domain/src/rbac/non-delegatable.ts:6` — `billing: ['update']` is NON_DELEGATABLE;
   `containsNonDelegatable` blocks it from every custom role, enforced on create/update/assign.
@@ -163,6 +171,7 @@ instance. Write that trigger down.
 
 **Consequence.** ORDINT-03 and ORDINT-05 promise auto-refund on reject/cancel. Two outcomes,
 both bad:
+
 - Reject/cancel becomes **owner-only** → the cashier at 22:00 on Friday cannot reject an
   out-of-stock order. Product-broken.
 - Reject/cancel is wired behind `order:update-status` and internally invokes
@@ -181,6 +190,7 @@ and cannot hold `billing:update`. Do not let this be decided by whoever writes t
 # HIGH
 
 ## HIGH-1 — An SSE feed on the current NATS subscriber dies silently and never recovers.
+
 `apps/api/src/infrastructure/nats.module.ts:111-131` — connect failure at boot resolves the
 provider to `null` with a WARN; the app comes up "healthy" with no subscriber.
 `packages/events/src/infrastructure/nats-subscriber.ts:250-267` — an iterator failure (broker
@@ -195,21 +205,23 @@ NATS → subscriber → SSE connection → tab. Polling's chain: Postgres → ta
 reconnect-with-backoff and a health signal surfaced in the UI ("live / reconnecting / stale").
 
 ## HIGH-2 — Durable consumer name = queue group. With 2 API instances, half the operators see nothing.
+
 `packages/events/src/infrastructure/nats-subscriber.ts:157` + `buildConsumerConfig` line 83
 use `durable_name`. Two API replicas subscribing with the same durable name split the stream:
 an event delivered to replica A is never seen by operators holding SSE connections on
 replica B. Today prod is a single container so this is invisible — it detonates on the first
-`--scale 2` or on any rolling deploy where old and new overlap, which is *precisely* the
+`--scale 2` or on any rolling deploy where old and new overlap, which is _precisely_ the
 ORDINT-09 scenario. Fixing it means per-instance ephemeral consumers with `inactive_threshold`
 and leak cleanup: entirely absent from the five success criteria.
 
 ## HIGH-3 — The rate limit is one shared per-IP bucket of 60/min. A restaurant is one NAT.
+
 `apps/api/src/shared/security.ts:144-166` — `global:false`, a **single store**, `max` defaults
 to `RATE_LIMIT_PUBLIC_PER_MIN` = 60 (`apps/api/src/config/env.schema.ts:182`), shared across
 all routes for one IP.
 
 Every device in a restaurant shares one public IP. Three tabs polling at 5s = 36 req/min
-*before* any other admin traffic; four devices = 48; add menu edits and stop-list toggles and
+_before_ any other admin traffic; four devices = 48; add menu edits and stop-list toggles and
 the operator eats a 429 in the middle of service. SSE doesn't save you either — a reconnect
 storm after a deploy has the same shape. (The founder's own memory note about false 429s in
 the API test suite is the same root cause.)
@@ -218,6 +230,7 @@ per-tenant) for authenticated `/v1/*` routes, or exempt the feed route explicitl
 a requirement — it is currently in none of ORDINT-01..10.
 
 ## HIGH-4 — No index for the feed query; no column for ORDINT-08's channel filter.
+
 `packages/db/src/schema/ordering.ts:48-74` — the only indexes on `orders` are
 `UNIQUE (tenant_id, idempotency_key)` and `UNIQUE (id, tenant_id)`. Nothing on
 `(tenant_id, location_id, status, created_at)`, which is exactly the feed query.
@@ -231,6 +244,7 @@ a dimension that has one value produced by one app. **Cut it**, or reduce it to
 `fulfillmentMode`, which already exists and is what the kitchen actually cares about.
 
 ## HIGH-5 — The order number is unusable at a counter.
+
 `apps/api/src/contexts/ordering/application/dto.ts:79-89` — `generateOrderNumber()` returns
 `20260810-A7K2M`. Nobody calls out "order 20260810-A7K2M is ready". Restaurants use a short
 daily sequence. This string is already printed to the guest
@@ -240,12 +254,13 @@ kitchen view, and on the guest page; keep the long one as the internal reference
 plus a counter. Decide it in Phase 10 or the feed is operationally dead on arrival.
 
 ## HIGH-6 — Delivery: zero fee, no zone, no address validation, no dispatch state, phantom "on its way".
+
 `apps/api/src/contexts/ordering/domain/order.aggregate.ts:182` hard-codes `deliveryFee: '0.00'`
 and nothing ever sets it. The website checkout offers delivery and tells the guest
 "Calculated at delivery" (`apps/website/components/checkout/order-summary.tsx:58-61`) — i.e.
 the restaurant is expected to collect cash at the door for a fee RestOS never computed.
 There is no courier, no `on_its_way` state in `OrderStatus` (`order.aggregate.ts:8-18`), and
-Phase 9 is in MVP-2. Yet ORDINT-10 *and* GNOTIF-02 both promise the guest an "on its way"
+Phase 9 is in MVP-2. Yet ORDINT-10 _and_ GNOTIF-02 both promise the guest an "on its way"
 status the state machine cannot produce.
 
 SC-1's "delivery orders are accepted without polygon enforcement" is not a graceful
@@ -257,6 +272,7 @@ persisted on the order, plus one manual "handed to courier" transition. That is 
 phase, not a footnote in a success criterion.
 
 ## HIGH-7 — Nothing happens to an order nobody accepts.
+
 ORDINT-01..10 defines no behaviour for an order sitting in `paid` for 20 minutes. The guest
 has paid and — worse — the confirmation page tells them "Payment confirmed" and **stops
 polling** the moment status hits `paid` (`order-status-poller.tsx:10,75`). So the guest
@@ -268,6 +284,7 @@ that emails/SMSs the brand's operator address if an order stays `paid` past N mi
 Decide the auto-cancel-and-refund policy explicitly, even if the answer is "never, alert only".
 
 ## HIGH-8 — Nothing alerts a backgrounded tab. This is the #1 reason the feature fails in a real restaurant.
+
 The whole design assumes a human is staring at the admin tab. Real counters have that tab
 behind a POS window, or the tablet asleep. Not one of ORDINT-01..10 mentions an audible alert,
 a `document.title` badge, the Notification API, or repeat-until-acknowledged.
@@ -281,21 +298,24 @@ who is on duty.
 # MED
 
 ## MED-1 — ORDINT-10 is already shipped. Shrink it to a 20-line change.
+
 `GET /v1/orders/:id/status` exists and is `@Public()`
 (`apps/api/src/contexts/ordering/interfaces/http/orders.controller.ts:52-67`), and a working
 exponential-backoff poller already consumes it
 (`apps/website/components/checkout/order-status-poller.tsx`).
 Two real deltas:
+
 1. `TERMINAL_STATUSES` includes `'paid'` (line 10) — the poller quits the instant payment
    confirms and never shows `accepted / preparing / ready`. Fix = change one Set + copy.
 2. `eta` maps to `snapshot.scheduledFor` (`orders.controller.ts:64`) — the **pre-order
    scheduled time**, `null` for every immediate order. The guest never sees a prep-time
    estimate. A real ETA is a **new** field (per-location prep minutes, stamped at accept),
    not an existing one.
-**Recommendation:** rewrite ORDINT-10 as "extend the existing poller through fulfillment
-states + add a real prep-time ETA". Budget zero plans for building the endpoint.
+   **Recommendation:** rewrite ORDINT-10 as "extend the existing poller through fulfillment
+   states + add a real prep-time ETA". Budget zero plans for building the endpoint.
 
 ## MED-2 — ORDINT-06's backend "exists" but has never been exercised by a client or a happy-path test.
+
 Route is in `docs/api/openapi.yaml:1090`; service is `refund-order.service.ts`. But:
 no admin UI calls it (zero `refund` hits in `apps/admin/src/lib/*`), no happy-path e2e (only
 cross-tenant denial at `payments-isolation.e2e.spec.ts:122,179`), and it is broken three ways
@@ -305,6 +325,7 @@ amount math, and an item↔refund link table do not exist. Calling ORDINT-06 "al
 would be the most expensive planning error available in this phase.
 
 ## MED-3 — The refund endpoint is unreachable for an owner in "all locations" mode.
+
 `refunds.controller.ts:14-22` carries neither `@BrandNeutral` nor `@LocationNeutral`, so
 `LocationScopeGuard` throws `location.context_required`
 (`guards/location-scope.guard.ts:39-45`) **before** the owner bypass at line 65 whenever
@@ -316,6 +337,7 @@ Audit every new and touched ordering/payments controller for the `@BrandNeutral`
 `@LocationNeutral` / `@RequireBrand` triple as an explicit plan task.
 
 ## MED-4 — Event contracts can't route by location, so SSE fan-out needs a DB hit per event anyway.
+
 `packages/events/src/contracts/ordering.ts:5-73` — `OrderCreatedV1Payload` has no
 `locationId`; `OrderPaidV1Payload` and `OrderStatusChangedV1Payload` have neither `brandId`
 nor `locationId`. A kitchen at location B must not see location A's orders, so every fan-out
@@ -325,8 +347,10 @@ polling simply does not have — the list query is already location-confined by
 plus `ScopedTx`.
 
 ## MED-5 — Stripe refund failure is invisible, and the Stripe call sits inside a DB transaction.
+
 `refund-order.service.ts:60-81` — `this.db.withTenant(async (tx) => { … await this.provider.createRefund(…) … })`.
 Two problems:
+
 1. A slow or hanging Stripe call holds a Postgres transaction open. On a Friday spike during
    a Stripe incident, that is connection-pool exhaustion on a single VPS.
 2. If `createRefund` throws, the whole transaction rolls back — so the reject/cancel is undone
@@ -348,12 +372,14 @@ silent rollback; (c) add the `refund.updated`/`refund.failed` webhook branch. Tw
 criteria promise auto-refund; neither says what happens when Stripe says no.
 
 ## MED-6 — No ticket, no print path.
+
 Kitchens run on paper or a locked-open KDS. There is no print view, no `@media print`
 stylesheet, no "print on accept". Skipping thermal/ESC-POS in MVP-1 is defensible; shipping
 **no printable order view at all** is not — a print stylesheet is a few hours and it is the
 difference between "usable in a kitchen" and "demo".
 
 ## MED-7 — `GET /v1/orders/:id/status` is `@Public()` and returns `total` + `orderNumber` to anyone with the UUID.
+
 `orders.controller.ts:32,52`. v4 UUIDs make enumeration impractical, so this is acceptable
 today — but the URL travels in emails and browser history. If Phase 10 enriches this response
 to power a nicer guest page (items, customer name, delivery address, ETA), it becomes a real
@@ -385,18 +411,18 @@ ever added to it.
 
 ## The "what if we cut it" test
 
-| Req | Cut? | Reasoning |
-|---|---|---|
-| ORDINT-01 feed | **NO** | This *is* the phase. Without it paid orders go nowhere. |
-| ORDINT-02 SSE | **CUT → 5s polling** | BLOCK-3 makes it architecturally expensive; HIGH-1/HIGH-2 make it fragile. A 5s delay on a 15-minute cook time is not a product difference. Trigger to revisit: a tenant complains, or >1 API instance. |
-| ORDINT-03 accept / reject | **KEEP accept, RESHAPE reject** | Accept is essential. "Reject auto-refunds" → "reject; refund attempted; outcome shown; retryable" (MED-5) + a delegatable `order:reject` permission (BLOCK-4). |
-| ORDINT-04 transitions | **CUT `preparing`** | `paid → accepted → ready → completed` is enough. `preparing` is a button nobody presses mid-service; it exists to look like a KDS. Removing it deletes a column, a status email, and a test matrix row. Add it back when a tenant asks. |
-| ORDINT-05 cancel + refund | **KEEP** | But requires BLOCK-2 first — cancel-after-accept is *the* real case, not an edge case. |
-| ORDINT-06 item-level partial refund | **CUT → MVP-2** | Needs a schema change, per-item math, and UI, to serve an edge case. Full refund + a note covers MVP-1; the existing amount-based owner endpoint is the escape hatch. |
-| ORDINT-07 order details | **NO** | Table number, items, modifiers — the kitchen cannot cook without it. This is the highest-value item after the feed itself. |
-| ORDINT-08 filters | **CUT date + channel** | "Today's open" + "history" is enough. Channel has one value and no column (HIGH-4). Date filtering is Phase 13/14 work. |
-| ORDINT-09 SSE shutdown | **CUT** | Dies with ORDINT-02. |
-| ORDINT-10 public status | **ALREADY DONE** | Shrink to "extend poller past `paid` + add a real ETA" (MED-1). |
+| Req                                 | Cut?                            | Reasoning                                                                                                                                                                                                                               |
+| ----------------------------------- | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ORDINT-01 feed                      | **NO**                          | This _is_ the phase. Without it paid orders go nowhere.                                                                                                                                                                                 |
+| ORDINT-02 SSE                       | **CUT → 5s polling**            | BLOCK-3 makes it architecturally expensive; HIGH-1/HIGH-2 make it fragile. A 5s delay on a 15-minute cook time is not a product difference. Trigger to revisit: a tenant complains, or >1 API instance.                                 |
+| ORDINT-03 accept / reject           | **KEEP accept, RESHAPE reject** | Accept is essential. "Reject auto-refunds" → "reject; refund attempted; outcome shown; retryable" (MED-5) + a delegatable `order:reject` permission (BLOCK-4).                                                                          |
+| ORDINT-04 transitions               | **CUT `preparing`**             | `paid → accepted → ready → completed` is enough. `preparing` is a button nobody presses mid-service; it exists to look like a KDS. Removing it deletes a column, a status email, and a test matrix row. Add it back when a tenant asks. |
+| ORDINT-05 cancel + refund           | **KEEP**                        | But requires BLOCK-2 first — cancel-after-accept is _the_ real case, not an edge case.                                                                                                                                                  |
+| ORDINT-06 item-level partial refund | **CUT → MVP-2**                 | Needs a schema change, per-item math, and UI, to serve an edge case. Full refund + a note covers MVP-1; the existing amount-based owner endpoint is the escape hatch.                                                                   |
+| ORDINT-07 order details             | **NO**                          | Table number, items, modifiers — the kitchen cannot cook without it. This is the highest-value item after the feed itself.                                                                                                              |
+| ORDINT-08 filters                   | **CUT date + channel**          | "Today's open" + "history" is enough. Channel has one value and no column (HIGH-4). Date filtering is Phase 13/14 work.                                                                                                                 |
+| ORDINT-09 SSE shutdown              | **CUT**                         | Dies with ORDINT-02.                                                                                                                                                                                                                    |
+| ORDINT-10 public status             | **ALREADY DONE**                | Shrink to "extend poller past `paid` + add a real ETA" (MED-1).                                                                                                                                                                         |
 
 **Net:** as written, this is realistically 12–15 plans. With the cuts above plus the two BLOCK
 fixes, it is **5–6 plans** and a materially better product.
@@ -434,7 +460,7 @@ fixes, it is **5–6 plans** and a materially better product.
    indistinguishable from "no orders tonight". Polling self-heals; a hung stream does not,
    and detecting it requires heartbeats — more work.
 4. **That "accepted" means something to the kitchen.** In most small restaurants the ticket
-   *is* the acceptance. A two-step accept-then-prepare may be pure friction. Watch one
+   _is_ the acceptance. A two-step accept-then-prepare may be pure friction. Watch one
    service before locking ORDINT-04.
 5. **That the guest wants live status.** For pickup, "ready" matters. For dine-in it is noise.
    For delivery it is meaningless without a courier.
@@ -444,7 +470,7 @@ fixes, it is **5–6 plans** and a materially better product.
 ## Third-party dependency exposure
 
 - **Stripe refunds** (MED-5) — auto-refund is promised in two success criteria with zero
-  failure handling. Insufficient connected-account balance is the *expected* case for a new
+  failure handling. Insufficient connected-account balance is the _expected_ case for a new
   restaurant, not the exotic one.
 - **Cloudflare** — admin on Pages, API elsewhere. Proxied responses are buffered by default;
   SSE needs `text/event-stream` + `Cache-Control: no-cache` + `X-Accel-Buffering: no` and a

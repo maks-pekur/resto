@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: planning
 stopped_at: Phase 10 context gathered (persona reviews folded; pre-phase quick task pending)
-last_updated: "2026-08-12T07:42:03.301Z"
+last_updated: '2026-08-12T07:42:03.301Z'
 last_activity: 2026-08-10
 progress:
   total_phases: 27

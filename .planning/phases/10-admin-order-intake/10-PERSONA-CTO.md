@@ -18,6 +18,7 @@ Reviewed at: `admin-vite-spa` @ `a2ae4ca`, 2026-08-10. Pre-implementation-plan.
 ### BLOCK-1 — `ordering.order_refunded.v1` and `ordering.order_canceled.v1` are never emitted; order status never flips on refund/cancel
 
 **Evidence.**
+
 - `apps/api/src/contexts/payments/application/refund-order.service.ts:114` — `await this.orderRepo.save(order)` after `order.refund(...)` at line 71.
 - `apps/api/src/contexts/payments/application/cancel-order.service.ts:55` — `await this.orderRepo.save(order)` after `order.cancel(...)` at line 54.
 - `apps/api/src/contexts/ordering/infrastructure/order-drizzle.repository.ts:77-80` — `save()` is `INSERT ... onConflictDoNothing({target:[tenantId, idempotencyKey]}).returning()`, then `if (result.length === 0) return;`. For an order that already exists (always, in the refund/cancel path) this returns **before** the item inserts and **before** the `appendToOutbox` loop at line 110.
@@ -25,9 +26,10 @@ Reviewed at: `admin-vite-spa` @ `a2ae4ca`, 2026-08-10. Pre-implementation-plan.
 
 **Consequence.** After an operator refunds in full: `payments.status='refunded'` (set by `RefundOrderService` / `handleRefund`), but `orders.status` stays `'paid'`. The admin feed, the guest status endpoint (`orders.controller.ts:52`), and any future analytics all read the wrong state. `ordering.order_refunded.v1` and `ordering.order_canceled.v1` do not exist on the wire — the audit context's `ordering.>` subscriber records nothing, and the Phase 10 SSE feed would never learn about a refund or a cancel.
 
-**Why it survived.** `apps/api/src/contexts/payments/application/refund-order.service.spec.ts:190-206` asserts `orderRepo.save.mock.calls[0][0].toSnapshot().status` — the *in-memory aggregate*, through a mocked repo. `apps/api/test/e2e/payment-lifecycle.e2e.spec.ts:386-398` asserts `payments.status` / `payments.refundedAmount` and never reads `orders.status`. This is the exact mock-only/over-bound test pattern already logged from the Phase 8 live smoke.
+**Why it survived.** `apps/api/src/contexts/payments/application/refund-order.service.spec.ts:190-206` asserts `orderRepo.save.mock.calls[0][0].toSnapshot().status` — the _in-memory aggregate_, through a mocked repo. `apps/api/test/e2e/payment-lifecycle.e2e.spec.ts:386-398` asserts `payments.status` / `payments.refundedAmount` and never reads `orders.status`. This is the exact mock-only/over-bound test pattern already logged from the Phase 8 live smoke.
 
 **Recommendation (planner-actionable).**
+
 - Change `refund-order.service.ts:114` to `await this.orderRepo.update(order, tx)` — it is already inside `this.db.withTenant(async (tx) => …)` at line 60, so pass that `tx` and get the outbox append in the same transaction as the payment row update.
 - Change `cancel-order.service.ts:55` to `update()`; wrap the whole `execute` in one `db.withTenant` so cancel + refund + outbox commit atomically.
 - Add a DB-level e2e assertion: after `POST /v1/orders/:id/refund`, `SELECT status FROM orders` = `refunded` (full) / `paid` (partial), and an `outbox_events` row with `type='ordering.order_refunded.v1'` exists. Make this a Wave-1 gate — everything else in the phase reads from it.
@@ -37,6 +39,7 @@ Reviewed at: `admin-vite-spa` @ `a2ae4ca`, 2026-08-10. Pre-implementation-plan.
 ### BLOCK-2 — `EventSource` cannot carry the headers this API uses to resolve tenant, brand, and location
 
 **Evidence.**
+
 - `apps/api/src/shared/tenant-context.middleware.ts:12-15` — tenant/brand/location come from `x-tenant-id`, `x-brand-slug`, `x-location-id`. For the admin SPA there is **no host-based path**: `resolveByCustomerHost` (line 62) matches brand hosts, not `api.<domain>`.
 - `apps/admin/src/lib/api-client.ts:44-52` is the only place those headers are set — via `fetch`.
 - The WHATWG `EventSource` constructor accepts only `{ withCredentials }`. No headers.
@@ -45,11 +48,11 @@ Reviewed at: `admin-vite-spa` @ `a2ae4ca`, 2026-08-10. Pre-implementation-plan.
 
 **The three real options — pick one in CONTEXT:**
 
-| Option | Cost | Risk |
-|---|---|---|
-| (a) `fetch`-based SSE reader (`@microsoft/fetch-event-source` or ~80 LOC) | keeps headers; **loses browser-native auto-reconnect**, so ORDINT-09's `retry:` semantics must be hand-rolled | new dep or new hand-rolled reconnect/backoff/`Last-Event-ID` code |
-| (b) Move the tuple into the URL: `GET /v1/brands/:brandSlug/orders/stream?location=<id>` + a route-scoped resolver | native `EventSource` works, `retry:` free | requires touching `TenantContextMiddleware` or adding a parallel resolution path — **requires a security pass**; brand slug in access logs (acceptable, not secret) |
-| (c) No SSE — poll | zero new transport surface | 3-5s latency instead of ~500ms |
+| Option                                                                                                             | Cost                                                                                                          | Risk                                                                                                                                                                |
+| ------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| (a) `fetch`-based SSE reader (`@microsoft/fetch-event-source` or ~80 LOC)                                          | keeps headers; **loses browser-native auto-reconnect**, so ORDINT-09's `retry:` semantics must be hand-rolled | new dep or new hand-rolled reconnect/backoff/`Last-Event-ID` code                                                                                                   |
+| (b) Move the tuple into the URL: `GET /v1/brands/:brandSlug/orders/stream?location=<id>` + a route-scoped resolver | native `EventSource` works, `retry:` free                                                                     | requires touching `TenantContextMiddleware` or adding a parallel resolution path — **requires a security pass**; brand slug in access logs (acceptable, not secret) |
+| (c) No SSE — poll                                                                                                  | zero new transport surface                                                                                    | 3-5s latency instead of ~500ms                                                                                                                                      |
 
 **Recommendation.** (c) as the shipped mechanism, (b) as the later enhancement if the founder still wants it. If SSE is non-negotiable, take (b) and budget a `/gsd-secure-phase` pass on the resolution change — do **not** take (a) casually, because hand-rolled reconnect is precisely what ORDINT-09 is asking the browser to do for you.
 
@@ -64,15 +67,17 @@ Every authz decision in this codebase is per-request:
 - `BrandScopeGuard` reconciles the session brand pin (08.2 D-10).
 
 **Named breakages if implemented naively:**
+
 1. Owner revokes a member's `member_location_scope` row, or archives the location → the member's open stream keeps receiving that location's orders indefinitely.
 2. `SetActiveBrandService` re-pins a non-owner to brand B → their stream opened against brand A keeps flowing.
 3. Session revoked (`revoke-user-sessions`), password reset, member removed → stream survives.
 4. Tenant suspended/archived → `AuthGuard`'s archived-tenant 403 never re-runs for that connection.
-5. `runInTenantContext` binds ALS around `next()` only (`tenant-context.middleware.ts:51-54`). Any `requireTenantContext()` / `getTenantContext()` called later from the fan-out callback either throws or — if the callback is shared across connections — reads *another request's* frame. This is the cross-tenant-leak footgun.
+5. `runInTenantContext` binds ALS around `next()` only (`tenant-context.middleware.ts:51-54`). Any `requireTenantContext()` / `getTenantContext()` called later from the fan-out callback either throws or — if the callback is shared across connections — reads _another request's_ frame. This is the cross-tenant-leak footgun.
 
 **RLS gives you zero protection here.** `orders_location_iso` (`packages/db/migrations/0071_orders_location_rls.sql:19-22`) and `orders_brand_iso` (`0060_brand_rls_restrictive.sql`) are both pass-through when the GUC is NULL, and `TenantAwareDb.withTenantId` (`packages/db/src/client.ts:298-316`) — the mandatory API for non-HTTP paths per ADR-0020 I-6 — **never binds brand or location at all**. A NATS-driven fan-out running under `withTenantId` sees every brand and every location of the tenant.
 
 **Required enforcement mechanism (must be in the plan, not left to the implementer):**
+
 - Capture `(tenantId, brandId, locationId|null, userId, sessionToken)` into a **plain frozen object** at connect time. Never call `getTenantContext()` inside the fan-out callback.
 - Match predicate at fan-out is exact `===` on all three scope fields. **`brandId === undefined` must never mean "all brands."** Owner "all locations" mode must be an explicit `locationIds: string[]` allowlist resolved at connect time, not a null-means-everything sentinel.
 - Hard max connection lifetime (suggest 10 min) → server closes with `retry:` → client reconnects through the full guard chain. This bounds every revocation scenario above to a 10-minute window; document that as the SLA.
@@ -89,6 +94,7 @@ Every authz decision in this codebase is per-request:
 Precedent exists and should be copied: `apps/api/src/contexts/audit/infrastructure/nats-audit-subscriber.ts:25-26` already runs durable `audit-recorder-ordering` on `ordering.>`, and `nats-guest-notification.subscriber.ts` shows the bootstrap/shutdown shape.
 
 **Two traps specific to this codebase:**
+
 - **Do NOT use `runDeduped` on the SSE consumer.** `runDeduped` is at-most-once keyed by `(envelope.id, consumer)`; the feed is a projection where duplicates are harmless and the client dedups via `Last-Event-ID`. Using it adds a DB write per event and a failure mode where a crashed fan-out permanently swallows an event.
 - **Use a distinct `durableName`** (e.g. `sse-order-feed`). Sharing `audit-recorder-ordering` would split delivery between the two consumers.
 
@@ -98,7 +104,7 @@ Precedent exists and should be copied: `apps/api/src/contexts/audit/infrastructu
 
 Given single VPS + Docker Compose + solo founder, LISTEN/NOTIFY removes: (a) NATS from the critical latency path (outbox tick is 250 ms — `packages/events/src/outbox/dispatcher.ts:6` — plus JetStream publish + consume), and (b) the `NATS_DISABLED` blind spot below. It costs one dedicated connection and gives no replay.
 
-**But** the deciding factor is HIGH-4: if you want the feed to survive a container restart without losing orders, the right primitive is neither NATS nor NOTIFY — it's a **Postgres watermark replay** (`Last-Event-ID` = `orders.updated_at`/id, on reconnect `SELECT … WHERE updated_at > watermark`). That is ~30 LOC, works with polling *and* SSE, and makes the broker an optimization rather than a correctness dependency.
+**But** the deciding factor is HIGH-4: if you want the feed to survive a container restart without losing orders, the right primitive is neither NATS nor NOTIFY — it's a **Postgres watermark replay** (`Last-Event-ID` = `orders.updated_at`/id, on reconnect `SELECT … WHERE updated_at > watermark`). That is ~30 LOC, works with polling _and_ SSE, and makes the broker an optimization rather than a correctness dependency.
 
 **Recommendation.** Record in CONTEXT: NATS in-process fan-out chosen for MVP because the subscriber infrastructure already exists; correctness is guaranteed by the Postgres watermark replay on (re)connect, not by broker delivery. LISTEN/NOTIFY rejected as a third mechanism for one feature.
 
@@ -114,13 +120,14 @@ Given single VPS + Docker Compose + solo founder, LISTEN/NOTIFY removes: (a) NAT
 
 **What actually happens on SIGTERM.** `app.enableShutdownHooks()` (`apps/api/src/main.ts:116`) → Nest `close()` runs in this order: `onModuleDestroy` → `beforeApplicationShutdown` → **`httpAdapter.close()`** → `onApplicationShutdown`. `fastify.close()` stops accepting connections and **waits for open ones**. An SSE response never ends. So a naive implementation hangs `app.close()` until Docker's stop grace period expires and the container is SIGKILLed.
 
-**Cascade:** `NatsShutdownHook.onApplicationShutdown` (`nats.module.ts:54`) runs *after* `dispose()` and therefore never runs — NATS is never drained. `OutboxDispatcherService.onModuleDestroy` (`outbox-dispatcher.service.ts:80`) does run first (good: `dispatcher.stop()` + `pg_advisory_unlock`), but any in-flight order mutation gets SIGKILLed mid-transaction.
+**Cascade:** `NatsShutdownHook.onApplicationShutdown` (`nats.module.ts:54`) runs _after_ `dispose()` and therefore never runs — NATS is never drained. `OutboxDispatcherService.onModuleDestroy` (`outbox-dispatcher.service.ts:80`) does run first (good: `dispatcher.stop()` + `pg_advisory_unlock`), but any in-flight order mutation gets SIGKILLed mid-transaction.
 
 **Also note:** `apps/api/src/bootstrap-telemetry.ts:66` installs a second, independent `process.on('SIGTERM')` that calls `sdk.shutdown()` without coordinating with Nest's handler. Survivable, but it means the OTel exporter can go down while the drain is still emitting spans — you will lose the traces of the exact shutdown you are debugging.
 
-**"Rolling deploy" is not available in the target topology.** Single VPS + `docker compose up -d` = container recreate = a hard downtime window. So ORDINT-09's honest guarantee is *"clients reconnect cleanly after a restart and lose no orders,"* not *"zero-downtime rollout."*
+**"Rolling deploy" is not available in the target topology.** Single VPS + `docker compose up -d` = container recreate = a hard downtime window. So ORDINT-09's honest guarantee is _"clients reconnect cleanly after a restart and lose no orders,"_ not _"zero-downtime rollout."_
 
 **Recommendation (concrete):**
+
 1. Maintain a `Set<{res, scope}>` registry of open streams.
 2. Terminate them in **`beforeApplicationShutdown`** (NOT `onApplicationShutdown`): write `retry: <2000-5000>ms` + a terminal `event: shutdown` frame with the current watermark, `res.end()`, then `socket.destroy()` after ~1 s grace, then return.
 3. Client reconnect **must be jittered** (`retry` + `random(0, 3000)`); otherwise N tablets reconnect inside the same 100 ms window and hit the rate limiter (see HIGH-5).
@@ -140,6 +147,7 @@ Given single VPS + Docker Compose + solo founder, LISTEN/NOTIFY removes: (a) NAT
 If `api.<domain>` is orange-clouded (the 07.5 target: "Cloudflare in front (DNS / TLS / CDN)"), SSE crosses the CF proxy. Two documented failure modes: a 100-second origin-idle timeout producing 524, and buffering of `text/event-stream` responses in some configurations until a size threshold accumulates.
 
 **Recommendation (all four, non-optional):**
+
 - Heartbeat comment frame (`:ping\n\n`) every ≤ 20 s — this alone defeats the 524.
 - `Cache-Control: no-cache, no-transform` and `X-Accel-Buffering: no` on the stream response.
 - Verify no `Content-Encoding` is applied. `@fastify/compress` is **not** registered today (`shared/security.ts` registers helmet, cors, rate-limit only) — record that as a load-bearing invariant so a future "let's gzip the API" PR doesn't silently break the feed.
@@ -153,9 +161,10 @@ If `api.<domain>` is orange-clouded (the 07.5 target: "Cloudflare in front (DNS 
 
 **ORDINT-05 needs cancel from `accepted|preparing|ready`.** Operationally mandatory (item ran out mid-prep, kitchen dropped it).
 
-**The invariant this risks — name it explicitly.** `CancelOrderService` decides whether to refund with `const wasPaid = snap.status === 'paid'` (`cancel-order.service.ts:33`). Widen `cancel()` to accept `accepted|preparing|ready` **without** changing that line and cancelling an accepted order silently does **not** refund the guest. The predicate must become *"a succeeded payment row exists with `refundedAmount < amount`"* — read from `PaymentRepository`, not from the order's status.
+**The invariant this risks — name it explicitly.** `CancelOrderService` decides whether to refund with `const wasPaid = snap.status === 'paid'` (`cancel-order.service.ts:33`). Widen `cancel()` to accept `accepted|preparing|ready` **without** changing that line and cancelling an accepted order silently does **not** refund the guest. The predicate must become _"a succeeded payment row exists with `refundedAmount < amount`"_ — read from `PaymentRepository`, not from the order's status.
 
 **Recommendation.**
+
 - Add a `rejected` status. That requires moving three things together or you get an unmapped 500: the `orders_status_chk` CHECK constraint (`packages/db/src/schema/ordering.ts:66-69`) via migration, the `ALLOWED_STATUSES` set (`order-drizzle.repository.ts:25-36`), and `OrderStatus` (`order.aggregate.ts:8-18`). `parseStatus` (`:38-41`) throws a bare `Error` that `mapOrderError` does not map → 500 on read.
 - Widen `cancel()` to `created|paid|accepted|preparing|ready`; keep it closed for `completed|refunded|canceled|failed|rejected`.
 - Rewrite the refund predicate in `CancelOrderService` as above, with a unit test for "cancel an `accepted` paid order → refund issued."
@@ -177,7 +186,7 @@ If `api.<domain>` is orange-clouded (the 07.5 target: "Cloudflare in front (DNS 
 
 **Why it bites now.** Per-location roles assigned via `AssignLocationRoleService` are stored in `member_location_scope.role` (08.4-07 decision), which `PermissionsGuard` never reads. So a member set to `kitchen` at location A actually gets whatever their **tenant-wide BA member role** grants. Two bad outcomes, both live in Phase 10: BA role `admin` → over-privileged (full `order:update-status` everywhere, plus menu CRUD); BA role `staff` → **no `order` permissions at all** → the feed 403s for exactly the people who need it.
 
-**Recommendation.** Phase 10 must either (a) wire `LocationPermissionChecker` — which needs `PermissionsGuard` to thread `req.activeLocationId` into `hasPermission`'s 4th param (`location-permission-checker.ts:28`), a small change with a large blast radius that deserves its own plan + isolation e2e — or (b) explicitly re-defer with the consequence written down: *"per-location roles do not govern order permissions in MVP-1; the tenant-wide base role does."* Silence is the one unacceptable outcome.
+**Recommendation.** Phase 10 must either (a) wire `LocationPermissionChecker` — which needs `PermissionsGuard` to thread `req.activeLocationId` into `hasPermission`'s 4th param (`location-permission-checker.ts:28`), a small change with a large blast radius that deserves its own plan + isolation e2e — or (b) explicitly re-defer with the consequence written down: _"per-location roles do not govern order permissions in MVP-1; the tenant-wide base role does."_ Silence is the one unacceptable outcome.
 
 ### HIGH-10 — `ordering.*` event payloads lack the fields the feed needs to route and render
 
@@ -222,17 +231,18 @@ Separately: **ORDINT-08's "channel (qr-menu vs site)" has no data source.** `ord
 - `order.aggregate.ts:334-335` — partial refund correctly leaves status `paid`, but the aggregate holds no refunded-to-date; `alreadyRefundedMinor` is passed in from the payments row each time. The order-detail view cannot render "€12 of €40 refunded" without joining `payments`/`refunds`.
 - `order-drizzle.repository.ts:220` sets `categoryId: ''` on reload — item provenance is partially lost the moment the order is re-read.
 
-**Recommendation.** Scope ORDINT-06 to: *operator selects items in the UI, the UI computes `amountMinor`, the API contract stays `{amountMinor, reason}`*. Optionally persist the selected `order_item_id[]` on the refund row for later reporting. Building a genuine item-level refund aggregate is a week you don't have and no customer has asked for.
+**Recommendation.** Scope ORDINT-06 to: _operator selects items in the UI, the UI computes `amountMinor`, the API contract stays `{amountMinor, reason}`_. Optionally persist the selected `order_item_id[]` on the refund row for later reporting. Building a genuine item-level refund aggregate is a week you don't have and no customer has asked for.
 
 ### MED-5 — No status-transition timestamps, no persisted cancel reason
 
-`OrderStatusChangedV1` goes to the outbox and `record-audit.service.ts:32-36` records it, but there is no queryable per-order timeline and no `accepted_at` / `ready_at` columns. ORDINT-01's "new orders visually flagged" needs *something* to define "new," and any time-to-accept metric needs `accepted_at`. Likewise the cancel reason exists only inside the `OrderCanceledV1` payload (`order.aggregate.ts:312-318`) — ORDINT-05 mandates a reason, and the operator will expect to see it on the order tomorrow.
+`OrderStatusChangedV1` goes to the outbox and `record-audit.service.ts:32-36` records it, but there is no queryable per-order timeline and no `accepted_at` / `ready_at` columns. ORDINT-01's "new orders visually flagged" needs _something_ to define "new," and any time-to-accept metric needs `accepted_at`. Likewise the cancel reason exists only inside the `OrderCanceledV1` payload (`order.aggregate.ts:312-318`) — ORDINT-05 mandates a reason, and the operator will expect to see it on the order tomorrow.
 
 **Recommendation.** One migration, four nullable columns: `accepted_at`, `ready_at`, `cancel_reason text`, `canceled_by uuid`. Trivial now, a backfill archaeology project in a year.
 
 ### MED-6 — SSE observability: you cannot currently distinguish "feed is broken" from "quiet Friday"
 
 No metric exists for the failure mode that will actually happen. Add, alongside the existing OTel meters:
+
 - `sse.connections` — up-down counter, labeled `tenant.id` (matches the existing `tenant.id` labeling convention in `outbox-dispatcher.service.ts` and `http-metrics.interceptor.ts`).
 - `sse.lag_ms` — histogram, `envelope.occurredAt` → socket write. **This is the load-bearing one.** Without it a silently-dead subscriber looks identical to a slow night.
 - `sse.events_dropped` — counter for slow-consumer backpressure.
