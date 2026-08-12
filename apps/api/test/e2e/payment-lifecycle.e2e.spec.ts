@@ -2,12 +2,14 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { schema } from '@resto/db';
-import { BrandId, TenantId } from '@resto/domain';
+import { BrandId, OrderId, TenantId } from '@resto/domain';
 import { runInTenantContext } from '@resto/db';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
 import { PaymentDrizzleRepository } from '../../src/contexts/payments/infrastructure/payment-drizzle.repository';
 import { CreateCheckoutPaymentService } from '../../src/contexts/payments/application/create-checkout-payment.service';
 import { HandleStripeEventService } from '../../src/contexts/payments/application/handle-stripe-event.service';
+import { CancelOrderService } from '../../src/contexts/payments/application/cancel-order.service';
+import { RefundOrderService } from '../../src/contexts/payments/application/refund-order.service';
 import { isDockerAvailable, startDbStack, stopDbStack } from './helpers/with-db-stack';
 import type { DbStack } from './helpers/with-db-stack';
 import type { BrandRepository } from '../../src/contexts/tenancy/domain/ports';
@@ -28,6 +30,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
   let tenantId: string;
   let brandId: string;
   let orderId: string;
+  let locationId: string;
 
   beforeAll(async () => {
     stack = await startDbStack();
@@ -60,6 +63,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         .values({ tenantId, brandId, name: 'Lifecycle Test Location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed lifecycle e2e: location insert failed.');
+      locationId = location.id;
 
       await tx.insert(schema.orders).values({
         id: orderId,
@@ -80,6 +84,63 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
   afterAll(async () => {
     if (stack) await stopDbStack(stack);
   });
+
+  const seedOrder = async (status: string, total = '15.00'): Promise<string> => {
+    const newOrderId = randomUUID();
+    await stack.db.withoutTenant('seed order for status persistence e2e', async (tx) => {
+      await tx.insert(schema.orders).values({
+        id: newOrderId,
+        tenantId,
+        brandId,
+        locationId,
+        idempotencyKey: randomUUID(),
+        orderNumber: `ORD-PERSIST-${newOrderId.slice(0, 8)}`,
+        status,
+        fulfillmentMode: 'dine_in',
+        subtotal: total,
+        total,
+        currency: 'EUR',
+      });
+    });
+    return newOrderId;
+  };
+
+  const seedPayment = async (seededOrderId: string, amount = '15.00'): Promise<void> => {
+    await stack.db.withoutTenant('seed payment for status persistence e2e', async (tx) => {
+      await tx.insert(schema.payments).values({
+        tenantId,
+        orderId: seededOrderId,
+        status: 'succeeded',
+        amount,
+        currency: 'EUR',
+        paymentIntentId: `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`,
+        latestChargeId: `ch_${randomUUID().replace(/-/g, '').slice(0, 16)}`,
+        refundedAmount: '0.00',
+        stripeAccountId: STRIPE_ACCOUNT_ID,
+        applicationFeeAmount: '0.00',
+      });
+    });
+  };
+
+  const readOrderStatus = async (seededOrderId: string): Promise<string | undefined> => {
+    const [row] = await stack.db.withoutTenant('read order status', async (tx) =>
+      tx
+        .select({ status: schema.orders.status })
+        .from(schema.orders)
+        .where(sql`${schema.orders.id} = ${seededOrderId}`),
+    );
+    return row?.status;
+  };
+
+  const readOutboxTypes = async (seededOrderId: string): Promise<string[]> => {
+    const rows = await stack.db.withoutTenant('read outbox types', async (tx) =>
+      tx
+        .select({ type: schema.outboxEvents.type })
+        .from(schema.outboxEvents)
+        .where(sql`${schema.outboxEvents.aggregateId} = ${seededOrderId}`),
+    );
+    return rows.map((row) => row.type);
+  };
 
   it('step 2: checkout service transitions order to requires_action and writes payment row', async () => {
     const orderRepo = new OrderDrizzleRepository(stack.db);
@@ -396,5 +457,121 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     expect(paymentRow?.status).toBe('refunded');
     expect(paymentRow?.refundedAmount).toBe('15.00');
+  });
+
+  it('operator cancel of an unpaid order persists status=canceled and emits ordering.order_canceled.v1', async () => {
+    const seededOrderId = await seedOrder('created');
+    const orderRepo = new OrderDrizzleRepository(stack.db);
+    const paymentRepo = new PaymentDrizzleRepository(stack.db);
+
+    const providerMock: PaymentProviderPort = {
+      ensureOnboardingAccount: vi.fn(),
+      createOnboardingLink: vi.fn(),
+      createOnboardingSession: vi.fn(),
+      exchangeOAuthCode: vi.fn(),
+      retrieveAccount: vi.fn(),
+      createPaymentIntent: vi.fn(),
+      cancelPaymentIntent: vi.fn(),
+      createRefund: vi
+        .fn()
+        .mockResolvedValue({ stripeRefundId: `re_${randomUUID()}`, status: 'succeeded' }),
+      verifyWebhookSignature: vi.fn(),
+    };
+
+    const refundService = new RefundOrderService(orderRepo, paymentRepo, providerMock, stack.db);
+    const cancelService = new CancelOrderService(orderRepo, refundService);
+
+    await runInTenantContext({ tenantId }, () =>
+      cancelService.execute({
+        orderId: OrderId.parse(seededOrderId),
+        tenantId: TenantId.parse(tenantId),
+        reason: 'guest changed mind',
+      }),
+    );
+
+    expect(await readOrderStatus(seededOrderId)).toBe('canceled');
+    expect(await readOutboxTypes(seededOrderId)).toContain('ordering.order_canceled.v1');
+    expect(providerMock.createRefund).not.toHaveBeenCalled();
+  });
+
+  it('operator full refund of a paid order persists status=refunded and emits ordering.order_refunded.v1', async () => {
+    const seededOrderId = await seedOrder('paid');
+    await seedPayment(seededOrderId);
+    const orderRepo = new OrderDrizzleRepository(stack.db);
+    const paymentRepo = new PaymentDrizzleRepository(stack.db);
+
+    const providerMock: PaymentProviderPort = {
+      ensureOnboardingAccount: vi.fn(),
+      createOnboardingLink: vi.fn(),
+      createOnboardingSession: vi.fn(),
+      exchangeOAuthCode: vi.fn(),
+      retrieveAccount: vi.fn(),
+      createPaymentIntent: vi.fn(),
+      cancelPaymentIntent: vi.fn(),
+      createRefund: vi
+        .fn()
+        .mockResolvedValue({ stripeRefundId: `re_${randomUUID()}`, status: 'succeeded' }),
+      verifyWebhookSignature: vi.fn(),
+    };
+
+    const refundService = new RefundOrderService(orderRepo, paymentRepo, providerMock, stack.db);
+
+    await runInTenantContext({ tenantId }, () =>
+      refundService.execute({
+        orderId: OrderId.parse(seededOrderId),
+        tenantId: TenantId.parse(tenantId),
+        reason: 'full refund requested',
+      }),
+    );
+
+    expect(await readOrderStatus(seededOrderId)).toBe('refunded');
+    const outboxTypes = await readOutboxTypes(seededOrderId);
+    expect(outboxTypes).toContain('ordering.order_refunded.v1');
+    expect(outboxTypes).toContain('payments.order_refunded.v1');
+
+    const [paymentRow] = await stack.db.withoutTenant('verify payment refunded', async (tx) =>
+      tx
+        .select({ status: schema.payments.status })
+        .from(schema.payments)
+        .where(sql`${schema.payments.orderId} = ${seededOrderId}`),
+    );
+    expect(paymentRow?.status).toBe('refunded');
+  });
+
+  it('operator cancel of a paid order persists the auto-refund transition (row no longer stuck at paid)', async () => {
+    const seededOrderId = await seedOrder('paid');
+    await seedPayment(seededOrderId);
+    const orderRepo = new OrderDrizzleRepository(stack.db);
+    const paymentRepo = new PaymentDrizzleRepository(stack.db);
+
+    const providerMock: PaymentProviderPort = {
+      ensureOnboardingAccount: vi.fn(),
+      createOnboardingLink: vi.fn(),
+      createOnboardingSession: vi.fn(),
+      exchangeOAuthCode: vi.fn(),
+      retrieveAccount: vi.fn(),
+      createPaymentIntent: vi.fn(),
+      cancelPaymentIntent: vi.fn(),
+      createRefund: vi
+        .fn()
+        .mockResolvedValue({ stripeRefundId: `re_${randomUUID()}`, status: 'succeeded' }),
+      verifyWebhookSignature: vi.fn(),
+    };
+
+    const refundService = new RefundOrderService(orderRepo, paymentRepo, providerMock, stack.db);
+    const cancelService = new CancelOrderService(orderRepo, refundService);
+
+    await runInTenantContext({ tenantId }, () =>
+      cancelService.execute({
+        orderId: OrderId.parse(seededOrderId),
+        tenantId: TenantId.parse(tenantId),
+        reason: 'operator canceled paid order',
+      }),
+    );
+
+    const status = await readOrderStatus(seededOrderId);
+    expect(status).toBe('refunded');
+    expect(status).not.toBe('paid');
+    expect(await readOutboxTypes(seededOrderId)).toContain('ordering.order_refunded.v1');
   });
 });
