@@ -133,8 +133,9 @@ describe('CancelOrderService', () => {
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
     await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'changed mind' });
     expect(provider.createRefund).not.toHaveBeenCalled();
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('canceled');
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('cancel of paid order — auto-refunds full remaining captured amount once', async () => {
@@ -157,6 +158,7 @@ describe('CancelOrderService', () => {
       refundedAmount: string;
     };
     expect(refundInput).toBeDefined();
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('cancel of paid order with partial prior refund — refunds remaining only', async () => {
@@ -169,5 +171,6 @@ describe('CancelOrderService', () => {
     expect(provider.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({ amountMinor: 1500 }),
     );
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 });
