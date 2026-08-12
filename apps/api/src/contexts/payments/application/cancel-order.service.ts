@@ -52,7 +52,7 @@ export class CancelOrderService {
     const currentStatus = order.toSnapshot().status;
     if (currentStatus === 'paid' || currentStatus === 'created') {
       order.cancel(cancelReason);
-      await this.orderRepo.save(order);
+      await this.orderRepo.update(order);
     }
   }
 }

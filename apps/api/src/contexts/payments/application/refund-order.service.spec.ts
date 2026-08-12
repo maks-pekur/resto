@@ -187,8 +187,10 @@ describe('RefundOrderService', () => {
       }),
       expect.anything(),
     );
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('paid');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('full refund transitions order to refunded', async () => {
@@ -202,8 +204,10 @@ describe('RefundOrderService', () => {
       reason: 'full refund',
     });
 
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('refunded');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('BUG-6 (a): full refund flips payment status to refunded (not left as succeeded)', async () => {
@@ -253,8 +257,10 @@ describe('RefundOrderService', () => {
       reason: 'remaining refund',
     });
 
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('refunded');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('over-refund throws RefundExceedsCapturedError', async () => {
@@ -286,7 +292,7 @@ describe('RefundOrderService', () => {
 
     const key1 = provider.createRefund.mock.calls[0]?.[0].refundRequestId as string;
 
-    orderRepo.save.mockClear();
+    orderRepo.update.mockClear();
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
 

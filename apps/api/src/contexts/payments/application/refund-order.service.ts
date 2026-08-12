@@ -111,7 +111,7 @@ export class RefundOrderService {
         tx,
       );
 
-      await this.orderRepo.save(order);
+      await this.orderRepo.update(order, tx);
 
       const snap = order.toSnapshot();
       const fullyRefunded = snap.status === 'refunded';
