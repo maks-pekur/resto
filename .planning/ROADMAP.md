@@ -655,8 +655,8 @@ Plans:
 
 **Wave 1**
 
-- [ ] 10-01-PLAN.md — Order schema migration: new order columns, per-location daily-counter table, feed index, GDPR erase (wave 1)
-- [ ] 10-02-PLAN.md — RBAC: `order:cancel` verb, preset re-sync for existing tenants, D-07 third re-defer (wave 1)
+- [x] 10-01-PLAN.md — Order schema migration: new order columns, per-location daily-counter table, feed index, GDPR erase (wave 1)
+- [x] 10-02-PLAN.md — RBAC: `order:cancel` verb, preset re-sync for existing tenants, D-07 third re-defer (wave 1)
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
@@ -905,7 +905,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 0/?            | Not started   | -          |
+| 10. Admin Order Intake                        | 2/13 | In Progress|  |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
