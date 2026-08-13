@@ -11,7 +11,7 @@ describe('loadEnv', () => {
   it('parses a minimal valid environment', () => {
     const env = loadEnv(baseEnv);
     expect(env.NODE_ENV).toBe('development');
-    expect(env.API_PORT).toBe(3000);
+    expect(env.API_PORT).toBe(5001);
     expect(env.NATS_STREAM).toBe('RESTO_EVENTS');
   });
 

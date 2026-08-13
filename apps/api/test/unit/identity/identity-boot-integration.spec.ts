@@ -33,6 +33,8 @@ const buildProdEnv = (overrides: Partial<Env> = {}): Env =>
     RESEND_API_KEY: 're_real_production_key_xyz',
     STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
     STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
+    STRIPE_CONNECT_RETURN_URL: 'https://admin.resto.app/stripe/return',
+    STRIPE_CONNECT_REFRESH_URL: 'https://admin.resto.app/stripe/refresh',
     RESEND_FROM: 'RestOS <noreply@resto.app>',
     RESEND_REPLY_TO: 'support@resto.app',
     MAILHOG_HOST: 'localhost',
