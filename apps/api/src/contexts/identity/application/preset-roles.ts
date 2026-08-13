@@ -12,7 +12,9 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     nameRu: 'Менеджер',
     permission: {
       menu: ['read', 'create', 'update', 'delete'],
-      order: ['read', 'update-status'],
+      // D-06 (Phase 10): reject/cancel is a status transition, not a
+      // financial grant — every preset gets it, billing stays owner-only.
+      order: ['read', 'update-status', 'cancel'],
       staff: ['invite'],
       reports: ['read'],
       brand: ['read', 'update'],
@@ -24,7 +26,9 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     nameEn: 'Cashier-FoH',
     nameRu: 'Кассир-зал',
     permission: {
-      order: ['read', 'update-status'],
+      // D-06 (Phase 10): reject/cancel is a status transition, not a
+      // financial grant — every preset gets it, billing stays owner-only.
+      order: ['read', 'update-status', 'cancel'],
       menu: ['read'],
       brand: ['read'],
     },
@@ -34,7 +38,9 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     nameEn: 'Kitchen',
     nameRu: 'Кухня',
     permission: {
-      order: ['read', 'update-status'],
+      // D-06 (Phase 10): reject/cancel is a status transition, not a
+      // financial grant — every preset gets it, billing stays owner-only.
+      order: ['read', 'update-status', 'cancel'],
       brand: ['read'],
     },
   },

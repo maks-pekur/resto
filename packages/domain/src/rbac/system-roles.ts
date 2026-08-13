@@ -3,7 +3,9 @@ import type { Permission } from './permissions';
 export const SYSTEM_ROLES = {
   owner: {
     menu: ['read', 'create', 'update', 'delete'],
-    order: ['read', 'update-status'],
+    // D-06 (Phase 10): reject/cancel is a status transition, not a
+    // financial grant — owner keeps it alongside admin and all presets.
+    order: ['read', 'update-status', 'cancel'],
     staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
     reports: ['read'],
     settings: ['update'],
@@ -17,7 +19,8 @@ export const SYSTEM_ROLES = {
   },
   admin: {
     menu: ['read', 'create', 'update', 'delete'],
-    order: ['read', 'update-status'],
+    // D-06 (Phase 10): same rationale as owner.order above.
+    order: ['read', 'update-status', 'cancel'],
     staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
     reports: ['read'],
     settings: ['update'],
