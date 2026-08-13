@@ -216,6 +216,10 @@ None — no external service configuration required. The migration was applied d
 - Plans 10-02/10-03/10-05 (aggregate/application/controller/RBAC/event-contract work) can proceed against this schema without further DB changes.
 - No blockers.
 
+## Self-Check: PASSED
+
+All 6 files verified present on disk; all 4 commit hashes (`dc54277`, `e5db7dc`, `a16eaac`, `cb07292`) verified in `git log --oneline --all`.
+
 ---
 
 _Plan: 10-admin-order-intake/01_
