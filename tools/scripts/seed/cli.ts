@@ -4,6 +4,7 @@ import { runBootstrapOwner } from './commands/bootstrap-owner';
 import { runProvisionTenant } from './commands/provision-tenant';
 import { runSeedDemo } from './commands/seed-demo';
 import { runSeedMenu } from './commands/seed-menu';
+import { runSyncPresetRoles } from './commands/sync-preset-roles';
 import { logError } from './lib/logger';
 import { resolveRuntimeOptions } from './lib/options';
 import { PasswordFlagDisallowedError, PasswordStdinTtyError } from './lib/password';
@@ -23,6 +24,11 @@ Commands:
   seed-demo          Idempotently seeds the "demo" tenant fixture:
                      2 brands, 4 locations, 2 staff roles, 2 categories +
                      4 items per brand. Dev only (NODE_ENV=development).
+  sync-preset-roles  Re-syncs PRESET_ROLES permission JSON onto existing
+                     tenants' organization_role rows (a preset edit does
+                     not otherwise reach an already-provisioned tenant).
+                     --tenant <organizationId> | --all
+                     Idempotent; skips roles the owner archived.
 
 Global flags:
   --dry-run          Print intended changes without writing.
@@ -61,6 +67,9 @@ const main = async (): Promise<void> => {
       return;
     case 'seed-demo':
       await runSeedDemo(rest, options);
+      return;
+    case 'sync-preset-roles':
+      await runSyncPresetRoles(rest, options);
       return;
     default:
       throw new Error(`Unknown command "${command ?? ''}". Run with --help for usage.`);

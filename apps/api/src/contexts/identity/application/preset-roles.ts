@@ -1,47 +1,7 @@
-export interface PresetRoleDefinition {
-  readonly slug: string;
-  readonly nameEn: string;
-  readonly nameRu: string;
-  readonly permission: Record<string, string[]>;
-}
-
-export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
-  {
-    slug: 'manager',
-    nameEn: 'Manager',
-    nameRu: 'Менеджер',
-    permission: {
-      menu: ['read', 'create', 'update', 'delete'],
-      // D-06 (Phase 10): reject/cancel is a status transition, not a
-      // financial grant — every preset gets it, billing stays owner-only.
-      order: ['read', 'update-status', 'cancel'],
-      staff: ['invite'],
-      reports: ['read'],
-      brand: ['read', 'update'],
-      settings: ['update'],
-    },
-  },
-  {
-    slug: 'cashier-foh',
-    nameEn: 'Cashier-FoH',
-    nameRu: 'Кассир-зал',
-    permission: {
-      // D-06 (Phase 10): reject/cancel is a status transition, not a
-      // financial grant — every preset gets it, billing stays owner-only.
-      order: ['read', 'update-status', 'cancel'],
-      menu: ['read'],
-      brand: ['read'],
-    },
-  },
-  {
-    slug: 'kitchen',
-    nameEn: 'Kitchen',
-    nameRu: 'Кухня',
-    permission: {
-      // D-06 (Phase 10): reject/cancel is a status transition, not a
-      // financial grant — every preset gets it, billing stays owner-only.
-      order: ['read', 'update-status', 'cancel'],
-      brand: ['read'],
-    },
-  },
-] as const;
+// T-10-02 (Phase 10): PRESET_ROLES moved to `@resto/domain` so the seed CLI
+// (`tools/scripts/seed`, scope:tools) can import it too — the Nx module
+// boundary (`packages/config-eslint/base.mjs`) forbids scope:tools from
+// depending on scope:api, so a CLI-side sync tool cannot import this data
+// from apps/api directly. This re-export keeps every existing apps/api
+// import path (`./preset-roles`) working unchanged.
+export { PRESET_ROLES, type PresetRoleDefinition } from '@resto/domain';

@@ -16,6 +16,7 @@ import {
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
 import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
 import { LocationPermissionChecker } from './application/location-permission-checker';
+import { SyncPresetRolesService } from './application/sync-preset-roles.service';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from './domain/ports';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import {
@@ -367,6 +368,7 @@ const memberLocationScopeReaderProvider: Provider = {
     memberLocationScopeReaderProvider,
     MemberLocationScopeDrizzleReader,
     LocationPermissionChecker,
+    SyncPresetRolesService,
     {
       provide: IDENTITY_EVENT_EMITTER,
       useClass: IdentityEventEmitterAdapter,
@@ -381,6 +383,7 @@ const memberLocationScopeReaderProvider: Provider = {
     IDENTITY_EVENT_EMITTER,
     InitialLocationDrizzleRepository,
     LocationPermissionChecker,
+    SyncPresetRolesService,
   ],
 })
 export class IdentityCoreModule {}
