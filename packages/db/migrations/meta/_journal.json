@@ -512,6 +512,20 @@
       "when": 1783987200000,
       "tag": "0072_tenancy_erase_locations",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1784073600000,
+      "tag": "0073_orders_intake",
+      "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1784160000000,
+      "tag": "0074_tenancy_erase_order_sequences",
+      "breakpoints": true
     }
   ]
 }
