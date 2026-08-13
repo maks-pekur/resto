@@ -35,6 +35,14 @@ describe('PRESET_ROLES', () => {
   it('kitchen preset has expected slug', () => {
     expect(PRESET_ROLES.find((p) => p.slug === 'kitchen')).toBeDefined();
   });
+
+  // D-06 (Phase 10): reject/cancel must be a status transition every
+  // preset can perform, not an owner-only financial grant.
+  it('every preset grants order:cancel', () => {
+    for (const preset of PRESET_ROLES) {
+      expect(preset.permission.order, `${preset.slug} missing order`).toContain('cancel');
+    }
+  });
 });
 
 describe('SeedPresetRolesService', () => {
