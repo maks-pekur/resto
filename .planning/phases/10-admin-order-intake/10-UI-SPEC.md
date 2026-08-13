@@ -11,9 +11,11 @@ created: 2026-08-13
 
 > **Founder framing, verbatim from CONTEXT.md: "admin is the kitchen."** This is not a CRUD page over orders — it is the screen a restaurant stares at during a Friday-evening service. Where a decision trades operator speed against developer convenience, operator speed wins. Every decision below is judged against a tablet on a counter, at arm's length, in a loud room, mid-service.
 >
-> Two surfaces are in scope: **`apps/admin`** (operator feed, TanStack Router + Vite + shadcn `new-york`/`neutral`, dark mode already live) and **`apps/website`** (guest live-status tracker, Next.js App Router + shadcn `new-york`/`neutral` + next-intl). Both share the same design-token contract via `packages/config-tailwind/preset.css` — colors declared once below apply to both surfaces.
+> Two surfaces are in scope: **`apps/admin`** (operator feed, TanStack Router + Vite + shadcn `new-york`/`neutral`, dark mode already live) and **`apps/website`** (guest live-status tracker, Next.js App Router + shadcn `new-york`/`neutral` + next-intl). Both share the same design-token contract via `packages/config-tailwind/preset.css` — colors and typography declared once below apply to both surfaces.
 >
 > Locked decisions (D-01..D-17) are load-bearing on this document and are **not** re-litigated here. Where this spec makes a call CONTEXT.md left to discretion, it is stated as a decision, not a question — genuine open items are collected at the end.
+>
+> **Revision note (this pass):** fixes a checker BLOCK on Typography (5 sizes / 4 weights → 4 sizes / 2 weights, with honest inherited-constraint notes for the two shadcn primitives that bake in a third weight) plus five non-blocking FLAGs (copywriting rationale, a missing i18n key, cross-doc reason-code drift, touch-target coverage gaps in Sections 4/5/6, and the undocumented 12px spacing exception). No locked decision was reopened; no section not named by the checker was redesigned.
 
 ---
 
@@ -44,29 +46,38 @@ Declared values (8-point scale, matches every existing admin surface — `px-4 l
 | 2xl   | 48px  | Major section breaks                                                |
 | 3xl   | 64px  | Page-level spacing                                                  |
 
-**Exceptions:**
+**Exceptions (two, both named explicitly — nothing else in this spec departs from the seven tokens above):**
 
-- **48px minimum touch target on primary card-face actions** (Принять / Отклонить / status-advance button / Cancel confirm). The default shadcn `Button` `lg` size is 40px (`h-10`) — too small for a tablet at arm's length per the founder framing and Product persona's tap-target findings. Primary order actions get an explicit `h-12` (48px) override; this is the one place in the admin app that exceeds the component-library default, and it must stay consistent everywhere an order-status action lives (card face, Sheet header, Accept/Reject popovers).
+- **48px minimum touch target on every order-status action** — Принять / Отклонить (card face), the status-advance button (card face + Sheet), **the ETA time chips and custom-confirm button inside the Accept popover (Section 4)**, **the reason chips and "Другая причина" confirm button inside the Reject popover (Section 5)**, and **the `AlertDialogAction` confirm button inside the Cancel dialog (Section 6)**. The default shadcn `Button` `lg` size is 40px (`h-10`), and `Popover`/`AlertDialog` content inherits whatever size is placed inside it — neither component sets this automatically. Every button/chip listed above needs an explicit `h-12` (48px) override; this is the one place in the admin app that exceeds the component-library default, and it must be applied at **every** site listed, not just the card face.
+- **12px (`gap-3`) card-to-card gap in the feed.** A second, smaller named exception — still a multiple of 4, but not one of the seven scale tokens above. Deliberately denser than the `md` (16px) default because the feed is a scrolling list of many small units, not a form; sits intentionally between `sm` (8px) and `md` (16px).
 - Secondary/icon actions (mute toggle, filter selects, the retry link in the refund-failed banner) use the existing default sizes (`h-9`/`h-8`) — no exception needed, these are not the rushed happy-path taps.
-- Card-to-card gap in the feed is `gap-3` (12px, still a multiple of 4) — denser than the `md` default because the feed is a scrolling list of many small units, not a form.
 
 ---
 
 ## Typography
 
-| Role       | Size | Weight | Line Height | Usage                                                                                                                                                                                             |
-| ---------- | ---- | ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Body       | 14px | 400    | 1.5         | Card meta text, table cells, Sheet body copy — matches every existing admin surface (`text-sm`)                                                                                                   |
-| Label      | 12px | 500    | 1.2         | Badge/chip text, filter labels, timeline stamps (`text-xs font-medium`)                                                                                                                           |
-| Subheading | 16px | 600    | 1.3         | Sheet section titles ("Состав заказа", "История заказа") — matches existing `CardTitle` weight                                                                                                    |
-| Heading    | 24px | 600    | 1.2         | Page heading ("Заказы") — matches the existing `PageHeading` component (`text-2xl font-semibold`), do not introduce a new size here                                                               |
-| Display    | 28px | 700    | 1.1         | The daily order number (`№{{n}}`) — the one number operators and guests actually read at a glance. Used identically on the admin card face, the admin detail Sheet header, and the guest tracker. |
+Reduced to **4 sizes / 2 weights.** The two weights this spec introduces for its own authored text are **400 (regular)** and **600 (semibold)** — see the _inherited-constraint note_ below for the two places an already-installed shadcn primitive bakes in a third weight (500) that this spec does not touch.
+
+| Role    | Size | Weight | Line Height | Usage                                                                                                                                                                                                                                                                                             |
+| ------- | ---- | ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Body    | 14px | 400    | 1.5         | Card meta text, table cells, Sheet body copy, timeline entries — matches every existing admin surface (`text-sm`)                                                                                                                                                                                 |
+| Label   | 12px | 400    | 1.2         | Raw-text captions only — filter option text, timeline timestamp captions, the internal order-key caption under the Sheet header. **Does not govern `Badge`-rendered chip text** — see the inherited-constraint note, `Badge` carries its own baked-in weight regardless of what this row declares |
+| Heading | 24px | 600    | 1.2         | Page heading ("Заказы") — matches the existing `PageHeading` component (`text-2xl font-semibold`), do not introduce a new size here                                                                                                                                                               |
+| Display | 28px | 600    | 1.1         | The daily order number (`№{{n}}`) — the one number operators and guests actually read at a glance. Used identically on the admin card face, the admin detail Sheet header, and the guest tracker. Uses the same weight as Heading at a larger size — **not** a third weight.                      |
+
+**Hybrid usage — a documented recombination of the two rows above, not a new size or a new weight:** Sheet section titles ("Состав заказа", "История заказа") and the Accept/Reject popover titles ("Через сколько будет готово?", "Почему отклоняем?") render at **Body's size (14px) + Heading's weight (600)**. This replaces what an earlier draft of this spec called a standalone "Subheading" 16px tier — that tier is removed, not renamed, to stay inside the 4-size cap.
+
+**Inherited-constraint note (an honest, named exception — not silently absorbed as compliance):**
+
+- The shadcn `Badge` primitive — `apps/admin/src/components/ui/badge.tsx` **and** the identical `apps/website/components/ui/badge.tsx` (same shadcn template, verified byte-for-byte identical on this point) — hardcodes `text-xs font-medium`, i.e. **12px / 500**, inside its own `badgeVariants` CVA definition. Every status chip, the location badge, and the refund-failed badge specified in this document render through `Badge` and therefore carry 500 weight for their label text regardless of the Label row above. This is a **pre-existing, repo-wide constant** — every `Badge` anywhere in either app, including the already-shipped `StatusBadge` in the menu editor, is 500 weight. This phase does not override it; doing so would make this phase's badges the one visually inconsistent set in the app.
+- The shadcn `Button` primitive — `apps/admin/src/components/ui/button.tsx` **and** the identical `apps/website/components/ui/button.tsx` — hardcodes `text-sm font-medium`, i.e. **14px / 500**, inside `buttonVariants`. Every button this spec specifies (Принять, Отклонить, Готовится, Готово, Выдан, Отменить заказ, and every guest-facing website button) inherits 500 weight for its label. Same reasoning: pre-existing, repo-wide, not a choice made by this phase, not changed here.
+- These two inherited 500-weight instances are the **only** place any text in this spec departs from the declared 400/600 pair, and both come from unmodified shadcn primitives already used identically everywhere else in both apps — not from a new typography choice introduced by this phase.
 
 ---
 
 ## Color
 
-Reuses the existing shared token contract (`packages/config-tailwind/preset.css` + `apps/admin/src/styles.css` `.dark` overrides) — **no new tokens are introduced.** This phase is, however, the **first consumer of `--success`/`--warning`** anywhere in the codebase (confirmed via repo-wide grep: zero prior `bg-success`/`bg-warning` usage) — they are declared in the preset and Tailwind will generate the utilities, but the executor should know this is untrodden ground, not an established pattern to copy from elsewhere.
+Reuses the existing shared token contract (`packages/config-tailwind/tokens.css` / `preset.css` + `apps/admin/src/styles.css` `.dark` overrides) — **no new tokens are introduced.** This phase is, however, the **first consumer of `--success`/`--warning`** anywhere in the codebase (confirmed via repo-wide grep: zero prior `bg-success`/`bg-warning` usage) — they are declared in the shared tokens and Tailwind will generate the utilities, but the executor should know this is untrodden ground, not an established pattern to copy from elsewhere.
 
 | Role            | Value (light / dark)                                                                                                        | Usage                                                                                                                                                                                                                                                                                                                                                         |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,6 +101,8 @@ Accent reserved for: primary order-advance actions and the active-nav/unaccepted
 | Empty state body                                   | Поделитесь ссылкой на заказ, и всё, что оплатят гости, появится здесь.                                                                                                                 |
 | Error state                                        | Не удалось загрузить заказы / Проверьте соединение и попробуйте снова. + **Повторить** button (never a dead-end message — matches `apps/CLAUDE.md`'s mandatory "Try again" affordance) |
 | Destructive confirmation                           | Cancel (Отменить заказ): "Отменить заказ №{{n}}? Будет оформлен возврат {{amount}}. Это действие нельзя отменить." confirm button repeats the amount: "Отменить и вернуть {{amount}}"  |
+
+**Rationale for bare-verb CTAs (Принять / Отклонить / Готовится / Готово / Выдан — no noun, e.g. not "Принять заказ"):** deliberate, not an oversight. On a tablet at arm's length, up to half a dozen cards are visible simultaneously, each already carrying its own order number, item summary, and status chip as unavoidable context — the noun is already on the card. Appending "заказ" to every single button on every single card adds rereading cost six times over without adding information the operator doesn't already have from the card itself. The one place a noun is restored is the Cancel/refund confirmation copy, precisely because that flow is deliberately slower and the amount/order-number repetition is the anti-mistake mechanism (Section 6) — bare verbs are for the fast, high-frequency path; full sentences are for the deliberately slow, money-naming path.
 
 Full copy deck (every string, both surfaces) is in **Section 12** below.
 
@@ -155,7 +168,7 @@ The core object of this phase. One card per order, never a dense table row — t
 
 **Location label (`all` mode, D-02):** an `outline` `Badge` with a `MapPin` icon, top-right next to the status chip, showing the location name (never "all"). Only rendered when `useEffectiveLocation().mode === 'all'`.
 
-**Daily order number:** Display-size (28px/700), `№{{shortNumber}}`, top-left of every card — the single largest element on the card, exactly as the founder framing demands ("the number staff will call out").
+**Daily order number:** Display-size (28px/600), `№{{shortNumber}}`, top-left of every card — the single largest element on the card, exactly as the founder framing demands ("the number staff will call out").
 
 ---
 
@@ -200,7 +213,9 @@ No custom date-range picker this phase (no Calendar/DatePicker component is inst
 
 **Control: `Popover`, anchored to the card-face "Принять" button.** Not a `Dialog` — a Popover keeps the rest of the feed visible behind it (context-preservation matters more than modal weight for the highest-frequency action in the app).
 
-**Contents:** title "Через сколько будет готово?" (Subheading, 16px), then a row of 4 time chips — **15 / 20 / 30 / 45 мин** — plus a 5th "Другое" chip. **20 мин is pre-highlighted/larger** (matches a sensible per-restaurant default; see Open Questions if a per-location default ships later, this stays the fallback).
+**Contents:** title "Через сколько будет готово?" (hybrid typography — 14px Body size / 600 Heading weight, see Typography), then a row of 4 time chips — **15 / 20 / 30 / 45 мин** — plus a 5th "Другое" chip. **20 мин is pre-highlighted/larger** (matches a sensible per-restaurant default; see Open Questions if a per-location default ships later, this stays the fallback).
+
+**Touch target:** every chip (15/20/30/45 мин, Другое) and the custom-path confirm button are `h-12` (48px) — the same touch-target exception declared in Spacing Scale. A `Popover`'s content does not size itself automatically; this must be set explicitly on each button in this popover, not inherited from `Popover` or from the default `Button` size.
 
 **Tap-count (critical path, count every tap):**
 
@@ -220,10 +235,19 @@ This is D-15's design read literally: "Accept opens a quick choice" — the oper
 **One tap on the card face → reason chips → done.** Deliberately lightweight — this happens before any food exists, and D-09 is explicit that it must never look scary or be confused with the harder-to-reach Cancel.
 
 - **Trigger:** "Отклонить" button, card face, `variant="outline"` (neutral gray border, **not** `variant="destructive"` — this is the visual half of D-09's asymmetry; Accept is the filled-primary button, Reject is a plain outline button, same visual weight class as any secondary action anywhere else in the app).
-- **Control:** the same `Popover` pattern as Accept, anchored to "Отклонить". Contents: title "Почему отклоняем?", then 7 reason chips (fixed set, shared with Cancel per Growth HIGH-6 — one taxonomy, one report later):
+- **Control:** the same `Popover` pattern as Accept, anchored to "Отклонить". Contents: title "Почему отклоняем?" (same hybrid typography as Accept's title — 14px/600), then 7 reason chips (fixed set, shared with Cancel per Growth HIGH-6 — one taxonomy, one report later). **Reason codes below are pinned to `10-RESEARCH.md` §A.3's exact enum strings** (this spec's earlier draft used slightly different spellings — `out_of_stock`/`kitchen_busy`/`duplicate` — which is exactly the drift the migration and the UI must not have; the strings below are now the single canonical set):
 
-  Нет в наличии · Кухня перегружена · Гость отменил · Гость не выходит на связь · Проблема с оплатой · Дубликат заказа · Другая причина
+  | Chip label (Russian)      | Reason code (canonical — matches `10-RESEARCH.md` §A.3 and the future CHECK constraint) |
+  | ------------------------- | --------------------------------------------------------------------------------------- |
+  | Нет в наличии             | `kitchen_out_of_stock`                                                                  |
+  | Кухня перегружена         | `kitchen_too_busy`                                                                      |
+  | Гость отменил             | `guest_requested`                                                                       |
+  | Гость не выходит на связь | `guest_no_show`                                                                         |
+  | Проблема с оплатой        | `payment_issue`                                                                         |
+  | Дубликат заказа           | `duplicate_order`                                                                       |
+  | Другая причина            | `other`                                                                                 |
 
+- **Touch target:** every reason chip and the "Другая причина" confirm button are `h-12` (48px) — same exception as Section 4, and for the same reason (this popover's content is not auto-sized by `Popover`).
 - **Tap count:** tap **Отклонить** (1) → tap a reason chip (2) = fires immediately, **2 taps**. "Другая причина" opens an inline `Textarea` (max 500 chars) + confirm button = **3 taps**.
 - On success: card animates into the "Завершены" group with the "Отменён" chip; toast "Заказ №{{n}} отклонён — возврат {{amount}} оформлен" (full amount, always — D-09's "always full auto-refund").
 - **The word "rejected" never reaches the guest** — the guest tracker (Section 11) shows guest-safe wording mapped from the reason code, never the operator-facing chip label verbatim.
@@ -239,9 +263,9 @@ This is D-15's design read literally: "Accept opens a quick choice" — the oper
 - **Confirmation:** `AlertDialog` (modal, centered, dimmed backdrop — genuinely heavier than Reject's inline Popover):
   - Title: **"Отменить заказ №{{n}}?"**
   - Description **names the refund amount explicitly**: "Будет оформлен возврат {{amount}}. Это действие нельзя отменить."
-  - A required `Select` for reason (same 7-value taxonomy as Reject — not free chips here, the modal is already the friction, no need for a second chip UI).
+  - A required `Select` for reason — the same canonical 7-value taxonomy as Reject (Section 5's table), not free chips here — the modal is already the friction, no need for a second chip UI.
   - `AlertDialogCancel` = "Закрыть" (dismiss, order untouched).
-  - `AlertDialogAction` (destructive) = **"Отменить и вернуть {{amount}}"** — the amount is repeated in the confirm button itself, the single strongest anti-mis-tap signal available.
+  - `AlertDialogAction` (destructive) = **"Отменить и вернуть {{amount}}"** — the amount is repeated in the confirm button itself, the single strongest anti-mis-tap signal available. **Touch target: `h-12` (48px)** — shadcn's `AlertDialogAction` defaults to the standard `Button` size (`h-9`), which must be explicitly overridden here, same exception as Sections 4 and 5.
 - On success: toast "Заказ №{{n}} отменён — возврат {{amount}} оформлен".
 
 **Cancel always issues a full auto-refund (D-10) — there is no partial/none option inside this flow.** A cashier using Cancel makes no financial judgment call. Partial or no-refund is a _separate_, owner-gated control inside the same Sheet's discretionary Refund section (Section 7) — never surfaced here.
@@ -283,8 +307,8 @@ This is D-15's design read literally: "Accept opens a quick choice" — the oper
 Three surfaces, from least to most zoomed-in, all pointing at the same underlying "this order has a `payment_refunds` row with `status='failed'`" fact:
 
 1. **Feed-level banner** — sticky, full-width, directly above the filter bar, appears only when ≥1 order in the current brand/location scope has a failed refund. **"{{count}} возврат(а) не прошли — требуется действие"** (i18next plural forms, see Copy Deck) with a **"Показать"** action that sets the Status filter to "Возврат не прошёл". Persistent — does not auto-dismiss, unlike a toast, because this is money sitting broken, not a transient event.
-2. **Card-level** — the affected card does **not** dim into the terminal group's usual muted styling (Section 1's overlay-flag row); it stays full-opacity, red-tinted, with a destructive badge (icon `AlertTriangle`, "Возврат не прошёл") and keeps a card-face action: **"Повторить возврат"** — the one exception to "terminal cards have no actions."
-3. **Detail-level** — a banner pinned at the very top of the Sheet (above even the header): `bg-destructive/10 border border-destructive text-destructive rounded-md p-3`, "Возврат {{amount}} не прошёл." + **"Повторить"** button, with the raw technical failure reason available underneath in small muted text (operator/debug detail, never guest-facing).
+2. **Card-level** — the affected card does **not** dim into the terminal group's usual muted styling (Section 1's overlay-flag row); it stays full-opacity, red-tinted, with a destructive badge (icon `AlertTriangle`, "Возврат не прошёл") and keeps a card-face action: **"Повторить возврат"** (`orders.refund.retryBtn`) — the one exception to "terminal cards have no actions."
+3. **Detail-level** — a banner pinned at the very top of the Sheet (above even the header): `bg-destructive/10 border border-destructive text-destructive rounded-md p-3`, "Возврат {{amount}} не прошёл." + a **"Повторить"** button, which **reuses the existing `common.retry` key** (already "Повторить" in `ru.json`) rather than inventing a third retry-label variant — this button is intentionally shorter than the card-level "Повторить возврат" because the Sheet's own banner text already states what's being retried, with the raw technical failure reason available underneath in small muted text (operator/debug detail, never guest-facing).
 
 This is explicitly the answer to the agenda's "whether it needs a feed-level banner so it is not missed" — yes, because D-11's whole premise is that a failed refund must never silently block the kitchen _or_ silently disappear from view.
 
@@ -317,14 +341,14 @@ Rewrite target: `apps/website/components/checkout/order-status-poller.tsx`. This
 - **`TERMINAL_STATUSES`** becomes `{'completed', 'canceled', 'refunded', 'failed'}` — `'paid'` is removed (today's bug: polling stops the instant payment confirms, per D-16).
 - **Poll cadence by status:** `created`/`requires_action` 2s (payment confirming, highest urgency) · `paid` 5s (waiting on accept — highest guest anxiety) · `accepted`/`preparing` 15s · `ready` 30s · terminal: stop.
 - **Visual: a 4-step horizontal tracker** (vertical stack on mobile) — **Оплачен → Принят → Готовится → [Готов к выдаче | Готово — принесём к столу]** (the last label swaps by `fulfillmentMode`; a `delivery` order uses the same "Готово" label as pickup — **never** an "in transit"/dispatch step, per Skeptic HIGH-6, since Phase 9 does not exist yet). Current step: filled `--primary` circle + connecting line. Complete steps: `--success` checkmark. Future steps: muted ring, no fill.
-- **Typography:** step label 12px/500, uppercase, `text-muted-foreground` when inactive, 14px/600 `text-foreground` when active/complete. Step indicator: `size-8` (32px) circle.
+- **Typography:** step label 12px/400 (not 500 — see the Typography section's declared pair; this raw-Tailwind tracker text is not routed through a `Badge`/`Button` primitive, so no inherited-constraint exception applies here), uppercase, `text-muted-foreground` when inactive; 14px/600 `text-foreground` when active/complete. Step indicator: `size-8` (32px) circle.
 - **ETA row**, directly under the tracker: once `etaAt` is present (from `accepted` onward), **"Будет готово к {{time}}"** (localized clock time). Before an ETA exists (order still `paid`, not yet accepted): **"Ресторан скоро примет ваш заказ"** — never a fabricated time.
-- **Daily number**, not the internal key: Display-size (28px/700) `№{{shortNumber}}` replaces the current small mono `orderNumber` display. The long internal key is dropped from guest view entirely — the guest never needs it (matches Growth LOW-20: "display it, never route on it," extended here to "don't even display the long one").
+- **Daily number**, not the internal key: Display-size (28px/600) `№{{shortNumber}}` replaces the current small mono `orderNumber` display. The long internal key is dropped from guest view entirely — the guest never needs it (matches Growth LOW-20: "display it, never route on it," extended here to "don't even display the long one").
 - **Location block** (`ready`/`accepted`, pickup): location name + address + "Построить маршрут" link + tap-to-call phone if present.
 - **Terminal — declined/canceled:** replaces the tracker with a distinct card, never a 5th tracker step:
   - Reject: heading **"Ресторан не смог принять ваш заказ"**
   - Cancel-after-accept: heading **"Заказ отменён рестораном"**
-  - Both: a guest-safe reason line (mapped from the reason code — **never** the operator-facing chip label, see Copy Deck's mapping table) + **"Возврат {{amount}} оформлен — поступит на карту в течение 5–10 рабочих дней."**
+  - Both: a guest-safe reason line (mapped from the canonical reason code — **never** the operator-facing chip label, see Copy Deck's mapping table) + **"Возврат {{amount}} оформлен — поступит на карту в течение 5–10 рабочих дней."**
   - **"Вернуться в меню"** CTA.
 - **Never render a raw status enum.** Replace `status.replace('_', ' ')` with an explicit status → label map (Copy Deck).
 - **Reconnecting affordance, guest side too:** small muted "Обновляем статус…" during a poll; on a failed poll, keep the last known status visible and show "Не удалось обновить. **Обновить**" (same Try-again discipline as the admin side).
@@ -415,21 +439,21 @@ All strings below are Russian, written for the operator (admin) or the guest (we
 | `orders.accept.acceptedToast`     | Заказ №{{n}} принят — будет готов к {{time}} |
 | `orders.accept.failedToast`       | Не удалось принять заказ.                    |
 
-**Reject** (reason set shared with Cancel — see Assumption in Open Questions #2)
+**Reject** (reason set shared with Cancel — canonical codes match Section 5's table exactly)
 
-| Key                              | Russian                                             |
-| -------------------------------- | --------------------------------------------------- |
-| `orders.reject.title`            | Почему отклоняем?                                   |
-| `orders.reasons.outOfStock`      | Нет в наличии                                       |
-| `orders.reasons.kitchenBusy`     | Кухня перегружена                                   |
-| `orders.reasons.guestRequested`  | Гость отменил                                       |
-| `orders.reasons.guestNoShow`     | Гость не выходит на связь                           |
-| `orders.reasons.paymentIssue`    | Проблема с оплатой                                  |
-| `orders.reasons.duplicate`       | Дубликат заказа                                     |
-| `orders.reasons.other`           | Другая причина                                      |
-| `orders.reject.otherPlaceholder` | Опишите причину                                     |
-| `orders.reject.rejectedToast`    | Заказ №{{n}} отклонён — возврат {{amount}} оформлен |
-| `orders.reject.failedToast`      | Не удалось отклонить заказ.                         |
+| Key                              | Russian                                             | Reason code            |
+| -------------------------------- | --------------------------------------------------- | ---------------------- |
+| `orders.reject.title`            | Почему отклоняем?                                   | —                      |
+| `orders.reasons.outOfStock`      | Нет в наличии                                       | `kitchen_out_of_stock` |
+| `orders.reasons.kitchenBusy`     | Кухня перегружена                                   | `kitchen_too_busy`     |
+| `orders.reasons.guestRequested`  | Гость отменил                                       | `guest_requested`      |
+| `orders.reasons.guestNoShow`     | Гость не выходит на связь                           | `guest_no_show`        |
+| `orders.reasons.paymentIssue`    | Проблема с оплатой                                  | `payment_issue`        |
+| `orders.reasons.duplicate`       | Дубликат заказа                                     | `duplicate_order`      |
+| `orders.reasons.other`           | Другая причина                                      | `other`                |
+| `orders.reject.otherPlaceholder` | Опишите причину                                     | —                      |
+| `orders.reject.rejectedToast`    | Заказ №{{n}} отклонён — возврат {{amount}} оформлен | —                      |
+| `orders.reject.failedToast`      | Не удалось отклонить заказ.                         | —                      |
 
 **Cancel**
 
@@ -466,18 +490,19 @@ All strings below are Russian, written for the operator (admin) or the guest (we
 
 **Discretionary refund**
 
-| Key                               | Russian                              |
-| --------------------------------- | ------------------------------------ |
-| `orders.refund.title`             | Возврат                              |
-| `orders.refund.amountLabel`       | Сумма возврата                       |
-| `orders.refund.reasonLabel`       | Причина                              |
-| `orders.refund.reasonPlaceholder` | Например: гость пожаловался на блюдо |
-| `orders.refund.submitBtn`         | Оформить возврат                     |
-| `orders.refund.remainingHint`     | Доступно к возврату: {{amount}}      |
-| `orders.refund.successToast`      | Возврат {{amount}} оформлен          |
-| `orders.refund.failedToast`       | Не удалось оформить возврат.         |
-| `orders.refund.retryBtn`          | Повторить возврат                    |
-| `orders.refund.failedBanner`      | Возврат {{amount}} не прошёл         |
+| Key                                           | Russian                                                                         |
+| --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `orders.refund.title`                         | Возврат                                                                         |
+| `orders.refund.amountLabel`                   | Сумма возврата                                                                  |
+| `orders.refund.reasonLabel`                   | Причина                                                                         |
+| `orders.refund.reasonPlaceholder`             | Например: гость пожаловался на блюдо                                            |
+| `orders.refund.submitBtn`                     | Оформить возврат                                                                |
+| `orders.refund.remainingHint`                 | Доступно к возврату: {{amount}}                                                 |
+| `orders.refund.successToast`                  | Возврат {{amount}} оформлен                                                     |
+| `orders.refund.failedToast`                   | Не удалось оформить возврат.                                                    |
+| `orders.refund.retryBtn`                      | Повторить возврат (card-level, Section 9 item 2)                                |
+| `orders.refund.failedBanner`                  | Возврат {{amount}} не прошёл                                                    |
+| (detail-level retry button, Section 9 item 3) | reuses `common.retry` = "Повторить" — deliberately not a new key, see Section 9 |
 
 **Alerts**
 
@@ -534,17 +559,17 @@ All strings below are Russian, written for the operator (admin) or the guest (we
 | `checkout.consent.label`           | Присылайте новости и акции ресторана                                      |
 | `checkout.consent.hint`            | Необязательно. Сообщения о статусе заказа мы отправим в любом случае.     |
 
-**Guest-safe reason mapping — operator reason code → guest-facing phrase (never the operator chip label verbatim):**
+**Guest-safe reason mapping — canonical reason code → guest-facing phrase (never the operator chip label verbatim). Codes match Section 5's table exactly — this is the single source both the admin chips and the guest copy read from:**
 
-| Reason code        | Guest-facing phrase                           |
-| ------------------ | --------------------------------------------- |
-| `out_of_stock`     | этого блюда сейчас нет в наличии              |
-| `kitchen_too_busy` | кухня сейчас не справляется с потоком заказов |
-| `guest_requested`  | по вашей просьбе                              |
-| `guest_no_show`    | мы не смогли с вами связаться                 |
-| `payment_issue`    | возникла проблема с оплатой                   |
-| `duplicate_order`  | это повторяющийся заказ                       |
-| `other`            | по техническим причинам                       |
+| Reason code            | Guest-facing phrase                           |
+| ---------------------- | --------------------------------------------- |
+| `kitchen_out_of_stock` | этого блюда сейчас нет в наличии              |
+| `kitchen_too_busy`     | кухня сейчас не справляется с потоком заказов |
+| `guest_requested`      | по вашей просьбе                              |
+| `guest_no_show`        | мы не смогли с вами связаться                 |
+| `payment_issue`        | возникла проблема с оплатой                   |
+| `duplicate_order`      | это повторяющийся заказ                       |
+| `other`                | по техническим причинам                       |
 
 ---
 
@@ -554,7 +579,7 @@ All strings below are Russian, written for the operator (admin) or the guest (we
 - **Contrast comes free from the existing token pairs** — as long as the executor uses the semantic classes (`bg-destructive text-destructive-foreground`, `bg-warning text-warning-foreground`, `bg-success text-success-foreground`) rather than raw hex, both light and dark mode contrast are already correct by construction (every pair above is already defined in `apps/admin/src/styles.css` / `packages/config-tailwind/preset.css`). This phase is simply the first to actually consume the warning/success pair — call this out in review, since there's no existing usage to visually diff against.
 - **Focus states** come from the existing shadcn primitives' built-in `focus-visible` rings (Button, Badge, Popover, Select, Switch) — no new work required.
 - **Sound state is never color-only** — the `Switch` thumb position already communicates on/off independent of color; keep the existing shadcn `Switch` as-is, do not restyle it to rely on a color swap alone.
-- **Touch targets:** 48px minimum on every primary order-status action (Spacing Scale exception) — this is itself an accessibility requirement (WCAG 2.5.5 target-size), not just an ergonomics choice.
+- **Touch targets:** 48px minimum on every primary order-status action (Spacing Scale exception, now explicitly enumerated per-flow in Sections 4/5/6) — this is itself an accessibility requirement (WCAG 2.5.5 target-size), not just an ergonomics choice.
 - **Precision on hover/focus:** the time-in-state chip's relative text ("12м") is backed by a `Tooltip` showing the exact timestamp — serves both precision-minded operators and anyone who needs the literal time, not just a fuzzy duration.
 
 ---
@@ -577,7 +602,7 @@ All strings below are Russian, written for the operator (admin) or the guest (we
 Genuine gaps this agent could not resolve from the repo, CONTEXT.md, or the persona reports — the founder should answer these, not the executor guessing silently.
 
 1. **Exact escalation-threshold minutes for the "unaccepted order turns red" behavior (D-12).** CONTEXT.md gives only an illustrative display example ("shows 'waiting 20 min'"), not a pinned trigger point. This spec defaults the threshold to **5 minutes** (distinct from the generic 15-minute time-in-state amber/red banding) so the loudest alarm in the app fires well before the founder's own example text would display. Confirm or adjust the single hardcoded constant before implementation.
-2. **The 7-value cancel/reject reason taxonomy is shared verbatim between this spec and `10-RESEARCH.md` Section A.3, which itself flags the set as `[ASSUMED]`** (not verified against iiko's actual cancel-reason taxonomy, per the canonical-refs instruction to borrow iiko's shapes where sensible). Because this taxonomy becomes both a database CHECK constraint and the literal chip labels shown to operators, it should be confirmed once, not drift between the migration and the UI independently.
+2. **The cancel/reject reason taxonomy's exact strings are now pinned** (this revision resolved the spelling drift the checker flagged — Section 5's table and the Copy Deck's guest-safe mapping both now read `kitchen_out_of_stock` / `kitchen_too_busy` / `duplicate_order`, matching `10-RESEARCH.md` §A.3 exactly). What remains genuinely open is the **taxonomy's semantic completeness/correctness** — `10-RESEARCH.md` §A.3 itself flags the 7-value set as `[ASSUMED]`, not verified against iiko's actual cancel-reason taxonomy per the canonical-refs instruction to borrow iiko's shapes where sensible. Confirm the set itself (not just the spelling) before it's baked into a CHECK constraint.
 3. **QR-code generation for the empty-state activation checklist (Section 10) may require a new dependency.** No existing QR-generation utility was found in this research pass (onboarding flow, if it has one, wasn't checked). Verify before committing to "downloadable QR PNG" as part of the empty state, or scope it down to the copy-link button only for this phase.
 4. **The exact RBAC permission key gating Reject/Cancel visibility in the UI is not yet locked** — CONTEXT.md's D-06 leaves the exact verb (`order:cancel` vs. reuse of `order:update-status`) to planner discretion, and `10-RESEARCH.md` Section B.5 recommends the new `order:cancel` verb. This spec assumes the UI checks a single boolean derived from whichever verb is chosen; the planner must ensure the client-side visibility check and the server-side enforcement key are the same string, or the UI will show a button the server then 403s.
 
