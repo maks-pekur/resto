@@ -94,6 +94,13 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         currency: 'USD',
         providerPaymentId: 'pi_stripe_secret_xyz',
       });
+
+      await tx.insert(schema.orderDailySequences).values({
+        tenantId,
+        locationId,
+        businessDate: '2026-08-13',
+        counter: 1,
+      });
     });
   }, 90_000);
 
@@ -133,6 +140,12 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         .from(schema.payments)
         .where(eq(schema.payments.tenantId, tenantId));
       expect(pays[0]?.n).toBe(0);
+
+      const sequences = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(schema.orderDailySequences)
+        .where(eq(schema.orderDailySequences.tenantId, tenantId));
+      expect(sequences[0]?.n).toBe(0);
 
       const brands = await tx
         .select({ n: sql<number>`count(*)::int` })
