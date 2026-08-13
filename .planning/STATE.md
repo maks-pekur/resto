@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: planning
-stopped_at: Phase 10 context gathered (persona reviews folded; pre-phase quick task pending)
-last_updated: '2026-08-12T11:30:16.474Z'
-last_activity: '2026-08-12 - Completed quick task 260812-i7v: order status persistence on cancel/refund'
+status: executing
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-08-13T10:48:13.042Z"
+last_activity: 2026-08-13 -- Phase 10 planning complete
 progress:
   total_phases: 27
   completed_phases: 14
-  total_plans: 108
+  total_plans: 121
   completed_plans: 100
   percent: 52
 ---
@@ -39,8 +39,8 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Ready to plan
-Last activity: 2026-08-12 - Completed quick task 260812-i7v: order status persistence on cancel/refund
+Status: Ready to execute
+Last activity: 2026-08-13 -- Phase 10 planning complete
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -346,6 +346,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-12T07:29:25.566Z
-Stopped at: Phase 10 context gathered (persona reviews folded; pre-phase quick task pending)
-Resume file: .planning/phases/10-admin-order-intake/10-CONTEXT.md
+Last session: 2026-08-13T09:50:01.430Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-admin-order-intake/10-UI-SPEC.md

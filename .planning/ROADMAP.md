@@ -299,6 +299,7 @@ Plans:
 4. Multi-language switcher works (locale from URL > cookie > Accept-Language)
 5. Production build emits source maps as `'hidden'` and the bundle test asserts source maps are not publicly served
    **Plans**: 5 plans
+
    - [x] 06-01-PLAN.md — Extract @resto/cart shared package (+ table/setTable) and re-point apps/website
    - [x] 06-02-PLAN.md — Expose isStopListed through /v1/menu (domain → controller → OpenAPI → api-client) + wire website flag
    - [x] 06-03-PLAN.md — qr-menu: switch to @resto/api-client/public, branded header, item detail modifiers + live price + add-to-cart
@@ -482,6 +483,7 @@ Plans:
 3. The payments application code (checkout, refund, webhook services) depends only on a provider-agnostic `PaymentProviderPort`; adding a second provider requires a new adapter + config only — proven by a stub second-provider adapter or an architecture test — and the tenant carries a `paymentProvider` discriminator
 4. The onboarding method ("Create new (Express)" vs "Connect existing (Standard)") is selectable in admin and resumable
    **Plans**: 5 plans
+
    - [x] 08.1-01-PLAN.md — Per-brand Stripe schema reshape (migration 0057, brand aggregate payment fields, brand repo findByStripeAccountId, tenant Stripe columns dropped — no backfill)
    - [x] 08.1-02-PLAN.md — Provider-agnostic PaymentProviderPort + StripeProviderAdapter rename/extend + stub adapter + ESLint architecture test (PAY-16)
    - [x] 08.1-03-PLAN.md — Repoint checkout/refund/webhook to per-brand account+currency; verifyWebhookSignature via port; DI rewired to PAYMENT_PROVIDER_PORT (D-07)
@@ -653,18 +655,47 @@ Plans:
 
 Plans:
 
+**Wave 1**
+
 - [ ] 10-01-PLAN.md — Order schema migration: new order columns, per-location daily-counter table, feed index, GDPR erase (wave 1)
 - [ ] 10-02-PLAN.md — RBAC: `order:cancel` verb, preset re-sync for existing tenants, D-07 third re-defer (wave 1)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 10-03-PLAN.md — Ordering domain: event payloads, widened state machine, new-column persistence (wave 2)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 10-04-PLAN.md — Order creation: short daily number, channel, marketing consent, `short_number` NOT NULL (wave 3)
-- [ ] 10-05-PLAN.md — Cancel/refund money-safety restructure: payment-derived refundability, Stripe outside the tx, retry (wave 4)
 - [ ] 10-06-PLAN.md — Guest status contract freeze + guest-email ETA, white-label fallback, tracker link (wave 3)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 10-05-PLAN.md — Cancel/refund money-safety restructure: payment-derived refundability, Stripe outside the tx, retry (wave 4)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 10-07-PLAN.md — Forward transition services + order feed read model (wave 5)
-- [ ] 10-08-PLAN.md — Operator order HTTP surface, route-by-route guard audit, poll-safe rate limiting (wave 6)
 - [ ] 10-09-PLAN.md — Website guest tracker rewrite + marketing-consent checkbox (wave 5)
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 10-08-PLAN.md — Operator order HTTP surface, route-by-route guard audit, poll-safe rate limiting (wave 6)
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
 - [ ] 10-10-PLAN.md — Admin Orders page: route, 5s-polled grouped feed, cards, filters, sidebar counter (wave 7)
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
 - [ ] 10-11-PLAN.md — Admin order actions: accept/reject popovers, status advance, sound + tab-title alerting (wave 8)
+
+**Wave 9** *(blocked on Wave 8 completion)*
+
 - [ ] 10-12-PLAN.md — Order detail Sheet, cancel dialog, owner-only refund, refund-failure surface (wave 9)
+
+**Wave 10** *(blocked on Wave 9 completion)*
+
 - [ ] 10-13-PLAN.md — Phase verification: Playwright operator smoke, two-screen guest loop, evidence matrices (wave 10)
 
 ### Phase 10.1: Location schedule and pause ordering (INSERTED)
