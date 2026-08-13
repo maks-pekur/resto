@@ -639,7 +639,7 @@ Plans:
 4. Operator cancels an order with a reason at any stage up to `completed`, always with a full auto-refund; a failed Stripe refund still cancels the order and surfaces a retryable red flag rather than blocking the kitchen; operator can filter by status, date, and channel and see full order details
 5. The guest sees live status on their phone (`accepted → preparing → ready`) with the operator-set ready time, via the existing public `GET /v1/orders/:id/status`; the checkout captures marketing consent
 6. One migration lands every new order field before the first real orders exist — short daily order number, channel, per-state timestamps, cancel reason + actor, ready time, consent — and every status transition is asserted by reading the row back from the database, not from a mocked repository
-   **Plans**: TBD
+   **Plans**: 13 plans (10 waves)
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer _(run 2026-08-11 — see `.planning/phases/10-admin-order-intake/10-PERSONA-REVIEWS.md`)_
 
@@ -650,6 +650,23 @@ Plans:
 - **ORDINT-06 narrowed**: "partial refund of specific items" ships as an arbitrary-amount refund (the API that already exists); item-level accounting is deferred.
 - **ORDINT-10 is ~90% already shipped** — the endpoint and the website poller exist; the delta is that the poller treats `paid` as terminal.
 - **HARD PRE-REQUISITE:** a verified live bug — `CancelOrderService`/`RefundOrderService` call the INSERT-only `save()`, so `orders.status` never flips and `ordering.order_canceled.v1` / `ordering.order_refunded.v1` are dropped. Fixed as a separate quick task before this phase is planned.
+
+Plans:
+
+- [ ] 10-01-PLAN.md — Order schema migration: new order columns, per-location daily-counter table, feed index, GDPR erase (wave 1)
+- [ ] 10-02-PLAN.md — RBAC: `order:cancel` verb, preset re-sync for existing tenants, D-07 third re-defer (wave 1)
+- [ ] 10-03-PLAN.md — Ordering domain: event payloads, widened state machine, new-column persistence (wave 2)
+- [ ] 10-04-PLAN.md — Order creation: short daily number, channel, marketing consent, `short_number` NOT NULL (wave 3)
+- [ ] 10-05-PLAN.md — Cancel/refund money-safety restructure: payment-derived refundability, Stripe outside the tx, retry (wave 4)
+- [ ] 10-06-PLAN.md — Guest status contract freeze + guest-email ETA, white-label fallback, tracker link (wave 3)
+- [ ] 10-07-PLAN.md — Forward transition services + order feed read model (wave 5)
+- [ ] 10-08-PLAN.md — Operator order HTTP surface, route-by-route guard audit, poll-safe rate limiting (wave 6)
+- [ ] 10-09-PLAN.md — Website guest tracker rewrite + marketing-consent checkbox (wave 5)
+- [ ] 10-10-PLAN.md — Admin Orders page: route, 5s-polled grouped feed, cards, filters, sidebar counter (wave 7)
+- [ ] 10-11-PLAN.md — Admin order actions: accept/reject popovers, status advance, sound + tab-title alerting (wave 8)
+- [ ] 10-12-PLAN.md — Order detail Sheet, cancel dialog, owner-only refund, refund-failure surface (wave 9)
+- [ ] 10-13-PLAN.md — Phase verification: Playwright operator smoke, two-screen guest loop, evidence matrices (wave 10)
+
 
 ### Phase 10.1: Location schedule and pause ordering (INSERTED)
 
