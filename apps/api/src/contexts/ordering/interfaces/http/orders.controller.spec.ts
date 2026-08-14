@@ -89,7 +89,7 @@ describe('OrdersController GET /:id/status', () => {
     expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
     expect(result).toEqual({
       status: 'requires_action',
-      shortNumber: null,
+      shortNumber: 1,
       orderNumber: '20260627-ABCDE',
       total: '25.00',
       currency: 'EUR',
