@@ -61,6 +61,14 @@ export class OrderModifierSelectionInvalidError extends Error {
   }
 }
 
+export class InvalidCancelReasonError extends Error {
+  readonly kind = 'InvalidCancelReasonError' as const;
+  constructor(public readonly reasonCode: string) {
+    super(`Cancel reason code "${reasonCode}" is not one of the canonical reason codes.`);
+    this.name = 'InvalidCancelReasonError';
+  }
+}
+
 export class RefundExceedsCapturedError extends Error {
   readonly kind = 'RefundExceedsCapturedError' as const;
   constructor(
@@ -85,4 +93,5 @@ export type OrderDomainError =
   | OrderItemNotOrderableError
   | OrderModifierNotAvailableError
   | OrderModifierSelectionInvalidError
+  | InvalidCancelReasonError
   | RefundExceedsCapturedError;

@@ -51,7 +51,13 @@ export class CancelOrderService {
 
     const currentStatus = order.toSnapshot().status;
     if (currentStatus === 'paid' || currentStatus === 'created') {
-      order.cancel(cancelReason);
+      // 10-03: order.cancel() now requires a canonical reasonCode (D-08/D-09)
+      // plus an explicit cancelNote/actorUserId. This service has no real
+      // reason-code selection or principal threading yet -- that lands with
+      // 10-05's rewrite of the wasPaid predicate and this status gate.
+      // 'other' + the free-text reason as the note is the minimal adaptation
+      // to the new aggregate signature, not the final design.
+      order.cancel('other', cancelReason, null);
       await this.orderRepo.update(order);
     }
   }

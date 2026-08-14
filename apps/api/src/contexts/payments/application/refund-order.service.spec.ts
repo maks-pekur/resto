@@ -45,6 +45,21 @@ const makeOrder = (status: string, total = '20.00') =>
     total,
     currency: Currency.parse('EUR'),
     scheduledFor: null,
+    shortNumber: null,
+    channel: 'site' as const,
+    acceptedAt: null,
+    preparingAt: null,
+    readyAt: null,
+    completedAt: null,
+    canceledAt: null,
+    acceptedByUserId: null,
+    canceledByUserId: null,
+    cancelReason: null,
+    cancelNote: null,
+    canceledFromStatus: null,
+    etaAt: null,
+    marketingConsent: false,
+    marketingConsentAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -135,12 +150,16 @@ describe('RefundOrderService', () => {
     ).rejects.toBeInstanceOf(RefundReasonRequiredError);
   });
 
-  it('rejects refund on non-paid order', async () => {
+  it('does not gate on order status — succeeds when order is created but a captured payment row exists (10-03 / RESEARCH.md C.9)', async () => {
+    // order.refund() no longer throws InvalidOrderTransitionError on a
+    // non-paid order; refundability is now determined solely by the
+    // payment row (PaymentNotRefundableError), not the order's fulfillment
+    // status. This is a deliberate design change, not a regression.
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow());
     await expect(
       service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'test' }),
-    ).rejects.toBeDefined();
+    ).resolves.toBeDefined();
   });
 
   it('rejects refund with no payment row', async () => {
@@ -193,7 +212,7 @@ describe('RefundOrderService', () => {
     expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
-  it('full refund transitions order to refunded', async () => {
+  it('full refund keeps order status unchanged — money-completeness lives on payments.status, not orders.status (10-03 / T-10-03-01)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
@@ -205,7 +224,7 @@ describe('RefundOrderService', () => {
     });
 
     const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
-    expect(savedOrder.toSnapshot().status).toBe('refunded');
+    expect(savedOrder.toSnapshot().status).toBe('paid');
     expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
     expect(orderRepo.save).not.toHaveBeenCalled();
   });
@@ -245,7 +264,7 @@ describe('RefundOrderService', () => {
     );
   });
 
-  it('second refund completing the total transitions order to refunded', async () => {
+  it('second refund completing the total keeps order status unchanged (10-03 / T-10-03-01)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('15.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
@@ -258,7 +277,7 @@ describe('RefundOrderService', () => {
     });
 
     const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
-    expect(savedOrder.toSnapshot().status).toBe('refunded');
+    expect(savedOrder.toSnapshot().status).toBe('paid');
     expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
     expect(orderRepo.save).not.toHaveBeenCalled();
   });
