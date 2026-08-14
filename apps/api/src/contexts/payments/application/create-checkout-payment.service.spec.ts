@@ -123,8 +123,11 @@ const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
       }),
     ),
     findRefundByStripeId: vi.fn().mockResolvedValue(null),
+    findRefundByRequestId: vi.fn().mockResolvedValue(null),
     upsertRefund: vi.fn().mockResolvedValue(null),
-    updateRefundStatus: vi.fn().mockResolvedValue(undefined),
+    updateRefundOutcome: vi.fn().mockResolvedValue(undefined),
+    updateRefundStatusByStripeId: vi.fn().mockResolvedValue(undefined),
+    findFailedRefundsForOrders: vi.fn().mockResolvedValue([]),
   };
 
   const provider: PaymentProviderPort = {

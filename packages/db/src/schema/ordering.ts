@@ -250,11 +250,28 @@ export const paymentRefunds = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     paymentId: uuid('payment_id').notNull(),
-    stripeRefundId: text('stripe_refund_id').notNull(),
+    // Phase 10 Plan 05 (D-11): nullable -- no Stripe id exists yet while a
+    // refund row is 'pending' (not yet called), and Stripe never returns one
+    // when a refund is 'failed'. Postgres treats NULL != NULL in a unique
+    // index, so payment_refunds_stripe_refund_id_uq below still protects
+    // against a duplicated real Stripe id with no partial-index workaround.
+    stripeRefundId: text('stripe_refund_id'),
+    // Locally-computed, deterministic idempotency key
+    // (`refund:{orderId}:{alreadyRefundedMinor}:{amountMinor}`), the stable
+    // identity that survives a crash between the pending insert and the
+    // Stripe response -- and is also passed to Stripe as its own
+    // idempotency key so a retry can never double-refund.
+    refundRequestId: text('refund_request_id').notNull(),
     amount: money('amount').notNull(),
     reason: text('reason').notNull(),
     status: text('status').notNull().default('pending'),
+    // Raw provider error text -- operator/debug detail only, never
+    // guest-facing (UI-SPEC §9 renders it small/muted in the admin Sheet).
+    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
       .notNull()
       .default(sql`now()`),
   },
@@ -271,5 +288,6 @@ export const paymentRefunds = pgTable(
     }).onDelete('restrict'),
     check('payment_refunds_status_chk', sql`${table.status} IN ('pending','succeeded','failed')`),
     uniqueIndex('payment_refunds_stripe_refund_id_uq').on(table.tenantId, table.stripeRefundId),
+    uniqueIndex('payment_refunds_request_id_uq').on(table.tenantId, table.refundRequestId),
   ],
 );

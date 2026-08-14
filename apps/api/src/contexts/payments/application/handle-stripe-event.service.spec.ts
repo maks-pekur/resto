@@ -150,8 +150,11 @@ describe('HandleStripeEventService', () => {
       findByOrderId: vi.fn(),
       upsertByPaymentIntentId: vi.fn(),
       findRefundByStripeId: vi.fn(),
+      findRefundByRequestId: vi.fn(),
       upsertRefund: vi.fn(),
-      updateRefundStatus: vi.fn().mockResolvedValue(undefined),
+      updateRefundOutcome: vi.fn().mockResolvedValue(undefined),
+      updateRefundStatusByStripeId: vi.fn().mockResolvedValue(undefined),
+      findFailedRefundsForOrders: vi.fn().mockResolvedValue([]),
     };
 
     provider = {

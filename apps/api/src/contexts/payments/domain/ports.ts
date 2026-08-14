@@ -115,11 +115,14 @@ export interface PaymentRefundRow {
   readonly id: string;
   readonly tenantId: TenantId;
   readonly paymentId: string;
-  readonly stripeRefundId: string;
+  readonly stripeRefundId: string | null;
+  readonly refundRequestId: string;
   readonly amount: string;
   readonly reason: string;
   readonly status: string;
+  readonly failureReason: string | null;
   readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface UpsertPaymentInput {
@@ -139,10 +142,18 @@ export interface UpsertPaymentInput {
 export interface UpsertPaymentRefundInput {
   readonly tenantId: TenantId;
   readonly paymentId: string;
-  readonly stripeRefundId: string;
+  readonly stripeRefundId: string | null;
+  readonly refundRequestId: string;
   readonly amount: string;
   readonly reason: string;
   readonly status: string;
+  readonly failureReason?: string | null;
+}
+
+export interface UpdateRefundOutcomeInput {
+  readonly status: 'succeeded' | 'failed';
+  readonly stripeRefundId?: string | null;
+  readonly failureReason?: string | null;
 }
 
 export interface PaymentRepository {
@@ -158,13 +169,35 @@ export interface PaymentRepository {
     stripeRefundId: string,
     tx: RestoTx,
   ): Promise<PaymentRefundRow | null>;
+  findRefundByRequestId(
+    tenantId: TenantId,
+    refundRequestId: string,
+    tx: RestoTx,
+  ): Promise<PaymentRefundRow | null>;
   upsertRefund(input: UpsertPaymentRefundInput, tx: RestoTx): Promise<PaymentRefundRow>;
-  updateRefundStatus(
+  // D-11: applies the outcome of a Stripe call keyed by our own idempotency
+  // key, once the row already exists (written pending in TX2, before Stripe
+  // was ever called).
+  updateRefundOutcome(
+    tenantId: TenantId,
+    refundRequestId: string,
+    outcome: UpdateRefundOutcomeInput,
+    tx: RestoTx,
+  ): Promise<void>;
+  // Companion for inbound Stripe webhook reconciliation, which arrives
+  // holding a Stripe refund id rather than our refundRequestId key.
+  updateRefundStatusByStripeId(
     tenantId: TenantId,
     stripeRefundId: string,
     status: string,
     tx: RestoTx,
   ): Promise<void>;
+  // Backs the admin feed's red retry flag / failed-refund banner (UI-SPEC §9).
+  findFailedRefundsForOrders(
+    tenantId: TenantId,
+    orderIds: readonly string[],
+    tx?: RestoTx,
+  ): Promise<readonly (PaymentRefundRow & { orderId: string })[]>;
 }
 
 export const PAYMENT_REPOSITORY = Symbol('PAYMENT_REPOSITORY');

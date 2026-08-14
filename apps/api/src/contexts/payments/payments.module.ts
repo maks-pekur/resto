@@ -7,6 +7,7 @@ import { HandleStripeEventService } from './application/handle-stripe-event.serv
 import { CreateCheckoutPaymentService } from './application/create-checkout-payment.service';
 import { RefundOrderService } from './application/refund-order.service';
 import { CancelOrderService } from './application/cancel-order.service';
+import { RetryRefundService } from './application/retry-refund.service';
 import { StripeWebhookController } from './interfaces/http/stripe-webhook.controller';
 import { CheckoutController } from './interfaces/http/checkout.controller';
 import { RefundsController } from './interfaces/http/refunds.controller';
@@ -20,7 +21,8 @@ import { RefundsController } from './interfaces/http/refunds.controller';
     CreateCheckoutPaymentService,
     RefundOrderService,
     CancelOrderService,
+    RetryRefundService,
   ],
-  exports: [CancelOrderService, RefundOrderService],
+  exports: [CancelOrderService, RefundOrderService, RetryRefundService],
 })
 export class PaymentsModule {}

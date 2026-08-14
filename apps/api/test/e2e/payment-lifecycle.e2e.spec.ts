@@ -495,7 +495,9 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       cancelService.execute({
         orderId: OrderId.parse(seededOrderId),
         tenantId: TenantId.parse(tenantId),
-        reason: 'guest changed mind',
+        reasonCode: 'guest_requested',
+        cancelNote: 'guest changed mind',
+        actorUserId: null,
       }),
     );
 
@@ -579,7 +581,9 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       cancelService.execute({
         orderId: OrderId.parse(seededOrderId),
         tenantId: TenantId.parse(tenantId),
-        reason: 'operator canceled paid order',
+        reasonCode: 'other',
+        cancelNote: 'operator canceled paid order',
+        actorUserId: null,
       }),
     );
 

@@ -123,3 +123,49 @@ correctly in sync. Fixing the wholesale drift is a separate maintenance
 task — running `pnpm exec nx run api:openapi:emit && pnpm exec nx run
 api-client:gen` and committing the full result — not attributable to any
 single phase's file list.
+
+## test/e2e/payments-isolation.e2e.spec.ts — pre-existing broken fixture (found in Phase 10 Plan 05)
+
+**Status:** Out of scope, not fixed. Discovered, not caused, by this plan.
+
+**What was found:** Running this spec in isolation fails with
+`PostgresError: null value in column "location_id" of relation "orders"
+violates not-null constraint`. `seedFixture()` inserts into `orders` via a
+raw SQL `INSERT INTO orders (id, tenant_id, brand_id, idempotency_key,
+order_number, status, fulfillment_mode, subtotal, delivery_fee,
+service_fee, discount, total, currency) VALUES (...)` with no `location_id`
+column at all. `orders.location_id` has been `NOT NULL` since migration
+`0070_orders_location_id.sql` (Phase 08.4 Plan 08), which predates this
+plan by two full phases. The fixture was never updated for that schema
+change. This file is not in Plan 10-05's `files_modified` list and was not
+touched by any of this plan's edits (`git status --short` confirms zero
+diff on it) — it was already red before this plan started.
+
+**Also observed:** a first run failed even earlier with `Error: Failed to
+connect to Reaper` (a testcontainers infra hiccup starting the `startNats`
+sidecar this spec's `with-real-stack.setup.ts` harness requires) — an
+unrelated, likely transient, environment issue with the heavier
+NATS+Postgres real-stack pattern this file uses (`payment-lifecycle.e2e.spec.ts`
+and the new `order-cancel-refund.e2e.spec.ts` both use the lighter
+db-only `with-db-stack.ts` harness and are unaffected).
+
+**What this plan did instead:** Nothing — per the scope boundary rule,
+pre-existing failures in files outside the current task's changes are
+logged here, not fixed. `payments-isolation.e2e.spec.ts` was read (not
+edited) only to confirm it has no `payment_refunds` INSERT site that
+migration 0076's schema change could have broken (it only `SELECT`s
+`schema.paymentRefunds.id`).
+
+**Cost estimate when picked up:** add `locationId` (a seeded
+`schema.locations` row's id) to both `orders` INSERT value tuples in
+`seedFixture()`, matching the pattern already used by
+`payment-lifecycle.e2e.spec.ts`'s `beforeAll`. Small, mechanical fix —
+not attributable to Plan 10-05.
+
+**Compounding note for whoever picks this up:** once the `location_id` gap
+above is fixed, this fixture's raw `INSERT INTO payment_refunds (id,
+tenant_id, payment_id, stripe_refund_id, amount, reason, status) VALUES
+(...)` (no `refund_request_id`) will newly fail against migration 0076
+(this plan), which made `refund_request_id` `NOT NULL`. Add a
+`refund_request_id` value (e.g. `'legacy:test'` or any unique string) to
+that INSERT at the same time.
