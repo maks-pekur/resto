@@ -10,6 +10,11 @@ export interface NotificationOrderRow {
   readonly brandId: string;
   readonly total: string;
   readonly currency: string;
+  /** D-15 / RESEARCH E.16: the operator-set ready time, never scheduledFor. */
+  readonly etaAt: Date | null;
+  readonly shortNumber: number | null;
+  /** IANA zone from the order's location, when one is set (D-15 clock-time formatting). */
+  readonly locationTimezone: string | null;
 }
 
 export interface NotificationOrderItemRow {
@@ -38,8 +43,18 @@ export class NotificationOrderDrizzleRepository implements NotificationOrderRepo
           brandId: schema.orders.brandId,
           total: schema.orders.total,
           currency: schema.orders.currency,
+          etaAt: schema.orders.etaAt,
+          shortNumber: schema.orders.shortNumber,
+          locationTimezone: schema.locations.timezone,
         })
         .from(schema.orders)
+        .leftJoin(
+          schema.locations,
+          and(
+            eq(schema.orders.locationId, schema.locations.id),
+            eq(schema.orders.tenantId, schema.locations.tenantId),
+          ),
+        )
         .where(and(eq(schema.orders.id, orderId), eq(schema.orders.tenantId, tenantId)))
         .limit(1);
       return rows[0] ?? null;

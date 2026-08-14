@@ -92,3 +92,34 @@ location-membership check plus a single tenant-wide role is sufficient.
    any environment with real tenants.
 
 Cross-referenced from `10-02-SUMMARY.md`.
+
+## docs/api/openapi.yaml — pre-existing wholesale drift (found in Phase 10 Plan 06)
+
+**Status:** Out of scope, not fixed. Discovered, not caused, by this plan.
+
+**What was found:** Running `pnpm exec nx run api:openapi:emit` against the
+worktree's committed `docs/api/openapi.yaml` produces a ~430-line diff
+covering endpoints unrelated to this plan's task list — `/v1/tenancy/locations`
+(create/list/archive), `/v1/me/set-active-brand`, and others from Phase
+08.4/08.5's controller work. None of that work's landing plans regenerated
+and committed the OpenAPI artifact, so `pnpm openapi:check` (the CI drift
+gate) was already red before this plan touched anything.
+
+**What this plan did instead:** Task 1 changes `OrderStatusResponseSchema`
+(`orders.controller.ts`), which does change the emitted spec for
+`OrderStatusResponseDto`. Rather than committing a full regenerated
+`docs/api/openapi.yaml` (which would silently absorb the unrelated ~430-line
+pre-existing drift into this plan's commit — a Scope Boundary violation),
+the `OrderStatusResponseDto` schema block was hand-edited to match exactly
+what the generator produces for the new nine-field shape, verified by a
+throwaway full regeneration + targeted diff extraction, then reverted and
+reapplied as a minimal, scoped patch. Same approach for
+`packages/api-client/src/generated/api.ts`'s `OrderStatusResponseDto` type.
+
+**Net effect:** `pnpm openapi:check` still fails after this plan, for the
+same pre-existing reasons it failed before (Phase 08.4/08.5 endpoints never
+regenerated). This plan's own endpoint (`/v1/orders/{id}/status`) is
+correctly in sync. Fixing the wholesale drift is a separate maintenance
+task — running `pnpm exec nx run api:openapi:emit && pnpm exec nx run
+api-client:gen` and committing the full result — not attributable to any
+single phase's file list.

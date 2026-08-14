@@ -3008,21 +3008,41 @@ components:
       properties:
         status:
           type: string
+        shortNumber:
+          type: integer
+          nullable: true
+        orderNumber:
+          type: string
         total:
           type: string
         currency:
           type: string
-        orderNumber:
-          type: string
-        eta:
+        etaAt:
           type: string
           format: date-time
           nullable: true
+        fulfillmentMode:
+          type: string
+          enum:
+            - dine_in
+            - pickup
+            - delivery
+        cancelReason:
+          type: string
+          nullable: true
+        canceledFromStatus:
+          type: string
+          nullable: true
       required:
         - status
+        - shortNumber
+        - orderNumber
         - total
         - currency
-        - orderNumber
+        - etaAt
+        - fulfillmentMode
+        - cancelReason
+        - canceledFromStatus
     CreatePaymentIntentInputDto:
       type: object
       properties:

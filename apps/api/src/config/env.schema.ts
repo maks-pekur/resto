@@ -92,6 +92,16 @@ export const envSchema = z
     ADMIN_WEB_URL: z.string().url().optional(),
 
     /**
+     * Public base URL of the customer-facing website — used to build the
+     * guest order-status link in guest notification emails (Growth
+     * HIGH-10). Required outside dev, same guard treatment as
+     * ADMIN_WEB_URL. Single global origin: `apps/website` resolves the
+     * tenant per-request from the Host header, so per-tenant custom-domain
+     * email links are a known future gap, not solved by this variable.
+     */
+    WEBSITE_PUBLIC_URL: z.string().url().optional(),
+
+    /**
      * Cookie domain for BA sessions. Set to `.resto.app` in production for
      * cross-subdomain session sharing (admin.resto.app ↔ api.resto.app).
      * Leave unset in dev/test so cookies bind to host-only.
@@ -261,6 +271,7 @@ export const envSchema = z
         'BETTER_AUTH_BASE_URL',
         'BETTER_AUTH_DATABASE_URL',
         'ADMIN_WEB_URL',
+        'WEBSITE_PUBLIC_URL',
         'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
