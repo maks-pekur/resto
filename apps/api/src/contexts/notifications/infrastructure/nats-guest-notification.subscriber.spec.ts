@@ -90,7 +90,14 @@ const buildRefundedEnvelope = () =>
 const buildOrderStatusEnvelope = (newStatus: string) =>
   buildEnvelope(
     OrderStatusChangedV1,
-    { orderId: ORDER_ID, tenantId: TENANT_ID, previousStatus: 'paid', newStatus },
+    {
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      locationId: '00000000-0000-0000-0000-000000000099',
+      previousStatus: 'paid',
+      newStatus,
+      actorUserId: null,
+    },
     { tenantId: TENANT_ID },
   );
 

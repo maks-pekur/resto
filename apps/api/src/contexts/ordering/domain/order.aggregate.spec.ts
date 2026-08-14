@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { Currency, TenantId } from '@resto/domain';
-import { Order, type CreateOrderInput } from './order.aggregate';
-import { InvalidOrderTransitionError, RefundExceedsCapturedError } from './errors';
+import { Currency, OrderId, TenantId } from '@resto/domain';
+import { Order, type CreateOrderInput, type OrderSnapshot } from './order.aggregate';
+import {
+  InvalidCancelReasonError,
+  InvalidOrderTransitionError,
+  RefundExceedsCapturedError,
+} from './errors';
 
 const USD = Currency.parse('USD');
 
@@ -9,7 +13,7 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
   return {
     tenantId: TenantId.parse('00000000-0000-0000-0000-000000000001'),
     brandId: '00000000-0000-0000-0000-000000000002',
-    locationId: '00000000-0000-0000-0000-000000000004',
+    locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
     fulfillmentMode: 'dine_in',
@@ -25,6 +29,50 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
         categoryId: 'cat-1',
       },
     ],
+    ...overrides,
+  };
+}
+
+function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
+  const now = new Date('2026-01-01T00:00:00.000Z');
+  return {
+    id: OrderId.parse('00000000-0000-0000-0000-0000000000f1'),
+    tenantId: TenantId.parse('00000000-0000-0000-0000-000000000001'),
+    brandId: '00000000-0000-0000-0000-000000000002',
+    locationId: '00000000-0000-0000-0000-000000000099',
+    idempotencyKey: '00000000-0000-0000-0000-000000000003',
+    orderNumber: 'ORD-001',
+    status: 'paid',
+    fulfillmentMode: 'dine_in',
+    tableIdentifier: null,
+    customerName: null,
+    customerPhone: null,
+    customerEmail: null,
+    items: [],
+    subtotal: '12.50',
+    deliveryFee: '0.00',
+    serviceFee: '0.00',
+    discount: '0.00',
+    total: '12.50',
+    currency: USD,
+    scheduledFor: null,
+    shortNumber: null,
+    channel: 'site',
+    acceptedAt: null,
+    preparingAt: null,
+    readyAt: null,
+    completedAt: null,
+    canceledAt: null,
+    acceptedByUserId: null,
+    canceledByUserId: null,
+    cancelReason: null,
+    cancelNote: null,
+    canceledFromStatus: null,
+    etaAt: null,
+    marketingConsent: false,
+    marketingConsentAt: null,
+    createdAt: now,
+    updatedAt: now,
     ...overrides,
   };
 }
@@ -45,6 +93,7 @@ describe('Order.create', () => {
     expect(event.kind).toBe('OrderCreated');
     if (event.kind !== 'OrderCreated') return;
     expect(event.brandId).toBe('00000000-0000-0000-0000-000000000002');
+    expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     expect(event.orderNumber).toBe('ORD-001');
     expect(event.fulfillmentMode).toBe('dine_in');
     expect(event.totalMinorUnits).toBeTypeOf('number');
@@ -203,6 +252,21 @@ describe('Order.create', () => {
     });
     expect(order.toSnapshot().items.length).toBe(snapshotItemsBefore);
   });
+
+  it('defaults channel to site and marketingConsent to false with no consent timestamp', () => {
+    const order = Order.create(makeInput());
+    const snap = order.toSnapshot();
+    expect(snap.channel).toBe('site');
+    expect(snap.marketingConsent).toBe(false);
+    expect(snap.marketingConsentAt).toBeNull();
+  });
+
+  it('stamps marketingConsentAt when marketingConsent is true (D-17 lawful-basis record)', () => {
+    const order = Order.create(makeInput({ marketingConsent: true }));
+    const snap = order.toSnapshot();
+    expect(snap.marketingConsent).toBe(true);
+    expect(snap.marketingConsentAt).toBeInstanceOf(Date);
+  });
 });
 
 describe('Order.fromSnapshot + toSnapshot round-trip', () => {
@@ -226,7 +290,7 @@ describe('pullEvents', () => {
 });
 
 describe('markPaid', () => {
-  it('transitions created → paid and emits OrderPaid', () => {
+  it('transitions created → paid and emits OrderPaid with real total/currency', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_123');
@@ -239,6 +303,9 @@ describe('markPaid', () => {
     expect(event.kind).toBe('OrderPaid');
     if (event.kind === 'OrderPaid') {
       expect(event.paymentId).toBe('pi_123');
+      expect(event.total).toBe(order.toSnapshot().total);
+      expect(event.currency).toBe('USD');
+      expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     }
   });
 
@@ -253,7 +320,7 @@ describe('markPaid', () => {
 
     const canceledOrder = Order.create(makeInput());
     canceledOrder.pullEvents();
-    canceledOrder.cancel('test');
+    canceledOrder.cancel('other', 'test', null);
     canceledOrder.pullEvents();
     expect(() => {
       canceledOrder.markPaid('pi_3');
@@ -262,13 +329,23 @@ describe('markPaid', () => {
 });
 
 describe('accept', () => {
-  it('transitions paid → accepted and emits OrderStatusChanged', () => {
+  it('transitions paid → accepted, stamps acceptedAt/acceptedByUserId/etaAt, and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
-    expect(order.toSnapshot().status).toBe('accepted');
+    const eta = new Date('2026-01-01T12:30:00.000Z');
+    order.accept(eta, 'user-1');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('accepted');
+    expect(snap.acceptedAt).toBeInstanceOf(Date);
+    expect(snap.acceptedByUserId).toBe('user-1');
+    // accept() stores the supplied etaAt verbatim
+    expect(snap.etaAt).toEqual(eta);
+    // only its own timestamp is stamped
+    expect(snap.preparingAt).toBeNull();
+    expect(snap.readyAt).toBeNull();
+    expect(snap.completedAt).toBeNull();
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -277,38 +354,56 @@ describe('accept', () => {
     if (event.kind === 'OrderStatusChanged') {
       expect(event.previousStatus).toBe('paid');
       expect(event.newStatus).toBe('accepted');
+      expect(event.actorUserId).toBe('user-1');
+      expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     }
+  });
+
+  it('accepts a null etaAt verbatim (no ETA chosen)', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.accept(null, 'user-1');
+    expect(order.toSnapshot().etaAt).toBeNull();
   });
 
   it('throws InvalidOrderTransitionError from created state', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     expect(() => {
-      order.accept();
+      order.accept(null, 'user-1');
     }).toThrow(InvalidOrderTransitionError);
   });
 
   it('throws InvalidOrderTransitionError from canceled state', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    order.cancel('test');
+    order.cancel('other', 'test', null);
     order.pullEvents();
     expect(() => {
-      order.accept();
+      order.accept(null, 'user-1');
     }).toThrow(InvalidOrderTransitionError);
   });
 });
 
 describe('startPreparing', () => {
-  it('transitions accepted → preparing and emits OrderStatusChanged', () => {
+  it('transitions accepted → preparing, stamps only preparingAt, and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
-    expect(order.toSnapshot().status).toBe('preparing');
+    const acceptedAtBefore = order.toSnapshot().acceptedAt;
+    order.startPreparing('user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('preparing');
+    expect(snap.preparingAt).toBeInstanceOf(Date);
+    // its own transition's timestamp is not re-stamped
+    expect(snap.acceptedAt).toEqual(acceptedAtBefore);
+    expect(snap.readyAt).toBeNull();
+    expect(snap.completedAt).toBeNull();
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -317,6 +412,7 @@ describe('startPreparing', () => {
     if (event.kind === 'OrderStatusChanged') {
       expect(event.previousStatus).toBe('accepted');
       expect(event.newStatus).toBe('preparing');
+      expect(event.actorUserId).toBe('user-2');
     }
   });
 
@@ -326,23 +422,28 @@ describe('startPreparing', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     expect(() => {
-      order.startPreparing();
+      order.startPreparing('user-1');
     }).toThrow(InvalidOrderTransitionError);
   });
 });
 
 describe('markReady', () => {
-  it('transitions preparing → ready and emits OrderStatusChanged', () => {
+  it('transitions preparing → ready, stamps only readyAt, and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
+    order.startPreparing('user-1');
     order.pullEvents();
-    order.markReady();
-    expect(order.toSnapshot().status).toBe('ready');
+    const preparingAtBefore = order.toSnapshot().preparingAt;
+    order.markReady('user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('ready');
+    expect(snap.readyAt).toBeInstanceOf(Date);
+    expect(snap.preparingAt).toEqual(preparingAtBefore);
+    expect(snap.completedAt).toBeNull();
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -351,6 +452,7 @@ describe('markReady', () => {
     if (event.kind === 'OrderStatusChanged') {
       expect(event.previousStatus).toBe('preparing');
       expect(event.newStatus).toBe('ready');
+      expect(event.actorUserId).toBe('user-2');
     }
   });
 
@@ -359,28 +461,32 @@ describe('markReady', () => {
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
     expect(() => {
-      order.markReady();
+      order.markReady('user-1');
     }).toThrow(InvalidOrderTransitionError);
   });
 });
 
 describe('complete', () => {
-  it('transitions ready → completed and emits OrderStatusChanged', () => {
+  it('transitions ready → completed, stamps only completedAt, and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
+    order.startPreparing('user-1');
     order.pullEvents();
-    order.markReady();
+    order.markReady('user-1');
     order.pullEvents();
-    order.complete();
-    expect(order.toSnapshot().status).toBe('completed');
+    const readyAtBefore = order.toSnapshot().readyAt;
+    order.complete('user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('completed');
+    expect(snap.completedAt).toBeInstanceOf(Date);
+    expect(snap.readyAt).toEqual(readyAtBefore);
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -389,6 +495,7 @@ describe('complete', () => {
     if (event.kind === 'OrderStatusChanged') {
       expect(event.previousStatus).toBe('ready');
       expect(event.newStatus).toBe('completed');
+      expect(event.actorUserId).toBe('user-2');
     }
   });
 
@@ -397,22 +504,28 @@ describe('complete', () => {
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
+    order.startPreparing('user-1');
     order.pullEvents();
     expect(() => {
-      order.complete();
+      order.complete('user-1');
     }).toThrow(InvalidOrderTransitionError);
   });
 });
 
+// D-08/D-09: cancel() is legal from every pre-completion status and is the
+// only method that writes a terminal order status.
 describe('cancel', () => {
-  it('transitions created → canceled and emits OrderCanceled', () => {
+  it('transitions created → canceled with canceledFromStatus "created" and emits OrderCanceled', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    order.cancel('customer request');
-    expect(order.toSnapshot().status).toBe('canceled');
+    order.cancel('guest_requested', 'customer request', null);
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('canceled');
+    expect(snap.canceledFromStatus).toBe('created');
+    expect(snap.cancelReason).toBe('guest_requested');
+    expect(snap.cancelNote).toBe('customer request');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -420,33 +533,74 @@ describe('cancel', () => {
     expect(event.kind).toBe('OrderCanceled');
     if (event.kind === 'OrderCanceled') {
       expect(event.reason).toBe('customer request');
+      expect(event.reasonCode).toBe('guest_requested');
+      expect(event.canceledFromStatus).toBe('created');
     }
   });
 
-  it('transitions paid → canceled and emits OrderCanceled', () => {
+  it('transitions paid → canceled with canceledFromStatus "paid" and records the actor', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.cancel('operator cancelled');
-    expect(order.toSnapshot().status).toBe('canceled');
+    order.cancel('payment_issue', null, 'user-1');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('canceled');
+    expect(snap.canceledFromStatus).toBe('paid');
+    expect(snap.canceledByUserId).toBe('user-1');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
     if (!event) return;
     expect(event.kind).toBe('OrderCanceled');
+    if (event.kind === 'OrderCanceled') {
+      expect(event.actorUserId).toBe('user-1');
+    }
   });
 
-  it('throws InvalidOrderTransitionError from accepted state', () => {
+  it('transitions accepted → canceled with canceledFromStatus "accepted"', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    expect(() => {
-      order.cancel('test');
-    }).toThrow(InvalidOrderTransitionError);
+    order.cancel('kitchen_too_busy', null, 'user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('canceled');
+    expect(snap.canceledFromStatus).toBe('accepted');
+  });
+
+  it('transitions preparing → canceled with canceledFromStatus "preparing"', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.accept(null, 'user-1');
+    order.pullEvents();
+    order.startPreparing('user-1');
+    order.pullEvents();
+    order.cancel('kitchen_out_of_stock', null, 'user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('canceled');
+    expect(snap.canceledFromStatus).toBe('preparing');
+  });
+
+  it('transitions ready → canceled with canceledFromStatus "ready"', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.accept(null, 'user-1');
+    order.pullEvents();
+    order.startPreparing('user-1');
+    order.pullEvents();
+    order.markReady('user-1');
+    order.pullEvents();
+    order.cancel('duplicate_order', null, 'user-2');
+    const snap = order.toSnapshot();
+    expect(snap.status).toBe('canceled');
+    expect(snap.canceledFromStatus).toBe('ready');
   });
 
   it('throws InvalidOrderTransitionError from completed state', () => {
@@ -454,28 +608,57 @@ describe('cancel', () => {
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
+    order.startPreparing('user-1');
     order.pullEvents();
-    order.markReady();
+    order.markReady('user-1');
     order.pullEvents();
-    order.complete();
+    order.complete('user-1');
     order.pullEvents();
     expect(() => {
-      order.cancel('test');
+      order.cancel('other', null, 'user-2');
     }).toThrow(InvalidOrderTransitionError);
+  });
+
+  it('throws InvalidOrderTransitionError from canceled state', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.cancel('other', null, null);
+    order.pullEvents();
+    expect(() => {
+      order.cancel('other', null, null);
+    }).toThrow(InvalidOrderTransitionError);
+  });
+
+  it('throws InvalidOrderTransitionError from refunded state', () => {
+    // 'refunded' is no longer reachable through the aggregate's own public
+    // API (refund() never writes status) -- construct it via fromSnapshot to
+    // prove cancel() still guards against acting on a terminal order.
+    const order = Order.fromSnapshot(makeSnapshot({ status: 'refunded' }));
+    expect(() => {
+      order.cancel('other', null, null);
+    }).toThrow(InvalidOrderTransitionError);
+  });
+
+  it('throws InvalidCancelReasonError for a reason code outside the canonical seven', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    expect(() => {
+      order.cancel('not_a_real_reason', null, null);
+    }).toThrow(InvalidCancelReasonError);
   });
 });
 
+// RESEARCH.md C.8 / T-10-03-01: refund() must never rewrite order.status.
 describe('refund', () => {
-  it('full refund: paid → refunded and emits OrderRefunded with amount', () => {
+  it('full refund on a paid order never rewrites order status', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(1250, 0);
-    expect(order.toSnapshot().status).toBe('refunded');
+    expect(order.toSnapshot().status).toBe('paid');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -483,27 +666,62 @@ describe('refund', () => {
     expect(event.kind).toBe('OrderRefunded');
     if (event.kind === 'OrderRefunded') {
       expect(event.amount).toBeGreaterThan(0);
+      expect(event.currency).toBe('USD');
+      expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     }
   });
 
-  it('throws InvalidOrderTransitionError from created state', () => {
-    const order = Order.create(makeInput());
-    order.pullEvents();
-    expect(() => {
-      order.refund(1250, 0);
-    }).toThrow(InvalidOrderTransitionError);
-  });
-
-  it('throws InvalidOrderTransitionError from accepted state', () => {
+  it('refund() on a preparing order leaves status preparing', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    expect(() => {
-      order.refund(1250, 0);
-    }).toThrow(InvalidOrderTransitionError);
+    order.startPreparing('user-1');
+    order.pullEvents();
+    order.refund(1250, 0);
+    expect(order.toSnapshot().status).toBe('preparing');
+  });
+
+  it('full refund() on a completed order leaves status completed', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    order.accept(null, 'user-1');
+    order.pullEvents();
+    order.startPreparing('user-1');
+    order.pullEvents();
+    order.markReady('user-1');
+    order.pullEvents();
+    order.complete('user-1');
+    order.pullEvents();
+    order.refund(1250, 0);
+    expect(order.toSnapshot().status).toBe('completed');
+  });
+
+  it('has no order-status gate -- refundability is RefundOrderService/PaymentNotRefundableError, not the aggregate', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    expect(() => order.refund(1250, 0)).not.toThrow();
+    expect(order.toSnapshot().status).toBe('created');
+  });
+
+  it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    expect(() => order.refund(1300, 0)).toThrow(RefundExceedsCapturedError);
+  });
+
+  it('throws RefundExceedsCapturedError when amount <= 0', () => {
+    const order = Order.create(makeInput());
+    order.pullEvents();
+    order.markPaid('pi_1');
+    order.pullEvents();
+    expect(() => order.refund(0, 0)).toThrow(RefundExceedsCapturedError);
   });
 });
 
@@ -542,13 +760,13 @@ describe('markFailed', () => {
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
-    order.accept();
+    order.accept(null, 'user-1');
     order.pullEvents();
-    order.startPreparing();
+    order.startPreparing('user-1');
     order.pullEvents();
-    order.markReady();
+    order.markReady('user-1');
     order.pullEvents();
-    order.complete();
+    order.complete('user-1');
     order.pullEvents();
     expect(() => {
       order.markFailed('test');
@@ -558,7 +776,7 @@ describe('markFailed', () => {
   it('throws InvalidOrderTransitionError from canceled state', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    order.cancel('test');
+    order.cancel('other', null, null);
     order.pullEvents();
     expect(() => {
       order.markFailed('test');
@@ -626,7 +844,7 @@ describe('partial refund (D-04)', () => {
     }
   });
 
-  it('cumulative full refund transitions to refunded', () => {
+  it('cumulative full refund keeps status paid (refund never transitions to refunded)', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
@@ -634,7 +852,9 @@ describe('partial refund (D-04)', () => {
     order.refund(500, 0);
     order.pullEvents();
     order.refund(750, 500);
-    expect(order.toSnapshot().status).toBe('refunded');
+    // Money-completeness lives on payments.status/payment_refunds now --
+    // cancel() is the only method that ever writes a terminal order status.
+    expect(order.toSnapshot().status).toBe('paid');
   });
 
   it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {

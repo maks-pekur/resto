@@ -113,8 +113,11 @@ export class RefundOrderService {
 
       await this.orderRepo.update(order, tx);
 
-      const snap = order.toSnapshot();
-      const fullyRefunded = snap.status === 'refunded';
+      // 10-03 (T-10-03-01): order.refund() no longer writes order.status --
+      // fulfillment status and refund completeness are separate facts.
+      // Derive fullyRefunded from the payment ledger amounts, not the order
+      // snapshot (order.toSnapshot().status === 'refunded' is never true now).
+      const fullyRefunded = newRefundedMinor >= capturedMinor;
 
       await appendToOutbox(tx, {
         envelope: buildEnvelope(
