@@ -1430,11 +1430,16 @@ export interface components {
         };
         OrderStatusResponseDto: {
             status: string;
+            shortNumber: number | null;
+            orderNumber: string;
             total: string;
             currency: string;
-            orderNumber: string;
             /** Format: date-time */
-            eta?: string | null;
+            etaAt: string | null;
+            /** @enum {string} */
+            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            cancelReason: string | null;
+            canceledFromStatus: string | null;
         };
         CreatePaymentIntentInputDto: {
             /** Format: uuid */
