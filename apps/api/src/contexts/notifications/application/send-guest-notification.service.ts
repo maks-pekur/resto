@@ -2,6 +2,8 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TenantId } from '@resto/domain';
 import { BrandQueriesService } from '../../tenancy/application/brand-queries.service';
 import { BrandId } from '@resto/domain';
+import { ENV_TOKEN } from '../../../config/config.module';
+import type { Env } from '../../../config/env.schema';
 import {
   NOTIFICATION_ORDER_REPOSITORY,
   type NotificationOrderRepository,
@@ -21,6 +23,32 @@ export interface SendGuestNotificationInput {
   readonly refundAmountMinor?: number | undefined;
 }
 
+const ETA_CLOCK_TIME_LOCALE = 'ru-RU';
+const ETA_CLOCK_TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+};
+
+// D-15: guest emails and the guest tracker (UI-SPEC S11/S12 checkout.status.etaLabel)
+// must show the identical clock-time reading -- format in the order's
+// location timezone, falling back to UTC when the location has none set
+// or the stored value isn't a recognised IANA zone (never crash a
+// notification send over a formatting detail).
+const formatEtaClockTime = (etaAt: Date, timezone: string | null): string => {
+  try {
+    return new Intl.DateTimeFormat(ETA_CLOCK_TIME_LOCALE, {
+      ...ETA_CLOCK_TIME_OPTS,
+      timeZone: timezone ?? 'UTC',
+    }).format(etaAt);
+  } catch {
+    return new Intl.DateTimeFormat(ETA_CLOCK_TIME_LOCALE, {
+      ...ETA_CLOCK_TIME_OPTS,
+      timeZone: 'UTC',
+    }).format(etaAt);
+  }
+};
+
 @Injectable()
 export class SendGuestNotificationService {
   private readonly logger = new Logger(SendGuestNotificationService.name);
@@ -30,6 +58,7 @@ export class SendGuestNotificationService {
     @Inject(BrandQueriesService) private readonly brandQueries: BrandQueriesService,
     @Inject(NOTIFICATION_ORDER_REPOSITORY)
     private readonly orderRepo: NotificationOrderRepository,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   async execute(input: SendGuestNotificationInput): Promise<void> {
@@ -56,9 +85,27 @@ export class SendGuestNotificationService {
     const brands = await this.brandQueries.listForTenant(tenantId, [BrandId.parse(order.brandId)]);
     const brand = brands[0] ?? null;
 
+    // WHY: no locale-detection/selection mechanism exists for guest
+    // notifications anywhere in this codebase -- hardcoding 'ru' is a
+    // known, deliberately-deferred limitation (Growth HIGH-11, RESEARCH
+    // E.19), not an oversight. Out of scope for this phase per
+    // CONTEXT.md's framing.
     const locale = 'ru';
-    const brandName = brand?.displayName ?? 'RestOS';
-    const brandTheme = brand?.theme
+
+    // Growth HIGH-11: every brand has a displayName by construction at
+    // provisioning -- a missing one is a real defect, not a
+    // degraded-but-fine case. Falling back to 'RestOS' would leak the
+    // platform's own name into a tenant's white-label guest email. Fail
+    // loudly and send nothing rather than send a mis-branded email.
+    if (!brand?.displayName) {
+      this.logger.error(
+        { tenantId, brandId: order.brandId, orderId: input.orderId },
+        'Brand has no displayName -- refusing to send a guest email that would fall back to the platform name',
+      );
+      return;
+    }
+    const brandName = brand.displayName;
+    const brandTheme = brand.theme
       ? { logoUrl: brand.theme.logoUrl, accentColor: brand.theme.primaryColor }
       : null;
 
@@ -71,6 +118,17 @@ export class SendGuestNotificationService {
       input.refundAmountMinor !== undefined
         ? (input.refundAmountMinor / 100).toFixed(2)
         : undefined;
+
+    const eta =
+      order.etaAt !== null ? formatEtaClockTime(order.etaAt, order.locationTimezone) : undefined;
+
+    // Growth HIGH-10: link back to the live guest tracker. WEBSITE_PUBLIC_URL
+    // is a single global origin (same shape as ADMIN_WEB_URL) -- see the
+    // WHY-comment on the env var itself for the per-tenant-domain caveat.
+    const statusUrl =
+      this.env.WEBSITE_PUBLIC_URL !== undefined
+        ? `${this.env.WEBSITE_PUBLIC_URL}/checkout/confirmation/${input.orderId}`
+        : `/checkout/confirmation/${input.orderId}`;
 
     const idempotencyKey = `gnotif:${input.orderId}:${input.transition}`;
 
@@ -85,6 +143,8 @@ export class SendGuestNotificationService {
         itemsSummary,
         total: order.total,
         currency: order.currency,
+        statusUrl,
+        ...(eta !== undefined ? { eta } : {}),
         ...(refundAmount !== undefined ? { refundAmount } : {}),
       },
       tenantId,

@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { renderGuestEmail, type GuestEmailVars } from './guest-email-templates';
+import {
+  renderGuestEmail,
+  type GuestEmailVars,
+  type GuestNotificationKind,
+} from './guest-email-templates';
 
 const baseVars: GuestEmailVars = {
   orderNumber: 'ORD-001',
   itemsSummary: '1x Burger, 2x Fries',
   total: '25.00',
   currency: 'EUR',
+  statusUrl: 'https://order.resto.app/checkout/confirmation/ORD-001',
 };
 
 describe('renderGuestEmail', () => {
@@ -114,5 +119,48 @@ describe('renderGuestEmail', () => {
       expect(result.subject).toContain('ready');
       expect(result.text).toContain('ORD-001');
     });
+  });
+
+  describe('D-15: ETA line presence across the four eta-aware templates', () => {
+    const etaAwareKinds: GuestNotificationKind[] = ['order_confirmation', 'order_accepted'];
+
+    for (const kind of etaAwareKinds) {
+      for (const locale of ['en', 'ru'] as const) {
+        it(`${kind}/${locale} renders the ETA line when eta is supplied`, () => {
+          const result = renderGuestEmail(kind, locale, null, 'Acme', {
+            ...baseVars,
+            eta: '19:45',
+          });
+          expect(result.text).toContain('19:45');
+        });
+
+        it(`${kind}/${locale} omits the ETA line when eta is absent`, () => {
+          const result = renderGuestEmail(kind, locale, null, 'Acme', baseVars);
+          expect(result.text).not.toContain('undefined');
+        });
+      }
+    }
+  });
+
+  describe('Growth HIGH-10: status-page link on every template', () => {
+    const allKinds: GuestNotificationKind[] = [
+      'order_confirmation',
+      'order_refunded',
+      'order_accepted',
+      'order_ready',
+    ];
+
+    for (const kind of allKinds) {
+      for (const locale of ['en', 'ru'] as const) {
+        it(`${kind}/${locale} renders a status link containing statusUrl`, () => {
+          const result = renderGuestEmail(kind, locale, null, 'Acme', {
+            ...baseVars,
+            ...(kind === 'order_refunded' ? { refundAmount: '12.50' } : {}),
+          });
+          expect(result.text).toContain(baseVars.statusUrl);
+          expect(result.html).toContain(`href="${baseVars.statusUrl}"`);
+        });
+      }
+    }
   });
 });

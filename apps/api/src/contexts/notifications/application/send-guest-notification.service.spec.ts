@@ -1,7 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
+import { Logger } from '@nestjs/common';
 import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
 import type { BrandQueriesService } from '../../tenancy/application/brand-queries.service';
 import type { EmailAdapterPort, SendGuestNotificationInput } from '../domain/ports';
+import type { Env } from '../../../config/env.schema';
 import type {
   NotificationOrderRepository,
   NotificationOrderRow,
@@ -11,6 +13,7 @@ import { SendGuestNotificationService } from './send-guest-notification.service'
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 const ORDER_ID = '22222222-2222-2222-2222-222222222222';
 const BRAND_ID = '33333333-3333-3333-3333-333333333333';
+const WEBSITE_PUBLIC_URL = 'https://order.resto.app';
 
 const baseOrder = {
   id: ORDER_ID,
@@ -20,7 +23,17 @@ const baseOrder = {
   customerEmail: 'guest@example.com',
   total: '25.00',
   currency: 'EUR',
+  etaAt: null,
+  shortNumber: null,
+  locationTimezone: null,
 };
+
+// Only WEBSITE_PUBLIC_URL is read by SendGuestNotificationService -- cast
+// mirrors the makeBrandQueries/makeEmailAdapter pattern below. No default
+// parameter: a default would silently substitute a value for an explicit
+// `undefined` call-site argument, defeating the "unset" test case below.
+const makeEnv = (websitePublicUrl: string | undefined): Env =>
+  ({ WEBSITE_PUBLIC_URL: websitePublicUrl }) as unknown as Env;
 
 const baseBrand: BrandSnapshot = {
   id: BRAND_ID as BrandSnapshot['id'],
@@ -76,6 +89,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder, [{ nameSnapshot: 'Burger', quantity: 1 }]),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -98,6 +112,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -115,6 +130,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -134,6 +150,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -155,6 +172,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo({ ...baseOrder, customerEmail: null }),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await expect(
@@ -170,6 +188,7 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(null),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await expect(
@@ -187,11 +206,114 @@ describe('SendGuestNotificationService', () => {
         email,
         makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
 
       expect(email.calls[0]?.kind).toBe('order_accepted');
+    });
+  });
+
+  describe('D-15: ETA plumbing', () => {
+    it('reaches vars as a localized clock-time string when etaAt is set', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeBrandQueries(baseBrand),
+        makeOrderRepo({
+          ...baseOrder,
+          etaAt: new Date('2026-06-28T19:45:00Z'),
+          locationTimezone: 'UTC',
+        }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
+
+      expect(email.calls[0]?.vars.eta).toBe('19:45');
+    });
+
+    it('is absent from vars when etaAt is null', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeBrandQueries(baseBrand),
+        makeOrderRepo({ ...baseOrder, etaAt: null }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.vars.eta).toBeUndefined();
+    });
+  });
+
+  describe('Growth HIGH-11: white-label brandName fallback removed', () => {
+    it('does not send and logs an error when brand.displayName is missing', async () => {
+      const email = makeEmailAdapter();
+      const noNameBrand = { ...baseBrand, displayName: '' };
+      const svc = new SendGuestNotificationService(
+        email,
+        makeBrandQueries(noNameBrand),
+        makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+      // Logger is a private instance field -- spy on the NestJS Logger
+      // prototype rather than reaching past the access modifier.
+      const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
+
+      await expect(
+        svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_confirmation' }),
+      ).resolves.toBeUndefined();
+
+      expect(email.sendGuestNotification).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledOnce();
+      errorSpy.mockRestore();
+    });
+  });
+
+  describe('Growth HIGH-10: status-page link', () => {
+    it('vars.statusUrl contains the order id and the configured website origin', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeBrandQueries(baseBrand),
+        makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      const statusUrl = email.calls[0]?.vars.statusUrl;
+      expect(statusUrl).toContain(WEBSITE_PUBLIC_URL);
+      expect(statusUrl).toContain(ORDER_ID);
+    });
+
+    it('falls back to a relative path when WEBSITE_PUBLIC_URL is unset', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeBrandQueries(baseBrand),
+        makeOrderRepo(baseOrder),
+        makeEnv(undefined),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.vars.statusUrl).toBe(`/checkout/confirmation/${ORDER_ID}`);
     });
   });
 });
