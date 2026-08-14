@@ -6,6 +6,7 @@ import { schema } from '@resto/db';
 import { runInTenantContext } from '@resto/db';
 import { OutboxDispatcher, type EventEnvelope } from '@resto/events';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
+import { OrderSequenceDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-sequence-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
@@ -65,6 +66,8 @@ const makeOrderInput = (): CreateOrderInput => ({
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),
+  channel: 'site',
+  marketingConsent: false,
 });
 
 suite('D-06 — Outbox decouples order acceptance from NATS availability', () => {
@@ -82,7 +85,8 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
     const defaultLocation = new DefaultLocationResolverService(stack.db);
-    service = new CreateOrderService(repo, pricing, defaultLocation);
+    const orderSequence = new OrderSequenceDrizzleRepository(stack.db);
+    service = new CreateOrderService(repo, pricing, orderSequence, defaultLocation, stack.db);
 
     await stack.db.withoutTenant('seed tenant for outbox-nats-decoupling e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
