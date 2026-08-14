@@ -29,7 +29,7 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   total: '25.00',
   currency: Currency.parse('EUR'),
   scheduledFor: null,
-  shortNumber: null,
+  shortNumber: 1,
   channel: 'site',
   acceptedAt: null,
   preparingAt: null,

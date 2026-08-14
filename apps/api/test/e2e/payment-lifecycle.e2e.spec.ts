@@ -77,6 +77,10 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         subtotal: '15.00',
         total: '15.00',
         currency: 'EUR',
+        // Plan 10-04: short_number is NOT NULL as of migration 0075 --
+        // deterministic fixture value, never 0 (which would read as a real,
+        // meaningless number).
+        shortNumber: 1,
       });
     });
   }, 120_000);
@@ -84,6 +88,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
   afterAll(async () => {
     if (stack) await stopDbStack(stack);
   });
+
+  // Plan 10-04: short_number is NOT NULL as of migration 0075 -- a
+  // deterministic incrementing counter (never 0, which would read as a
+  // real, meaningless number) rather than a fixed constant per fixture row.
+  let seedOrderShortNumberCounter = 2; // beforeAll's fixed fixture order used 1.
 
   const seedOrder = async (status: string, total = '15.00'): Promise<string> => {
     const newOrderId = randomUUID();
@@ -100,6 +109,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         subtotal: total,
         total,
         currency: 'EUR',
+        shortNumber: seedOrderShortNumberCounter++,
       });
     });
     return newOrderId;

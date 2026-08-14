@@ -273,7 +273,7 @@ export class OrderDrizzleRepository implements OrderRepository {
       total: row.total,
       currency: Currency.parse(row.currency),
       scheduledFor: row.scheduledFor ?? null,
-      shortNumber: row.shortNumber ?? null,
+      shortNumber: row.shortNumber,
       channel: row.channel as OrderSnapshot['channel'],
       acceptedAt: row.acceptedAt ?? null,
       preparingAt: row.preparingAt ?? null,

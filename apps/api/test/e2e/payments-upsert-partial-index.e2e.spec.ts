@@ -60,6 +60,9 @@ suite(
           subtotal: '10.00',
           total: '10.00',
           currency: 'EUR',
+          // Plan 10-04: short_number is NOT NULL as of migration 0075 --
+          // deterministic fixture value, never 0.
+          shortNumber: 1,
         });
       });
     }, 120_000);

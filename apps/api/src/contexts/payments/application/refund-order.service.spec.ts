@@ -45,7 +45,7 @@ const makeOrder = (status: string, total = '20.00') =>
     total,
     currency: Currency.parse('EUR'),
     scheduledFor: null,
-    shortNumber: null,
+    shortNumber: 1,
     channel: 'site' as const,
     acceptedAt: null,
     preparingAt: null,

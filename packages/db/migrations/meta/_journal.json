@@ -526,6 +526,13 @@
       "when": 1784160000000,
       "tag": "0074_tenancy_erase_order_sequences",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1784246400000,
+      "tag": "0075_orders_short_number_not_null",
+      "breakpoints": true
     }
   ]
 }

@@ -18,6 +18,10 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
     orderNumber: 'ORD-001',
     fulfillmentMode: 'dine_in',
     currency: USD,
+    // Phase 10 Plan 04: shortNumber is required, non-nullable end to end --
+    // a stand-in counter value, unrelated to this file's own transition
+    // tests.
+    shortNumber: 1,
     items: [
       {
         menuItemId: '00000000-0000-0000-0000-000000000010',
@@ -56,7 +60,7 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     total: '12.50',
     currency: USD,
     scheduledFor: null,
-    shortNumber: null,
+    shortNumber: 1,
     channel: 'site',
     acceptedAt: null,
     preparingAt: null,

@@ -214,7 +214,7 @@ function toOrderResponse(snap: {
   status: string;
   total: string;
   currency: string;
-  shortNumber: number | null;
+  shortNumber: number;
   channel: 'site' | 'qr-menu';
 }): OrderResponse {
   return {

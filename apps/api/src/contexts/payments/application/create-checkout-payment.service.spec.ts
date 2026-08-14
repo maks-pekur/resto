@@ -55,7 +55,7 @@ const makeOrderSnap = (brandId: string, overrides: Partial<OrderSnapshot> = {}):
   total: '10.00',
   currency: Currency.parse('EUR'),
   scheduledFor: null,
-  shortNumber: null,
+  shortNumber: 1,
   channel: 'site',
   acceptedAt: null,
   preparingAt: null,

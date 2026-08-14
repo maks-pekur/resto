@@ -83,10 +83,10 @@ export const OrderResponseSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/),
   // D-04: raw integer, not a pre-formatted '#042' string -- display format
   // (e.g. '№{{n}}') is a UI concern, so a future rebrand needs no backfill.
-  // Nullable to stay tolerant if this schema is ever reused against a
-  // pre-migration-0075 row (none can exist post-clear, but the response
-  // contract itself does not assume that).
-  shortNumber: z.number().int().positive().nullable(),
+  // Non-nullable end to end (Plan 04 Task 3): orders.short_number is NOT
+  // NULL as of migration 0075 and no pre-migration row survived the clear,
+  // so no legacy null value can ever be read back through this schema.
+  shortNumber: z.number().int().positive(),
   channel: OrderChannelSchema,
 });
 export type OrderResponse = z.infer<typeof OrderResponseSchema>;
