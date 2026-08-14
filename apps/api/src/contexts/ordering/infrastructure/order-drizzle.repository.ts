@@ -323,8 +323,8 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
           tenantId: event.tenantId,
           locationId: event.locationId,
           paymentId: event.paymentId,
-          // D-05: real captured money, replacing the historical
-          // total: 0 / currency: 'USD' hardcode.
+          // D-05: real captured money, replacing the historical zero-amount
+          // default-currency hardcode this branch used to ship.
           total: toMinorUnits(event.total),
           currency: event.currency,
         },
