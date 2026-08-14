@@ -42,10 +42,11 @@ export const orders = pgTable(
     total: money('total').notNull(),
     currency: text('currency').notNull(),
     scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
-    // Phase 10 Plan 01 (D-04): nullable at this stage -- the generator that
-    // fills it (CreateOrderService + order_daily_sequences) does not exist
-    // until plan 10-04, which tightens this to NOT NULL via migration 0075.
-    shortNumber: integer('short_number'),
+    // Phase 10 Plan 04 (D-04): tightened to NOT NULL by migration 0075 --
+    // order_daily_sequences + CreateOrderService.nextShortNumber() fill this
+    // on every new order; the shared dev database had zero orders rows at
+    // tightening time, so no clear/backfill was required.
+    shortNumber: integer('short_number').notNull(),
     channel: text('channel').notNull().default('site'),
     acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'date' }),
     preparingAt: timestamp('preparing_at', { withTimezone: true, mode: 'date' }),

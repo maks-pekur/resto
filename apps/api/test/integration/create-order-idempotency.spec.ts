@@ -10,6 +10,7 @@ import {
   type DbStack,
 } from '../e2e/helpers/with-db-stack';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
+import { OrderSequenceDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-sequence-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
@@ -75,6 +76,8 @@ const makeCartInput = (
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),
+  channel: 'site',
+  marketingConsent: false,
   ...overrides,
 });
 
@@ -98,7 +101,8 @@ suite('CreateOrderService — idempotency', () => {
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
     const defaultLocation = new DefaultLocationResolverService(stack.db);
-    service = new CreateOrderService(repo, pricing, defaultLocation);
+    const orderSequence = new OrderSequenceDrizzleRepository(stack.db);
+    service = new CreateOrderService(repo, pricing, orderSequence, defaultLocation, stack.db);
 
     await stack.db.withoutTenant('seed idempotency spec fixtures', async (tx) => {
       await tx.insert(schema.tenants).values([
@@ -132,15 +136,37 @@ suite('CreateOrderService — idempotency', () => {
     if (stack) await stopDbStack(stack);
   });
 
+  // T-10-04-06: the sum of order_daily_sequences.counter across every row
+  // for tenant A, at whatever point it is called -- a before/after delta
+  // proves how many counter values a set of calls actually consumed,
+  // independent of what other tests in this file have already run.
+  const sumTenantACounters = async (): Promise<number> => {
+    const rows = await stack.db.withoutTenant(
+      'sum order_daily_sequences counters for tenant A',
+      async (tx) =>
+        tx
+          .select({ counter: schema.orderDailySequences.counter })
+          .from(schema.orderDailySequences)
+          .where(eq(schema.orderDailySequences.tenantId, tenantIdA)),
+    );
+    return rows.reduce((sum, row) => sum + row.counter, 0);
+  };
+
   it('ORD-10: duplicate idempotency key returns the same orderId and produces only one orders row', async () => {
     const input = makeCartInput();
     const key = input.idempotencyKey;
 
+    const countersBefore = await sumTenantACounters();
     const first = await inTenantA(() => service.execute(input));
     const second = await inTenantA(() => service.execute({ ...input, idempotencyKey: key }));
+    const countersAfter = await sumTenantACounters();
 
     expect(second.orderId).toBe(first.orderId);
     expect(second.orderNumber).toBe(first.orderNumber);
+    // T-10-04-06: the idempotent replay must not consume a second counter
+    // value -- exactly one increment across both calls, read back from
+    // order_daily_sequences, not inferred from the in-memory response.
+    expect(countersAfter - countersBefore).toBe(1);
 
     const rowCount = await stack.db.withoutTenant('count orders', async (tx) => {
       const rows = await tx

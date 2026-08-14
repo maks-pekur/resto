@@ -89,7 +89,9 @@ export interface OrderSnapshot {
   readonly total: string;
   readonly currency: Currency;
   readonly scheduledFor: Date | null;
-  readonly shortNumber: number | null;
+  // Phase 10 Plan 04: orders.short_number is NOT NULL as of migration 0075
+  // -- every persisted order has a real per-location daily counter value.
+  readonly shortNumber: number;
   readonly channel: 'site' | 'qr-menu';
   readonly acceptedAt: Date | null;
   readonly preparingAt: Date | null;
@@ -138,7 +140,11 @@ export interface CreateOrderInput {
   readonly currency: Currency;
   readonly discountSpec?: DiscountSpec | null;
   readonly scheduledFor?: Date | null;
-  readonly shortNumber?: number | null;
+  // Required, not defaulted: the caller (CreateOrderService) must resolve a
+  // real value via ORDER_SEQUENCE_PORT.nextShortNumber() before calling
+  // create() -- unlike channel/marketingConsent, there is no safe synthetic
+  // default for a per-location daily counter value.
+  readonly shortNumber: number;
   readonly channel?: 'site' | 'qr-menu';
   readonly marketingConsent?: boolean;
 }
@@ -236,7 +242,7 @@ export class Order {
       total: fromMinorUnits(totalMinor),
       currency: input.currency,
       scheduledFor: input.scheduledFor ?? null,
-      shortNumber: input.shortNumber ?? null,
+      shortNumber: input.shortNumber,
       channel: input.channel ?? 'site',
       acceptedAt: null,
       preparingAt: null,

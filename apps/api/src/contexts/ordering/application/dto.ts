@@ -19,6 +19,10 @@ const CartLineItemSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
+// D-04: apps/qr-menu has no order-submission path yet -- 'site' is the only
+// producible value today, but the column/enum exist ahead of QR ordering.
+const OrderChannelSchema = z.enum(['site', 'qr-menu']);
+
 export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
@@ -36,6 +40,12 @@ export const CreateOrderInputSchema = z
         message: 'scheduledFor must be in the future',
       })
       .optional(),
+    channel: OrderChannelSchema.optional().default('site'),
+    // D-17: a flag + a server-set timestamp is the GDPR lawful-basis shape
+    // this repo precedents for consent (no consent-copy/version table or
+    // column exists anywhere else) -- the client never supplies the
+    // timestamp, Order.create() derives marketingConsentAt from `now`.
+    marketingConsent: z.boolean().optional().default(false),
   })
   .refine(
     (data) => {
@@ -71,6 +81,13 @@ export const OrderResponseSchema = z.object({
   status: z.string(),
   total: z.string(),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  // D-04: raw integer, not a pre-formatted '#042' string -- display format
+  // (e.g. '№{{n}}') is a UI concern, so a future rebrand needs no backfill.
+  // Non-nullable end to end (Plan 04 Task 3): orders.short_number is NOT
+  // NULL as of migration 0075 and no pre-migration row survived the clear,
+  // so no legacy null value can ever be read back through this schema.
+  shortNumber: z.number().int().positive(),
+  channel: OrderChannelSchema,
 });
 export type OrderResponse = z.infer<typeof OrderResponseSchema>;
 

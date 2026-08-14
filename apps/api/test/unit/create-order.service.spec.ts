@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { runInTenantContext } from '@resto/db';
+import { runInTenantContext, type TenantAwareDb } from '@resto/db';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import type { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
@@ -8,6 +8,7 @@ import type {
   MenuPricingPort,
   OrderingMenuSnapshot,
   OrderRepository,
+  OrderSequencePort,
 } from '../../src/contexts/ordering/domain/ports';
 import {
   OrderItemNotOrderableError,
@@ -127,9 +128,23 @@ const defaultLocation = {
   resolveForBrand: () => Promise.resolve(locationId),
 } as unknown as DefaultLocationResolverService;
 
+const orderSequence: OrderSequencePort = { nextShortNumber: () => Promise.resolve(1) };
+
+// Fakes only resolveBusinessDate's single query — a location row with no
+// timezone, exercising the UTC fallback path (T-10-04-07).
+const fakeDb = {
+  withTenant: (op: (tx: unknown, scoped: unknown) => Promise<unknown>) =>
+    op(undefined, {
+      selectFrom: () => ({ limit: () => Promise.resolve([{ timezone: null }]) }),
+    }),
+} as unknown as TenantAwareDb;
+
 const makeService = (): { service: CreateOrderService; repo: FakeOrderRepository } => {
   const repo = new FakeOrderRepository();
-  return { service: new CreateOrderService(repo, pricing, defaultLocation), repo };
+  return {
+    service: new CreateOrderService(repo, pricing, orderSequence, defaultLocation, fakeDb),
+    repo,
+  };
 };
 
 const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId, brandId }, op);
@@ -140,6 +155,8 @@ const baseInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
   customerName: 'Alice',
   customerPhone: '+15555550123',
   idempotencyKey: randomUUID(),
+  channel: 'site',
+  marketingConsent: false,
   ...overrides,
 });
 
