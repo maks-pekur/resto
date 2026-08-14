@@ -4,28 +4,6 @@ import { PRESET_ROLES } from '@resto/domain';
 import { log } from '../lib/logger';
 import { parseFlags, type RuntimeOptions } from '../lib/options';
 
-/**
- * D-06 / T-10-02-04 (Phase 10): re-syncs `PRESET_ROLES`'s current
- * permission JSON onto `organization_role` rows for tenants that were
- * already provisioned before a preset changed — `SeedPresetRolesService`
- * only writes at provisioning time, so an edited preset otherwise never
- * reaches an existing tenant.
- *
- * Connects directly to `BETTER_AUTH_DATABASE_URL` (the `resto_auth`
- * Postgres role — granted SELECT/UPDATE on `tenants` and full RLS-bypass
- * access to `organization_role`, see `packages/db/sql/auth-role.sql`).
- * `PRESET_ROLES` lives in `@resto/domain` (scope:shared) rather than
- * `apps/api` specifically so this CLI (scope:tools) can import the exact
- * same source of truth without crossing the Nx module boundary that
- * forbids scope:tools → scope:api.
- *
- * Mirrors `SyncPresetRolesService`'s logic (apps/api identity context) —
- * the CLI cannot resolve that NestJS-injected service in-process (RES-113:
- * bootstrapping a Nest application context from this tsx + esbuild CLI
- * setup was abandoned), so the sync is hand-rolled here with the same
- * skip-archived / update-if-changed / insert-if-missing rules.
- */
-
 interface OrgRow {
   readonly id: string;
 }
@@ -66,8 +44,6 @@ const syncOrganization = async (sql: Sql, organizationId: string): Promise<SyncC
     const target = JSON.stringify(preset.permission);
 
     if (existing) {
-      // T-10-02-05: never resurrect a role the owner deliberately archived
-      // (08.3 D-12 soft-delete semantics).
       if (existing.archivedAt !== null) {
         skippedArchived += 1;
         continue;
@@ -111,10 +87,6 @@ export const runSyncPresetRoles = async (
   try {
     let organizationIds: readonly string[];
     if (all) {
-      // Non-archived per T-10-02 "--all iterates every non-archived
-      // tenant" — organization_id references tenants.id directly (BA's
-      // "organization" concept is mapped onto our tenants table, see
-      // packages/db/src/schema/auth.ts).
       const rows = await sql<OrgRow[]>`
         SELECT id FROM tenants WHERE status NOT IN ('archived', 'erased')
       `;
@@ -122,8 +94,6 @@ export const runSyncPresetRoles = async (
     } else if (tenantFlag !== undefined) {
       organizationIds = [tenantFlag];
     } else {
-      // Unreachable — guarded above — but keeps organizationIds definitely
-      // assigned without a non-null assertion (CLAUDE.md: no `!` asserts).
       organizationIds = [];
     }
 

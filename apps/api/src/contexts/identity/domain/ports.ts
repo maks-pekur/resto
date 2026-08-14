@@ -46,7 +46,6 @@ export interface GuestEmailVars {
   readonly currency: string;
   readonly eta?: string | undefined;
   readonly refundAmount?: string | undefined;
-  /** Growth HIGH-10: link back to the live guest order-status tracker. */
   readonly statusUrl: string;
 }
 

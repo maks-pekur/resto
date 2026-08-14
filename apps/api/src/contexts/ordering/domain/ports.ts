@@ -63,14 +63,9 @@ export const MENU_PRICING_PORT = Symbol('MENU_PRICING_PORT');
 export interface NextShortNumberInput {
   readonly tenantId: TenantId;
   readonly locationId: string;
-  // ISO YYYY-MM-DD -- the caller resolves the calendar boundary (business
-  // day, in the location's timezone); the repository just keys on it.
   readonly businessDate: string;
 }
 
-// D-04: per-(tenant, location, business_date) daily order counter. The
-// generator that fills orders.short_number -- see order-sequence-drizzle.repository.ts
-// for the single-statement atomic increment this port fronts.
 export interface OrderSequencePort {
   nextShortNumber(input: NextShortNumberInput): Promise<number>;
 }

@@ -63,9 +63,6 @@ const buildController = () => {
   return { controller, getOrderService, createOrderService };
 };
 
-// T-10-06-02: the public status contract is frozen at exactly these nine
-// fields (see the WHY-comment above OrderStatusResponseSchema). Any test
-// case that adds a tenth key must fail this set-equality assertion.
 const FROZEN_STATUS_RESPONSE_KEYS = [
   'status',
   'shortNumber',

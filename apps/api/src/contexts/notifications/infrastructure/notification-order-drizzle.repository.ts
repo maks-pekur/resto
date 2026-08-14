@@ -10,10 +10,8 @@ export interface NotificationOrderRow {
   readonly brandId: string;
   readonly total: string;
   readonly currency: string;
-  /** D-15 / RESEARCH E.16: the operator-set ready time, never scheduledFor. */
   readonly etaAt: Date | null;
   readonly shortNumber: number | null;
-  /** IANA zone from the order's location, when one is set (D-15 clock-time formatting). */
   readonly locationTimezone: string | null;
 }
 

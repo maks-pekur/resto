@@ -8,10 +8,6 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getOrderStatus, type OrderStatusResponse } from '@/lib/checkout-api';
 
-// The four tracker steps this app can actually back -- Phase 9 (delivery
-// zones/fulfillment tracking) does not exist yet, so there is deliberately
-// no fifth step for a delivery order's transit leg here (Skeptic HIGH-6).
-// A `delivery` order reuses the pickup-ready label.
 type TrackerStatus = 'paid' | 'accepted' | 'preparing' | 'ready';
 const TRACKER_ORDER: readonly TrackerStatus[] = ['paid', 'accepted', 'preparing', 'ready'];
 
@@ -24,11 +20,6 @@ type KnownStatus =
   | 'refunded'
   | 'failed';
 
-// D-16: 'paid' MUST NOT be terminal. The pre-existing bug stopped polling the
-// moment Stripe settled, so accepted/preparing/ready never rendered -- the
-// entire guest half of this phase was invisible. 'refunded' is kept only as
-// a defensive fallback: refund() never writes order.status (see
-// order.aggregate.ts), so this value is not produced by the current backend.
 const TERMINAL_STATUSES = new Set<KnownStatus>(['completed', 'canceled', 'refunded', 'failed']);
 
 function pollIntervalMs(status: string): number {
@@ -146,11 +137,6 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     <p className="text-[12px] leading-[1.4] text-muted-foreground">{t('status.updating')}</p>
   ) : null;
 
-  // 'failed': payment never confirmed -- markFailed() only fires from
-  // created/paid, before any operator ever sees the order. This is not a
-  // restaurant decision, so it must never share copy with the
-  // declined/canceled card below (D-09's asymmetry extends to payment
-  // failures too -- don't blame the kitchen for a card decline).
   if (status.status === 'failed') {
     return (
       <div className="flex flex-col gap-4">

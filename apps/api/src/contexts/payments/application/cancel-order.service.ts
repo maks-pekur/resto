@@ -40,23 +40,9 @@ export class CancelOrderService {
       throw new OrderNotFoundError(input.orderId);
     }
 
-    // TX1: cancel commits on its own, before anything downstream ever
-    // touches Stripe. orderRepo.update() with no explicit tx opens and
-    // commits its own short transaction (order-drizzle.repository.ts) --
-    // this is what makes D-11's "the order still cancels even if Stripe is
-    // down" true. order.cancel() also validates reasonCode against the
-    // canonical seven codes before this write (InvalidCancelReasonError).
     order.cancel(input.reasonCode, input.cancelNote ?? null, input.actorUserId);
     await this.orderRepo.update(order);
 
-    // CTO HIGH-7: refundability is derived solely from the captured payment
-    // via RefundOrderService's own PaymentNotRefundableError check -- never
-    // from orders.status. The deleted `wasPaid` predicate used to read
-    // false for a fully-paid order sitting in accepted/preparing/ready,
-    // silently skipping the refund. There is deliberately no order-status
-    // gate here. The refund is always for the full remaining captured
-    // amount (D-10) -- CancelOrderService never accepts an amountMinor; a
-    // cashier cancelling makes no financial judgement.
     try {
       const result = await this.refundService.executeWithOrder(
         {

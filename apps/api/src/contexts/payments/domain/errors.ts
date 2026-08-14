@@ -46,10 +46,6 @@ export class PaymentNotRefundableError extends Error {
   }
 }
 
-// D-11: thrown when the Stripe call itself fails (network error, timeout,
-// provider rejection) -- the payment_refunds row is already marked 'failed'
-// by the time this is thrown, and the cancel/refund transactions that
-// already committed are never rolled back.
 export class RefundProviderFailedError extends Error {
   readonly kind = 'RefundProviderFailedError' as const;
   constructor(

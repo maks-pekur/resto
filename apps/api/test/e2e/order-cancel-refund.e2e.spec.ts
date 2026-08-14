@@ -24,10 +24,6 @@ if (!dockerOk) {
 
 const STRIPE_ACCOUNT_ID = 'acct_test_cancel_refund';
 
-// This spec is deliberately run in isolation (not part of a full apps/api
-// sweep) -- the shared per-IP rate limiter plus a 50-file single-process run
-// produces known false 429/timeout failures (project memory: "api
-// full-suite 429 gotcha").
 suite('Order cancel + refund e2e — payment-derived refundability, D-11 restructure', () => {
   let stack: DbStack;
   let tenantId: string;
@@ -183,7 +179,6 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
     },
   });
 
-  // Cases 1-3: cancel from every non-terminal captured-payment status.
   it.each([
     ['accepted', 'guest_no_show'],
     ['preparing', 'kitchen_too_busy'],
@@ -191,11 +186,6 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
   ] as const)(
     'cancel from %s with a captured payment issues a full refund (CTO HIGH-7 regression)',
     async (status, reasonCode) => {
-      // Before this plan, CancelOrderService derived refundability from
-      // `wasPaid = snap.status === 'paid'`, which reads false for any
-      // accepted/preparing/ready order -- the refund would have been
-      // silently skipped here even though the payment was fully captured.
-      // Refundability now comes solely from the payment row.
       const orderId = await seedOrder(status, '20.00');
       await seedPayment(orderId, '20.00', '0.00');
 
@@ -293,8 +283,6 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
 
     expect(result.refund.outcome).toBe('failed');
 
-    // The kitchen is not blocked -- the order still cancels even though the
-    // refund provider call failed.
     const orderRow = await readOrderRow(orderId);
     expect(orderRow?.status).toBe('canceled');
 
@@ -364,7 +352,6 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
     expect(secondRequestId).toBe(firstRequestId);
 
     const rowsAfterRetry = await readRefundRows(orderId);
-    // Row count for the order stays exactly 1 -- no duplicate ledger row.
     expect(rowsAfterRetry).toHaveLength(1);
     expect(rowsAfterRetry[0]?.status).toBe('succeeded');
     expect(rowsAfterRetry[0]?.stripeRefundId).not.toBeNull();

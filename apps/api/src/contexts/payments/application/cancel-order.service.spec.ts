@@ -223,11 +223,6 @@ describe('CancelOrderService', () => {
     expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
-  // CTO HIGH-7 regression test: before this plan, CancelOrderService derived
-  // refundability from `wasPaid = snap.status === 'paid'`, which read false
-  // for an accepted/preparing/ready order -- silently skipping the refund
-  // on a fully-paid order. Refundability now comes solely from the captured
-  // payment row, with no order-status gate at all.
   it.each(['accepted', 'preparing', 'ready'] as const)(
     'cancel of a %s order still issues the auto-refund (CTO HIGH-7)',
     async (status) => {

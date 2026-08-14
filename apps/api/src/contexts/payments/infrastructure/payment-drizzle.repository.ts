@@ -154,9 +154,6 @@ export class PaymentDrizzleRepository implements PaymentRepository {
         createdAt: now,
         updatedAt: now,
       })
-      // D-11: conflict target is (tenant_id, refund_request_id), not
-      // stripe_refund_id -- a pending row (no Stripe id yet) is upserted in
-      // place once the real Stripe id becomes known.
       .onConflictDoUpdate({
         target: [schema.paymentRefunds.tenantId, schema.paymentRefunds.refundRequestId],
         set: {

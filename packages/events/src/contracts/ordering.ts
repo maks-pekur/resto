@@ -6,8 +6,6 @@ export const OrderCreatedV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
   brandId: z.string().uuid(),
-  // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE phase (18)
-  // route this event without a DB round-trip.
   locationId: z.string().uuid(),
   orderNumber: z.string().min(1).max(20),
   fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
@@ -25,8 +23,6 @@ export const OrderCreatedV1 = defineEventContract({
 export const OrderPaidV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
-  // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE phase (18)
-  // route this event without a DB round-trip.
   locationId: z.string().uuid(),
   paymentId: z.string().uuid(),
   total: z.number().int().nonnegative(),
@@ -42,8 +38,6 @@ export const OrderPaidV1 = defineEventContract({
 export const OrderCanceledV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
-  // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE phase (18)
-  // route this event without a DB round-trip.
   locationId: z.string().uuid(),
   reason: z.string(),
   reasonCode: z.string(),
@@ -60,8 +54,6 @@ export const OrderCanceledV1 = defineEventContract({
 export const OrderRefundedV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
-  // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE phase (18)
-  // route this event without a DB round-trip.
   locationId: z.string().uuid(),
   amount: z.number().int().nonnegative(),
   currency: z.string().regex(/^[A-Z]{3}$/),
@@ -76,8 +68,6 @@ export const OrderRefundedV1 = defineEventContract({
 export const OrderStatusChangedV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
-  // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE phase (18)
-  // route this event without a DB round-trip.
   locationId: z.string().uuid(),
   previousStatus: z.string(),
   newStatus: z.string(),

@@ -1,8 +1,5 @@
 export const PERMISSIONS_STATEMENT = {
   menu: ['read', 'create', 'update', 'delete'],
-  // D-06 (Phase 10): 'cancel' is a status-transition verb (reject/cancel an
-  // order), deliberately kept out of NON_DELEGATABLE so any non-owner
-  // preset can hold it — see non-delegatable.spec.ts.
   order: ['read', 'update-status', 'cancel'],
   staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
   reports: ['read'],

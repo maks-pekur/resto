@@ -91,14 +91,6 @@ export const envSchema = z
      */
     ADMIN_WEB_URL: z.string().url().optional(),
 
-    /**
-     * Public base URL of the customer-facing website — used to build the
-     * guest order-status link in guest notification emails (Growth
-     * HIGH-10). Required outside dev, same guard treatment as
-     * ADMIN_WEB_URL. Single global origin: `apps/website` resolves the
-     * tenant per-request from the Host header, so per-tenant custom-domain
-     * email links are a known future gap, not solved by this variable.
-     */
     WEBSITE_PUBLIC_URL: z.string().url().optional(),
 
     /**

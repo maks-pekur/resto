@@ -18,16 +18,6 @@ const wrap = wrapWith(mapOrderError);
 
 class OrderResponseDto extends createZodDto(OrderResponseSchema) {}
 
-// RESEARCH E.17 / CONTEXT.md Claude's Discretion: GET /v1/orders/:id/status
-// stays @Public() -- the order id is a randomUUID(), a 122-bit random
-// capability token in all but name, and a second signed token would add
-// real friction to D-16's entire value ("share this link, watch it
-// update") for little extra security. The mitigation for an already-public
-// endpoint growing over time (Skeptic MED-7) is NOT authentication, it is
-// freezing the response shape: exactly the nine fields below, no guest
-// PII, no internal operator identities (customerName/Phone/Email,
-// cancelNote, acceptedByUserId/canceledByUserId are all deliberately
-// excluded). Do not add a field here without revisiting this posture.
 const OrderStatusResponseSchema = z.object({
   status: z.string(),
   shortNumber: z.number().int().nullable(),
@@ -76,10 +66,6 @@ export class OrdersController {
         orderNumber: snap.orderNumber,
         total: snap.total,
         currency: snap.currency,
-        // D-15 / RESEARCH E.16: etaAt is the operator-set ready time
-        // (Order.accept()'s etaAt param), never scheduledFor -- that field
-        // means "the guest's requested pickup/delivery time" and is null
-        // for every ASAP order. The two must never be conflated.
         etaAt: snap.etaAt ? snap.etaAt.toISOString() : null,
         fulfillmentMode: snap.fulfillmentMode,
         cancelReason: snap.cancelReason,

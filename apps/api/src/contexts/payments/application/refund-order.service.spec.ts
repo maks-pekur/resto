@@ -158,10 +158,6 @@ describe('RefundOrderService', () => {
   });
 
   it('does not gate on order status — succeeds when order is created but a captured payment row exists (10-03 / RESEARCH.md C.9)', async () => {
-    // order.refund() no longer throws InvalidOrderTransitionError on a
-    // non-paid order; refundability is now determined solely by the
-    // payment row (PaymentNotRefundableError), not the order's fulfillment
-    // status. This is a deliberate design change, not a regression.
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow());
     await expect(
@@ -197,8 +193,6 @@ describe('RefundOrderService', () => {
         refundRequestId: expect.stringContaining('refund:'),
       }),
     );
-    // D-11: TX2 writes the 'pending' row BEFORE Stripe is called -- the
-    // real Stripe id only lands afterwards via updateRefundOutcome (TX3).
     expect(paymentRepo.upsertRefund).toHaveBeenCalledWith(
       expect.objectContaining({
         tenantId: TENANT_ID,
@@ -342,10 +336,6 @@ describe('RefundOrderService', () => {
     expect(key1).toBe(key2);
   });
 
-  // D-11: the provider call sits outside any open transaction -- a failure
-  // records a 'failed' ledger row (via updateRefundOutcome, not a second
-  // upsertRefund insert) and rethrows a typed error, but must never touch
-  // the order (orderRepo.update is only called on the TX3-success path).
   it('provider failure records a failed outcome and rethrows RefundProviderFailedError (D-11)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));

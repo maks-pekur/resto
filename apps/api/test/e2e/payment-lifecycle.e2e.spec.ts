@@ -77,9 +77,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         subtotal: '15.00',
         total: '15.00',
         currency: 'EUR',
-        // Plan 10-04: short_number is NOT NULL as of migration 0075 --
-        // deterministic fixture value, never 0 (which would read as a real,
-        // meaningless number).
         shortNumber: 1,
       });
     });
@@ -89,9 +86,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     if (stack) await stopDbStack(stack);
   });
 
-  // Plan 10-04: short_number is NOT NULL as of migration 0075 -- a
-  // deterministic incrementing counter (never 0, which would read as a
-  // real, meaningless number) rather than a fixed constant per fixture row.
   let seedOrderShortNumberCounter = 2; // beforeAll's fixed fixture order used 1.
 
   const seedOrder = async (status: string, total = '15.00'): Promise<string> => {
@@ -536,10 +530,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       }),
     );
 
-    // 10-03 (T-10-03-01): a discretionary refund() never rewrites order
-    // status -- fulfillment status and refund completeness are separate
-    // facts now (RESEARCH.md C.8). The order stays 'paid'; payments.status
-    // (asserted below) is the single source of truth for refund completeness.
     expect(await readOrderStatus(seededOrderId)).toBe('paid');
     const outboxTypes = await readOutboxTypes(seededOrderId);
     expect(outboxTypes).toContain('ordering.order_refunded.v1');
@@ -588,15 +578,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     );
 
     const status = await readOrderStatus(seededOrderId);
-    // 10-03 (D-09, T-10-03-01): 'canceled' is the correct end state, not
-    // 'refunded'. This assertion previously read .toBe('refunded'), which
-    // encoded the deliberately-narrow interim fix from quick task 260812-i7v
-    // (commit 32016da / 642bf8c) — that fix only had to get the row "off
-    // paid," it never claimed 'refunded' was the semantically right
-    // terminal status. Plan 10-03 makes cancel() the sole terminal-status
-    // writer (canceled) and strips refund()'s status write entirely, so a
-    // canceled-paid-order now correctly lands on 'canceled', carrying its
-    // own auto-refund alongside it -- not on 'refunded'.
     expect(status).toBe('canceled');
     expect(status).not.toBe('paid');
     expect(await readOutboxTypes(seededOrderId)).toContain('ordering.order_refunded.v1');

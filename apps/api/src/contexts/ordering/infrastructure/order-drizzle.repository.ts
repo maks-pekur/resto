@@ -304,8 +304,6 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
           orderId: event.orderId,
           tenantId: event.tenantId,
           brandId: event.brandId,
-          // D-05 / CTO HIGH-10: locationId lets the feed and the future SSE
-          // phase (18) route this event without a DB round-trip.
           locationId: event.locationId,
           orderNumber: event.orderNumber,
           fulfillmentMode: event.fulfillmentMode,
@@ -323,8 +321,6 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
           tenantId: event.tenantId,
           locationId: event.locationId,
           paymentId: event.paymentId,
-          // D-05: real captured money, replacing the historical zero-amount
-          // default-currency hardcode this branch used to ship.
           total: toMinorUnits(event.total),
           currency: event.currency,
         },

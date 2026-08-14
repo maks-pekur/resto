@@ -59,8 +59,6 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
           subtotal: '10.00',
           total: '11.50',
           currency: 'USD',
-          // Plan 10-04: short_number is NOT NULL as of migration 0075 --
-          // deterministic fixture value, never 0.
           shortNumber: 1,
         })
         .returning({ id: schema.orders.id });

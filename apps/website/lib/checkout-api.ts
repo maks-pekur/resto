@@ -40,9 +40,6 @@ export interface CreatePaymentIntentResponse {
   orderId: string;
 }
 
-// Frozen 9-field public status contract (10-06) -- exactly these fields, no
-// guest PII, no internal operator identities. Do not add a field here without
-// revisiting apps/api's orders.controller.ts getStatus() posture.
 export interface OrderStatusResponse {
   status: string;
   shortNumber: number | null;

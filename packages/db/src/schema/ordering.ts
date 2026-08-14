@@ -42,10 +42,6 @@ export const orders = pgTable(
     total: money('total').notNull(),
     currency: text('currency').notNull(),
     scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
-    // Phase 10 Plan 04 (D-04): tightened to NOT NULL by migration 0075 --
-    // order_daily_sequences + CreateOrderService.nextShortNumber() fill this
-    // on every new order; the shared dev database had zero orders rows at
-    // tightening time, so no clear/backfill was required.
     shortNumber: integer('short_number').notNull(),
     channel: text('channel').notNull().default('site'),
     acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'date' }),
@@ -53,14 +49,11 @@ export const orders = pgTable(
     readyAt: timestamp('ready_at', { withTimezone: true, mode: 'date' }),
     completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
     canceledAt: timestamp('canceled_at', { withTimezone: true, mode: 'date' }),
-    // Better Auth user ids are text, not uuid -- do NOT FK to the BA-owned `user` table.
     acceptedByUserId: text('accepted_by_user_id'),
     canceledByUserId: text('canceled_by_user_id'),
     cancelReason: text('cancel_reason'),
     cancelNote: text('cancel_note'),
     canceledFromStatus: text('canceled_from_status'),
-    // D-15: operator-set ready time captured on accept(). Do NOT reuse
-    // scheduledFor -- that column means "the guest's requested time".
     etaAt: timestamp('eta_at', { withTimezone: true, mode: 'date' }),
     marketingConsent: boolean('marketing_consent').notNull().default(false),
     marketingConsentAt: timestamp('marketing_consent_at', { withTimezone: true, mode: 'date' }),
@@ -250,23 +243,11 @@ export const paymentRefunds = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     paymentId: uuid('payment_id').notNull(),
-    // Phase 10 Plan 05 (D-11): nullable -- no Stripe id exists yet while a
-    // refund row is 'pending' (not yet called), and Stripe never returns one
-    // when a refund is 'failed'. Postgres treats NULL != NULL in a unique
-    // index, so payment_refunds_stripe_refund_id_uq below still protects
-    // against a duplicated real Stripe id with no partial-index workaround.
     stripeRefundId: text('stripe_refund_id'),
-    // Locally-computed, deterministic idempotency key
-    // (`refund:{orderId}:{alreadyRefundedMinor}:{amountMinor}`), the stable
-    // identity that survives a crash between the pending insert and the
-    // Stripe response -- and is also passed to Stripe as its own
-    // idempotency key so a retry can never double-refund.
     refundRequestId: text('refund_request_id').notNull(),
     amount: money('amount').notNull(),
     reason: text('reason').notNull(),
     status: text('status').notNull().default('pending'),
-    // Raw provider error text -- operator/debug detail only, never
-    // guest-facing (UI-SPEC §9 renders it small/muted in the admin Sheet).
     failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .notNull()

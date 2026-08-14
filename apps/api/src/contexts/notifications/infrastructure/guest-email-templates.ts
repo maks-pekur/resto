@@ -18,8 +18,6 @@ const HTTPS_URL_RE = /^https:\/\//iu;
 
 const DEFAULT_ACCENT = '#1a1a1a';
 
-// Growth HIGH-10: label for the guest order-status tracker link, rendered
-// on every guest notification email regardless of kind.
 const STATUS_LINK_LABEL: Record<'en' | 'ru', string> = {
   en: 'Track your order',
   ru: 'Следить за заказом',
@@ -117,7 +115,6 @@ const buildHtml = (opts: {
     .map((line) => `<p style="margin:0 0 8px;">${escapeHtml(line)}</p>`)
     .join('');
 
-  // Growth HIGH-10: every guest email links back to the live tracker.
   const statusLink = `<p style="margin:16px 0 0;"><a href="${escapeHtml(opts.statusUrl)}" style="color:${opts.accentColor};text-decoration:underline;">${escapeHtml(opts.statusLinkLabel)}</a></p>`;
 
   return `<!DOCTYPE html>

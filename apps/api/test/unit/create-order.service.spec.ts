@@ -130,8 +130,6 @@ const defaultLocation = {
 
 const orderSequence: OrderSequencePort = { nextShortNumber: () => Promise.resolve(1) };
 
-// Fakes only resolveBusinessDate's single query — a location row with no
-// timezone, exercising the UTC fallback path (T-10-04-07).
 const fakeDb = {
   withTenant: (op: (tx: unknown, scoped: unknown) => Promise<unknown>) =>
     op(undefined, {

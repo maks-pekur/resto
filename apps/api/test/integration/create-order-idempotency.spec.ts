@@ -136,10 +136,6 @@ suite('CreateOrderService — idempotency', () => {
     if (stack) await stopDbStack(stack);
   });
 
-  // T-10-04-06: the sum of order_daily_sequences.counter across every row
-  // for tenant A, at whatever point it is called -- a before/after delta
-  // proves how many counter values a set of calls actually consumed,
-  // independent of what other tests in this file have already run.
   const sumTenantACounters = async (): Promise<number> => {
     const rows = await stack.db.withoutTenant(
       'sum order_daily_sequences counters for tenant A',
@@ -163,9 +159,6 @@ suite('CreateOrderService — idempotency', () => {
 
     expect(second.orderId).toBe(first.orderId);
     expect(second.orderNumber).toBe(first.orderNumber);
-    // T-10-04-06: the idempotent replay must not consume a second counter
-    // value -- exactly one increment across both calls, read back from
-    // order_daily_sequences, not inferred from the in-memory response.
     expect(countersAfter - countersBefore).toBe(1);
 
     const rowCount = await stack.db.withoutTenant('count orders', async (tx) => {

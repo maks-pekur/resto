@@ -175,24 +175,18 @@ export interface PaymentRepository {
     tx: RestoTx,
   ): Promise<PaymentRefundRow | null>;
   upsertRefund(input: UpsertPaymentRefundInput, tx: RestoTx): Promise<PaymentRefundRow>;
-  // D-11: applies the outcome of a Stripe call keyed by our own idempotency
-  // key, once the row already exists (written pending in TX2, before Stripe
-  // was ever called).
   updateRefundOutcome(
     tenantId: TenantId,
     refundRequestId: string,
     outcome: UpdateRefundOutcomeInput,
     tx: RestoTx,
   ): Promise<void>;
-  // Companion for inbound Stripe webhook reconciliation, which arrives
-  // holding a Stripe refund id rather than our refundRequestId key.
   updateRefundStatusByStripeId(
     tenantId: TenantId,
     stripeRefundId: string,
     status: string,
     tx: RestoTx,
   ): Promise<void>;
-  // Backs the admin feed's red retry flag / failed-refund banner (UI-SPEC §9).
   findFailedRefundsForOrders(
     tenantId: TenantId,
     orderIds: readonly string[],

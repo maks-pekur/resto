@@ -109,8 +109,6 @@ describe('SyncPresetRolesService', () => {
     const svc = new SyncPresetRolesService(authDb as never);
     const result = await svc.execute({ organizationId: ORG_ID });
     expect(authDb.db.update).not.toHaveBeenCalled();
-    // kitchen is missing entirely → inserted; manager archived → skipped;
-    // cashier-foh already current → no-op.
     expect(authDb.db.insert).toHaveBeenCalledTimes(1);
     expect(result.skippedArchived).toBe(1);
     expect(result.inserted).toBe(1);

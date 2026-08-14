@@ -46,9 +46,6 @@ export class CreateOrderService {
     const brandId = requireBrandContext();
     const locationId = await this.defaultLocation.resolveForBrand(brandId, tenantId);
 
-    // T-10-04-06: an idempotent replay must return the existing order
-    // without consuming a counter value -- nextShortNumber only fires past
-    // this point, on a genuinely new order.
     const existingOrder = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     if (existingOrder) {
       return toOrderResponse(existingOrder.toSnapshot());
@@ -178,12 +175,6 @@ export class CreateOrderService {
     return size.price;
   }
 
-  // RESEARCH.md Open Question #1 / T-10-04-07: "business date" for the
-  // per-location daily counter needs a timezone to compute local midnight.
-  // locations.timezone (brands.ts:133) is nullable — when unset, fall back
-  // to 'UTC' EXPLICITLY via Intl.DateTimeFormat's timeZone option, never
-  // the ambient server-local zone (an unrelated, environment-dependent
-  // value). This fallback is the decision this plan locks.
   private async resolveBusinessDate(locationId: string): Promise<string> {
     const rows = await this.db.withTenant(async (_tx, scoped) =>
       scoped.selectFrom(schema.locations, eq(schema.locations.id, locationId)).limit(1),

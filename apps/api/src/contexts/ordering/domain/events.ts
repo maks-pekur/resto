@@ -1,7 +1,5 @@
 import type { OrderId, TenantId, Currency } from '@resto/domain';
 
-// D-05 / CTO HIGH-10: locationId travels on every ordering event so the feed
-// (and the future SSE phase, 18) can route without a DB round-trip.
 export interface OrderCreatedDomainEvent {
   readonly kind: 'OrderCreated';
   readonly orderId: OrderId;

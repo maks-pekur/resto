@@ -18,9 +18,6 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
     orderNumber: 'ORD-001',
     fulfillmentMode: 'dine_in',
     currency: USD,
-    // Phase 10 Plan 04: shortNumber is required, non-nullable end to end --
-    // a stand-in counter value, unrelated to this file's own transition
-    // tests.
     shortNumber: 1,
     items: [
       {
@@ -344,9 +341,7 @@ describe('accept', () => {
     expect(snap.status).toBe('accepted');
     expect(snap.acceptedAt).toBeInstanceOf(Date);
     expect(snap.acceptedByUserId).toBe('user-1');
-    // accept() stores the supplied etaAt verbatim
     expect(snap.etaAt).toEqual(eta);
-    // only its own timestamp is stamped
     expect(snap.preparingAt).toBeNull();
     expect(snap.readyAt).toBeNull();
     expect(snap.completedAt).toBeNull();
@@ -404,7 +399,6 @@ describe('startPreparing', () => {
     const snap = order.toSnapshot();
     expect(snap.status).toBe('preparing');
     expect(snap.preparingAt).toBeInstanceOf(Date);
-    // its own transition's timestamp is not re-stamped
     expect(snap.acceptedAt).toEqual(acceptedAtBefore);
     expect(snap.readyAt).toBeNull();
     expect(snap.completedAt).toBeNull();
@@ -518,8 +512,6 @@ describe('complete', () => {
   });
 });
 
-// D-08/D-09: cancel() is legal from every pre-completion status and is the
-// only method that writes a terminal order status.
 describe('cancel', () => {
   it('transitions created → canceled with canceledFromStatus "created" and emits OrderCanceled', () => {
     const order = Order.create(makeInput());
@@ -636,9 +628,6 @@ describe('cancel', () => {
   });
 
   it('throws InvalidOrderTransitionError from refunded state', () => {
-    // 'refunded' is no longer reachable through the aggregate's own public
-    // API (refund() never writes status) -- construct it via fromSnapshot to
-    // prove cancel() still guards against acting on a terminal order.
     const order = Order.fromSnapshot(makeSnapshot({ status: 'refunded' }));
     expect(() => {
       order.cancel('other', null, null);
@@ -654,7 +643,6 @@ describe('cancel', () => {
   });
 });
 
-// RESEARCH.md C.8 / T-10-03-01: refund() must never rewrite order.status.
 describe('refund', () => {
   it('full refund on a paid order never rewrites order status', () => {
     const order = Order.create(makeInput());
@@ -856,8 +844,6 @@ describe('partial refund (D-04)', () => {
     order.refund(500, 0);
     order.pullEvents();
     order.refund(750, 500);
-    // Money-completeness lives on payments.status/payment_refunds now --
-    // cancel() is the only method that ever writes a terminal order status.
     expect(order.toSnapshot().status).toBe('paid');
   });
 

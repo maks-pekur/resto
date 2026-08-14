@@ -24,11 +24,6 @@ export const RefundInputSchema = z.object({
 export type RefundInput = z.infer<typeof RefundInputSchema>;
 export class RefundInputDto extends createZodDto(RefundInputSchema) {}
 
-// Canonical cancel reason codes -- pinned identically in order.aggregate.ts
-// (CANCEL_REASON_CODES), 10-RESEARCH.md §A.3, 10-UI-SPEC.md §5/§12 and
-// migration 0073's orders_cancel_reason_chk CHECK constraint. This DTO-level
-// enum is the first HTTP-boundary line of defence, well ahead of the
-// domain-level InvalidCancelReasonError and the DB CHECK constraint.
 const CANCEL_REASON_CODES = [
   'guest_no_show',
   'kitchen_out_of_stock',

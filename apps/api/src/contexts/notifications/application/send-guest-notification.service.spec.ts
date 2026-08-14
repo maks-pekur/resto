@@ -28,10 +28,6 @@ const baseOrder = {
   locationTimezone: null,
 };
 
-// Only WEBSITE_PUBLIC_URL is read by SendGuestNotificationService -- cast
-// mirrors the makeBrandQueries/makeEmailAdapter pattern below. No default
-// parameter: a default would silently substitute a value for an explicit
-// `undefined` call-site argument, defeating the "unset" test case below.
 const makeEnv = (websitePublicUrl: string | undefined): Env =>
   ({ WEBSITE_PUBLIC_URL: websitePublicUrl }) as unknown as Env;
 
@@ -263,8 +259,6 @@ describe('SendGuestNotificationService', () => {
         makeOrderRepo(baseOrder),
         makeEnv(WEBSITE_PUBLIC_URL),
       );
-      // Logger is a private instance field -- spy on the NestJS Logger
-      // prototype rather than reaching past the access modifier.
       const errorSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => undefined);
 
       await expect(

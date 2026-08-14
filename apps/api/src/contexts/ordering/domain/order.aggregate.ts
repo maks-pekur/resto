@@ -21,10 +21,6 @@ export type OrderStatus =
   | 'refunded'
   | 'failed';
 
-// Canonical cancel reason codes -- pinned identically in 10-RESEARCH.md §A.3,
-// 10-UI-SPEC.md §5/§12 and migration 0073's orders_cancel_reason_chk CHECK
-// constraint. The CHECK constraint must never be the first line of defence
-// (T-10-03-02) -- this domain-level validation runs before any persistence.
 const CANCEL_REASON_CODES = [
   'guest_no_show',
   'kitchen_out_of_stock',
@@ -89,8 +85,6 @@ export interface OrderSnapshot {
   readonly total: string;
   readonly currency: Currency;
   readonly scheduledFor: Date | null;
-  // Phase 10 Plan 04: orders.short_number is NOT NULL as of migration 0075
-  // -- every persisted order has a real per-location daily counter value.
   readonly shortNumber: number;
   readonly channel: 'site' | 'qr-menu';
   readonly acceptedAt: Date | null;
@@ -140,10 +134,6 @@ export interface CreateOrderInput {
   readonly currency: Currency;
   readonly discountSpec?: DiscountSpec | null;
   readonly scheduledFor?: Date | null;
-  // Required, not defaulted: the caller (CreateOrderService) must resolve a
-  // real value via ORDER_SEQUENCE_PORT.nextShortNumber() before calling
-  // create() -- unlike channel/marketingConsent, there is no safe synthetic
-  // default for a per-location daily counter value.
   readonly shortNumber: number;
   readonly channel?: 'site' | 'qr-menu';
   readonly marketingConsent?: boolean;
@@ -255,8 +245,6 @@ export class Order {
       cancelNote: null,
       canceledFromStatus: null,
       etaAt: null,
-      // D-17: marketingConsentAt is the lawful-basis timestamp -- derived
-      // from `now`, never accepted as caller input.
       marketingConsent,
       marketingConsentAt: marketingConsent ? now : null,
       createdAt: now,
@@ -399,11 +387,6 @@ export class Order {
     });
   }
 
-  // D-08/D-09: cancel() is legal from every pre-completion status and is the
-  // ONLY method that writes a terminal status. canceledFromStatus is the sole
-  // discriminator between reject-intent ('paid') and cancel-intent
-  // ('accepted' | 'preparing' | 'ready') -- this is why no separate
-  // `rejected` status/method exists.
   cancel(
     reasonCode: string,
     cancelNote: string | null,
@@ -413,9 +396,6 @@ export class Order {
     if (!CANCELABLE_STATUSES.includes(this.snapshot.status)) {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'canceled');
     }
-    // T-10-03-02: validated here, before any persistence -- the 0073
-    // orders_cancel_reason_chk CHECK constraint must never be the first
-    // line of defence against a bad reason code.
     if (!isCancelReasonCode(reasonCode)) {
       throw new InvalidCancelReasonError(reasonCode);
     }
@@ -443,15 +423,6 @@ export class Order {
     });
   }
 
-  // RESEARCH.md C.8 / T-10-03-01: refund() must never write order.status.
-  // Refund state belongs on payments.status/payment_refunds (already
-  // maintained correctly by RefundOrderService), not on the order's
-  // fulfillment status. Before this fix, a partial refund on a preparing
-  // order silently reset it to 'paid', and a full discretionary refund on a
-  // completed order silently flipped it to 'refunded' -- erasing "the food
-  // was delivered". cancel() is the only method that writes a terminal
-  // status; refundability is independently enforced by
-  // RefundOrderService's PaymentNotRefundableError check.
   refund(amountMinor: number, alreadyRefundedMinor: number, now: Date = new Date()): void {
     const capturedMinor = toMinorUnits(this.snapshot.total);
     if (amountMinor <= 0 || amountMinor + alreadyRefundedMinor > capturedMinor) {

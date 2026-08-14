@@ -714,8 +714,6 @@ suite('Row-Level Security — tenant isolation', () => {
             discount: '0.00',
             total: '10.00',
             currency: 'USD',
-            // Plan 10-04: short_number is NOT NULL as of migration 0075 --
-            // deterministic fixture value, never 0.
             shortNumber: 1,
           })
           .returning({ id: schema.orders.id });

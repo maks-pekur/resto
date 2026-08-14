@@ -30,11 +30,6 @@ const ETA_CLOCK_TIME_OPTS: Intl.DateTimeFormatOptions = {
   hour12: false,
 };
 
-// D-15: guest emails and the guest tracker (UI-SPEC S11/S12 checkout.status.etaLabel)
-// must show the identical clock-time reading -- format in the order's
-// location timezone, falling back to UTC when the location has none set
-// or the stored value isn't a recognised IANA zone (never crash a
-// notification send over a formatting detail).
 const formatEtaClockTime = (etaAt: Date, timezone: string | null): string => {
   try {
     return new Intl.DateTimeFormat(ETA_CLOCK_TIME_LOCALE, {
@@ -85,18 +80,8 @@ export class SendGuestNotificationService {
     const brands = await this.brandQueries.listForTenant(tenantId, [BrandId.parse(order.brandId)]);
     const brand = brands[0] ?? null;
 
-    // WHY: no locale-detection/selection mechanism exists for guest
-    // notifications anywhere in this codebase -- hardcoding 'ru' is a
-    // known, deliberately-deferred limitation (Growth HIGH-11, RESEARCH
-    // E.19), not an oversight. Out of scope for this phase per
-    // CONTEXT.md's framing.
     const locale = 'ru';
 
-    // Growth HIGH-11: every brand has a displayName by construction at
-    // provisioning -- a missing one is a real defect, not a
-    // degraded-but-fine case. Falling back to 'RestOS' would leak the
-    // platform's own name into a tenant's white-label guest email. Fail
-    // loudly and send nothing rather than send a mis-branded email.
     if (!brand?.displayName) {
       this.logger.error(
         { tenantId, brandId: order.brandId, orderId: input.orderId },
@@ -122,9 +107,6 @@ export class SendGuestNotificationService {
     const eta =
       order.etaAt !== null ? formatEtaClockTime(order.etaAt, order.locationTimezone) : undefined;
 
-    // Growth HIGH-10: link back to the live guest tracker. WEBSITE_PUBLIC_URL
-    // is a single global origin (same shape as ADMIN_WEB_URL) -- see the
-    // WHY-comment on the env var itself for the per-tenant-domain caveat.
     const statusUrl =
       this.env.WEBSITE_PUBLIC_URL !== undefined
         ? `${this.env.WEBSITE_PUBLIC_URL}/checkout/confirmation/${input.orderId}`

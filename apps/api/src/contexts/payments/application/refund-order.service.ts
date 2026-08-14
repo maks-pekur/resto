@@ -27,17 +27,11 @@ export interface RefundOrderResult {
   readonly fullyRefunded: boolean;
 }
 
-// D-11 TX2 preparation result: either a short-circuit (an already-succeeded
-// refund for this exact request was found -- no Stripe call, no new write)
-// or the data TX2 wrote/validated that the provider call and TX3 need.
 type RefundPrep =
   | { readonly shortCircuit: true; readonly result: RefundOrderResult }
   | {
       readonly shortCircuit: false;
       readonly payment: PaymentRow;
-      // Narrowed at the TX2 guard below -- carried as plain strings rather
-      // than re-derived from `payment.paymentIntentId` after the fact, so
-      // no `!`/`as` assertion is needed at the provider call site.
       readonly paymentIntentId: string;
       readonly stripeAccountId: string;
       readonly capturedMinor: number;
@@ -79,17 +73,12 @@ export class RefundOrderService {
     return this.executeWithOrder(input, order);
   }
 
-  // D-11: three short transactions with the Stripe call outside all of
-  // them. TX2 durably records the attempt (a 'pending' payment_refunds row)
-  // BEFORE Stripe is ever called; a Stripe failure applies its outcome in
-  // its own TX3 without touching TX2's commit or the order at all.
   async executeWithOrder(input: RefundOrderInput, order: Order): Promise<RefundOrderResult> {
     const trimmedReason = input.reason.trim();
     if (!trimmedReason) {
       throw new RefundReasonRequiredError(input.orderId);
     }
 
-    // TX2 -- close reached here; the block below never touches Stripe.
     const prep: RefundPrep = await this.db.withTenant(async (tx) => {
       const payment = await this.paymentRepo.findByOrderId(input.tenantId, input.orderId, tx);
       if (!payment?.paymentIntentId || !payment.stripeAccountId) {
@@ -104,8 +93,6 @@ export class RefundOrderService {
       const amountMinor = input.amountMinor ?? remainingMinor;
       const refundRequestId = `refund:${input.orderId}:${alreadyRefundedMinor}:${amountMinor}`;
 
-      // Idempotent replay: a refund already completed for this exact
-      // request short-circuits before any write or Stripe call.
       const existing = await this.paymentRepo.findRefundByRequestId(
         input.tenantId,
         refundRequestId,
@@ -123,8 +110,6 @@ export class RefundOrderService {
         };
       }
 
-      // Amount validation only -- post-10-03, order.refund() no longer
-      // writes order.status. Throws RefundExceedsCapturedError if invalid.
       order.refund(amountMinor, alreadyRefundedMinor);
 
       await this.paymentRepo.upsertRefund(
@@ -151,7 +136,6 @@ export class RefundOrderService {
         refundRequestId,
       };
     });
-    // <- TX2 commits here.
 
     if (prep.shortCircuit) {
       this.logger.log(
@@ -171,9 +155,6 @@ export class RefundOrderService {
       refundRequestId,
     } = prep;
 
-    // Provider call -- deliberately outside any open database transaction
-    // (D-11): a Stripe outage must never roll back TX1's cancel or TX2's
-    // pending ledger row.
     let providerResult: { stripeRefundId: string; status: string };
     try {
       providerResult = await this.provider.createRefund({
@@ -185,8 +166,6 @@ export class RefundOrderService {
       });
     } catch (err) {
       const failureReason = truncateFailureReason(err);
-      // TX3 (failure branch): record the failure in the ledger row TX2
-      // already wrote. The order itself is never touched here.
       await this.db.withTenant(async (tx) => {
         await this.paymentRepo.updateRefundOutcome(
           input.tenantId,
@@ -209,7 +188,6 @@ export class RefundOrderService {
 
     const { stripeRefundId } = providerResult;
 
-    // TX3 (success branch).
     return this.db.withTenant(async (tx) => {
       await this.paymentRepo.updateRefundOutcome(
         input.tenantId,
@@ -237,15 +215,8 @@ export class RefundOrderService {
         tx,
       );
 
-      // Flushes the OrderRefunded domain event that order.refund() queued
-      // back in TX2 -- only now, because the refund only actually happened
-      // once Stripe confirmed it.
       await this.orderRepo.update(order, tx);
 
-      // 10-03 (T-10-03-01): order.refund() no longer writes order.status --
-      // fulfillment status and refund completeness are separate facts.
-      // Derive fullyRefunded from the payment ledger amounts, not the order
-      // snapshot (order.toSnapshot().status === 'refunded' is never true now).
       const fullyRefunded = newRefundedMinor >= capturedMinor;
 
       await appendToOutbox(tx, {

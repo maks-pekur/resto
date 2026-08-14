@@ -14,11 +14,6 @@ if (!dockerOk) {
   console.warn('[order-short-number] Docker not available — skipping.');
 }
 
-// T-10-04-01/03: proves the atomic per-(tenant, location, business_date)
-// counter is duplicate-free and gap-free under concurrency, and that the
-// composite FK rejects a locationId from another tenant. Follows the
-// payment-lifecycle.e2e.spec.ts harness exactly -- real Postgres
-// testcontainer, real OrderSequenceDrizzleRepository, nothing mocked.
 suite(
   'OrderSequenceDrizzleRepository.nextShortNumber — atomic per-location daily counter (D-04)',
   () => {
@@ -151,7 +146,6 @@ suite(
       expect(sorted).toEqual(Array.from({ length: N }, (_, i) => i + 1));
       expect(new Set(results).size).toBe(N);
 
-      // Assert on the database row, not just the in-memory return values.
       const dbCounter = await readCounterRow(locationIdB, businessDate);
       expect(dbCounter).toBe(N);
     });

@@ -25,12 +25,6 @@ const truncateFailureReason = (err: unknown): string => {
   return message.slice(0, 500);
 };
 
-// D-11: re-runs ONLY the provider call + outcome-recording for an existing
-// failed payment_refunds row. Never calls order.cancel() again (the order
-// is already canceled from the first attempt) and never calls
-// order.refund() again (the ledger row already records the intended
-// amount) -- retry touches payments/payment_refunds only, never the order
-// aggregate.
 @Injectable()
 export class RetryRefundService {
   private readonly logger: Logger;
@@ -63,8 +57,6 @@ export class RetryRefundService {
       if (!payment?.paymentIntentId || !payment.stripeAccountId) {
         throw new RefundNotRetryableError(input.orderId, input.refundRequestId, 'payment_missing');
       }
-      // Narrowed here so no `!`/`as` assertion is needed at the provider
-      // call site below.
       const paymentIntentId = payment.paymentIntentId;
       const stripeAccountId = payment.stripeAccountId;
 
@@ -87,9 +79,6 @@ export class RetryRefundService {
         connectedAccountId: stripeAccountId,
         amountMinor,
         reason,
-        // Reuse the ORIGINAL refundRequestId -- both our ledger key and
-        // Stripe's idempotency key must stay unchanged across a retry so a
-        // duplicate attempt can never double-refund the connected account.
         refundRequestId: input.refundRequestId,
       });
     } catch (err) {
@@ -122,10 +111,6 @@ export class RetryRefundService {
     const { stripeRefundId } = providerResult;
 
     return this.db.withTenant(async (tx) => {
-      // Re-read refundedAmount fresh inside this transaction -- a webhook
-      // may have already reconciled part of this refund between TX prep
-      // above and now; re-reading here (instead of trusting the value
-      // captured before the provider call) avoids a stale double-count.
       const freshPayment: PaymentRow | null = await this.paymentRepo.findByOrderId(
         input.tenantId,
         input.orderId,

@@ -24,20 +24,6 @@ interface ExistingRoleRow {
   readonly archivedAt: Date | null;
 }
 
-/**
- * D-06 / T-10-02-04 (Phase 10): `SeedPresetRolesService` only writes
- * `organization_role` at provisioning time — a snapshot, not a live read.
- * Editing `PRESET_ROLES` after tenants already exist reaches no existing
- * tenant. This service re-syncs the current `PRESET_ROLES` permission JSON
- * onto an already-provisioned tenant's `organization_role` rows, so a
- * permission change (like Phase 10's `order:cancel`) actually reaches
- * staff who signed up before the change shipped.
- *
- * Mirrors `SeedPresetRolesService`'s shape (direct Drizzle writes, no BA
- * role API — 08.3-P02) but UPDATEs existing rows instead of skipping them,
- * and repairs any preset slug missing entirely (tenants provisioned before
- * presets existed).
- */
 @Injectable()
 export class SyncPresetRolesService {
   private readonly logger = new Logger(SyncPresetRolesService.name);
@@ -66,8 +52,6 @@ export class SyncPresetRolesService {
       const targetPermission = JSON.stringify(preset.permission);
 
       if (existing) {
-        // T-10-02-05: never resurrect a role the owner deliberately
-        // archived (08.3 D-12 soft-delete semantics).
         if (existing.archivedAt !== null) {
           skippedArchived += 1;
           continue;
