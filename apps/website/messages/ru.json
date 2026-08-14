@@ -41,6 +41,35 @@
     "consent": {
       "label": "Присылайте новости и акции ресторана",
       "hint": "Необязательно. Сообщения о статусе заказа мы отправим в любом случае."
+    },
+    "status": {
+      "stepPaid": "Оплачен",
+      "stepAccepted": "Принят",
+      "stepPreparing": "Готовится",
+      "stepReadyPickup": "Готов к выдаче",
+      "stepReadyDineIn": "Готово — принесём к столу",
+      "waitingAccept": "Ресторан скоро примет ваш заказ",
+      "etaLabel": "Будет готово к {time}",
+      "updating": "Обновляем статус…",
+      "updateFailed": "Не удалось обновить статус.",
+      "retry": "Обновить",
+      "declinedTitle": "Ресторан не смог принять ваш заказ",
+      "canceledTitle": "Заказ отменён рестораном",
+      "refundLine": "Возврат {amount} оформлен — поступит на карту в течение 5–10 рабочих дней",
+      "backToMenu": "Вернуться в меню",
+      "orderNumberLabel": "Заказ №{n}",
+      "awaitingPayment": "Подтверждаем оплату…",
+      "paymentFailedTitle": "Оплата не прошла",
+      "paymentFailedRetry": "Попробовать снова",
+      "reasons": {
+        "kitchenOutOfStock": "этого блюда сейчас нет в наличии",
+        "kitchenTooBusy": "кухня сейчас не справляется с потоком заказов",
+        "guestRequested": "по вашей просьбе",
+        "guestNoShow": "мы не смогли с вами связаться",
+        "paymentIssue": "возникла проблема с оплатой",
+        "duplicateOrder": "это повторяющийся заказ",
+        "other": "по техническим причинам"
+      }
     }
   },
   "content": {
