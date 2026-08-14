@@ -37,7 +37,40 @@
     "paymentComingSoon": "Payment processing coming soon",
     "deliveryMode": "Delivery",
     "pickupMode": "Pickup",
-    "modePrompt": "How would you like to receive your order?"
+    "modePrompt": "How would you like to receive your order?",
+    "consent": {
+      "label": "Send me restaurant news and promotions",
+      "hint": "Optional. We'll send order status updates either way."
+    },
+    "status": {
+      "stepPaid": "Paid",
+      "stepAccepted": "Accepted",
+      "stepPreparing": "Preparing",
+      "stepReadyPickup": "Ready for pickup",
+      "stepReadyDineIn": "Ready — we'll bring it to your table",
+      "waitingAccept": "The restaurant will accept your order shortly",
+      "etaLabel": "Will be ready by {time}",
+      "updating": "Updating status…",
+      "updateFailed": "Couldn't update the status.",
+      "retry": "Retry",
+      "declinedTitle": "The restaurant couldn't accept your order",
+      "canceledTitle": "The order was canceled by the restaurant",
+      "refundLine": "A refund of {amount} has been issued — it will reach your card in 5–10 business days",
+      "backToMenu": "Back to menu",
+      "orderNumberLabel": "Order #{n}",
+      "awaitingPayment": "Confirming payment…",
+      "paymentFailedTitle": "Payment failed",
+      "paymentFailedRetry": "Try again",
+      "reasons": {
+        "kitchenOutOfStock": "this item is currently out of stock",
+        "kitchenTooBusy": "the kitchen can't keep up with order volume right now",
+        "guestRequested": "at your request",
+        "guestNoShow": "we couldn't reach you",
+        "paymentIssue": "there was a payment issue",
+        "duplicateOrder": "this is a duplicate order",
+        "other": "for technical reasons"
+      }
+    }
   },
   "content": {
     "aboutHeading": "About {restaurantName}",
