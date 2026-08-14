@@ -664,8 +664,8 @@ Plans:
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
-- [ ] 10-04-PLAN.md — Order creation: short daily number, channel, marketing consent, `short_number` NOT NULL (wave 3)
-- [ ] 10-06-PLAN.md — Guest status contract freeze + guest-email ETA, white-label fallback, tracker link (wave 3)
+- [x] 10-04-PLAN.md — Order creation: short daily number, channel, marketing consent, `short_number` NOT NULL (wave 3)
+- [x] 10-06-PLAN.md — Guest status contract freeze + guest-email ETA, white-label fallback, tracker link (wave 3)
 
 **Wave 4** _(blocked on Wave 3 completion)_
 
@@ -905,7 +905,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 3/13 | In Progress|  |
+| 10. Admin Order Intake                        | 5/13 | In Progress|  |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
