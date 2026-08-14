@@ -23,6 +23,7 @@ export interface CreateOrderInput {
   customerEmail?: string;
   idempotencyKey: string;
   scheduledFor?: string;
+  marketingConsent?: boolean;
 }
 
 export interface CreateOrderResponse {

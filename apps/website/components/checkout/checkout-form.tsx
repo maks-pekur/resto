@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCartStore } from '@resto/cart';
 import {
   createCheckoutSchema,
+  type CheckoutFormInput,
   type CheckoutForm as CheckoutFormValues,
 } from '@/lib/checkout-schema';
 import {
@@ -18,6 +20,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { AddressInput } from '@/components/checkout/address-input';
 import { OrderTimeSelector } from '@/components/checkout/order-time-selector';
@@ -44,16 +47,24 @@ type PaymentState =
   | { stage: 'error'; orderId: string | null; message: string };
 
 export function CheckoutForm() {
+  const t = useTranslations('checkout');
   const mode = useCartStore((s) => s.mode);
   const items = useCartStore((s) => s.items);
 
   const [payment, setPayment] = useState<PaymentState>({ stage: 'idle' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const form = useForm<CheckoutFormValues>({
+  const form = useForm<CheckoutFormInput, unknown, CheckoutFormValues>({
     resolver: zodResolver(createCheckoutSchema(mode)),
     mode: 'onChange',
-    defaultValues: { name: '', phone: '', email: '', address: '', orderTime: { kind: 'asap' } },
+    defaultValues: {
+      name: '',
+      phone: '',
+      email: '',
+      address: '',
+      orderTime: { kind: 'asap' },
+      marketingConsent: false,
+    },
   });
 
   if (items.length === 0) {
@@ -80,6 +91,7 @@ export function CheckoutForm() {
         customerEmail: values.email,
         idempotencyKey: crypto.randomUUID(),
         scheduledFor: values.orderTime.kind === 'scheduled' ? values.orderTime.at : undefined,
+        marketingConsent: values.marketingConsent,
       });
 
       const pi = await createPaymentIntent(orderResult.orderId);
@@ -226,6 +238,25 @@ export function CheckoutForm() {
                 <FormControl>
                   <Input type="email" placeholder="your@email.com" {...field} />
                 </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="marketingConsent"
+            render={({ field }) => (
+              <FormItem>
+                <div className="flex items-start gap-2">
+                  <FormControl>
+                    <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormLabel className="font-normal">{t('consent.label')}</FormLabel>
+                </div>
+                <p className="text-[12px] leading-[1.4] text-[oklch(0.45_0_0)]">
+                  {t('consent.hint')}
+                </p>
                 <FormMessage />
               </FormItem>
             )}

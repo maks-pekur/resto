@@ -37,7 +37,11 @@
     "paymentComingSoon": "Payment processing coming soon",
     "deliveryMode": "Delivery",
     "pickupMode": "Pickup",
-    "modePrompt": "How would you like to receive your order?"
+    "modePrompt": "How would you like to receive your order?",
+    "consent": {
+      "label": "Send me restaurant news and promotions",
+      "hint": "Optional. We'll send order status updates either way."
+    }
   },
   "content": {
     "aboutHeading": "About {restaurantName}",
