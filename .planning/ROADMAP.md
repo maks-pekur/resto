@@ -660,7 +660,7 @@ Plans:
 
 **Wave 2** _(blocked on Wave 1 completion)_
 
-- [ ] 10-03-PLAN.md — Ordering domain: event payloads, widened state machine, new-column persistence (wave 2)
+- [x] 10-03-PLAN.md — Ordering domain: event payloads, widened state machine, new-column persistence (wave 2)
 
 **Wave 3** _(blocked on Wave 2 completion)_
 
@@ -905,7 +905,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 2/13 | In Progress|  |
+| 10. Admin Order Intake                        | 3/13 | In Progress|  |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
