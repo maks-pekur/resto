@@ -180,7 +180,7 @@
 - [x] **ORDINT-07**: Operator sees order details (items, modifiers, customer info, delivery address, total breakdown)
 - [x] **ORDINT-08**: Operator filters orders by status / date / channel (qr-menu vs site)
 - [ ] **ORDINT-09**: Graceful shutdown closes all active SSE connections with a `retry:` event; clients auto-reconnect after rolling deploy — **moved to Phase 18**
-- [ ] **ORDINT-10**: Public `GET /v1/orders/:id/status` endpoint (or SSE stream) returns current order state (`accepted / preparing / ready / on its way`); used by guest-facing confirmation page for live status polling
+- [x] **ORDINT-10**: Public `GET /v1/orders/:id/status` endpoint (or SSE stream) returns current order state (`accepted / preparing / ready / on its way`); used by guest-facing confirmation page for live status polling
 
 ### Location Schedule & Pause Ordering (`SCHED`)
 
@@ -515,7 +515,7 @@
 | ORDINT-07   | Phase 10      | Complete |
 | ORDINT-08   | Phase 10      | Complete |
 | ORDINT-09   | Phase 18      | Pending  |
-| ORDINT-10   | Phase 10      | Pending  |
+| ORDINT-10   | Phase 10      | Complete |
 | SCHED-01    | Phase 10.1    | Pending  |
 | SCHED-02    | Phase 10.1    | Pending  |
 | SCHED-03    | Phase 10.1    | Pending  |
