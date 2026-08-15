@@ -169,3 +169,45 @@ tenant_id, payment_id, stripe_refund_id, amount, reason, status) VALUES
 (this plan), which made `refund_request_id` `NOT NULL`. Add a
 `refund_request_id` value (e.g. `'legacy:test'` or any unique string) to
 that INSERT at the same time.
+
+## test/e2e/security.e2e.spec.ts — pre-existing `innerJoin is not a function` on `/internal/v1/tenants` (found in Phase 10 Plan 08)
+
+**Status:** Out of scope, not fixed. Discovered, not caused, by this plan.
+
+**What was found:** `Security middleware (RES-99) > rate limit > honours the
+stricter limit on /internal/v1/* routes` fails with `expected 500 to be
+429`. Both requests in the test (the one expected to succeed and the one
+expected to be rate-limited) return 500 with
+`"originalDetail": "tx.select(...).from(...).innerJoin is not a function"`
+— i.e. the underlying `/internal/v1/tenants` handler itself throws before
+the rate limiter's pass/fail distinction is even reachable; this is not a
+rate-limiting bug. `security.e2e.spec.ts`'s `createApp()` builds a hand-rolled
+`TenantAwareDb` stub (`buildDbStub()`) whose `withoutTenant` mock only
+implements `select().from().where().limit()` — it has never supported
+`.innerJoin()`. `innerJoin` calls already exist in
+`apps/api/src/contexts/identity/infrastructure/initial-brand-drizzle.repository.ts`
+at the plan's own base commit (`5449fd0`, confirmed via `git show
+5449fd0:...initial-brand-drizzle.repository.ts`), i.e. before this plan's
+session started — some provider in the tenant-provisioning path this test
+exercises calls `.innerJoin()` on the stub, and always would have.
+
+**Verified not caused by this plan's Task 2 change:** `apps/api/src/shared/security.ts`'s
+new `keyGenerator` (per-principal rate-limit bucketing, see 10-08-SUMMARY.md)
+was temporarily reverted to its pre-Task-2 state (`git checkout --
+apps/api/src/shared/security.ts`) and the test re-run — identical failure,
+identical `innerJoin is not a function` error, on both requests. The
+`keyGenerator` change was then reapplied. This test was already broken by
+this stub's limited surface before Task 2 touched the rate limiter at all.
+
+**What this plan did instead:** Nothing to this test file or the stub — per
+the scope boundary rule, a pre-existing gap in an unrelated identity
+repository call path (surfaced through a test-harness stub, not through any
+file this plan's `files_modified` list touches) is logged here, not fixed.
+
+**Cost estimate when picked up:** extend `buildDbStub()`'s `withoutTenant`
+mock tx to also stub `.innerJoin()` (return `this` or a compatible chain),
+matching whichever repository call in the tenant-provisioning path needs
+it — or replace the hand-rolled stub with the real `with-db-stack.ts`
+testcontainer harness for this one describe block, at the cost of losing
+the lightweight/no-Docker property the rest of `security.e2e.spec.ts`
+relies on for its other (non-DB) assertions.

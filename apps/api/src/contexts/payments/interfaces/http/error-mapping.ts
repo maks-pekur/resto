@@ -1,10 +1,17 @@
-import { ConflictException, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  BadGatewayException,
+  ConflictException,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import {
   CurrencyMismatchError,
   OrderNotCheckoutableError,
   PaymentsNotEnabledError,
   RefundReasonRequiredError,
   PaymentNotRefundableError,
+  RefundNotRetryableError,
+  RefundProviderFailedError,
 } from '../../domain/errors';
 import { OrderNotFoundError, RefundExceedsCapturedError } from '../../../ordering/domain/errors';
 
@@ -39,6 +46,18 @@ export const mapPaymentError = (err: unknown): unknown => {
   if (err instanceof PaymentNotRefundableError) {
     return new ConflictException({
       code: 'payments.not_refundable',
+      message: err.message,
+    });
+  }
+  if (err instanceof RefundNotRetryableError) {
+    return new ConflictException({
+      code: 'payments.refund_not_retryable',
+      message: err.message,
+    });
+  }
+  if (err instanceof RefundProviderFailedError) {
+    return new BadGatewayException({
+      code: 'payments.refund_provider_failed',
       message: err.message,
     });
   }

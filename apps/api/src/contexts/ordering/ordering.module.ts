@@ -21,10 +21,11 @@ import { AdvanceOrderStatusService } from './application/advance-order-status.se
 import { ListOrdersService } from './application/list-orders.service';
 import { GetOrderDetailService } from './application/get-order-detail.service';
 import { OrdersController } from './interfaces/http/orders.controller';
+import { OperatorOrdersController } from './interfaces/http/operator-orders.controller';
 
 @Module({
   imports: [TenancyModule, CatalogModule],
-  controllers: [OrdersController],
+  controllers: [OrdersController, OperatorOrdersController],
   providers: [
     { provide: ORDER_REPOSITORY, useClass: OrderDrizzleRepository },
     { provide: MENU_PRICING_PORT, useClass: CatalogMenuPricingAdapter },

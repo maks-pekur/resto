@@ -35,6 +35,9 @@ const isInternalRoute = (url: string): boolean => url.startsWith('/internal/v1/'
 
 const STRIPE_WEBHOOK_PATH = '/webhook/stripe';
 
+const rateLimitKeyGenerator = (req: FastifyRequest): string =>
+  req.principal && 'userId' in req.principal ? req.principal.userId : `ip:${req.ip}`;
+
 /**
  * Best-effort email extraction from a parsed BA request body. BA's
  * sign-in/reset endpoints accept JSON or `application/x-www-form-urlencoded`;
@@ -150,11 +153,7 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     // pipeline so the standard `ProblemDetailsFilter` formats the 429.
     global: false,
     timeWindow: '1 minute',
-    // Single per-IP store across all routes — same IP hitting different
-    // route groups shares the counter. Per-endpoint max overrides at
-    // request time but the counter is shared. Acceptable for MVP-1; a
-    // future ticket can per-bucket via `keyGenerator` if cross-traffic
-    // pollution becomes visible.
+    keyGenerator: rateLimitKeyGenerator,
     max: (req: FastifyRequest): number => {
       if (isInternalRoute(req.url)) return env.RATE_LIMIT_INTERNAL_PER_MIN;
       if (req.url.startsWith('/api/auth/sign-up') || req.url.startsWith('/v1/signup'))
