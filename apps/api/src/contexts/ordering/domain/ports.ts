@@ -1,6 +1,7 @@
+import { z } from 'zod';
 import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
-import type { Order } from './order.aggregate';
+import type { Order, OrderStatus } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
@@ -71,3 +72,66 @@ export interface OrderSequencePort {
 }
 
 export const ORDER_SEQUENCE_PORT = Symbol('ORDER_SEQUENCE_PORT');
+
+export const OrderStatusSchema: z.ZodType<OrderStatus> = z.enum([
+  'created',
+  'requires_action',
+  'paid',
+  'accepted',
+  'preparing',
+  'ready',
+  'completed',
+  'canceled',
+  'refunded',
+  'failed',
+]);
+
+export const OrderFeedQuerySchema = z.object({
+  tenantId: z.string().uuid(),
+  brandId: z.string().uuid(),
+  locationIds: z.array(z.string().uuid()),
+  statuses: z.array(OrderStatusSchema),
+  channel: z.enum(['site', 'qr-menu']).optional(),
+  createdFrom: z.date(),
+  createdTo: z.date(),
+  since: z
+    .object({
+      createdAt: z.date(),
+      id: z.string().uuid(),
+    })
+    .optional(),
+  limit: z.number().int().positive(),
+  offset: z.number().int().nonnegative(),
+});
+export type OrderFeedQuery = z.infer<typeof OrderFeedQuerySchema>;
+
+export const OrderFeedRowSchema = z.object({
+  id: z.string().uuid(),
+  shortNumber: z.number().int(),
+  status: OrderStatusSchema,
+  locationId: z.string().uuid(),
+  locationName: z.string(),
+  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  tableIdentifier: z.string().nullable(),
+  total: z.string(),
+  currency: z.string(),
+  itemCount: z.number().int(),
+  channel: z.enum(['site', 'qr-menu']),
+  createdAt: z.date(),
+  acceptedAt: z.date().nullable(),
+  preparingAt: z.date().nullable(),
+  readyAt: z.date().nullable(),
+  completedAt: z.date().nullable(),
+  canceledAt: z.date().nullable(),
+  etaAt: z.date().nullable(),
+  cancelReason: z.string().nullable(),
+  canceledFromStatus: z.string().nullable(),
+  hasFailedRefund: z.boolean(),
+});
+export type OrderFeedRow = z.infer<typeof OrderFeedRowSchema>;
+
+export interface OrderFeedRepository {
+  list(input: OrderFeedQuery): Promise<{ rows: OrderFeedRow[]; total: number }>;
+}
+
+export const ORDER_FEED_REPOSITORY = Symbol('ORDER_FEED_REPOSITORY');
