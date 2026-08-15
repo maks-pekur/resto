@@ -69,6 +69,14 @@ export class InvalidCancelReasonError extends Error {
   }
 }
 
+export class InvalidPrepMinutesError extends Error {
+  readonly kind = 'InvalidPrepMinutesError' as const;
+  constructor(public readonly prepMinutes: number) {
+    super(`Prep time "${prepMinutes}" must be an integer between 5 and 180 minutes.`);
+    this.name = 'InvalidPrepMinutesError';
+  }
+}
+
 export class RefundExceedsCapturedError extends Error {
   readonly kind = 'RefundExceedsCapturedError' as const;
   constructor(
@@ -94,4 +102,5 @@ export type OrderDomainError =
   | OrderModifierNotAvailableError
   | OrderModifierSelectionInvalidError
   | InvalidCancelReasonError
+  | InvalidPrepMinutesError
   | RefundExceedsCapturedError;
