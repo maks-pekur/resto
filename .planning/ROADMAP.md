@@ -673,7 +673,7 @@ Plans:
 
 **Wave 5** _(blocked on Wave 4 completion)_
 
-- [ ] 10-07-PLAN.md — Forward transition services + order feed read model (wave 5)
+- [x] 10-07-PLAN.md — Forward transition services + order feed read model (wave 5)
 - [x] 10-09-PLAN.md — Website guest tracker rewrite + marketing-consent checkbox (wave 5)
 
 **Wave 6** _(blocked on Wave 5 completion)_
@@ -905,7 +905,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 7/13 | In Progress|  |
+| 10. Admin Order Intake                        | 8/13 | In Progress|  |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
