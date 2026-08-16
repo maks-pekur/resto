@@ -158,3 +158,65 @@ export const orderDetailQuery = (brandSlug: string, orderId: string, locationId:
   queryFn: ({ signal }: { signal: AbortSignal }) =>
     apiFetch<OrderDetailApi>(`/v1/orders/${orderId}/detail`, { brandSlug, locationId, signal }),
 });
+
+export type OrderSnapshotApi = Omit<OrderDetailApi, 'hasFailedRefund'>;
+
+export interface AcceptOrderMutationInput {
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly prepMinutes: number;
+}
+
+export const acceptOrderMutation = (brandSlug: string, input: AcceptOrderMutationInput) =>
+  apiFetch<OrderSnapshotApi>(`/v1/orders/${input.orderId}/accept`, {
+    method: 'POST',
+    body: { prepMinutes: input.prepMinutes },
+    brandSlug,
+    locationId: input.locationId,
+  });
+
+export interface AdvanceOrderStatusMutationInput {
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly targetStatus: 'preparing' | 'ready' | 'completed';
+}
+
+export const advanceOrderStatusMutation = (
+  brandSlug: string,
+  input: AdvanceOrderStatusMutationInput,
+) =>
+  apiFetch<OrderSnapshotApi>(`/v1/orders/${input.orderId}/advance`, {
+    method: 'POST',
+    body: { targetStatus: input.targetStatus },
+    brandSlug,
+    locationId: input.locationId,
+  });
+
+export interface OrderCancelRefundApi {
+  readonly attempted: boolean;
+  readonly outcome: 'succeeded' | 'failed' | 'none';
+  readonly amountMinor: number | null;
+}
+
+export interface OrderCancelResponseApi {
+  readonly canceled: true;
+  readonly refund: OrderCancelRefundApi;
+}
+
+export interface CancelOrderMutationInput {
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly reasonCode: string;
+  readonly cancelNote?: string;
+}
+
+export const cancelOrderMutation = (brandSlug: string, input: CancelOrderMutationInput) =>
+  apiFetch<OrderCancelResponseApi>(`/v1/orders/${input.orderId}/cancel`, {
+    method: 'POST',
+    body: {
+      reasonCode: input.reasonCode,
+      ...(input.cancelNote !== undefined ? { cancelNote: input.cancelNote } : {}),
+    },
+    brandSlug,
+    locationId: input.locationId,
+  });

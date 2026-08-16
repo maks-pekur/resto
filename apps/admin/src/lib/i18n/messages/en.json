@@ -347,7 +347,8 @@
       "itemCount_other": "{{count}} items",
       "fulfillmentDineIn": "Dine-in",
       "fulfillmentPickup": "Pickup",
-      "fulfillmentDelivery": "Delivery"
+      "fulfillmentDelivery": "Delivery",
+      "statusUpdateFailed": "Couldn't update the order status."
     },
     "accept": {
       "title": "How soon will it be ready?",
@@ -364,6 +365,7 @@
     "reject": {
       "title": "Why are we declining it?",
       "otherPlaceholder": "Describe the reason",
+      "otherConfirm": "Decline",
       "rejectedToast": "Order No. {{n}} declined — refund of {{amount}} issued",
       "failedToast": "Couldn't decline the order."
     },

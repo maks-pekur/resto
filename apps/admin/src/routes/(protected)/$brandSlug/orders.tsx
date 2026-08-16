@@ -12,6 +12,8 @@ import {
   type OrderDatePreset,
 } from '@/lib/queries/orders';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { useOrderSound } from '@/lib/hooks/use-order-sound';
+import { useTabTitle } from '@/lib/hooks/use-tab-title';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
+import { EnableSoundBanner } from '@/components/orders/enable-sound-banner';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
@@ -61,10 +64,12 @@ function groupFeedRows(rows: readonly OrderFeedRowApi[]): FeedGroups {
 }
 
 function FeedGroupSection({
+  brandSlug,
   title,
   rows,
   showLocationBadge,
 }: {
+  readonly brandSlug: string;
   readonly title: string;
   readonly rows: readonly OrderFeedRowApi[];
   readonly showLocationBadge: boolean;
@@ -77,7 +82,12 @@ function FeedGroupSection({
       </h2>
       <div className="mx-auto grid w-full max-w-[640px] grid-cols-1 gap-3 xl:max-w-none xl:grid-cols-2">
         {rows.map((row) => (
-          <OrderCard key={row.id} row={row} showLocationBadge={showLocationBadge} />
+          <OrderCard
+            key={row.id}
+            brandSlug={brandSlug}
+            row={row}
+            showLocationBadge={showLocationBadge}
+          />
         ))}
       </div>
     </section>
@@ -126,15 +136,22 @@ function OrdersPage() {
   const groups = useMemo(() => groupFeedRows(rows), [rows]);
   const showLocationBadge = mode === 'all';
 
+  const sound = useOrderSound(groups.waiting);
+  useTabTitle(groups.waiting.length);
+
   return (
     <>
       <PageHeading title={tNav('orders')} />
+      <EnableSoundBanner onUnlock={sound.unlock} />
       <OrderFilterBar
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         isLive={!feedQuery.isRefetchError}
+        soundMuted={sound.muted}
+        onSoundMutedChange={sound.setMuted}
+        soundBlocked={sound.blocked}
       />
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (
@@ -197,16 +214,19 @@ function OrdersPage() {
         ) : (
           <div className="flex flex-col gap-6">
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupWaiting')}
               rows={groups.waiting}
               showLocationBadge={showLocationBadge}
             />
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupInProgress')}
               rows={groups.inProgress}
               showLocationBadge={showLocationBadge}
             />
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupDone')}
               rows={groups.done}
               showLocationBadge={showLocationBadge}

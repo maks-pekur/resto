@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MapPin, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,12 +8,16 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { formatDuration } from '@/lib/menu/format-age';
+import { showError } from '@/lib/ui/toast-helpers';
+import { advanceOrderStatusMutation } from '@/lib/queries/orders';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 import {
   OrderRefundFailedBadge,
   OrderStatusBadge,
   type OrderCardState,
 } from './order-status-badge';
+import { AcceptPopover } from './accept-popover';
+import { RejectPopover } from './reject-popover';
 
 export const UNACCEPTED_ESCALATION_MS = 5 * 60_000;
 
@@ -52,15 +57,40 @@ const AGE_BAND_CLASS = (ageMs: number): string => {
 };
 
 export interface OrderCardProps {
+  readonly brandSlug: string;
   readonly row: OrderFeedRowApi;
   readonly showLocationBadge: boolean;
 }
 
-export function OrderCard({ row, showLocationBadge }: OrderCardProps): React.ReactElement {
+export function OrderCard({
+  brandSlug,
+  row,
+  showLocationBadge,
+}: OrderCardProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const queryClient = useQueryClient();
   const now = Date.now();
   const state = deriveOrderCardState(row, now);
   const isTerminal = state === 'completed' || state === 'canceled';
+
+  const advanceMutation = useMutation({
+    mutationFn: (targetStatus: 'preparing' | 'ready' | 'completed') =>
+      advanceOrderStatusMutation(brandSlug, {
+        orderId: row.id,
+        locationId: row.locationId,
+        targetStatus,
+      }),
+    onSuccess: (res) => {
+      if (!res.ok) {
+        showError(null, t('card.statusUpdateFailed'));
+        return;
+      }
+      void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
+    },
+    onError: () => {
+      showError(null, t('card.statusUpdateFailed'));
+    },
+  });
 
   const cardClassName =
     state === 'escalated'
@@ -133,23 +163,40 @@ export function OrderCard({ row, showLocationBadge }: OrderCardProps): React.Rea
 
       {state === 'new' || state === 'escalated' ? (
         <div className="flex gap-2">
-          <Button size="lg" className="h-12 flex-1" disabled>
-            {t('card.acceptBtn')}
-          </Button>
-          <Button size="lg" variant="outline" className="h-12 flex-1" disabled>
-            {t('card.rejectBtn')}
-          </Button>
+          <AcceptPopover brandSlug={brandSlug} order={row} />
+          <RejectPopover brandSlug={brandSlug} order={row} />
         </div>
       ) : state === 'accepted' ? (
-        <Button size="lg" className="h-12 w-full" disabled>
+        <Button
+          size="lg"
+          className="h-12 w-full"
+          disabled={advanceMutation.isPending}
+          onClick={() => {
+            advanceMutation.mutate('preparing');
+          }}
+        >
           {t('card.startPreparingBtn')}
         </Button>
       ) : state === 'preparing' ? (
-        <Button size="lg" className="h-12 w-full" disabled>
+        <Button
+          size="lg"
+          className="h-12 w-full"
+          disabled={advanceMutation.isPending}
+          onClick={() => {
+            advanceMutation.mutate('ready');
+          }}
+        >
           {t('card.markReadyBtn')}
         </Button>
       ) : state === 'ready' ? (
-        <Button size="lg" className="h-12 w-full" disabled>
+        <Button
+          size="lg"
+          className="h-12 w-full"
+          disabled={advanceMutation.isPending}
+          onClick={() => {
+            advanceMutation.mutate('completed');
+          }}
+        >
           {t('card.completeBtn')}
         </Button>
       ) : row.hasFailedRefund ? (
