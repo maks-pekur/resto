@@ -353,7 +353,8 @@
       "itemCount_other": "{{count}} товаров",
       "fulfillmentDineIn": "В зале",
       "fulfillmentPickup": "Самовывоз",
-      "fulfillmentDelivery": "Доставка"
+      "fulfillmentDelivery": "Доставка",
+      "statusUpdateFailed": "Не удалось обновить статус заказа."
     },
     "accept": {
       "title": "Через сколько будет готово?",
@@ -370,6 +371,7 @@
     "reject": {
       "title": "Почему отклоняем?",
       "otherPlaceholder": "Опишите причину",
+      "otherConfirm": "Отклонить",
       "rejectedToast": "Заказ №{{n}} отклонён — возврат {{amount}} оформлен",
       "failedToast": "Не удалось отклонить заказ."
     },
