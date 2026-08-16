@@ -5,6 +5,7 @@ import {
   SidebarGroup,
   SidebarGroupLabel,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarMenuSub,
@@ -26,6 +27,8 @@ export interface NavMainItem {
   isActive?: boolean;
   scope?: NavScope;
   items?: NavMainSubItem[];
+  badge?: number;
+  badgeAriaLabel?: string;
 }
 
 const isVisible = (item: NavMainItem, activeBrandSlug: string | null): boolean => {
@@ -58,6 +61,9 @@ export function NavMain({
                     <span>{item.title}</span>
                   </Link>
                 </SidebarMenuButton>
+                {item.badge && item.badge > 0 ? (
+                  <SidebarMenuBadge aria-label={item.badgeAriaLabel}>{item.badge}</SidebarMenuBadge>
+                ) : null}
               </SidebarMenuItem>
             );
           }
@@ -76,6 +82,9 @@ export function NavMain({
                     <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
                   </SidebarMenuButton>
                 </CollapsibleTrigger>
+                {item.badge && item.badge > 0 ? (
+                  <SidebarMenuBadge aria-label={item.badgeAriaLabel}>{item.badge}</SidebarMenuBadge>
+                ) : null}
                 <CollapsibleContent>
                   <SidebarMenuSub>
                     {item.items?.map((subItem) => (

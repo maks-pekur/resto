@@ -40,6 +40,7 @@
     "team": "Team",
     "settings": "Settings",
     "payments": "Payments",
+    "orders": "Orders",
     "user": {
       "accountItem": "Account",
       "themeLabel": "Theme",
@@ -295,6 +296,149 @@
       "unpublishedChanges_other": "{{count}} unpublished changes",
       "countdownLabel": "Publishing in {{sec}}s",
       "cancelBtn": "Cancel"
+    }
+  },
+  "orders": {
+    "feed": {
+      "groupWaiting": "Waiting",
+      "groupInProgress": "In progress",
+      "groupDone": "Done",
+      "live": "Live",
+      "reconnecting": "Reconnecting…",
+      "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
+      "staleRetry": "Refresh",
+      "refundBanner_one": "{{count}} refund failed — action required",
+      "refundBanner_other": "{{count}} refunds failed — action required",
+      "refundBannerAction": "Show"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "statusActive": "Active",
+      "statusAllToday": "All today",
+      "statusCompleted": "Completed",
+      "statusCanceled": "Canceled",
+      "statusRefundFailed": "Refund failed",
+      "dateLabel": "Date",
+      "dateToday": "Today",
+      "dateYesterday": "Yesterday",
+      "dateWeek": "7 days",
+      "channelLabel": "Channel",
+      "channelSiteOnly": "Website",
+      "channelHint": "More channels appear once QR ordering is connected"
+    },
+    "card": {
+      "newBadge": "New",
+      "escalatedBadge": "Waiting {{duration}}",
+      "acceptedBadge": "Accepted",
+      "preparingBadge": "Preparing",
+      "readyBadge": "Ready",
+      "completedBadge": "Completed",
+      "canceledBadge": "Canceled",
+      "refundFailedBadge": "Refund failed",
+      "acceptBtn": "Accept",
+      "rejectBtn": "Reject",
+      "startPreparingBtn": "Preparing",
+      "markReadyBtn": "Ready",
+      "completeBtn": "Handed over",
+      "locationBadgeAria": "Location: {{name}}",
+      "dailyNumber": "No. {{n}}",
+      "sidebarBadgeAria": "Unaccepted orders: {{count}}",
+      "itemCount_one": "{{count}} item",
+      "itemCount_other": "{{count}} items",
+      "fulfillmentDineIn": "Dine-in",
+      "fulfillmentPickup": "Pickup",
+      "fulfillmentDelivery": "Delivery"
+    },
+    "accept": {
+      "title": "How soon will it be ready?",
+      "chip15": "15 min",
+      "chip20": "20 min",
+      "chip30": "30 min",
+      "chip45": "45 min",
+      "customChip": "Other",
+      "customPlaceholder": "Minutes",
+      "customConfirm": "Accept",
+      "acceptedToast": "Order No. {{n}} accepted — ready by {{time}}",
+      "failedToast": "Couldn't accept the order."
+    },
+    "reject": {
+      "title": "Why are we declining it?",
+      "otherPlaceholder": "Describe the reason",
+      "rejectedToast": "Order No. {{n}} declined — refund of {{amount}} issued",
+      "failedToast": "Couldn't decline the order."
+    },
+    "reasons": {
+      "outOfStock": "Out of stock",
+      "kitchenBusy": "Kitchen is overloaded",
+      "guestRequested": "Guest canceled",
+      "guestNoShow": "Couldn't reach the guest",
+      "paymentIssue": "Payment issue",
+      "duplicate": "Duplicate order",
+      "other": "Other reason"
+    },
+    "cancel": {
+      "triggerBtn": "Cancel order",
+      "dialogTitle": "Cancel order No. {{n}}?",
+      "dialogDescription": "A refund of {{amount}} will be issued. This cannot be undone.",
+      "reasonLabel": "Reason",
+      "reasonRequired": "Choose a reason.",
+      "dismissBtn": "Close",
+      "confirmBtn": "Cancel and refund {{amount}}",
+      "canceledToast": "Order No. {{n}} canceled — refund of {{amount}} issued",
+      "failedToast": "Couldn't cancel the order."
+    },
+    "detail": {
+      "internalNumberLabel": "Internal number",
+      "customerTitle": "Guest",
+      "itemsTitle": "Order items",
+      "timelineTitle": "Order history",
+      "timelineCreated": "Paid",
+      "timelineAccepted": "Accepted",
+      "timelinePreparing": "Preparing",
+      "timelineReady": "Ready",
+      "timelineCompleted": "Handed over",
+      "timelineCanceled": "Canceled",
+      "totalsSubtotal": "Subtotal",
+      "totalsService": "Service fee",
+      "totalsDiscount": "Discount",
+      "totalsTotal": "Total"
+    },
+    "refund": {
+      "title": "Refund",
+      "amountLabel": "Refund amount",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "E.g. guest complained about a dish",
+      "submitBtn": "Issue refund",
+      "remainingHint": "Available to refund: {{amount}}",
+      "successToast": "Refund of {{amount}} issued",
+      "failedToast": "Couldn't issue the refund.",
+      "retryBtn": "Retry refund",
+      "failedBanner": "Refund of {{amount}} failed"
+    },
+    "alerts": {
+      "enableSoundTitle": "Turn on order notifications",
+      "enableSoundBody": "Allow sound in this tab so you don't miss a new order.",
+      "enableSoundBtn": "Turn on sound",
+      "soundBlockedHint": "Sound may not work in this browser.",
+      "muteToggleLabel": "Sound",
+      "muteOnAria": "Sound on",
+      "muteOffAria": "Sound off"
+    },
+    "empty": {
+      "activationTitle": "Your first orders will show up here",
+      "activationBody": "Share the ordering link and everything guests pay for will appear here.",
+      "checklistPayments": "Payments connected",
+      "checklistMenu": "Menu published",
+      "checklistLocation": "Location open",
+      "copyLinkBtn": "Copy link",
+      "linkCopiedToast": "Link copied",
+      "noDomainHint": "No guest ordering domain configured yet.",
+      "filteredTitle": "Nothing found",
+      "filteredBody": "Change the filters or check a different date."
+    },
+    "error": {
+      "initialLoadTitle": "Couldn't load orders",
+      "initialLoadBody": "Check your connection and try again."
     }
   },
   "dashboard": {
