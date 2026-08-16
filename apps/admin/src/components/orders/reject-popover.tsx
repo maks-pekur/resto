@@ -21,15 +21,17 @@ export const ORDER_CANCEL_REASON_CODES = [
 
 export type OrderCancelReasonCode = (typeof ORDER_CANCEL_REASON_CODES)[number];
 
-const [
-  REASON_OUT_OF_STOCK,
-  REASON_KITCHEN_BUSY,
-  REASON_GUEST_REQUESTED,
-  REASON_GUEST_NO_SHOW,
-  REASON_PAYMENT_ISSUE,
-  REASON_DUPLICATE_ORDER,
-  REASON_OTHER,
-] = ORDER_CANCEL_REASON_CODES;
+const REASON_OTHER = 'other' satisfies OrderCancelReasonCode;
+
+const REASON_LABEL_KEYS: Record<OrderCancelReasonCode, string> = {
+  kitchen_out_of_stock: 'reasons.outOfStock',
+  kitchen_too_busy: 'reasons.kitchenBusy',
+  guest_requested: 'reasons.guestRequested',
+  guest_no_show: 'reasons.guestNoShow',
+  payment_issue: 'reasons.paymentIssue',
+  duplicate_order: 'reasons.duplicate',
+  other: 'reasons.other',
+};
 
 const OTHER_NOTE_MAX_LENGTH = 500;
 
@@ -100,83 +102,24 @@ export function RejectPopover({ brandSlug, order }: RejectPopoverProps): React.R
       <PopoverContent align="start" className="w-80">
         <p className="mb-3 text-sm font-semibold">{t('reject.title')}</p>
         <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_OUT_OF_STOCK });
-            }}
-          >
-            {t('reasons.outOfStock')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_KITCHEN_BUSY });
-            }}
-          >
-            {t('reasons.kitchenBusy')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_GUEST_REQUESTED });
-            }}
-          >
-            {t('reasons.guestRequested')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_GUEST_NO_SHOW });
-            }}
-          >
-            {t('reasons.guestNoShow')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_PAYMENT_ISSUE });
-            }}
-          >
-            {t('reasons.paymentIssue')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              mutation.mutate({ reasonCode: REASON_DUPLICATE_ORDER });
-            }}
-          >
-            {t('reasons.duplicate')}
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            className="h-12 flex-1"
-            disabled={isPending}
-            onClick={() => {
-              setOtherOpen(true);
-            }}
-          >
-            {t('reasons.other')}
-          </Button>
+          {ORDER_CANCEL_REASON_CODES.map((code) => (
+            <Button
+              key={code}
+              type="button"
+              variant="outline"
+              className="h-12 flex-1"
+              disabled={isPending}
+              onClick={() => {
+                if (code === REASON_OTHER) {
+                  setOtherOpen(true);
+                  return;
+                }
+                mutation.mutate({ reasonCode: code });
+              }}
+            >
+              {t(REASON_LABEL_KEYS[code])}
+            </Button>
+          ))}
         </div>
         {otherOpen ? (
           <div className="mt-3 flex flex-col gap-2">
