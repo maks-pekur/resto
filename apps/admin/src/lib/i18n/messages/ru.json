@@ -40,6 +40,7 @@
     "team": "Команда",
     "settings": "Настройки",
     "payments": "Платежи",
+    "orders": "Заказы",
     "user": {
       "accountItem": "Аккаунт",
       "themeLabel": "Тема",
@@ -297,6 +298,153 @@
       "unpublishedChanges_other": "{{count}} неопубликованных изменений",
       "countdownLabel": "Публикация через {{sec}}с",
       "cancelBtn": "Отменить"
+    }
+  },
+  "orders": {
+    "feed": {
+      "groupWaiting": "Ждут",
+      "groupInProgress": "В работе",
+      "groupDone": "Завершены",
+      "live": "В сети",
+      "reconnecting": "Переподключение…",
+      "staleNotice": "Не удалось обновить список — показаны данные на {{time}}",
+      "staleRetry": "Обновить",
+      "refundBanner_one": "{{count}} возврат не прошёл — требуется действие",
+      "refundBanner_few": "{{count}} возврата не прошли — требуется действие",
+      "refundBanner_many": "{{count}} возвратов не прошли — требуется действие",
+      "refundBanner_other": "{{count}} возвратов не прошли — требуется действие",
+      "refundBannerAction": "Показать"
+    },
+    "filters": {
+      "statusLabel": "Статус",
+      "statusActive": "Активные",
+      "statusAllToday": "Все за сегодня",
+      "statusCompleted": "Завершены",
+      "statusCanceled": "Отменены",
+      "statusRefundFailed": "Возврат не прошёл",
+      "dateLabel": "Дата",
+      "dateToday": "Сегодня",
+      "dateYesterday": "Вчера",
+      "dateWeek": "7 дней",
+      "channelLabel": "Канал",
+      "channelSiteOnly": "Сайт",
+      "channelHint": "Появятся другие каналы, когда подключим QR-меню"
+    },
+    "card": {
+      "newBadge": "Новый",
+      "escalatedBadge": "Ждём {{duration}}",
+      "acceptedBadge": "Принят",
+      "preparingBadge": "Готовится",
+      "readyBadge": "Готово",
+      "completedBadge": "Завершён",
+      "canceledBadge": "Отменён",
+      "refundFailedBadge": "Возврат не прошёл",
+      "acceptBtn": "Принять",
+      "rejectBtn": "Отклонить",
+      "startPreparingBtn": "Готовится",
+      "markReadyBtn": "Готово",
+      "completeBtn": "Выдан",
+      "locationBadgeAria": "Точка: {{name}}",
+      "dailyNumber": "№{{n}}",
+      "sidebarBadgeAria": "Непринятых заказов: {{count}}",
+      "itemCount_one": "{{count}} товар",
+      "itemCount_few": "{{count}} товара",
+      "itemCount_many": "{{count}} товаров",
+      "itemCount_other": "{{count}} товаров",
+      "fulfillmentDineIn": "В зале",
+      "fulfillmentPickup": "Самовывоз",
+      "fulfillmentDelivery": "Доставка"
+    },
+    "accept": {
+      "title": "Через сколько будет готово?",
+      "chip15": "15 мин",
+      "chip20": "20 мин",
+      "chip30": "30 мин",
+      "chip45": "45 мин",
+      "customChip": "Другое",
+      "customPlaceholder": "Минут",
+      "customConfirm": "Принять",
+      "acceptedToast": "Заказ №{{n}} принят — будет готов к {{time}}",
+      "failedToast": "Не удалось принять заказ."
+    },
+    "reject": {
+      "title": "Почему отклоняем?",
+      "otherPlaceholder": "Опишите причину",
+      "rejectedToast": "Заказ №{{n}} отклонён — возврат {{amount}} оформлен",
+      "failedToast": "Не удалось отклонить заказ."
+    },
+    "reasons": {
+      "outOfStock": "Нет в наличии",
+      "kitchenBusy": "Кухня перегружена",
+      "guestRequested": "Гость отменил",
+      "guestNoShow": "Гость не выходит на связь",
+      "paymentIssue": "Проблема с оплатой",
+      "duplicate": "Дубликат заказа",
+      "other": "Другая причина"
+    },
+    "cancel": {
+      "triggerBtn": "Отменить заказ",
+      "dialogTitle": "Отменить заказ №{{n}}?",
+      "dialogDescription": "Будет оформлен возврат {{amount}}. Это действие нельзя отменить.",
+      "reasonLabel": "Причина",
+      "reasonRequired": "Выберите причину.",
+      "dismissBtn": "Закрыть",
+      "confirmBtn": "Отменить и вернуть {{amount}}",
+      "canceledToast": "Заказ №{{n}} отменён — возврат {{amount}} оформлен",
+      "failedToast": "Не удалось отменить заказ."
+    },
+    "detail": {
+      "internalNumberLabel": "Внутренний номер",
+      "customerTitle": "Гость",
+      "itemsTitle": "Состав заказа",
+      "timelineTitle": "История заказа",
+      "timelineCreated": "Оплачен",
+      "timelineAccepted": "Принят",
+      "timelinePreparing": "Готовится",
+      "timelineReady": "Готово",
+      "timelineCompleted": "Выдан",
+      "timelineCanceled": "Отменён",
+      "totalsSubtotal": "Сумма",
+      "totalsService": "Сервисный сбор",
+      "totalsDiscount": "Скидка",
+      "totalsTotal": "Итого"
+    },
+    "refund": {
+      "title": "Возврат",
+      "amountLabel": "Сумма возврата",
+      "reasonLabel": "Причина",
+      "reasonPlaceholder": "Например: гость пожаловался на блюдо",
+      "submitBtn": "Оформить возврат",
+      "remainingHint": "Доступно к возврату: {{amount}}",
+      "successToast": "Возврат {{amount}} оформлен",
+      "failedToast": "Не удалось оформить возврат.",
+      "retryBtn": "Повторить возврат",
+      "failedBanner": "Возврат {{amount}} не прошёл"
+    },
+    "alerts": {
+      "enableSoundTitle": "Включите звук уведомлений",
+      "enableSoundBody": "Чтобы не пропустить новый заказ, разрешите звук в этой вкладке.",
+      "enableSoundBtn": "Включить звук",
+      "soundBlockedHint": "Звук может не работать в этом браузере.",
+      "muteToggleLabel": "Звук",
+      "muteOnAria": "Звук включён",
+      "muteOffAria": "Звук выключен"
+    },
+    "empty": {
+      "activationTitle": "Здесь появятся ваши первые заказы",
+      "activationBody": "Поделитесь ссылкой на заказ, и всё, что оплатят гости, появится здесь.",
+      "checklistPayments": "Приём платежей подключен",
+      "checklistMenu": "Меню опубликовано",
+      "checklistLocation": "Точка открыта",
+      "copyLinkBtn": "Скопировать ссылку",
+      "linkCopiedToast": "Ссылка скопирована",
+      "noDomainHint": "Домен для гостевых заказов ещё не настроен.",
+      "filteredTitle": "Ничего не найдено",
+      "filteredBody": "Измените фильтры или проверьте другую дату."
+    },
+    "error": {
+      "initialLoadTitle": "Не удалось загрузить заказы",
+      "initialLoadBody": "Проверьте соединение и попробуйте снова."
     }
   },
   "dashboard": {
