@@ -8,6 +8,7 @@ export interface MeResponse {
   readonly baseRole?: 'owner' | 'admin' | 'staff';
   readonly twoFactorEnabled?: boolean;
   readonly activeBrandId?: string | null;
+  readonly permissions?: Record<string, readonly string[]>;
 }
 
 export interface OperatorSummary {

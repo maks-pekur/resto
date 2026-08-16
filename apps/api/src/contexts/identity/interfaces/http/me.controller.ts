@@ -1,7 +1,13 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Inject, Req } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { and, eq } from 'drizzle-orm';
 import type { FastifyRequest } from 'fastify';
+import { member as memberTable } from '@resto/db/schema';
 import { BrandNeutral } from '../../../../shared/auth';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { computeEffectivePermissions } from '../../application/effective-permissions';
+import { listActiveCustomRoles } from '../../application/list-active-custom-roles';
 import { CurrentPrincipal } from './decorators/current-principal.decorator';
 import type { Principal } from '../../domain/principal';
 
@@ -13,15 +19,21 @@ interface MeResponse {
   baseRole?: 'owner' | 'admin' | 'staff';
   twoFactorEnabled?: boolean;
   activeBrandId?: string | null;
+  permissions: Record<string, string[]>;
 }
 
 @ApiTags('identity')
 @BrandNeutral()
 @Controller('/v1/me')
 export class MeController {
+  constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
+
   @Get()
-  me(@CurrentPrincipal() actor: Principal, @Req() req: FastifyRequest): MeResponse {
+  async me(@CurrentPrincipal() actor: Principal, @Req() req: FastifyRequest): Promise<MeResponse> {
     if (actor.kind === 'operator') {
+      const permissions = actor.tenantId
+        ? await this.resolvePermissions(actor.userId, actor.tenantId)
+        : {};
       return {
         kind: actor.kind,
         userId: actor.userId,
@@ -32,6 +44,7 @@ export class MeController {
           ? { twoFactorEnabled: actor.twoFactorEnabled }
           : {}),
         activeBrandId: req.activeBrandId ?? null,
+        permissions,
       };
     }
     if (actor.kind === 'customer') {
@@ -39,8 +52,33 @@ export class MeController {
         kind: actor.kind,
         userId: actor.userId,
         tenantId: actor.tenantId,
+        permissions: {},
       };
     }
-    return { kind: 'anonymous' };
+    return { kind: 'anonymous', permissions: {} };
+  }
+
+  private async resolvePermissions(
+    userId: string,
+    organizationId: string,
+  ): Promise<Record<string, string[]>> {
+    const rows = await this.authDb.db
+      .select({ role: memberTable.role })
+      .from(memberTable)
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
+      .limit(1);
+    const memberRoleCsv = rows[0]?.role;
+    if (!memberRoleCsv) return {};
+
+    const activeRoles = await listActiveCustomRoles(this.authDb, organizationId);
+    const customRoleLookup = (slug: string): Record<string, string[]> | null =>
+      activeRoles.find((r) => r.role === slug)?.permission ?? null;
+
+    const effective = computeEffectivePermissions(memberRoleCsv, customRoleLookup);
+    const result: Record<string, string[]> = {};
+    for (const [resource, actions] of Object.entries(effective)) {
+      result[resource] = [...actions];
+    }
+    return result;
   }
 }
