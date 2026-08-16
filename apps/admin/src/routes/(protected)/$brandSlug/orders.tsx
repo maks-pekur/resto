@@ -61,10 +61,12 @@ function groupFeedRows(rows: readonly OrderFeedRowApi[]): FeedGroups {
 }
 
 function FeedGroupSection({
+  brandSlug,
   title,
   rows,
   showLocationBadge,
 }: {
+  readonly brandSlug: string;
   readonly title: string;
   readonly rows: readonly OrderFeedRowApi[];
   readonly showLocationBadge: boolean;
@@ -77,7 +79,12 @@ function FeedGroupSection({
       </h2>
       <div className="mx-auto grid w-full max-w-[640px] grid-cols-1 gap-3 xl:max-w-none xl:grid-cols-2">
         {rows.map((row) => (
-          <OrderCard key={row.id} row={row} showLocationBadge={showLocationBadge} />
+          <OrderCard
+            key={row.id}
+            brandSlug={brandSlug}
+            row={row}
+            showLocationBadge={showLocationBadge}
+          />
         ))}
       </div>
     </section>
@@ -197,16 +204,19 @@ function OrdersPage() {
         ) : (
           <div className="flex flex-col gap-6">
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupWaiting')}
               rows={groups.waiting}
               showLocationBadge={showLocationBadge}
             />
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupInProgress')}
               rows={groups.inProgress}
               showLocationBadge={showLocationBadge}
             />
             <FeedGroupSection
+              brandSlug={brandSlug}
               title={t('feed.groupDone')}
               rows={groups.done}
               showLocationBadge={showLocationBadge}

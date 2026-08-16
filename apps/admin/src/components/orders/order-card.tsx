@@ -13,6 +13,7 @@ import {
   OrderStatusBadge,
   type OrderCardState,
 } from './order-status-badge';
+import { AcceptPopover } from './accept-popover';
 
 export const UNACCEPTED_ESCALATION_MS = 5 * 60_000;
 
@@ -52,11 +53,16 @@ const AGE_BAND_CLASS = (ageMs: number): string => {
 };
 
 export interface OrderCardProps {
+  readonly brandSlug: string;
   readonly row: OrderFeedRowApi;
   readonly showLocationBadge: boolean;
 }
 
-export function OrderCard({ row, showLocationBadge }: OrderCardProps): React.ReactElement {
+export function OrderCard({
+  brandSlug,
+  row,
+  showLocationBadge,
+}: OrderCardProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const now = Date.now();
   const state = deriveOrderCardState(row, now);
@@ -133,9 +139,7 @@ export function OrderCard({ row, showLocationBadge }: OrderCardProps): React.Rea
 
       {state === 'new' || state === 'escalated' ? (
         <div className="flex gap-2">
-          <Button size="lg" className="h-12 flex-1" disabled>
-            {t('card.acceptBtn')}
-          </Button>
+          <AcceptPopover brandSlug={brandSlug} order={row} />
           <Button size="lg" variant="outline" className="h-12 flex-1" disabled>
             {t('card.rejectBtn')}
           </Button>
