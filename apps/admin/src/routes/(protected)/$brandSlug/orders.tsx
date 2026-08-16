@@ -12,6 +12,8 @@ import {
   type OrderDatePreset,
 } from '@/lib/queries/orders';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { useOrderSound } from '@/lib/hooks/use-order-sound';
+import { useTabTitle } from '@/lib/hooks/use-tab-title';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -19,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { OrderCard } from '@/components/orders/order-card';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
+import { EnableSoundBanner } from '@/components/orders/enable-sound-banner';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
@@ -133,15 +136,22 @@ function OrdersPage() {
   const groups = useMemo(() => groupFeedRows(rows), [rows]);
   const showLocationBadge = mode === 'all';
 
+  const sound = useOrderSound(groups.waiting);
+  useTabTitle(groups.waiting.length);
+
   return (
     <>
       <PageHeading title={tNav('orders')} />
+      <EnableSoundBanner onUnlock={sound.unlock} />
       <OrderFilterBar
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         isLive={!feedQuery.isRefetchError}
+        soundMuted={sound.muted}
+        onSoundMutedChange={sound.setMuted}
+        soundBlocked={sound.blocked}
       />
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (

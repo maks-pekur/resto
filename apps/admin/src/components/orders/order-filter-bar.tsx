@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { Volume2, VolumeX } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -8,6 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { OrderStatusPreset, OrderDatePreset } from '@/lib/queries/orders';
@@ -18,6 +20,9 @@ export interface OrderFilterBarProps {
   readonly datePreset: OrderDatePreset;
   readonly onDatePresetChange: (value: OrderDatePreset) => void;
   readonly isLive: boolean;
+  readonly soundMuted: boolean;
+  readonly onSoundMutedChange: (muted: boolean) => void;
+  readonly soundBlocked: boolean;
 }
 
 export function OrderFilterBar({
@@ -26,9 +31,13 @@ export function OrderFilterBar({
   datePreset,
   onDatePresetChange,
   isLive,
+  soundMuted,
+  onSoundMutedChange,
+  soundBlocked,
 }: OrderFilterBarProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.filters' });
   const { t: tFeed } = useTranslation('translation', { keyPrefix: 'orders.feed' });
+  const { t: tAlerts } = useTranslation('translation', { keyPrefix: 'orders.alerts' });
 
   return (
     <div className="sticky top-0 z-10 flex flex-wrap items-center gap-2 bg-background px-4 py-2 lg:px-6">
@@ -75,15 +84,35 @@ export function OrderFilterBar({
         <TooltipContent>{t('channelHint')}</TooltipContent>
       </Tooltip>
 
-      <Badge variant="outline" className="ml-auto gap-1.5">
-        <span
-          className={cn(
-            'size-1.5 rounded-full',
-            isLive ? 'bg-success' : 'animate-pulse bg-warning',
+      <div className="ml-auto flex items-center gap-3">
+        {soundBlocked ? (
+          <span className="text-xs text-muted-foreground">{tAlerts('soundBlockedHint')}</span>
+        ) : null}
+        <div className="flex items-center gap-1.5">
+          {soundMuted ? (
+            <VolumeX className="size-4 text-muted-foreground" />
+          ) : (
+            <Volume2 className="size-4 text-muted-foreground" />
           )}
-        />
-        {isLive ? tFeed('live') : tFeed('reconnecting')}
-      </Badge>
+          <span className="text-xs text-muted-foreground">{tAlerts('muteToggleLabel')}</span>
+          <Switch
+            checked={!soundMuted}
+            onCheckedChange={(checked) => {
+              onSoundMutedChange(!checked);
+            }}
+            aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+          />
+        </div>
+        <Badge variant="outline" className="gap-1.5">
+          <span
+            className={cn(
+              'size-1.5 rounded-full',
+              isLive ? 'bg-success' : 'animate-pulse bg-warning',
+            )}
+          />
+          {isLive ? tFeed('live') : tFeed('reconnecting')}
+        </Badge>
+      </div>
     </div>
   );
 }
