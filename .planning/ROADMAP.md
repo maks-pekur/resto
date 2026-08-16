@@ -682,7 +682,7 @@ Plans:
 
 **Wave 7** _(blocked on Wave 6 completion)_
 
-- [ ] 10-10-PLAN.md — Admin Orders page: route, 5s-polled grouped feed, cards, filters, sidebar counter (wave 7)
+- [x] 10-10-PLAN.md — Admin Orders page: route, 5s-polled grouped feed, cards, filters, sidebar counter (wave 7)
 
 **Wave 8** _(blocked on Wave 7 completion)_
 
@@ -905,7 +905,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 9/13 | In Progress|  |
+| 10. Admin Order Intake                        | 10/13 | In Progress|  |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
