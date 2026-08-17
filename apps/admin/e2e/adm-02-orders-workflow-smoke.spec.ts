@@ -466,6 +466,10 @@ test.describe('ADM-02 orders workflow smoke (load-bearing, real browser)', () =>
 
       await signInViaSessionCookie(page, seed.staffSessionCookie, seed.brandSlug);
 
+      await page.getByRole('combobox', { name: 'Статус' }).click();
+      await page.getByRole('option', { name: 'Все за сегодня' }).click();
+      await expect(page.getByRole('combobox', { name: 'Статус' })).toContainText('Все за сегодня');
+
       const card = page.getByTestId(`order-card-${orderNonOwnerCancel.id}`);
       await expect(card).toBeVisible({ timeout: STATE_TIMEOUT });
       await card.getByText(new RegExp(`№${String(orderNonOwnerCancel.shortNumber)}`)).click();

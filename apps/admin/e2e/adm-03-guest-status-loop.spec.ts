@@ -178,6 +178,10 @@ test.describe('ADM-03 two-screen guest status loop (load-bearing, real browser)'
     await opPage.waitForURL(new RegExp(`/${seed.brandSlug}(\\?|$)`), { timeout: 15_000 });
     await opPage.goto(`/${seed.brandSlug}/orders`);
 
+    await opPage.getByRole('combobox', { name: 'Статус' }).click();
+    await opPage.getByRole('option', { name: 'Все за сегодня' }).click();
+    await expect(opPage.getByRole('combobox', { name: 'Статус' })).toContainText('Все за сегодня');
+
     const opCardAccept = opPage.getByTestId(`order-card-${orderAccept.id}`);
     await expect(opCardAccept).toBeVisible({ timeout: STATE_TIMEOUT });
     await opCardAccept.getByRole('button', { name: 'Принять' }).click();
