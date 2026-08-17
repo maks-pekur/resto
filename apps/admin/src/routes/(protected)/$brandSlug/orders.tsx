@@ -22,6 +22,7 @@ import { OrderCard } from '@/components/orders/order-card';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
 import { EnableSoundBanner } from '@/components/orders/enable-sound-banner';
+import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
@@ -68,11 +69,13 @@ function FeedGroupSection({
   title,
   rows,
   showLocationBadge,
+  onOpenDetail,
 }: {
   readonly brandSlug: string;
   readonly title: string;
   readonly rows: readonly OrderFeedRowApi[];
   readonly showLocationBadge: boolean;
+  readonly onOpenDetail: (row: OrderFeedRowApi) => void;
 }) {
   if (rows.length === 0) return null;
   return (
@@ -87,6 +90,7 @@ function FeedGroupSection({
             brandSlug={brandSlug}
             row={row}
             showLocationBadge={showLocationBadge}
+            onOpenDetail={onOpenDetail}
           />
         ))}
       </div>
@@ -107,6 +111,7 @@ function OrdersPage() {
   const [datePreset, setDatePreset] = useState<OrderDatePreset>(
     DEFAULT_ORDER_FEED_FILTERS.datePreset ?? 'today',
   );
+  const [openOrder, setOpenOrder] = useState<OrderFeedRowApi | null>(null);
   const filters = useMemo(() => ({ statusFilter, datePreset }), [statusFilter, datePreset]);
 
   const feedQuery = useQuery({
@@ -218,22 +223,32 @@ function OrdersPage() {
               title={t('feed.groupWaiting')}
               rows={groups.waiting}
               showLocationBadge={showLocationBadge}
+              onOpenDetail={setOpenOrder}
             />
             <FeedGroupSection
               brandSlug={brandSlug}
               title={t('feed.groupInProgress')}
               rows={groups.inProgress}
               showLocationBadge={showLocationBadge}
+              onOpenDetail={setOpenOrder}
             />
             <FeedGroupSection
               brandSlug={brandSlug}
               title={t('feed.groupDone')}
               rows={groups.done}
               showLocationBadge={showLocationBadge}
+              onOpenDetail={setOpenOrder}
             />
           </div>
         )}
       </div>
+      <OrderDetailSheet
+        brandSlug={brandSlug}
+        order={openOrder}
+        onOpenChange={(open) => {
+          if (!open) setOpenOrder(null);
+        }}
+      />
     </>
   );
 }

@@ -21,7 +21,9 @@ import { RejectPopover } from './reject-popover';
 
 export const UNACCEPTED_ESCALATION_MS = 5 * 60_000;
 
-export function deriveOrderCardState(row: OrderFeedRowApi, now: number): OrderCardState {
+export type OrderCardStateSource = Pick<OrderFeedRowApi, 'status' | 'acceptedAt' | 'createdAt'>;
+
+export function deriveOrderCardState(row: OrderCardStateSource, now: number): OrderCardState {
   if (row.status === 'paid' && row.acceptedAt === null) {
     const age = now - new Date(row.createdAt).getTime();
     return age >= UNACCEPTED_ESCALATION_MS ? 'escalated' : 'new';
@@ -34,6 +36,12 @@ export function deriveOrderCardState(row: OrderFeedRowApi, now: number): OrderCa
   }
   return 'completed';
 }
+
+export const AGE_BAND_CLASS = (ageMs: number): string => {
+  if (ageMs < 5 * 60_000) return 'text-success';
+  if (ageMs < 15 * 60_000) return 'text-warning';
+  return 'text-destructive';
+};
 
 const FULFILLMENT_ICON: Record<
   OrderFeedRowApi['fulfillmentMode'],
@@ -50,22 +58,18 @@ const FULFILLMENT_LABEL_KEY: Record<OrderFeedRowApi['fulfillmentMode'], string> 
   delivery: 'fulfillmentDelivery',
 };
 
-const AGE_BAND_CLASS = (ageMs: number): string => {
-  if (ageMs < 5 * 60_000) return 'text-success';
-  if (ageMs < 15 * 60_000) return 'text-warning';
-  return 'text-destructive';
-};
-
 export interface OrderCardProps {
   readonly brandSlug: string;
   readonly row: OrderFeedRowApi;
   readonly showLocationBadge: boolean;
+  readonly onOpenDetail: (row: OrderFeedRowApi) => void;
 }
 
 export function OrderCard({
   brandSlug,
   row,
   showLocationBadge,
+  onOpenDetail,
 }: OrderCardProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const queryClient = useQueryClient();
@@ -122,44 +126,52 @@ export function OrderCard({
 
   return (
     <Card className={cn('gap-2 p-4', cardClassName)}>
-      <div className="flex items-start justify-between gap-2">
-        <span className="text-[28px] leading-tight font-semibold">
-          {t('card.dailyNumber', { n: row.shortNumber })}
-        </span>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-1">
-            {showLocationBadge ? (
-              <Badge
-                variant="outline"
-                aria-label={t('card.locationBadgeAria', { name: row.locationName })}
-              >
-                <MapPin className="size-3" />
-                {row.locationName}
-              </Badge>
+      <button
+        type="button"
+        className="flex flex-col gap-2 text-left"
+        onClick={() => {
+          onOpenDetail(row);
+        }}
+      >
+        <div className="flex items-start justify-between gap-2">
+          <span className="text-[28px] leading-tight font-semibold">
+            {t('card.dailyNumber', { n: row.shortNumber })}
+          </span>
+          <div className="flex flex-col items-end gap-1">
+            <div className="flex items-center gap-1">
+              {showLocationBadge ? (
+                <Badge
+                  variant="outline"
+                  aria-label={t('card.locationBadgeAria', { name: row.locationName })}
+                >
+                  <MapPin className="size-3" />
+                  {row.locationName}
+                </Badge>
+              ) : null}
+              <OrderStatusBadge state={state} escalatedDuration={escalatedDuration} />
+            </div>
+            {row.hasFailedRefund ? <OrderRefundFailedBadge /> : null}
+            {ageMs !== null && state !== 'escalated' ? (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className={cn('text-xs', AGE_BAND_CLASS(ageMs))}>
+                    {formatDuration(ageMs)}
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {new Date(stateEnteredAt ?? row.createdAt).toLocaleString('ru-RU')}
+                </TooltipContent>
+              </Tooltip>
             ) : null}
-            <OrderStatusBadge state={state} escalatedDuration={escalatedDuration} />
           </div>
-          {row.hasFailedRefund ? <OrderRefundFailedBadge /> : null}
-          {ageMs !== null && state !== 'escalated' ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className={cn('text-xs', AGE_BAND_CLASS(ageMs))}>
-                  {formatDuration(ageMs)}
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {new Date(stateEnteredAt ?? row.createdAt).toLocaleString('ru-RU')}
-              </TooltipContent>
-            </Tooltip>
-          ) : null}
         </div>
-      </div>
 
-      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span>{t('card.itemCount', { count: row.itemCount })}</span>
-        <FulfillmentIcon className="size-4" />
-        <span>{t(`card.${FULFILLMENT_LABEL_KEY[row.fulfillmentMode]}`)}</span>
-      </div>
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <span>{t('card.itemCount', { count: row.itemCount })}</span>
+          <FulfillmentIcon className="size-4" />
+          <span>{t(`card.${FULFILLMENT_LABEL_KEY[row.fulfillmentMode]}`)}</span>
+        </div>
+      </button>
 
       {state === 'new' || state === 'escalated' ? (
         <div className="flex gap-2">

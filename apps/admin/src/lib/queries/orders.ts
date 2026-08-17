@@ -220,3 +220,24 @@ export const cancelOrderMutation = (brandSlug: string, input: CancelOrderMutatio
     brandSlug,
     locationId: input.locationId,
   });
+
+export interface RefundOrderResponseApi {
+  readonly stripeRefundId: string;
+  readonly amountMinor: number;
+  readonly fullyRefunded: boolean;
+}
+
+export interface RefundOrderMutationInput {
+  readonly orderId: string;
+  readonly locationId: string;
+  readonly amountMinor: number;
+  readonly reason: string;
+}
+
+export const refundOrderMutation = (brandSlug: string, input: RefundOrderMutationInput) =>
+  apiFetch<RefundOrderResponseApi>(`/v1/orders/${input.orderId}/refund`, {
+    method: 'POST',
+    body: { amountMinor: input.amountMinor, reason: input.reason },
+    brandSlug,
+    locationId: input.locationId,
+  });

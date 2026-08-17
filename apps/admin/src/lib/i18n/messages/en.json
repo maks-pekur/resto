@@ -391,6 +391,8 @@
     },
     "detail": {
       "internalNumberLabel": "Internal number",
+      "tableIdentifierLabel": "Table/number",
+      "scheduledForLabel": "Scheduled for",
       "customerTitle": "Guest",
       "itemsTitle": "Order items",
       "timelineTitle": "Order history",
