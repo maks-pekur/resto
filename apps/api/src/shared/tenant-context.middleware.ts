@@ -13,6 +13,18 @@ const HEADER_TENANT = 'x-tenant-slug';
 const HEADER_TENANT_ID = 'x-tenant-id';
 const HEADER_BRAND = 'x-brand-slug';
 const HEADER_LOCATION = 'x-location-id';
+const BETTER_AUTH_PATH_PREFIX = '/api/auth';
+
+// `req.url` is rewritten to `/` by the Fastify middleware-compat layer
+// (`@fastify/middie`) before user middleware runs; `req.originalUrl` still
+// carries the real incoming path. Better Auth's org-switch hooks call
+// `db.withTenantId(...)` directly and assert no ALS is already bound
+// (ADR-0020 I-6) — resolving a tenant here for `/api/auth/*` would bind
+// one and trip that assertion.
+const isBetterAuthRoute = (req: FastifyRequest['raw']): boolean => {
+  const path = (req as unknown as { originalUrl?: string }).originalUrl ?? req.url ?? '';
+  return path.startsWith(BETTER_AUTH_PATH_PREFIX);
+};
 
 /**
  * Resolve the tenant (and brand, when available) for an inbound request
@@ -43,6 +55,10 @@ export class TenantContextMiddleware implements NestMiddleware {
     _res: FastifyReply['raw'],
     next: () => void,
   ): Promise<void> {
+    if (isBetterAuthRoute(req)) {
+      next();
+      return;
+    }
     const context = await this.resolveContext(req);
     if (!context) {
       next();
