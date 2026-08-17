@@ -156,7 +156,7 @@ export const envSchema = z
      */
     CORS_ALLOWED_ORIGINS: z
       .string()
-      .default('http://localhost:4000,http://localhost:3003')
+      .default('http://localhost:4000,http://localhost:3001,http://localhost:3002')
       .transform((raw) =>
         raw
           .split(',')
