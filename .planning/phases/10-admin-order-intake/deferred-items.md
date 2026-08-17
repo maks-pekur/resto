@@ -211,3 +211,59 @@ it — or replace the hand-rolled stub with the real `with-db-stack.ts`
 testcontainer harness for this one describe block, at the cost of losing
 the lightweight/no-Docker property the rest of `security.e2e.spec.ts`
 relies on for its other (non-DB) assertions.
+
+## apps/admin/e2e/adm-00-smoke-walk.spec.ts — scenarios 2-8 assert against the retired Next.js admin UI (found in Phase 10 Plan 13)
+
+**Status:** Out of scope, not fixed. Discovered, not caused, by this plan.
+
+**What was found:** Plan 13's `apiOrigin()` fix to `seed-tenants.ts` (stale
+`:3000` default) plus a companion fix to the same file's
+`signInAndGetCookie`/`setActiveOrg` (missing `Origin` header, tripping
+Better Auth's own `MISSING_OR_NULL_ORIGIN` origin-check) together let
+`adm-00-smoke-walk.spec.ts` scenario 1 actually reach a live server and
+pass for the first time in this session. Scenario 2 ("0-brand tenant
+renders EmptyState empty-variant") then fails on
+`page.locator('text=/your tenant has no brands yet/i')` — the running
+admin app redirects a zero-brand owner from `/dashboard` straight to
+`/onboarding/brand` (`apps/admin/src/routes/(protected)/dashboard-redirect.$.tsx`
+plus the `brands.length === 0` check in
+`apps/admin/src/routes/(protected)/$brandSlug/_layout.tsx`), not an inline
+`EmptyState` on `/dashboard` itself. The admin app was fully rewritten
+Next.js → Vite SPA in Phase 7.5/7.6 (project memory
+`project_admin_vite_migration_2026_06_21`), well before Phase 10 started;
+`adm-00-smoke-walk.spec.ts` (written in Phase 2 for the retired Next.js
+admin) was never updated for the new route tree and component structure.
+Scenarios 3-8 were not independently verified against the new UI (the
+Playwright run stopped early on cascading sign-in rate-limit exhaustion
+from running many real sign-ins back-to-back in one worker — see the note
+below), but scenario 2's finding — the fundamental `/dashboard` route
+behavior changed — makes it near-certain the rest reference retired
+selectors/routes too.
+
+**What this plan did instead:** Fixed the two `seed-tenants.ts` bugs
+(`apiOrigin()` default, missing `Origin` header) since both are directly
+in this plan's `files_modified` list and are what let scenario 1 pass.
+Did not touch `adm-00-smoke-walk.spec.ts` itself or attempt to rewrite its
+assertions against the current SPA — that is a full re-write of a Phase 2
+test file for a Phase 7.5/7.6 rewrite, disproportionate to and outside
+this plan's scope (D-01..D-17 concern order intake, not the admin shell).
+
+**Also observed — e2e suite rate-limit exhaustion is a real artifact, not
+a regression:** running the full `pnpm --filter admin e2e` sweep (all four
+spec files, 11 tests, one Playwright worker) in one process exhausts
+`RATE_LIMIT_AUTH_SIGNIN_PER_MIN` partway through, since every scenario's
+fixture does a real `POST /api/auth/sign-in/email`. This is the browser-e2e
+analog of the already-documented `api full-suite 429 gotcha` (project
+memory) for vitest. Every spec in this plan (`adm-01`, `adm-02`, `adm-03`)
+was independently verified green against a freshly-restarted api process
+with a clean rate-limit bucket; the cascading 429s only appear when many
+specs run back-to-back with no restart between them. `10-13-VERIFICATION-EVIDENCE.md`
+records both the batched-clean-run results and this full-sweep caveat.
+
+**Cost estimate when picked up:** rewrite `adm-00-smoke-walk.spec.ts`
+scenario-by-scenario against the current TanStack Router route tree
+(`/onboarding/brand`, `/{brandSlug}/...`) and component structure — a
+full spec rewrite, not a patch. Separately, consider a `reuseExistingServer`-safe
+rate-limit-aware retry/stagger in the e2e harness itself (or a documented
+"run `pnpm --filter admin e2e` in batches, not as one sweep" convention
+mirroring the vitest gotcha) so the full suite can run unattended in CI.
