@@ -1,4 +1,4 @@
-const apiOrigin = (): string => process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:3000';
+const apiOrigin = (): string => process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
 const internalToken = (): string =>
   process.env.INTERNAL_API_TOKEN ?? 'dev-internal-token-min-16-chars';
 
