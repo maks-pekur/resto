@@ -27,10 +27,10 @@ export function OrdersEmptyState({ brandSlug }: OrdersEmptyStateProps): React.Re
 
   const paymentsConnected = paymentsQuery.data?.data?.canAcceptPayments ?? false;
   const menuPublished = (menuQuery.data?.data?.total ?? 0) > 0;
-  const locations = locationsQuery.data?.data ?? [];
+  const locations = Array.isArray(locationsQuery.data?.data) ? locationsQuery.data.data : [];
   const locationOpen = locations.some((location) => location.status === 'active');
 
-  const domains = domainsQuery.data?.data ?? [];
+  const domains = Array.isArray(domainsQuery.data?.data) ? domainsQuery.data.data : [];
   const primaryDomain = domains.find((domain) => domain.isPrimary) ?? domains[0];
   const orderingLink = primaryDomain ? `https://${primaryDomain.domain}` : null;
 
