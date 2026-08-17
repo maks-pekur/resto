@@ -82,6 +82,7 @@ export class ListOrdersService {
     const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
     const offset = Math.max(input.offset ?? 0, 0);
     const { from, to } = resolveDateRange(input.datePreset ?? 'today', referenceTimezone);
+    const isRefundFailedPreset = statusPreset === 'refund_failed';
 
     const { rows, total } = await this.feedRepo.list({
       tenantId,
@@ -92,15 +93,22 @@ export class ListOrdersService {
       createdFrom: from,
       createdTo: to,
       ...(input.since !== undefined ? { since: input.since } : {}),
-      limit,
-      offset,
+      limit: isRefundFailedPreset ? MAX_LIMIT : limit,
+      offset: isRefundFailedPreset ? 0 : offset,
     });
 
     const patchedRows = await this.#applyFailedRefundFlag(tenantId, rows);
-    const finalRows =
-      statusPreset === 'refund_failed' ? patchedRows.filter((r) => r.hasFailedRefund) : patchedRows;
+    if (!isRefundFailedPreset) {
+      return { rows: patchedRows, total, limit, offset };
+    }
 
-    return { rows: finalRows, total, limit, offset };
+    const failedRows = patchedRows.filter((r) => r.hasFailedRefund);
+    return {
+      rows: failedRows.slice(offset, offset + limit),
+      total: failedRows.length,
+      limit,
+      offset,
+    };
   }
 
   async #applyFailedRefundFlag(
