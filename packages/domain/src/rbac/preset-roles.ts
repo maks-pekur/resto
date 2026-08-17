@@ -17,6 +17,7 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
       reports: ['read'],
       brand: ['read', 'update'],
       settings: ['update'],
+      tenant: ['read'],
     },
   },
   {
@@ -27,6 +28,7 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
       order: ['read', 'update-status', 'cancel'],
       menu: ['read'],
       brand: ['read'],
+      tenant: ['read'],
     },
   },
   {
@@ -36,6 +38,7 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     permission: {
       order: ['read', 'update-status', 'cancel'],
       brand: ['read'],
+      tenant: ['read'],
     },
   },
 ] as const;
