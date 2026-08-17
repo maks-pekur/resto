@@ -148,7 +148,12 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard brandSlug="test-brand" row={acceptedRow} showLocationBadge={false} />
+        <OrderCard
+          brandSlug="test-brand"
+          row={acceptedRow}
+          showLocationBadge={false}
+          onOpenDetail={vi.fn()}
+        />
       </Wrap>,
     );
 
@@ -175,7 +180,12 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard brandSlug="test-brand" row={acceptedRow} showLocationBadge={false} />
+        <OrderCard
+          brandSlug="test-brand"
+          row={acceptedRow}
+          showLocationBadge={false}
+          onOpenDetail={vi.fn()}
+        />
       </Wrap>,
     );
 

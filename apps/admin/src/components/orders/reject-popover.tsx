@@ -23,7 +23,7 @@ export type OrderCancelReasonCode = (typeof ORDER_CANCEL_REASON_CODES)[number];
 
 const REASON_OTHER = 'other' satisfies OrderCancelReasonCode;
 
-const REASON_LABEL_KEYS: Record<OrderCancelReasonCode, string> = {
+export const REASON_LABEL_KEYS: Record<OrderCancelReasonCode, string> = {
   kitchen_out_of_stock: 'reasons.outOfStock',
   kitchen_too_busy: 'reasons.kitchenBusy',
   guest_requested: 'reasons.guestRequested',

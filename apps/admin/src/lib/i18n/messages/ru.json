@@ -397,6 +397,8 @@
     },
     "detail": {
       "internalNumberLabel": "Внутренний номер",
+      "tableIdentifierLabel": "Стол/номер",
+      "scheduledForLabel": "Ко времени",
       "customerTitle": "Гость",
       "itemsTitle": "Состав заказа",
       "timelineTitle": "История заказа",

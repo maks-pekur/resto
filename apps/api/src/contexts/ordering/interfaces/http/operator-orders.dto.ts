@@ -141,6 +141,8 @@ export class OrderSnapshotResponseDto extends createZodDto(OrderSnapshotResponse
 
 export const OrderDetailResponseSchema = OrderSnapshotResponseSchema.extend({
   hasFailedRefund: z.boolean(),
+  failedRefundAmount: z.string().nullable(),
+  failedRefundReason: z.string().nullable(),
 });
 export type OrderDetailResponse = z.infer<typeof OrderDetailResponseSchema>;
 export class OrderDetailResponseDto extends createZodDto(OrderDetailResponseSchema) {}
@@ -203,4 +205,6 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
 export const toOrderDetailResponse = (result: OrderDetailResult): OrderDetailResponse => ({
   ...toOrderSnapshotResponse(result.order),
   hasFailedRefund: result.hasFailedRefund,
+  failedRefundAmount: result.failedRefundAmount,
+  failedRefundReason: result.failedRefundReason,
 });
