@@ -4,6 +4,7 @@ import { authClient } from './auth-client';
 const TIMEOUT_GET_MS = 10_000;
 const TIMEOUT_MUTATION_MS = 30_000;
 const RETRY_BACKOFF_MS = 500;
+const SESSION_CACHE_MS = 2_000;
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
@@ -12,6 +13,31 @@ interface ApiFetchResult<T> {
   ok: boolean;
   data: T | null;
 }
+
+interface SessionLookupResult {
+  readonly data: { session?: { activeOrganizationId?: string } } | null;
+}
+
+let sessionCache: { readonly result: SessionLookupResult; readonly at: number } | null = null;
+let sessionInFlight: Promise<SessionLookupResult> | null = null;
+
+const getCachedSession = async (): Promise<SessionLookupResult> => {
+  const now = Date.now();
+  if (sessionCache && now - sessionCache.at < SESSION_CACHE_MS) {
+    return sessionCache.result;
+  }
+  if (sessionInFlight) return sessionInFlight;
+  sessionInFlight = (async () => {
+    const session = (await authClient.getSession()) as SessionLookupResult;
+    sessionCache = { result: session, at: Date.now() };
+    return session;
+  })();
+  try {
+    return await sessionInFlight;
+  } finally {
+    sessionInFlight = null;
+  }
+};
 
 export const apiFetch = async <T>(
   path: string,
@@ -26,15 +52,8 @@ export const apiFetch = async <T>(
     signal?: AbortSignal;
   } = {},
 ): Promise<ApiFetchResult<T>> => {
-  const session = await authClient.getSession();
-  const sessionData =
-    session.data !== null
-      ? (
-          session.data as {
-            session?: { activeOrganizationId?: string };
-          }
-        ).session
-      : undefined;
+  const session = await getCachedSession();
+  const sessionData = session.data !== null ? session.data.session : undefined;
   const tenantId = sessionData?.activeOrganizationId;
   const isGet = (opts.method ?? 'GET') === 'GET';
   const timeoutMs = isGet ? TIMEOUT_GET_MS : TIMEOUT_MUTATION_MS;
