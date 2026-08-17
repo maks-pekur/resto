@@ -7,8 +7,11 @@ import { defineConfig, devices } from '@playwright/test';
 // env vars were Next.js-era leftovers from before the Vite SPA migration
 // (07.6) and did not match this app's real dev topology.
 const adminPort = 4000;
+const websitePort = 3002;
 const baseURL = process.env.ADMIN_E2E_BASE_URL ?? `http://localhost:${adminPort}`;
 const apiOrigin = process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
+export const websiteBaseURL =
+  process.env.WEBSITE_E2E_BASE_URL ?? `http://localhost:${String(websitePort)}`;
 
 export default defineConfig({
   testDir: './e2e',
@@ -22,15 +25,27 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     viewport: { width: 1280, height: 720 },
+    locale: 'ru-RU',
   },
-  webServer: {
-    command: `pnpm --filter @resto/admin exec vite --port ${String(adminPort)}`,
-    url: `${baseURL}/login`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 60_000,
-    env: {
-      VITE_API_ORIGIN: apiOrigin,
+  webServer: [
+    {
+      command: `pnpm --filter @resto/admin exec vite --port ${String(adminPort)}`,
+      url: `${baseURL}/login`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      env: {
+        VITE_API_ORIGIN: apiOrigin,
+      },
     },
-  },
+    {
+      command: `pnpm --filter website exec next dev --port ${String(websitePort)}`,
+      port: websitePort,
+      reuseExistingServer: !process.env.CI,
+      timeout: 60_000,
+      env: {
+        NEXT_PUBLIC_API_ORIGIN: apiOrigin,
+      },
+    },
+  ],
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
