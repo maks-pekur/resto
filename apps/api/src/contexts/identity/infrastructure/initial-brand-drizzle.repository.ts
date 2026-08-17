@@ -50,7 +50,18 @@ export class InitialBrandDrizzleRepository {
         return scopedRows[0]?.id ?? null;
       });
     } catch (err) {
-      this.logger.error({ err, userId, tenantId }, 'resolveForUserInTenant failed');
+      // `logger.error({ err })` alone serialises an Error to `{}` (message/stack
+      // are non-enumerable) — pull them out explicitly so failures here are
+      // diagnosable instead of silently swallowed as an empty object.
+      this.logger.error(
+        {
+          message: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+          userId,
+          tenantId,
+        },
+        'resolveForUserInTenant failed',
+      );
       return null;
     }
   }
