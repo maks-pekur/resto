@@ -1,4 +1,5 @@
 const apiOrigin = (): string => process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
+const adminOrigin = (): string => process.env.ADMIN_E2E_BASE_URL ?? 'http://localhost:4000';
 const internalToken = (): string =>
   process.env.INTERNAL_API_TOKEN ?? 'dev-internal-token-min-16-chars';
 
@@ -97,7 +98,7 @@ const bootstrapOwner = async (
 const signInAndGetCookie = async (email: string, password: string): Promise<string> => {
   const res = await fetch(`${apiOrigin()}/api/auth/sign-in/email`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: adminOrigin() },
     body: JSON.stringify({ email, password }),
   });
   if (res.status !== 200) {
@@ -114,7 +115,7 @@ const signInAndGetCookie = async (email: string, password: string): Promise<stri
 const setActiveOrg = async (cookie: string, tenantId: string): Promise<string> => {
   const res = await fetch(`${apiOrigin()}/api/auth/organization/set-active`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', cookie },
+    headers: { 'content-type': 'application/json', cookie, origin: adminOrigin() },
     body: JSON.stringify({ organizationId: tenantId }),
   });
   if (res.status !== 200) {
