@@ -31,8 +31,6 @@ if (typeof globalThis.ResizeObserver === 'undefined') {
   (globalThis as { ResizeObserver?: unknown }).ResizeObserver = ResizeObserverStub;
 }
 
-// JSDOM lacks the pointer-capture APIs; Radix Select's pointer-event handlers
-// throw without these stubs.
 if (typeof Element.prototype.hasPointerCapture === 'undefined') {
   Element.prototype.hasPointerCapture = () => false;
 }
