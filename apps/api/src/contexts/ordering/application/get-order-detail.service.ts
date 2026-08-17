@@ -14,6 +14,8 @@ export interface GetOrderDetailInput {
 export interface OrderDetailResult {
   readonly order: OrderSnapshot;
   readonly hasFailedRefund: boolean;
+  readonly failedRefundAmount: string | null;
+  readonly failedRefundReason: string | null;
 }
 
 @Injectable()
@@ -49,7 +51,13 @@ export class GetOrderDetailService {
     }
 
     const failedRefunds = await this.payments.findFailedRefundsForOrders(tenantId, [snap.id]);
+    const failedRefund = failedRefunds[0];
 
-    return { order: snap, hasFailedRefund: failedRefunds.length > 0 };
+    return {
+      order: snap,
+      hasFailedRefund: failedRefunds.length > 0,
+      failedRefundAmount: failedRefund?.amount ?? null,
+      failedRefundReason: failedRefund?.failureReason ?? null,
+    };
   }
 }

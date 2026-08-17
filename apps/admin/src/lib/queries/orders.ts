@@ -151,6 +151,8 @@ export interface OrderDetailApi {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly hasFailedRefund: boolean;
+  readonly failedRefundAmount: string | null;
+  readonly failedRefundReason: string | null;
 }
 
 export const orderDetailQuery = (brandSlug: string, orderId: string, locationId: string) => ({
@@ -238,6 +240,18 @@ export const refundOrderMutation = (brandSlug: string, input: RefundOrderMutatio
   apiFetch<RefundOrderResponseApi>(`/v1/orders/${input.orderId}/refund`, {
     method: 'POST',
     body: { amountMinor: input.amountMinor, reason: input.reason },
+    brandSlug,
+    locationId: input.locationId,
+  });
+
+export interface RetryRefundMutationInput {
+  readonly orderId: string;
+  readonly locationId: string;
+}
+
+export const retryRefundMutation = (brandSlug: string, input: RetryRefundMutationInput) =>
+  apiFetch<RefundOrderResponseApi>(`/v1/orders/${input.orderId}/refund/retry`, {
+    method: 'POST',
     brandSlug,
     locationId: input.locationId,
   });

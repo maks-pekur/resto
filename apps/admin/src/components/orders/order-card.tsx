@@ -6,10 +6,11 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
+import { cn, formatMoney } from '@/lib/utils';
 import { formatDuration } from '@/lib/menu/format-age';
-import { showError } from '@/lib/ui/toast-helpers';
-import { advanceOrderStatusMutation } from '@/lib/queries/orders';
+import { showError, showSuccess } from '@/lib/ui/toast-helpers';
+import { usePermissions } from '@/lib/hooks/use-permissions';
+import { advanceOrderStatusMutation, retryRefundMutation } from '@/lib/queries/orders';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 import {
   OrderRefundFailedBadge,
@@ -73,6 +74,7 @@ export function OrderCard({
 }: OrderCardProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const queryClient = useQueryClient();
+  const { can } = usePermissions();
   const now = Date.now();
   const state = deriveOrderCardState(row, now);
   const isTerminal = state === 'completed' || state === 'canceled';
@@ -93,6 +95,25 @@ export function OrderCard({
     },
     onError: () => {
       showError(null, t('card.statusUpdateFailed'));
+    },
+  });
+
+  const retryMutation = useMutation({
+    mutationFn: () =>
+      retryRefundMutation(brandSlug, { orderId: row.id, locationId: row.locationId }),
+    onSuccess: (res) => {
+      if (!res.ok || !res.data) {
+        showError(null, t('refund.failedToast'));
+        return;
+      }
+      showSuccess(
+        t('refund.successToast', { amount: formatMoney(res.data.amountMinor / 100, row.currency) }),
+      );
+      void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
+      void queryClient.invalidateQueries({ queryKey: ['orders', 'detail'] });
+    },
+    onError: () => {
+      showError(null, t('refund.failedToast'));
     },
   });
 
@@ -211,8 +232,16 @@ export function OrderCard({
         >
           {t('card.completeBtn')}
         </Button>
-      ) : row.hasFailedRefund ? (
-        <Button size="lg" variant="destructive" className="h-12 w-full gap-1" disabled>
+      ) : row.hasFailedRefund && can('order', 'cancel') ? (
+        <Button
+          size="lg"
+          variant="destructive"
+          className="h-12 w-full gap-1"
+          disabled={retryMutation.isPending}
+          onClick={() => {
+            retryMutation.mutate();
+          }}
+        >
           <AlertCircle className="size-4" />
           {t('refund.retryBtn')}
         </Button>

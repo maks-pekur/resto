@@ -121,6 +121,8 @@ const detail: OrderDetailApi = {
   createdAt: feedRow.createdAt,
   updatedAt: feedRow.createdAt,
   hasFailedRefund: false,
+  failedRefundAmount: null,
+  failedRefundReason: null,
 };
 
 describe('OrderDetailSheet', () => {

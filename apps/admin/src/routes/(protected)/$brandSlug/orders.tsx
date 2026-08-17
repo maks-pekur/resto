@@ -23,6 +23,7 @@ import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
 import { EnableSoundBanner } from '@/components/orders/enable-sound-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
+import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 
 export const Route = createRoute({
   getParentRoute: () => brandSlugLayoutRoute,
@@ -138,6 +139,17 @@ function OrdersPage() {
     activationCheckQuery.isSuccess &&
     (activationCheckQuery.data.data?.total ?? 0) === 0;
 
+  const refundFailedCountQuery = useQuery({
+    ...ordersFeedQuery(brandSlug, locationId ?? 'all', {
+      statusFilter: 'refund_failed',
+      datePreset: 'week',
+      limit: 1,
+    }),
+    enabled: locationId !== undefined,
+    refetchInterval: 5_000,
+  });
+  const refundFailedCount = refundFailedCountQuery.data?.data?.total ?? 0;
+
   const groups = useMemo(() => groupFeedRows(rows), [rows]);
   const showLocationBadge = mode === 'all';
 
@@ -148,6 +160,12 @@ function OrdersPage() {
     <>
       <PageHeading title={tNav('orders')} />
       <EnableSoundBanner onUnlock={sound.unlock} />
+      <RefundFailedBanner
+        count={refundFailedCount}
+        onShowClick={() => {
+          setStatusFilter('refund_failed');
+        }}
+      />
       <OrderFilterBar
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
