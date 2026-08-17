@@ -146,7 +146,7 @@ export function OrderCard({
   const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
 
   return (
-    <Card className={cn('gap-2 p-4', cardClassName)}>
+    <Card data-testid={`order-card-${row.id}`} className={cn('gap-2 p-4', cardClassName)}>
       <button
         type="button"
         className="flex flex-col gap-2 text-left"
