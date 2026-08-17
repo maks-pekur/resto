@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
@@ -35,8 +36,29 @@ const isInternalRoute = (url: string): boolean => url.startsWith('/internal/v1/'
 
 const STRIPE_WEBHOOK_PATH = '/webhook/stripe';
 
-const rateLimitKeyGenerator = (req: FastifyRequest): string =>
-  req.principal && 'userId' in req.principal ? req.principal.userId : `ip:${req.ip}`;
+const SESSION_COOKIE_NAME = 'better-auth.session_token';
+
+const readSessionCookieValue = (rawCookieHeader: string | undefined): string | undefined => {
+  if (!rawCookieHeader) return undefined;
+  for (const pair of rawCookieHeader.split(';')) {
+    const eq = pair.indexOf('=');
+    if (eq === -1) continue;
+    const name = pair.slice(0, eq).trim();
+    if (name !== SESSION_COOKIE_NAME) continue;
+    const value = pair.slice(eq + 1).trim();
+    return value.length > 0 ? value : undefined;
+  }
+  return undefined;
+};
+
+const rateLimitKeyGenerator = (req: FastifyRequest): string => {
+  if (req.principal && 'userId' in req.principal) return req.principal.userId;
+  const sessionToken = readSessionCookieValue(req.headers.cookie);
+  if (sessionToken) {
+    return `session:${createHash('sha256').update(sessionToken).digest('hex')}`;
+  }
+  return `ip:${req.ip}`;
+};
 
 /**
  * Best-effort email extraction from a parsed BA request body. BA's
