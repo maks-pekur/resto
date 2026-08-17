@@ -16,11 +16,7 @@ const HEADER_LOCATION = 'x-location-id';
 const BETTER_AUTH_PATH_PREFIX = '/api/auth';
 
 // `req.url` is rewritten to `/` by the Fastify middleware-compat layer
-// (`@fastify/middie`) before user middleware runs; `req.originalUrl` still
-// carries the real incoming path. Better Auth's org-switch hooks call
-// `db.withTenantId(...)` directly and assert no ALS is already bound
-// (ADR-0020 I-6) — resolving a tenant here for `/api/auth/*` would bind
-// one and trip that assertion.
+// `@fastify/middie` rewrites `req.url` to `/` before user middleware runs.
 const isBetterAuthRoute = (req: FastifyRequest['raw']): boolean => {
   const path = (req as unknown as { originalUrl?: string }).originalUrl ?? req.url ?? '';
   return path.startsWith(BETTER_AUTH_PATH_PREFIX);
