@@ -1,4 +1,4 @@
-import { Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { getLocationId, requireBrandContext, requireTenantContext } from '@resto/db';
 import { BrandId, TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
@@ -63,19 +63,18 @@ export class ListOrdersService {
     const allLocations = await this.locations.listForBrand(brandId, tenantId);
     const activeLocations = allLocations.filter((l) => l.status === 'active');
 
-    let locationIds: string[];
-    let referenceTimezone: string | null;
     if (requestedLocationId === undefined) {
-      locationIds = activeLocations.map((l) => l.id);
-      referenceTimezone = activeLocations[0]?.timezone ?? null;
-    } else {
-      const match = activeLocations.find((l) => l.id === requestedLocationId);
-      if (!match) {
-        throw new NotFoundException();
-      }
-      locationIds = [match.id];
-      referenceTimezone = match.timezone;
+      throw new ForbiddenException({
+        code: 'location.context_required',
+        message: 'Location context is required for the order feed.',
+      });
     }
+    const match = activeLocations.find((l) => l.id === requestedLocationId);
+    if (!match) {
+      throw new NotFoundException();
+    }
+    const locationIds: string[] = [match.id];
+    const referenceTimezone: string | null = match.timezone;
 
     const statusPreset = input.statusPreset ?? 'active';
     const statuses = resolveStatusPreset(statusPreset);

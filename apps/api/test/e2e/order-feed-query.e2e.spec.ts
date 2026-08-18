@@ -244,30 +244,41 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     expect(ids).not.toContain(olderId);
   });
 
-  it('all mode merges two locations with correct locationName labels', async () => {
+  it('each location sees only its own rows, labelled with its own name', async () => {
     const now = new Date();
     const orderAId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
     const orderBId = await seedOrder({ locationId: locationBId, status: 'paid', createdAt: now });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId }, () =>
+    const resultA = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+      service.execute({ statusPreset: 'all_today' }),
+    );
+    const resultB = await runInTenantContext({ tenantId, brandId, locationId: locationBId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
 
-    const rowA = result.rows.find((r) => r.id === orderAId);
-    const rowB = result.rows.find((r) => r.id === orderBId);
-    expect(rowA?.locationName).toBe('Location A');
-    expect(rowB?.locationName).toBe('Location B');
+    expect(resultA.rows.find((r) => r.id === orderAId)?.locationName).toBe('Location A');
+    expect(resultA.rows.map((r) => r.id)).not.toContain(orderBId);
+    expect(resultB.rows.find((r) => r.id === orderBId)?.locationName).toBe('Location B');
+    expect(resultB.rows.map((r) => r.id)).not.toContain(orderAId);
   });
 
-  it('empty active-location set returns an empty result in all mode', async () => {
+  it('a missing location context is refused rather than widened to the brand', async () => {
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId: emptyBrandId }, () =>
-      service.execute({ statusPreset: 'all_today' }),
-    );
+    await expect(
+      runInTenantContext({ tenantId, brandId }, () =>
+        service.execute({ statusPreset: 'all_today' }),
+      ),
+    ).rejects.toMatchObject({ status: 403 });
+  });
 
-    expect(result.rows).toHaveLength(0);
-    expect(result.total).toBe(0);
+  it('a location outside the brand is not readable', async () => {
+    const service = makeListOrdersService();
+    await expect(
+      runInTenantContext({ tenantId, brandId: emptyBrandId, locationId: locationAId }, () =>
+        service.execute({ statusPreset: 'all_today' }),
+      ),
+    ).rejects.toMatchObject({ status: 404 });
   });
 
   it('hasFailedRefund is true only for an order with a failed payment_refunds row', async () => {
@@ -321,7 +332,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     expect(cleanRow?.hasFailedRefund).toBe(false);
   });
 
-  it('cross-tenant orders never appear, even in all mode', async () => {
+  it('cross-tenant orders never appear', async () => {
     const now = new Date();
     const otherTenantOrderId = await seedOrder({
       tenantIdOverride: otherTenantId,
@@ -333,7 +344,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const ownOrderId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId }, () =>
+    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
 

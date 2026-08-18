@@ -105,6 +105,7 @@ function OrdersPage() {
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { brandSlug } = Route.useParams();
   const { mode, locationId } = useEffectiveLocation();
+  const feedLocationId = mode === 'all' ? undefined : locationId;
 
   const [statusFilter, setStatusFilter] = useState<OrderStatusPreset>(
     DEFAULT_ORDER_FEED_FILTERS.statusFilter ?? 'active',
@@ -116,8 +117,8 @@ function OrdersPage() {
   const filters = useMemo(() => ({ statusFilter, datePreset }), [statusFilter, datePreset]);
 
   const feedQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, locationId ?? 'all', filters),
-    enabled: locationId !== undefined,
+    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', filters),
+    enabled: feedLocationId !== undefined,
     refetchInterval: 5_000,
     refetchIntervalInBackground: true,
     refetchOnWindowFocus: true,
@@ -127,12 +128,12 @@ function OrdersPage() {
   const mainEmpty = feedQuery.isSuccess && rows.length === 0;
 
   const activationCheckQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, locationId ?? 'all', {
+    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', {
       statusFilter: 'all_today',
       datePreset: 'week',
       limit: 1,
     }),
-    enabled: locationId !== undefined && mainEmpty,
+    enabled: feedLocationId !== undefined && mainEmpty,
   });
   const isActivationEmpty =
     mainEmpty &&
@@ -140,18 +141,18 @@ function OrdersPage() {
     (activationCheckQuery.data.data?.total ?? 0) === 0;
 
   const refundFailedCountQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, locationId ?? 'all', {
+    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', {
       statusFilter: 'refund_failed',
       datePreset: 'week',
       limit: 1,
     }),
-    enabled: locationId !== undefined,
+    enabled: feedLocationId !== undefined,
     refetchInterval: 5_000,
   });
   const refundFailedCount = refundFailedCountQuery.data?.data?.total ?? 0;
 
   const groups = useMemo(() => groupFeedRows(rows), [rows]);
-  const showLocationBadge = mode === 'all';
+  const showLocationBadge = false;
 
   const sound = useOrderSound(groups.waiting);
   useTabTitle(groups.waiting.length);
@@ -199,7 +200,13 @@ function OrdersPage() {
           </div>
         ) : null}
 
-        {feedQuery.isPending ? (
+        {feedLocationId === undefined ? (
+          <EmptyState
+            variant="empty"
+            title={t('empty.pickLocationTitle')}
+            description={t('empty.pickLocationBody')}
+          />
+        ) : feedQuery.isPending ? (
           <div className="flex flex-col gap-3">
             <Skeleton className="h-40 w-full" />
             <Skeleton className="h-40 w-full" />

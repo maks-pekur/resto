@@ -227,19 +227,50 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       if (stack) await stopRealStack(stack);
     });
 
-    it('case 1 — owner in all mode (no x-location-id) reads the merged feed with both locations labelled', async () => {
-      const res = await stack.app.inject({
+    it('case 1 — the feed requires an explicit location; owner reads exactly that location', async () => {
+      const noLocation = await stack.app.inject({
         method: 'GET',
         url: '/v1/orders/feed',
         headers: ownerHeaders(),
       });
-      expect(res.statusCode).toBe(200);
-      const body = res.json<{
-        rows: { id: string; locationId: string; locationName: string }[];
-      }>();
-      const byId = new Map(body.rows.map((r) => [r.id, r]));
-      expect(byId.get(orderMutateWithoutLocationId)?.locationName).toBe('Location 1');
-      expect(byId.get(orderOwnerConcreteLocationId)?.locationName).toBe('Location 2');
+      expect(noLocation.statusCode).toBe(403);
+      expect(noLocation.json<{ code?: string }>().code).toBe('location.context_required');
+
+      const l1 = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/orders/feed',
+        headers: ownerHeaders({ 'x-location-id': locationL1Id }),
+      });
+      expect(l1.statusCode).toBe(200);
+      const rows = l1.json<{ rows: { id: string; locationId: string }[] }>().rows;
+      expect(rows.map((r) => r.id)).toContain(orderMutateWithoutLocationId);
+      expect(rows.map((r) => r.id)).not.toContain(orderOwnerConcreteLocationId);
+      expect(new Set(rows.map((r) => r.locationId))).toEqual(new Set([locationL1Id]));
+    });
+
+    it('case 1b — non-owner scoped to L1 cannot read the L2 feed, and gets no cross-location rows', async () => {
+      const forged = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/orders/feed',
+        headers: nonOwnerHeaders({ 'x-location-id': locationL2Id }),
+      });
+      expect([403, 404]).toContain(forged.statusCode);
+
+      const unscoped = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/orders/feed',
+        headers: nonOwnerHeaders(),
+      });
+      expect([403, 404]).toContain(unscoped.statusCode);
+
+      const own = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/orders/feed',
+        headers: nonOwnerHeaders({ 'x-location-id': locationL1Id }),
+      });
+      expect(own.statusCode).toBe(200);
+      const rows = own.json<{ rows: { id: string; locationId: string }[] }>().rows;
+      expect(new Set(rows.map((r) => r.locationId))).toEqual(new Set([locationL1Id]));
     });
 
     it('case 2 — owner mutates with a concrete location (accepts the L2 order)', async () => {
@@ -339,6 +370,32 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
     let ownerBCookie: string;
     const SHARED_IP = '203.0.113.77';
     const CAP = 8;
+    let locationAId: string;
+
+    const firstLocationId = async (
+      cookie: string,
+      tenantId: string,
+      brandSlug: string,
+    ): Promise<string> => {
+      const headers = { cookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+      const listed = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/tenancy/locations',
+        headers,
+      });
+      const existing = listed.statusCode === 200 ? listed.json<{ id: string }[]>() : [];
+      const first = existing[0]?.id;
+      if (first) return first;
+
+      const created = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/tenancy/locations',
+        headers,
+        payload: { name: 'Rate limit location' },
+      });
+      expect(created.statusCode).toBe(200);
+      return created.json<{ id: string }>().id;
+    };
 
     beforeAll(async () => {
       process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
@@ -373,6 +430,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         name: 'Owner B',
       });
       ownerBCookie = await signInAsOperator(stack.app, ownerBEmail, PASSWORD, tenantBId, SHARED_IP);
+      locationAId = await firstLocationId(ownerACookie, tenantAId, brandASlug);
       brandBSlug = `authz-rl-brand-b-${randomUUID().slice(0, 8)}`;
       await createBrand(stack, ownerBCookie, tenantBId, brandBSlug);
     }, 240_000);
@@ -387,7 +445,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         const res = await stack.app.inject({
           method: 'GET',
           url: '/v1/orders/feed',
-          headers: { cookie: ownerACookie, 'x-tenant-id': tenantAId, 'x-brand-slug': brandASlug },
+          headers: {
+            cookie: ownerACookie,
+            'x-tenant-id': tenantAId,
+            'x-brand-slug': brandASlug,
+            'x-location-id': locationAId,
+          },
           remoteAddress: SHARED_IP,
         });
         if (res.statusCode === 429) {
@@ -401,7 +464,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       const otherPrincipalRes = await stack.app.inject({
         method: 'GET',
         url: '/v1/orders/feed',
-        headers: { cookie: ownerBCookie, 'x-tenant-id': tenantBId, 'x-brand-slug': brandBSlug },
+        headers: {
+          cookie: ownerBCookie,
+          'x-tenant-id': tenantBId,
+          'x-brand-slug': brandBSlug,
+          'x-location-id': await firstLocationId(ownerBCookie, tenantBId, brandBSlug),
+        },
         remoteAddress: SHARED_IP,
       });
       expect(otherPrincipalRes.statusCode).toBe(200);

@@ -438,7 +438,9 @@
       "linkCopiedToast": "Link copied",
       "noDomainHint": "No guest ordering domain configured yet.",
       "filteredTitle": "Nothing found",
-      "filteredBody": "Change the filters or check a different date."
+      "filteredBody": "Change the filters or check a different date.",
+      "pickLocationTitle": "Choose a location",
+      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above."
     },
     "error": {
       "initialLoadTitle": "Couldn't load orders",

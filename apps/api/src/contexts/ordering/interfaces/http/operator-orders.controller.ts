@@ -16,12 +16,7 @@ import { trace } from '@opentelemetry/api';
 import { requireTenantContext } from '@resto/db';
 import { OrderId, TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import {
-  LocationNeutral,
-  Permissions,
-  RequireActiveTenant,
-  RequireBrand,
-} from '../../../../shared/auth';
+import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { CurrentOperator } from '../../../identity/interfaces/http/decorators/current-principal.decorator';
 import type { OperatorPrincipal } from '../../../identity/domain/principal';
@@ -63,7 +58,6 @@ export class OperatorOrdersController {
   @Permissions({ order: ['read'] })
   @RequireActiveTenant()
   @RequireBrand()
-  @LocationNeutral()
   @ApiOkResponse({ type: OrderFeedListResponseDto })
   feed(
     @Query(new RestoZodValidationPipe(OrderFeedQueryDto)) query: OrderFeedQueryDto,
