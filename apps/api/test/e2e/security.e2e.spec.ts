@@ -195,6 +195,30 @@ describe('Security middleware (RES-99)', () => {
       expect(limited.headers['content-type']).toContain('application/problem+json');
     });
 
+    it('a rotating session cookie cannot mint fresh sign-in buckets', async () => {
+      const remoteAddress = '10.20.30.43';
+      const attempt = (n: number) =>
+        app.inject({
+          method: 'POST',
+          url: '/api/auth/sign-in/email',
+          remoteAddress,
+          headers: { cookie: `better-auth.session_token=rotating-value-${String(n)}` },
+          payload: { email: `probe-${String(n)}@example.com`, password: 'wrong-password' },
+        });
+
+      let limitedAt = -1;
+      for (let n = 0; n < 12; n += 1) {
+        const res = await attempt(n);
+        if (res.statusCode === 429) {
+          limitedAt = n;
+          break;
+        }
+      }
+
+      expect(limitedAt).toBeGreaterThanOrEqual(0);
+      expect(limitedAt).toBeLessThanOrEqual(10);
+    });
+
     it('keeps /healthz exempted via allowList', async () => {
       for (let i = 0; i < 10; i += 1) {
         const res = await app.inject({ method: 'GET', url: '/healthz' });

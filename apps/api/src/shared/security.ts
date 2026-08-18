@@ -51,8 +51,21 @@ const readSessionCookieValue = (rawCookieHeader: string | undefined): string | u
   return undefined;
 };
 
+const CREDENTIAL_ROUTE_PREFIXES = [
+  '/api/auth/sign-in',
+  '/api/auth/sign-up',
+  '/api/auth/request-password-reset',
+  '/api/auth/reset-password',
+  '/api/auth/forget-password',
+  '/v1/signup',
+];
+
+const isCredentialRoute = (url: string): boolean =>
+  CREDENTIAL_ROUTE_PREFIXES.some((prefix) => url.startsWith(prefix));
+
 const rateLimitKeyGenerator = (req: FastifyRequest): string => {
   if (req.principal && 'userId' in req.principal) return req.principal.userId;
+  if (isCredentialRoute(req.url)) return `ip:${req.ip}`;
   const sessionToken = readSessionCookieValue(req.headers.cookie);
   if (sessionToken) {
     return `session:${createHash('sha256').update(sessionToken).digest('hex')}`;
