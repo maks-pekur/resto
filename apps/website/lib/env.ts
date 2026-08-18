@@ -9,7 +9,7 @@ const WebsiteEnvSchema = z.object({
 type WebsiteEnv = z.infer<typeof WebsiteEnvSchema>;
 
 const DEV_DEFAULTS: WebsiteEnv = {
-  NEXT_PUBLIC_API_ORIGIN: 'http://localhost:3000',
+  NEXT_PUBLIC_API_ORIGIN: 'http://localhost:5001',
   WEBSITE_URL: 'http://localhost:3002',
 };
 

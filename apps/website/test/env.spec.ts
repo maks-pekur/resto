@@ -16,7 +16,7 @@ describe('env loader', () => {
     vi.resetModules();
 
     const { apiOrigin, websiteUrl } = await import('@/lib/env');
-    expect(apiOrigin()).toBe('http://localhost:3000');
+    expect(apiOrigin()).toBe('http://localhost:5001');
     expect(websiteUrl()).toBe('http://localhost:3002');
   });
 
