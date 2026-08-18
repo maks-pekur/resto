@@ -248,6 +248,26 @@ describe('CancelOrderService', () => {
     },
   );
 
+  it('cancel of an already fully refunded order reports success, not a 409 (CR-04)', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('20.00'));
+
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'guest_requested',
+      actorUserId: null,
+    });
+
+    expect(provider.createRefund).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      canceled: true,
+      refund: { attempted: false, outcome: 'none', amountMinor: null },
+    });
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+    expect(savedOrder.toSnapshot().status).toBe('canceled');
+  });
+
   it('cancel still commits when the refund provider call fails (D-11)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));

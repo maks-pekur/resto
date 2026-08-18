@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { type OrderId, type TenantId } from '@resto/domain';
 import { ORDER_REPOSITORY, type OrderRepository } from '../../ordering/domain/ports';
-import { OrderNotFoundError } from '../../ordering/domain/errors';
+import { OrderNotFoundError, RefundExceedsCapturedError } from '../../ordering/domain/errors';
 import { RefundOrderService } from './refund-order.service';
 import { PaymentNotRefundableError, RefundProviderFailedError } from '../domain/errors';
 
@@ -61,6 +61,18 @@ export class CancelOrderService {
         this.logger.log(
           { orderId: input.orderId, tenantId: input.tenantId },
           'Cancel of an order with no captured payment — nothing to refund.',
+        );
+        return { canceled: true, refund: { attempted: false, outcome: 'none', amountMinor: null } };
+      }
+      if (err instanceof RefundExceedsCapturedError) {
+        this.logger.log(
+          {
+            orderId: input.orderId,
+            tenantId: input.tenantId,
+            alreadyRefundedMinor: err.alreadyRefundedMinor,
+            capturedMinor: err.capturedMinor,
+          },
+          'Cancel of an already fully refunded order — nothing left to refund.',
         );
         return { canceled: true, refund: { attempted: false, outcome: 'none', amountMinor: null } };
       }
