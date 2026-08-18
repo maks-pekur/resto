@@ -4,7 +4,7 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 10.1 context gathered
-last_updated: "2026-08-18T15:59:54.029Z"
+last_updated: '2026-08-18T15:59:54.029Z'
 last_activity: 2026-08-13 -- Phase 10 execution started
 progress:
   total_phases: 27
@@ -26,10 +26,16 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-**ACTIVE → Phase 08.2 (brand-first-routing + access-control core) — CONTEXT gathered 2026-06-29, ready for /gsd-plan-phase 08.2.** Scope split from SEED-001: 08.2 = routing + brand-level access core (default-deny flip, server-session active-brand pin, brand RLS, `/{brand}` URLs); owner-managed custom roles (better-auth dynamicAccessControl) and location-level scoping are split into their own follow-on phases — now on the roadmap as **08.3 (Owner-managed Roles & Permissions)** + **08.4 (Location-scoped Access)**, sequenced after 08.2, before Phase 10. Decisions in `08.2-CONTEXT.md`; persona findings in `08.2-PERSONA-REVIEWS.md`. (08.1 below is complete; its verification is deferred.)
+**Phase 10 (admin-order-intake) — PARKED at the plan-13 human checkpoint (2026-08-18).** 12 of 13 plans complete and merged; plan 13's automatable work done, its SUMMARY intentionally unwritten pending founder sign-off. Blocked on a manual two-screen walkthrough that needs a real Stripe-test payment — `seed-demo` never makes a brand payment-ready, so guest checkout returns `payments.not_enabled`. Full state, what is machine-proven vs human-only, the five post-review fixes, and how to resume: `10-13-CHECKPOINT.md`.
 
-Phase: 10 (admin-order-intake) — EXECUTING
-Plan: 1 of 13
+**Phase 10.1 (location schedule + pause ordering)** — context and research being gathered in a parallel session.
+
+**Founder decision 2026-08-18:** the order feed is strictly single-location; the owner's brand-wide aggregate view was removed.
+
+**Next after the pause:** a working demo environment (seeded paid orders), then a `restos` namespace in llm-wiki for norms, then refresh the codebase map (stale since 13 June — predates 08.2–08.5 and 10), then the testing/UI cleanup pass.
+
+Phase: 10 (admin-order-intake) — PARKED (checkpoint)
+Plan: 12 of 13 complete
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
