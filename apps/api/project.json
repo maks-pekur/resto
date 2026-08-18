@@ -29,7 +29,7 @@
     "e2e": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run test/e2e",
+        "command": "vitest run test/e2e test/integration",
         "cwd": "apps/api"
       }
     },
