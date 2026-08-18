@@ -38,7 +38,7 @@ Required env vars:
   INTERNAL_API_TOKEN  Shared secret for /internal/v1/* (matches api).
 
 Optional env vars:
-  RESTO_API_URL       Default http://localhost:3000
+  RESTO_API_URL       Default http://localhost:5001
 
 seed-demo additionally requires:
   NODE_ENV=development

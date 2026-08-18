@@ -33,7 +33,7 @@ export const resolveRuntimeOptions = (
   argv: readonly string[] = process.argv.slice(2),
   env: NodeJS.ProcessEnv = process.env,
 ): RuntimeOptions => ({
-  apiUrl: env.RESTO_API_URL ?? 'http://localhost:3000',
+  apiUrl: env.RESTO_API_URL ?? 'http://localhost:5001',
   internalToken: requireEnv('INTERNAL_API_TOKEN', env),
   dryRun: argv.includes('--dry-run'),
 });
