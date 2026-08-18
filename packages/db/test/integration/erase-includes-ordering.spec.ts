@@ -96,6 +96,22 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         providerPaymentId: 'pi_stripe_secret_xyz',
       });
 
+      const [payment] = await tx
+        .select({ id: schema.payments.id })
+        .from(schema.payments)
+        .where(eq(schema.payments.tenantId, tenantId));
+      if (!payment) throw new Error('payment fixture missing');
+
+      await tx.insert(schema.paymentRefunds).values({
+        tenantId,
+        paymentId: payment.id,
+        refundRequestId: `refund:${orderId}:0:1150`,
+        amount: '11.50',
+        reason: 'requested_by_customer',
+        status: 'succeeded',
+        stripeRefundId: 're_stripe_xyz',
+      });
+
       await tx.insert(schema.orderDailySequences).values({
         tenantId,
         locationId,
@@ -141,6 +157,12 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         .from(schema.payments)
         .where(eq(schema.payments.tenantId, tenantId));
       expect(pays[0]?.n).toBe(0);
+
+      const refunds = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(schema.paymentRefunds)
+        .where(eq(schema.paymentRefunds.tenantId, tenantId));
+      expect(refunds[0]?.n).toBe(0);
 
       const sequences = await tx
         .select({ n: sql<number>`count(*)::int` })
