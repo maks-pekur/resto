@@ -4,6 +4,7 @@ import { printDemoCredentialsBlock } from '../lib/credentials-block';
 import { log } from '../lib/logger';
 import type { RuntimeOptions } from '../lib/options';
 import { OperatorHttpClient, OperatorHttpError, signInAsOperator } from '../lib/operator-http';
+import { createAppDb, seedDemoOrder, DEMO_ORDER_SPECS } from '../lib/demo-orders';
 
 const DEMO_PASSWORD = 'DevPassword123!';
 const ADMIN_URL = 'http://localhost:4000';
@@ -343,6 +344,52 @@ export const runSeedDemo = async (
           location: assignment.location,
           role: staff.roleSlug,
         });
+      }
+    }
+
+    const ordersBrand = BRANDS[0];
+    const ordersLocationName = ordersBrand?.locations[0];
+    const ordersLocationId =
+      ordersBrand && ordersLocationName
+        ? locationsByBrand.get(ordersBrand.slug)?.get(ordersLocationName)
+        : undefined;
+
+    if (!ordersBrand || !ordersLocationId) {
+      log('seed-demo.orders.skipped', { reason: 'no brand/location resolved' });
+    } else {
+      const opBrand = new OperatorHttpClient(options.apiUrl, ownerCookie, {
+        'x-tenant-slug': tenant.slug,
+        'x-brand-slug': ordersBrand.slug,
+      });
+      const items = await opBrand.get<{ items: { id: string; slug: string }[] }>(
+        '/v1/catalog/items?status=published',
+      );
+      const firstItem = items.items[0];
+      if (!firstItem) {
+        log('seed-demo.orders.skipped', { reason: 'no published catalog item' });
+      } else {
+        const appDb = createAppDb(requireEnv('DATABASE_URL'));
+        try {
+          for (const spec of DEMO_ORDER_SPECS) {
+            const seeded = await seedDemoOrder(appDb, {
+              apiUrl: options.apiUrl,
+              tenantId: tenant.id,
+              brandSlug: ordersBrand.slug,
+              locationId: ordersLocationId,
+              itemId: firstItem.id,
+              itemName: firstItem.slug,
+              spec,
+            });
+            log('seed-demo.order.seeded', {
+              brand: ordersBrand.slug,
+              location: ordersLocationName,
+              shortNumber: seeded.shortNumber,
+              status: seeded.status,
+            });
+          }
+        } finally {
+          await appDb.end({ timeout: 5 });
+        }
       }
     }
   } finally {
