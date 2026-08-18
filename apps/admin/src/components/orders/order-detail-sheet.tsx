@@ -25,6 +25,15 @@ import { AGE_BAND_CLASS, deriveOrderCardState } from './order-card';
 import { REASON_LABEL_KEYS, type OrderCancelReasonCode } from './reject-popover';
 import { CancelDialog } from './cancel-dialog';
 
+const CANCELABLE_STATUSES: readonly string[] = [
+  'created',
+  'paid',
+  'accepted',
+  'preparing',
+  'ready',
+];
+const REFUNDABLE_STATUSES: readonly string[] = ['completed'];
+
 const FULFILLMENT_LABEL_KEY: Record<OrderDetailApi['fulfillmentMode'], string> = {
   dine_in: 'card.fulfillmentDineIn',
   pickup: 'card.fulfillmentPickup',
@@ -177,8 +186,8 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
       ? t(REASON_LABEL_KEYS[detail.cancelReason as OrderCancelReasonCode])
       : detail.cancelReason);
 
-  const canRefund = can('billing', 'update');
-  const canCancel = can('order', 'cancel');
+  const canRefund = can('billing', 'update') && REFUNDABLE_STATUSES.includes(detail.status);
+  const canCancel = can('order', 'cancel') && CANCELABLE_STATUSES.includes(detail.status);
   const canRetry = can('order', 'cancel');
   const refundDisabled =
     refundMutation.isPending || refundAmount.trim() === '' || refundReason.trim() === '';

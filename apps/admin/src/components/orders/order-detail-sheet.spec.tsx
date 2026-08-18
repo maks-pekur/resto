@@ -150,11 +150,54 @@ describe('OrderDetailSheet', () => {
     expect(screen.queryByLabelText('orders.refund.amountLabel')).toBeNull();
   });
 
+  it('hides the discretionary refund control on an order that is not completed', async () => {
+    canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ...detail, status: 'accepted' },
+    });
+    render(
+      <Wrap>
+        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+      </Wrap>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('orders.detail.itemsTitle')).not.toBeNull();
+    });
+    expect(screen.queryByLabelText('orders.refund.amountLabel')).toBeNull();
+  });
+
+  it('hides the cancel control on an already-canceled order', async () => {
+    canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ...detail, status: 'canceled' },
+    });
+    render(
+      <Wrap>
+        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+      </Wrap>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('orders.detail.itemsTitle')).not.toBeNull();
+    });
+    expect(screen.queryByText('orders.detail.cancelBtn')).toBeNull();
+  });
+
   it('renders the discretionary refund section when the operator has billing:update', async () => {
     canMock.mockImplementation((resource: string, action: string) => {
       if (resource === 'billing' && action === 'update') return true;
       if (resource === 'order' && action === 'cancel') return true;
       return false;
+    });
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ...detail, status: 'completed' },
     });
     render(
       <Wrap>
@@ -198,8 +241,13 @@ describe('OrderDetailSheet', () => {
     expect(/on its way|в пути|курьер/i.test(bodyText)).toBe(false);
   });
 
-  it('renders sections in the specified order: header before items before timeline before refund before footer', async () => {
+  it('renders sections in the specified order: header, items, timeline, then the money block', async () => {
     canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ...detail, status: 'completed' },
+    });
     render(
       <Wrap>
         <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
@@ -215,12 +263,35 @@ describe('OrderDetailSheet', () => {
     const itemsIndex = bodyText.indexOf('orders.detail.itemsTitle');
     const timelineIndex = bodyText.indexOf('orders.detail.timelineTitle');
     const refundIndex = bodyText.indexOf('orders.refund.title');
-    const cancelIndex = bodyText.indexOf('orders.cancel.triggerBtn');
 
     expect(dailyNumberIndex).toBeGreaterThanOrEqual(0);
     expect(itemsIndex).toBeGreaterThan(dailyNumberIndex);
     expect(timelineIndex).toBeGreaterThan(itemsIndex);
     expect(refundIndex).toBeGreaterThan(timelineIndex);
-    expect(cancelIndex).toBeGreaterThan(refundIndex);
+  });
+
+  it('puts the cancel control after the timeline on a cancelable order', async () => {
+    canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: { ...detail, status: 'accepted' },
+    });
+    render(
+      <Wrap>
+        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+      </Wrap>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('orders.detail.itemsTitle')).not.toBeNull();
+    });
+
+    const bodyText = document.body.textContent;
+    const timelineIndex = bodyText.indexOf('orders.detail.timelineTitle');
+    const cancelIndex = bodyText.indexOf('orders.cancel.triggerBtn');
+
+    expect(timelineIndex).toBeGreaterThanOrEqual(0);
+    expect(cancelIndex).toBeGreaterThan(timelineIndex);
   });
 });
