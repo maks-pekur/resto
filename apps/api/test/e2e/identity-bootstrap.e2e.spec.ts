@@ -107,7 +107,7 @@ describe('identity bootstrap E2E', () => {
     const meRes = await app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie: activeCookie },
+      headers: { cookie: activeCookie, 'x-tenant-id': tenant.id },
     });
     expect(meRes.statusCode).toBe(200);
     const body = meRes.json<{ id: string; slug: string }>();
@@ -193,7 +193,7 @@ describe('identity bootstrap E2E', () => {
       const meRes = await app.inject({
         method: 'GET',
         url: '/v1/tenants/me',
-        headers: { cookie },
+        headers: { cookie, 'x-tenant-id': tenant.id },
       });
       expect(meRes.statusCode).toBe(200);
       expect(meRes.json<{ slug: string }>().slug).toBe(slug);

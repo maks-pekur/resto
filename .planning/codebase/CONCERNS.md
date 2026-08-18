@@ -78,30 +78,22 @@ Verified live against the current Docker dev stack (not carried from
 memory) on 2026-08-18. Four distinct standing failures, plus two separately
 documented pre-existing gaps from Phase 10's own deferred-items log:
 
-**`identity-bootstrap.e2e.spec.ts` — 2 failures, fixture drift, NOT a
-product defect.** Re-verified 2026-08-18 against the running stack. A
-freshly bootstrapped owner does get `403` on `GET /v1/tenants/me`, but the
-cause is that the session has no active organization: a bare
-`POST /api/auth/sign-in/email` leaves `session.active_organization_id`
-null, so `PermissionsGuard` resolves no membership and therefore no
-permissions. Setting the active organization is a separate step the admin
-performs after login. Confirmed both ways on live data — a fresh
-curl sign-in reproduces the 403 with a null `active_organization_id`, while
-the sessions created by the admin's real login flow carry it and the same
-owner reads the route fine. The `owner` system role does hold
-`tenant: ['read', 'delete', 'transfer']`.
+**`identity-bootstrap.e2e.spec.ts` — RESOLVED 2026-08-18.** Was fixture
+drift, not a product defect. The two requests to `GET /v1/tenants/me` sent
+only the session cookie; the route needs an explicit tenant header and
+returned `auth.tenant_context_missing`. Every other operator spec in the
+suite already sends `x-tenant-id`, and the admin's `apiFetch` does too — so
+header-carried tenant context is the live convention and these two calls had
+simply not been updated. Fixed by adding the header; 8/8 pass.
 
-What is genuinely wrong here is the error, not the authorization: the
-response is `auth.forbidden` / "Insufficient permissions" when the real
-condition is "no active organization selected". The location guard already
-models this correctly with `location.context_required`. The misleading code
-cost real diagnosis time twice — once during the Phase 08.4 triage and again
-during this mapping pass. Worth a small, deliberate change on the auth path;
-until then, treat a 403 on a brand-neutral route as "check the active org
-first".
-
-The spec's own active-org step has drifted since Phase 08.2's default-deny
-flip and needs reseeding. Tracked in STATE.md's Blockers as pre-existing.
+Worth separating from a nearby, genuinely different failure that looks the
+same from the outside: a session created by a bare
+`POST /api/auth/sign-in/email` has no `active_organization_id`, and requests
+on it fail with `auth.forbidden` / "Insufficient permissions" rather than
+anything naming the real cause. The location guard models this properly with
+`location.context_required`; the tenant/permission path does not, and that
+vagueness cost diagnosis time twice. A clearer code on that path is a small
+worthwhile change, not yet made.
 
 **`identity-invitation.e2e.spec.ts` — 2 failures, real pre-existing bug,
 already tracked.** `POST /api/auth/organization/invite-member` returns
