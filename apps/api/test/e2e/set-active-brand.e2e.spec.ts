@@ -139,7 +139,7 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
     expect(body.slug).toBe(`${slug}-b`);
   }, 60_000);
 
-  it('non-owner in-scope: can re-pin to a scoped brand (200)', async () => {
+  it('non-owner IN scope is still refused — the gate ignores scope entirely (D-14, 08.5)', async () => {
     const slug = `sab-staff-${randomUUID().slice(0, 6)}`;
     const ownerEmail = `owner-${slug}@example.com`;
     const staffEmail = `staff-${slug}@example.com`;
@@ -214,9 +214,8 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
       },
       payload: { brandId: brandAId },
     });
-    expect(res.statusCode).toBe(200);
-    const body = res.json<{ slug: string }>();
-    expect(body.slug).toBe(`${slug}-a`);
+    expect(res.statusCode).toBe(403);
+    expect(res.json<{ code?: string }>().code).toBe('identity.non_owner_brand_switch_forbidden');
 
     void ownerBootstrap;
   }, 90_000);
@@ -398,9 +397,15 @@ describe('POST /v1/me/set-active-brand (D-09)', () => {
         role: 'staff',
         createdAt: new Date(),
       });
-      await tx.insert(schema.memberBrandScope).values([
-        { memberId: staffMemberId, brandId: brandAId, tenantId: tenant.id },
-        { memberId: staffMemberId, brandId: brandBId, tenantId: tenant.id },
+      const locationAId = randomUUID();
+      const locationBId = randomUUID();
+      await tx.insert(schema.locations).values([
+        { id: locationAId, brandId: brandAId, tenantId: tenant.id, name: 'A location' },
+        { id: locationBId, brandId: brandBId, tenantId: tenant.id, name: 'B location' },
+      ]);
+      await tx.insert(schema.memberLocationScope).values([
+        { memberId: staffMemberId, locationId: locationAId, tenantId: tenant.id, role: 'staff' },
+        { memberId: staffMemberId, locationId: locationBId, tenantId: tenant.id, role: 'staff' },
       ]);
       await tx
         .update(schema.user)

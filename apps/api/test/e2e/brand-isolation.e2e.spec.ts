@@ -80,9 +80,15 @@ suite('SC-4 brand-isolation e2e (Plan 08.2-06)', () => {
       role: 'admin',
       createdAt: new Date(),
     });
-    await db.withoutTenant('seed member brand scope', (tx) =>
-      tx.insert(schema.memberBrandScope).values({ memberId, brandId, tenantId }),
-    );
+    await db.withoutTenant('seed member location scope', async (tx) => {
+      const locationId = randomUUID();
+      await tx
+        .insert(schema.locations)
+        .values({ id: locationId, brandId, tenantId, name: 'Isolation location' });
+      await tx
+        .insert(schema.memberLocationScope)
+        .values({ memberId, locationId, tenantId, role: 'admin' });
+    });
     return memberId;
   };
 
@@ -95,6 +101,14 @@ suite('SC-4 brand-isolation e2e (Plan 08.2-06)', () => {
     });
     expect(res.statusCode).toBe(200);
     return pinCookie(res.headers['set-cookie'], cookie);
+  };
+
+  const pinBrandForUser = async (userId: string, brandId: string): Promise<void> => {
+    const authDb = stack.app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+    await authDb.db
+      .update(schema.session)
+      .set({ activeBrandId: brandId })
+      .where(eq(schema.session.userId, userId));
   };
 
   beforeAll(async () => {
@@ -136,7 +150,8 @@ suite('SC-4 brand-isolation e2e (Plan 08.2-06)', () => {
     });
     await seedMemberScoped(scopedUser.userId, brandAId);
     scopedAdminCookieBase = await signInAsOperator(stack.app, scopedEmail, PASSWORD, tenantId);
-    scopedAdminCookiePinnedA = await setPin(scopedAdminCookieBase, brandAId);
+    await pinBrandForUser(scopedUser.userId, brandAId);
+    scopedAdminCookiePinnedA = scopedAdminCookieBase;
 
     const unscopedEmail = `unscoped-${randomUUID().slice(0, 8)}@example.com`;
     const unscopedBase = await addMemberWithRole(stack.app, {

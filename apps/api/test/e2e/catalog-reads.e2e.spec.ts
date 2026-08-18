@@ -24,7 +24,14 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 interface AuthedTenant {
   id: string;
   slug: string;
+  locationId: string;
   authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
+  atLocation: {
+    cookie: string;
+    'x-tenant-id': string;
+    'x-brand-slug': string;
+    'x-location-id': string;
+  };
 }
 
 const setupAuthedTenant = async (
@@ -44,10 +51,23 @@ const setupAuthedTenant = async (
     payload: { slug: brandSlug, displayName: `Brand ${label}` },
   });
   expect(brandRes.statusCode).toBe(201);
+
+  const authed = { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug };
+  const locationRes = await app.inject({
+    method: 'POST',
+    url: '/v1/tenancy/locations',
+    headers: authed,
+    payload: { name: `Location ${label}` },
+  });
+  expect(locationRes.statusCode).toBe(200);
+  const locationId = locationRes.json<{ id: string }>().id;
+
   return {
     id: tenant.id,
     slug,
-    authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug },
+    locationId,
+    authed,
+    atLocation: { ...authed, 'x-location-id': locationId },
   };
 };
 
@@ -408,14 +428,14 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
     await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/stop-list',
-      headers: readsA.authed,
+      headers: readsA.atLocation,
       payload: { itemId, reason: 'Out of stock' },
     });
 
     const listRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/stop-list',
-      headers: readsA.authed,
+      headers: readsA.atLocation,
     });
     expect(listRes.statusCode).toBe(200);
     const body = listRes.json<{
@@ -426,14 +446,11 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
     expect(entry?.stoppedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   }, 60_000);
 
-  it('GET /draft-diff returns unpublishedCount and capped items (tenant-only, no brand required)', async () => {
+  it('GET /draft-diff returns unpublishedCount and capped items for the active brand', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/draft-diff',
-      headers: {
-        cookie: readsA.authed.cookie,
-        'x-tenant-id': readsA.authed['x-tenant-id'],
-      },
+      headers: readsA.authed,
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{

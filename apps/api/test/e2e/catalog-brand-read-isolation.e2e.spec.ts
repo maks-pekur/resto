@@ -36,6 +36,16 @@ suite('Catalog — brand read-path isolation (AUDIT #7/#8/#9)', () => {
         : { 'x-tenant-slug': tenantSlug },
     });
 
+  const createLocation = async (brand: string): Promise<string> => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/tenancy/locations',
+      headers: w(brand),
+      payload: { name: `${brand} location` },
+    });
+    expect(res.statusCode).toBe(200);
+    return res.json<{ id: string }>().id;
+  };
   const createBrand = async (slug: string): Promise<void> => {
     const res = await stack.app.inject({
       method: 'POST',
@@ -144,10 +154,11 @@ suite('Catalog — brand read-path isolation (AUDIT #7/#8/#9)', () => {
     const catB = await createCategory(brandBSlug);
     const itemB = await createItem(brandBSlug, catB);
     await publish(brandBSlug);
+    const locationA = await createLocation(brandASlug);
     const stop = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/stop-list',
-      headers: w(brandASlug),
+      headers: { ...w(brandASlug), 'x-location-id': locationA },
       payload: { itemId: itemA },
     });
     expect(stop.statusCode).toBe(200);
