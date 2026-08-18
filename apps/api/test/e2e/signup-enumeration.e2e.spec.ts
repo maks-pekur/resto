@@ -53,6 +53,8 @@ suite('D-06 — /v1/signup enumeration parity', () => {
   let stack: RealStack;
 
   beforeAll(async () => {
+    process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
+    process.env.RATE_LIMIT_PUBLIC_PER_MIN = '1000';
     stack = await startRealStack();
   }, 180_000);
 
