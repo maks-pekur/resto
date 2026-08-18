@@ -7,7 +7,12 @@ import {
   stopRealStack,
   type RealStack,
 } from './with-real-stack.setup';
-import { provisionTenant, runBootstrap, signInAsOperator } from './helpers/operator-fixture';
+import {
+  addMemberWithRole,
+  provisionTenant,
+  runBootstrap,
+  signInAsOperator,
+} from './helpers/operator-fixture';
 import { EMAIL_ADAPTER_PORT } from '../../src/contexts/identity/domain/ports';
 import type { CapturedEmailAdapter } from '../../src/contexts/identity/infrastructure/email/captured.adapter';
 
@@ -91,7 +96,7 @@ suite('Identity — invitation send + owner-only-grants-owner regression (AUTH-0
     expect(invitation?.tenantSlug).toBe(slug);
   }, 60_000);
 
-  it('Skeptic LOW-12: admin-tier inviter requesting role=owner gets 403', async () => {
+  it('Skeptic LOW-12: an admin-tier member cannot invite anyone as owner', async () => {
     const slug = `inv-admin-${randomUUID().slice(0, 8)}`;
     const ownerEmail = `owner-${slug}@example.com`;
     const adminEmail = `admin-${slug}@example.com`;
@@ -106,67 +111,37 @@ suite('Identity — invitation send + owner-only-grants-owner regression (AUTH-0
     });
     const ownerCookie = await signInAsOperator(stack.app, ownerEmail, password, tenant.id);
 
-    // Owner invites an admin who then attempts the privilege escalation.
-    captured.clear();
-    const invite = await stack.app.inject({
-      method: 'POST',
-      url: '/api/auth/organization/invite-member',
-      headers: { 'content-type': 'application/json', cookie: ownerCookie },
-      payload: { email: adminEmail, role: 'admin' },
-    });
-    expect([200, 201]).toContain(invite.statusCode);
-
-    // The invitation row is created and accepted manually for the
-    // regression — we don't need the email link, we just need the
-    // admin user attached to the org with the admin role.
-    await runBootstrap({
-      tenantSlug: slug,
+    const adminCookie = await addMemberWithRole(stack.app, {
+      tenantId: tenant.id,
+      internalToken: INTERNAL_TOKEN,
       email: adminEmail,
       password,
       name: 'LOW-12 Admin',
+      role: 'admin',
     });
-    // Sign in as admin and confirm the role. `runBootstrap` makes the
-    // user an owner of a separate context; to actually exercise the
-    // admin-role gate we attach via BA directly.
-    // Simpler path: sign in as the owner and attempt to invite role=owner
-    // from the OWNER session first to confirm it WORKS, then assert that
-    // the admin's session would be rejected — but the admin doesn't have
-    // a session yet. We model the regression as: an admin-tier OPERATOR
-    // is created via the org-plugin's setRole + sign-in path.
 
-    const adminCookie = await signInAsOperator(stack.app, adminEmail, password, tenant.id).catch(
-      () => null,
-    );
-
-    // If the admin can't sign in to this tenant (likely — they aren't
-    // a member), the regression still holds: the owner-only-grants-owner
-    // gate is unreachable for a non-member. Skip the third-party
-    // attempt in that case; the load-bearing path is exercised below.
-    if (!adminCookie) {
-      // Surrogate assertion: ensure the owner-tier inviter CAN grant
-      // owner (so the gate is role-based, not blanket).
-      const grantByOwner = await stack.app.inject({
-        method: 'POST',
-        url: '/api/auth/organization/invite-member',
-        headers: { 'content-type': 'application/json', cookie: ownerCookie },
-        payload: {
-          email: `extra-${randomUUID().slice(0, 8)}@example.com`,
-          role: 'owner',
-        },
-      });
-      expect([200, 201]).toContain(grantByOwner.statusCode);
-      return;
-    }
+    const adminInvitesAdmin = await stack.app.inject({
+      method: 'POST',
+      url: '/api/auth/organization/invite-member',
+      headers: { 'content-type': 'application/json', cookie: adminCookie },
+      payload: { email: `peer-${randomUUID().slice(0, 8)}@example.com`, role: 'admin' },
+    });
+    expect([200, 201]).toContain(adminInvitesAdmin.statusCode);
 
     const escalate = await stack.app.inject({
       method: 'POST',
       url: '/api/auth/organization/invite-member',
       headers: { 'content-type': 'application/json', cookie: adminCookie },
-      payload: {
-        email: `escalation-${randomUUID().slice(0, 8)}@example.com`,
-        role: 'owner',
-      },
+      payload: { email: `escalation-${randomUUID().slice(0, 8)}@example.com`, role: 'owner' },
     });
     expect(escalate.statusCode).toBe(403);
+
+    const ownerGrantsOwner = await stack.app.inject({
+      method: 'POST',
+      url: '/api/auth/organization/invite-member',
+      headers: { 'content-type': 'application/json', cookie: ownerCookie },
+      payload: { email: `co-owner-${randomUUID().slice(0, 8)}@example.com`, role: 'owner' },
+    });
+    expect([200, 201]).toContain(ownerGrantsOwner.statusCode);
   }, 90_000);
 });

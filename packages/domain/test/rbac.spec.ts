@@ -8,12 +8,13 @@ import {
 } from '../src/rbac';
 
 describe('RBAC permission catalogue', () => {
-  it('exposes the expected resources including ac and location', () => {
+  it('exposes the expected resources including ac, location and invitation', () => {
     expect(Object.keys(PERMISSIONS_STATEMENT).sort()).toEqual(
       [
         'ac',
         'billing',
         'brand',
+        'invitation',
         'location',
         'menu',
         'order',

@@ -11,6 +11,8 @@ export const PERMISSIONS_STATEMENT = {
   location: ['read', 'create', 'update', 'delete'],
   // D-13 (08.3): BA dynamicAccessControl gate checks { ac: ['create'] }; no ':' in action names
   ac: ['create', 'read', 'update', 'delete'],
+  // Replaces BA's organization defaultStatements: omitting this denies invites to every role.
+  invitation: ['create', 'cancel'],
 } as const;
 
 export type PermissionResource = keyof typeof PERMISSIONS_STATEMENT;
