@@ -207,7 +207,13 @@
       "tableActionsHeader": "Actions",
       "editAriaLabel": "Edit {{name}}",
       "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first.",
-      "saveFailed": "Couldn't save the category."
+      "saveFailed": "Couldn't save the category.",
+      "archiveAction": "Archive",
+      "archiveAriaLabel": "Archive \"{{name}}\"",
+      "archiveDialogTitle": "Archive this category?",
+      "archiveDialogDescription": "Category \"{{name}}\" will be hidden from the menu. This is reversible — turn on \"Show archived\".",
+      "archiveFailed": "Couldn't archive the category.",
+      "showArchived": "Show archived"
     },
     "modifierGroups": {
       "createGroup": "+ Create group",

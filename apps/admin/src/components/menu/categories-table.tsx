@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { GripVertical, Pencil } from 'lucide-react';
+import { Archive, GripVertical, Pencil } from 'lucide-react';
 import {
   DndContext,
   type DragCancelEvent,
@@ -21,6 +21,18 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { EmptyState } from '@/components/empty-state';
 import {
   Table,
@@ -34,7 +46,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { cn } from '@/lib/utils';
 import { showError } from '@/lib/ui/toast-helpers';
-import { reorderCategories } from '@/lib/queries/catalog';
+import { archiveCategory, reorderCategories } from '@/lib/queries/catalog';
 import { CategoryForm } from '@/components/menu/category-form';
 import type { CategoryListItemApi } from '@/lib/queries/catalog';
 
@@ -66,6 +78,7 @@ interface SortableCategoryRowProps {
   readonly isChild: boolean;
   readonly parentName: string;
   readonly onEdit: () => void;
+  readonly onArchive: () => void;
   readonly isPendingNestTarget: boolean;
 }
 
@@ -74,6 +87,7 @@ function SortableCategoryRow({
   isChild,
   parentName,
   onEdit,
+  onArchive,
   isPendingNestTarget,
 }: SortableCategoryRowProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
@@ -124,11 +138,23 @@ function SortableCategoryRow({
           <Button
             variant="ghost"
             size="icon"
+            className="min-h-11 min-w-11"
             aria-label={t('editAriaLabel', { name: displayName })}
             onClick={onEdit}
           >
             <Pencil className="size-4" />
           </Button>
+          {category.status === 'archived' ? null : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="min-h-11 min-w-11"
+              aria-label={t('archiveAriaLabel', { name: displayName })}
+              onClick={onArchive}
+            >
+              <Archive className="size-4" />
+            </Button>
+          )}
         </div>
       </TableCell>
     </TableRow>
@@ -213,8 +239,11 @@ export function CategoriesTable({
   categories,
 }: CategoriesTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
+  const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = React.useState<string | null>(null);
+  const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
+  const [showArchived, setShowArchived] = React.useState(false);
   const [localCategories, setLocalCategories] = React.useState(categories);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pendingNestParentId, setPendingNestParentId] = React.useState<string | null>(null);
@@ -233,9 +262,27 @@ export function CategoriesTable({
     },
   });
 
+  const archiveMutation = useMutation({
+    mutationFn: (id: string) => archiveCategory(brandSlug, id),
+    onSuccess: (res) => {
+      if (res.ok) {
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
+      } else {
+        showError(null, t('archiveFailed'));
+      }
+    },
+  });
+
+  const handleArchiveConfirm = (): void => {
+    if (!archiveTarget) return;
+    const id = archiveTarget.id;
+    setArchiveTarget(null);
+    archiveMutation.mutate(id);
+  };
+
   const visible = React.useMemo(
-    () => localCategories.filter((c) => c.status !== 'archived'),
-    [localCategories],
+    () => (showArchived ? localCategories : localCategories.filter((c) => c.status !== 'archived')),
+    [localCategories, showArchived],
   );
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
@@ -346,6 +393,17 @@ export function CategoriesTable({
 
   return (
     <>
+      <div className="mb-3 flex items-center gap-2">
+        <Switch
+          id="categories-show-archived"
+          checked={showArchived}
+          onCheckedChange={setShowArchived}
+          className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
+        />
+        <Label htmlFor="categories-show-archived" className="text-sm font-normal">
+          {t('showArchived')}
+        </Label>
+      </div>
       {rows.length === 0 ? (
         <EmptyState variant="empty" title={t('empty')} description={t('emptyDescription')} />
       ) : (
@@ -385,6 +443,9 @@ export function CategoriesTable({
                           )
                         : '—'
                     }
+                    onArchive={() => {
+                      setArchiveTarget(category);
+                    }}
                     onEdit={() => {
                       setEditingId(category.id);
                     }}
@@ -426,6 +487,29 @@ export function CategoriesTable({
           </div>
         </SheetContent>
       </Sheet>
+      <AlertDialog
+        open={archiveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setArchiveTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('archiveDialogTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('archiveDialogDescription', {
+                name: fromLocalizedText(archiveTarget?.name ?? {}),
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{tCommon('cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={handleArchiveConfirm}>
+              {t('archiveAction')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

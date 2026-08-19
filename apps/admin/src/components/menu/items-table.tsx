@@ -268,6 +268,7 @@ export function ItemsTable({
                 <TableCell onClick={stopPropagation}>
                   <div className={isPending ? 'pointer-events-none opacity-50' : ''}>
                     <Switch
+                      className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                       checked={isOnStopList}
                       onCheckedChange={() => {
                         handleToggleStop(item);
@@ -285,6 +286,7 @@ export function ItemsTable({
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="min-h-11 min-w-11"
                       aria-label={t('actionsAriaLabel', { name })}
                       aria-haspopup="menu"
                       aria-expanded={openMenuId === item.id}

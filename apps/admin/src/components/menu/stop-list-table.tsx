@@ -111,6 +111,7 @@ export function StopListTable({
               </TableCell>
               <TableCell className="text-right">
                 <Switch
+                  className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                   checked
                   disabled={isPending}
                   onCheckedChange={() => {

@@ -207,7 +207,13 @@
       "tableActionsHeader": "Действия",
       "editAriaLabel": "Редактировать {{name}}",
       "nestWithChildrenError": "Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.",
-      "saveFailed": "Не удалось сохранить категорию."
+      "saveFailed": "Не удалось сохранить категорию.",
+      "archiveAction": "Архивировать",
+      "archiveAriaLabel": "Архивировать «{{name}}»",
+      "archiveDialogTitle": "Архивировать категорию?",
+      "archiveDialogDescription": "Категория «{{name}}» будет скрыта из меню. Действие обратимо — включите «Показать архив».",
+      "archiveFailed": "Не удалось архивировать категорию.",
+      "showArchived": "Показать архив"
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",

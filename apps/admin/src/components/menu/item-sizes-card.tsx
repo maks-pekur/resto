@@ -236,6 +236,7 @@ export function ItemSizesCard({
                   type="button"
                   variant="ghost"
                   size="icon"
+                  className="min-h-11 min-w-11"
                   aria-label={t('removeAriaLabel')}
                   onClick={() => {
                     onRemoveRow(row.localKey);
