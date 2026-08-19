@@ -777,13 +777,26 @@ flow needs, so both live in one phase rather than two fighting over it:
 - **No placeholder tenant name.** `tenants.display_name` and `slug` are NOT NULL,
   but the person's own name is a real value, not a stub — use it, derive the slug
   from it plus a short random suffix, and let onboarding replace it with the
-  restaurant name. `default_currency` already defaults to `USD` in the schema, so
-  currency genuinely does not need asking at signup.
+  restaurant name. Currency is derived from the country the owner picks, so it is
+  never asked; `default_currency` already defaults to `USD` in the schema, which
+  covers the moment between account creation and the derivation landing.
 - **The signup form's currency field is dead today** — collected and never sent.
   Its "Restaurant name" label is wrong too: the value goes to Better Auth as the
   person's name.
-- **Multi-step onboarding** when the owner has no brand: restaurant name and
-  currency, then the first brand.
+- **Registration asks for country** ("Your country") from a list of supported
+  countries, and **currency is derived from it** — never asked. No `country`
+  column exists anywhere today and no country list exists in the codebase; the
+  Stripe adapter already accepts `country` and `default_currency` as optional
+  inputs (`stripe-provider.adapter.ts`) but nothing supplies them, so this
+  finally feeds a wire that is already in place.
+- **Which countries are "supported" is a product decision, not a lookup.** Stripe
+  Connect Express availability differs by country, and this project deliberately
+  defers per-market fiscal compliance (see Constraints in CLAUDE.md — no EU-wide
+  fiscalization adapter in MVP). Start from a deliberately short list the founder
+  names at discuss, not from every country Stripe lists.
+- **Multi-step onboarding** when the owner has no brand: restaurant name, then
+  the first brand. Currency no longer appears here either — country at signup
+  already determined it.
 - **After sign-in:** one brand → straight to its dashboard; several → the picker.
 - **Close direct Better Auth signup** (`POST /api/auth/sign-up/email` is publicly
   open and is how stranded accounts appear). Check invitation acceptance first —
