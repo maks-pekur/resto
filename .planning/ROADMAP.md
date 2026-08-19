@@ -35,7 +35,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
-- [ ] **Phase 10.2: Brand-pinned sessions and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_
+- [ ] **Phase 10.2: Organization-per-restaurant and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -753,9 +753,9 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
-### Phase 10.2: Brand-pinned sessions and account onboarding (INSERTED)
+### Phase 10.2: Organization-per-restaurant and account onboarding (INSERTED)
 
-**Goal**: Make one brand the fixed context of a session — chosen at sign-in, never switched inside the app — and give a new owner a working path from "create account" to "first brand", so every operator surface, guard and URL resolves against a single brand for the life of the session
+**Goal**: Collapse tenant and brand into a single entity — the Better Auth organization — so one restaurant is one organization, an owner may belong to several, and the active organization chosen at sign-in is the entire context of a session; and give a new owner a working path from "create account" to "first restaurant"
 
 **Depends on**: Phase 10 _(origin: founder, 2026-08-19. Completes a direction the codebase already drifted toward: 08.5 (D-14) closed non-owner brand switching outright, and Phase 10 made the order feed strictly single-location. The brand switcher is the last surface still assuming a session can span brands.)_
 
@@ -826,38 +826,20 @@ flow needs, so both live in one phase rather than two fighting over it:
 
 _Original question, kept for the record:_ brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
 
-**Settled at discuss 2026-08-19 (see `.planning/phases/10.2-brand-pinned-sessions/10.2-CONTEXT.md`).** Parts of the scope sketch above are now superseded — read CONTEXT.md, not the sketch, where they disagree:
+**MODEL REVERSED late on 2026-08-19 — read `.planning/phases/10.2-brand-pinned-sessions/10.2-CONTEXT.md`, not the sketch above.** CONTEXT.md was rewritten from scratch; everything in the scope sketch that speaks of a tenant containing brands is superseded. `10.2-DISCUSSION-LOG.md` keeps the full path, including the model that was tried and dropped.
 
-- **The tenancy model was questioned and confirmed.** Tenant = the group (shared staff, guests, loyalty, one subscription); brand = the legal entity inside it. Collapsing to `tenant = brand` was considered and **rejected** (D-01/D-02) — it would have halved this phase but cost cross-brand sharing. Subscription sits on the owner and its plan caps brand count; the cap itself is deferred to the billing phase (D-03).
-- **Onboarding is creating the first brand, name only — there is no "restaurant name" step** (D-17/D-18). The sketch's two-step "restaurant name, then the first brand" was built on a wrong model: the brand _is_ the company, the tenant is plumbing. Legal details are left to Stripe Connect Express.
-- **`tenants.display_name` derives from the first brand's name** (D-04), not from the person's name as the sketch proposed.
-- **Country lands on `brands`, not on the tenant** (D-22); it is collected at signup and carried into onboarding. Currency derives from it and is never asked (D-23).
-- **First supported countries: UA, GB, ES** (D-21). The founder said "ua and en and es"; `en` is not a country and was resolved to GB over US.
-- **Spanish catalogue is added in this phase** for admin and website, covering interface _and_ communication (D-25). Interface language is a per-user choice with a `langSwitcher` (D-24).
-- **Amended later the same day — brand context moves to the host, not the path.** The
-  `/{brandSlug}` path segment still goes away, but the admin is served per-brand at
-  `<brandSlug>.admin.resto.app` (D-29). Cheaper than the path segment — a host is
-  constant for the session, so reconciliation against the pin is one check at bootstrap
-  instead of 18 route files. Bare `<brandSlug>.resto.app` is **reserved for the future
-  public website** (D-30); guest menu keeps `.menu.` Needs wildcard DNS/TLS and wildcard
-  `trustedOrigins` (`ADMIN_WEB_URL` is a single value today) — match on parsed hostname,
-  never a suffix check (D-31).
-- **The tenant loses its subdomain (D-28) — this fixes a real defect.**
-  `provision-tenant.service.ts:40` writes `<tenantSlug>.menu.resto.app` into
-  `tenant_domains`, the same suffix brands use in `brand_domains`. Separate tables,
-  separate unique indexes, no constraint between them — so a tenant named after its
-  only brand would duplicate the hostname on every signup. Guest traffic resolves brands
-  first, so the tenant never needed a subdomain. _Planner must verify_ whether
-  `resolveByHost` (middleware fallback) is dead once it is gone.
-- **Tenant naming resolved (D-04, revised).** Silent default = first brand's name,
-  **never displayed while there is one brand** (verified: nothing in the admin reads it).
-  The group-naming question is asked when the owner creates a second brand. Researched
-  against Square, Toast, Stripe, Shopify, Vercel: the group layer gets named only once a
-  group exists.
-- **GAP created by this phase:** deleting the brand switcher removes the **only**
-  add-brand entry point; no brand-creation route exists outside `onboarding/brand.tsx`.
-  An owner would be unable to create a second brand. See CONTEXT.md `<deferred>`.
-- **Delete, don't deprecate** (D-27) — including `@RequireBrand`/`REQUIRE_BRAND_KEY`, which spans 8 api files and is read by no guard.
+- **Tenant and brand merge into one entity — the Better Auth organization.** One restaurant = one organization = one legal entity with its own Stripe account, country, currency, theme and domains. An owner may belong to several; BA supports this natively (`setActiveOrganization` is already called in `signup.service.ts:229`).
+- **This reverses the group model chosen the same morning.** The founder was shown the consequence — no shared staff, guest base, loyalty or group analytics across an owner's restaurants — and chose the merge anyway. Recorded in CONTEXT.md D-03 so it is not rediscovered as a surprise.
+- **Physical merge, all inside 10.2.** The cheaper 1:1-satellite option was offered and declined; splitting the merge into a preceding phase was offered and declined. **Measured: 137 files** reference `brandId`/`brandSlug` (70 api, 58 admin, 7 db, 2 other); 9 `brand_id` columns across 6 schema files plus `session.active_brand_id`; 3 tables dropped (`brands`, `brand_domains`, `member_brand_scope`); the `app_bind_brand` GUC and brand RLS lineage removed. This is larger than the rest of the phase combined.
+- **Real upside found while measuring:** menu tables carry both `tenant_id` and `brand_id` today — the merge removes that redundant dimension and its composite FKs permanently.
+- **No data migration.** No production, no paying customer (Q1 2027 target), database reset the same day — ships as a schema rewrite with a dev reset (CONTEXT.md D-12, assumption stated). Seeds rewritten in-phase.
+- **Brand pinning is no longer needed at all.** `activeOrganizationId` is the pin and BA owns it. `set-active-brand`, `active_brand_id`, `BrandScopeGuard`, `onInitialBrandPin`, `member_brand_scope` and the brand switcher are all deleted. The location switcher survives as the only in-app context control.
+- **Organization lives in the host:** admin at `<orgSlug>.admin.resto.app`; the `/{brandSlug}` path segment goes. Bare `<orgSlug>.resto.app` reserved for the future public website, `.menu.` stays with guests. Needs wildcard DNS/TLS and wildcard `trustedOrigins` — match on parsed hostname, never a suffix check.
+- **Switching organizations revokes the session and issues a new one**, without re-prompting for the password. Picker at every sign-in when the owner has more than one.
+- **Signup:** name, email, password, country → user + first organization, via `/v1/signup`. **Onboarding:** the restaurant's name only; legal details left to Stripe. **Countries:** UA, GB, ES as a config in `packages/domain`; currency derived; Spanish catalogue added for admin and website; interface language per user with a `langSwitcher`.
+- **The tenant-naming problem is moot** — the organization's name is the restaurant's name.
+- **GAP created by this phase:** deleting the switcher removes the only add-organization entry point; no creation route exists outside `onboarding/brand.tsx`. An owner would be unable to create a second restaurant. See CONTEXT.md `<deferred>`.
+- **Plan-based limit on organization count is explicitly NOT built here** — billing does not exist; leave the creation path a natural place for it.
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
