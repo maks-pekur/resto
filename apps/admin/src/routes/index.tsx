@@ -1,5 +1,6 @@
 import { createRoute, redirect } from '@tanstack/react-router';
 import { Route as rootRoute } from './__root';
+import { authClient } from '@/lib/auth-client';
 import { meBrandsQuery, meQuery } from '@/lib/queries/identity';
 import type { MeBrandsResponse, MeResponse } from '@/lib/queries/identity';
 
@@ -17,6 +18,10 @@ export const Route = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
   beforeLoad: async ({ context: { queryClient } }) => {
+    const session = await authClient.getSession();
+    if (!session.data?.session) {
+      throw redirect({ to: '/login' });
+    }
     const [meResult, brandsResult] = await Promise.all([
       queryClient.fetchQuery(meQuery()),
       queryClient.fetchQuery(meBrandsQuery()),

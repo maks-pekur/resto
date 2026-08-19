@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { createRoute, useNavigate } from '@tanstack/react-router';
 import { Link } from '@tanstack/react-router';
 import { useForm } from 'react-hook-form';
@@ -23,6 +24,7 @@ type LoginForm = z.infer<typeof LoginSchema>;
 
 const SearchSchema = z.object({
   next: z.string().optional(),
+  expired: z.string().optional(),
 });
 
 export const Route = createRoute({
@@ -34,7 +36,8 @@ export const Route = createRoute({
 
 function LoginPage() {
   const navigate = useNavigate();
-  const { next } = Route.useSearch();
+  const { next, expired } = Route.useSearch();
+  const { t: tAuth } = useTranslation('translation', { keyPrefix: 'auth' });
   const [error, setError] = useState<string | null>(null);
 
   const {
@@ -75,6 +78,15 @@ function LoginPage() {
         <CardTitle className="text-xl">Sign in</CardTitle>
       </CardHeader>
       <CardContent>
+        {expired === '1' ? (
+          <p
+            data-testid="session-expired-notice"
+            role="status"
+            className="mb-4 rounded-md border px-3 py-2 text-sm"
+          >
+            {tAuth('sessionExpired')}
+          </p>
+        ) : null}
         <form onSubmit={(e) => void handleSubmit(onSubmit)(e)} className="grid gap-4" noValidate>
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>

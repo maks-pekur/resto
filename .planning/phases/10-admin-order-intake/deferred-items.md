@@ -268,19 +268,18 @@ rate-limit-aware retry/stagger in the e2e harness itself (or a documented
 "run `pnpm --filter admin e2e` in batches, not as one sweep" convention
 mirroring the vitest gotcha) so the full suite can run unattended in CI.
 
-## Expired-session signal on the login page (found 2026-08-19)
+## Expired-session signal on the login page (2026-08-19 — mostly resolved)
 
-When a session expires mid-work the admin bounces to `/login?next=…` and shows a
-bare "Sign in" — the operator is not told why they were thrown out. The login
-page now renders a notice when `?expired=true` arrives
-(`data-testid="session-expired-notice"`), but nothing emits that flag.
+`api-client.ts`'s 401 handler already redirects to `/login?expired=1`; the login
+page now renders `auth.sessionExpired` for it. That covers the common case: a
+401 on a live page.
 
-It cannot be emitted from the client: the session cookie is `httpOnly`, so the
-browser cannot distinguish "token present but invalid" from "no token". The
-server has to make that distinction and surface it.
+The remaining gap is narrow. On a _fresh navigation_ with a stale cookie the
+client cannot tell "expired" from "never signed in" — the session cookie is
+`httpOnly` — so both land on plain `/login`. Closing that needs the server to
+distinguish the two and say so.
 
-A login-page notice keyed on `?expired=true` was briefly added and then removed:
-with no emitter it could only be triggered by hand-editing the URL, and
-`z.coerce.boolean()` made **any** value — including `expired=false` — render it.
-Build the server signal first, then the UI. `adm-00` scenario 5 is `test.fixme`
-waiting on it.
+Related bug fixed at the same time: the index route `/` called the API before
+any session check, so a first-time visitor with no session got a 401 and was
+told their session had expired. It now checks the session first and sends an
+unauthenticated visitor to plain `/login`.

@@ -8,14 +8,15 @@ test.beforeAll(async () => {
 });
 
 test.describe('ADM-00 scaffold smoke-walk', () => {
+  // On a fresh navigation the client cannot tell a stale session cookie from no
+  // cookie at all — the session cookie is httpOnly. Both land on plain /login.
+  // The `?expired=1` notice covers the other, more common case: a 401 on a live
+  // page, emitted by api-client's 401 handler.
+
   // Scenarios 3, 6, 7a and 7b are fixme, not broken: they exercise the brand
   // switcher, cross-tab brand sync and add-brand-from-switcher, all of which
   // phase 10.2 (brand-pinned sessions) removes. Rewrite them with that phase.
   //
-  // Scenario 5 is fixme for a different reason: the session cookie is httpOnly,
-  // so the client cannot tell an expired session from no session at all.
-  // Telling the operator why they were bounced needs the server to make that
-  // distinction; there is no client-side signal to build it on.
 
   test('scenario 1: valid sign-in lands on /dashboard with brand list', async ({
     operatorSession,
@@ -79,7 +80,7 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await ctx.close();
   });
 
-  test.fixme('scenario 5: an expired session says so instead of a bare sign-in prompt', async ({
+  test('scenario 5: a stale session cookie lands on sign-in, never a loop or a blank page', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.threeBrands);
@@ -95,8 +96,8 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     ]);
     const page = await ctx.newPage();
     await page.goto('/dashboard');
-    await page.waitForURL(/\/login\?.*expired=true/);
-    await expect(page.getByTestId('session-expired-notice')).toBeVisible();
+    await page.waitForURL(/\/login(\?|$)/);
+    await expect(page.getByRole('button', { name: /sign in/i })).toBeVisible();
     await ctx.close();
   });
 
