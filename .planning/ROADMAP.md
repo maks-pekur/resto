@@ -762,7 +762,7 @@ Plans:
 **Scope sketch (to be settled at discuss):**
 
 - Sign-in pins exactly one brand. An owner with more than one brand chooses at sign-in — mirror the existing staff pick-location interstitial rather than inventing a second pattern.
-- Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.
+- ~~Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.~~ **Settled 2026-08-19:** switching **revokes the current session and issues a new one**, without re-prompting for the password (CONTEXT.md D-08/D-09). One session = one brand, for the life of that session.
 - Remove the brand switcher; the location switcher stays and remains the only in-app context control.
 
 **Scope grew 2026-08-19 (founder) — signup and onboarding fold in here.** The
@@ -822,7 +822,19 @@ flow needs, so both live in one phase rather than two fighting over it:
 
 **Rejected before — a dedicated brand cookie.** Phase 02-03 shipped a signed `resto.active_brand` cookie (HMAC-SHA256, dedicated `ACTIVE_BRAND_COOKIE_SECRET`, four cookie I/O sites); it was replaced by brand-in-URL as D-03. Re-introducing one would duplicate a server-side field that cannot be forged and would bring back the signing secret and its I/O sites. The session cookie already identifies the session; the brand belongs on the session row, not in its own cookie.
 
-**Open question — brand authority (settle before planning):** brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
+**RESOLVED at discuss 2026-08-19 — brand authority.** The question below was settled: **the session is the single source of truth and the `/{brandSlug}` URL segment is removed entirely** (CONTEXT.md D-05). No compatibility shim for old URLs (D-06). Measured cost: 18 route files under `$brandSlug`, 58 admin files referencing `brandSlug`.
+
+_Original question, kept for the record:_ brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
+
+**Settled at discuss 2026-08-19 (see `.planning/phases/10.2-brand-pinned-sessions/10.2-CONTEXT.md`).** Parts of the scope sketch above are now superseded — read CONTEXT.md, not the sketch, where they disagree:
+
+- **The tenancy model was questioned and confirmed.** Tenant = the group (shared staff, guests, loyalty, one subscription); brand = the legal entity inside it. Collapsing to `tenant = brand` was considered and **rejected** (D-01/D-02) — it would have halved this phase but cost cross-brand sharing. Subscription sits on the owner and its plan caps brand count; the cap itself is deferred to the billing phase (D-03).
+- **Onboarding is creating the first brand, name only — there is no "restaurant name" step** (D-17/D-18). The sketch's two-step "restaurant name, then the first brand" was built on a wrong model: the brand _is_ the company, the tenant is plumbing. Legal details are left to Stripe Connect Express.
+- **`tenants.display_name` derives from the first brand's name** (D-04), not from the person's name as the sketch proposed.
+- **Country lands on `brands`, not on the tenant** (D-22); it is collected at signup and carried into onboarding. Currency derives from it and is never asked (D-23).
+- **First supported countries: UA, GB, ES** (D-21). The founder said "ua and en and es"; `en` is not a country and was resolved to GB over US.
+- **Spanish catalogue is added in this phase** for admin and website, covering interface _and_ communication (D-25). Interface language is a per-user choice with a `langSwitcher` (D-24).
+- **Delete, don't deprecate** (D-27) — including `@RequireBrand`/`REQUIRE_BRAND_KEY`, which spans 8 api files and is read by no guard.
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
