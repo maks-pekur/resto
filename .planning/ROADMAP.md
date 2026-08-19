@@ -834,6 +834,29 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 - **Country lands on `brands`, not on the tenant** (D-22); it is collected at signup and carried into onboarding. Currency derives from it and is never asked (D-23).
 - **First supported countries: UA, GB, ES** (D-21). The founder said "ua and en and es"; `en` is not a country and was resolved to GB over US.
 - **Spanish catalogue is added in this phase** for admin and website, covering interface _and_ communication (D-25). Interface language is a per-user choice with a `langSwitcher` (D-24).
+- **Amended later the same day — brand context moves to the host, not the path.** The
+  `/{brandSlug}` path segment still goes away, but the admin is served per-brand at
+  `<brandSlug>.admin.resto.app` (D-29). Cheaper than the path segment — a host is
+  constant for the session, so reconciliation against the pin is one check at bootstrap
+  instead of 18 route files. Bare `<brandSlug>.resto.app` is **reserved for the future
+  public website** (D-30); guest menu keeps `.menu.` Needs wildcard DNS/TLS and wildcard
+  `trustedOrigins` (`ADMIN_WEB_URL` is a single value today) — match on parsed hostname,
+  never a suffix check (D-31).
+- **The tenant loses its subdomain (D-28) — this fixes a real defect.**
+  `provision-tenant.service.ts:40` writes `<tenantSlug>.menu.resto.app` into
+  `tenant_domains`, the same suffix brands use in `brand_domains`. Separate tables,
+  separate unique indexes, no constraint between them — so a tenant named after its
+  only brand would duplicate the hostname on every signup. Guest traffic resolves brands
+  first, so the tenant never needed a subdomain. _Planner must verify_ whether
+  `resolveByHost` (middleware fallback) is dead once it is gone.
+- **Tenant naming resolved (D-04, revised).** Silent default = first brand's name,
+  **never displayed while there is one brand** (verified: nothing in the admin reads it).
+  The group-naming question is asked when the owner creates a second brand. Researched
+  against Square, Toast, Stripe, Shopify, Vercel: the group layer gets named only once a
+  group exists.
+- **GAP created by this phase:** deleting the brand switcher removes the **only**
+  add-brand entry point; no brand-creation route exists outside `onboarding/brand.tsx`.
+  An owner would be unable to create a second brand. See CONTEXT.md `<deferred>`.
 - **Delete, don't deprecate** (D-27) — including `@RequireBrand`/`REQUIRE_BRAND_KEY`, which spans 8 api files and is read by no guard.
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
