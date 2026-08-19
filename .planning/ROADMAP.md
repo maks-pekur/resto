@@ -843,11 +843,67 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 0 plans
+**Plans:** 20 plans in 13 waves
 
 Plans:
+**Wave 1**
 
-- [ ] TBD (run /gsd-plan-phase 10.2 to break down)
+- [ ] 10.2-01-PLAN.md — Shared domain registries: country/currency/locale config, TenantSlugValue, brand RBAC resource dropped
+- [ ] 10.2-02-PLAN.md — i18n foundation: Spanish catalogue for admin + website, three-locale switcher, deliberate fallback
+- [ ] 10.2-03-PLAN.md — Schema merge A: tenants absorbs brands, locations relocated, one domain table, session.active_brand_id dropped
+
+**Wave 2**
+
+- [ ] 10.2-04-PLAN.md — Schema merge B: nine brand_id columns dropped, index collapse, ScopedTx/TenantContext brand removal
+
+**Wave 3**
+
+- [ ] 10.2-05-PLAN.md — [BLOCKING] Migration 0079 + RLS teardown + boot-preflight deletion + dev reset/migrate/FK audit
+
+**Wave 4**
+
+- [ ] 10.2-06-PLAN.md — Tenancy domain merge: Brand folded into Tenant, one provisioning path, tenancy event contracts
+
+**Wave 5**
+
+- [ ] 10.2-07-PLAN.md — Tenancy host resolution, Stripe onboarding dedup, x-brand-slug removal, tenancy controllers
+- [ ] 10.2-08-PLAN.md — Identity brand machinery deleted; GET /v1/me/tenants and the renamed slug-availability check
+- [ ] 10.2-09-PLAN.md — Catalog context sweep (21 files)
+- [ ] 10.2-10-PLAN.md — Ordering + payments + notifications sweep and the ordering event contract
+
+**Wave 6**
+
+- [ ] 10.2-11-PLAN.md — Guard chain and decorator sweep, preserving the location-bypass semantics @BrandNeutral carried
+
+**Wave 7**
+
+- [ ] 10.2-12-PLAN.md — Better Auth revoke-and-reissue endpoint, brand-pin hook removal, wildcard trustedOrigins + cookie scope
+
+**Wave 8**
+
+- [ ] 10.2-13-PLAN.md — Signup (name/email/password/country), onboarding finalize, closing public Better Auth signup
+
+**Wave 9**
+
+- [ ] 10.2-14-PLAN.md — Admin data layer: apiFetch, seven query modules, payments/slug helpers
+
+**Wave 10**
+
+- [ ] 10.2-15-PLAN.md — Admin route-tree collapse (18 files), static organization label replacing the brand switcher
+- [ ] 10.2-16-PLAN.md — Admin feature components sweep (menu, orders, roles) + auto-save model deletion
+
+**Wave 11**
+
+- [ ] 10.2-17-PLAN.md — Admin auth surfaces: signup form, sign-in picker, onboarding, host reconciliation, wildcard dev hosts
+- [ ] 10.2-18-PLAN.md — Seeds and erasure tooling on the merged model; payment-ready demo restaurant
+
+**Wave 12**
+
+- [ ] 10.2-19-PLAN.md — Test net rebuild: 12 e2e + 12 unit + db integration specs, adm-00 scenarios repaired
+
+**Wave 13**
+
+- [ ] 10.2-20-PLAN.md — Final gate: dead code, repo-wide rename proof, OpenAPI regeneration, 40-decision coverage audit
 
 ### Phase 11: Promo & Discounts
 
