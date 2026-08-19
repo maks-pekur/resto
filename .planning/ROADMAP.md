@@ -794,6 +794,18 @@ flow needs, so both live in one phase rather than two fighting over it:
   defers per-market fiscal compliance (see Constraints in CLAUDE.md — no EU-wide
   fiscalization adapter in MVP). Start from a deliberately short list the founder
   names at discuss, not from every country Stripe lists.
+- **The country list is a config, and it is the seam every per-market setting
+  lands on.** One entry per supported country carrying, at minimum, its currency
+  and default interface locale, with room for what follows (timezone defaults,
+  address shape, and eventually the fiscal rules deliberately deferred today).
+  Natural home is `packages/domain` alongside the other shared registries
+  (`money.ts`, `rbac/`, `reserved-slugs.ts`) — no infrastructure imports, usable
+  from api and both web apps.
+- **The locale half already has real surface.** `tenants.locale` exists (NOT NULL,
+  default `en`); the admin ships `ru`/`en` and the website `ru`/`uk`/`en`. A
+  country whose default locale has no message catalogue must fall back
+  deliberately rather than render raw keys — the failure mode already seen this
+  phase when a component read a key from the wrong namespace.
 - **Multi-step onboarding** when the owner has no brand: restaurant name, then
   the first brand. Currency no longer appears here either — country at signup
   already determined it.
