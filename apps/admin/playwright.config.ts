@@ -1,4 +1,23 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
+
+// The suite provisions tenants through /internal/v1/*, so it needs the same
+// INTERNAL_API_TOKEN the running api booted with; without it every run 401s.
+const loadRepoEnv = (key: string): string | undefined => {
+  if (process.env[key] !== undefined) return process.env[key];
+  try {
+    for (const line of readFileSync(new URL('../../.env', import.meta.url), 'utf8').split('\n')) {
+      const match = /^([A-Z0-9_]+)=(.*)$/.exec(line.trim());
+      if (match && match[1] === key) return match[2];
+    }
+  } catch {
+    return undefined;
+  }
+  return undefined;
+};
+
+const internalApiToken = loadRepoEnv('INTERNAL_API_TOKEN');
+if (internalApiToken !== undefined) process.env.INTERNAL_API_TOKEN = internalApiToken;
 
 // Vite (apps/admin) serves on :4000 (vite.config.ts) — this also matches
 // the api's default CORS_ALLOWED_ORIGINS/ADMIN_WEB_URL dev defaults
