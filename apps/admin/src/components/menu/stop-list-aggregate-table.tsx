@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/empty-state';
 import { ImageIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -30,6 +31,10 @@ export function StopListAggregateTable({
 }: StopListAggregateTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const now = Date.now();
+
+  if (items.length === 0) {
+    return <EmptyState variant="empty" title={t('title')} description={t('titleDescription')} />;
+  }
 
   return (
     <div className="flex flex-col gap-3">

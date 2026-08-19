@@ -87,6 +87,26 @@ export function ItemsTable({
   const [archiveTarget, setArchiveTarget] = React.useState<ItemListItemApi | null>(null);
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
 
+  const openMenuRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (openMenuId === null) return undefined;
+    const onPointerDown = (event: PointerEvent): void => {
+      const root = openMenuRef.current;
+      if (root && event.target instanceof Node && root.contains(event.target)) return;
+      setOpenMenuId(null);
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpenMenuId(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openMenuId]);
+
   const toggleMutation = useMutation({
     mutationFn: ({ itemId, next }: { itemId: string; next: 'paused' | 'published' }) =>
       toggleStopList(brandSlug, itemId, next, stopListLocationId ?? ''),
@@ -258,7 +278,10 @@ export function ItemsTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right" onClick={stopPropagation}>
-                  <div className="relative inline-block">
+                  <div
+                    className="relative inline-block"
+                    ref={openMenuId === item.id ? openMenuRef : undefined}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"

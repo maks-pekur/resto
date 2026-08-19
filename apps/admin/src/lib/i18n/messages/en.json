@@ -206,7 +206,8 @@
       "tableParentHeader": "Parent",
       "tableActionsHeader": "Actions",
       "editAriaLabel": "Edit {{name}}",
-      "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first."
+      "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first.",
+      "saveFailed": "Couldn't save the category."
     },
     "modifierGroups": {
       "createGroup": "+ Create group",

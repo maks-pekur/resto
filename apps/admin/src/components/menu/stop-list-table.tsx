@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/empty-state';
 import { ImageIcon } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
@@ -60,6 +61,10 @@ export function StopListTable({
 
   const visibleItems = items.filter((it) => !removedIds.has(it.id));
   const now = Date.now();
+
+  if (visibleItems.length === 0) {
+    return <EmptyState variant="empty" title={t('title')} description={t('titleDescription')} />;
+  }
 
   return (
     <Table>

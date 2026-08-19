@@ -44,7 +44,7 @@ export function CategoryForm({
         void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
         onClose();
       } else {
-        setError(String(res.status));
+        setError(tCommon('errorGeneric'));
         showError(null, t('saveFailed'));
       }
     },

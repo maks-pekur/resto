@@ -206,7 +206,8 @@
       "tableParentHeader": "Родитель",
       "tableActionsHeader": "Действия",
       "editAriaLabel": "Редактировать {{name}}",
-      "nestWithChildrenError": "Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории."
+      "nestWithChildrenError": "Нельзя вложить категорию с подкатегориями — сначала переместите подкатегории.",
+      "saveFailed": "Не удалось сохранить категорию."
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",
@@ -258,8 +259,8 @@
       "todayDescription": "Все остановленные позиции будут возобновлены.",
       "todayEmpty": "Стоп-лист пуст.",
       "resetAllBtn": "Сбросить всё",
-      "resetAllAriaLabel": "Сбросить весь стоп-листа",
-      "resetSuccess": "Стоп-лист сбросен",
+      "resetAllAriaLabel": "Сбросить весь стоп-лист",
+      "resetSuccess": "Стоп-лист сброшен",
       "resetPartial": "{{ok}} возобновлены, {{failed}} не удалось",
       "resetFailed": "Не удалось сбросить стоп-лист.",
       "resetFetchFailed": "Не удалось получить стоп-лист.",

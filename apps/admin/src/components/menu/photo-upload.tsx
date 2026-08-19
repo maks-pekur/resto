@@ -60,7 +60,7 @@ export function PhotoUpload({
     setState({ kind: 'requesting' });
     const urlRes = await urlMutation.mutateAsync();
     if (!urlRes.ok || !urlRes.data) {
-      setState({ kind: 'error', message: String(urlRes.status) });
+      setState({ kind: 'error', message: t('photoUploadFailed') });
       return;
     }
     setState({ kind: 'uploading' });
