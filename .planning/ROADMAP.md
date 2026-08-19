@@ -843,7 +843,7 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 20 plans in 13 waves
+**Plans:** 20 plans in 14 waves
 
 Plans:
 **Wave 1**
@@ -889,19 +889,22 @@ Plans:
 
 **Wave 10**
 
-- [ ] 10.2-15-PLAN.md — Admin route-tree collapse (18 files), static organization label replacing the brand switcher
 - [ ] 10.2-16-PLAN.md — Admin feature components sweep (menu, orders, roles) + auto-save model deletion
 
 **Wave 11**
 
-- [ ] 10.2-17-PLAN.md — Admin auth surfaces: signup form, sign-in picker, onboarding, host reconciliation, wildcard dev hosts
-- [ ] 10.2-18-PLAN.md — Seeds and erasure tooling on the merged model; payment-ready demo restaurant
+- [ ] 10.2-15-PLAN.md — Admin route-tree collapse (18 files), static organization label replacing the brand switcher
 
 **Wave 12**
 
-- [ ] 10.2-19-PLAN.md — Test net rebuild: 12 e2e + 12 unit + db integration specs, adm-00 scenarios repaired
+- [ ] 10.2-17-PLAN.md — Admin auth surfaces: signup form, sign-in picker, onboarding, host reconciliation, wildcard dev hosts
+- [ ] 10.2-18-PLAN.md — Seeds and erasure tooling on the merged model; payment-ready demo restaurant
 
 **Wave 13**
+
+- [ ] 10.2-19-PLAN.md — Test net rebuild: 12 e2e + 12 unit + db integration specs, adm-00 scenarios repaired
+
+**Wave 14**
 
 - [ ] 10.2-20-PLAN.md — Final gate: dead code, repo-wide rename proof, OpenAPI regeneration, 40-decision coverage audit
 
