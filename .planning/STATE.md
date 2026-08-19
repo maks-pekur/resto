@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 10.1 context gathered
-last_updated: '2026-08-18T15:59:54.029Z'
+stopped_at: Phase 10.1 UI-SPEC approved
+last_updated: '2026-08-18T17:37:34.733Z'
 last_activity: 2026-08-13 -- Phase 10 execution started
 progress:
   total_phases: 27
@@ -166,6 +166,7 @@ _Updated after each plan completion_
 - Phase 08.4 inserted after Phase 08.3: Location-scoped access (new locations entity + member_location_scope) — split from SEED-001 (URGENT)
 - Phase 10.1 inserted after Phase 10: Location schedule and pause ordering — split out of Phase 10 at discuss (persona-product BLOCK-3); stays in MVP-1, runs AFTER Phase 10 (next-phase pointer intentionally NOT repointed)
 - Phase 18 added: Real-time Order Feed (SSE) — carries ORDINT-02 + ORDINT-09 split out of Phase 10 at discuss (browser EventSource cannot send the tenancy headers; long-lived streams break per-request authz). Placed in MVP-2 Track A; Phase 10 ships 5s polling
+- Phase 10.2 inserted after Phase 10.1: Brand-pinned sessions — one brand fixed per session, chosen at sign-in; switching brands requires signing in again; brand switcher removed, location switcher stays (founder, 2026-08-19). Completes the direction 08.5 D-14 (non-owner brand switching closed) and Phase 10 (feed strictly single-location) already took. Open question carried to discuss: whether the URL segment or the session pin is the brand authority — that choice drives most of the cost. Blocks repair of `adm-00` scenarios 3/6/7a/7b, which test the switcher this phase deletes.
 - Phase 10 edited: goal, requirements (ORDINT-02/09 out), and all success criteria rewritten to match 10-CONTEXT.md; criterion 6 added (single migration + read-back-from-DB test fidelity); pre-requisite quick task noted
 
 ### Decisions
@@ -352,6 +353,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-18T15:59:54.018Z
-Stopped at: Phase 10.1 context gathered
-Resume file: .planning/phases/10.1-location-schedule-and-pause-ordering/10.1-CONTEXT.md
+Last session: 2026-08-18T17:37:34.722Z
+Stopped at: Phase 10.1 UI-SPEC approved
+Resume file: .planning/phases/10.1-location-schedule-and-pause-ordering/10.1-UI-SPEC.md

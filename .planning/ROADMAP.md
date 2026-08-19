@@ -35,6 +35,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
+- [ ] **Phase 10.2: Brand-pinned sessions** - One brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -752,6 +753,28 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
+### Phase 10.2: Brand-pinned sessions (INSERTED)
+
+**Goal**: Make one brand the fixed context of a session — chosen at sign-in, never switched inside the app — so every operator surface, guard and URL resolves against a single brand for the life of the session
+
+**Depends on**: Phase 10 _(origin: founder, 2026-08-19. Completes a direction the codebase already drifted toward: 08.5 (D-14) closed non-owner brand switching outright, and Phase 10 made the order feed strictly single-location. The brand switcher is the last surface still assuming a session can span brands.)_
+
+**Scope sketch (to be settled at discuss):**
+
+- Sign-in pins exactly one brand. An owner with more than one brand chooses at sign-in — mirror the existing staff pick-location interstitial rather than inventing a second pattern.
+- Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.
+- Remove the brand switcher; the location switcher stays and remains the only in-app context control.
+
+**Open question — brand authority (settle before planning):** brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
+
+**Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
+
+**Plans:** 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.2 to break down)
+
 ### Phase 11: Promo & Discounts
 
 **Goal**: Give operators single-use and bulk promo code management and automatic discounts in the admin UX; the pure domain discount engine is already live from Phase 7
@@ -905,7 +928,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 12/13 | In Progress|  |
+| 10. Admin Order Intake                        | 12/13          | In Progress   |            |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._
