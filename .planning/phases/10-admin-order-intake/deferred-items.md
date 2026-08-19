@@ -267,3 +267,15 @@ full spec rewrite, not a patch. Separately, consider a `reuseExistingServer`-saf
 rate-limit-aware retry/stagger in the e2e harness itself (or a documented
 "run `pnpm --filter admin e2e` in batches, not as one sweep" convention
 mirroring the vitest gotcha) so the full suite can run unattended in CI.
+
+## Expired-session signal on the login page (found 2026-08-19)
+
+When a session expires mid-work the admin bounces to `/login?next=…` and shows a
+bare "Sign in" — the operator is not told why they were thrown out. The login
+page now renders a notice when `?expired=true` arrives
+(`data-testid="session-expired-notice"`), but nothing emits that flag.
+
+It cannot be emitted from the client: the session cookie is `httpOnly`, so the
+browser cannot distinguish "token present but invalid" from "no token". The
+server has to make that distinction and surface it. Small, self-contained, real
+usability gain; `adm-00` scenario 5 is `test.fixme` waiting on it.

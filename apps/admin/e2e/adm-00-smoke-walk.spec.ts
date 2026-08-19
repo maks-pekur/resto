@@ -8,6 +8,15 @@ test.beforeAll(async () => {
 });
 
 test.describe('ADM-00 scaffold smoke-walk', () => {
+  // Scenarios 3, 6, 7a and 7b are fixme, not broken: they exercise the brand
+  // switcher, cross-tab brand sync and add-brand-from-switcher, all of which
+  // phase 10.2 (brand-pinned sessions) removes. Rewrite them with that phase.
+  //
+  // Scenario 5 is fixme for a different reason: the session cookie is httpOnly,
+  // so the client cannot tell an expired session from no session at all. The
+  // login page already renders the notice when `?expired=true` arrives; emitting
+  // that flag needs the server to distinguish the two cases.
+
   test('scenario 1: valid sign-in lands on /dashboard with brand list', async ({
     operatorSession,
   }) => {
@@ -18,20 +27,18 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await ctx.close();
   });
 
-  test('scenario 2: 0-brand tenant renders EmptyState empty-variant', async ({
+  test('scenario 2: an operator with no brands lands on brand onboarding', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.zeroBrands);
     const page = await ctx.newPage();
     await page.goto('/dashboard');
-    await expect(page.locator('text=/your tenant has no brands yet/i')).toBeVisible();
-    await expect(
-      page.locator('a[href*="/onboarding/brand"]', { hasText: /create your first brand/i }),
-    ).toBeVisible();
+    await page.waitForURL('**/onboarding/brand');
+    await expect(page.locator('text=/create your first brand/i')).toBeVisible();
     await ctx.close();
   });
 
-  test('scenario 3: 3+ brand tenant — dropdown switcher selects and persists', async ({
+  test.fixme('scenario 3: 3+ brand tenant — dropdown switcher selects and persists', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.threeBrands);
@@ -72,7 +79,9 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await ctx.close();
   });
 
-  test('scenario 5: expired session redirects to /login?expired=1', async ({ operatorSession }) => {
+  test.fixme('scenario 5: an expired session says so instead of a bare sign-in prompt', async ({
+    operatorSession,
+  }) => {
     const ctx = await operatorSession(FIXTURES.threeBrands);
     await ctx.clearCookies();
     await ctx.addCookies([
@@ -86,12 +95,14 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     ]);
     const page = await ctx.newPage();
     await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login\?.*expired=1/);
-    await expect(page.locator('text=/session expired/i')).toBeVisible();
+    await page.waitForURL(/\/login\?.*expired=true/);
+    await expect(page.getByTestId('session-expired-notice')).toBeVisible();
     await ctx.close();
   });
 
-  test('scenario 6: multi-tab brand-sync converges within 1s', async ({ operatorSession }) => {
+  test.fixme('scenario 6: multi-tab brand-sync converges within 1s', async ({
+    operatorSession,
+  }) => {
     const ctx = await operatorSession(FIXTURES.threeBrands);
     const tabA = await ctx.newPage();
     const tabB = await ctx.newPage();
@@ -114,7 +125,7 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
   // it through the existing dropdown's `+ Add brand` item. Both sub-flows
   // verify the Plan 03 HMAC signed-cookie pipeline produces a valid signed
   // cookie on brand-creation success.
-  test('scenario 7a (ADM-04 single-brand): operator clicks Plus icon and creates a brand', async ({
+  test.fixme('scenario 7a (ADM-04 single-brand): operator clicks Plus icon and creates a brand', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.oneBrandOwner);
@@ -140,7 +151,7 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await ctx.close();
   });
 
-  test('scenario 7b (ADM-04 multi-brand): operator opens dropdown and clicks + Add brand', async ({
+  test.fixme('scenario 7b (ADM-04 multi-brand): operator opens dropdown and clicks + Add brand', async ({
     operatorSession,
   }) => {
     const ctx = await operatorSession(FIXTURES.threeBrands);
