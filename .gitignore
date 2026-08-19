@@ -53,14 +53,18 @@ generated/
 !packages/api-client/src/generated/
 !packages/api-client/src/generated/**
 
-# Claude session settings and local CLAUDE.md instructions
+# Claude session settings
 # Exception: .claude/skills/ is committed (project-local skill definitions)
+# CLAUDE.md files ARE committed — they carry the project's coding rules and
+# are the canon agents and humans work from; keeping them untracked left the
+# rules on one machine only. A global ~/.config/git/ignore rule excludes them
+# everywhere, so re-include them explicitly for this repo.
+!CLAUDE.md
+!**/CLAUDE.md
 .claude/settings.local.json
 .claude/hooks/
 .claude/superpowers/
 .claude/PROJECT-MAP.md
-CLAUDE.md
-**/CLAUDE.md
 AGENTS.md
 **/AGENTS.md
 
