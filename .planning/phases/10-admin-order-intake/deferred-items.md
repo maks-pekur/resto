@@ -277,5 +277,10 @@ page now renders a notice when `?expired=true` arrives
 
 It cannot be emitted from the client: the session cookie is `httpOnly`, so the
 browser cannot distinguish "token present but invalid" from "no token". The
-server has to make that distinction and surface it. Small, self-contained, real
-usability gain; `adm-00` scenario 5 is `test.fixme` waiting on it.
+server has to make that distinction and surface it.
+
+A login-page notice keyed on `?expired=true` was briefly added and then removed:
+with no emitter it could only be triggered by hand-editing the URL, and
+`z.coerce.boolean()` made **any** value — including `expired=false` — render it.
+Build the server signal first, then the UI. `adm-00` scenario 5 is `test.fixme`
+waiting on it.

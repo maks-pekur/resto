@@ -13,9 +13,9 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
   // phase 10.2 (brand-pinned sessions) removes. Rewrite them with that phase.
   //
   // Scenario 5 is fixme for a different reason: the session cookie is httpOnly,
-  // so the client cannot tell an expired session from no session at all. The
-  // login page already renders the notice when `?expired=true` arrives; emitting
-  // that flag needs the server to distinguish the two cases.
+  // so the client cannot tell an expired session from no session at all.
+  // Telling the operator why they were bounced needs the server to make that
+  // distinction; there is no client-side signal to build it on.
 
   test('scenario 1: valid sign-in lands on /dashboard with brand list', async ({
     operatorSession,
