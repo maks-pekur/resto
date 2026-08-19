@@ -35,7 +35,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
-- [ ] **Phase 10.2: Brand-pinned sessions** - One brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_
+- [ ] **Phase 10.2: Brand-pinned sessions and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
@@ -753,9 +753,9 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
 
-### Phase 10.2: Brand-pinned sessions (INSERTED)
+### Phase 10.2: Brand-pinned sessions and account onboarding (INSERTED)
 
-**Goal**: Make one brand the fixed context of a session — chosen at sign-in, never switched inside the app — so every operator surface, guard and URL resolves against a single brand for the life of the session
+**Goal**: Make one brand the fixed context of a session — chosen at sign-in, never switched inside the app — and give a new owner a working path from "create account" to "first brand", so every operator surface, guard and URL resolves against a single brand for the life of the session
 
 **Depends on**: Phase 10 _(origin: founder, 2026-08-19. Completes a direction the codebase already drifted toward: 08.5 (D-14) closed non-owner brand switching outright, and Phase 10 made the order feed strictly single-location. The brand switcher is the last surface still assuming a session can span brands.)_
 
@@ -764,6 +764,34 @@ Plans:
 - Sign-in pins exactly one brand. An owner with more than one brand chooses at sign-in — mirror the existing staff pick-location interstitial rather than inventing a second pattern.
 - Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.
 - Remove the brand switcher; the location switcher stays and remains the only in-app context control.
+
+**Scope grew 2026-08-19 (founder) — signup and onboarding fold in here.** The
+brand picker this phase builds at sign-in is the same screen the new-account
+flow needs, so both live in one phase rather than two fighting over it:
+
+- **Registration asks for name, email and password only.** It creates the user
+  AND the tenant. Today the admin form calls Better Auth directly, producing a
+  user with **zero memberships** — a stranded account that cannot create a brand
+  (verified live 2026-08-19). The correct endpoint `/v1/signup` already
+  provisions tenant + owner atomically; the form must call it.
+- **No placeholder tenant name.** `tenants.display_name` and `slug` are NOT NULL,
+  but the person's own name is a real value, not a stub — use it, derive the slug
+  from it plus a short random suffix, and let onboarding replace it with the
+  restaurant name. `default_currency` already defaults to `USD` in the schema, so
+  currency genuinely does not need asking at signup.
+- **The signup form's currency field is dead today** — collected and never sent.
+  Its "Restaurant name" label is wrong too: the value goes to Better Auth as the
+  person's name.
+- **Multi-step onboarding** when the owner has no brand: restaurant name and
+  currency, then the first brand.
+- **After sign-in:** one brand → straight to its dashboard; several → the picker.
+- **Close direct Better Auth signup** (`POST /api/auth/sign-up/email` is publicly
+  open and is how stranded accounts appear). Check invitation acceptance first —
+  it may share the same signup path, and blindly disabling it would break the
+  invitations repaired on 2026-08-19.
+- **Model confirmed (founder, 2026-08-19):** `owner` is a role on the TENANT, not
+  on a brand. A user creates their company, owns it, and creates brands inside.
+  Staff never self-register — they arrive by invitation.
 
 **Already in place (do not rebuild):** the session row already carries a server-side `active_brand_id`, and `onInitialBrandPin` (auth.config.ts) pins a brand at login when none is set. `SetActiveBrandService` is the owner-only switch; non-owners are refused outright since 08.5 D-14. What is missing is only: a picker when an owner has more than one brand, removal of the in-app switcher, and the authority question below.
 
