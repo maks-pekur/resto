@@ -765,6 +765,10 @@ Plans:
 - Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.
 - Remove the brand switcher; the location switcher stays and remains the only in-app context control.
 
+**Already in place (do not rebuild):** the session row already carries a server-side `active_brand_id`, and `onInitialBrandPin` (auth.config.ts) pins a brand at login when none is set. `SetActiveBrandService` is the owner-only switch; non-owners are refused outright since 08.5 D-14. What is missing is only: a picker when an owner has more than one brand, removal of the in-app switcher, and the authority question below.
+
+**Rejected before — a dedicated brand cookie.** Phase 02-03 shipped a signed `resto.active_brand` cookie (HMAC-SHA256, dedicated `ACTIVE_BRAND_COOKIE_SECRET`, four cookie I/O sites); it was replaced by brand-in-URL as D-03. Re-introducing one would duplicate a server-side field that cannot be forged and would bring back the signing secret and its I/O sites. The session cookie already identifies the session; the brand belongs on the session row, not in its own cookie.
+
 **Open question — brand authority (settle before planning):** brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
