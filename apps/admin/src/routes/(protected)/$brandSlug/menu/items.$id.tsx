@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/empty-state';
 import { Route as menuLayoutRoute } from './_layout';
 import { itemQuery, categoriesQuery, modifierGroupsQuery } from '@/lib/queries/catalog';
 import { ItemEditorShell } from '@/components/menu/item-editor-shell';
@@ -42,7 +43,14 @@ function ItemDetailPage() {
   }));
 
   const item = isNew ? null : (itemResult?.data ?? null);
+  const notFound = !isNew && itemResult !== undefined && (!itemResult.ok || item === null);
   const title = isNew ? t('newItemTitle') : fromLocalizedText(item?.name ?? {});
+
+  if (notFound) {
+    return (
+      <EmptyState variant="empty" title={t('notFound')} description={t('notFoundDescription')} />
+    );
+  }
 
   return (
     <ItemEditorShell

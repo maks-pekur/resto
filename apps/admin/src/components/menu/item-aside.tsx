@@ -9,7 +9,7 @@ const STATUS_VARIANT: Record<Status, 'default' | 'secondary' | 'outline' | 'dest
   draft: 'outline',
   modified: 'secondary',
   published: 'default',
-  paused: 'destructive',
+  paused: 'secondary',
   archived: 'secondary',
 };
 

@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/empty-state';
 import { Route as menuLayoutRoute } from './_layout';
 import { modifierGroupQuery } from '@/lib/queries/catalog';
 import { GroupEditorShell } from '@/components/menu/group-editor-shell';
@@ -26,7 +27,18 @@ function ModifierGroupDetailPage() {
   });
 
   const group = isNew ? null : (data?.data ?? null);
+  const notFound = !isNew && data !== undefined && (!data.ok || group === null);
   const title = isNew ? t('newGroupTitle') : (group?.name ?? '');
+
+  if (notFound) {
+    return (
+      <EmptyState
+        variant="empty"
+        title={t('groupNotFound')}
+        description={t('groupNotFoundDescription')}
+      />
+    );
+  }
 
   return <GroupEditorShell brandSlug={brandSlug} title={title} initialGroup={group} groupId={id} />;
 }
