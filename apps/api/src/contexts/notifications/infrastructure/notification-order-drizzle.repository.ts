@@ -7,12 +7,14 @@ export interface NotificationOrderRow {
   readonly id: string;
   readonly orderNumber: string;
   readonly customerEmail: string | null;
-  readonly brandId: string;
   readonly total: string;
   readonly currency: string;
   readonly etaAt: Date | null;
   readonly shortNumber: number | null;
   readonly locationTimezone: string | null;
+  readonly tenantDisplayName: string;
+  readonly tenantLocale: string;
+  readonly tenantTheme: Record<string, unknown> | null;
 }
 
 export interface NotificationOrderItemRow {
@@ -38,12 +40,14 @@ export class NotificationOrderDrizzleRepository implements NotificationOrderRepo
           id: schema.orders.id,
           orderNumber: schema.orders.orderNumber,
           customerEmail: schema.orders.customerEmail,
-          brandId: schema.orders.brandId,
           total: schema.orders.total,
           currency: schema.orders.currency,
           etaAt: schema.orders.etaAt,
           shortNumber: schema.orders.shortNumber,
           locationTimezone: schema.locations.timezone,
+          tenantDisplayName: schema.tenants.displayName,
+          tenantLocale: schema.tenants.locale,
+          tenantTheme: schema.tenants.theme,
         })
         .from(schema.orders)
         .leftJoin(
@@ -53,6 +57,7 @@ export class NotificationOrderDrizzleRepository implements NotificationOrderRepo
             eq(schema.orders.tenantId, schema.locations.tenantId),
           ),
         )
+        .innerJoin(schema.tenants, eq(schema.tenants.id, schema.orders.tenantId))
         .where(and(eq(schema.orders.id, orderId), eq(schema.orders.tenantId, tenantId)))
         .limit(1);
       return rows[0] ?? null;
