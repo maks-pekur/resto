@@ -69,7 +69,7 @@ export class StartTenantOnboardingService {
     }
     try {
       const result = await this.provider.ensureOnboardingAccount({
-        brandId: snapshot.id,
+        tenantId: snapshot.id,
         displayName: snapshot.displayName,
         country: snapshot.country,
         defaultCurrency: snapshot.defaultCurrency,
