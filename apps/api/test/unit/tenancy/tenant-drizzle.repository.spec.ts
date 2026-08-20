@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Currency, TenantSlug } from '@resto/domain';
+import { TenantSlug } from '@resto/domain';
 import type { TenantAwareDb } from '@resto/db';
 import { TenantDrizzleRepository } from '../../../src/contexts/tenancy/infrastructure/tenant-drizzle.repository';
 import { TenantSlugTakenError } from '../../../src/contexts/tenancy/domain/errors';
@@ -9,8 +9,8 @@ const makeTenant = (): Tenant =>
   Tenant.provision({
     slug: TenantSlug.parse('cafe-roma'),
     displayName: 'Cafe Roma',
+    country: 'GB',
     locale: 'en',
-    defaultCurrency: Currency.parse('USD'),
     primaryDomainHostname: 'cafe-roma.menu.resto.app',
   });
 

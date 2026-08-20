@@ -1,12 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { Currency, TenantSlug } from '@resto/domain';
+import { TenantSlug } from '@resto/domain';
 import { StripeAccountId, Tenant } from './tenant.aggregate';
 
 function makeTenant() {
   return Tenant.provision({
     slug: TenantSlug.parse('test-tenant-ok'),
     displayName: 'Test Tenant',
-    defaultCurrency: Currency.parse('EUR'),
+    country: 'ES',
     primaryDomainHostname: 'test-tenant-ok.menu.resto.app',
   });
 }
@@ -21,21 +21,61 @@ describe('StripeAccountId (PAY-11)', () => {
   });
 });
 
-describe('Tenant.canAcceptPayments (D-06 stub)', () => {
-  it('always returns false — stripe capability moved to Brand aggregate', () => {
+describe('Tenant.canAcceptPayments (D-06/D-39: real Stripe-linkage derivation)', () => {
+  it('returns false before any Stripe account is linked', () => {
     const tenant = makeTenant();
     expect(tenant.canAcceptPayments()).toBe(false);
   });
 
-  it('applyStripeCapabilities is a no-op stub that does not throw', () => {
+  it('returns true once an account is linked and charges are enabled', () => {
     const tenant = makeTenant();
-    expect(() =>
-      tenant.applyStripeCapabilities({
-        chargesEnabled: true,
-        payoutsEnabled: true,
-        onboardingStatus: 'complete',
-        requirementsDue: null,
-      }),
-    ).not.toThrow();
+    tenant.linkStripeAccount('acct_123', 'express');
+    tenant.applyStripeCapabilities({
+      chargesEnabled: true,
+      payoutsEnabled: true,
+      onboardingStatus: 'complete',
+      requirementsDue: null,
+    });
+    expect(tenant.canAcceptPayments()).toBe(true);
+  });
+});
+
+describe('Tenant.linkStripeAccount', () => {
+  it('sets the account id/type and moves onboarding status to pending', () => {
+    const tenant = makeTenant();
+    tenant.pullEvents();
+    tenant.linkStripeAccount('acct_123', 'express');
+    const snapshot = tenant.toSnapshot();
+    expect(snapshot.stripeAccountId).toBe('acct_123');
+    expect(snapshot.accountType).toBe('express');
+    expect(snapshot.stripeOnboardingStatus).toBe('pending');
+    const events = tenant.pullEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      kind: 'TenantPaymentAccountLinked',
+      stripeAccountId: 'acct_123',
+      accountType: 'express',
+    });
+  });
+});
+
+describe('Tenant.applyStripeCapabilities', () => {
+  it('updates capability fields and raises TenantPaymentCapabilitiesApplied', () => {
+    const tenant = makeTenant();
+    tenant.pullEvents();
+    tenant.applyStripeCapabilities({
+      chargesEnabled: true,
+      payoutsEnabled: false,
+      onboardingStatus: 'pending',
+      requirementsDue: ['individual.verification.document'],
+    });
+    const snapshot = tenant.toSnapshot();
+    expect(snapshot.stripeChargesEnabled).toBe(true);
+    expect(snapshot.stripePayoutsEnabled).toBe(false);
+    expect(snapshot.stripeOnboardingStatus).toBe('pending');
+    expect(snapshot.stripeRequirementsDue).toEqual(['individual.verification.document']);
+    const events = tenant.pullEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0]?.kind).toBe('TenantPaymentCapabilitiesApplied');
   });
 });

@@ -1,5 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TenantId } from '@resto/domain';
+import { Tenant } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantNotFoundError } from '../domain/errors';
 import {
@@ -18,10 +19,11 @@ export class ArchiveTenantService {
 
   async execute(rawId: string): Promise<void> {
     const id = TenantId.parse(rawId);
-    const tenant = await this.repo.findById(id);
-    if (!tenant) {
+    const snapshot = await this.repo.findById(id);
+    if (!snapshot) {
       throw new TenantNotFoundError(rawId);
     }
+    const tenant = Tenant.fromSnapshot(snapshot);
     tenant.archive();
     await this.repo.save(tenant);
     try {

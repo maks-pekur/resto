@@ -29,3 +29,65 @@ owns the file.
   `packages/db` itself is unaffected; this is `packages/events`-only breakage.
   Not fixed in plan 04 — outside its `files_modified` list (`packages/db/src/**`
   only) and not caused by plan 04's own changes.
+
+## From plan 06
+
+- **`packages/events` Docker/testcontainer integration suite fails migration
+  setup, not event-contract related.** `cd packages/events && npx vitest run`
+  — 4 of 9 test files fail
+  (`test/integration/{dispatcher-stop-idempotent,outbox-claim-ownership,
+outbox-roundtrip,run-deduped}.spec.ts`), all with the same root cause:
+  `ALTER POLICY organization_role_resto_auth_full ON tenant_role RENAME TO
+tenant_role_resto_auth_full;` fails against the fresh testcontainer Postgres
+  that these tests spin up and migrate from scratch. Verified this is
+  unrelated to plan 06's own change (`rg -n "BrandPayment|TenantPayment"` on
+  all four failing spec files and `test/setup.ts` returns zero matches — none
+  of them reference the tenancy event contracts this plan renamed). The 5
+  unit-test files in the same package (`envelope`, `build-envelope`,
+  `identity-email-dispatch-failed`, `nats-subscriber-dlq`,
+  `nats-publisher-raw`) all pass; `tsc -p packages/events/tsconfig.json
+--noEmit` exits 0. Root cause looks like a migration-0079 ordering/
+  idempotency issue (renaming `organization_role_resto_auth_full` a second
+  time, or the policy not existing under that name when this migration runs
+  against a from-scratch testcontainer database) — plan 05's territory
+  (`packages/db/migrations/0079_organization_merge.sql`), already merged.
+  Owning plan derived mechanically: `grep -l "packages/db/migrations/0079"
+.planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → plans 05 (done) and
+  19 (the phase's green-gate plan). Flagging for plan 19's full-suite
+  verification pass since plan 05 has already landed. Not fixed here — no
+  file in this plan's `files_modified` touches `packages/db/migrations/` or
+  `packages/db/sql/`.
+
+- **The `Location` cluster has no owning plan.** Mechanically checked with
+  `grep -l "<path>" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` for
+  each: `apps/api/src/contexts/tenancy/application/list-locations.service.ts`,
+  `apps/api/src/contexts/tenancy/application/provision-location.service.ts`,
+  and `apps/api/src/contexts/tenancy/infrastructure/location-drizzle.repository.ts`
+  all return **zero matches** — no plan in this phase lists them in
+  `files_modified`. All three (plus their spec files
+  `test/unit/tenancy/archive-location.service.spec.ts` and
+  `test/unit/tenancy/provision-location.service.spec.ts`) were already broken
+  before this plan ran — they reference `BrandId` (removed by plan 01) and
+  `requireBrandContext`/`withBrand` (removed by plan 04) — pre-existing
+  breakage, not caused by this plan.
+
+  This plan's Task 1 touched `apps/api/src/contexts/tenancy/domain/location.aggregate.ts`
+  only as a Rule-3 minimal unblock: removed the one `BrandId`-typed field
+  (`LocationSnapshot.brandId` / `LocationArchivedEvent.brandId`) that was
+  the sole reason `contexts/tenancy/domain/` — this plan's own directory-wide
+  typecheck gate — didn't compile. `ports.ts`'s `LocationRepository.listForBrand`
+  was renamed to `listForTenant(tenantId)` to match (the `brandId` parameter
+  had no meaning left to carry). This is a genuine, if small, interface change
+  that ripples into the three unowned files above, which were already broken
+  on `BrandId`/`requireBrandContext` before this plan touched anything — the
+  rename does not newly break a working file, but it does mean the eventual
+  fix must additionally drop the `brandId` parameter, not just repoint
+  `BrandId`/`requireBrandContext` imports.
+
+  `apps/api/src/contexts/tenancy/interfaces/http/locations.controller.ts` IS
+  owned by plan 07 (`grep -l` confirms it in `10.2-07-PLAN.md`'s
+  `files_modified`) — plan 07 will hit this exact gap the moment it tries to
+  make that controller compile, since the controller depends on all three
+  unowned files. Flagging explicitly so plan 07 (or a plan inserted ahead of
+  it) absorbs `list-locations.service.ts`, `provision-location.service.ts`,
+  and `location-drizzle.repository.ts` rather than being surprised by them.

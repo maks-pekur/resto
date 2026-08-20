@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { BrandId, LocationId, TenantId } from '@resto/domain';
+import type { LocationId, TenantId } from '@resto/domain';
 import { LocationAlreadyArchivedError } from './errors';
 
 export const LocationName = z.string().min(1).max(200);
@@ -23,7 +23,6 @@ export interface LocationArchivedEvent {
   readonly kind: 'LocationArchived';
   readonly locationId: LocationId;
   readonly tenantId: TenantId;
-  readonly brandId: BrandId;
   readonly occurredAt: Date;
 }
 
@@ -32,7 +31,6 @@ export type LocationDomainEvent = LocationArchivedEvent;
 export interface LocationSnapshot {
   readonly id: LocationId;
   readonly tenantId: TenantId;
-  readonly brandId: BrandId;
   readonly name: string;
   readonly address: string | null;
   readonly timezone: string | null;
@@ -70,7 +68,6 @@ export class Location {
       kind: 'LocationArchived',
       locationId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
-      brandId: this.snapshot.brandId,
       occurredAt: now,
     });
   }
