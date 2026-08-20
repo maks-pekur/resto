@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import {
-  BrandSlug,
   Currency,
   LocalizedText,
   Money,
@@ -9,6 +8,7 @@ import {
   RESERVED_SLUGS,
   Slug,
   TenantSlug,
+  TenantSlugValue,
 } from '../src';
 
 describe('MoneyAmount', () => {
@@ -106,18 +106,22 @@ describe('TenantSlug', () => {
   });
 });
 
-describe('BrandSlug', () => {
+describe('TenantSlugValue', () => {
   it('rejects reserved platform slugs', () => {
     for (const s of ['admin', 'api', 'app', 'cdn', 'status', 'www']) {
-      expect(BrandSlug.safeParse(s).success).toBe(false);
+      expect(TenantSlugValue.safeParse(s).success).toBe(false);
     }
   });
 
   it('rejects punycode / IDN (xn--) slugs', () => {
-    expect(BrandSlug.safeParse('xn--pple-43d').success).toBe(false);
+    expect(TenantSlugValue.safeParse('xn--pple-43d').success).toBe(false);
   });
 
-  it('accepts a normal brand slug', () => {
-    expect(BrandSlug.safeParse('cafe-roma').success).toBe(true);
+  it('accepts a normal tenant slug', () => {
+    expect(TenantSlugValue.safeParse('cafe-roma').success).toBe(true);
+  });
+
+  it("rejects 'pick-organization' — reserved to prevent shadowing the admin route", () => {
+    expect(TenantSlugValue.safeParse('pick-organization').success).toBe(false);
   });
 });

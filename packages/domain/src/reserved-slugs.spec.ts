@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ADMIN_ROOT_ROUTE_SEGMENTS, RESERVED_SLUG_SET } from './reserved-slugs';
-import { BrandSlugValue } from './brand-slug';
+import { TenantSlugValue } from './tenant-slug';
 
 describe('ADMIN_ROOT_ROUTE_SEGMENTS drift gate', () => {
   it('every admin root segment is in RESERVED_SLUG_SET', () => {
@@ -10,15 +10,15 @@ describe('ADMIN_ROOT_ROUTE_SEGMENTS drift gate', () => {
   });
 });
 
-describe('newly reserved admin route words are rejected by BrandSlugValue', () => {
+describe('newly reserved admin route words are rejected by TenantSlugValue', () => {
   it.each(['onboarding', 'forgot-password', 'reset-password', 'accept-invitation'])(
     '"%s" is rejected',
     (word) => {
-      expect(BrandSlugValue.safeParse(word).success).toBe(false);
+      expect(TenantSlugValue.safeParse(word).success).toBe(false);
     },
   );
 
   it('a normal slug still passes', () => {
-    expect(BrandSlugValue.safeParse('my-cafe').success).toBe(true);
+    expect(TenantSlugValue.safeParse('my-cafe').success).toBe(true);
   });
 });

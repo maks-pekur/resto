@@ -8,13 +8,13 @@ construction: zero NestJS / Drizzle / network / DB imports.
 
 ## Layout
 
-- `src/ids.ts` — branded ID types (`TenantId`, `BrandId`, `UserId`, …).
+- `src/ids.ts` — branded ID types (`TenantId`, `UserId`, …).
 - `src/schema/` — entity schemas (`tenant`, `menu-*`, `user`,
   `customer-profile`, …) and shared shapes (`_shared`).
 - `src/rbac/` — permission catalogue + system roles. Consumed at api-boot
   to construct Better Auth's accessControl statements (ADR-0013).
-- Value-object schemas at root: `money`, `slug`, `brand-slug`,
-  `tenant-slug`, `brand-theme`, `localized-text`.
+- Value-object schemas at root: `money`, `slug`,
+  `tenant-slug`, `tenant-theme`, `localized-text`.
 - `src/index.ts` — barrel. The only public surface; everything else is
   internal.
 
@@ -45,7 +45,7 @@ z.object({ … })` — they will drift.
   `<a href>`, or CSS `url(...)` is an XSS vector. Use
   `.refine(u => /^https?:/i.test(u), 'must be http(s)')`.
 - **Style/identifier fields rendered into CSS MUST use an allowlist.**
-  `BrandTheme.font` with no charset restriction allows CSS injection if
+  `TenantTheme.font` with no charset restriction allows CSS injection if
   a consumer interpolates it into `font-family: ${font};`. Restrict to
   `/^[A-Za-z0-9 ,'"\-]+$/` or, better, a fixed enum of approved tokens.
 - **Money never uses floats.** Integer-cents pattern. Currency code

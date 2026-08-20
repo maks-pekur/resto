@@ -18,13 +18,29 @@ export const TENANT_RESERVED_SLUGS = RESERVED_SLUGS;
  */
 const tenantSlugRegex = /^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/;
 
-export const TenantSlug = z
+/**
+ * HTTP-boundary form — use this in every `createZodDto` request schema
+ * (signup, onboarding, slug-availability checks); `nestjs-zod` emits
+ * `type: string` for it.
+ *
+ * WHY unbranded, deliberately deviating from the `FooValue`/branded-`Foo`
+ * pair convention (`packages/domain/CLAUDE.md`): `TenantSlug` is unbranded
+ * today and referenced by 32 files outside this package. Branding it would
+ * ripple that churn for zero contract gain, because the `type: unknown`
+ * OpenAPI bug (ADR-0020 I-7) only occurs with a *branded* schema.
+ * `TenantSlugValue` is the name HTTP DTOs must use from now on;
+ * `TenantSlug` stays as the unbranded alias every existing call site uses.
+ */
+export const TenantSlugValue = z
   .string()
   .regex(tenantSlugRegex, 'must be 3..64 lowercase alphanumeric/hyphen chars without edge hyphens')
   // Reserved-list check is case-insensitive: the regex guarantees lowercase input
   // in normal use, but a request that bypasses the regex (e.g. internal callers
-  // constructing a TenantSlug from a header) still gets rejected on `Admin` /
+  // constructing a TenantSlugValue from a header) still gets rejected on `Admin` /
   // `ADMIN` etc. Defence in depth, per packages/domain/CLAUDE.md.
   .refine((v) => !RESERVED_SLUG_SET.has(v.toLowerCase()), 'is a reserved platform slug')
   .refine((v) => !v.startsWith('xn--'), 'must not be a punycode/IDN (xn--) label');
-export type TenantSlug = z.infer<typeof TenantSlug>;
+export type TenantSlugValue = z.infer<typeof TenantSlugValue>;
+
+export const TenantSlug = TenantSlugValue;
+export type TenantSlug = z.infer<typeof TenantSlugValue>;
