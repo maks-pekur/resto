@@ -53,13 +53,12 @@ export const menuCategories = pgTable(
       columns: [table.parentId, table.tenantId],
       foreignColumns: [table.id, table.tenantId],
     }).onDelete('restrict'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped —
-    // the merge collapses the brand dimension into tenant. Slug/code
-    // uniqueness is now per-tenant, not per-(tenant, brand); this is a
-    // deliberate behavior change (two categories with the same slug could
-    // previously coexist in two brands of one tenant, no longer possible).
-    uniqueIndex('menu_categories_slug_uq').on(table.tenantId, table.slug),
-    uniqueIndex('menu_categories_code_uq')
+    // NOTE (D-04/plan 04): the second scoping dimension merged into tenant.
+    // Slug/code uniqueness is now per-tenant only; this is a deliberate
+    // behavior change (two categories with the same slug could previously
+    // coexist under two separate scopes of one tenant, no longer possible).
+    uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_categories_tenant_code_uq')
       .on(table.tenantId, table.code)
       .where(sql`${table.code} IS NOT NULL`),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
@@ -126,10 +125,10 @@ export const menuItems = pgTable(
       child: { id: table.categoryId, tenantId: table.tenantId },
       parent: { id: menuCategories.id, tenantId: menuCategories.tenantId },
     }).onDelete('restrict'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped —
+    // NOTE (D-04/plan 04): the second scoping dimension merged into tenant —
     // see menuCategories' note above; same tenant-only uniqueness collapse.
-    uniqueIndex('menu_items_slug_uq').on(table.tenantId, table.slug),
-    uniqueIndex('menu_items_code_uq')
+    uniqueIndex('menu_items_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_items_tenant_code_uq')
       .on(table.tenantId, table.code)
       .where(sql`${table.code} IS NOT NULL`),
     index('menu_items_tenant_category_status_idx').on(
@@ -180,7 +179,7 @@ export const menuItemSizes = pgTable(
       child: { id: table.menuItemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped.
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_item_sizes_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
     uniqueIndex('menu_item_sizes_one_default_per_item_uq')
       .on(table.menuItemId)
@@ -206,7 +205,7 @@ export const menuModifierGroups = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped.
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     check(
       'menu_modifier_groups_selectable_range_chk',
       sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
@@ -243,7 +242,7 @@ export const menuModifierOptions = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped.
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_modifier_options_tenant_group_idx').on(
       table.tenantId,
       table.modifierGroupId,
@@ -289,7 +288,7 @@ export const menuItemModifierGroups = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    // NOTE (D-04/plan 04): brandId + its composite FK to `brands` dropped.
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_item_modifier_groups_tenant_item_idx').on(table.tenantId, table.menuItemId),
   ],
 );
