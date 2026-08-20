@@ -30,7 +30,6 @@ import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permis
 import { createEmailAdapter } from './infrastructure/email/email-adapter.factory';
 import { getLocale } from './infrastructure/email/get-locale';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
-import { InitialBrandDrizzleRepository } from './infrastructure/initial-brand-drizzle.repository';
 import { InitialLocationDrizzleRepository } from './infrastructure/initial-location-drizzle.repository';
 import { MemberLocationScopeDrizzleReader } from './infrastructure/member-location-scope-drizzle.reader';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
@@ -223,7 +222,6 @@ export const buildAuthFromEnv = (
   env: Env,
   emitter: IdentityEventEmitterPort,
   emailAdapter: EmailAdapterPort,
-  brandResolver: InitialBrandDrizzleRepository,
   locationResolver: InitialLocationDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
@@ -300,7 +298,6 @@ export const buildAuthFromEnv = (
         ),
       );
     },
-    onInitialBrandPin: (userId, tenantId) => brandResolver.resolveForUserInTenant(userId, tenantId),
     onInitialLocationPin: (userId, brandId) =>
       locationResolver.resolveForUserInBrand(userId, brandId),
     onActiveOrganizationSet: async (session, ctx) => {
@@ -335,7 +332,6 @@ const authProvider: Provider = {
     ENV_TOKEN,
     IDENTITY_EVENT_EMITTER,
     EMAIL_ADAPTER_PORT,
-    InitialBrandDrizzleRepository,
     InitialLocationDrizzleRepository,
   ],
   useFactory: buildAuthFromEnv,
@@ -360,7 +356,6 @@ const memberLocationScopeReaderProvider: Provider = {
   providers: [
     authDrizzleProvider,
     emailAdapterProvider,
-    InitialBrandDrizzleRepository,
     InitialLocationDrizzleRepository,
     authProvider,
     permissionCheckerProvider,
