@@ -27,7 +27,22 @@
     "sessionExpired": "Сессия истекла. Войдите снова.",
     "passwordUpdated": "Пароль обновлён. Войдите с новым паролем.",
     "noAccess": "Нет доступа",
-    "noAccessDescription": "У вас нет прав для управления меню. Обратитесь к владельцу аккаунта."
+    "noAccessDescription": "У вас нет прав для управления меню. Обратитесь к владельцу аккаунта.",
+    "signup": {
+      "title": "Создать аккаунт",
+      "nameLabel": "Ваше имя",
+      "countryLabel": "Страна",
+      "countryPlaceholder": "Выберите страну",
+      "countryOption": {
+        "ua": "Украина · UAH",
+        "gb": "Великобритания · GBP",
+        "es": "Испания · EUR"
+      },
+      "submitIdle": "Создать аккаунт",
+      "submitPending": "Создаём аккаунт…",
+      "errorGeneric": "Не удалось создать аккаунт. Попробуйте ещё раз.",
+      "signInPrompt": "Уже есть аккаунт?"
+    }
   },
   "nav": {
     "platform": "Платформа",
@@ -50,8 +65,28 @@
       "logout": "Выйти",
       "languageLabel": "Язык",
       "localeRu": "Русский",
-      "localeEn": "English"
+      "localeEn": "English",
+      "switchOrganizationItem": "Сменить ресторан",
+      "localeEs": "Español"
     }
+  },
+  "pickOrganization": {
+    "title": "Выберите ресторан",
+    "description": "У вас есть доступ к нескольким ресторанам. Выберите один, чтобы продолжить.",
+    "loading": "Загружаем…",
+    "empty": "Нет доступных ресторанов.",
+    "emptyDescription": "Обратитесь в поддержку — у каждого аккаунта должен быть хотя бы один ресторан.",
+    "enteringState": "Заходим в {{name}}…",
+    "error": "Не удалось переключиться на этот ресторан. Попробуйте ещё раз."
+  },
+  "onboarding": {
+    "title": "Назовите свой ресторан",
+    "nameLabel": "Название ресторана",
+    "hostPreview": "Вы будете доступны по адресу {{host}}",
+    "submitIdle": "Продолжить",
+    "submitPending": "Создаём ваш ресторан…",
+    "errorGeneric": "Не удалось создать ресторан. Попробуйте ещё раз.",
+    "createdToast": "«{{name}}» готов."
   },
   "menu": {
     "items": {

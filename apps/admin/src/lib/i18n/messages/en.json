@@ -27,7 +27,22 @@
     "sessionExpired": "Your session expired. Please sign in again.",
     "passwordUpdated": "Password updated. Sign in with your new password.",
     "noAccess": "No access",
-    "noAccessDescription": "You don't have permission to manage the menu. Contact the account owner."
+    "noAccessDescription": "You don't have permission to manage the menu. Contact the account owner.",
+    "signup": {
+      "title": "Create account",
+      "nameLabel": "Your name",
+      "countryLabel": "Country",
+      "countryPlaceholder": "Select your country",
+      "countryOption": {
+        "ua": "Ukraine · UAH",
+        "gb": "United Kingdom · GBP",
+        "es": "Spain · EUR"
+      },
+      "submitIdle": "Create account",
+      "submitPending": "Creating account…",
+      "errorGeneric": "Could not create account. Please try again.",
+      "signInPrompt": "Already have an account?"
+    }
   },
   "nav": {
     "platform": "Platform",
@@ -50,8 +65,28 @@
       "logout": "Log out",
       "languageLabel": "Language",
       "localeRu": "Русский",
-      "localeEn": "English"
+      "localeEn": "English",
+      "switchOrganizationItem": "Switch organization",
+      "localeEs": "Español"
     }
+  },
+  "pickOrganization": {
+    "title": "Choose your restaurant",
+    "description": "You have access to more than one restaurant. Pick one to continue.",
+    "loading": "Loading…",
+    "empty": "No restaurants available.",
+    "emptyDescription": "Contact support — every account should have at least one restaurant.",
+    "enteringState": "Entering {{name}}…",
+    "error": "Could not switch to this restaurant. Please try again."
+  },
+  "onboarding": {
+    "title": "Name your restaurant",
+    "nameLabel": "Restaurant name",
+    "hostPreview": "You'll be reachable at {{host}}",
+    "submitIdle": "Continue",
+    "submitPending": "Creating your restaurant…",
+    "errorGeneric": "Could not create your restaurant. Please try again.",
+    "createdToast": "\"{{name}}\" is ready."
   },
   "menu": {
     "items": {
@@ -300,6 +335,8 @@
       "cancelledToast": "Publication cancelled",
       "alreadyPublishedToast": "Already published — cancel window expired",
       "unpublishedChanges_one": "{{count}} unpublished change",
+      "unpublishedChanges_few": "{{count}} unpublished changes",
+      "unpublishedChanges_many": "{{count}} unpublished changes",
       "unpublishedChanges_other": "{{count}} unpublished changes",
       "countdownLabel": "Publishing in {{sec}}s",
       "cancelBtn": "Cancel"
@@ -315,6 +352,8 @@
       "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
       "staleRetry": "Refresh",
       "refundBanner_one": "{{count}} refund failed — action required",
+      "refundBanner_few": "{{count}} refunds failed — action required",
+      "refundBanner_many": "{{count}} refunds failed — action required",
       "refundBanner_other": "{{count}} refunds failed — action required",
       "refundBannerAction": "Show"
     },
@@ -351,6 +390,8 @@
       "dailyNumber": "No. {{n}}",
       "sidebarBadgeAria": "Unaccepted orders: {{count}}",
       "itemCount_one": "{{count}} item",
+      "itemCount_few": "{{count}} items",
+      "itemCount_many": "{{count}} items",
       "itemCount_other": "{{count}} items",
       "fulfillmentDineIn": "Dine-in",
       "fulfillmentPickup": "Pickup",
