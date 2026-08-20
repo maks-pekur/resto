@@ -8,47 +8,31 @@ export class InitialLocationDrizzleRepository {
 
   constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
-  async resolveForUserInBrand(userId: string, brandId: string): Promise<string | null> {
+  // D-01 (phase 10.2): the historical brand entity merged 1:1 into tenant and its
+  // satellite table was dropped — the second positional argument (still supplied by
+  // the unrewritten BA hook at identity-core.module.ts:302/auth.config.ts:428) IS the
+  // tenant id now. No lookup table remains to translate one into the other.
+  async resolveForUserInBrand(userId: string, tenantId: string): Promise<string | null> {
     try {
       const boundTenantId = getTenantContext()?.tenantId;
       if (boundTenantId) {
-        return await this.db.withTenant((tx) =>
-          this.#resolveScoped(tx, userId, brandId, boundTenantId),
-        );
+        return await this.db.withTenant((tx) => this.#resolveScoped(tx, userId, boundTenantId));
       }
 
-      const tenantId = await this.db.withoutTenant(
-        'identity.initial-location-pin: resolve tenant for brand',
-        async (tx) => {
-          const rows = await tx
-            .select({ tenantId: schema.brands.tenantId })
-            .from(schema.brands)
-            .where(eq(schema.brands.id, brandId))
-            .limit(1);
-          return rows[0]?.tenantId ?? null;
-        },
-      );
-      if (!tenantId) return null;
-
       return await this.db.withTenantId(tenantId, (tx) =>
-        this.#resolveScoped(tx, userId, brandId, tenantId),
+        this.#resolveScoped(tx, userId, tenantId),
       );
     } catch (err) {
-      this.logger.error({ err, userId, brandId }, 'resolveForUserInBrand failed');
+      this.logger.error({ err, userId, tenantId }, 'resolveForUserInBrand failed');
       return null;
     }
   }
 
-  async #resolveScoped(
-    tx: RestoTx,
-    userId: string,
-    brandId: string,
-    tenantId: string,
-  ): Promise<string | null> {
+  async #resolveScoped(tx: RestoTx, userId: string, tenantId: string): Promise<string | null> {
     const memberRows = await tx
       .select({ role: schema.member.role })
       .from(schema.member)
-      .where(and(eq(schema.member.userId, userId), eq(schema.member.organizationId, tenantId)))
+      .where(and(eq(schema.member.userId, userId), eq(schema.member.tenantId, tenantId)))
       .limit(1);
     if (memberRows[0]?.role === 'owner') return null;
 
@@ -61,13 +45,12 @@ export class InitialLocationDrizzleRepository {
         and(
           eq(schema.memberLocationScope.locationId, schema.locations.id),
           eq(schema.locations.status, 'active'),
-          eq(schema.locations.brandId, brandId),
         ),
       )
       .where(
         and(
           eq(schema.member.userId, userId),
-          eq(schema.member.organizationId, tenantId),
+          eq(schema.member.tenantId, tenantId),
           eq(schema.memberLocationScope.tenantId, tenantId),
         ),
       )

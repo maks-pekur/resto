@@ -10,7 +10,6 @@ const LOCATION_ID = '00000000-0000-0000-0000-000000000002';
 
 const makeReader = (roleSlug: string | null): MemberLocationScopeReader => ({
   findLocationScopeForMember: vi.fn(),
-  findReachableBrandsForMember: vi.fn(),
   findRoleForMemberAtLocation: vi.fn().mockResolvedValue(roleSlug),
   findPinnableLocations: vi.fn(),
   listLocationRolesForMember: vi.fn(),

@@ -31,41 +31,12 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
           and(
             eq(schema.memberLocationScope.tenantId, input.tenantId),
             eq(schema.member.userId, input.userId),
-            eq(schema.member.organizationId, input.tenantId),
+            eq(schema.member.tenantId, input.tenantId),
           ),
         ),
     );
     if (rows.length === 0) return null;
     return rows.map((r) => r.locationId);
-  }
-
-  async findReachableBrandsForMember(input: {
-    userId: string;
-    tenantId: TenantId;
-  }): Promise<readonly string[] | null> {
-    const rows = await this.db.withTenant(async (tx) =>
-      tx
-        .selectDistinct({ brandId: schema.brands.id })
-        .from(schema.memberLocationScope)
-        .innerJoin(schema.member, eq(schema.memberLocationScope.memberId, schema.member.id))
-        .innerJoin(
-          schema.locations,
-          and(
-            eq(schema.memberLocationScope.locationId, schema.locations.id),
-            eq(schema.locations.status, 'active'),
-          ),
-        )
-        .innerJoin(schema.brands, eq(schema.locations.brandId, schema.brands.id))
-        .where(
-          and(
-            eq(schema.memberLocationScope.tenantId, input.tenantId),
-            eq(schema.member.userId, input.userId),
-            eq(schema.member.organizationId, input.tenantId),
-          ),
-        ),
-    );
-    if (rows.length === 0) return null;
-    return rows.map((r) => r.brandId);
   }
 
   async findRoleForMemberAtLocation(input: {
@@ -95,6 +66,13 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
     return rows[0]?.role ?? null;
   }
 
+  // D-01 (phase 10.2): locations lost their brand dimension when brand merged 1:1 into
+  // tenant, so the query below no longer filters by it — every active tenant location
+  // is in scope now (further narrowed to membership scope for non-owners), a
+  // deliberate widening of the pre-merge result set. `input.brandId`/`PinnableLocation`
+  // still carry the field for the currently-untouched port/controller contract
+  // (set-active-location.controller.ts, out of this task's scope); it is echoed back
+  // rather than read from the row.
   async findPinnableLocations(input: {
     userId: string;
     tenantId: TenantId;
@@ -102,30 +80,28 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
     isOwner: boolean;
   }): Promise<readonly PinnableLocation[]> {
     if (input.isOwner) {
-      return this.db.withTenant(async (tx) =>
+      const rows = await this.db.withTenant(async (tx) =>
         tx
           .select({
             id: schema.locations.id,
             name: schema.locations.name,
-            brandId: schema.locations.brandId,
           })
           .from(schema.locations)
           .where(
             and(
               eq(schema.locations.tenantId, input.tenantId),
-              eq(schema.locations.brandId, input.brandId),
               eq(schema.locations.status, 'active'),
             ),
           ),
       );
+      return rows.map((r) => ({ ...r, brandId: input.brandId }));
     }
 
-    return this.db.withTenant(async (tx) =>
+    const rows = await this.db.withTenant(async (tx) =>
       tx
         .select({
           id: schema.locations.id,
           name: schema.locations.name,
-          brandId: schema.locations.brandId,
         })
         .from(schema.memberLocationScope)
         .innerJoin(schema.member, eq(schema.memberLocationScope.memberId, schema.member.id))
@@ -134,17 +110,17 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
           and(
             eq(schema.memberLocationScope.locationId, schema.locations.id),
             eq(schema.locations.status, 'active'),
-            eq(schema.locations.brandId, input.brandId),
           ),
         )
         .where(
           and(
             eq(schema.memberLocationScope.tenantId, input.tenantId),
             eq(schema.member.userId, input.userId),
-            eq(schema.member.organizationId, input.tenantId),
+            eq(schema.member.tenantId, input.tenantId),
           ),
         ),
     );
+    return rows.map((r) => ({ ...r, brandId: input.brandId }));
   }
 
   async listLocationRolesForMember(input: {
