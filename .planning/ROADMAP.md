@@ -843,14 +843,14 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 20 plans in 14 waves
+**Plans:** 3/20 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 10.2-01-PLAN.md — Shared domain registries: country/currency/locale config, TenantSlugValue, brand RBAC resource dropped
-- [ ] 10.2-02-PLAN.md — i18n foundation: Spanish catalogue for admin + website, three-locale switcher, deliberate fallback
-- [ ] 10.2-03-PLAN.md — Schema merge A: tenants absorbs brands, locations relocated, one domain table, session.active_brand_id dropped
+- [x] 10.2-01-PLAN.md — Shared domain registries: country/currency/locale config, TenantSlugValue, brand RBAC resource dropped
+- [x] 10.2-02-PLAN.md — i18n foundation: Spanish catalogue for admin + website, three-locale switcher, deliberate fallback
+- [x] 10.2-03-PLAN.md — Schema merge A: tenants absorbs brands, locations relocated, one domain table, session.active_brand_id dropped
 
 **Wave 2**
 
