@@ -16,7 +16,12 @@ import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import {
+  BrandNeutral,
+  LocationNeutral,
+  Permissions,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
 import { SetActiveLocationService } from '../../application/set-active-location.service';
 import {
   MEMBER_LOCATION_SCOPE_READER,
@@ -65,6 +70,7 @@ const wrap = wrapWith(mapError);
 
 @ApiTags('identity')
 @BrandNeutral()
+@LocationNeutral()
 @Controller('v1/me')
 export class SetActiveLocationController {
   constructor(

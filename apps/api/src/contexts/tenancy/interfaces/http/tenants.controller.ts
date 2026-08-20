@@ -15,7 +15,12 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { TenantQueriesService } from '../../application/tenant-queries.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
 import { ScheduleOffboardingInputDto } from '../../application/dto';
-import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import {
+  BrandNeutral,
+  LocationNeutral,
+  Permissions,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
@@ -31,6 +36,7 @@ class TenantDomainDto extends createZodDto(TenantDomainSchema) {}
 
 @ApiTags('tenancy')
 @BrandNeutral()
+@LocationNeutral()
 @Controller('v1/tenants')
 export class TenantsController {
   constructor(

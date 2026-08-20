@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   BrandNeutral,
+  LocationNeutral,
   Permissions,
   RequireActiveTenant,
   RequireBrand,
@@ -131,6 +132,7 @@ export class TenantOnboardingController {
 
 @ApiTags('tenancy')
 @BrandNeutral()
+@LocationNeutral()
 @Controller('v1/tenancy/onboarding')
 export class TenantOAuthCallbackController {
   readonly #wrap = wrapWith(mapDomainError);
