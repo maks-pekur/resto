@@ -152,3 +152,93 @@ tenant_role_resto_auth_full;` fails against the fresh testcontainer Postgres
   owner) should rename `brandTheme`/`brandName`/`GuestBrandTheme` to their tenant-named
   equivalents and update `guest-email-templates.ts` + its spec + this plan's two files
   (`send-guest-notification.service.ts`, `.spec.ts`) in the same commit.
+
+## From plan 07
+
+- **Deleting `apps/api/src/contexts/tenancy/application/brand-queries.service.ts`
+  (Task 1, D-40) breaks three files outside `contexts/tenancy/` that still import
+  `BrandQueriesService`:**
+  - `apps/api/src/contexts/identity/infrastructure/brand-provisioning.adapter.ts` —
+    `owner: plan 08` (`grep -l` confirms `10.2-08-PLAN.md` lists this file). Plan 08's
+    own Task 1 already deletes this adapter and its port outright (`ports/
+brand-provisioning.port.ts`, `infrastructure/brand-provisioning.adapter.ts`), so
+    the new `TS2307: Cannot find module '.../brand-queries.service'` is moot — the
+    importing file is gone the moment plan 08 lands.
+  - `apps/api/src/contexts/notifications/application/send-guest-notification.service.ts`
+    (+ its spec) — `owner: plan 10` (`grep -l` confirms `10.2-10-PLAN.md`). Plan 10's
+    own action text already rewrites this file to source sender identity/locale from
+    the tenant instead of the brand, so it was going to drop the `BrandQueriesService`
+    import regardless.
+    Not fixed here — both consumers are outside `files_modified` for this plan and
+    already owned by concurrent plans that independently remove the dependency. Verified
+    before deleting: neither consumer imports anything from `brand-queries.service.ts`
+    that would give it a _new_, different failure mode (both already failed to typecheck
+    before this plan touched anything, for unrelated pre-existing reasons — missing
+    `BrandId`/`BrandSlug` exports, a missing `provision-brand.service.ts`). Baseline
+    captured via `npx tsc -p apps/api/tsconfig.json --noEmit` before the Task 1 edit;
+    the only new lines it added were the four `TS2307`s on the `brand-queries.service`
+    import path itself.
+
+- **`apps/api/src/contexts/tenancy/tenancy.module.ts`'s full brand-vocabulary cleanup
+  (nominally Task 3's) landed inside Task 2's commit instead, forced by the
+  `lint-staged` eslint gate — not by choice.** Task 2's own acceptance criteria
+  require `tenancy.module.ts` to already reference `StartTenantOnboardingService` and
+  have zero `StartStripeOnboardingService`/`stripe-onboarding` matches at Task 2's
+  commit, so a partial edit to this Task-3-owned file was unavoidable (same situation
+  as Task 1's `location.aggregate.ts` unblock in plan 06). The first, minimal attempt —
+  swapping only the four Stripe-onboarding-specific import/provider/controller lines —
+  could not be _committed_: `@typescript-eslint/no-unsafe-assignment` flagged the whole
+  `providers`/`exports` array literals as `any[]` because `BrandDrizzleRepository`
+  (imported from a file plan 06 already deleted) resolves to `any`, and ESLint's
+  contextual-typing check poisons the entire array literal, not just the one bad
+  element — confirmed empirically: removing only the `BRAND_REPOSITORY`/
+  `BrandDrizzleRepository` pair left the array-level `any[]` errors still firing from
+  the three OTHER already-unresolvable imports (`ProvisionBrandService`,
+  `BrandQueriesService`, `TenantAndBrandResolverService`, dead since plan 06 / this
+  plan's own Task 1), so all three had to go too before `npx eslint
+apps/api/src/contexts/tenancy/tenancy.module.ts --max-warnings=0` passed.
+  **Consequence for Task 3**: `tenancy.module.ts` is now fully clean of brand
+  vocabulary — Task 3 will find nothing left to do to this specific file (its other
+  files — `tenants.controller.ts`, `internal-tenants.controller.ts`,
+  `locations.controller.ts`, `tenant-response.ts`, `error-mapping.ts` — are unaffected
+  and still Task 3's to do). **Verified safe** (no new breakage in a previously-working
+  file): the only consumers of the three removed providers outside this file were
+  already broken before this edit — `notifications/application/
+send-guest-notification.service.ts` (+spec, plan 10, mid-rewrite),
+  `identity/infrastructure/brand-provisioning.adapter.ts` (+port, +spec, plan 08,
+  being deleted outright), and the unowned `test/unit/tenancy/
+provision-brand.service.spec.ts` (already flagged above). `grep -l` confirms none of
+  the three removed classes appear in any _other_ plan's `files_modified` for
+  `tenancy.module.ts` itself.
+
+- **`apps/api/src/contexts/tenancy/application/start-tenant-onboarding.service.ts:72`
+  passes `brandId: snapshot.id` into `PaymentProviderPort.ensureOnboardingAccount`.**
+  `owner: plan 10` (`grep -l "payments/domain/ports.ts"` → `10.2-10-PLAN.md` only).
+  `CreateOnboardingAccountInput.brandId` is a field name on a port this plan does not
+  own; renaming it is out of scope (concurrent worktree, verification-lesson #5). This
+  is the one remaining `brand` string match inside `contexts/tenancy/application/`
+  (`rg -in "brand"` — down from 6 before the `oauth-state.ts` `OAuthStatePayload`
+  field rename below). Not a shim — the call site correctly supplies the tenant's own
+  id into an inherited field name; only the field's NAME is stale. Whichever plan
+  renames `CreateOnboardingAccountInput.brandId` (plan 10 itself, or the D-41 code-half
+  sweep in plan 21) will get a one-line compile error here pointing straight at this
+  call site.
+
+- **`apps/api/src/contexts/tenancy/domain/oauth-state.ts` — `OAuthStatePayload.brandId`
+  renamed to `tenantId`.** Not owned by any plan (`grep -l "domain/oauth-state.ts"` →
+  only this plan's own `10.2-07-PLAN.md`, as a `read_first` citation, never as a file
+  another plan claims). Renamed here rather than left stale because Task 2 already
+  rewrites every call site (`start-tenant-onboarding.service.ts`) and the two Task 2
+  spec files, and doing so closes 5 of the 6 pre-rename `brand` matches inside
+  `contexts/tenancy/application/`. Pure Zod-schema field rename, zero behavior change,
+  verified by both onboarding spec files still passing (13/13).
+
+- **`test/unit/tenancy/brand-aggregate.spec.ts` and
+  `test/unit/tenancy/provision-brand.service.spec.ts` do not compile** — both import
+  `brand.aggregate.ts`/`provision-brand.service.ts`, deleted outright by plan 06. `grep
+-l` for both spec paths across every `*-PLAN.md` returns zero — unowned by any plan,
+  unlike `test/e2e/brand-slug-lookup.e2e.spec.ts` and
+  `test/e2e/payment-lifecycle.e2e.spec.ts` (same root cause, but both owned by plan
+  19). Pre-existing since plan 06 landed; not caused by this plan and outside Task 2's
+  `files_modified`. Flagging for plan 19's green-gate sweep alongside the two owned
+  e2e specs.

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
-import { BrandId, TenantId } from '@resto/domain';
+import { requireTenantContext } from '@resto/db';
+import { TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../domain/ports';
 import type { LocationSnapshot } from '../domain/location.aggregate';
 
@@ -10,7 +10,6 @@ export class ListLocationsService {
 
   execute(): Promise<readonly LocationSnapshot[]> {
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
-    return this.locations.listForBrand(BrandId.parse(brandId), TenantId.parse(ctx.tenantId));
+    return this.locations.listForTenant(TenantId.parse(ctx.tenantId));
   }
 }

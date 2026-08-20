@@ -1,17 +1,17 @@
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
-import { BrandSlug, TenantId } from '@resto/domain';
+import { TenantId } from '@resto/domain';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
 import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../payments/domain/ports';
-import { Brand } from '../domain/brand.aggregate';
-import type { BrandOnboardingStatus } from '../domain/brand.aggregate';
+import { StripeOnboardingFailedError, TenantNotFoundError } from '../domain/errors';
 import { encodeOAuthState, verifyOAuthState } from '../domain/oauth-state';
-import { BRAND_REPOSITORY, type BrandRepository } from '../domain/ports';
+import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
+import { Tenant, type StripeOnboardingStatus } from '../domain/tenant.aggregate';
 
-export interface GetBrandOnboardingStatusResult {
+export interface GetTenantOnboardingStatusResult {
   readonly accountType: 'express' | 'standard' | null;
-  readonly onboardingStatus: BrandOnboardingStatus;
+  readonly onboardingStatus: StripeOnboardingStatus;
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
   readonly canAcceptPayments: boolean;
@@ -35,59 +35,69 @@ export interface HandleOAuthCallbackInput {
   readonly code: string;
   readonly state: string;
   readonly nonce: string;
-  readonly slugFromPath?: string;
 }
 
 export interface HandleOAuthCallbackResult {
   readonly redirectUrl: string;
 }
 
+/**
+ * Single surviving Stripe Connect onboarding path (D-39) — the tenant-level
+ * `linkStripeAccount`/`applyStripeCapabilities` columns this reads/writes are
+ * the real, `account.updated`-webhook-driven ones (PAY-05). The dead sibling
+ * that called a no-op `Tenant.linkStripeAccount` stub is deleted, not merged.
+ */
 @Injectable()
-export class StartBrandOnboardingService {
-  private readonly logger = new Logger(StartBrandOnboardingService.name);
+export class StartTenantOnboardingService {
+  private readonly logger = new Logger(StartTenantOnboardingService.name);
 
   constructor(
-    @Inject(BRAND_REPOSITORY) private readonly brandRepo: BrandRepository,
+    @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
     @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
-  private async ensureBrandAccount(slug: string): Promise<{ accountId: string; brand: Brand }> {
-    const { tenantId: rawTenantId } = requireTenantContext();
-    const snapshot = await this.brandRepo.findByTenantAndSlug(
-      TenantId.parse(rawTenantId),
-      BrandSlug.parse(slug),
-    );
-    if (snapshot === null) {
-      throw new NotFoundException(`Brand "${slug}" not found.`);
+  private async ensureTenantAccount(): Promise<{ accountId: string; tenant: Tenant }> {
+    const { tenantId } = requireTenantContext();
+    const tenant = await this.repo.findCurrentTenant();
+    if (tenant === null) {
+      throw new TenantNotFoundError(tenantId);
     }
-    const brand = Brand.fromSnapshot(snapshot);
+    const snapshot = tenant.toSnapshot();
     if (snapshot.stripeAccountId !== null) {
-      return { accountId: snapshot.stripeAccountId, brand };
+      return { accountId: snapshot.stripeAccountId, tenant };
     }
-    const result = await this.provider.ensureOnboardingAccount({
-      brandId: snapshot.id,
-      displayName: snapshot.displayName,
-      ...(snapshot.defaultCurrency !== null ? { defaultCurrency: snapshot.defaultCurrency } : {}),
-      accountType: 'express',
-    });
-    brand.linkPaymentAccount(result.accountId, 'express');
-    await this.brandRepo.updatePaymentConnection(brand);
-    this.logger.log(
-      { brandId: snapshot.id, accountId: result.accountId },
-      'Stripe Express account linked to brand.',
-    );
-    return { accountId: result.accountId, brand };
+    try {
+      const result = await this.provider.ensureOnboardingAccount({
+        brandId: snapshot.id,
+        displayName: snapshot.displayName,
+        country: snapshot.country,
+        defaultCurrency: snapshot.defaultCurrency,
+        accountType: 'express',
+      });
+      tenant.linkStripeAccount(result.accountId, 'express');
+      await this.repo.save(tenant);
+      this.logger.log(
+        { tenantId: snapshot.id, accountId: result.accountId },
+        'Stripe Express account linked to tenant.',
+      );
+      return { accountId: result.accountId, tenant };
+    } catch (err) {
+      throw new StripeOnboardingFailedError(
+        snapshot.id,
+        err instanceof Error ? err : new Error(String(err)),
+      );
+    }
   }
 
-  async createEmbeddedSession(slug: string): Promise<CreateEmbeddedSessionResult> {
-    const { accountId } = await this.ensureBrandAccount(slug);
+  async createEmbeddedSession(): Promise<CreateEmbeddedSessionResult> {
+    const { accountId } = await this.ensureTenantAccount();
     const session = await this.provider.createOnboardingSession({ accountId });
     return { clientSecret: session.clientSecret };
   }
 
-  async createHostedLink(slug: string): Promise<CreateHostedLinkResult> {
-    const { accountId } = await this.ensureBrandAccount(slug);
+  async createHostedLink(): Promise<CreateHostedLinkResult> {
+    const { accountId } = await this.ensureTenantAccount();
     const link = await this.provider.createOnboardingLink({
       accountId,
       returnUrl: this.env.STRIPE_CONNECT_RETURN_URL,
@@ -96,27 +106,24 @@ export class StartBrandOnboardingService {
     return { onboardingUrl: link.url };
   }
 
-  async getStatus(slug: string): Promise<GetBrandOnboardingStatusResult> {
-    const { tenantId: rawTenantId } = requireTenantContext();
-    const snapshot = await this.brandRepo.findByTenantAndSlug(
-      TenantId.parse(rawTenantId),
-      BrandSlug.parse(slug),
-    );
-    if (snapshot === null) {
-      throw new NotFoundException(`Brand "${slug}" not found.`);
+  async getStatus(): Promise<GetTenantOnboardingStatusResult> {
+    const { tenantId } = requireTenantContext();
+    const tenant = await this.repo.findCurrentTenant();
+    if (tenant === null) {
+      throw new TenantNotFoundError(tenantId);
     }
-    const brand = Brand.fromSnapshot(snapshot);
+    const snapshot = tenant.toSnapshot();
     return {
       accountType: snapshot.accountType,
       onboardingStatus: snapshot.stripeOnboardingStatus,
       chargesEnabled: snapshot.stripeChargesEnabled,
       payoutsEnabled: snapshot.stripePayoutsEnabled,
-      canAcceptPayments: brand.canAcceptPayments(),
+      canAcceptPayments: tenant.canAcceptPayments(),
       requirementsDue: snapshot.stripeRequirementsDue,
     };
   }
 
-  async startOAuth(slug: string): Promise<StartOAuthResult> {
+  async startOAuth(): Promise<StartOAuthResult> {
     const clientId = this.env.STRIPE_CONNECT_CLIENT_ID;
     const redirectUrl = this.env.STRIPE_CONNECT_OAUTH_REDIRECT_URL;
     const secret = this.env.BETTER_AUTH_SECRET;
@@ -130,17 +137,15 @@ export class StartBrandOnboardingService {
       throw new BadRequestException('OAuth state signing secret is not configured.');
     }
 
-    const { tenantId: rawTenantId } = requireTenantContext();
-    const snapshot = await this.brandRepo.findByTenantAndSlug(
-      TenantId.parse(rawTenantId),
-      BrandSlug.parse(slug),
-    );
-    if (snapshot === null) {
-      throw new NotFoundException(`Brand "${slug}" not found.`);
+    const { tenantId } = requireTenantContext();
+    const tenant = await this.repo.findCurrentTenant();
+    if (tenant === null) {
+      throw new TenantNotFoundError(tenantId);
     }
+    const snapshot = tenant.toSnapshot();
 
     const nonce = crypto.randomUUID();
-    const signedState = encodeOAuthState({ brandId: snapshot.id, nonce }, secret);
+    const signedState = encodeOAuthState({ tenantId: snapshot.id, nonce }, secret);
 
     const authorizeUrl =
       `https://connect.stripe.com/oauth/authorize` +
@@ -150,7 +155,7 @@ export class StartBrandOnboardingService {
       `&redirect_uri=${encodeURIComponent(redirectUrl)}` +
       `&state=${encodeURIComponent(signedState)}`;
 
-    this.logger.log({ brandId: snapshot.id }, 'OAuth authorize URL built for brand.');
+    this.logger.log({ tenantId: snapshot.id }, 'OAuth authorize URL built for tenant.');
 
     return { authorizeUrl, nonce };
   }
@@ -170,19 +175,20 @@ export class StartBrandOnboardingService {
       throw new BadRequestException('OAuth state nonce mismatch — possible replay attack.');
     }
 
-    const snapshot = await this.brandRepo.findById(verified.brandId as never);
+    const tenantId = TenantId.parse(verified.tenantId);
+    const snapshot = await this.repo.findById(tenantId);
     if (snapshot === null) {
-      throw new NotFoundException(`Brand "${verified.brandId}" not found.`);
+      throw new TenantNotFoundError(verified.tenantId);
     }
 
     const { accountId } = await this.provider.exchangeOAuthCode({ code: input.code });
 
-    const brand = Brand.fromSnapshot(snapshot);
-    brand.linkPaymentAccount(accountId, 'standard');
+    const tenant = Tenant.fromSnapshot(snapshot);
+    tenant.linkStripeAccount(accountId, 'standard');
 
     try {
       const capabilities = await this.provider.retrieveAccount({ accountId });
-      brand.applyPaymentCapabilities({
+      tenant.applyStripeCapabilities({
         chargesEnabled: capabilities.chargesEnabled,
         payoutsEnabled: capabilities.payoutsEnabled,
         onboardingStatus: capabilities.chargesEnabled ? 'complete' : 'pending',
@@ -190,21 +196,20 @@ export class StartBrandOnboardingService {
       });
     } catch {
       this.logger.warn(
-        { brandId: verified.brandId },
+        { tenantId: verified.tenantId },
         'Could not retrieve account capabilities after OAuth; will wait for account.updated webhook.',
       );
     }
 
-    await this.brandRepo.updatePaymentConnection(brand);
+    await this.repo.save(tenant);
 
     this.logger.log(
-      { brandId: verified.brandId, accountId },
-      'Brand linked via Connect Standard OAuth.',
+      { tenantId: verified.tenantId, accountId },
+      'Tenant linked via Connect Standard OAuth.',
     );
 
     const adminWebUrl = this.env.ADMIN_WEB_URL ?? '';
-    const brandSnap = brand.toSnapshot();
-    const redirectUrl = `${adminWebUrl}/${brandSnap.slug}/payouts`;
+    const redirectUrl = `${adminWebUrl}/payouts`;
 
     return { redirectUrl };
   }

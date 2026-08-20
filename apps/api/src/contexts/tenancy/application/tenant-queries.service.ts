@@ -25,8 +25,7 @@ export class TenantQueriesService {
    */
   async findBySlug(rawSlug: string): Promise<TenantSnapshot | null> {
     const slug = TenantSlug.parse(rawSlug);
-    const tenant = await this.repo.findBySlug(slug);
-    return tenant ? tenant.toSnapshot() : null;
+    return this.repo.findBySlug(slug);
   }
 
   /**
@@ -36,8 +35,7 @@ export class TenantQueriesService {
    */
   async findById(rawId: string): Promise<TenantSnapshot | null> {
     const id = TenantId.parse(rawId);
-    const tenant = await this.repo.findById(id);
-    return tenant ? tenant.toSnapshot() : null;
+    return this.repo.findById(id);
   }
 
   /**

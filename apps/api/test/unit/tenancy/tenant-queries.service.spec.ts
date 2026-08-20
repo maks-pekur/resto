@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Currency, TenantSlug } from '@resto/domain';
+import { CountryCodeValue, TenantSlug } from '@resto/domain';
 import { TenantQueriesService } from '../../../src/contexts/tenancy/application/tenant-queries.service';
 import { TenantNotFoundError } from '../../../src/contexts/tenancy/domain/errors';
 import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
@@ -9,6 +9,7 @@ const buildRepo = (): TenantRepository => ({
   findById: vi.fn(),
   findBySlug: vi.fn(),
   findByDomainHost: vi.fn(),
+  findByStripeAccountId: vi.fn(),
   save: vi.fn(),
   listDomains: vi.fn().mockResolvedValue([]),
   eraseTenant: vi.fn(),
@@ -21,7 +22,7 @@ const tenantFor = (slug: string): Tenant =>
   Tenant.provision({
     slug: TenantSlug.parse(slug),
     displayName: 'Cafe',
-    defaultCurrency: Currency.parse('USD'),
+    country: CountryCodeValue.parse('GB'),
     primaryDomainHostname: `${slug}.menu.resto.app`,
   });
 
@@ -35,7 +36,7 @@ describe('TenantQueriesService.getBySlug', () => {
   });
 
   it('returns the snapshot when the slug exists', async () => {
-    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma').toSnapshot());
     const snapshot = await service.getBySlug('cafe-roma');
     expect(snapshot.slug).toBe('cafe-roma');
   });
@@ -56,7 +57,7 @@ describe('TenantQueriesService.findBySlug', () => {
   });
 
   it('returns the snapshot when the slug exists', async () => {
-    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma').toSnapshot());
     const snapshot = await service.findBySlug('cafe-roma');
     expect(snapshot?.slug).toBe('cafe-roma');
   });
