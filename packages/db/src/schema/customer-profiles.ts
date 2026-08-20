@@ -1,4 +1,4 @@
-import { foreignKey, integer, pgTable, text, uniqueIndex, uuid } from 'drizzle-orm/pg-core';
+import { foreignKey, integer, pgTable, text, uniqueIndex } from 'drizzle-orm/pg-core';
 import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
 import { tenants } from './tenants';
 import { user } from './auth';
@@ -15,7 +15,6 @@ export const customerProfiles = pgTable(
     id: pkUuid(),
     userId: text('user_id').notNull(), // BA user.id is text — verified in Task 2
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id'),
     displayName: text('display_name'),
     loyaltyPoints: integer('loyalty_points').notNull().default(0),
     ...timestampsColumns(),
