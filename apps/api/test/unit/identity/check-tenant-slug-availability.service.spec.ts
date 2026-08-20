@@ -1,18 +1,25 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { CheckBrandSlugAvailabilityService } from '../../../src/contexts/identity/application/check-brand-slug-availability.service';
-import type { BrandProvisioningPort } from '../../../src/contexts/identity/application/ports/brand-provisioning.port';
+import { CheckTenantSlugAvailabilityService } from '../../../src/contexts/identity/application/check-tenant-slug-availability.service';
+import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
-const buildPort = (slugs: readonly string[]): BrandProvisioningPort => ({
-  listForTenant: vi.fn(),
-  provision: vi.fn(),
-  findActiveSlugsByPrefix: vi.fn().mockResolvedValue(slugs),
-});
+const buildAuthDb = (slugs: readonly string[]): AuthDrizzle =>
+  ({
+    db: {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockResolvedValue(slugs.map((slug) => ({ slug }))),
+          }),
+        }),
+      }),
+    },
+  }) as unknown as AuthDrizzle;
 
 const run = (slug: string, slugs: readonly string[]) =>
-  new CheckBrandSlugAvailabilityService(buildPort(slugs)).execute(slug);
+  new CheckTenantSlugAvailabilityService(buildAuthDb(slugs)).execute(slug);
 
-describe('CheckBrandSlugAvailabilityService', () => {
+describe('CheckTenantSlugAvailabilityService', () => {
   it('returns available when the slug is unused', async () => {
     expect(await run('z-burger', [])).toEqual({ available: true, suggestion: null });
   });

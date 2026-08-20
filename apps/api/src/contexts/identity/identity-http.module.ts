@@ -22,38 +22,28 @@ import { MemberLocationRolesController } from './interfaces/http/member-location
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
-import { BrandSlugRateLimitGuard } from './interfaces/http/guards/brand-slug-rate-limit.guard';
+import { TenantSlugRateLimitGuard } from './interfaces/http/guards/tenant-slug-rate-limit.guard';
 import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
 import { MeController } from './interfaces/http/me.controller';
 import { InternalBootstrapController } from './interfaces/http/internal-bootstrap.controller';
 import { SignUpController } from './interfaces/http/signup.controller';
 import { SignUpService } from './application/signup.service';
-import { ListMyBrandsService } from './application/list-my-brands.service';
-import { CreateMyBrandService } from './application/create-my-brand.service';
-import { CheckBrandSlugAvailabilityService } from './application/check-brand-slug-availability.service';
-import { SetActiveBrandService } from './application/set-active-brand.service';
+import { ListMyTenantsService } from './application/list-my-tenants.service';
+import { CheckTenantSlugAvailabilityService } from './application/check-tenant-slug-availability.service';
 import { SetActiveLocationService } from './application/set-active-location.service';
-import { MeBrandsController } from './interfaces/http/me-brands.controller';
-import { SetActiveBrandController } from './interfaces/http/set-active-brand.controller';
+import { MeTenantsController } from './interfaces/http/me-tenants.controller';
 import { SetActiveLocationController } from './interfaces/http/set-active-location.controller';
-import { BrandScopeGuard } from './interfaces/http/guards/brand-scope.guard';
 import { LocationScopeGuard } from './interfaces/http/guards/location-scope.guard';
 import { OwnerOnlyGuard } from './interfaces/http/guards/owner-only.guard';
-import { MEMBER_BRAND_SCOPE_READER } from './application/ports/member-brand-scope-reader.port';
-import { MemberBrandScopeDrizzleReader } from './infrastructure/member-brand-scope-drizzle.reader';
 import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
 import { MemberLocationScopeDrizzleReader } from './infrastructure/member-location-scope-drizzle.reader';
-import { SESSION_ACTIVE_BRAND_WRITER } from './application/ports/session-active-brand-writer.port';
-import { BetterAuthSessionActiveBrandWriter } from './infrastructure/better-auth/session-active-brand.adapter';
 import { SESSION_ACTIVE_LOCATION_WRITER } from './application/ports/session-active-location-writer.port';
 import { BetterAuthSessionActiveLocationWriter } from './infrastructure/better-auth/session-active-location.adapter';
 import { BA_USER_READER } from './application/ports/ba-user-reader.port';
 import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';
 import { TENANT_PROVISIONING_PORT } from './application/ports/tenant-provisioning.port';
 import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.adapter';
-import { BRAND_PROVISIONING_PORT } from './application/ports/brand-provisioning.port';
-import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.adapter';
 
 /**
  * HTTP-side composition for the identity context. Imports
@@ -65,8 +55,7 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
   imports: [IdentityCoreModule, TenancyModule],
   controllers: [
     MeController,
-    MeBrandsController,
-    SetActiveBrandController,
+    MeTenantsController,
     SetActiveLocationController,
     InternalBootstrapController,
     SignUpController,
@@ -85,33 +74,24 @@ import { BrandProvisioningAdapter } from './infrastructure/brand-provisioning.ad
     ListMemberLocationRolesService,
     ListMembersService,
     SignUpService,
-    ListMyBrandsService,
-    CreateMyBrandService,
-    CheckBrandSlugAvailabilityService,
-    SetActiveBrandService,
+    ListMyTenantsService,
+    CheckTenantSlugAvailabilityService,
     SetActiveLocationService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
-    { provide: APP_GUARD, useClass: BrandScopeGuard },
     { provide: APP_GUARD, useClass: LocationScopeGuard },
     { provide: APP_GUARD, useClass: OwnerOnlyGuard },
-    { provide: MEMBER_BRAND_SCOPE_READER, useClass: MemberBrandScopeDrizzleReader },
-    MemberBrandScopeDrizzleReader,
     { provide: MEMBER_LOCATION_SCOPE_READER, useClass: MemberLocationScopeDrizzleReader },
     MemberLocationScopeDrizzleReader,
-    { provide: SESSION_ACTIVE_BRAND_WRITER, useClass: BetterAuthSessionActiveBrandWriter },
-    BetterAuthSessionActiveBrandWriter,
     { provide: SESSION_ACTIVE_LOCATION_WRITER, useClass: BetterAuthSessionActiveLocationWriter },
     BetterAuthSessionActiveLocationWriter,
     { provide: BA_USER_READER, useClass: BaUserDrizzleReader },
     BaUserDrizzleReader,
     { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },
     TenantProvisioningAdapter,
-    { provide: BRAND_PROVISIONING_PORT, useClass: BrandProvisioningAdapter },
-    BrandProvisioningAdapter,
-    BrandSlugRateLimitGuard,
+    TenantSlugRateLimitGuard,
   ],
 })
 export class IdentityHttpModule implements OnModuleInit {

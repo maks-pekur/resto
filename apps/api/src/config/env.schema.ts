@@ -186,8 +186,8 @@ export const envSchema = z
     RATE_LIMIT_INTERNAL_PER_MIN: z.coerce.number().int().positive().default(10),
     /** Per-IP rate limit (req/min) for `POST /api/auth/sign-up/email` (brute-force resistance, RES-137). */
     RATE_LIMIT_AUTH_SIGNUP_PER_MIN: z.coerce.number().int().positive().default(5),
-    /** Per-user rate limit (req/min) for `GET /v1/me/brands/slug-availability`. */
-    RATE_LIMIT_BRAND_SLUG_CHECK_PER_MIN: z.coerce.number().int().positive().default(30),
+    /** Per-user rate limit (req/min) for `GET /v1/me/tenants/slug-availability`. */
+    RATE_LIMIT_TENANT_SLUG_CHECK_PER_MIN: z.coerce.number().int().positive().default(30),
     REQUIRE_EMAIL_VERIFICATION: z
       .enum(['true', 'false'])
       .default('false')
