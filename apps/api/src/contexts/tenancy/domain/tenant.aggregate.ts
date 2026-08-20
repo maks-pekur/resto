@@ -1,5 +1,13 @@
 import { randomUUID } from 'node:crypto';
-import { TenantId, TenantSlug, type Currency } from '@resto/domain';
+import {
+  currencyForCountry,
+  defaultLocaleForCountry,
+  TenantId,
+  TenantSlug,
+  type TenantTheme,
+  type CountryCodeValue,
+  type Currency,
+} from '@resto/domain';
 import { z } from 'zod';
 import type { TenantDomain } from './tenant-domain';
 
@@ -33,13 +41,30 @@ export const isPubliclyServable = (status: TenantStatus): boolean => SERVABLE_ST
 // (handle-stripe-event.service.ts imports it from this location).
 export type StripeOnboardingStatus = 'not_started' | 'pending' | 'complete' | 'restricted';
 
+export type TenantLegalForm = 'IP' | 'OOO' | 'LLC' | 'SOLE_PROP' | 'OTHER';
+
+export type TenantPaymentAccountType = 'express' | 'standard';
+
 export interface TenantSnapshot {
   readonly id: TenantId;
   readonly slug: TenantSlug;
   readonly displayName: string;
   readonly status: TenantStatus;
   readonly locale: string;
+  readonly country: CountryCodeValue;
   readonly defaultCurrency: Currency;
+  readonly theme: TenantTheme | null;
+  readonly legalName: string | null;
+  readonly legalForm: TenantLegalForm | null;
+  readonly taxId: string | null;
+  readonly stripeAccountId: string | null;
+  readonly paymentProvider: 'stripe';
+  readonly accountType: TenantPaymentAccountType | null;
+  readonly stripeChargesEnabled: boolean;
+  readonly stripePayoutsEnabled: boolean;
+  readonly stripeOnboardingStatus: StripeOnboardingStatus;
+  readonly stripeRequirementsDue: string[] | null;
+  readonly fiscalizationConfig: Record<string, unknown> | null;
   readonly primaryDomain: TenantDomain;
   readonly customDomains: readonly TenantDomain[];
   readonly createdAt: Date;
@@ -54,14 +79,15 @@ export interface ApplyStripeCapabilitiesInput {
   readonly chargesEnabled: boolean;
   readonly payoutsEnabled: boolean;
   readonly onboardingStatus: StripeOnboardingStatus;
-  readonly requirementsDue: unknown;
+  readonly requirementsDue: string[] | null;
 }
 
 export interface ProvisionInput {
   readonly slug: TenantSlug;
   readonly displayName: string;
+  readonly country: CountryCodeValue;
+  /** Defaults to `defaultLocaleForCountry(country)` (D-35) when omitted. */
   readonly locale?: string;
-  readonly defaultCurrency: Currency;
   /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
   readonly primaryDomainHostname: string;
   readonly now?: Date;
@@ -96,13 +122,27 @@ export class Tenant {
       verifiedAt: now,
       createdAt: now,
     };
+    const defaultCurrency = currencyForCountry(input.country) as Currency;
     const snapshot: TenantSnapshot = {
       id,
       slug: input.slug,
       displayName: input.displayName,
       status: 'active',
-      locale: input.locale ?? 'en',
-      defaultCurrency: input.defaultCurrency,
+      locale: input.locale ?? defaultLocaleForCountry(input.country),
+      country: input.country,
+      defaultCurrency,
+      theme: null,
+      legalName: null,
+      legalForm: null,
+      taxId: null,
+      stripeAccountId: null,
+      paymentProvider: 'stripe',
+      accountType: null,
+      stripeChargesEnabled: false,
+      stripePayoutsEnabled: false,
+      stripeOnboardingStatus: 'not_started',
+      stripeRequirementsDue: null,
+      fiscalizationConfig: null,
       primaryDomain,
       customDomains: [],
       createdAt: now,
@@ -244,18 +284,48 @@ export class Tenant {
     });
   }
 
-  linkStripeAccount(_accountId: string, _now: Date = new Date()): void {
-    void _accountId;
-    void _now;
+  linkStripeAccount(
+    accountId: string,
+    accountType: TenantPaymentAccountType,
+    now: Date = new Date(),
+  ): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeAccountId: accountId,
+      accountType,
+      stripeOnboardingStatus: 'pending',
+      updatedAt: now,
+    };
+    this.#events.push({
+      kind: 'TenantPaymentAccountLinked',
+      tenantId: this.snapshot.id,
+      stripeAccountId: accountId,
+      accountType,
+      occurredAt: now,
+    });
   }
 
-  applyStripeCapabilities(_input: ApplyStripeCapabilitiesInput, _now: Date = new Date()): void {
-    void _input;
-    void _now;
+  applyStripeCapabilities(input: ApplyStripeCapabilitiesInput, now: Date = new Date()): void {
+    this.snapshot = {
+      ...this.snapshot,
+      stripeChargesEnabled: input.chargesEnabled,
+      stripePayoutsEnabled: input.payoutsEnabled,
+      stripeOnboardingStatus: input.onboardingStatus,
+      stripeRequirementsDue: input.requirementsDue,
+      updatedAt: now,
+    };
+    this.#events.push({
+      kind: 'TenantPaymentCapabilitiesApplied',
+      tenantId: this.snapshot.id,
+      chargesEnabled: input.chargesEnabled,
+      payoutsEnabled: input.payoutsEnabled,
+      onboardingStatus: input.onboardingStatus,
+      occurredAt: now,
+    });
   }
 
   canAcceptPayments(): boolean {
-    return false;
+    return this.snapshot.stripeAccountId !== null && this.snapshot.stripeChargesEnabled;
   }
 
   isPubliclyServable(): boolean {

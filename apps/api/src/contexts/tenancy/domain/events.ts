@@ -60,6 +60,23 @@ export interface TenantResumedDomainEvent {
   readonly occurredAt: Date;
 }
 
+export interface TenantPaymentAccountLinkedDomainEvent {
+  readonly kind: 'TenantPaymentAccountLinked';
+  readonly tenantId: TenantId;
+  readonly stripeAccountId: string;
+  readonly accountType: 'express' | 'standard';
+  readonly occurredAt: Date;
+}
+
+export interface TenantPaymentCapabilitiesAppliedDomainEvent {
+  readonly kind: 'TenantPaymentCapabilitiesApplied';
+  readonly tenantId: TenantId;
+  readonly chargesEnabled: boolean;
+  readonly payoutsEnabled: boolean;
+  readonly onboardingStatus: 'not_started' | 'pending' | 'complete' | 'restricted';
+  readonly occurredAt: Date;
+}
+
 export type TenantDomainEvent =
   | TenantProvisionedDomainEvent
   | TenantArchivedDomainEvent
@@ -67,4 +84,6 @@ export type TenantDomainEvent =
   | TenantOffboardingCancelledDomainEvent
   | TenantErasureCompletedDomainEvent
   | TenantSuspendedDomainEvent
-  | TenantResumedDomainEvent;
+  | TenantResumedDomainEvent
+  | TenantPaymentAccountLinkedDomainEvent
+  | TenantPaymentCapabilitiesAppliedDomainEvent;
