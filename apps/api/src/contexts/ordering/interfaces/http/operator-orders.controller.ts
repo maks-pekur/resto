@@ -16,7 +16,7 @@ import { trace } from '@opentelemetry/api';
 import { requireTenantContext } from '@resto/db';
 import { OrderId, TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import { Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { CurrentOperator } from '../../../identity/interfaces/http/decorators/current-principal.decorator';
 import type { OperatorPrincipal } from '../../../identity/domain/principal';
@@ -57,7 +57,6 @@ export class OperatorOrdersController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['read'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: OrderFeedListResponseDto })
   feed(
     @Query(new RestoZodValidationPipe(OrderFeedQueryDto)) query: OrderFeedQueryDto,
@@ -89,7 +88,6 @@ export class OperatorOrdersController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['read'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: OrderDetailResponseDto })
   detail(@Param('id', ParseUUIDPipe) id: string): Promise<OrderDetailResponse> {
     return wrap(async () =>
@@ -101,7 +99,6 @@ export class OperatorOrdersController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['update-status'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiBody({ type: AcceptOrderInputDto })
   @ApiOkResponse({ type: OrderSnapshotResponseDto })
   accept(
@@ -125,7 +122,6 @@ export class OperatorOrdersController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['update-status'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiBody({ type: AdvanceOrderStatusInputDto })
   @ApiOkResponse({ type: OrderSnapshotResponseDto })
   advance(

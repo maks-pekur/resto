@@ -242,3 +242,37 @@ provision-brand.service.spec.ts` (already flagged above). `grep -l` confirms non
   19). Pre-existing since plan 06 landed; not caused by this plan and outside Task 2's
   `files_modified`. Flagging for plan 19's green-gate sweep alongside the two owned
   e2e specs.
+
+## From plan 11 (Task 0b)
+
+- **`apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts` still
+  carries 5 `activeBrandId`/`brandId` matches** — the `session.additionalFields.activeBrandId`
+  declaration (line 364) and the org-switch `databaseHooks.session.update.after` brand-pin
+  sub-block (lines 381-424, plus the `brandId: pinnedBrandId` logger field at line 441).
+  This is the one remaining file with matches under `apps/api/src/contexts/identity` — Task
+  0b's own `<files>` list is `auth.guard.ts` / `set-active-location.controller.ts` /
+  `me.controller.ts`, and this file is not in it. Confirmed dead at runtime:
+  `onInitialBrandPin` is never wired in `identity-core.module.ts`'s `buildAuth({...})` call
+  (`grep -n "onInitialBrandPin" identity-core.module.ts` returns nothing), so
+  `opts.onInitialBrandPin` is always `undefined` and the whole brand/location auto-pin branch
+  inside the hook never executes — leaving it in place changes nothing observable. Not
+  removed here because doing so means rewriting a Better-Auth session hook (schema
+  `additionalFields` + `databaseHooks` write logic) in a security-sensitive auth-plugin
+  file, and `10.2-08-SUMMARY.md`'s "Next Phase Readiness" note already assigns
+  "reviving/rewriting this hook" to **plan 12** — Rule 4 (architectural change to auth
+  wiring) applies rather than a mechanical identifier rename. `identity-core.module.ts`'s
+  own `brandId` param (renamed to `tenantId` at the `onInitialLocationPin` call site) and
+  `auth.config.ts`'s matching type declaration were renamed as pure, zero-risk parameter
+  renames since `resolveForUserInBrand`'s second parameter is already `tenantId` (Task 0a
+  precedent) — those two are NOT part of this deferred item, only the 5 matches listed above
+  remain.
+
+- **`apps/admin/src/lib/queries/locations.ts`'s `PinnableLocation.brandId: string`** is now
+  stale — `GET /v1/me/locations`'s response no longer carries `brandId` after this task
+  (the field was dropped from the port/reader/controller Zod schema; the pick-location list
+  is now tenant-scoped, not brand-scoped — see 10.2-11-SUMMARY.md). `grep -l
+"apps/admin/src/lib/queries/locations.ts" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md`
+  → owned by **plan 14**, not this plan. Confirmed zero admin consumers actually read
+  `.brandId` off a `PinnableLocation` (`grep -n "brandId" app-sidebar.tsx
+use-effective-location.ts pick-location.tsx` — no matches), so the stale field is inert,
+  not a live bug; left for plan 14 to drop alongside its own work on this file.

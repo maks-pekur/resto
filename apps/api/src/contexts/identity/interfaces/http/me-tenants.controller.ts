@@ -9,7 +9,7 @@ import { ListMyTenantsService } from '../../application/list-my-tenants.service'
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { TenantSlugRateLimitGuard } from './guards/tenant-slug-rate-limit.guard';
-import { BrandNeutral, LocationNeutral, Permissions } from '../../../../shared/auth';
+import { LocationNeutral, Permissions } from '../../../../shared/auth';
 
 const MeTenantSchema = z.object({
   id: z.string().uuid(),
@@ -32,7 +32,6 @@ class SlugAvailabilityResponseDto extends createZodDto(SlugAvailabilityResponseS
 
 @ApiTags('identity')
 @Controller('v1/me')
-@BrandNeutral()
 @LocationNeutral()
 export class MeTenantsController {
   constructor(

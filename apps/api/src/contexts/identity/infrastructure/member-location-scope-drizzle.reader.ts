@@ -69,18 +69,15 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
   // D-01 (phase 10.2): locations lost their brand dimension when brand merged 1:1 into
   // tenant, so the query below no longer filters by it — every active tenant location
   // is in scope now (further narrowed to membership scope for non-owners), a
-  // deliberate widening of the pre-merge result set. `input.brandId`/`PinnableLocation`
-  // still carry the field for the currently-untouched port/controller contract
-  // (set-active-location.controller.ts, out of this task's scope); it is echoed back
-  // rather than read from the row.
+  // deliberate widening of the pre-merge result set (F-28: tenant-scope reproduces
+  // exactly what brand-scope used to mean, since one tenant is one former brand).
   async findPinnableLocations(input: {
     userId: string;
     tenantId: TenantId;
-    brandId: string;
     isOwner: boolean;
   }): Promise<readonly PinnableLocation[]> {
     if (input.isOwner) {
-      const rows = await this.db.withTenant(async (tx) =>
+      return this.db.withTenant(async (tx) =>
         tx
           .select({
             id: schema.locations.id,
@@ -94,10 +91,9 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
             ),
           ),
       );
-      return rows.map((r) => ({ ...r, brandId: input.brandId }));
     }
 
-    const rows = await this.db.withTenant(async (tx) =>
+    return this.db.withTenant(async (tx) =>
       tx
         .select({
           id: schema.locations.id,
@@ -120,7 +116,6 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
           ),
         ),
     );
-    return rows.map((r) => ({ ...r, brandId: input.brandId }));
   }
 
   async listLocationRolesForMember(input: {

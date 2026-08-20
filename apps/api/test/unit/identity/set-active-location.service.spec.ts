@@ -11,7 +11,6 @@ import type { SessionActiveLocationWriter } from '../../../src/contexts/identity
 
 const TENANT_ID = TenantId.parse('00000000-0000-0000-0000-000000000001');
 const USER_ID = '00000000-0000-0000-0000-000000000002';
-const BRAND_ID = '00000000-0000-0000-0000-000000000003';
 const LOCATION_A = '00000000-0000-0000-0000-000000000010';
 const LOCATION_B = '00000000-0000-0000-0000-000000000011';
 const SESSION_TOKEN = 'session-token';
@@ -44,7 +43,6 @@ describe('SetActiveLocationService', () => {
       userId: USER_ID,
       tenantId: TENANT_ID,
       baseRole: 'owner',
-      brandId: BRAND_ID,
       locationId: LOCATION_A,
       sessionToken: SESSION_TOKEN,
     });
@@ -64,7 +62,6 @@ describe('SetActiveLocationService', () => {
       userId: USER_ID,
       tenantId: TENANT_ID,
       baseRole: 'owner',
-      brandId: BRAND_ID,
       locationId: null,
       sessionToken: SESSION_TOKEN,
     });
@@ -88,7 +85,6 @@ describe('SetActiveLocationService', () => {
         userId: USER_ID,
         tenantId: TENANT_ID,
         baseRole: 'staff',
-        brandId: BRAND_ID,
         locationId: LOCATION_A,
         sessionToken: SESSION_TOKEN,
       }),
@@ -109,7 +105,6 @@ describe('SetActiveLocationService', () => {
       userId: USER_ID,
       tenantId: TENANT_ID,
       baseRole: 'staff',
-      brandId: BRAND_ID,
       locationId: LOCATION_B,
       sessionToken: SESSION_TOKEN,
     });
@@ -135,7 +130,6 @@ describe('SetActiveLocationService', () => {
         userId: USER_ID,
         tenantId: TENANT_ID,
         baseRole: 'staff',
-        brandId: BRAND_ID,
         locationId: LOCATION_B,
         sessionToken: SESSION_TOKEN,
       }),

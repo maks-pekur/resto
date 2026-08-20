@@ -14,7 +14,7 @@ import { createZodDto } from 'nestjs-zod';
 import { requireTenantContext } from '@resto/db';
 import { OrderId, TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import { Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { CurrentOperator } from '../../../identity/interfaces/http/decorators/current-principal.decorator';
 import type { OperatorPrincipal } from '../../../identity/domain/principal';
@@ -56,7 +56,6 @@ export class OrderCancelController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['cancel'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiBody({ type: CancelOrderInputDto })
   @ApiOkResponse({ type: CancelOrderResponseDto })
   cancel(
@@ -81,7 +80,6 @@ export class OrderCancelController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ order: ['cancel'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: RetryRefundResponseDto })
   retry(@CurrentOperator() operator: OperatorPrincipal, @Param('orderId') orderId: string) {
     const tenantId = TenantId.parse(requireTenantContext().tenantId);

@@ -1,9 +1,8 @@
-import { Controller, Get, Inject, Req } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { and, eq } from 'drizzle-orm';
-import type { FastifyRequest } from 'fastify';
 import { member as memberTable } from '@resto/db/schema';
-import { BrandNeutral } from '../../../../shared/auth';
+import { LocationNeutral } from '../../../../shared/auth';
 import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
 import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 import { computeEffectivePermissions } from '../../application/effective-permissions';
@@ -18,18 +17,17 @@ interface MeResponse {
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
   twoFactorEnabled?: boolean;
-  activeBrandId?: string | null;
   permissions: Record<string, string[]>;
 }
 
 @ApiTags('identity')
-@BrandNeutral()
+@LocationNeutral()
 @Controller('/v1/me')
 export class MeController {
   constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
 
   @Get()
-  async me(@CurrentPrincipal() actor: Principal, @Req() req: FastifyRequest): Promise<MeResponse> {
+  async me(@CurrentPrincipal() actor: Principal): Promise<MeResponse> {
     if (actor.kind === 'operator') {
       const permissions = actor.tenantId
         ? await this.resolvePermissions(actor.userId, actor.tenantId)
@@ -43,7 +41,6 @@ export class MeController {
         ...(typeof actor.twoFactorEnabled === 'boolean'
           ? { twoFactorEnabled: actor.twoFactorEnabled }
           : {}),
-        activeBrandId: req.activeBrandId ?? null,
         permissions,
       };
     }

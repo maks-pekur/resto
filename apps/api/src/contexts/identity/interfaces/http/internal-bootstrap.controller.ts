@@ -27,7 +27,7 @@ import {
   type TenantLookupPort,
 } from '../../application/ports/tenant-lookup.port';
 import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
-import { BrandNeutral, Public } from '../../../../shared/auth';
+import { LocationNeutral, Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { mapIdentityError } from './error-mapping';
 
@@ -67,7 +67,7 @@ const wrap = wrapWith(mapIdentityError);
  */
 @ApiTags('identity')
 @Public()
-@BrandNeutral()
+@LocationNeutral()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/tenants')
 export class InternalBootstrapController {

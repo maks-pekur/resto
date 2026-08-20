@@ -15,7 +15,7 @@ import { z } from 'zod';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { AssignLocationRoleService } from '../../application/assign-location-role.service';
 import { ListMemberLocationRolesService } from '../../application/list-member-location-roles.service';
@@ -38,7 +38,7 @@ class MemberLocationRolesResponseDto extends createZodDto(MemberLocationRolesRes
 // D-15: brand-neutral (mirrors member-roles.controller.ts) — assigns
 // roles across a brand's locations, not scoped to one pinned location.
 @ApiTags('identity')
-@BrandNeutral()
+@LocationNeutral()
 @Controller('v1/members')
 export class MemberLocationRolesController {
   constructor(

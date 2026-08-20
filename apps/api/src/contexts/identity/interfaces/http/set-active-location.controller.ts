@@ -16,7 +16,7 @@ import { z } from 'zod';
 import type { FastifyRequest } from 'fastify';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { BrandNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { SetActiveLocationService } from '../../application/set-active-location.service';
 import {
   MEMBER_LOCATION_SCOPE_READER,
@@ -43,7 +43,6 @@ class SetActiveLocationResponseDto extends createZodDto(SetActiveLocationRespons
 const PinnableLocationSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
-  brandId: z.string().uuid(),
 });
 
 const ListPinnableLocationsResponseSchema = z.object({
@@ -65,7 +64,7 @@ const mapError = (err: unknown): unknown => {
 const wrap = wrapWith(mapError);
 
 @ApiTags('identity')
-@BrandNeutral()
+@LocationNeutral()
 @Controller('v1/me')
 export class SetActiveLocationController {
   constructor(
@@ -88,10 +87,6 @@ export class SetActiveLocationController {
     if (!rawTenantId) {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });
     }
-    const activeBrandId = req.activeBrandId;
-    if (!activeBrandId) {
-      throw new ForbiddenException({ code: 'brand.context_required' });
-    }
     const sessionToken = req.sessionToken;
     if (!sessionToken) {
       throw new ForbiddenException({ code: 'auth.session_missing' });
@@ -102,7 +97,6 @@ export class SetActiveLocationController {
         userId: operator.userId,
         tenantId,
         baseRole: operator.baseRole,
-        brandId: activeBrandId,
         locationId: input.locationId,
         sessionToken,
       }),
@@ -115,23 +109,17 @@ export class SetActiveLocationController {
   @ApiOkResponse({ type: ListPinnableLocationsResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   async listPinnableLocations(
-    @Req() req: FastifyRequest,
     @CurrentOperator() operator: OperatorPrincipal,
   ): Promise<ListPinnableLocationsResponseDto> {
     const { tenantId: rawTenantId } = operator;
     if (!rawTenantId) {
       throw new ForbiddenException({ code: 'auth.no_active_tenant' });
     }
-    const activeBrandId = req.activeBrandId;
-    if (!activeBrandId) {
-      throw new ForbiddenException({ code: 'brand.context_required' });
-    }
     const tenantId = TenantId.parse(rawTenantId);
     const locations = await wrap(() =>
       this.reader.findPinnableLocations({
         userId: operator.userId,
         tenantId,
-        brandId: activeBrandId,
         isOwner: operator.baseRole === 'owner',
       }),
     );

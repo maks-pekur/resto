@@ -14,7 +14,6 @@ export interface SetActiveLocationInput {
   readonly userId: string;
   readonly tenantId: TenantId;
   readonly baseRole: string | undefined;
-  readonly brandId: string;
   readonly locationId: string | null;
   readonly sessionToken: string;
 }

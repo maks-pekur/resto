@@ -26,7 +26,6 @@ import {
   LocationNeutral,
   OwnerOnly,
   Permissions,
-  RequireBrand,
   RequiresTenantContext,
 } from '../../../../shared/auth';
 import {
@@ -126,7 +125,6 @@ export class CatalogController {
   @Post('categories')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: UpsertCategoryInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -140,7 +138,6 @@ export class CatalogController {
   @Post('categories/reorder')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: ReorderCategoriesInputDto })
   @ApiOkResponse({ type: ReorderCategoriesResponseDto })
@@ -154,7 +151,6 @@ export class CatalogController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: UpsertItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -168,7 +164,6 @@ export class CatalogController {
   @Post('modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: UpsertModifierGroupInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -183,7 +178,6 @@ export class CatalogController {
   @Post('modifier-options')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: UpsertModifierOptionInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -198,7 +192,6 @@ export class CatalogController {
   @Post('item-sizes')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: UpsertItemSizeInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -212,7 +205,6 @@ export class CatalogController {
   @Put('items/:id/modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiBody({ type: SetItemModifierGroupsInputDto })
   @ApiOkResponse({ type: IdResponseDto })
@@ -230,7 +222,6 @@ export class CatalogController {
   @Post('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @ApiBody({ type: StopItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -243,7 +234,6 @@ export class CatalogController {
   @Delete('stop-list/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   stopListRemove(@Param('itemId', ParseUUIDPipe) itemId: string): Promise<void> {
     return wrap(() => this.stopList.unstop(itemId));
@@ -298,7 +288,6 @@ export class CatalogController {
   @Patch('categories/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveCategory(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
@@ -308,7 +297,6 @@ export class CatalogController {
   @Patch('items/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
@@ -318,7 +306,6 @@ export class CatalogController {
   @Get('categories')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -331,7 +318,6 @@ export class CatalogController {
   @Get('items')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: ItemListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -373,7 +359,6 @@ export class CatalogController {
   @Get('items/:id')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: ItemDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -384,7 +369,6 @@ export class CatalogController {
   @Get('modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -395,7 +379,6 @@ export class CatalogController {
   @Get('modifier-groups/:id')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -408,7 +391,6 @@ export class CatalogController {
   @Get('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @ApiOkResponse({ type: StopListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listStopList(): Promise<StopListResponseDto> {
@@ -418,7 +400,6 @@ export class CatalogController {
   @Get('stop-list/aggregate')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @OwnerOnly()
   @ApiOkResponse({ type: AggregateStopListResponseDto })
@@ -433,7 +414,6 @@ export class CatalogController {
   @Get('draft-diff')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @LocationNeutral()
   @ApiOkResponse({ type: DraftDiffResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })

@@ -8,12 +8,12 @@ import {
   Req,
 } from '@nestjs/common';
 import type { FastifyRequest } from 'fastify';
-import { BrandNeutral } from '../../../../shared/auth/brand-neutral.decorator';
+import { LocationNeutral } from '../../../../shared/auth/location-neutral.decorator';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { HandleStripeEventService } from '../../application/handle-stripe-event.service';
 import { PAYMENT_PROVIDER_PORT, type PaymentProviderPort } from '../../domain/ports';
 
-@BrandNeutral()
+@LocationNeutral()
 @Controller()
 export class StripeWebhookController {
   private readonly logger = new Logger(StripeWebhookController.name);
