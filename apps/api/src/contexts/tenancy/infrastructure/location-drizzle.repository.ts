@@ -1,14 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, TenantScopedRepository } from '@resto/db';
-import { BrandId, LocationId, TenantId } from '@resto/domain';
-import { and, asc, eq } from 'drizzle-orm';
+import { LocationId, TenantId } from '@resto/domain';
+import { asc, eq } from 'drizzle-orm';
 import { LocationContactsSchema, type LocationSnapshot } from '../domain/location.aggregate';
 import type { LocationRepository } from '../domain/ports';
 
 const ROW_TO_SNAPSHOT = (row: {
   id: string;
   tenantId: string;
-  brandId: string;
   name: string;
   address: string | null;
   timezone: string | null;
@@ -20,7 +19,6 @@ const ROW_TO_SNAPSHOT = (row: {
 }): LocationSnapshot => ({
   id: LocationId.parse(row.id),
   tenantId: TenantId.parse(row.tenantId),
-  brandId: BrandId.parse(row.brandId),
   name: row.name,
   address: row.address,
   timezone: row.timezone,
@@ -45,13 +43,13 @@ export class LocationDrizzleRepository
     return row ? ROW_TO_SNAPSHOT(row) : null;
   }
 
-  async listForBrand(brandId: BrandId, tenantId: TenantId): Promise<readonly LocationSnapshot[]> {
+  async listForTenant(_tenantId: TenantId): Promise<readonly LocationSnapshot[]> {
+    // ADR-0020 I-1: `scoped.selectFrom` auto-applies `eq(table.tenantId, ...)`
+    // from the ALS-bound context — this is now the ONLY filter on this query,
+    // not a redundant one alongside a dropped brand predicate.
     return this.withTenant(async (scoped) => {
       const rows = await scoped
-        .selectFrom(
-          schema.locations,
-          and(eq(schema.locations.tenantId, tenantId), eq(schema.locations.brandId, brandId)),
-        )
+        .selectFrom(schema.locations)
         .orderBy(asc(schema.locations.createdAt));
       return rows.map(ROW_TO_SNAPSHOT);
     });
@@ -62,7 +60,6 @@ export class LocationDrizzleRepository
       await scoped
         .insertInto(schema.locations, {
           id: snapshot.id,
-          brandId: snapshot.brandId,
           name: snapshot.name,
           address: snapshot.address,
           timezone: snapshot.timezone,

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
-import { BrandId, LocationId, TenantId } from '@resto/domain';
+import { requireTenantContext } from '@resto/db';
+import { LocationId, TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../domain/ports';
 import type { LocationContacts, LocationSnapshot } from '../domain/location.aggregate';
 
@@ -20,13 +20,11 @@ export class ProvisionLocationService {
 
   async execute(input: ProvisionLocationInput): Promise<LocationSnapshot> {
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
     const now = new Date();
 
     const snapshot: LocationSnapshot = {
       id: LocationId.parse(randomUUID()),
       tenantId: TenantId.parse(ctx.tenantId),
-      brandId: BrandId.parse(brandId),
       name: input.name,
       address: input.address,
       timezone: input.timezone,
@@ -38,10 +36,7 @@ export class ProvisionLocationService {
     };
 
     await this.locations.save(snapshot);
-    this.logger.log(
-      { tenantId: ctx.tenantId, brandId, locationId: snapshot.id },
-      'Location provisioned.',
-    );
+    this.logger.log({ tenantId: ctx.tenantId, locationId: snapshot.id }, 'Location provisioned.');
     return snapshot;
   }
 }
