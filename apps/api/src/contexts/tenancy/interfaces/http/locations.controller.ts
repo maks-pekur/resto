@@ -52,7 +52,6 @@ class CreateLocationInputDto extends createZodDto(CreateLocationInputSchema) {}
 
 const LocationResponseSchema = z.object({
   id: z.string().uuid(),
-  brandId: z.string().uuid(),
   name: z.string(),
   address: z.string().nullable(),
   timezone: z.string().nullable(),
@@ -71,7 +70,6 @@ class ArchiveLocationResponseDto extends createZodDto(ArchiveLocationResponseSch
 
 const toResponse = (s: LocationSnapshot) => ({
   id: s.id,
-  brandId: s.brandId,
   name: s.name,
   address: s.address,
   timezone: s.timezone,
