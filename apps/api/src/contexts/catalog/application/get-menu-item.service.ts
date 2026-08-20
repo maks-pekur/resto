@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { PublishedMenuItem } from '../domain/published-menu';
 import { MenuItemNotFoundError } from '../domain/errors';
@@ -13,7 +13,7 @@ export class GetMenuItemService {
     // matches the peer pattern in `get-published-menu.service.ts` and
     // avoids a generic 500 from `db.withTenant` deep in the repo (RES-176).
     requireTenantContext();
-    const item = await this.repo.findPublishedItem(itemId, requireBrandContext());
+    const item = await this.repo.findPublishedItem(itemId);
     if (!item) throw new MenuItemNotFoundError(itemId);
     return item;
   }

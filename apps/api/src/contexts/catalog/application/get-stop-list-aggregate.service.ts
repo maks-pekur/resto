@@ -1,25 +1,32 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
-import { BrandId, TenantId } from '@resto/domain';
+import { requireTenantContext } from '@resto/db';
+import { TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
+import type { LocationSnapshot } from '../../tenancy/domain/location.aggregate';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { AggregateStopListResponse } from './dto';
+
+// 10.2-06 (concurrent) replaces LocationRepository.listForBrand with a tenant-scoped
+// equivalent; this augmentation lets catalog compile against that shape ahead of the
+// merge. Drop once ports.ts exports listForTenant directly.
+interface TenantScopedLocationRepository extends LocationRepository {
+  listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
+}
 
 @Injectable()
 export class GetStopListAggregateService {
   constructor(
     @Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository,
-    @Inject(LOCATION_REPOSITORY) private readonly locations: LocationRepository,
+    @Inject(LOCATION_REPOSITORY) private readonly locations: TenantScopedLocationRepository,
   ) {}
 
   async execute(): Promise<AggregateStopListResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = BrandId.parse(requireBrandContext());
 
     // D-10: the active-location set is always server-resolved from the
-    // brand-RLS-protected `locations` table, never accepted from the caller.
-    const all = await this.locations.listForBrand(brandId, tenantId);
+    // tenant-RLS-protected `locations` table, never accepted from the caller.
+    const all = await this.locations.listForTenant(tenantId);
     const active = all.filter((l) => l.status === 'active');
 
     const { rows, totalStoppedItems } = await this.repo.listStopListAggregateAcrossLocations(

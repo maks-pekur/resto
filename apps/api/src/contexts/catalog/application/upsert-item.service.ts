@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext, type MenuItemPhoto } from '@resto/db';
+import { requireTenantContext, type MenuItemPhoto } from '@resto/db';
 import { Currency, MoneyAmount } from '@resto/domain';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import { deriveSlugFromName } from './slug-util';
@@ -11,12 +11,11 @@ export class UpsertItemService {
 
   async execute(input: UpsertItemInput): Promise<{ id: string }> {
     // RestoZodValidationPipe already validated constraints via MoneyAmountValue /
-    // CurrencyValue (packages/domain/src/money.ts). Brands are purely TS; cast at
-    // the HTTP→service boundary per ADR-0020 I-7.
+    // CurrencyValue (packages/domain/src/money.ts). Cast at the HTTP→service
+    // boundary per ADR-0020 I-7.
     const basePrice = input.basePrice as MoneyAmount;
     const currency = input.currency as Currency;
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
     // D-4a-04 / RESEARCH.md Pattern 4: auto-derive slug from name when
     // operator did not supply one. Slug-change alias insertion happens at the
     // repository layer (single transaction with the upsert so the alias and
@@ -37,7 +36,6 @@ export class UpsertItemService {
     const result = await this.repo.upsertItem({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
-      brandId,
       categoryId: input.categoryId,
       slug,
       name: input.name,

@@ -1,5 +1,4 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import {
   CATALOG_REPOSITORY,
@@ -19,7 +18,6 @@ export class GetPublishedMenuService {
   async execute(rawTenantId: string): Promise<PublishedMenu> {
     const tenantId = TenantId.parse(rawTenantId);
     const version = await this.versions.current(tenantId);
-    const brandId = requireBrandContext();
-    return this.repo.loadPublishedMenu(tenantId, version, brandId);
+    return this.repo.loadPublishedMenu(tenantId, version);
   }
 }
