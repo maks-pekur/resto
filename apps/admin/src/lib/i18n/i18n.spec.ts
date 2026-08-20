@@ -1,5 +1,16 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import i18n from './index';
+import ru from './messages/ru.json';
+import en from './messages/en.json';
+import es from './messages/es.json';
+
+function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
+  return Object.entries(obj).flatMap(([key, value]) =>
+    typeof value === 'object' && value !== null
+      ? flattenKeys(value as Record<string, unknown>, `${prefix}${key}.`)
+      : [`${prefix}${key}`],
+  );
+}
 
 beforeAll(async () => {
   if (!i18n.isInitialized) {
@@ -46,6 +57,38 @@ describe('i18n — language switch', () => {
     await i18n.changeLanguage('en');
     const result = i18n.t('nav.dashboard');
     expect(result).toBe('Dashboard');
+    await i18n.changeLanguage('ru');
+  });
+});
+
+describe('i18n — catalogue completeness (D-38)', () => {
+  it('ru, en and es catalogues have identical key sets', () => {
+    const ruKeys = flattenKeys(ru).sort();
+    const enKeys = flattenKeys(en).sort();
+    const esKeys = flattenKeys(es).sort();
+
+    const missingFromEn = ruKeys.filter((key) => !enKeys.includes(key));
+    const missingFromRu = enKeys.filter((key) => !ruKeys.includes(key));
+    const missingFromEs = enKeys.filter((key) => !esKeys.includes(key));
+    const extraInEs = esKeys.filter((key) => !enKeys.includes(key));
+
+    expect({ missingFromEn, missingFromRu, missingFromEs, extraInEs }).toEqual({
+      missingFromEn: [],
+      missingFromRu: [],
+      missingFromEs: [],
+      extraInEs: [],
+    });
+  });
+});
+
+describe('i18n — deliberate fallback (D-38)', () => {
+  it('a locale with no catalogue falls back to the ru (fallbackLng) rendered string, not a raw key', async () => {
+    await i18n.changeLanguage('uk');
+    const result = i18n.t('nav.user.localeEs');
+
+    expect(result).not.toBe('nav.user.localeEs');
+    expect(result).toBe(ru.nav.user.localeEs);
+
     await i18n.changeLanguage('ru');
   });
 });
