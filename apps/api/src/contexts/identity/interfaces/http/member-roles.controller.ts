@@ -14,12 +14,7 @@ import type { FastifyRequest } from 'fastify';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import {
-  BrandNeutral,
-  LocationNeutral,
-  Permissions,
-  RequiresTenantContext,
-} from '../../../../shared/auth';
+import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { AssignRoleInputDto, type AssignRoleInput } from '../../application/dto';
 import { AssignRoleService } from '../../application/assign-role.service';
@@ -50,7 +45,6 @@ const toWebHeaders = (raw: FastifyRequest['headers']): Headers => {
 };
 
 @ApiTags('identity')
-@BrandNeutral()
 @LocationNeutral()
 @Controller('v1/roles')
 export class MemberRolesController {

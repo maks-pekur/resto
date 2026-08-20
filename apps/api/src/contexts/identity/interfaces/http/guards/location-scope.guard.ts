@@ -14,7 +14,7 @@ import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
 } from '../../../application/ports/member-location-scope-reader.port';
-import { BRAND_NEUTRAL_KEY, LOCATION_NEUTRAL_KEY } from '../../../../../shared/auth';
+import { LOCATION_NEUTRAL_KEY } from '../../../../../shared/auth';
 
 @Injectable()
 export class LocationScopeGuard implements CanActivate {
@@ -29,12 +29,6 @@ export class LocationScopeGuard implements CanActivate {
       [ctx.getHandler(), ctx.getClass()],
     );
     if (locationNeutral) return true;
-
-    const brandNeutral = this.reflector.getAllAndOverride<boolean | undefined>(BRAND_NEUTRAL_KEY, [
-      ctx.getHandler(),
-      ctx.getClass(),
-    ]);
-    if (brandNeutral) return true;
 
     const locationId = getLocationId();
     if (!locationId) {

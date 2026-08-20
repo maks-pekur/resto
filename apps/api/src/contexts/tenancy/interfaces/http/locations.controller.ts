@@ -22,12 +22,7 @@ import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
-import {
-  LocationNeutral,
-  Permissions,
-  RequireActiveTenant,
-  RequireBrand,
-} from '../../../../shared/auth';
+import { LocationNeutral, Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { ProvisionLocationService } from '../../application/provision-location.service';
 import { ListLocationsService } from '../../application/list-locations.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
@@ -95,7 +90,6 @@ export class LocationsController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ location: ['create'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiBody({ type: CreateLocationInputDto })
   @ApiOkResponse({ type: LocationResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -108,7 +102,6 @@ export class LocationsController {
   @Get()
   @Permissions({ location: ['read'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: LocationResponseDto, isArray: true })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   list(): Promise<LocationResponseDto[]> {
@@ -119,7 +112,6 @@ export class LocationsController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ location: ['update'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: ArchiveLocationResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto })

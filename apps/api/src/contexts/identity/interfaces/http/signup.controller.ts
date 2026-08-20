@@ -13,7 +13,7 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { SignUpInputDto } from '../../application/dto';
 import { SignUpService } from '../../application/signup.service';
 import { mapIdentityError } from './error-mapping';
-import { BrandNeutral, LocationNeutral, Public } from '../../../../shared/auth';
+import { LocationNeutral, Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 
 /**
@@ -33,7 +33,6 @@ class SignUpResponseDto extends createZodDto(SignUpResponseSchema) {}
 const wrap = wrapWith(mapIdentityError);
 
 @ApiTags('identity')
-@BrandNeutral()
 @LocationNeutral()
 @Controller('v1/signup')
 export class SignUpController {

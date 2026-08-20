@@ -14,13 +14,7 @@ import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { wrapWith } from '../../../../shared/api/wrap';
-import {
-  BrandNeutral,
-  LocationNeutral,
-  Permissions,
-  RequireActiveTenant,
-  RequireBrand,
-} from '../../../../shared/auth';
+import { LocationNeutral, Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { Public } from '../../../../shared/auth/public.decorator';
 import { StartTenantOnboardingService } from '../../application/start-tenant-onboarding.service';
 import { OAUTH_NONCE_COOKIE } from '../../domain/oauth-state';
@@ -90,7 +84,6 @@ export class TenantOnboardingController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ tenant: ['transfer'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: AccountSessionResponseDto })
   async createAccountSession(): Promise<AccountSessionResponseDto> {
     return this.#wrap(() => this.service.createEmbeddedSession());
@@ -100,7 +93,6 @@ export class TenantOnboardingController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ tenant: ['transfer'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: AccountLinkResponseDto })
   async createAccountLink(): Promise<AccountLinkResponseDto> {
     return this.#wrap(() => this.service.createHostedLink());
@@ -109,7 +101,6 @@ export class TenantOnboardingController {
   @Get('status')
   @Permissions({ tenant: ['read'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: OnboardingStatusResponseDto })
   async getStatus(): Promise<OnboardingStatusResponseDto> {
     return this.#wrap(() => this.service.getStatus());
@@ -119,7 +110,6 @@ export class TenantOnboardingController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ tenant: ['transfer'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiOkResponse({ type: OAuthStartResponseDto })
   async startOAuth(@Res({ passthrough: true }) res: FastifyReply): Promise<OAuthStartResponseDto> {
     return this.#wrap(async () => {
@@ -131,7 +121,6 @@ export class TenantOnboardingController {
 }
 
 @ApiTags('tenancy')
-@BrandNeutral()
 @LocationNeutral()
 @Controller('v1/tenancy/onboarding')
 export class TenantOAuthCallbackController {

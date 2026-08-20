@@ -2,7 +2,7 @@ import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { and, eq } from 'drizzle-orm';
 import { member as memberTable } from '@resto/db/schema';
-import { BrandNeutral, LocationNeutral } from '../../../../shared/auth';
+import { LocationNeutral } from '../../../../shared/auth';
 import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
 import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 import { computeEffectivePermissions } from '../../application/effective-permissions';
@@ -21,7 +21,6 @@ interface MeResponse {
 }
 
 @ApiTags('identity')
-@BrandNeutral()
 @LocationNeutral()
 @Controller('/v1/me')
 export class MeController {

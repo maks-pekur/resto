@@ -3,12 +3,7 @@ import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swa
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import {
-  BrandNeutral,
-  LocationNeutral,
-  Public,
-  RequireActiveTenant,
-} from '../../../../shared/auth';
+import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   CreateOrderInputDto,
@@ -39,7 +34,6 @@ class OrderStatusResponseDto extends createZodDto(OrderStatusResponseSchema) {}
 
 @ApiTags('ordering')
 @Public()
-@BrandNeutral()
 @LocationNeutral()
 @Controller('v1/orders')
 export class OrdersController {

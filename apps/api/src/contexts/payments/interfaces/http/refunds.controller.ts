@@ -3,7 +3,7 @@ import { ApiBody, ApiTags } from '@nestjs/swagger';
 import { requireTenantContext } from '@resto/db';
 import { OrderId, TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequireActiveTenant, RequireBrand } from '../../../../shared/auth';
+import { Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { RefundInputDto, type RefundInput } from '../../application/dto';
 import { RefundOrderService } from '../../application/refund-order.service';
@@ -20,7 +20,6 @@ export class RefundsController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ billing: ['update'] })
   @RequireActiveTenant()
-  @RequireBrand()
   @ApiBody({ type: RefundInputDto })
   refundOrder(
     @Param('orderId') orderId: string,
