@@ -61,6 +61,7 @@ suite('Outbox claim ownership (AUDIT #11)', () => {
         id: TENANT_UUID,
         slug: 'cafe-claim-owner',
         displayName: 'Cafe Claim Owner',
+        country: 'GB',
       });
     });
   }, 120_000);

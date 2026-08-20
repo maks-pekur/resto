@@ -20,11 +20,11 @@ suite('TenantAwareDb.withTenantId — explicit tenant for non-HTTP entry points'
     await pg.db.withoutTenant('seed tenants for withTenantId test', async (tx) => {
       const [a] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'wtid-a', displayName: 'WithTenantId A' })
+        .values({ slug: 'wtid-a', displayName: 'WithTenantId A', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [b] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'wtid-b', displayName: 'WithTenantId B' })
+        .values({ slug: 'wtid-b', displayName: 'WithTenantId B', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!a || !b) throw new Error('Failed to seed tenants.');
       tenantA = a.id;

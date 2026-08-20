@@ -52,6 +52,7 @@ suite('Outbox → NATS roundtrip', () => {
         id: TENANT_UUID,
         slug: 'cafe-roundtrip',
         displayName: 'Cafe Roundtrip',
+        country: 'GB',
       });
     });
   }, 120_000);

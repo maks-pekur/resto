@@ -15,7 +15,6 @@ const SALT = 'test-salt-must-be-at-least-32-chars';
 suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
   let pg: TestPg;
   let tenantId: string;
-  let brandId: string;
   let locationId: string;
   let orderId: string;
 
@@ -24,21 +23,14 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
     await pg.db.withoutTenant('seed ordering erase fixtures', async (tx) => {
       const [t] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-ord', displayName: 'EraseOrd' })
+        .values({ slug: 'erase-ord', displayName: 'EraseOrd', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!t) throw new Error('seed tenant failed');
       tenantId = t.id;
 
-      const [b] = await tx
-        .insert(schema.brands)
-        .values({ tenantId, slug: 'erase-ord-brand', displayName: 'EraseOrdBrand' })
-        .returning({ id: schema.brands.id });
-      if (!b) throw new Error('seed brand failed');
-      brandId = b.id;
-
       const [loc] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'EraseOrd Location' })
+        .values({ tenantId, name: 'EraseOrd Location' })
         .returning({ id: schema.locations.id });
       if (!loc) throw new Error('seed location failed');
       locationId = loc.id;
@@ -47,7 +39,6 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         .insert(schema.orders)
         .values({
           tenantId,
-          brandId,
           locationId,
           idempotencyKey: 'erase-ord-idem',
           orderNumber: '20260621-ERS',
@@ -125,7 +116,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
     await stopPostgres(pg);
   });
 
-  it('erases orders/items/modifiers/payments and still removes the brand (orders→brands RESTRICT no longer blocks)', async () => {
+  it('erases orders/items/modifiers/payments for the erased tenant', async () => {
     await pg.db.withoutTenant('run erase', async (tx) => {
       await tx.execute(sql`SELECT app_allow_erasure(${tenantId}::uuid)`);
       await tx.execute(
@@ -169,12 +160,6 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         .from(schema.orderDailySequences)
         .where(eq(schema.orderDailySequences.tenantId, tenantId));
       expect(sequences[0]?.n).toBe(0);
-
-      const brands = await tx
-        .select({ n: sql<number>`count(*)::int` })
-        .from(schema.brands)
-        .where(eq(schema.brands.tenantId, tenantId));
-      expect(brands[0]?.n).toBe(0);
     });
   });
 });

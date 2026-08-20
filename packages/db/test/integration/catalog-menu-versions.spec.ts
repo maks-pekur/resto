@@ -14,46 +14,32 @@ suite('catalog version tables', () => {
   let pg: TestPg;
   let tenantA: string;
   let tenantB: string;
-  let brandA: string;
-  let brandB: string;
   let locationA: string;
   let locationB: string;
 
   beforeAll(async () => {
     pg = await startPostgres();
 
-    await pg.db.withoutTenant('seed two tenants and brands', async (tx) => {
+    await pg.db.withoutTenant('seed two tenants and locations', async (tx) => {
       const [a] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'ver-a', displayName: 'Ver A' })
+        .values({ slug: 'ver-a', displayName: 'Ver A', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [b] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'ver-b', displayName: 'Ver B' })
+        .values({ slug: 'ver-b', displayName: 'Ver B', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!a || !b) throw new Error('Failed to seed tenants.');
       tenantA = a.id;
       tenantB = b.id;
 
-      const [ba] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantA, slug: 'ver-a-brand', displayName: 'Ver A Brand' })
-        .returning({ id: schema.brands.id });
-      const [bb] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantB, slug: 'ver-b-brand', displayName: 'Ver B Brand' })
-        .returning({ id: schema.brands.id });
-      if (!ba || !bb) throw new Error('Failed to seed brands.');
-      brandA = ba.id;
-      brandB = bb.id;
-
       const [la] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantA, brandId: brandA, name: 'Ver A Location' })
+        .values({ tenantId: tenantA, name: 'Ver A Location' })
         .returning({ id: schema.locations.id });
       const [lb] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantB, brandId: brandB, name: 'Ver B Location' })
+        .values({ tenantId: tenantB, name: 'Ver B Location' })
         .returning({ id: schema.locations.id });
       if (!la || !lb) throw new Error('Failed to seed locations.');
       locationA = la.id;
