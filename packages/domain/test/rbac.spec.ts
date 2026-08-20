@@ -13,7 +13,6 @@ describe('RBAC permission catalogue', () => {
       [
         'ac',
         'billing',
-        'brand',
         'invitation',
         'location',
         'menu',
@@ -76,14 +75,9 @@ describe('RBAC permission catalogue', () => {
     expect(SYSTEM_ROLES.admin.menu).toContain('update');
   });
 
-  it('admin can create / update / delete brands', () => {
-    expect(SYSTEM_ROLES.admin.brand).toEqual(['read', 'create', 'update', 'delete']);
-  });
-
-  it('staff can only read tenant + brand + location', () => {
-    expect(Object.keys(SYSTEM_ROLES.staff).sort()).toEqual(['brand', 'location', 'tenant']);
+  it('staff can only read tenant + location', () => {
+    expect(Object.keys(SYSTEM_ROLES.staff).sort()).toEqual(['location', 'tenant']);
     expect(SYSTEM_ROLES.staff.tenant).toEqual(['read']);
-    expect(SYSTEM_ROLES.staff.brand).toEqual(['read']);
     expect(SYSTEM_ROLES.staff.location).toEqual(['read']);
   });
 

@@ -9,7 +9,6 @@ export const SYSTEM_ROLES = {
     settings: ['update'],
     billing: ['read', 'update'],
     tenant: ['read', 'delete', 'transfer'],
-    brand: ['read', 'create', 'update', 'delete'],
     // D-06 (08.4): owner has full location CRUD
     location: ['read', 'create', 'update', 'delete'],
     // D-01/D-13 (08.3): owner-only; BA role-CRUD gate requires { ac: ['create'] }
@@ -23,14 +22,12 @@ export const SYSTEM_ROLES = {
     reports: ['read'],
     settings: ['update'],
     tenant: ['read'],
-    brand: ['read', 'create', 'update', 'delete'],
     invitation: ['create', 'cancel'],
     // D-06 (08.4): admin is read-only on locations (planner default)
     location: ['read'],
   },
   staff: {
     tenant: ['read'],
-    brand: ['read'],
     // D-06 (08.4): staff is read-only on locations
     location: ['read'],
   },

@@ -6,7 +6,6 @@ export const PERMISSIONS_STATEMENT = {
   settings: ['update'],
   billing: ['read', 'update'],
   tenant: ['read', 'delete', 'transfer'],
-  brand: ['read', 'create', 'update', 'delete'],
   // D-06 (08.4): location resource — owner-only write, admin/staff read (system-roles.ts)
   location: ['read', 'create', 'update', 'delete'],
   // D-13 (08.3): BA dynamicAccessControl gate checks { ac: ['create'] }; no ':' in action names

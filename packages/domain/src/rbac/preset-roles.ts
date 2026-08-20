@@ -15,7 +15,6 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
       order: ['read', 'update-status', 'cancel'],
       staff: ['invite'],
       reports: ['read'],
-      brand: ['read', 'update'],
       settings: ['update'],
       tenant: ['read'],
     },
@@ -27,7 +26,6 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     permission: {
       order: ['read', 'update-status', 'cancel'],
       menu: ['read'],
-      brand: ['read'],
       tenant: ['read'],
     },
   },
@@ -37,7 +35,6 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
     nameRu: 'Кухня',
     permission: {
       order: ['read', 'update-status', 'cancel'],
-      brand: ['read'],
       tenant: ['read'],
     },
   },

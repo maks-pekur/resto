@@ -3,9 +3,6 @@ import { z } from 'zod';
 export const TenantId = z.string().uuid().brand<'TenantId'>();
 export type TenantId = z.infer<typeof TenantId>;
 
-export const BrandId = z.string().uuid().brand<'BrandId'>();
-export type BrandId = z.infer<typeof BrandId>;
-
 export const LocationId = z.string().uuid().brand<'LocationId'>();
 export type LocationId = z.infer<typeof LocationId>;
 

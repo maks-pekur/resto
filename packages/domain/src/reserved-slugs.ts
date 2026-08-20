@@ -1,6 +1,6 @@
 /**
  * Non-dynamic root-level path segments of the admin SPA router.
- * These must all be in RESERVED_SLUGS so no brand slug can shadow an admin route.
+ * These must all be in RESERVED_SLUGS so no tenant slug can shadow an admin route.
  * D-06: the admin route-derivation spec (apps/admin/test/reserved-slugs-route-derivation.spec.ts)
  * asserts every ACTUAL assembled root segment is in RESERVED_SLUG_SET — catching new routes
  * added to main.tsx without reserving the word.
@@ -13,10 +13,11 @@ export const ADMIN_ROOT_ROUTE_SEGMENTS: readonly string[] = [
   'accept-invitation',
   'onboarding',
   'pick-location',
+  'pick-organization',
 ];
 
 /**
- * Platform-reserved subdomain labels. Never claimable as a tenant OR brand
+ * Platform-reserved subdomain labels. Never claimable as a tenant
  * slug — they collide with operational subdomains (admin, api, cdn, …) or are
  * confusing. Matched case-insensitively (slugs are lowercase by construction;
  * this is defence in depth in case a request bypasses the schema).
@@ -40,6 +41,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   'menu',
   'onboarding',
   'pick-location',
+  'pick-organization',
   'public',
   'reset-password',
   'resto',
