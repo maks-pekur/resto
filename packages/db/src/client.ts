@@ -191,9 +191,9 @@ export class TenantAwareDb {
 
   /**
    * RES-243 drift sentinel: assert `app.current_tenant` (and optionally
-   * `app.current_brand`) still match the values bound at transaction start.
-   * Catches `SET LOCAL` / `RESET` forge forms that `REVOKE EXECUTE` on
-   * `set_config` cannot block.
+   * `app.current_location`) still match the values bound at transaction
+   * start. Catches `SET LOCAL` / `RESET` forge forms that `REVOKE EXECUTE`
+   * on `set_config` cannot block.
    *
    * Called at end of every `withTenant` / `withTenantId` / `withoutTenant`
    * callback before the result is returned, so a drift throws while
@@ -211,7 +211,6 @@ export class TenantAwareDb {
     tx: RestoTx,
     expected: string,
     scope: string,
-    expectedBrand?: string,
     expectedLocation?: string,
   ): Promise<void> {
     const rows = await tx.execute<{ v: string | null }>(
@@ -222,17 +221,6 @@ export class TenantAwareDb {
       throw new Error(
         `Tenant GUC drift detected in ${scope}: expected ${JSON.stringify(expected)}, got ${JSON.stringify(actual)}. Transaction rolled back.`,
       );
-    }
-    if (expectedBrand !== undefined) {
-      const brandRows = await tx.execute<{ v: string | null }>(
-        sql`SELECT current_setting('app.current_brand', true) AS v`,
-      );
-      const actualBrand = brandRows[0]?.v ?? '';
-      if (actualBrand !== expectedBrand) {
-        throw new Error(
-          `Brand GUC drift detected in ${scope}: expected ${JSON.stringify(expectedBrand)}, got ${JSON.stringify(actualBrand)}. Transaction rolled back.`,
-        );
-      }
     }
     if (expectedLocation !== undefined) {
       const locationRows = await tx.execute<{ v: string | null }>(
@@ -255,14 +243,9 @@ export class TenantAwareDb {
    * (RES-243). The wrapper raises on rebind to a different tenant;
    * same-tenant rebind is idempotent.
    *
-   * When `ctx.brandId` is present (set by TenantContextMiddleware for
-   * brand-scoped routes), `app_bind_brand` is called AFTER `app_bind_tenant`
-   * so the brand RLS policy can filter rows by current_brand_id(). The
-   * drift sentinel is extended to cover `app.current_brand` in that case.
-   *
    * When `ctx.locationId` is present (set via `withLocation`/session pin
    * for location-scoped routes), `app_bind_location` is called AFTER
-   * `app_bind_brand` so the location RLS policy can filter rows by
+   * `app_bind_tenant` so the location RLS policy can filter rows by
    * current_location_id(). The drift sentinel is extended to cover
    * `app.current_location` in that case.
    */
@@ -270,14 +253,11 @@ export class TenantAwareDb {
     const ctx = requireTenantContext();
     return this.#db.transaction(async (tx) => {
       await tx.execute(sql`SELECT app_bind_tenant(${ctx.tenantId}, false)`);
-      if (ctx.brandId !== undefined) {
-        await tx.execute(sql`SELECT app_bind_brand(${ctx.brandId}::text)`);
-      }
       if (ctx.locationId !== undefined) {
         await tx.execute(sql`SELECT app_bind_location(${ctx.locationId}::text)`);
       }
       const result = await op(tx, new ScopedTx(tx, ctx.tenantId));
-      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.brandId, ctx.locationId);
+      await this.#assertGucUnchanged(tx, ctx.tenantId, 'withTenant', ctx.locationId);
       return result;
     });
   }
