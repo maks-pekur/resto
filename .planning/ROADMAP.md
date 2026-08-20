@@ -843,7 +843,7 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 3/20 plans executed
+**Plans:** 4/21 plans executed
 
 Plans:
 **Wave 1**
@@ -854,7 +854,7 @@ Plans:
 
 **Wave 2**
 
-- [ ] 10.2-04-PLAN.md — Schema merge B: nine brand_id columns dropped, index collapse, ScopedTx/TenantContext brand removal
+- [x] 10.2-04-PLAN.md — Schema merge B: nine brand_id columns dropped, index collapse, ScopedTx/TenantContext brand removal
 
 **Wave 3**
 
