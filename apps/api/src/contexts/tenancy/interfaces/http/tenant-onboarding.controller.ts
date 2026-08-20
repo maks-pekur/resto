@@ -4,7 +4,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   Query,
   Req,
@@ -22,7 +21,7 @@ import {
   RequireBrand,
 } from '../../../../shared/auth';
 import { Public } from '../../../../shared/auth/public.decorator';
-import { StartBrandOnboardingService } from '../../application/start-brand-onboarding.service';
+import { StartTenantOnboardingService } from '../../application/start-tenant-onboarding.service';
 import { OAUTH_NONCE_COOKIE } from '../../domain/oauth-state';
 import { mapDomainError } from './error-mapping';
 
@@ -80,11 +79,11 @@ function buildClearCookieHeader(): string {
 }
 
 @ApiTags('tenancy')
-@Controller('v1/tenancy/brands/:slug/onboarding')
-export class BrandOnboardingController {
+@Controller('v1/tenancy/onboarding')
+export class TenantOnboardingController {
   readonly #wrap = wrapWith(mapDomainError);
 
-  constructor(private readonly service: StartBrandOnboardingService) {}
+  constructor(private readonly service: StartTenantOnboardingService) {}
 
   @Post('account-session')
   @HttpCode(HttpStatus.OK)
@@ -92,8 +91,8 @@ export class BrandOnboardingController {
   @RequireActiveTenant()
   @RequireBrand()
   @ApiOkResponse({ type: AccountSessionResponseDto })
-  async createAccountSession(@Param('slug') slug: string): Promise<AccountSessionResponseDto> {
-    return this.#wrap(() => this.service.createEmbeddedSession(slug));
+  async createAccountSession(): Promise<AccountSessionResponseDto> {
+    return this.#wrap(() => this.service.createEmbeddedSession());
   }
 
   @Post('account-link')
@@ -102,8 +101,8 @@ export class BrandOnboardingController {
   @RequireActiveTenant()
   @RequireBrand()
   @ApiOkResponse({ type: AccountLinkResponseDto })
-  async createAccountLink(@Param('slug') slug: string): Promise<AccountLinkResponseDto> {
-    return this.#wrap(() => this.service.createHostedLink(slug));
+  async createAccountLink(): Promise<AccountLinkResponseDto> {
+    return this.#wrap(() => this.service.createHostedLink());
   }
 
   @Get('status')
@@ -111,8 +110,8 @@ export class BrandOnboardingController {
   @RequireActiveTenant()
   @RequireBrand()
   @ApiOkResponse({ type: OnboardingStatusResponseDto })
-  async getStatus(@Param('slug') slug: string): Promise<OnboardingStatusResponseDto> {
-    return this.#wrap(() => this.service.getStatus(slug));
+  async getStatus(): Promise<OnboardingStatusResponseDto> {
+    return this.#wrap(() => this.service.getStatus());
   }
 
   @Get('oauth/start')
@@ -121,12 +120,9 @@ export class BrandOnboardingController {
   @RequireActiveTenant()
   @RequireBrand()
   @ApiOkResponse({ type: OAuthStartResponseDto })
-  async startOAuth(
-    @Param('slug') slug: string,
-    @Res({ passthrough: true }) res: FastifyReply,
-  ): Promise<OAuthStartResponseDto> {
+  async startOAuth(@Res({ passthrough: true }) res: FastifyReply): Promise<OAuthStartResponseDto> {
     return this.#wrap(async () => {
-      const result = await this.service.startOAuth(slug);
+      const result = await this.service.startOAuth();
       res.raw.setHeader('Set-Cookie', buildNonceCookieHeader(result.nonce));
       return { authorizeUrl: result.authorizeUrl };
     });
@@ -136,10 +132,10 @@ export class BrandOnboardingController {
 @ApiTags('tenancy')
 @BrandNeutral()
 @Controller('v1/tenancy/onboarding')
-export class BrandOAuthCallbackController {
+export class TenantOAuthCallbackController {
   readonly #wrap = wrapWith(mapDomainError);
 
-  constructor(private readonly service: StartBrandOnboardingService) {}
+  constructor(private readonly service: StartTenantOnboardingService) {}
 
   @Get('oauth/callback')
   @Public()

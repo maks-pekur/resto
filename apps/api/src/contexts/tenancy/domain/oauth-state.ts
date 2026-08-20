@@ -4,7 +4,7 @@ import { z } from 'zod';
 const TTL_MS = 10 * 60 * 1000;
 
 export const OAuthStatePayload = z.object({
-  brandId: z.string().min(1),
+  tenantId: z.string().min(1),
   nonce: z.string().min(1),
   iat: z.number().int().positive(),
 });

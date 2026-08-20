@@ -1,70 +1,61 @@
 import { describe, it, expect, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import { type BrandId, TenantId } from '@resto/domain';
+import { CountryCodeValue, TenantId, TenantSlug } from '@resto/domain';
 import { runInTenantContext } from '@resto/db';
 import {
   encodeOAuthState,
   verifyOAuthState,
   OAUTH_NONCE_COOKIE,
 } from '../../../src/contexts/tenancy/domain/oauth-state';
-import type { BrandSnapshot } from '../../../src/contexts/tenancy/domain/brand.aggregate';
-import { StartBrandOnboardingService } from '../../../src/contexts/tenancy/application/start-brand-onboarding.service';
+import { Tenant, type TenantSnapshot } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
+import { StartTenantOnboardingService } from '../../../src/contexts/tenancy/application/start-tenant-onboarding.service';
 import type { PaymentProviderPort } from '../../../src/contexts/payments/domain/ports';
-import type { BrandRepository } from '../../../src/contexts/tenancy/domain/ports';
+import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 import type { Env } from '../../../src/config/env.schema';
 
 const SECRET = 'super-secret-testing-value-32chars!!';
 
-const makeBrandSnap = (overrides: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
-  id: randomUUID() as BrandId,
-  tenantId: TenantId.parse(randomUUID()),
-  slug: 'test-brand',
-  displayName: 'Test Brand',
-  status: 'active',
-  theme: null,
-  paymentProvider: 'stripe',
-  accountType: null,
-  defaultCurrency: 'EUR',
-  stripeAccountId: null,
-  stripeChargesEnabled: false,
-  stripePayoutsEnabled: false,
-  stripeOnboardingStatus: 'not_started',
-  stripeRequirementsDue: null,
+const makeTenantSnap = (overrides: Partial<TenantSnapshot> = {}): TenantSnapshot => ({
+  ...Tenant.provision({
+    slug: TenantSlug.parse('test-tenant'),
+    displayName: 'Test Tenant',
+    country: CountryCodeValue.parse('GB'),
+    primaryDomainHostname: 'test-tenant.menu.resto.app',
+  }).toSnapshot(),
   ...overrides,
 });
 
 function makeService(
-  brandRepo: Partial<BrandRepository>,
+  repo: Partial<TenantRepository>,
   provider: Partial<PaymentProviderPort>,
   env: Partial<Env>,
-): StartBrandOnboardingService {
-  const svc = new StartBrandOnboardingService(
-    brandRepo as BrandRepository,
+): StartTenantOnboardingService {
+  return new StartTenantOnboardingService(
+    repo as TenantRepository,
     provider as PaymentProviderPort,
     env as Env,
   );
-  return svc;
 }
 
 describe('oauth-state: encodeOAuthState / verifyOAuthState', () => {
   it('round-trips a valid state', () => {
-    const brandId = randomUUID();
+    const tenantId = randomUUID();
     const nonce = randomUUID();
-    const state = encodeOAuthState({ brandId, nonce }, SECRET);
+    const state = encodeOAuthState({ tenantId, nonce }, SECRET);
     const result = verifyOAuthState(state, SECRET);
     expect(result).not.toBeNull();
-    expect(result?.brandId).toBe(brandId);
+    expect(result?.tenantId).toBe(tenantId);
     expect(result?.nonce).toBe(nonce);
   });
 
   it('returns null for a tampered signature', () => {
-    const state = encodeOAuthState({ brandId: randomUUID(), nonce: randomUUID() }, SECRET);
+    const state = encodeOAuthState({ tenantId: randomUUID(), nonce: randomUUID() }, SECRET);
     const tampered = state.slice(0, -4) + 'XXXX';
     expect(verifyOAuthState(tampered, SECRET)).toBeNull();
   });
 
   it('returns null when signed with a different secret', () => {
-    const state = encodeOAuthState({ brandId: randomUUID(), nonce: randomUUID() }, SECRET);
+    const state = encodeOAuthState({ tenantId: randomUUID(), nonce: randomUUID() }, SECRET);
     expect(verifyOAuthState(state, 'wrong-secret-entirely-different!')).toBeNull();
   });
 
@@ -76,7 +67,7 @@ describe('oauth-state: encodeOAuthState / verifyOAuthState', () => {
     const realDateNow = Date.now;
     const nowMs = Date.now();
     vi.spyOn(Date, 'now').mockImplementation(() => nowMs);
-    const state = encodeOAuthState({ brandId: randomUUID(), nonce: randomUUID() }, SECRET);
+    const state = encodeOAuthState({ tenantId: randomUUID(), nonce: randomUUID() }, SECRET);
     vi.spyOn(Date, 'now').mockImplementation(() => nowMs + 11 * 60 * 1000);
     const result = verifyOAuthState(state, SECRET);
     vi.spyOn(Date, 'now').mockImplementation(realDateNow);
@@ -84,17 +75,15 @@ describe('oauth-state: encodeOAuthState / verifyOAuthState', () => {
   });
 });
 
-describe('StartBrandOnboardingService: OAuth start + callback', () => {
+describe('StartTenantOnboardingService: OAuth start + callback', () => {
   it('startOAuth builds authorize URL with scope=read_write and signed state', async () => {
-    const brandId = randomUUID() as BrandId;
-    const brandSnap = makeBrandSnap({ id: brandId });
+    const tenantSnap = makeTenantSnap();
     const clientId = 'ca_test123';
     const redirectUrl = 'http://localhost:3000/oauth/callback';
     const adminWebUrl = 'http://localhost:3001';
 
-    const brandRepo: Partial<BrandRepository> = {
-      findByTenantAndSlug: vi.fn().mockResolvedValue(brandSnap),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+    const repo: Partial<TenantRepository> = {
+      findCurrentTenant: vi.fn().mockResolvedValue(Tenant.fromSnapshot(tenantSnap)),
     };
     const provider: Partial<PaymentProviderPort> = {
       exchangeOAuthCode: vi.fn().mockResolvedValue({ accountId: 'acct_standard_123' }),
@@ -106,15 +95,14 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
       BETTER_AUTH_SECRET: SECRET,
     };
 
-    const service = makeService(brandRepo, provider, env);
+    const service = makeService(repo, provider, env);
 
-    const tenantId = TenantId.parse(randomUUID());
-    const result = await runInTenantContext({ tenantId, brandId }, () =>
-      service.startOAuth('test-brand'),
+    const result = await runInTenantContext({ tenantId: tenantSnap.id }, () =>
+      service.startOAuth(),
     );
 
     expect(result).toHaveProperty('authorizeUrl');
-    const url = new URL((result as { authorizeUrl: string }).authorizeUrl);
+    const url = new URL(result.authorizeUrl);
     expect(url.hostname).toBe('connect.stripe.com');
     expect(url.searchParams.get('response_type')).toBe('code');
     expect(url.searchParams.get('client_id')).toBe(clientId);
@@ -124,21 +112,22 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
     expect(stateParam).toBeTruthy();
     const verified = verifyOAuthState(stateParam, SECRET);
     expect(verified).not.toBeNull();
-    expect(verified?.brandId).toBe(brandId);
+    expect(verified?.tenantId).toBe(tenantSnap.id);
   });
 
-  it('handleOAuthCallback links brand as standard using state.brandId not slug', async () => {
-    const brandId = randomUUID() as BrandId;
+  it('handleOAuthCallback links the tenant as standard using state.tenantId, not a slug from the route', async () => {
+    const tenantSnap = makeTenantSnap({ slug: TenantSlug.parse('real-tenant') });
     const nonce = randomUUID();
     const adminWebUrl = 'http://localhost:3001';
     const stripeUserId = 'acct_standard_456';
 
-    const brandSnap = makeBrandSnap({ id: brandId, slug: 'real-brand' });
-
-    const brandRepo: Partial<BrandRepository> = {
-      findByTenantAndSlug: vi.fn().mockResolvedValue(brandSnap),
-      findById: vi.fn().mockResolvedValue(brandSnap),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+    let savedTenant: Tenant | undefined;
+    const repo: Partial<TenantRepository> = {
+      findById: vi.fn().mockResolvedValue(tenantSnap),
+      save: vi.fn().mockImplementation((tenant: Tenant) => {
+        savedTenant = tenant;
+        return Promise.resolve();
+      }),
     };
     const provider: Partial<PaymentProviderPort> = {
       exchangeOAuthCode: vi.fn().mockResolvedValue({ accountId: stripeUserId }),
@@ -153,30 +142,25 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
       BETTER_AUTH_SECRET: SECRET,
     };
 
-    const state = encodeOAuthState({ brandId, nonce }, SECRET);
-    const service = makeService(brandRepo, provider, env);
+    const state = encodeOAuthState({ tenantId: tenantSnap.id, nonce }, SECRET);
+    const service = makeService(repo, provider, env);
 
     const result = await service.handleOAuthCallback({
       code: 'test_code_xyz',
       state,
       nonce,
-      slugFromPath: 'different-slug-that-should-be-ignored',
     });
 
     expect(provider.exchangeOAuthCode).toHaveBeenCalledWith({ code: 'test_code_xyz' });
-    expect(brandRepo.updatePaymentConnection).toHaveBeenCalled();
+    expect(repo.save).toHaveBeenCalled();
 
-    const firstCallArg = (brandRepo.updatePaymentConnection as ReturnType<typeof vi.fn>).mock.calls
-      .at(0)
-      ?.at(0) as { toSnapshot: () => BrandSnapshot } | undefined;
-    expect(firstCallArg).toBeDefined();
-    const snap = (firstCallArg as { toSnapshot: () => BrandSnapshot }).toSnapshot();
-    expect(snap.accountType).toBe('standard');
-    expect(snap.stripeAccountId).toBe(stripeUserId);
+    expect(savedTenant).toBeDefined();
+    const snap = savedTenant?.toSnapshot();
+    expect(snap?.accountType).toBe('standard');
+    expect(snap?.stripeAccountId).toBe(stripeUserId);
 
-    const redirectUrl = (result as { redirectUrl: string }).redirectUrl;
-    expect(redirectUrl).toContain(adminWebUrl);
-    expect(redirectUrl).not.toMatch(/^\/\//);
+    expect(result.redirectUrl).toContain(adminWebUrl);
+    expect(result.redirectUrl).not.toMatch(/^\/\//);
   });
 
   it('handleOAuthCallback rejects a tampered state', async () => {
@@ -186,15 +170,15 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
       ADMIN_WEB_URL: 'http://localhost:3001',
       BETTER_AUTH_SECRET: SECRET,
     };
-    const brandRepo: Partial<BrandRepository> = {
+    const repo: Partial<TenantRepository> = {
       findById: vi.fn(),
-      updatePaymentConnection: vi.fn(),
+      save: vi.fn(),
     };
     const provider: Partial<PaymentProviderPort> = {
       exchangeOAuthCode: vi.fn(),
     };
 
-    const service = makeService(brandRepo, provider, env);
+    const service = makeService(repo, provider, env);
     const tamperedState = 'invalid.state.tampered';
 
     await expect(
@@ -202,7 +186,6 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
         code: 'code',
         state: tamperedState,
         nonce: 'any',
-        slugFromPath: 'brand',
       }),
     ).rejects.toThrow();
 
@@ -210,10 +193,10 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
   });
 
   it('handleOAuthCallback rejects a replayed state (nonce mismatch)', async () => {
-    const brandId = randomUUID() as BrandId;
+    const tenantId = TenantId.parse(randomUUID());
     const nonce = randomUUID();
     const differentNonce = randomUUID();
-    const state = encodeOAuthState({ brandId, nonce }, SECRET);
+    const state = encodeOAuthState({ tenantId: tenantId, nonce }, SECRET);
 
     const env: Partial<Env> = {
       STRIPE_CONNECT_CLIENT_ID: 'ca_test',
@@ -221,38 +204,39 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
       ADMIN_WEB_URL: 'http://localhost:3001',
       BETTER_AUTH_SECRET: SECRET,
     };
-    const brandRepo: Partial<BrandRepository> = {
+    const repo: Partial<TenantRepository> = {
       findById: vi.fn(),
-      updatePaymentConnection: vi.fn(),
+      save: vi.fn(),
     };
     const provider: Partial<PaymentProviderPort> = {
       exchangeOAuthCode: vi.fn(),
     };
 
-    const service = makeService(brandRepo, provider, env);
+    const service = makeService(repo, provider, env);
 
     await expect(
       service.handleOAuthCallback({
         code: 'code',
         state,
         nonce: differentNonce,
-        slugFromPath: 'brand',
       }),
     ).rejects.toThrow();
 
     expect(provider.exchangeOAuthCode).not.toHaveBeenCalled();
   });
 
-  it('access_token is never stored on the brand', async () => {
-    const brandId = randomUUID() as BrandId;
+  it('access_token is never stored on the tenant', async () => {
+    const tenantSnap = makeTenantSnap();
     const nonce = randomUUID();
-    const state = encodeOAuthState({ brandId, nonce }, SECRET);
-    const brandSnap = makeBrandSnap({ id: brandId });
+    const state = encodeOAuthState({ tenantId: tenantSnap.id, nonce }, SECRET);
 
-    const brandRepo: Partial<BrandRepository> = {
-      findById: vi.fn().mockResolvedValue(brandSnap),
-      findByTenantAndSlug: vi.fn().mockResolvedValue(brandSnap),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+    let savedTenant: Tenant | undefined;
+    const repo: Partial<TenantRepository> = {
+      findById: vi.fn().mockResolvedValue(tenantSnap),
+      save: vi.fn().mockImplementation((tenant: Tenant) => {
+        savedTenant = tenant;
+        return Promise.resolve();
+      }),
     };
     const provider: Partial<PaymentProviderPort> = {
       exchangeOAuthCode: vi
@@ -269,15 +253,12 @@ describe('StartBrandOnboardingService: OAuth start + callback', () => {
       BETTER_AUTH_SECRET: SECRET,
     };
 
-    const service = makeService(brandRepo, provider, env);
+    const service = makeService(repo, provider, env);
 
-    await service.handleOAuthCallback({ code: 'code', state, nonce, slugFromPath: 'brand' });
+    await service.handleOAuthCallback({ code: 'code', state, nonce });
 
-    const firstCallArg2 = (brandRepo.updatePaymentConnection as ReturnType<typeof vi.fn>).mock.calls
-      .at(0)
-      ?.at(0) as { toSnapshot: () => BrandSnapshot } | undefined;
-    expect(firstCallArg2).toBeDefined();
-    const snap = (firstCallArg2 as { toSnapshot: () => BrandSnapshot }).toSnapshot();
+    expect(savedTenant).toBeDefined();
+    const snap = savedTenant?.toSnapshot();
     expect(JSON.stringify(snap)).not.toContain('access_token');
     expect(JSON.stringify(snap)).not.toContain('sk_live');
   });
