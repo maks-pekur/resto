@@ -6,7 +6,7 @@
  * `_*.ts` files and are not re-exported.
  */
 export * from './tenants';
-export * from './brands';
+export * from './locations';
 export * from './menu';
 // Public-surface contract — visible to schema consumers via `schema.<name>`:
 //   - menuCategories, menuItems, menuModifierOptions

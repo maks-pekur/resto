@@ -17,14 +17,13 @@ import {
 import { money } from './_types';
 import { compositeTenantFk, pkUuid, tenantIdColumn, tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
-import { brands, locations } from './brands';
+import { locations } from './locations';
 
 export const orders = pgTable(
   'orders',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     locationId: uuid('location_id').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     orderNumber: text('order_number').notNull(),
@@ -70,11 +69,6 @@ export const orders = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'orders_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
     compositeTenantFk({
       name: 'orders_location_fk',
       child: { id: table.locationId, tenantId: table.tenantId },
