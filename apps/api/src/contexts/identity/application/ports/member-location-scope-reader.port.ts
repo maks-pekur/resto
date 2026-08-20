@@ -5,7 +5,6 @@ export const MEMBER_LOCATION_SCOPE_READER = Symbol('MEMBER_LOCATION_SCOPE_READER
 export interface PinnableLocation {
   readonly id: string;
   readonly name: string;
-  readonly brandId: string;
 }
 
 export interface MemberLocationScopeReader {
@@ -20,7 +19,6 @@ export interface MemberLocationScopeReader {
   findPinnableLocations(input: {
     userId: string;
     tenantId: TenantId;
-    brandId: string;
     isOwner: boolean;
   }): Promise<readonly PinnableLocation[]>;
   listLocationRolesForMember(input: {

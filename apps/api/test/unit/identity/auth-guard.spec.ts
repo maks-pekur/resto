@@ -246,7 +246,7 @@ describe('AuthGuard.lookupBaseRole (D-15 CSV parsing)', () => {
       api: {
         getSession: vi.fn().mockResolvedValue({
           user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
-          session: { activeOrganizationId: 't-1', activeBrandId: null, token: 'tok' },
+          session: { activeOrganizationId: 't-1', token: 'tok' },
         }),
       },
     };

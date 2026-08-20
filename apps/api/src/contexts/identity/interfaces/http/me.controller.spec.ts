@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import type { FastifyRequest } from 'fastify';
 import { MeController } from './me.controller';
 import type {
   OperatorPrincipal,
@@ -43,8 +42,6 @@ const makeAuthDb = (
   return { db: { select } } as unknown as AuthDrizzle;
 };
 
-const makeReq = (): FastifyRequest => ({ activeBrandId: null }) as unknown as FastifyRequest;
-
 const makeOwner = (): OperatorPrincipal => ({
   kind: 'operator',
   userId: 'user-owner',
@@ -73,14 +70,13 @@ describe('MeController', () => {
   it('returns operator projection with baseRole when present', async () => {
     const authDb = makeAuthDb('owner');
     const controller = new MeController(authDb);
-    const result = await controller.me(makeOwner(), makeReq());
+    const result = await controller.me(makeOwner());
     expect(result).toMatchObject({
       kind: 'operator',
       userId: 'user-owner',
       email: 'owner@example.com',
       tenantId: ORG_ID,
       baseRole: 'owner',
-      activeBrandId: null,
     });
   });
 
@@ -92,28 +88,19 @@ describe('MeController', () => {
       userId: 'user-fresh-2',
       email: 'fresh2@example.com',
     };
-    const result = await controller.me(operatorNoRole, makeReq());
+    const result = await controller.me(operatorNoRole);
     expect(result).toEqual({
       kind: 'operator',
       userId: 'user-fresh-2',
       email: 'fresh2@example.com',
-      activeBrandId: null,
       permissions: {},
     });
-  });
-
-  it('includes activeBrandId when the session has an active brand', async () => {
-    const authDb = makeAuthDb('owner');
-    const controller = new MeController(authDb);
-    const req = { activeBrandId: 'brand-uuid-1' } as unknown as FastifyRequest;
-    const result = await controller.me(makeOwner(), req);
-    expect(result).toMatchObject({ kind: 'operator', activeBrandId: 'brand-uuid-1' });
   });
 
   it("an owner's response includes billing: ['read','update'] and no permissions call errors", async () => {
     const authDb = makeAuthDb('owner');
     const controller = new MeController(authDb);
-    const result = await controller.me(makeOwner(), makeReq());
+    const result = await controller.me(makeOwner());
     expect(result.permissions.billing).toEqual(expect.arrayContaining(['read', 'update']));
     expect(result.permissions.billing).toHaveLength(2);
   });
@@ -127,7 +114,7 @@ describe('MeController', () => {
       },
     ]);
     const controller = new MeController(authDb);
-    const result = await controller.me(makeCashierFoh(), makeReq());
+    const result = await controller.me(makeCashierFoh());
     expect(result.permissions.order).toContain('cancel');
     expect(result.permissions.billing).toBeUndefined();
   });
@@ -135,7 +122,7 @@ describe('MeController', () => {
   it("a bare staff member's response contains no order key", async () => {
     const authDb = makeAuthDb('staff');
     const controller = new MeController(authDb);
-    const result = await controller.me(makeBareStaff(), makeReq());
+    const result = await controller.me(makeBareStaff());
     expect(result.permissions.order).toBeUndefined();
   });
 
@@ -148,7 +135,7 @@ describe('MeController', () => {
       phone: '+15551234567',
       tenantId: ORG_ID,
     };
-    const result = await controller.me(customer, makeReq());
+    const result = await controller.me(customer);
     expect(result.permissions).toEqual({});
     expect(authDb.db.select).not.toHaveBeenCalled();
   });
@@ -157,7 +144,7 @@ describe('MeController', () => {
     const authDb = makeAuthDb(null);
     const controller = new MeController(authDb);
     const anonymous: AnonymousPrincipal = { kind: 'anonymous' };
-    const result = await controller.me(anonymous, makeReq());
+    const result = await controller.me(anonymous);
     expect(result.permissions).toEqual({});
     expect(authDb.db.select).not.toHaveBeenCalled();
   });
@@ -170,7 +157,7 @@ describe('MeController', () => {
       userId: 'user-fresh',
       email: 'fresh@example.com',
     };
-    const result = await controller.me(operatorNoTenant, makeReq());
+    const result = await controller.me(operatorNoTenant);
     expect(result.permissions).toEqual({});
     expect(authDb.db.select).not.toHaveBeenCalled();
   });

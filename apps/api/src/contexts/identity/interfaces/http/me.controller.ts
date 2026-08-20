@@ -1,7 +1,6 @@
-import { Controller, Get, Inject, Req } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { and, eq } from 'drizzle-orm';
-import type { FastifyRequest } from 'fastify';
 import { member as memberTable } from '@resto/db/schema';
 import { BrandNeutral } from '../../../../shared/auth';
 import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
@@ -18,7 +17,6 @@ interface MeResponse {
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
   twoFactorEnabled?: boolean;
-  activeBrandId?: string | null;
   permissions: Record<string, string[]>;
 }
 
@@ -29,7 +27,7 @@ export class MeController {
   constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
 
   @Get()
-  async me(@CurrentPrincipal() actor: Principal, @Req() req: FastifyRequest): Promise<MeResponse> {
+  async me(@CurrentPrincipal() actor: Principal): Promise<MeResponse> {
     if (actor.kind === 'operator') {
       const permissions = actor.tenantId
         ? await this.resolvePermissions(actor.userId, actor.tenantId)
@@ -43,7 +41,6 @@ export class MeController {
         ...(typeof actor.twoFactorEnabled === 'boolean'
           ? { twoFactorEnabled: actor.twoFactorEnabled }
           : {}),
-        activeBrandId: req.activeBrandId ?? null,
         permissions,
       };
     }
