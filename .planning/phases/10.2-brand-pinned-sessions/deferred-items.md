@@ -29,3 +29,39 @@ owns the file.
   `packages/db` itself is unaffected; this is `packages/events`-only breakage.
   Not fixed in plan 04 — outside its `files_modified` list (`packages/db/src/**`
   only) and not caused by plan 04's own changes.
+
+## From plan 09
+
+- **`apps/api/src/contexts/tenancy/domain/ports.ts` — `LocationRepository.listForBrand`**
+  still takes `(brandId: BrandId, tenantId: TenantId)`. `owner: plan 06` (`grep -l
+"tenancy/domain/ports.ts" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` →
+  only `10.2-06-PLAN.md`), which was running concurrently in a separate worktree and
+  is explicitly tasked (D-40) with deleting `BrandRepository`/`BrandId` vocabulary
+  from this exact file — but its own `<action>` text never mentions
+  `LocationRepository`. Two catalog call sites (`get-stop-list.service.ts`,
+  `get-stop-list-aggregate.service.ts`) needed a tenant-scoped equivalent, so they now
+  call `this.locations.listForTenant(tenantId)` — a name chosen to mirror the
+  already-established `BrandRepository.listForTenant(tenantId, ids?)` convention in
+  the same file, not confirmed against plan 06's actual landed diff. Each call site
+  carries a local `TenantScopedLocationRepository` interface augmentation (documented
+  inline) so catalog's own `tsc`/`eslint` pass cleanly without touching
+  `tenancy/domain/ports.ts`. **Reconcile at merge**: if plan 06 lands with a
+  differently-named or -shaped method, update the two call sites and delete the local
+  augmentations; if it lands with `listForTenant(tenantId)`, the augmentations become
+  redundant (safe to delete, structurally identical) but are not a compile error
+  either way.
+
+- **`apps/api/test/e2e/menu-brand-response.e2e.spec.ts`** does not compile
+  (`schema.brands`/`schema.brandDomains` were deleted by plan 03) — pre-existing,
+  outside `files_modified`, and explicitly plan 19's to rewrite per this plan's own
+  `<action>` text. Not executed live; static `tsc` check confirms the failure is a
+  compile error on tables that no longer exist, not a runtime assertion this plan's
+  catalog changes could pass or fail.
+- **`apps/api/test/e2e/catalog-brand-isolation.e2e.spec.ts`** compiles cleanly but its
+  entire test body (`beforeAll` calls `POST /v1/me/brands`, every `it()` asserts
+  brand-A-vs-brand-B isolation via `x-brand-slug`) tests a concept D-07/D-40 deleted
+  outright; it contains no cross-tenant assertion to separately verify. Not executed
+  live — booting the real NestJS stack against the shared dev Postgres while plan 06
+  ran concurrently in a sibling worktree risked mutating state the other agent
+  depended on, for a test whose premise is already obsolete. `owner: plan 19`
+  (explicitly named in this plan's `<verification>` section).
