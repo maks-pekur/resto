@@ -843,7 +843,7 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 10/21 plans executed
+**Plans:** 12/22 plans executed
 
 Plans:
 **Wave 1**
@@ -873,7 +873,7 @@ Plans:
 
 **Wave 6**
 
-- [ ] 10.2-11-PLAN.md — Guard chain and decorator sweep, preserving the location-bypass semantics @BrandNeutral carried
+- [x] 10.2-11-PLAN.md — Guard chain and decorator sweep, preserving the location-bypass semantics @BrandNeutral carried
 
 **Wave 7**
 
