@@ -71,14 +71,6 @@ export class MenuItemAlreadyArchivedError extends Error {
   }
 }
 
-export class BrandContextRequiredError extends Error {
-  readonly kind = 'BrandContextRequiredError' as const;
-  constructor() {
-    super('A menu write requires an active brand. Send the x-brand-slug header.');
-    this.name = 'BrandContextRequiredError';
-  }
-}
-
 export class CategoryNestingDepthError extends Error {
   readonly kind = 'CategoryNestingDepthError' as const;
   constructor(
@@ -96,23 +88,18 @@ export class CatalogCodeConflictError extends Error {
     public readonly entityType: 'category' | 'item',
     public readonly code: string,
   ) {
-    super(`A ${entityType} with code "${code}" already exists in this brand.`);
+    super(`A ${entityType} with code "${code}" already exists for this tenant.`);
     this.name = 'CatalogCodeConflictError';
   }
 }
 
-// D-02/D-12: a brand with zero active locations has no location to resolve
+// D-04: a tenant with zero active locations has no location to resolve
 // availability against; no location is ever synthesized to satisfy this.
-export class NoLocationForBrandError extends Error {
-  readonly kind = 'NoLocationForBrandError' as const;
-  constructor(
-    public readonly brandId: string,
-    public readonly tenantId: string,
-  ) {
-    super(
-      `Brand "${brandId}" (tenant "${tenantId}") has no active location to resolve availability against.`,
-    );
-    this.name = 'NoLocationForBrandError';
+export class NoLocationForTenantError extends Error {
+  readonly kind = 'NoLocationForTenantError' as const;
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" has no active location to resolve availability against.`);
+    this.name = 'NoLocationForTenantError';
   }
 }
 
@@ -126,7 +113,6 @@ export type CatalogDomainError =
   | StopListItemNotFoundError
   | MenuCategoryAlreadyArchivedError
   | MenuItemAlreadyArchivedError
-  | BrandContextRequiredError
   | CategoryNestingDepthError
   | CatalogCodeConflictError
-  | NoLocationForBrandError;
+  | NoLocationForTenantError;
