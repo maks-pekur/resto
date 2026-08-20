@@ -4,7 +4,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
-import { NoLocationForBrandError } from '../../../catalog/domain/errors';
+import { NoLocationForTenantError } from '../../../catalog/domain/errors';
 import {
   DuplicateOrderKeyError,
   InvalidCancelReasonError,
@@ -18,8 +18,8 @@ import {
 } from '../../domain/errors';
 
 export const mapOrderError = (err: unknown): unknown => {
-  if (err instanceof NoLocationForBrandError) {
-    return new NotFoundException({ code: 'catalog.no_location_for_brand', message: err.message });
+  if (err instanceof NoLocationForTenantError) {
+    return new NotFoundException({ code: 'catalog.no_location_for_tenant', message: err.message });
   }
   if (err instanceof OrderNotFoundError) {
     return new NotFoundException({ code: 'ordering.order_not_found', message: err.message });

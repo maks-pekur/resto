@@ -54,9 +54,9 @@ export interface OrderingMenuSnapshot {
 
 // Server-authoritative pricing for the order path: the create-order service must
 // never trust client-supplied prices (API review 2026-06-15 BLOCK-1). The adapter
-// sources this from the published catalog, scoped by tenant+brand via ScopedTx+RLS.
+// sources this from the published catalog, scoped by tenant via ScopedTx+RLS.
 export interface MenuPricingPort {
-  loadSnapshot(tenantId: TenantId, brandId: string): Promise<OrderingMenuSnapshot>;
+  loadSnapshot(tenantId: TenantId): Promise<OrderingMenuSnapshot>;
 }
 
 export const MENU_PRICING_PORT = Symbol('MENU_PRICING_PORT');
@@ -88,7 +88,6 @@ export const OrderStatusSchema: z.ZodType<OrderStatus> = z.enum([
 
 export const OrderFeedQuerySchema = z.object({
   tenantId: z.string().uuid(),
-  brandId: z.string().uuid(),
   locationIds: z.array(z.string().uuid()),
   statuses: z.array(OrderStatusSchema),
   channel: z.enum(['site', 'qr-menu']).optional(),

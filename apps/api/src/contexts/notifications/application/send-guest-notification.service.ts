@@ -1,14 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { TenantId } from '@resto/domain';
-import { BrandQueriesService } from '../../tenancy/application/brand-queries.service';
-import { BrandId } from '@resto/domain';
+import { TenantId, TenantTheme } from '@resto/domain';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
+import { SUPPORTED_LOCALES, type EmailLocale } from '../../identity/domain/email-locale';
 import {
   NOTIFICATION_ORDER_REPOSITORY,
   type NotificationOrderRepository,
 } from '../infrastructure/notification-order-drizzle.repository';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from '../domain/ports';
+
+// `tenants.locale` (D-35/D-36) is derived from a country registry {ru, en, es}
+// wider than the email-adapter's current `EmailLocale` union {en, ru}. D-38
+// requires a deliberate fallback rather than passing an unsupported locale
+// through — 'es' guest email content does not exist yet.
+const resolveEmailLocale = (tenantLocale: string): EmailLocale =>
+  (SUPPORTED_LOCALES as readonly string[]).includes(tenantLocale)
+    ? (tenantLocale as EmailLocale)
+    : 'en';
 
 export type GuestNotificationTransition =
   | 'order_confirmation'
@@ -50,7 +58,6 @@ export class SendGuestNotificationService {
 
   constructor(
     @Inject(EMAIL_ADAPTER_PORT) private readonly emailAdapter: EmailAdapterPort,
-    @Inject(BrandQueriesService) private readonly brandQueries: BrandQueriesService,
     @Inject(NOTIFICATION_ORDER_REPOSITORY)
     private readonly orderRepo: NotificationOrderRepository,
     @Inject(ENV_TOKEN) private readonly env: Env,
@@ -77,21 +84,13 @@ export class SendGuestNotificationService {
       return;
     }
 
-    const brands = await this.brandQueries.listForTenant(tenantId, [BrandId.parse(order.brandId)]);
-    const brand = brands[0] ?? null;
-
-    const locale = 'ru';
-
-    if (!brand?.displayName) {
-      this.logger.error(
-        { tenantId, brandId: order.brandId, orderId: input.orderId },
-        'Brand has no displayName -- refusing to send a guest email that would fall back to the platform name',
-      );
-      return;
-    }
-    const brandName = brand.displayName;
-    const brandTheme = brand.theme
-      ? { logoUrl: brand.theme.logoUrl, accentColor: brand.theme.primaryColor }
+    const locale = resolveEmailLocale(order.tenantLocale);
+    const tenantName = order.tenantDisplayName;
+    const tenantTheme = order.tenantTheme
+      ? (() => {
+          const theme = TenantTheme.parse(order.tenantTheme);
+          return { logoUrl: theme.logoUrl, accentColor: theme.primaryColor };
+        })()
       : null;
 
     const itemsRows = await this.orderRepo.findOrderItems(tenantId, input.orderId);
@@ -118,8 +117,8 @@ export class SendGuestNotificationService {
       to: order.customerEmail,
       locale,
       kind: input.transition,
-      brandTheme,
-      brandName,
+      brandTheme: tenantTheme,
+      brandName: tenantName,
       vars: {
         orderNumber: order.orderNumber,
         itemsSummary,

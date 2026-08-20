@@ -67,7 +67,6 @@ export interface OrderItemSnapshot {
 export interface OrderSnapshot {
   readonly id: OrderId;
   readonly tenantId: TenantId;
-  readonly brandId: string;
   readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
@@ -106,7 +105,6 @@ export interface OrderSnapshot {
 
 export interface CreateOrderInput {
   readonly tenantId: TenantId;
-  readonly brandId: string;
   readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
@@ -214,7 +212,6 @@ export class Order {
     const snapshot: OrderSnapshot = {
       id,
       tenantId: input.tenantId,
-      brandId: input.brandId,
       locationId: input.locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
@@ -256,7 +253,6 @@ export class Order {
       kind: 'OrderCreated',
       orderId: id,
       tenantId: input.tenantId,
-      brandId: input.brandId,
       locationId: input.locationId,
       orderNumber: input.orderNumber,
       fulfillmentMode: input.fulfillmentMode,

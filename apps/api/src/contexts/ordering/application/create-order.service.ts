@@ -1,11 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import {
-  requireBrandContext,
-  requireTenantContext,
-  schema,
-  TenantAwareDb,
-  withLocation,
-} from '@resto/db';
+import { requireTenantContext, schema, TenantAwareDb, withLocation } from '@resto/db';
 import { Currency, TenantId } from '@resto/domain';
 import { eq } from 'drizzle-orm';
 import { DefaultLocationResolverService } from '../../catalog/application/default-location-resolver.service';
@@ -43,15 +37,14 @@ export class CreateOrderService {
   async execute(input: CreateOrderInput): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = requireBrandContext();
-    const locationId = await this.defaultLocation.resolveForBrand(brandId, tenantId);
+    const locationId = await this.defaultLocation.resolveForTenant(tenantId);
 
     const existingOrder = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     if (existingOrder) {
       return toOrderResponse(existingOrder.toSnapshot());
     }
 
-    const snapshot = await this.pricing.loadSnapshot(tenantId, brandId);
+    const snapshot = await this.pricing.loadSnapshot(tenantId);
     const currency = Currency.parse(snapshot.currency);
     const itemsById = new Map(snapshot.items.map((i) => [i.itemId, i]));
     const groupsById = new Map(snapshot.modifierGroups.map((g) => [g.groupId, g]));
@@ -138,7 +131,6 @@ export class CreateOrderService {
 
     const order = Order.create({
       tenantId,
-      brandId,
       locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber,

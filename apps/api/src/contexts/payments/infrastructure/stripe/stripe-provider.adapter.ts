@@ -172,7 +172,7 @@ export class StripeProviderAdapter implements PaymentProviderPort {
       }),
     );
     this.#logger.log(
-      { brandId: input.brandId, accountId: account.id },
+      { tenantId: input.tenantId, accountId: account.id },
       'Stripe Express account created.',
     );
     return { accountId: account.id };

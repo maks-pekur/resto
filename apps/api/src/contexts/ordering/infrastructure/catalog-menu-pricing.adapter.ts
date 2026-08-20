@@ -24,13 +24,13 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
     private readonly defaultLocation: DefaultLocationResolverService,
   ) {}
 
-  async loadSnapshot(tenantId: TenantId, brandId: string): Promise<OrderingMenuSnapshot> {
+  async loadSnapshot(tenantId: TenantId): Promise<OrderingMenuSnapshot> {
     const [version, locationId] = await Promise.all([
       this.versions.current(tenantId),
-      this.defaultLocation.resolveForBrand(brandId, tenantId),
+      this.defaultLocation.resolveForTenant(tenantId),
     ]);
     const [menu, stoppedItemIds] = await Promise.all([
-      this.catalog.loadPublishedMenu(tenantId, version, brandId),
+      this.catalog.loadPublishedMenu(tenantId, version),
       this.catalog.listStoppedItemIds(locationId),
     ]);
 

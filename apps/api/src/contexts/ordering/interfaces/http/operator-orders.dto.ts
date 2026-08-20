@@ -101,7 +101,6 @@ const OrderItemResponseSchema = z.object({
 export const OrderSnapshotResponseSchema = z.object({
   id: z.string(),
   tenantId: z.string(),
-  brandId: z.string(),
   locationId: z.string(),
   orderNumber: z.string(),
   status: OrderStatusSchema,
@@ -150,7 +149,6 @@ export class OrderDetailResponseDto extends createZodDto(OrderDetailResponseSche
 export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse => ({
   id: s.id,
   tenantId: s.tenantId,
-  brandId: s.brandId,
   locationId: s.locationId,
   orderNumber: s.orderNumber,
   status: s.status,

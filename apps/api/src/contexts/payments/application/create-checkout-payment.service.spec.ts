@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
-import { BrandId, Currency, TenantId } from '@resto/domain';
+import { Currency, type TenantId, TenantSlug } from '@resto/domain';
 import type { OrderRepository } from '../../ordering/domain/ports';
-import type { BrandRepository } from '../../tenancy/domain/ports';
+import type { TenantRepository } from '../../tenancy/domain/ports';
 import type { PaymentProviderPort, PaymentRepository, UpsertPaymentInput } from '../domain/ports';
 import type { TenantAwareDb } from '@resto/db';
 import { CreateCheckoutPaymentService } from './create-checkout-payment.service';
@@ -11,33 +11,44 @@ import {
   OrderNotCheckoutableError,
 } from '../domain/errors';
 import { Order } from '../../ordering/domain/order.aggregate';
-import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
+import { Tenant } from '../../tenancy/domain/tenant.aggregate';
+import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
 import type { OrderSnapshot } from '../../ordering/domain/order.aggregate';
 import { OrderId } from '@resto/domain';
 import { randomUUID } from 'node:crypto';
 
-const makeBrandSnap = (overrides: Partial<BrandSnapshot> = {}): BrandSnapshot => ({
-  id: BrandId.parse(randomUUID()),
-  tenantId: TenantId.parse(randomUUID()),
-  slug: 'test-brand',
-  displayName: 'Test Restaurant',
-  status: 'active',
-  theme: null,
-  paymentProvider: 'stripe',
-  accountType: 'express',
-  defaultCurrency: 'EUR',
-  stripeAccountId: 'acct_test123',
-  stripeChargesEnabled: true,
-  stripePayoutsEnabled: true,
-  stripeOnboardingStatus: 'complete',
-  stripeRequirementsDue: null,
-  ...overrides,
-});
+const makeTenantSnap = (
+  overrides: {
+    stripeAccountId?: string | null;
+    stripeChargesEnabled?: boolean;
+  } = {},
+): TenantSnapshot => {
+  const tenant = Tenant.provision({
+    slug: TenantSlug.parse(`test-tenant-${randomUUID().slice(0, 8)}`),
+    displayName: 'Test Restaurant',
+    country: 'ES',
+    primaryDomainHostname: `test-tenant-${randomUUID().slice(0, 8)}.menu.resto.app`,
+  });
+  const stripeAccountId =
+    overrides.stripeAccountId === undefined ? 'acct_test123' : overrides.stripeAccountId;
+  if (stripeAccountId !== null) {
+    tenant.linkStripeAccount(stripeAccountId, 'express');
+  }
+  tenant.applyStripeCapabilities({
+    chargesEnabled: overrides.stripeChargesEnabled ?? true,
+    payoutsEnabled: true,
+    onboardingStatus: 'complete',
+    requirementsDue: null,
+  });
+  return tenant.toSnapshot();
+};
 
-const makeOrderSnap = (brandId: string, overrides: Partial<OrderSnapshot> = {}): OrderSnapshot => ({
+const makeOrderSnap = (
+  tenantId: TenantId,
+  overrides: Partial<OrderSnapshot> = {},
+): OrderSnapshot => ({
   id: OrderId.parse(randomUUID()),
-  tenantId: TenantId.parse(randomUUID()),
-  brandId,
+  tenantId,
   locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: 'ORD-001',
@@ -75,10 +86,10 @@ const makeOrderSnap = (brandId: string, overrides: Partial<OrderSnapshot> = {}):
   ...overrides,
 });
 
-const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
-  const brandSnap = makeBrandSnap(brandSnapOverrides);
-  const orderSnap = makeOrderSnap(brandSnap.id);
-  const tenantId = orderSnap.tenantId;
+const buildSut = (tenantSnapOverrides: Parameters<typeof makeTenantSnap>[0] = {}) => {
+  const tenantSnap = makeTenantSnap(tenantSnapOverrides);
+  const tenantId = tenantSnap.id;
+  const orderSnap = makeOrderSnap(tenantId);
 
   const order = Order.fromSnapshot(orderSnap);
 
@@ -90,16 +101,17 @@ const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
   };
 
-  const brandRepo: BrandRepository = {
-    findById: vi.fn().mockResolvedValue(brandSnap),
+  const tenantRepo: TenantRepository = {
+    findById: vi.fn().mockResolvedValue(tenantSnap),
     findBySlug: vi.fn().mockResolvedValue(null),
-    findByTenantAndSlug: vi.fn().mockResolvedValue(null),
     findByDomainHost: vi.fn().mockResolvedValue(null),
-    listForTenant: vi.fn().mockResolvedValue([]),
-    save: vi.fn().mockResolvedValue(undefined),
-    findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
     findByStripeAccountId: vi.fn().mockResolvedValue(null),
-    updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+    save: vi.fn().mockResolvedValue(undefined),
+    listDomains: vi.fn().mockResolvedValue([]),
+    findCurrentTenant: vi.fn().mockResolvedValue(null),
+    listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
+    eraseTenant: vi.fn(),
+    listScheduledForErasure: vi.fn().mockResolvedValue([]),
   };
 
   const paymentRepo: PaymentRepository = {
@@ -162,16 +174,16 @@ const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
       .mockImplementation((_reason: unknown, fn: (tx: unknown) => Promise<unknown>) => fn(_fakeTx)),
   } as unknown as TenantAwareDb;
 
-  const sut = new CreateCheckoutPaymentService(orderRepo, brandRepo, paymentRepo, provider, db, 0);
+  const sut = new CreateCheckoutPaymentService(orderRepo, tenantRepo, paymentRepo, provider, db, 0);
 
   return {
     sut,
     orderRepo,
-    brandRepo,
+    tenantRepo,
     paymentRepo,
     provider,
     order,
-    brandSnap,
+    tenantSnap,
     orderSnap,
     tenantId,
   };
@@ -179,7 +191,7 @@ const buildSut = (brandSnapOverrides: Partial<BrandSnapshot> = {}) => {
 
 describe('CreateCheckoutPaymentService', () => {
   describe('canAcceptPayments gate (D-07)', () => {
-    it('throws PaymentsNotEnabledError when brand has no stripeAccountId', async () => {
+    it('throws PaymentsNotEnabledError when tenant has no stripeAccountId', async () => {
       const { sut, orderSnap, tenantId } = buildSut({
         stripeAccountId: null,
         stripeChargesEnabled: false,
@@ -190,7 +202,7 @@ describe('CreateCheckoutPaymentService', () => {
       );
     });
 
-    it('throws PaymentsNotEnabledError when brand has account but chargesEnabled=false', async () => {
+    it('throws PaymentsNotEnabledError when tenant has account but chargesEnabled=false', async () => {
       const { sut, orderSnap, tenantId } = buildSut({
         stripeAccountId: 'acct_test123',
         stripeChargesEnabled: false,
@@ -201,12 +213,9 @@ describe('CreateCheckoutPaymentService', () => {
       );
     });
 
-    it('throws PaymentsNotEnabledError when brand has no defaultCurrency', async () => {
-      const { sut, orderSnap, tenantId } = buildSut({
-        defaultCurrency: null,
-        stripeAccountId: 'acct_test123',
-        stripeChargesEnabled: true,
-      });
+    it('throws PaymentsNotEnabledError when the tenant lookup resolves nothing', async () => {
+      const { sut, orderSnap, tenantId, tenantRepo } = buildSut();
+      vi.mocked(tenantRepo.findById).mockResolvedValue(null);
 
       await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(
         PaymentsNotEnabledError,
@@ -214,7 +223,7 @@ describe('CreateCheckoutPaymentService', () => {
     });
   });
 
-  describe('server-authoritative amount + currency (D-07, brand-level)', () => {
+  describe('server-authoritative amount + currency (D-07, tenant-level)', () => {
     it('creates PaymentIntent with server-computed order total in minor units', async () => {
       const { sut, provider, orderSnap, tenantId } = buildSut();
 
@@ -225,10 +234,9 @@ describe('CreateCheckoutPaymentService', () => {
       );
     });
 
-    it('throws CurrencyMismatchError when order currency differs from brand settlement currency', async () => {
-      const { sut, orderRepo, orderSnap, tenantId } = buildSut();
-      const mismatchOrderSnap = makeOrderSnap(orderSnap.brandId, {
-        tenantId,
+    it('throws CurrencyMismatchError when order currency differs from tenant settlement currency', async () => {
+      const { sut, orderRepo, tenantId } = buildSut();
+      const mismatchOrderSnap = makeOrderSnap(tenantId, {
         currency: Currency.parse('USD'),
         total: '10.00',
       });

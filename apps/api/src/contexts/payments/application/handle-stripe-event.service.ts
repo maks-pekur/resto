@@ -16,10 +16,9 @@ import { toMinorUnits, fromMinorUnits } from '../../ordering/domain/money-utils'
 import { ORDER_REPOSITORY, type OrderRepository } from '../../ordering/domain/ports';
 import { InvalidOrderTransitionError } from '../../ordering/domain/errors';
 import type { OrderId } from '@resto/domain';
-import { BRAND_REPOSITORY, type BrandRepository } from '../../tenancy/domain/ports';
-import { Brand } from '../../tenancy/domain/brand.aggregate';
-import type { BrandOnboardingStatus } from '../../tenancy/domain/brand.aggregate';
-import { StripeAccountId } from '../../tenancy/domain/tenant.aggregate';
+import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
+import { StripeAccountId, Tenant } from '../../tenancy/domain/tenant.aggregate';
+import type { StripeOnboardingStatus } from '../../tenancy/domain/tenant.aggregate';
 import {
   PAYMENT_PROVIDER_PORT,
   PAYMENT_REPOSITORY,
@@ -44,7 +43,7 @@ export class HandleStripeEventService {
 
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
-    @Inject(BRAND_REPOSITORY) private readonly brandRepo: BrandRepository,
+    @Inject(TENANT_REPOSITORY) private readonly tenantRepo: TenantRepository,
     @Inject(ORDER_REPOSITORY) private readonly orderRepo: OrderRepository,
     @Inject(PAYMENT_REPOSITORY) private readonly paymentRepo: PaymentRepository,
     @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
@@ -97,8 +96,8 @@ export class HandleStripeEventService {
     }
     const accountId = parsedId.data;
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'account.updated for unregistered Stripe account — ignoring (W3).',
@@ -106,7 +105,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const acct = rawEvent.data.object as {
       charges_enabled?: boolean;
       payouts_enabled?: boolean;
@@ -118,7 +117,7 @@ export class HandleStripeEventService {
     const payoutsEnabled = acct.payouts_enabled ?? false;
     const detailsSubmitted = acct.details_submitted ?? false;
 
-    let onboardingStatus: BrandOnboardingStatus;
+    let onboardingStatus: StripeOnboardingStatus;
     if (chargesEnabled && detailsSubmitted) {
       onboardingStatus = 'complete';
     } else if (acct.requirements?.currently_due && acct.requirements.currently_due.length > 0) {
@@ -129,15 +128,15 @@ export class HandleStripeEventService {
 
     const pseudoEnvelope = { id: event.id, tenantId };
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (_tx) => {
-      const brand = Brand.fromSnapshot(brandSnap);
+      const tenant = Tenant.fromSnapshot(tenantSnap);
       const currentlyDue = acct.requirements?.currently_due ?? null;
-      brand.applyPaymentCapabilities({
+      tenant.applyStripeCapabilities({
         chargesEnabled,
         payoutsEnabled,
         onboardingStatus,
         requirementsDue: currentlyDue ? [...currentlyDue] : null,
       });
-      await this.brandRepo.updatePaymentConnection(brand);
+      await this.tenantRepo.save(tenant);
     });
   }
 
@@ -331,13 +330,13 @@ export class HandleStripeEventService {
     if (!accountId) {
       this.logger.warn(
         { eventId: event.id },
-        'charge.refunded missing event.account — cannot resolve brand, ignoring.',
+        'charge.refunded missing event.account — cannot resolve tenant, ignoring.',
       );
       return;
     }
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'charge.refunded for unregistered account — ignoring (W3).',
@@ -345,7 +344,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const pseudoEnvelope = { id: event.id, tenantId };
 
     const cumulativeRefundedMinor = rawCharge.amount_refunded ?? 0;
@@ -435,8 +434,8 @@ export class HandleStripeEventService {
       return;
     }
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'charge.dispute.created for unregistered account — ignoring (W3).',
@@ -444,7 +443,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const pseudoEnvelope = { id: event.id, tenantId };
 
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (tx) => {

@@ -8,7 +8,7 @@ export interface WebhookEvent {
 }
 
 export interface CreateOnboardingAccountInput {
-  readonly brandId: string;
+  readonly tenantId: string;
   readonly displayName: string;
   readonly country?: string;
   readonly defaultCurrency?: string;

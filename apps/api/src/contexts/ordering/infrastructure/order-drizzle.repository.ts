@@ -55,7 +55,6 @@ export class OrderDrizzleRepository implements OrderRepository {
         .values({
           id: snapshot.id,
           tenantId: snapshot.tenantId,
-          brandId: snapshot.brandId,
           locationId: snapshot.locationId,
           idempotencyKey: snapshot.idempotencyKey,
           orderNumber: snapshot.orderNumber,
@@ -255,7 +254,6 @@ export class OrderDrizzleRepository implements OrderRepository {
     const snap: OrderSnapshot = {
       id: OrderId.parse(row.id),
       tenantId: TenantId.parse(row.tenantId),
-      brandId: row.brandId,
       locationId: row.locationId,
       idempotencyKey: row.idempotencyKey,
       orderNumber: row.orderNumber,
@@ -303,7 +301,6 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
         {
           orderId: event.orderId,
           tenantId: event.tenantId,
-          brandId: event.brandId,
           locationId: event.locationId,
           orderNumber: event.orderNumber,
           fulfillmentMode: event.fulfillmentMode,

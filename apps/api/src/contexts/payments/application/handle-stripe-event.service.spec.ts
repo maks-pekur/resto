@@ -1,17 +1,17 @@
 import { Logger } from '@nestjs/common';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { TenantAwareDb, RestoTx } from '@resto/db';
-import { BrandId, TenantId, OrderId, Currency } from '@resto/domain';
+import { TenantId, TenantSlug, OrderId, Currency } from '@resto/domain';
 import type { RunDedupedResult } from '@resto/events';
-import type { BrandRepository } from '../../tenancy/domain/ports';
-import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
+import type { TenantRepository } from '../../tenancy/domain/ports';
+import { Tenant } from '../../tenancy/domain/tenant.aggregate';
+import type { TenantSnapshot } from '../../tenancy/domain/tenant.aggregate';
 import type { OrderRepository } from '../../ordering/domain/ports';
 import { Order } from '../../ordering/domain/order.aggregate';
 import type { PaymentProviderPort, PaymentRepository } from '../domain/ports';
 import { HandleStripeEventService } from './handle-stripe-event.service';
 
 const TENANT_ID = TenantId.parse('00000000-0000-0000-0000-000000000001');
-const BRAND_ID = BrandId.parse('00000000-0000-0000-0000-000000000009');
 const ORDER_ID = '00000000-0000-0000-0000-000000000002';
 const PAYMENT_INTENT_ID = 'pi_test_abc123';
 const CHARGE_ID = 'ch_test_xyz789';
@@ -29,7 +29,6 @@ const makeOrder = (status: string): Order => {
   const snap = {
     id: OrderId.parse(ORDER_ID),
     tenantId: TENANT_ID,
-    brandId: BRAND_ID,
     locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
@@ -68,28 +67,31 @@ const makeOrder = (status: string): Order => {
   return Order.fromSnapshot(snap as Parameters<typeof Order.fromSnapshot>[0]);
 };
 
-const makeBrandSnap = (
+const makeTenantSnap = (
   overrides: {
     stripeAccountId?: string | null;
     chargesEnabled?: boolean;
     payoutsEnabled?: boolean;
   } = {},
-): BrandSnapshot => ({
-  id: BRAND_ID,
-  tenantId: TENANT_ID,
-  slug: 'test-brand',
-  displayName: 'Test Brand',
-  status: 'active',
-  theme: null,
-  paymentProvider: 'stripe',
-  accountType: 'express',
-  defaultCurrency: 'EUR',
-  stripeAccountId: overrides.stripeAccountId ?? STRIPE_ACCOUNT_ID,
-  stripeChargesEnabled: overrides.chargesEnabled ?? false,
-  stripePayoutsEnabled: overrides.payoutsEnabled ?? false,
-  stripeOnboardingStatus: 'pending',
-  stripeRequirementsDue: null,
-});
+): TenantSnapshot => {
+  const tenant = Tenant.provision({
+    slug: TenantSlug.parse('test-tenant'),
+    displayName: 'Test Tenant',
+    country: 'ES',
+    primaryDomainHostname: 'test-tenant.menu.resto.app',
+  });
+  const stripeAccountId = overrides.stripeAccountId ?? STRIPE_ACCOUNT_ID;
+  if (stripeAccountId !== null) {
+    tenant.linkStripeAccount(stripeAccountId, 'express');
+  }
+  tenant.applyStripeCapabilities({
+    chargesEnabled: overrides.chargesEnabled ?? false,
+    payoutsEnabled: overrides.payoutsEnabled ?? false,
+    onboardingStatus: 'pending',
+    requirementsDue: null,
+  });
+  return tenant.toSnapshot();
+};
 
 const makePaymentRow = (overrides: Record<string, unknown> = {}) => ({
   id: '00000000-0000-0000-0000-000000000010',
@@ -117,7 +119,7 @@ const makeStripeEvent = (type: string, dataObject: Record<string, unknown>, acco
 
 describe('HandleStripeEventService', () => {
   let service: HandleStripeEventService;
-  let brandRepo: { [K in keyof BrandRepository]: ReturnType<typeof vi.fn> };
+  let tenantRepo: { [K in keyof TenantRepository]: ReturnType<typeof vi.fn> };
   let orderRepo: { [K in keyof OrderRepository]: ReturnType<typeof vi.fn> };
   let paymentRepo: { [K in keyof PaymentRepository]: ReturnType<typeof vi.fn> };
   let provider: { [K in keyof PaymentProviderPort]: ReturnType<typeof vi.fn> };
@@ -125,16 +127,17 @@ describe('HandleStripeEventService', () => {
   let runDedupedMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    brandRepo = {
+    tenantRepo = {
       findById: vi.fn(),
       findBySlug: vi.fn(),
-      findByTenantAndSlug: vi.fn(),
       findByDomainHost: vi.fn(),
-      listForTenant: vi.fn(),
-      save: vi.fn().mockResolvedValue(undefined),
-      findActiveSlugsByPrefix: vi.fn(),
       findByStripeAccountId: vi.fn(),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
+      save: vi.fn().mockResolvedValue(undefined),
+      listDomains: vi.fn(),
+      findCurrentTenant: vi.fn(),
+      listCurrentTenantDomains: vi.fn(),
+      eraseTenant: vi.fn(),
+      listScheduledForErasure: vi.fn(),
     };
 
     orderRepo = {
@@ -190,7 +193,7 @@ describe('HandleStripeEventService', () => {
 
     service = new HandleStripeEventService(
       db as unknown as TenantAwareDb,
-      brandRepo,
+      tenantRepo,
       orderRepo,
       paymentRepo,
       provider,
@@ -292,30 +295,36 @@ describe('HandleStripeEventService', () => {
       requirements: { currently_due: [] },
     };
 
-    it('syncs capability flags when brand is known', async () => {
-      const brandSnap = makeBrandSnap();
-      brandRepo.findByStripeAccountId.mockResolvedValue(brandSnap);
+    it('syncs capability flags onto the tenant row when the connected account is known', async () => {
+      const tenantSnap = makeTenantSnap();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenantSnap);
 
       const event = makeStripeEvent('account.updated', accountObj, STRIPE_ACCOUNT_ID);
       await service.handle(event);
 
-      expect(brandRepo.updatePaymentConnection).toHaveBeenCalled();
+      expect(tenantRepo.save).toHaveBeenCalledTimes(1);
+      const savedTenant = tenantRepo.save.mock.calls[0]?.[0] as Tenant;
+      const savedSnap = savedTenant.toSnapshot();
+      expect(savedSnap.id).toBe(tenantSnap.id);
+      expect(savedSnap.stripeChargesEnabled).toBe(true);
+      expect(savedSnap.stripePayoutsEnabled).toBe(true);
+      expect(savedSnap.stripeOnboardingStatus).toBe('complete');
     });
 
     it('W3: unknown account is a no-op — no throw, no DB write', async () => {
-      brandRepo.findByStripeAccountId.mockResolvedValue(null);
+      tenantRepo.findByStripeAccountId.mockResolvedValue(null);
 
       const event = makeStripeEvent('account.updated', accountObj, 'acct_unknown');
       await expect(service.handle(event as never)).resolves.toBeUndefined();
-      expect(brandRepo.updatePaymentConnection).not.toHaveBeenCalled();
+      expect(tenantRepo.save).not.toHaveBeenCalled();
       expect(runDedupedMock).not.toHaveBeenCalled();
     });
   });
 
   describe('charge.refunded (BUG-6)', () => {
     it('BUG-6 (b): real Stripe shape — no refunds.data — still flips payment status to refunded', async () => {
-      const brandSnap = makeBrandSnap();
-      brandRepo.findByStripeAccountId.mockResolvedValue(brandSnap);
+      const tenantSnap = makeTenantSnap();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenantSnap);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(
         makePaymentRow({ status: 'succeeded', amount: '10.00' }),
       );
@@ -339,8 +348,8 @@ describe('HandleStripeEventService', () => {
     });
 
     it('BUG-6 (b): partial charge.refunded flips payment status to partially_refunded', async () => {
-      const brandSnap = makeBrandSnap();
-      brandRepo.findByStripeAccountId.mockResolvedValue(brandSnap);
+      const tenantSnap = makeTenantSnap();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenantSnap);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(
         makePaymentRow({ status: 'succeeded', amount: '10.00' }),
       );
@@ -365,8 +374,8 @@ describe('HandleStripeEventService', () => {
     });
 
     it('BUG-6 (b): charge.refunded with inline refunds.data still flips status', async () => {
-      const brandSnap = makeBrandSnap();
-      brandRepo.findByStripeAccountId.mockResolvedValue(brandSnap);
+      const tenantSnap = makeTenantSnap();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenantSnap);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(
         makePaymentRow({ status: 'succeeded', amount: '10.00' }),
       );
@@ -399,8 +408,8 @@ describe('HandleStripeEventService', () => {
         reason: 'fraudulent',
         charge: CHARGE_ID,
       };
-      const brandSnap = makeBrandSnap();
-      brandRepo.findByStripeAccountId.mockResolvedValue(brandSnap);
+      const tenantSnap = makeTenantSnap();
+      tenantRepo.findByStripeAccountId.mockResolvedValue(tenantSnap);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(makePaymentRow());
 
       const event = makeStripeEvent('charge.dispute.created', disputeObj, STRIPE_ACCOUNT_ID);
