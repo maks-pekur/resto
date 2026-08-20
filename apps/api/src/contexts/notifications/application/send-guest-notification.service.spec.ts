@@ -72,7 +72,7 @@ describe('SendGuestNotificationService', () => {
       const call = email.calls[0];
       expect(call?.to).toBe('guest@example.com');
       expect(call?.kind).toBe('order_confirmation');
-      expect(call?.brandName).toBe('Acme');
+      expect(call?.tenantName).toBe('Acme');
       expect(call?.vars.orderNumber).toBe('ORD-001');
       expect(call?.vars.itemsSummary).toContain('Burger');
     });
@@ -108,7 +108,7 @@ describe('SendGuestNotificationService', () => {
         transition: 'order_confirmation',
       });
 
-      expect(email.calls[0]?.brandTheme).toMatchObject({ accentColor: '#16a34a' });
+      expect(email.calls[0]?.tenantTheme).toMatchObject({ accentColor: '#16a34a' });
     });
 
     it('reads the notification locale from the tenant row (D-36)', async () => {

@@ -1,11 +1,11 @@
 import type { EmailLocale } from '../../identity/domain/email-locale';
 import type {
-  GuestBrandTheme,
+  GuestTenantTheme,
   GuestEmailVars,
   GuestNotificationKind,
 } from '../../identity/domain/ports';
 
-export type { GuestBrandTheme, GuestEmailVars, GuestNotificationKind };
+export type { GuestTenantTheme, GuestEmailVars, GuestNotificationKind };
 
 export interface RenderedGuestEmail {
   readonly subject: string;
@@ -100,14 +100,14 @@ const escapeHtml = (s: string): string =>
 const buildHtml = (opts: {
   heading: string;
   bodyText: string;
-  brandName: string;
+  tenantName: string;
   accentColor: string;
   logoUrl: string | null;
   statusUrl: string;
   statusLinkLabel: string;
 }): string => {
   const logo = opts.logoUrl
-    ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.brandName)}" style="max-height:48px;display:block;margin:0 auto 16px;" />`
+    ? `<img src="${opts.logoUrl}" alt="${escapeHtml(opts.tenantName)}" style="max-height:48px;display:block;margin:0 auto 16px;" />`
     : '';
 
   const bodyLines = opts.bodyText
@@ -124,7 +124,7 @@ const buildHtml = (opts: {
   <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;margin:0 auto;background:#fff;border-radius:8px;overflow:hidden;">
     <tr><td style="background:${opts.accentColor};padding:24px;text-align:center;">
       ${logo}
-      <span style="color:#fff;font-size:20px;font-weight:600;">${escapeHtml(opts.brandName)}</span>
+      <span style="color:#fff;font-size:20px;font-weight:600;">${escapeHtml(opts.tenantName)}</span>
     </td></tr>
     <tr><td style="padding:32px;">
       <h1 style="font-size:18px;margin:0 0 16px;color:#111;">${escapeHtml(opts.heading)}</h1>
@@ -139,14 +139,14 @@ const buildHtml = (opts: {
 export const renderGuestEmail = (
   kind: GuestNotificationKind,
   locale: EmailLocale,
-  brandTheme: GuestBrandTheme | null,
-  brandName: string,
+  tenantTheme: GuestTenantTheme | null,
+  tenantName: string,
   vars: GuestEmailVars,
 ): RenderedGuestEmail => {
   const strings = STRINGS[locale];
   const template = strings[kind];
-  const accentColor = sanitizeAccentColor(brandTheme?.accentColor);
-  const logoUrl = sanitizeLogoUrl(brandTheme?.logoUrl);
+  const accentColor = sanitizeAccentColor(tenantTheme?.accentColor);
+  const logoUrl = sanitizeLogoUrl(tenantTheme?.logoUrl);
   const bodyText = template.body(vars);
   const statusLinkLabel = STATUS_LINK_LABEL[locale];
 
@@ -155,7 +155,7 @@ export const renderGuestEmail = (
     html: buildHtml({
       heading: template.heading,
       bodyText,
-      brandName,
+      tenantName,
       accentColor,
       logoUrl,
       statusUrl: vars.statusUrl,

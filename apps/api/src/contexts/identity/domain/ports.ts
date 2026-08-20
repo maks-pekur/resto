@@ -34,7 +34,7 @@ export type GuestNotificationKind =
   | 'order_accepted'
   | 'order_ready';
 
-export interface GuestBrandTheme {
+export interface GuestTenantTheme {
   readonly logoUrl?: string | null | undefined;
   readonly accentColor?: string | null | undefined;
 }
@@ -53,8 +53,8 @@ export interface SendGuestNotificationInput {
   readonly to: string;
   readonly locale: EmailLocale;
   readonly kind: GuestNotificationKind;
-  readonly brandTheme: GuestBrandTheme | null;
-  readonly brandName: string;
+  readonly tenantTheme: GuestTenantTheme | null;
+  readonly tenantName: string;
   readonly vars: GuestEmailVars;
   readonly tenantId: TenantId;
   readonly idempotencyKey: string;

@@ -117,8 +117,8 @@ export class SendGuestNotificationService {
       to: order.customerEmail,
       locale,
       kind: input.transition,
-      brandTheme: tenantTheme,
-      brandName: tenantName,
+      tenantTheme,
+      tenantName,
       vars: {
         orderNumber: order.orderNumber,
         itemsSummary,

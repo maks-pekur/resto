@@ -40,7 +40,7 @@ describe('renderGuestEmail', () => {
       expect(result.html).toContain('<img src="https://cdn.example.com/logo.png"');
     });
 
-    it('renders a neutral default layout when brandTheme is null', () => {
+    it('renders a neutral default layout when tenantTheme is null', () => {
       const result = renderGuestEmail('order_confirmation', 'en', null, 'Acme', baseVars);
       expect(result.html).toContain('#1a1a1a');
       expect(result.html).toContain('ORD-001');

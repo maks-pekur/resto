@@ -232,8 +232,8 @@ export class ResendEmailAdapter implements EmailAdapterPort {
     const rendered = renderGuestEmail(
       input.kind,
       input.locale,
-      input.brandTheme,
-      input.brandName,
+      input.tenantTheme,
+      input.tenantName,
       input.vars,
     );
     await this.#sendWithRetry({
