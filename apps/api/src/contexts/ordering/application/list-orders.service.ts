@@ -1,6 +1,6 @@
 import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { getLocationId, requireBrandContext, requireTenantContext } from '@resto/db';
-import { BrandId, TenantId } from '@resto/domain';
+import { getLocationId, requireTenantContext } from '@resto/db';
+import { TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
 import { PAYMENT_REPOSITORY, type PaymentRepository } from '../../payments/domain/ports';
 import {
@@ -57,10 +57,9 @@ export class ListOrdersService {
   async execute(input: ListOrdersInput): Promise<ListOrdersResult> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = BrandId.parse(requireBrandContext());
     const requestedLocationId = getLocationId();
 
-    const allLocations = await this.locations.listForBrand(brandId, tenantId);
+    const allLocations = await this.locations.listForTenant(tenantId);
     const activeLocations = allLocations.filter((l) => l.status === 'active');
 
     if (requestedLocationId === undefined) {
@@ -85,7 +84,6 @@ export class ListOrdersService {
 
     const { rows, total } = await this.feedRepo.list({
       tenantId,
-      brandId,
       locationIds,
       statuses: [...statuses],
       ...(input.channel !== undefined ? { channel: input.channel } : {}),

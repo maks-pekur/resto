@@ -12,7 +12,6 @@ const USD = Currency.parse('USD');
 function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput {
   return {
     tenantId: TenantId.parse('00000000-0000-0000-0000-000000000001'),
-    brandId: '00000000-0000-0000-0000-000000000002',
     locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
@@ -39,7 +38,6 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
   return {
     id: OrderId.parse('00000000-0000-0000-0000-0000000000f1'),
     tenantId: TenantId.parse('00000000-0000-0000-0000-000000000001'),
-    brandId: '00000000-0000-0000-0000-000000000002',
     locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
@@ -93,7 +91,7 @@ describe('Order.create', () => {
     if (!event) return;
     expect(event.kind).toBe('OrderCreated');
     if (event.kind !== 'OrderCreated') return;
-    expect(event.brandId).toBe('00000000-0000-0000-0000-000000000002');
+    expect(event.tenantId).toBe('00000000-0000-0000-0000-000000000001');
     expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     expect(event.orderNumber).toBe('ORD-001');
     expect(event.fulfillmentMode).toBe('dine_in');

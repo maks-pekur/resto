@@ -4,7 +4,6 @@ export interface OrderCreatedDomainEvent {
   readonly kind: 'OrderCreated';
   readonly orderId: OrderId;
   readonly tenantId: TenantId;
-  readonly brandId: string;
   readonly locationId: string;
   readonly orderNumber: string;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';

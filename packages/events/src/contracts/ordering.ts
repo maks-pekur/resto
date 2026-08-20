@@ -5,7 +5,6 @@ import { defineEventContract } from '../envelope';
 export const OrderCreatedV1Payload = z.object({
   orderId: z.string().uuid(),
   tenantId: TenantId,
-  brandId: z.string().uuid(),
   locationId: z.string().uuid(),
   orderNumber: z.string().min(1).max(20),
   fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),

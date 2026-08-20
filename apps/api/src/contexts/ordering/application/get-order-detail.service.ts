@@ -1,6 +1,6 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
-import { getLocationId, requireBrandContext, requireTenantContext } from '@resto/db';
-import { BrandId, OrderId, TenantId } from '@resto/domain';
+import { getLocationId, requireTenantContext } from '@resto/db';
+import { OrderId, TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
 import { PAYMENT_REPOSITORY, type PaymentRepository } from '../../payments/domain/ports';
 import { ORDER_REPOSITORY, type OrderRepository } from '../domain/ports';
@@ -29,7 +29,6 @@ export class GetOrderDetailService {
   async execute(input: GetOrderDetailInput): Promise<OrderDetailResult> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = BrandId.parse(requireBrandContext());
     const requestedLocationId = getLocationId();
 
     const order = await this.orderRepo.findById(OrderId.parse(input.orderId));
@@ -38,7 +37,7 @@ export class GetOrderDetailService {
     }
     const snap = order.toSnapshot();
 
-    const activeLocations = (await this.locations.listForBrand(brandId, tenantId)).filter(
+    const activeLocations = (await this.locations.listForTenant(tenantId)).filter(
       (l) => l.status === 'active',
     );
     const inScope =
