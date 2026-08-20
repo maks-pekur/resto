@@ -233,7 +233,7 @@ export const buildAuth = (opts: BuildOpts) =>
         // `activeTenantId`), not the physical column (`tenant_id`).
         schema: {
           session: { fields: { activeOrganizationId: 'activeTenantId' } },
-          organizationRole: { modelName: 'tenant_role', fields: { organizationId: 'tenantId' } },
+          organizationRole: { modelName: 'tenantRole', fields: { organizationId: 'tenantId' } },
           member: { fields: { organizationId: 'tenantId' } },
           invitation: { fields: { organizationId: 'tenantId' } },
         },
