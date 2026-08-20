@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { Currency, TenantId, TenantSlug } from '@resto/domain';
+import { TenantId, TenantSlug } from '@resto/domain';
 import { OffboardTenantService } from '../../../src/contexts/tenancy/application/offboard-tenant.service';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
 import { TenantNotFoundError } from '../../../src/contexts/tenancy/domain/errors';
@@ -12,7 +12,7 @@ const fakeId = '00000000-0000-4000-8000-000000000001';
 const baseProvisionInput = () => ({
   slug: TenantSlug.parse('cafe-roma'),
   displayName: 'Cafe Roma',
-  defaultCurrency: Currency.parse('USD'),
+  country: 'GB' as const,
   primaryDomainHostname: 'cafe-roma.menu.resto.app',
 });
 
@@ -27,6 +27,7 @@ const buildRepoMock = (): TenantRepository => ({
   findById: vi.fn(),
   findBySlug: vi.fn(),
   findByDomainHost: vi.fn(),
+  findByStripeAccountId: vi.fn(),
   listDomains: vi.fn(),
   save: vi.fn(),
   eraseTenant: vi.fn(),
@@ -39,7 +40,7 @@ describe('OffboardTenantService', () => {
   it('schedule loads, mutates, and saves the aggregate', async () => {
     const tenant = Tenant.provision(baseProvisionInput());
     const repo = buildRepoMock();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.schedule({
       tenantId: tenant.toSnapshot().id,
@@ -63,7 +64,7 @@ describe('OffboardTenantService', () => {
     tenant.scheduleOffboarding('user-abc');
     tenant.pullEvents();
     const repo = buildRepoMock();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
     const service = new OffboardTenantService(repo, baseEnv());
     const result = await service.cancel({ tenantId: tenant.toSnapshot().id });
     expect(result.status).toBe('active');

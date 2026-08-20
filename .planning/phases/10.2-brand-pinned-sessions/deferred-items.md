@@ -57,3 +57,37 @@ tenant_role_resto_auth_full;` fails against the fresh testcontainer Postgres
   verification pass since plan 05 has already landed. Not fixed here — no
   file in this plan's `files_modified` touches `packages/db/migrations/` or
   `packages/db/sql/`.
+
+- **The `Location` cluster has no owning plan.** Mechanically checked with
+  `grep -l "<path>" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` for
+  each: `apps/api/src/contexts/tenancy/application/list-locations.service.ts`,
+  `apps/api/src/contexts/tenancy/application/provision-location.service.ts`,
+  and `apps/api/src/contexts/tenancy/infrastructure/location-drizzle.repository.ts`
+  all return **zero matches** — no plan in this phase lists them in
+  `files_modified`. All three (plus their spec files
+  `test/unit/tenancy/archive-location.service.spec.ts` and
+  `test/unit/tenancy/provision-location.service.spec.ts`) were already broken
+  before this plan ran — they reference `BrandId` (removed by plan 01) and
+  `requireBrandContext`/`withBrand` (removed by plan 04) — pre-existing
+  breakage, not caused by this plan.
+
+  This plan's Task 1 touched `apps/api/src/contexts/tenancy/domain/location.aggregate.ts`
+  only as a Rule-3 minimal unblock: removed the one `BrandId`-typed field
+  (`LocationSnapshot.brandId` / `LocationArchivedEvent.brandId`) that was
+  the sole reason `contexts/tenancy/domain/` — this plan's own directory-wide
+  typecheck gate — didn't compile. `ports.ts`'s `LocationRepository.listForBrand`
+  was renamed to `listForTenant(tenantId)` to match (the `brandId` parameter
+  had no meaning left to carry). This is a genuine, if small, interface change
+  that ripples into the three unowned files above, which were already broken
+  on `BrandId`/`requireBrandContext` before this plan touched anything — the
+  rename does not newly break a working file, but it does mean the eventual
+  fix must additionally drop the `brandId` parameter, not just repoint
+  `BrandId`/`requireBrandContext` imports.
+
+  `apps/api/src/contexts/tenancy/interfaces/http/locations.controller.ts` IS
+  owned by plan 07 (`grep -l` confirms it in `10.2-07-PLAN.md`'s
+  `files_modified`) — plan 07 will hit this exact gap the moment it tries to
+  make that controller compile, since the controller depends on all three
+  unowned files. Flagging explicitly so plan 07 (or a plan inserted ahead of
+  it) absorbs `list-locations.service.ts`, `provision-location.service.ts`,
+  and `location-drizzle.repository.ts` rather than being surprised by them.

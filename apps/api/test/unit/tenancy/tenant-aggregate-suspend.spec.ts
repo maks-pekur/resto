@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Currency, TenantSlug } from '@resto/domain';
+import { TenantSlug } from '@resto/domain';
 import {
   TenantAlreadySuspendedError,
   TenantNotSuspendedError,
@@ -12,7 +12,7 @@ const NOW = new Date('2026-05-01T00:00:00.000Z');
 const baseProvisionInput = {
   slug: TenantSlug.parse('cafe-roma'),
   displayName: 'Cafe Roma',
-  defaultCurrency: Currency.parse('USD'),
+  country: 'GB' as const,
   primaryDomainHostname: 'cafe-roma.menu.resto.app',
   now: NOW,
 };
