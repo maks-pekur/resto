@@ -6,9 +6,9 @@ import type { LocationSnapshot } from '../../tenancy/domain/location.aggregate';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { StopListResponse } from './dto';
 
-// 10.2-06 (concurrent) replaces LocationRepository.listForBrand with a tenant-scoped
-// equivalent; this augmentation lets catalog compile against that shape ahead of the
-// merge. Drop once ports.ts exports listForTenant directly.
+// 10.2-06 (concurrent) adds LocationRepository.listForTenant as part of the tenancy
+// port sweep; this augmentation lets catalog compile against that shape ahead of the
+// merge landing. Drop once ports.ts exports listForTenant directly.
 interface TenantScopedLocationRepository extends LocationRepository {
   listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
 }

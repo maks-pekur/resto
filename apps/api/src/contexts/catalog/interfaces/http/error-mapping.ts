@@ -5,7 +5,6 @@ import {
   type HttpException,
 } from '@nestjs/common';
 import {
-  BrandContextRequiredError,
   CatalogCodeConflictError,
   CatalogPublishConflictError,
   CategoryNestingDepthError,
@@ -16,7 +15,7 @@ import {
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
   MenuModifierOptionNotFoundError,
-  NoLocationForBrandError,
+  NoLocationForTenantError,
   StopListItemNotFoundError,
   type CatalogDomainError,
 } from '../../domain/errors';
@@ -31,13 +30,9 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof StopListItemNotFoundError ||
   err instanceof MenuCategoryAlreadyArchivedError ||
   err instanceof MenuItemAlreadyArchivedError ||
-  err instanceof BrandContextRequiredError ||
   err instanceof CategoryNestingDepthError ||
   err instanceof CatalogCodeConflictError ||
-  err instanceof NoLocationForBrandError;
-
-const isMissingBrandContextError = (err: unknown): err is Error =>
-  err instanceof Error && err.message.startsWith('No brand context bound.');
+  err instanceof NoLocationForTenantError;
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -86,11 +81,6 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
         code: 'catalog.menu_item_already_archived',
         message: err.message,
       });
-    case 'BrandContextRequiredError':
-      return new BadRequestException({
-        code: 'catalog.brand_context_required',
-        message: err.message,
-      });
     case 'CategoryNestingDepthError':
       return new BadRequestException({
         code: 'catalog.category_nesting_depth',
@@ -101,9 +91,9 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
         code: 'catalog.code_conflict',
         message: err.message,
       });
-    case 'NoLocationForBrandError':
+    case 'NoLocationForTenantError':
       return new NotFoundException({
-        code: 'catalog.no_location_for_brand',
+        code: 'catalog.no_location_for_tenant',
         message: err.message,
       });
     default: {
@@ -115,6 +105,5 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
 
 export const mapCatalogError = (err: unknown): unknown => {
   if (isCatalogDomainError(err)) return mapKnown(err);
-  if (isMissingBrandContextError(err)) return mapKnown(new BrandContextRequiredError());
   return err;
 };
