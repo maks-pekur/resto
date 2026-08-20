@@ -134,7 +134,7 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         .insert(schema.member)
         .values({
           id: 'i2-member',
-          organizationId: tenantA.id,
+          tenantId: tenantA.id,
           userId: userRow.id,
           role: 'admin',
           createdAt: new Date(),
