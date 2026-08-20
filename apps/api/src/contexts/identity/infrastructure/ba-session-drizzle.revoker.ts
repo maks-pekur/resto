@@ -13,16 +13,14 @@ export class BaSessionDrizzleRevoker implements BaSessionRevoker {
     const members = await this.authDb.db
       .select({ userId: memberTable.userId })
       .from(memberTable)
-      .where(eq(memberTable.organizationId, tenantId));
+      .where(eq(memberTable.tenantId, tenantId));
     const userIds = members.map((m) => m.userId);
     if (userIds.length === 0) {
       return { revokedSessionsCount: 0 };
     }
     const deleted = await this.authDb.db
       .delete(sessionTable)
-      .where(
-        and(inArray(sessionTable.userId, userIds), eq(sessionTable.activeOrganizationId, tenantId)),
-      )
+      .where(and(inArray(sessionTable.userId, userIds), eq(sessionTable.activeTenantId, tenantId)))
       .returning({ id: sessionTable.id });
     return { revokedSessionsCount: deleted.length };
   }

@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
-import { organizationRole as organizationRoleTable } from '@resto/db/schema';
+import { tenantRole as tenantRoleTable } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { PRESET_ROLES } from './preset-roles';
@@ -33,13 +33,13 @@ export class SyncPresetRolesService {
   async execute(input: SyncPresetRolesInput): Promise<SyncPresetRolesResult> {
     const existingRows: ExistingRoleRow[] = await this.authDb.db
       .select({
-        id: organizationRoleTable.id,
-        role: organizationRoleTable.role,
-        permission: organizationRoleTable.permission,
-        archivedAt: organizationRoleTable.archivedAt,
+        id: tenantRoleTable.id,
+        role: tenantRoleTable.role,
+        permission: tenantRoleTable.permission,
+        archivedAt: tenantRoleTable.archivedAt,
       })
-      .from(organizationRoleTable)
-      .where(eq(organizationRoleTable.organizationId, input.organizationId));
+      .from(tenantRoleTable)
+      .where(eq(tenantRoleTable.tenantId, input.organizationId));
 
     const existingBySlug = new Map(existingRows.map((row) => [row.role, row]));
 
@@ -61,9 +61,9 @@ export class SyncPresetRolesService {
         }
         try {
           await this.authDb.db
-            .update(organizationRoleTable)
+            .update(tenantRoleTable)
             .set({ permission: targetPermission })
-            .where(eq(organizationRoleTable.id, existing.id));
+            .where(eq(tenantRoleTable.id, existing.id));
           updated += 1;
         } catch (err) {
           this.logger.warn(
@@ -75,9 +75,9 @@ export class SyncPresetRolesService {
       }
 
       try {
-        await this.authDb.db.insert(organizationRoleTable).values({
+        await this.authDb.db.insert(tenantRoleTable).values({
           id: randomUUID(),
-          organizationId: input.organizationId,
+          tenantId: input.organizationId,
           role: preset.slug,
           permission: targetPermission,
           createdAt: new Date(),

@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { buildEnvelope, IdentityRoleDeletedV1 } from '@resto/events';
 import { TenantId } from '@resto/domain';
-import { member as memberTable, organizationRole } from '@resto/db/schema';
+import { member as memberTable, tenantRole } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { RoleNotFoundError, RoleOccupiedError } from '../domain/errors';
@@ -38,7 +38,7 @@ export class ArchiveRoleService {
     const memberRows = await this.authDb.db
       .select({ id: memberTable.id, role: memberTable.role })
       .from(memberTable)
-      .where(eq(memberTable.organizationId, input.organizationId));
+      .where(eq(memberTable.tenantId, input.organizationId));
 
     const occupyingMembers = memberRows.filter((m) => {
       const parts = m.role.split(',').map((r) => r.trim());
@@ -51,13 +51,10 @@ export class ArchiveRoleService {
 
     // D-12 (08.3): soft-archive; NEVER call auth.api.deleteOrgRole (hard-delete forbidden)
     await this.authDb.db
-      .update(organizationRole)
+      .update(tenantRole)
       .set({ archivedAt: new Date() })
       .where(
-        and(
-          eq(organizationRole.organizationId, input.organizationId),
-          eq(organizationRole.role, input.roleSlug),
-        ),
+        and(eq(tenantRole.tenantId, input.organizationId), eq(tenantRole.role, input.roleSlug)),
       );
 
     const tenantId = TenantId.parse(input.organizationId);

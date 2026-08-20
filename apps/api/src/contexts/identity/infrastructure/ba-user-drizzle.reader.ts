@@ -23,7 +23,7 @@ export class BaUserDrizzleReader implements BaUserReader {
       .select({ id: userTable.id, email: userTable.email })
       .from(memberTable)
       .innerJoin(userTable, eq(memberTable.userId, userTable.id))
-      .where(and(eq(memberTable.organizationId, organizationId), eq(memberTable.role, 'owner')))
+      .where(and(eq(memberTable.tenantId, organizationId), eq(memberTable.role, 'owner')))
       .limit(1);
     return rows[0] ?? null;
   }
