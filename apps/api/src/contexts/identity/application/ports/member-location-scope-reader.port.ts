@@ -13,10 +13,6 @@ export interface MemberLocationScopeReader {
     userId: string;
     tenantId: TenantId;
   }): Promise<readonly string[] | null>;
-  findReachableBrandsForMember(input: {
-    userId: string;
-    tenantId: TenantId;
-  }): Promise<readonly string[] | null>;
   findRoleForMemberAtLocation(input: {
     userId: string;
     locationId: string;
