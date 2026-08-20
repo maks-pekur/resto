@@ -18,7 +18,7 @@ interface Bucket {
 const WINDOW_MS = 60_000;
 
 @Injectable()
-export class BrandSlugRateLimitGuard implements CanActivate {
+export class TenantSlugRateLimitGuard implements CanActivate {
   private readonly buckets = new Map<string, Bucket>();
   private lastSweepAt = 0;
 
@@ -35,7 +35,7 @@ export class BrandSlugRateLimitGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const key = req.principal && 'userId' in req.principal ? req.principal.userId : `ip:${req.ip}`;
-    const cap = this.env.RATE_LIMIT_BRAND_SLUG_CHECK_PER_MIN;
+    const cap = this.env.RATE_LIMIT_TENANT_SLUG_CHECK_PER_MIN;
     const now = Date.now();
     this.sweep(now);
     const existing = this.buckets.get(key);

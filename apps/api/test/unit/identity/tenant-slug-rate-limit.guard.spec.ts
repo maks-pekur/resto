@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { HttpException, type ExecutionContext } from '@nestjs/common';
-import { BrandSlugRateLimitGuard } from '../../../src/contexts/identity/interfaces/http/guards/brand-slug-rate-limit.guard';
+import { TenantSlugRateLimitGuard } from '../../../src/contexts/identity/interfaces/http/guards/tenant-slug-rate-limit.guard';
 import type { Env } from '../../../src/config/env.schema';
 
 const T0 = 1_700_000_000_000;
@@ -9,13 +9,13 @@ const WINDOW_MS = 60_000;
 const ctxFor = (ip: string): ExecutionContext =>
   ({ switchToHttp: () => ({ getRequest: () => ({ ip }) }) }) as unknown as ExecutionContext;
 
-const bucketCount = (guard: BrandSlugRateLimitGuard): number =>
+const bucketCount = (guard: TenantSlugRateLimitGuard): number =>
   (guard as unknown as { buckets: Map<string, unknown> }).buckets.size;
 
-const buildGuard = (cap: number): BrandSlugRateLimitGuard =>
-  new BrandSlugRateLimitGuard({ RATE_LIMIT_BRAND_SLUG_CHECK_PER_MIN: cap } as unknown as Env);
+const buildGuard = (cap: number): TenantSlugRateLimitGuard =>
+  new TenantSlugRateLimitGuard({ RATE_LIMIT_TENANT_SLUG_CHECK_PER_MIN: cap } as unknown as Env);
 
-describe('BrandSlugRateLimitGuard', () => {
+describe('TenantSlugRateLimitGuard', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.setSystemTime(T0);

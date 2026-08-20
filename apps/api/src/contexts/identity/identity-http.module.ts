@@ -22,17 +22,17 @@ import { MemberLocationRolesController } from './interfaces/http/member-location
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { TenantLookupAdapter } from './infrastructure/tenant-lookup.adapter';
 import { AuthGuard } from './interfaces/http/guards/auth.guard';
-import { BrandSlugRateLimitGuard } from './interfaces/http/guards/brand-slug-rate-limit.guard';
+import { TenantSlugRateLimitGuard } from './interfaces/http/guards/tenant-slug-rate-limit.guard';
 import { PermissionsGuard } from './interfaces/http/guards/permissions.guard';
 import { registerBetterAuthHandler } from './interfaces/http/better-auth.handler';
 import { MeController } from './interfaces/http/me.controller';
 import { InternalBootstrapController } from './interfaces/http/internal-bootstrap.controller';
 import { SignUpController } from './interfaces/http/signup.controller';
 import { SignUpService } from './application/signup.service';
-import { ListMyBrandsService } from './application/list-my-brands.service';
-import { CheckBrandSlugAvailabilityService } from './application/check-brand-slug-availability.service';
+import { ListMyTenantsService } from './application/list-my-tenants.service';
+import { CheckTenantSlugAvailabilityService } from './application/check-tenant-slug-availability.service';
 import { SetActiveLocationService } from './application/set-active-location.service';
-import { MeBrandsController } from './interfaces/http/me-brands.controller';
+import { MeTenantsController } from './interfaces/http/me-tenants.controller';
 import { SetActiveLocationController } from './interfaces/http/set-active-location.controller';
 import { LocationScopeGuard } from './interfaces/http/guards/location-scope.guard';
 import { OwnerOnlyGuard } from './interfaces/http/guards/owner-only.guard';
@@ -55,7 +55,7 @@ import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.
   imports: [IdentityCoreModule, TenancyModule],
   controllers: [
     MeController,
-    MeBrandsController,
+    MeTenantsController,
     SetActiveLocationController,
     InternalBootstrapController,
     SignUpController,
@@ -74,8 +74,8 @@ import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.
     ListMemberLocationRolesService,
     ListMembersService,
     SignUpService,
-    ListMyBrandsService,
-    CheckBrandSlugAvailabilityService,
+    ListMyTenantsService,
+    CheckTenantSlugAvailabilityService,
     SetActiveLocationService,
     { provide: TENANT_LOOKUP_PORT, useClass: TenantLookupAdapter },
     TenantLookupAdapter,
@@ -91,7 +91,7 @@ import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.
     BaUserDrizzleReader,
     { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },
     TenantProvisioningAdapter,
-    BrandSlugRateLimitGuard,
+    TenantSlugRateLimitGuard,
   ],
 })
 export class IdentityHttpModule implements OnModuleInit {
