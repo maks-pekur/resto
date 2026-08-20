@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TenantAwareDb } from '@resto/db';
-import { BrandId, OrderId, TenantId } from '@resto/domain';
+import { OrderId, TenantId } from '@resto/domain';
 import { ORDER_REPOSITORY, type OrderRepository } from '../../ordering/domain/ports';
-import { BRAND_REPOSITORY, type BrandRepository } from '../../tenancy/domain/ports';
-import { Brand } from '../../tenancy/domain/brand.aggregate';
+import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
+import { Tenant } from '../../tenancy/domain/tenant.aggregate';
 import {
   PAYMENT_PROVIDER_PORT,
   PAYMENT_REPOSITORY,
@@ -31,7 +31,7 @@ export class CreateCheckoutPaymentService {
 
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly orderRepo: OrderRepository,
-    @Inject(BRAND_REPOSITORY) private readonly brandRepo: BrandRepository,
+    @Inject(TENANT_REPOSITORY) private readonly tenantRepo: TenantRepository,
     @Inject(PAYMENT_REPOSITORY) private readonly paymentRepo: PaymentRepository,
     @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
@@ -58,21 +58,21 @@ export class CreateCheckoutPaymentService {
       throw new OrderNotCheckoutableError(input.orderId, snap.status);
     }
 
-    const brandSnap = await this.brandRepo.findById(BrandId.parse(snap.brandId));
-    if (!brandSnap?.defaultCurrency || !Brand.fromSnapshot(brandSnap).canAcceptPayments()) {
-      throw new PaymentsNotEnabledError(snap.brandId);
+    const tenantSnap = await this.tenantRepo.findById(input.tenantId);
+    if (!tenantSnap || !Tenant.fromSnapshot(tenantSnap).canAcceptPayments()) {
+      throw new PaymentsNotEnabledError(input.tenantId);
     }
 
-    const brandCurrency: string = brandSnap.defaultCurrency;
+    const tenantCurrency: string = tenantSnap.defaultCurrency;
     const orderCurrency: string = snap.currency;
 
-    if (orderCurrency.toUpperCase() !== brandCurrency.toUpperCase()) {
-      throw new CurrencyMismatchError(orderCurrency, brandCurrency);
+    if (orderCurrency.toUpperCase() !== tenantCurrency.toUpperCase()) {
+      throw new CurrencyMismatchError(orderCurrency, tenantCurrency);
     }
 
-    const connectedAccountId = brandSnap.stripeAccountId ?? '';
+    const connectedAccountId = tenantSnap.stripeAccountId ?? '';
     if (!connectedAccountId) {
-      throw new PaymentsNotEnabledError(snap.brandId);
+      throw new PaymentsNotEnabledError(input.tenantId);
     }
 
     const result = await this.db.withTenant(async (tx) => {
@@ -102,13 +102,12 @@ export class CreateCheckoutPaymentService {
         orderId: snap.id,
         connectedAccountId,
         amountMinor,
-        currency: brandCurrency,
+        currency: tenantCurrency,
         applicationFeeMinor: this.#applicationFeeMinor,
         attempt,
         metadata: {
           orderId: snap.id,
           tenantId: input.tenantId,
-          brandId: snap.brandId,
         },
       });
 
@@ -123,7 +122,7 @@ export class CreateCheckoutPaymentService {
           orderId: snap.id,
           status: 'requires_action',
           amount: fromMinorUnits(amountMinor),
-          currency: brandCurrency.toUpperCase(),
+          currency: tenantCurrency.toUpperCase(),
           paymentIntentId: piResult.paymentIntentId,
           stripeAccountId: connectedAccountId,
           applicationFeeAmount: fromMinorUnits(this.#applicationFeeMinor),
