@@ -57,17 +57,17 @@ export class MeController {
 
   private async resolvePermissions(
     userId: string,
-    organizationId: string,
+    tenantId: string,
   ): Promise<Record<string, string[]>> {
     const rows = await this.authDb.db
       .select({ role: memberTable.role })
       .from(memberTable)
-      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
       .limit(1);
     const memberRoleCsv = rows[0]?.role;
     if (!memberRoleCsv) return {};
 
-    const activeRoles = await listActiveCustomRoles(this.authDb, organizationId);
+    const activeRoles = await listActiveCustomRoles(this.authDb, tenantId);
     const customRoleLookup = (slug: string): Record<string, string[]> | null =>
       activeRoles.find((r) => r.role === slug)?.permission ?? null;
 

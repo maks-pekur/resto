@@ -152,12 +152,12 @@ export class AuthGuard implements CanActivate {
 
   private async lookupBaseRole(
     userId: string,
-    organizationId: string,
+    tenantId: string,
   ): Promise<'owner' | 'admin' | 'staff' | undefined> {
     const rows = await this.authDb.db
       .select({ role: memberTable.role })
       .from(memberTable)
-      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
       .limit(1);
     const role = rows[0]?.role;
     if (!role) return undefined;

@@ -43,7 +43,7 @@ export class AssignRoleService {
       .where(
         and(
           eq(memberTable.userId, input.actorUserId),
-          eq(memberTable.organizationId, input.organizationId),
+          eq(memberTable.tenantId, input.organizationId),
         ),
       )
       .limit(1);

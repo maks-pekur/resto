@@ -23,7 +23,7 @@ export class ListMembersService {
     const members = await this.authDb.db
       .select({ id: memberTable.id, userId: memberTable.userId, role: memberTable.role })
       .from(memberTable)
-      .where(eq(memberTable.organizationId, input.organizationId));
+      .where(eq(memberTable.tenantId, input.organizationId));
 
     if (members.length === 0) return { members: [] };
 
