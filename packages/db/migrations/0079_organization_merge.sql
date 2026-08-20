@@ -347,3 +347,36 @@ BEGIN
   END IF;
 END;
 $func$;
+--> statement-breakpoint
+-- ── 12. Leftovers found by sweeping the live catalog rather than the migration files.
+--
+-- Both survived every earlier "drop brand" step because each earlier step named a
+-- specific object from a migration file, and neither of these matches the name that
+-- file used:
+--
+--   * `app_bind_brand(text, boolean)` — migration 0061 ("drop_app_bind_brand_is_system_param")
+--     added the one-argument overload but never dropped the two-argument one, so step 2
+--     above (`DROP FUNCTION IF EXISTS app_bind_brand(text)`) removed only half of it. What
+--     was left is a SECURITY DEFINER function setting `app.current_brand`, a GUC no
+--     surviving policy reads. Dead, privileged, and invisible to any grep over source.
+--
+--   * `catalog_brand_stop_version_iso` — phase 08.4 renamed the TABLE
+--     `catalog_brand_stop_version` to `catalog_location_stop_version` but left the POLICY
+--     carrying the old name. The policy body is correct (`tenant_id = current_tenant_id()`);
+--     only the name is stale. Renamed rather than dropped — the isolation it provides is
+--     still required.
+DROP FUNCTION IF EXISTS app_bind_brand(text, boolean);--> statement-breakpoint
+ALTER POLICY catalog_brand_stop_version_iso
+  ON catalog_location_stop_version
+  RENAME TO catalog_location_stop_version_tenant_iso;
+--> statement-breakpoint
+-- ── 13. D-41 leftovers, same class as step 12: `ALTER TABLE ... RENAME TO` renames the
+-- table and nothing else. The primary-key constraint (and its backing index) and both
+-- policies kept the `organization_role` name they were given in migrations 0005 and 0054.
+--
+-- Found by sweeping pg_indexes / pg_constraint / pg_policies for '%organi%' after the
+-- migration applied, not by reading source — no grep over the repository can see a live
+-- database object name.
+ALTER TABLE tenant_role RENAME CONSTRAINT organization_role_pkey TO tenant_role_pkey;--> statement-breakpoint
+ALTER POLICY organization_role_tenant_isolation ON tenant_role RENAME TO tenant_role_tenant_isolation;--> statement-breakpoint
+ALTER POLICY organization_role_resto_auth_full ON tenant_role RENAME TO tenant_role_resto_auth_full;
