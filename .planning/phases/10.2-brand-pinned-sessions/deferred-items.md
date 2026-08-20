@@ -127,3 +127,28 @@ tenant_role_resto_auth_full;` fails against the fresh testcontainer Postgres
   ran concurrently in a sibling worktree risked mutating state the other agent
   depended on, for a test whose premise is already obsolete. `owner: plan 19`
   (explicitly named in this plan's `<verification>` section).
+
+## From plan 10
+
+- **`apps/api/src/contexts/identity/domain/ports.ts` — `SendGuestNotificationInput.brandTheme`
+  / `.brandName` / `GuestBrandTheme`** still carry `brand` vocabulary. Mechanically checked
+  (`grep -l "identity/domain/ports.ts" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md`
+  → zero results) — unowned by any plan in this phase. Plan 10's Task 3 rewrote
+  `send-guest-notification.service.ts` to source the guest email's sender identity, theme
+  and locale from the merged `tenants` row (via `notification-order-drizzle.repository.ts`'s
+  new join) instead of `BrandQueriesService`, but the payload it hands to
+  `EmailAdapterPort.sendGuestNotification` still uses the port's existing field names
+  (`brandTheme`, `brandName`) because that port — and its downstream renderer,
+  `apps/api/src/contexts/notifications/infrastructure/guest-email-templates.ts` (also
+  unowned, `grep -l` confirms) — live in `identity/domain/`, owned by plan 08, running
+  concurrently in a sibling worktree. Renaming them here would edit a file outside this
+  plan's `files_modified` and outside its bounded context, risking exactly the kind of
+  cross-plan collision the phase's parallel-execution rules forbid. Not fixed — the DATA
+  is correctly tenant-scoped (T-10.2-10-05 mitigated); only the wire field NAME still says
+  `brand`. `rg -in "brand" apps/api/src/contexts/notifications/` therefore does not return
+  zero matches, contrary to plan 10's own literal Task 3 acceptance criterion — see
+  `10.2-10-SUMMARY.md` for the full trace. Whichever plan eventually touches
+  `identity/domain/ports.ts` for D-40/D-41 (plan 21's mechanical sweep is the most likely
+  owner) should rename `brandTheme`/`brandName`/`GuestBrandTheme` to their tenant-named
+  equivalents and update `guest-email-templates.ts` + its spec + this plan's two files
+  (`send-guest-notification.service.ts`, `.spec.ts`) in the same commit.
