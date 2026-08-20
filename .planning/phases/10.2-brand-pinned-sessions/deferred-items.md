@@ -12,9 +12,16 @@ owns the file.
   BrandTheme into tenant-named equivalents"), which landed before plan 03 ran.
   `packages/events/src/contracts/tenancy.ts:96,109` and
   `packages/events/src/contracts/ordering.ts:8` still declare `brandId` fields on
-  the event contracts — this is explicitly plan 10's scope ("plan 10 removes the
-  `brandId` field from the `tenancy` and `ordering` event contracts"), so the
-  `BrandId` type-not-found error will resolve as a side effect of that plan's work.
+  the event contracts.
+
+  **Ownership corrected by the orchestrator (2026-08-20):** plan 04 attributed this to
+  plan 10. `packages/events/src/contracts/tenancy.ts` is in **plan 06**'s
+  `files_modified` (wave 4) and is not in plan 10's; only
+  `packages/events/src/contracts/ordering.ts` is shared between 06 and 10. So the
+  `BrandId` type-not-found error is plan 06's to close, and plan 06 runs six waves
+  earlier than the plan named here. Left unfixed by design either way — the wrong
+  owner would have delayed the fix, not lost it, but a later plan reading this file
+  would have skipped a break it owns.
   Confirmed via `git merge-base --is-ancestor a44da912 e5e1e3ed` that plan 01's
   removal predates plan 03's landing, so plan 03's SUMMARY claim of a clean
   `packages/events` typecheck was accurate only within its own pre-merge worktree —
