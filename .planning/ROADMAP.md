@@ -843,7 +843,7 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 7/21 plans executed
+**Plans:** 10/21 plans executed
 
 Plans:
 **Wave 1**
@@ -866,10 +866,10 @@ Plans:
 
 **Wave 5**
 
-- [ ] 10.2-07-PLAN.md — Tenancy host resolution, Stripe onboarding dedup, x-brand-slug removal, tenancy controllers
-- [ ] 10.2-08-PLAN.md — Identity brand machinery deleted; GET /v1/me/tenants and the renamed slug-availability check
+- [x] 10.2-07-PLAN.md — Tenancy host resolution, Stripe onboarding dedup, x-brand-slug removal, tenancy controllers
+- [x] 10.2-08-PLAN.md — Identity brand machinery deleted; GET /v1/me/tenants and the renamed slug-availability check
 - [x] 10.2-09-PLAN.md — Catalog context sweep (21 files)
-- [ ] 10.2-10-PLAN.md — Ordering + payments + notifications sweep and the ordering event contract
+- [x] 10.2-10-PLAN.md — Ordering + payments + notifications sweep and the ordering event contract
 
 **Wave 6**
 
