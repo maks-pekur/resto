@@ -7,7 +7,7 @@ import { assertRoleAttributes } from './preflight';
  * Provision the `resto_auth` NOBYPASSRLS role for Better Auth's drizzle
  * client. Mirrors `provisionAppRole` exactly (NOSUPERUSER NOBYPASSRLS).
  * resto_auth reaches the four RLS-enabled BA-owned tables it operates on
- * (member, invitation, organization_role, tenants) via explicit permissive
+ * (member, invitation, tenant_role, tenants) via explicit permissive
  * RLS policies created by migration 0054 (Option A, D-04 / RDS). This
  * removes the dependency on the BYPASSRLS attribute, which AWS RDS cannot
  * confer on a non-superuser (rds_superuser is not a true SUPERUSER).

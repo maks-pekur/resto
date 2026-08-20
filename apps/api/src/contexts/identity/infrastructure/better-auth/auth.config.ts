@@ -7,7 +7,7 @@ import { eq, and, isNull } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
-import { organizationRole as organizationRoleTable } from '@resto/db/schema';
+import { tenantRole as tenantRoleTable } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -223,6 +223,20 @@ export const buildAuth = (opts: BuildOpts) =>
       organization({
         ac,
         roles: { owner: ownerRole, admin: adminRole, staff: staffRole },
+        // D-41: points BA at the tenant-named physical schema (migration 0079).
+        // The value on each side must be the property key that exists on our
+        // `@resto/db/schema` Drizzle table object, NOT the raw SQL column name —
+        // BA's generic drizzle adapter resolves a field by doing
+        // `schemaModel[resolvedFieldName]` (verified against
+        // `better-auth/dist/adapters/drizzle-adapter/drizzle-adapter.mjs`), so
+        // the override must match our camelCase Drizzle property (`tenantId`,
+        // `activeTenantId`), not the physical column (`tenant_id`).
+        schema: {
+          session: { fields: { activeOrganizationId: 'activeTenantId' } },
+          organizationRole: { modelName: 'tenant_role', fields: { organizationId: 'tenantId' } },
+          member: { fields: { organizationId: 'tenantId' } },
+          invitation: { fields: { organizationId: 'tenantId' } },
+        },
         // D-13/D-17 (08.3): flag on; cap prevents unbounded per-request findMany cost
         dynamicAccessControl: { enabled: true, maximumRolesPerOrganization: 25 },
         // Pitfall 8 (RESEARCH.md): a malicious actor cannot invite a
@@ -260,13 +274,13 @@ export const buildAuth = (opts: BuildOpts) =>
             } else {
               try {
                 const rows = await opts.authDb.db
-                  .select({ permission: organizationRoleTable.permission })
-                  .from(organizationRoleTable)
+                  .select({ permission: tenantRoleTable.permission })
+                  .from(tenantRoleTable)
                   .where(
                     and(
-                      eq(organizationRoleTable.organizationId, orgId),
-                      eq(organizationRoleTable.role, newRole),
-                      isNull(organizationRoleTable.archivedAt),
+                      eq(tenantRoleTable.tenantId, orgId),
+                      eq(tenantRoleTable.role, newRole),
+                      isNull(tenantRoleTable.archivedAt),
                     ),
                   )
                   .limit(1);

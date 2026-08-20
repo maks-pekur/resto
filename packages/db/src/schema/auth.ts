@@ -29,7 +29,7 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  activeOrganizationId: text('active_organization_id'),
+  activeTenantId: text('active_tenant_id'),
   activeLocationId: text('active_location_id'),
 });
 
@@ -65,9 +65,9 @@ export const verification = pgTable('verification', {
     .notNull(),
 });
 
-export const organizationRole = pgTable('organization_role', {
+export const tenantRole = pgTable('tenant_role', {
   id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
+  tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   role: text('role').notNull(),
@@ -88,7 +88,7 @@ export const organization = tenants;
 
 export const member = pgTable('member', {
   id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
+  tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   userId: text('user_id')
@@ -100,7 +100,7 @@ export const member = pgTable('member', {
 
 export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
+  tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   email: text('email').notNull(),

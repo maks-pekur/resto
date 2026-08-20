@@ -842,7 +842,7 @@ suite('Row-Level Security — tenant isolation', () => {
           await tx.insert(schema.member).values({
             id: memberId,
             userId,
-            organizationId: tenantA,
+            tenantId: tenantA,
             role: 'staff',
             createdAt: new Date(),
           });
