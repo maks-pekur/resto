@@ -2,22 +2,14 @@ import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
-import type { LocationSnapshot } from '../../tenancy/domain/location.aggregate';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { AggregateStopListResponse } from './dto';
-
-// 10.2-06 (concurrent) adds LocationRepository.listForTenant as part of the tenancy
-// port sweep; this augmentation lets catalog compile against that shape ahead of the
-// merge landing. Drop once ports.ts exports listForTenant directly.
-interface TenantScopedLocationRepository extends LocationRepository {
-  listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
-}
 
 @Injectable()
 export class GetStopListAggregateService {
   constructor(
     @Inject(CATALOG_REPOSITORY) private readonly repo: CatalogRepository,
-    @Inject(LOCATION_REPOSITORY) private readonly locations: TenantScopedLocationRepository,
+    @Inject(LOCATION_REPOSITORY) private readonly locations: LocationRepository,
   ) {}
 
   async execute(): Promise<AggregateStopListResponse> {
