@@ -127,3 +127,36 @@ tenant_role_resto_auth_full;` fails against the fresh testcontainer Postgres
   ran concurrently in a sibling worktree risked mutating state the other agent
   depended on, for a test whose premise is already obsolete. `owner: plan 19`
   (explicitly named in this plan's `<verification>` section).
+
+## From plan 07
+
+- **Deleting `apps/api/src/contexts/tenancy/application/brand-queries.service.ts`
+  (Task 1, D-40) breaks three files outside `contexts/tenancy/` that still import
+  `BrandQueriesService`:**
+  - `apps/api/src/contexts/identity/infrastructure/brand-provisioning.adapter.ts` —
+    `owner: plan 08` (`grep -l` confirms `10.2-08-PLAN.md` lists this file). Plan 08's
+    own Task 1 already deletes this adapter and its port outright (`ports/
+brand-provisioning.port.ts`, `infrastructure/brand-provisioning.adapter.ts`), so
+    the new `TS2307: Cannot find module '.../brand-queries.service'` is moot — the
+    importing file is gone the moment plan 08 lands.
+  - `apps/api/src/contexts/notifications/application/send-guest-notification.service.ts`
+    (+ its spec) — `owner: plan 10` (`grep -l` confirms `10.2-10-PLAN.md`). Plan 10's
+    own action text already rewrites this file to source sender identity/locale from
+    the tenant instead of the brand, so it was going to drop the `BrandQueriesService`
+    import regardless.
+    Not fixed here — both consumers are outside `files_modified` for this plan and
+    already owned by concurrent plans that independently remove the dependency. Verified
+    before deleting: neither consumer imports anything from `brand-queries.service.ts`
+    that would give it a _new_, different failure mode (both already failed to typecheck
+    before this plan touched anything, for unrelated pre-existing reasons — missing
+    `BrandId`/`BrandSlug` exports, a missing `provision-brand.service.ts`). Baseline
+    captured via `npx tsc -p apps/api/tsconfig.json --noEmit` before the Task 1 edit;
+    the only new lines it added were the four `TS2307`s on the `brand-queries.service`
+    import path itself.
+
+- **`apps/api/src/contexts/tenancy/tenancy.module.ts` still imports
+  `./application/brand-queries.service` and
+  `./application/tenant-and-brand-resolver.service`, both deleted in Task 1.**
+  `owner: plan 07 Task 3` (this same plan, later task — module wiring is explicitly
+  Task 3's file). Left broken between the Task 1 and Task 3 commits by design; not a
+  gap for another plan to pick up.
