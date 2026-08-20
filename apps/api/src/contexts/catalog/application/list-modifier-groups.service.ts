@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { ModifierGroupListResponse } from './dto';
 
@@ -9,8 +9,7 @@ export class ListModifierGroupsService {
 
   async execute(): Promise<ModifierGroupListResponse> {
     requireTenantContext();
-    const brandId = requireBrandContext();
-    const rows = await this.repo.listModifierGroups(brandId);
+    const rows = await this.repo.listModifierGroups();
     return {
       items: rows.map((r) => ({
         id: r.id,

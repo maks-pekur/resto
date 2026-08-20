@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { MoneyAmount } from '@resto/domain';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { UpsertItemSizeInput } from './dto';
@@ -10,12 +10,10 @@ export class UpsertItemSizeService {
 
   async execute(input: UpsertItemSizeInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
     const price = input.price as MoneyAmount;
     return this.repo.upsertItemSize({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
-      brandId,
       menuItemId: input.menuItemId,
       name: input.name,
       price,

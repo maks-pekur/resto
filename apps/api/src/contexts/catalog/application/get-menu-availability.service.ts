@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext, withLocation } from '@resto/db';
+import { requireTenantContext, withLocation } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { DefaultLocationResolverService } from './default-location-resolver.service';
 import {
@@ -25,9 +25,8 @@ export class GetMenuAvailabilityService {
 
   async execute(): Promise<MenuAvailabilityResult> {
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const locationId = await this.defaultLocation.resolveForBrand(brandId, tenantId);
+    const locationId = await this.defaultLocation.resolveForTenant(tenantId);
 
     return withLocation(locationId, async () => {
       const [stoppedItemIds, stopVersion] = await Promise.all([

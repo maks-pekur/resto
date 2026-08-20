@@ -1,8 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, schema, TenantAwareDb, type MenuItemPhoto } from '@resto/db';
 import {
-  BrandId,
-  BrandTheme,
   Currency,
   MenuCategoryId,
   MenuItemId,
@@ -49,7 +47,6 @@ import {
 } from '../domain/errors';
 import type {
   PublishedMenu,
-  PublishedMenuBrand,
   PublishedMenuCategory,
   PublishedMenuItem,
   PublishedMenuItemPhoto,
@@ -92,50 +89,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     return signed.filter((p): p is PublishedMenuItemPhoto => p !== null);
   }
 
-  async loadPublishedMenu(
-    tenantId: TenantId,
-    version: number,
-    brandId: string,
-  ): Promise<PublishedMenu> {
-    return this.db.withTenant(async (tx, scoped) => {
-      const itemsBaseConditions = and(
-        eq(schema.menuItems.status, 'published'),
-        eq(schema.menuItems.brandId, brandId),
-      );
-
-      const brandRowPromise = tx
-        .select({
-          id: schema.brands.id,
-          slug: schema.brands.slug,
-          displayName: schema.brands.displayName,
-          theme: schema.brands.theme,
-        })
-        .from(schema.brands)
-        .where(
-          // ADR-0020 I-1: ScopedTx does not support column projection; explicit tenant filter at this single call site.
-          and(
-            eq(schema.brands.tenantId, requireTenantContext().tenantId),
-            eq(schema.brands.id, brandId),
-          ),
-        )
-        .limit(1);
-
-      const [categoriesRows, allItemsRows, brandRows] = await Promise.all([
-        scoped.selectFrom(schema.menuCategories, eq(schema.menuCategories.brandId, brandId)),
-        scoped.selectFrom(schema.menuItems, itemsBaseConditions),
-        brandRowPromise,
+  async loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const [categoriesRows, allItemsRows] = await Promise.all([
+        scoped.selectFrom(schema.menuCategories),
+        scoped.selectFrom(schema.menuItems, eq(schema.menuItems.status, 'published')),
       ]);
 
       const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
-        scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.brandId, brandId)),
-        scoped.selectFrom(
-          schema.menuItemModifierGroups,
-          eq(schema.menuItemModifierGroups.brandId, brandId),
-        ),
-        scoped.selectFrom(
-          schema.menuModifierGroups,
-          eq(schema.menuModifierGroups.brandId, brandId),
-        ),
+        scoped.selectFrom(schema.menuItemSizes),
+        scoped.selectFrom(schema.menuItemModifierGroups),
+        scoped.selectFrom(schema.menuModifierGroups),
       ]);
 
       const optionsRows =
@@ -143,12 +107,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           ? []
           : await scoped.selectFrom(
               schema.menuModifierOptions,
-              and(
-                inArray(
-                  schema.menuModifierOptions.modifierGroupId,
-                  modifierGroupsRows.map((m) => m.id),
-                ),
-                eq(schema.menuModifierOptions.brandId, brandId),
+              inArray(
+                schema.menuModifierOptions.modifierGroupId,
+                modifierGroupsRows.map((m) => m.id),
               ),
             );
 
@@ -222,21 +183,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
       const currency = items[0]?.currency ?? Currency.parse('USD');
 
-      const brandRow = brandRows[0];
-      const brand: PublishedMenuBrand | null = brandRow
-        ? {
-            id: BrandId.parse(brandRow.id),
-            slug: brandRow.slug,
-            displayName: brandRow.displayName,
-            theme: brandRow.theme === null ? null : BrandTheme.parse(brandRow.theme),
-          }
-        : null;
-
       return {
         tenantId,
         version,
         currency,
-        brand,
         categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
         items: items.sort((a, b) => a.sortOrder - b.sortOrder),
         modifierGroups,
@@ -244,31 +194,18 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async findPublishedItem(itemId: string, brandId: string): Promise<PublishedMenuItem | null> {
+  async findPublishedItem(itemId: string): Promise<PublishedMenuItem | null> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const where = and(
-        eq(schema.menuItems.id, itemId),
-        eq(schema.menuItems.status, 'published'),
-        eq(schema.menuItems.brandId, brandId),
-      );
+      const where = and(eq(schema.menuItems.id, itemId), eq(schema.menuItems.status, 'published'));
       const items = await scoped.selectFrom(schema.menuItems, where).limit(1);
       const row = items[0];
       if (!row) return null;
 
       const [sizes, links] = await Promise.all([
-        scoped.selectFrom(
-          schema.menuItemSizes,
-          and(
-            eq(schema.menuItemSizes.menuItemId, row.id),
-            eq(schema.menuItemSizes.brandId, brandId),
-          ),
-        ),
+        scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
-          and(
-            eq(schema.menuItemModifierGroups.menuItemId, row.id),
-            eq(schema.menuItemModifierGroups.brandId, brandId),
-          ),
+          eq(schema.menuItemModifierGroups.menuItemId, row.id),
         ),
       ]);
       const photos = await this.signPhotos(row.photos);
@@ -310,7 +247,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         const [row] = await scoped
           .insertInto(schema.menuCategories, {
             ...(input.id ? { id: input.id } : {}),
-            brandId: input.brandId,
             parentId: input.parentId ?? null,
             slug: input.slug,
             name: input.name,
@@ -319,11 +255,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             code: input.code,
           })
           .onConflictDoUpdate({
-            target: [
-              schema.menuCategories.tenantId,
-              schema.menuCategories.brandId,
-              schema.menuCategories.slug,
-            ],
+            target: [schema.menuCategories.tenantId, schema.menuCategories.slug],
             set: {
               parentId: input.parentId ?? null,
               name: input.name,
@@ -337,7 +269,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         if (!row) throw new Error('upsertCategory: insert returned no row');
         return { id: row.id };
       } catch (err) {
-        if (isCodeUniqueViolation(err, 'menu_categories_brand_code_uq')) {
+        if (isCodeUniqueViolation(err, 'menu_categories_tenant_code_uq')) {
           throw new CatalogCodeConflictError('category', input.code ?? '');
         }
         throw err;
@@ -351,13 +283,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     try {
       return await this.db.withTenant(async (_tx, scoped) => {
         const parentCategory = await scoped
-          .selectFrom(
-            schema.menuCategories,
-            and(
-              eq(schema.menuCategories.id, input.categoryId),
-              eq(schema.menuCategories.brandId, input.brandId),
-            ),
-          )
+          .selectFrom(schema.menuCategories, eq(schema.menuCategories.id, input.categoryId))
           .limit(1);
         if (!parentCategory[0]) {
           throw new MenuCategoryNotFoundError(input.categoryId);
@@ -375,9 +301,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.id))
             .limit(1);
           const existingRow = existing[0];
-          if (existingRow && existingRow.brandId !== input.brandId) {
-            throw new MenuItemNotFoundError(input.id);
-          }
           oldSlug = existingRow?.slug ?? null;
 
           if (existing.length === 0) {
@@ -386,7 +309,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               [row] = await scoped
                 .insertInto(schema.menuItems, {
                   id: input.id,
-                  brandId: input.brandId,
                   categoryId: input.categoryId,
                   slug: input.slug,
                   name: input.name,
@@ -452,7 +374,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                   measureUnit: input.measureUnit,
                   updatedAt: new Date(),
                 },
-                and(eq(schema.menuItems.id, input.id), eq(schema.menuItems.brandId, input.brandId)),
+                eq(schema.menuItems.id, input.id),
               )
               .returning({ id: schema.menuItems.id });
             if (!row) throw new MenuItemNotFoundError(input.id);
@@ -461,7 +383,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         } else {
           const [row] = await scoped
             .insertInto(schema.menuItems, {
-              brandId: input.brandId,
               categoryId: input.categoryId,
               slug: input.slug,
               name: input.name,
@@ -488,7 +409,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               measureUnit: input.measureUnit,
             })
             .onConflictDoUpdate({
-              target: [schema.menuItems.tenantId, schema.menuItems.brandId, schema.menuItems.slug],
+              target: [schema.menuItems.tenantId, schema.menuItems.slug],
               set: {
                 categoryId: input.categoryId,
                 name: input.name,
@@ -534,7 +455,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         return { id: rowId };
       });
     } catch (err) {
-      if (isCodeUniqueViolation(err, 'menu_items_brand_code_uq')) {
+      if (isCodeUniqueViolation(err, 'menu_items_tenant_code_uq')) {
         throw new CatalogCodeConflictError('item', input.code ?? '');
       }
       throw err;
@@ -554,10 +475,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               isRequired: input.isRequired,
               updatedAt: new Date(),
             },
-            and(
-              eq(schema.menuModifierGroups.id, input.id),
-              eq(schema.menuModifierGroups.brandId, input.brandId),
-            ),
+            eq(schema.menuModifierGroups.id, input.id),
           )
           .returning({ id: schema.menuModifierGroups.id });
         if (!row) throw new MenuModifierGroupNotFoundError(input.id);
@@ -565,7 +483,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierGroups, {
-          brandId: input.brandId,
           name: input.name,
           minSelectable: input.minSelectable,
           maxSelectable: input.maxSelectable,
@@ -582,10 +499,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const parentGroup = await scoped
         .selectFrom(
           schema.menuModifierGroups,
-          and(
-            eq(schema.menuModifierGroups.id, input.modifierGroupId),
-            eq(schema.menuModifierGroups.brandId, input.brandId),
-          ),
+          eq(schema.menuModifierGroups.id, input.modifierGroupId),
         )
         .limit(1);
       if (!parentGroup[0]) {
@@ -607,10 +521,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               maxAmount: input.maxAmount,
               updatedAt: new Date(),
             },
-            and(
-              eq(schema.menuModifierOptions.id, input.id),
-              eq(schema.menuModifierOptions.brandId, input.brandId),
-            ),
+            eq(schema.menuModifierOptions.id, input.id),
           )
           .returning({ id: schema.menuModifierOptions.id });
         if (!row) throw new MenuModifierOptionNotFoundError(input.id);
@@ -618,7 +529,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierOptions, {
-          brandId: input.brandId,
           modifierGroupId: input.modifierGroupId,
           name: input.name,
           priceDelta: input.priceDelta,
@@ -637,13 +547,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       const parentItem = await scoped
-        .selectFrom(
-          schema.menuItems,
-          and(
-            eq(schema.menuItems.id, input.menuItemId),
-            eq(schema.menuItems.brandId, input.brandId),
-          ),
-        )
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.menuItemId))
         .limit(1);
       if (!parentItem[0]) {
         throw new MenuItemNotFoundError(input.menuItemId);
@@ -661,10 +565,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               sortOrder: input.sortOrder,
               updatedAt: new Date(),
             },
-            and(
-              eq(schema.menuItemSizes.id, input.id),
-              eq(schema.menuItemSizes.brandId, input.brandId),
-            ),
+            eq(schema.menuItemSizes.id, input.id),
           )
           .returning({ id: schema.menuItemSizes.id });
         if (!row) throw new MenuItemSizeNotFoundError(input.id);
@@ -672,7 +573,6 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuItemSizes, {
-          brandId: input.brandId,
           menuItemId: input.menuItemId,
           name: input.name,
           price: input.price,
@@ -687,15 +587,11 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async replaceItemModifierGroups(input: {
     itemId: string;
-    brandId: string;
     modifierGroupIds: readonly string[];
   }): Promise<{ id: string }> {
     return this.db.withTenant(async (tx, scoped) => {
       const itemRows = await scoped
-        .selectFrom(
-          schema.menuItems,
-          and(eq(schema.menuItems.id, input.itemId), eq(schema.menuItems.brandId, input.brandId)),
-        )
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
         .limit(1);
       if (!itemRows[0]) {
         throw new MenuItemNotFoundError(input.itemId);
@@ -706,10 +602,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       if (dedupedIds.length > 0) {
         const foundGroups = await scoped.selectFrom(
           schema.menuModifierGroups,
-          and(
-            inArray(schema.menuModifierGroups.id, dedupedIds),
-            eq(schema.menuModifierGroups.brandId, input.brandId),
-          ),
+          inArray(schema.menuModifierGroups.id, dedupedIds),
         );
         const foundSet = new Set(foundGroups.map((g) => g.id));
         const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
@@ -726,14 +619,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .where(
           and(
             eq(schema.menuItemModifierGroups.tenantId, ctx.tenantId),
-            eq(schema.menuItemModifierGroups.brandId, input.brandId),
             eq(schema.menuItemModifierGroups.menuItemId, input.itemId),
           ),
         );
 
       for (const [i, modifierGroupId] of dedupedIds.entries()) {
         await scoped.insertInto(schema.menuItemModifierGroups, {
-          brandId: input.brandId,
           menuItemId: input.itemId,
           modifierGroupId,
           sortOrder: i,
@@ -747,9 +638,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
-      // Item lookup is not brand-filtered explicitly — the item's brand-grain RLS
-      // (current_brand_id(), still bound via the operator's brand-routing context)
-      // is the fence here; the stop-list row itself is keyed on locationId below.
+      // Item lookup relies on ScopedTx's tenant-grain filter (auto-applied by
+      // selectFrom); the stop-list row itself is keyed on locationId below.
       const existingItem = await scoped
         .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
         .limit(1);
@@ -942,14 +832,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   }
 
   async applyCategoryMoves(input: {
-    brandId: string;
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const all = await scoped.selectFrom(
-        schema.menuCategories,
-        eq(schema.menuCategories.brandId, input.brandId),
-      );
+      const all = await scoped.selectFrom(schema.menuCategories);
       const byId = new Map(all.map((c) => [c.id, c]));
       const childrenOf = new Map<string, number>();
       for (const c of all) {
@@ -990,10 +876,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           .updateTable(
             schema.menuCategories,
             { parentId: move.parentId, sortOrder: move.sortOrder, updatedAt },
-            and(
-              eq(schema.menuCategories.id, move.id),
-              eq(schema.menuCategories.brandId, input.brandId),
-            ),
+            eq(schema.menuCategories.id, move.id),
           )
           .execute();
         updated += 1;
@@ -1156,10 +1039,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]> {
+  async listModifierGroups(): Promise<ModifierGroupListRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const groups = await scoped
-        .selectFrom(schema.menuModifierGroups, eq(schema.menuModifierGroups.brandId, brandId))
+        .selectFrom(schema.menuModifierGroups)
         .orderBy(asc(schema.menuModifierGroups.id));
       if (groups.length === 0) return [];
       const groupIds = groups.map((g) => g.id);
@@ -1347,7 +1230,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
+  async computeDraftDiff(input: { tenantId: TenantId }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }> {
@@ -1359,10 +1242,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const firstPublishedAt = firstPublishedRows[0]?.at ?? null;
 
-      const items = await scoped.selectFrom(
-        schema.menuItems,
-        eq(schema.menuItems.brandId, input.brandId),
-      );
+      const items = await scoped.selectFrom(schema.menuItems);
       const entries: DraftDiffEntryRow[] = [];
       for (const it of items) {
         if (it.status === 'draft') {
@@ -1383,26 +1263,26 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
-  async archiveCategory(id: string, brandId: string): Promise<{ found: boolean }> {
+  async archiveCategory(id: string): Promise<{ found: boolean }> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped
         .updateTable(
           schema.menuCategories,
           { status: 'archived', updatedAt: new Date() },
-          and(eq(schema.menuCategories.id, id), eq(schema.menuCategories.brandId, brandId)),
+          eq(schema.menuCategories.id, id),
         )
         .returning({ id: schema.menuCategories.id });
       return { found: rows.length > 0 };
     });
   }
 
-  async archiveItem(id: string, brandId: string): Promise<{ found: boolean }> {
+  async archiveItem(id: string): Promise<{ found: boolean }> {
     return this.db.withTenant(async (_tx, scoped) => {
       const rows = await scoped
         .updateTable(
           schema.menuItems,
           { status: 'archived', updatedAt: new Date() },
-          and(eq(schema.menuItems.id, id), eq(schema.menuItems.brandId, brandId)),
+          eq(schema.menuItems.id, id),
         )
         .returning({ id: schema.menuItems.id });
       return { found: rows.length > 0 };

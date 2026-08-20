@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import type { ReorderCategoriesInput, ReorderCategoriesResponse } from './dto';
 
@@ -9,7 +9,6 @@ export class ReorderCategoriesService {
 
   async execute(input: ReorderCategoriesInput): Promise<ReorderCategoriesResponse> {
     requireTenantContext();
-    const brandId = requireBrandContext();
-    return this.repo.applyCategoryMoves({ brandId, moves: input.moves });
+    return this.repo.applyCategoryMoves({ moves: input.moves });
   }
 }

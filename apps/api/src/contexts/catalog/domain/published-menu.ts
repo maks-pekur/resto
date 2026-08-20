@@ -1,6 +1,4 @@
 import type {
-  BrandId,
-  BrandTheme,
   Currency,
   LocalizedText,
   MenuCategoryId,
@@ -139,19 +137,6 @@ export interface PublishedMenuCategory {
 }
 
 /**
- * Brand identity bundled into the public menu document so the qr-menu
- * can render the right logo, primary color, and font on first paint —
- * no second round-trip to a separate brand endpoint. Null when the
- * request resolved a tenant but no brand (legacy host fallback).
- */
-export interface PublishedMenuBrand {
-  readonly id: BrandId;
-  readonly slug: string;
-  readonly displayName: string;
-  readonly theme: BrandTheme | null;
-}
-
-/**
  * Top-level read DTO. `version` is the cache key suffix — the publish
  * service bumps it; the cache adapter uses it to invalidate without
  * scanning Redis keys.
@@ -160,7 +145,6 @@ export interface PublishedMenu {
   readonly tenantId: string;
   readonly version: number;
   readonly currency: Currency;
-  readonly brand: PublishedMenuBrand | null;
   readonly categories: readonly PublishedMenuCategory[];
   readonly items: readonly PublishedMenuItem[];
   readonly modifierGroups: readonly PublishedMenuModifierGroup[];

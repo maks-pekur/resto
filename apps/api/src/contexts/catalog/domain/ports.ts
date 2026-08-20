@@ -3,8 +3,8 @@ import type { MenuItemPhoto } from '@resto/db';
 import type { PublishedMenu, PublishedMenuItem } from './published-menu';
 
 export interface CatalogRepository {
-  loadPublishedMenu(tenantId: TenantId, version: number, brandId: string): Promise<PublishedMenu>;
-  findPublishedItem(itemId: string, brandId: string): Promise<PublishedMenuItem | null>;
+  loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu>;
+  findPublishedItem(itemId: string): Promise<PublishedMenuItem | null>;
   upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }>;
   upsertItem(input: UpsertItemRow): Promise<{ id: string; slugChanged?: { oldSlug: string } }>;
   upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }>;
@@ -12,7 +12,6 @@ export interface CatalogRepository {
   upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }>;
   replaceItemModifierGroups(input: {
     itemId: string;
-    brandId: string;
     modifierGroupIds: readonly string[];
   }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
@@ -30,7 +29,7 @@ export interface CatalogRepository {
     offset: number;
   }): Promise<{ rows: ItemListRow[]; total: number }>;
   getItemById(id: string): Promise<ItemDetailRow | null>;
-  listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]>;
+  listModifierGroups(): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
@@ -38,16 +37,15 @@ export interface CatalogRepository {
     tenantId: TenantId,
     activeLocationIds: readonly string[],
   ): Promise<{ rows: AggregateStopListRow[]; totalStoppedItems: number }>;
-  computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
+  computeDraftDiff(input: { tenantId: TenantId }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }>;
 
-  archiveCategory(id: string, brandId: string): Promise<{ found: boolean }>;
-  archiveItem(id: string, brandId: string): Promise<{ found: boolean }>;
+  archiveCategory(id: string): Promise<{ found: boolean }>;
+  archiveItem(id: string): Promise<{ found: boolean }>;
 
   applyCategoryMoves(input: {
-    brandId: string;
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }>;
 
@@ -90,7 +88,6 @@ export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
 export interface UpsertCategoryRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly parentId?: string | null;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -102,7 +99,6 @@ export interface UpsertCategoryRow {
 export interface UpsertItemRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly categoryId: string;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -132,7 +128,6 @@ export interface UpsertItemRow {
 export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly name: Record<string, string>;
   readonly minSelectable: number;
   readonly maxSelectable: number;
@@ -142,7 +137,6 @@ export interface UpsertModifierGroupRow {
 export interface UpsertModifierOptionRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly modifierGroupId: string;
   readonly name: Record<string, string>;
   readonly priceDelta: string;
@@ -156,7 +150,6 @@ export interface UpsertModifierOptionRow {
 export interface UpsertItemSizeRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly menuItemId: string;
   readonly name: Record<string, string>;
   readonly price: string;

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
 import { deriveSlugFromName } from './slug-util';
 import type { UpsertCategoryInput } from './dto';
@@ -10,7 +10,6 @@ export class UpsertCategoryService {
 
   async execute(input: UpsertCategoryInput): Promise<{ id: string }> {
     const ctx = requireTenantContext();
-    const brandId = requireBrandContext();
     // D-4a-04 / RESEARCH.md Pattern 4: when no slug is supplied, derive one
     // by transliterating the localized name. The HTTP DB CHECK constraint
     // (^[a-z0-9][a-z0-9-]*$) is the ultimate guard; this helper produces a
@@ -19,7 +18,6 @@ export class UpsertCategoryService {
     return this.repo.upsertCategory({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
-      brandId,
       parentId: input.parentId,
       slug,
       name: input.name,

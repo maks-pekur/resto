@@ -3,7 +3,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { getBrandId, requireTenantContext } from '@resto/db';
+import { requireTenantContext } from '@resto/db';
 import { MenuItemId, TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/get-menu-availability.service';
@@ -94,19 +94,6 @@ const PublishedMenuModifierGroupSchema = z.object({
   options: z.array(PublishedMenuModifierOptionSchema),
 });
 
-const PublishedMenuBrandSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string(),
-  displayName: z.string(),
-  theme: z
-    .object({
-      logoUrl: z.string().url().nullable(),
-      primaryColor: z.string().nullable(),
-      font: z.string().nullable(),
-    })
-    .nullable(),
-});
-
 const MenuAvailabilitySchema = z.object({
   stoppedItemIds: z.array(z.string().uuid()),
 });
@@ -115,7 +102,6 @@ const PublishedMenuSchema = z.object({
   tenantId: z.string().uuid(),
   version: z.number().int().nonnegative(),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  brand: PublishedMenuBrandSchema.nullable(),
   categories: z.array(PublishedMenuCategorySchema),
   items: z.array(PublishedMenuItemSchema),
   modifierGroups: z.array(PublishedMenuModifierGroupSchema),
@@ -156,7 +142,6 @@ export class PublicMenuController {
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<{ stoppedItemIds: string[] } | undefined> {
     requireTenantOr404();
-    requireBrandOr404();
     const { stoppedItemIds, stopVersion } = await wrap(() => this.getAvailability.execute());
     const etag = '"' + stopVersion.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -177,7 +162,6 @@ export class PublicMenuController {
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<PublishedMenu | undefined> {
     const ctx = requireTenantOr404();
-    requireBrandOr404();
     const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -199,7 +183,6 @@ export class PublicMenuController {
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<PublishedMenuItem | undefined> {
     const ctx = requireTenantOr404();
-    requireBrandOr404();
     const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -221,11 +204,5 @@ const requireTenantOr404 = (): { readonly tenantId: string } => {
     return requireTenantContext();
   } catch {
     throw new NotFoundException('No tenant resolved for this host.');
-  }
-};
-
-const requireBrandOr404 = (): void => {
-  if (getBrandId() === undefined) {
-    throw new NotFoundException('No brand resolved for this host.');
   }
 };
