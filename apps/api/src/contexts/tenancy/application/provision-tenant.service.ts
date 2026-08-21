@@ -48,6 +48,7 @@ export class ProvisionTenantService {
       displayName: input.displayName,
       country: input.country,
       ...(input.locale !== undefined ? { locale: input.locale } : {}),
+      ...(input.status !== undefined ? { status: input.status } : {}),
       primaryDomainHostname: `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`,
     });
 

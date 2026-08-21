@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { Currency, TenantSlug } from '@resto/domain';
+import { defaultLocaleForCountry, TenantSlug } from '@resto/domain';
 import { AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
 import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
@@ -25,7 +26,7 @@ import {
 // There is no `base-1` — base IS the first candidate. Renamed from the
 // off-by-one MAX_SLUG_SUFFIX label so future readers do not assume the
 // constant is the suffix value.
-const MAX_SLUG_CANDIDATES = 100;
+export const MAX_SLUG_CANDIDATES = 100;
 const SLUG_MAX_LEN = 30;
 
 /**
@@ -54,7 +55,10 @@ export interface SignUpEqualizedResult {
   readonly status: 'pending_verification';
 }
 
-const slugify = (raw: string): string => {
+// Task 2 (finalize-tenant-setup.service.ts) reuses this pair rather than
+// reimplementing slug derivation — D-30/UI-SPEC S4 require the SAME
+// silent-collision behaviour at onboarding that signup already has here.
+export const slugify = (raw: string): string => {
   const ascii = raw
     .normalize('NFKD')
     .replace(/[̀-ͯ]/g, '')
@@ -63,6 +67,20 @@ const slugify = (raw: string): string => {
     .replace(/^-+|-+$/g, '');
   if (ascii.length === 0) return 'tenant';
   return ascii.slice(0, SLUG_MAX_LEN).replace(/-+$/g, '') || 'tenant';
+};
+
+export const findFreeSlug = async (lookup: TenantLookupPort, base: string): Promise<string> => {
+  // WR-06 part 2 (DEFERRED): batch via `LIKE 'base%'` requires a new
+  // TenantLookupPort method + repository impl + adapter wiring across
+  // the identity → tenancy bounded-context boundary. Tracked for a
+  // future ticket; current sequential lookup is acceptable for the
+  // typical N=0..1 case on signup.
+  for (let i = 0; i < MAX_SLUG_CANDIDATES; i++) {
+    const candidate = i === 0 ? base : `${base}-${(i + 1).toString()}`;
+    const existing = await lookup.findBySlug(candidate);
+    if (!existing) return candidate;
+  }
+  throw new SlugUnavailableError(base);
 };
 
 @Injectable()
@@ -127,21 +145,24 @@ export class SignUpService {
   }
 
   async execute(input: SignUpInput): Promise<SignUpResult> {
-    // RestoZodValidationPipe already validated the regex via CurrencyValue
-    // (packages/domain/src/money.ts). Brand is purely TS; cast at the
-    // HTTP→service boundary per ADR-0020 I-7.
-    const defaultCurrency = input.defaultCurrency as Currency;
     if (await this.userExistsByEmail(input.email)) {
       throw new SignupEmailAlreadyExistsError(input.email);
     }
-    const base = slugify(input.displayName);
-    const slug = await this.findFreeSlug(base);
+    // D-27: the person's name never becomes the organization's name. The
+    // provisional slug/displayName are derived from it plus a random
+    // suffix (so two "Roma" signups never collide) purely as a scratch
+    // identifier — onboarding replaces both before the owner sees a
+    // dashboard. `findFreeSlug` is still the final guard against the
+    // astronomically unlikely random-suffix collision.
+    const provisionalBase = `${slugify(input.name)}-${randomUUID().slice(0, 6)}`;
+    const provisionalSlug = await findFreeSlug(this.tenantLookup, provisionalBase);
 
     const tenant = await this.tenantProvisioning.provision({
-      slug: TenantSlug.parse(slug),
-      displayName: input.displayName,
-      locale: input.locale,
-      defaultCurrency: defaultCurrency,
+      slug: TenantSlug.parse(provisionalSlug),
+      displayName: provisionalSlug,
+      country: input.country,
+      locale: defaultLocaleForCountry(input.country),
+      status: 'pending_setup',
     });
 
     try {
@@ -149,7 +170,7 @@ export class SignUpService {
         tenantSlug: tenant.slug,
         email: input.email,
         password: input.password,
-        name: input.displayName,
+        name: input.name,
       });
     } catch (err) {
       if (err instanceof OwnerAlreadyExistsError) {
@@ -177,20 +198,6 @@ export class SignUpService {
 
   private async userExistsByEmail(email: string): Promise<boolean> {
     return (await this.users.findUserByEmail(email)) !== null;
-  }
-
-  private async findFreeSlug(base: string): Promise<string> {
-    // WR-06 part 2 (DEFERRED): batch via `LIKE 'base%'` requires a new
-    // TenantLookupPort method + repository impl + adapter wiring across
-    // the identity → tenancy bounded-context boundary. Tracked for a
-    // future ticket; current sequential lookup is acceptable for the
-    // typical N=0..1 case on signup.
-    for (let i = 0; i < MAX_SLUG_CANDIDATES; i++) {
-      const candidate = i === 0 ? base : `${base}-${(i + 1).toString()}`;
-      const existing = await this.tenantLookup.findBySlug(candidate);
-      if (!existing) return candidate;
-    }
-    throw new SlugUnavailableError(base);
   }
 
   private async signInAndActivate(

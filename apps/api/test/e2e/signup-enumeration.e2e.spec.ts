@@ -1,18 +1,11 @@
+import 'reflect-metadata';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
-import {
-  isDockerAvailable,
-  startRealStack,
-  stopRealStack,
-  type RealStack,
-} from './with-real-stack.setup';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { AppModule } from '../../src/app.module';
 
-const dockerOk = isDockerAvailable();
-const suite = dockerOk ? describe : describe.skip;
-
-if (!dockerOk) {
-  console.warn('[signup-enumeration.e2e] Docker not available — skipping integration tests.');
-}
+const INTERNAL_TOKEN = 'signup-enum-e2e-internal-token-123';
 
 /**
  * D-06 (Phase 03) enumeration parity gate — `POST /v1/signup` MUST return:
@@ -27,13 +20,21 @@ if (!dockerOk) {
  *
  * 03-RESEARCH.md Pattern 3 + Pitfall 1 background. The companion spec
  * `signup.e2e.spec.ts` covers the underlying DB side effects.
+ *
+ * No testcontainer here (10.2 plan 13) — a fresh-container migration
+ * replay of the full chain fails on the pre-existing 0079 idempotency bug
+ * (`ALTER POLICY organization_role_resto_auth_full` — logged in
+ * deferred-items.md under plan 06, owned by plans 05/19, unrelated to this
+ * plan's files). The live dev Postgres is already migrated with roles
+ * granted; this spec inserts its own uniquely-emailed rows into it rather
+ * than rebuilding the database, matching plan 12's `organization-switch.
+ * e2e.spec.ts` precedent for the same blocker.
  */
 const buildBody = (email?: string) => ({
   email: email ?? `enum-${randomUUID().slice(0, 8)}@example.com`,
   password: 'a-strong-password-12',
-  displayName: `Enum Test ${randomUUID().slice(0, 6)}`,
-  defaultCurrency: 'USD',
-  locale: 'en',
+  name: `Enum Test ${randomUUID().slice(0, 6)}`,
+  country: 'GB',
 });
 
 interface SignUpResponse {
@@ -49,21 +50,44 @@ const median = (xs: number[]): number => {
   return sorted[mid] ?? 0;
 };
 
-suite('D-06 — /v1/signup enumeration parity', () => {
-  let stack: RealStack;
+describe('D-06 — /v1/signup enumeration parity', () => {
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
+    process.env.DATABASE_URL = 'postgres://resto_app:resto_app_dev_password@localhost:5433/resto';
+    process.env.BETTER_AUTH_DATABASE_URL =
+      'postgres://resto_auth:auth_password_dev@localhost:5433/resto';
+    process.env.NATS_URL = 'nats://localhost:4222';
+    process.env.NODE_ENV = 'test';
+    process.env.OTEL_DISABLED = 'true';
+    process.env.NATS_DISABLED = 'true';
+    process.env.BETTER_AUTH_SECRET = 'signup-enum-e2e-secret-padding-padding-padding';
+    process.env.BETTER_AUTH_BASE_URL = 'http://localhost:4000';
+    process.env.ADMIN_WEB_URL = 'http://localhost:3000';
+    process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
+    process.env.S3_ENDPOINT = 'http://localhost:9000';
+    process.env.S3_ACCESS_KEY = 'x';
+    process.env.S3_SECRET_KEY = 'x';
     process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
-    process.env.RATE_LIMIT_PUBLIC_PER_MIN = '1000';
-    stack = await startRealStack();
-  }, 180_000);
+    process.env.RATE_LIMIT_PUBLIC_PER_MIN = '10000';
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
+    );
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+  }, 120_000);
 
   afterAll(async () => {
-    await stopRealStack(stack);
+    await app.close();
   });
 
   it('returns identical status + body for new vs existing email', async () => {
-    const newRes = await stack.app.inject({
+    const newRes = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -73,7 +97,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
 
     // Seed an account so the second call hits the "email taken" branch.
     const seedBody = buildBody();
-    const seed = await stack.app.inject({
+    const seed = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -81,7 +105,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
     });
     expect(seed.statusCode).toBe(201);
 
-    const dupRes = await stack.app.inject({
+    const dupRes = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -96,7 +120,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
 
   it('emits no Set-Cookie on either branch (Pitfall 1: cookie divergence)', async () => {
     const seedBody = buildBody();
-    const seed = await stack.app.inject({
+    const seed = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -112,7 +136,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
       true,
     );
 
-    const dup = await stack.app.inject({
+    const dup = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -138,7 +162,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
     const seededEmails: string[] = [];
     for (let i = 0; i < ITERATIONS; i++) {
       const seedBody = buildBody();
-      const seed = await stack.app.inject({
+      const seed = await app.inject({
         method: 'POST',
         url: '/v1/signup',
         headers: { 'content-type': 'application/json' },
@@ -154,7 +178,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
     // Interleave to absorb time-of-day / cache warmth bias.
     for (let i = 0; i < ITERATIONS; i++) {
       const tNew0 = Date.now();
-      const resNew = await stack.app.inject({
+      const resNew = await app.inject({
         method: 'POST',
         url: '/v1/signup',
         headers: { 'content-type': 'application/json' },
@@ -166,7 +190,7 @@ suite('D-06 — /v1/signup enumeration parity', () => {
       const existingEmail = seededEmails[i];
       if (typeof existingEmail !== 'string') throw new Error('existingEmail must be seeded');
       const tEx0 = Date.now();
-      const resExisting = await stack.app.inject({
+      const resExisting = await app.inject({
         method: 'POST',
         url: '/v1/signup',
         headers: { 'content-type': 'application/json' },

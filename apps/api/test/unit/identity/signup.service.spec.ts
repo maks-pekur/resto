@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { Currency } from '@resto/domain';
+import type * as NodeCrypto from 'node:crypto';
 import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
 import {
   SignupBetterAuthFailureError,
@@ -11,15 +11,24 @@ import {
   OwnerAlreadyExistsError,
 } from '../../../src/contexts/identity/domain/bootstrap-errors';
 
+// D-27 (10.2 plan 13): the provisional slug is `slugify(name)-<random6>`.
+// Stub `randomUUID` so the random suffix is deterministic and the existing
+// exact-slug assertions below stay meaningful.
+vi.mock('node:crypto', async (importOriginal) => {
+  const actual = await importOriginal<typeof NodeCrypto>();
+  return { ...actual, randomUUID: () => 'abcdef12-3456-7890-abcd-ef1234567890' };
+});
+
 const TENANT_ID_DEFAULT = '11111111-1111-4111-8111-111111111111';
 const TENANT_ID_ALT = '22222222-2222-4222-8222-222222222222';
+const RANDOM_SUFFIX = 'abcdef';
 
 const tenantView = (overrides: Partial<Record<string, unknown>> = {}) => ({
   id: TENANT_ID_DEFAULT,
-  slug: 'cafe-roma',
-  displayName: 'Cafe Roma',
-  status: 'active',
-  primaryDomainHostname: 'cafe-roma.menu.resto.app',
+  slug: `cafe-roma-${RANDOM_SUFFIX}`,
+  displayName: `cafe-roma-${RANDOM_SUFFIX}`,
+  status: 'pending_setup',
+  primaryDomainHostname: `cafe-roma-${RANDOM_SUFFIX}.menu.resto.app`,
   ...overrides,
 });
 
@@ -50,7 +59,11 @@ const buildUsersMock = (
 });
 
 describe('SignUpService', () => {
-  let tenantProvisioningMock: { provision: ReturnType<typeof vi.fn> };
+  let tenantProvisioningMock: {
+    provision: ReturnType<typeof vi.fn>;
+    findById: ReturnType<typeof vi.fn>;
+    finalizeSetup: ReturnType<typeof vi.fn>;
+  };
   let bootstrapMock: { execute: ReturnType<typeof vi.fn> };
   let tenantLookupMock: {
     findBySlug: ReturnType<typeof vi.fn>;
@@ -69,15 +82,14 @@ describe('SignUpService', () => {
     );
 
   const baseInput = {
+    name: 'Cafe Roma',
     email: 'owner@example.com',
     password: 'a-strong-password-12',
-    displayName: 'Cafe Roma',
-    defaultCurrency: Currency.parse('USD'),
-    locale: 'en',
+    country: 'GB' as const,
   };
 
   beforeEach(() => {
-    tenantProvisioningMock = { provision: vi.fn() };
+    tenantProvisioningMock = { provision: vi.fn(), findById: vi.fn(), finalizeSetup: vi.fn() };
     bootstrapMock = { execute: vi.fn() };
     tenantLookupMock = { findBySlug: vi.fn(), findById: vi.fn() };
     authMock = buildAuthMock();
@@ -93,7 +105,7 @@ describe('SignUpService', () => {
 
     expect(tenantLookupMock.findBySlug).toHaveBeenCalledTimes(1);
     expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
-      expect.objectContaining({ slug: 'cafe-roma' }),
+      expect.objectContaining({ slug: `cafe-roma-${RANDOM_SUFFIX}`, status: 'pending_setup' }),
     );
     expect(result.userId).toBe('u-1');
     expect(result.setCookie).toHaveLength(1);
@@ -128,16 +140,17 @@ describe('SignUpService', () => {
       .mockResolvedValueOnce({ id: 't-existing-1' })
       .mockResolvedValueOnce({ id: 't-existing-2' })
       .mockResolvedValueOnce(null);
-    tenantProvisioningMock.provision.mockResolvedValue(tenantView({ slug: 'cafe-roma-3' }));
+    const bumpedSlug = `cafe-roma-${RANDOM_SUFFIX}-3`;
+    tenantProvisioningMock.provision.mockResolvedValue(tenantView({ slug: bumpedSlug }));
     bootstrapMock.execute.mockResolvedValue({});
 
     const result = await buildService().execute(baseInput);
 
     expect(tenantLookupMock.findBySlug).toHaveBeenCalledTimes(3);
     expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
-      expect.objectContaining({ slug: 'cafe-roma-3' }),
+      expect.objectContaining({ slug: bumpedSlug }),
     );
-    expect(result.tenant.slug).toBe('cafe-roma-3');
+    expect(result.tenant.slug).toBe(bumpedSlug);
   });
 
   it('throws SlugUnavailableError after 100 attempts', async () => {
@@ -155,13 +168,13 @@ describe('SignUpService', () => {
     await expect(buildService().execute(baseInput)).rejects.toThrow(SignupEmailAlreadyExistsError);
   });
 
-  it('slugifies non-ASCII displayName', async () => {
+  it('slugifies non-ASCII name', async () => {
     tenantLookupMock.findBySlug.mockResolvedValue(null);
     tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
-    await buildService().execute({ ...baseInput, displayName: 'Café Mañana' });
+    await buildService().execute({ ...baseInput, name: 'Café Mañana' });
     expect(tenantProvisioningMock.provision).toHaveBeenCalledWith(
-      expect.objectContaining({ slug: expect.stringMatching(/^cafe-/) }),
+      expect.objectContaining({ slug: expect.stringMatching(/^cafe-manana-/) }),
     );
   });
 

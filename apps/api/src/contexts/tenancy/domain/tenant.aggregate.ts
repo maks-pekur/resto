@@ -27,7 +27,13 @@ import {
 const COOL_OFF_DAYS = 30;
 const COOL_OFF_MS = COOL_OFF_DAYS * 24 * 60 * 60 * 1000;
 
-export type TenantStatus = 'active' | 'suspended' | 'archived' | 'pending_offboarding' | 'erased';
+export type TenantStatus =
+  | 'pending_setup'
+  | 'active'
+  | 'suspended'
+  | 'archived'
+  | 'pending_offboarding'
+  | 'erased';
 
 /**
  * Statuses whose public surface (QR menu, marketing site) stays live.
@@ -90,6 +96,13 @@ export interface ProvisionInput {
   readonly locale?: string;
   /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
   readonly primaryDomainHostname: string;
+  /**
+   * D-25/D-30 (10.2 plan 13): defaults to `'active'`. Signup provisions
+   * `'pending_setup'` so an owner who has not yet named the restaurant
+   * cannot be mistaken for one who has; onboarding's `finalizeSetup`
+   * is the only path that flips it to `'active'`.
+   */
+  readonly status?: TenantStatus;
   readonly now?: Date;
 }
 
@@ -127,7 +140,7 @@ export class Tenant {
       id,
       slug: input.slug,
       displayName: input.displayName,
-      status: 'active',
+      status: input.status ?? 'active',
       locale: input.locale ?? defaultLocaleForCountry(input.country),
       country: input.country,
       defaultCurrency,

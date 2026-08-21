@@ -10,6 +10,12 @@ export const ProvisionTenantInputSchema = z.object({
     .string()
     .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
     .optional(),
+  /**
+   * D-25/D-30 (10.2 plan 13): omitted by every caller except the signup
+   * flow, which provisions `'pending_setup'` so onboarding has something
+   * to finalize. Defaults to `'active'` inside `Tenant.provision`.
+   */
+  status: z.enum(['pending_setup', 'active']).optional(),
 });
 export type ProvisionTenantInput = z.infer<typeof ProvisionTenantInputSchema>;
 export class ProvisionTenantInputDto extends createZodDto(ProvisionTenantInputSchema) {}

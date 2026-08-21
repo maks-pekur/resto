@@ -30,6 +30,7 @@ import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
 
 const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
+  'pending_setup',
   'active',
   'suspended',
   'archived',

@@ -1,4 +1,4 @@
-import type { Currency, TenantId, TenantSlug } from '@resto/domain';
+import type { CountryCodeValue, TenantId, TenantSlug } from '@resto/domain';
 
 export const TENANT_PROVISIONING_PORT = Symbol('TENANT_PROVISIONING_PORT');
 
@@ -18,8 +18,10 @@ export interface IdentityTenantView {
 export interface ProvisionIdentityTenantInput {
   readonly slug: TenantSlug;
   readonly displayName: string;
-  readonly defaultCurrency: Currency;
+  readonly country: CountryCodeValue;
   readonly locale?: string;
+  /** D-25/D-30 (10.2 plan 13): signup's only caller-supplied status. */
+  readonly status?: 'pending_setup';
 }
 
 /**
