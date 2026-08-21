@@ -17,7 +17,6 @@ export interface DemoOrderSpec {
 export interface SeedDemoOrderInput {
   readonly apiUrl: string;
   readonly tenantId: string;
-  readonly brandSlug: string;
   readonly locationId: string;
   readonly itemId: string;
   readonly itemName: string;
@@ -43,7 +42,6 @@ const createOrder = async (input: SeedDemoOrderInput): Promise<CreateOrderRespon
     headers: {
       'content-type': 'application/json',
       'x-tenant-id': input.tenantId,
-      'x-brand-slug': input.brandSlug,
       'x-location-id': input.locationId,
     },
     body: JSON.stringify({

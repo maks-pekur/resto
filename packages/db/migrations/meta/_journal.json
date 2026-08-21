@@ -561,6 +561,13 @@
       "when": 1784592000000,
       "tag": "0079_organization_merge",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1784678400000,
+      "tag": "0080_tenancy_erase_tenant_pii",
+      "breakpoints": true
     }
   ]
 }

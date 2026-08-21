@@ -13,24 +13,24 @@ export const findUserIdByEmail = async (sql: Sql, email: string): Promise<string
 
 export const findMemberId = async (
   sql: Sql,
-  organizationId: string,
+  tenantId: string,
   userId: string,
 ): Promise<string | null> => {
   const rows = await sql<{ id: string }[]>`
-    SELECT id FROM member WHERE organization_id = ${organizationId} AND user_id = ${userId} LIMIT 1
+    SELECT id FROM member WHERE tenant_id = ${tenantId} AND user_id = ${userId} LIMIT 1
   `;
   return rows[0]?.id ?? null;
 };
 
 export const insertStaffMember = async (
   sql: Sql,
-  organizationId: string,
+  tenantId: string,
   userId: string,
 ): Promise<string> => {
   const id = randomUUID();
   await sql`
-    INSERT INTO member (id, organization_id, user_id, role, created_at)
-    VALUES (${id}, ${organizationId}, ${userId}, 'staff', now())
+    INSERT INTO member (id, tenant_id, user_id, role, created_at)
+    VALUES (${id}, ${tenantId}, ${userId}, 'staff', now())
   `;
   return id;
 };
