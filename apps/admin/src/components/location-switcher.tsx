@@ -1,6 +1,6 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { ChevronsUpDown, MapPin } from 'lucide-react';
-import { Route as brandSlugLayoutRoute } from '@/routes/(protected)/$brandSlug/_layout';
+import { Route as protectedLayoutRoute } from '@/routes/(protected)/_layout';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import {
   DropdownMenu,
@@ -14,7 +14,6 @@ import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui
 export interface LocationSwitcherOption {
   readonly id: string;
   readonly name: string;
-  readonly brandId: string;
 }
 
 export interface LocationSwitcherProps {
@@ -27,9 +26,9 @@ export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) 
   // a cross-cutting sidebar component that renders under many different leaf
   // routes, so navigation must target the CURRENT pathname (an explicit
   // absolute `to`), not `from` re-interpolated (which would always land on
-  // the brand-layout's own index route regardless of the page the operator
-  // was actually on).
-  const navigate = useNavigate({ from: brandSlugLayoutRoute.fullPath });
+  // the protected layout's own index route regardless of the page the
+  // operator was actually on).
+  const navigate = useNavigate({ from: protectedLayoutRoute.fullPath });
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode, locationId } = useEffectiveLocation();
 

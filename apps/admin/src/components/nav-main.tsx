@@ -13,8 +13,6 @@ import {
   SidebarMenuSubItem,
 } from '@/components/ui/sidebar';
 
-export type NavScope = 'any' | 'tenant' | 'brand';
-
 export interface NavMainSubItem {
   title: string;
   url: string;
@@ -25,32 +23,17 @@ export interface NavMainItem {
   url: string;
   icon?: LucideIcon;
   isActive?: boolean;
-  scope?: NavScope;
   items?: NavMainSubItem[];
   badge?: number;
   badgeAriaLabel?: string;
 }
 
-const isVisible = (item: NavMainItem, activeBrandSlug: string | null): boolean => {
-  const scope = item.scope ?? 'any';
-  if (scope === 'any') return true;
-  if (scope === 'tenant') return true;
-  return activeBrandSlug !== null;
-};
-
-export function NavMain({
-  items,
-  activeBrandSlug,
-}: {
-  items: NavMainItem[];
-  activeBrandSlug: string | null;
-}) {
-  const visible = items.filter((item) => isVisible(item, activeBrandSlug));
+export function NavMain({ items }: { items: NavMainItem[] }) {
   return (
     <SidebarGroup>
       <SidebarGroupLabel>Platform</SidebarGroupLabel>
       <SidebarMenu>
-        {visible.map((item) => {
+        {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
           if (!hasSubItems) {
             return (
