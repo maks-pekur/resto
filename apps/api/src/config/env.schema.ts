@@ -1,6 +1,29 @@
 import { z } from 'zod';
 
 /**
+ * D-21/D-24: the wildcard's `*` must occupy the ENTIRE leftmost hostname
+ * label, with at least two literal labels after it. Rejects a wildcard
+ * that can swallow a label boundary (`https://*resto.app` matches any
+ * `*resto.app`-suffixed host; `https://*.app` has nothing anchoring it to
+ * `resto.app` at all) — the origin-spoofing hazard this field exists to
+ * prevent.
+ */
+const isValidAdminOriginWildcard = (value: string): boolean => {
+  let hostname: string;
+  try {
+    hostname = new URL(value).hostname;
+  } catch {
+    return false;
+  }
+  const [first, ...rest] = hostname.split('.');
+  return (
+    first === '*' &&
+    rest.length >= 2 &&
+    rest.every((label) => label.length > 0 && !label.includes('*'))
+  );
+};
+
+/**
  * Environment schema for `apps/api`.
  *
  * Every value the app reads at boot lives here. Anything the app needs
@@ -87,16 +110,35 @@ export const envSchema = z
 
     /**
      * Public URL of the admin web app — used as link target in invitation
-     * and password-reset emails. Required outside dev.
+     * and password-reset emails. Required outside dev. This is the apex
+     * host (pre-organization sign-in/signup); per-organization traffic is
+     * ADMIN_WEB_ORIGIN_WILDCARD below (D-21).
      */
     ADMIN_WEB_URL: z.string().url().optional(),
+
+    /**
+     * Wildcard trusted origin for per-organization admin hosts (D-21,
+     * D-24). Optional — absent means only the apex ADMIN_WEB_URL is
+     * trusted. e.g. `https://*.admin.resto.app`; local dev
+     * `http://*.admin.localhost:4000`.
+     */
+    ADMIN_WEB_ORIGIN_WILDCARD: z
+      .string()
+      .url()
+      .optional()
+      .refine((value) => value === undefined || isValidAdminOriginWildcard(value), {
+        message:
+          'ADMIN_WEB_ORIGIN_WILDCARD must have "*" as the entire leftmost hostname label, followed by at least two literal labels (e.g. https://*.admin.resto.app)',
+      }),
 
     WEBSITE_PUBLIC_URL: z.string().url().optional(),
 
     /**
-     * Cookie domain for BA sessions. Set to `.resto.app` in production for
-     * cross-subdomain session sharing (admin.resto.app ↔ api.resto.app).
-     * Leave unset in dev/test so cookies bind to host-only.
+     * Cookie domain for BA sessions. Set to `.admin.resto.app` in
+     * production (D-21/D-24) — scoping to the bare `.resto.app` apex would
+     * deliver the operator session cookie to the guest menu
+     * (`<slug>.menu.resto.app`) and the public site (`<slug>.resto.app`)
+     * too. Leave unset in dev/test so cookies bind to host-only.
      */
     AUTH_COOKIE_DOMAIN: z.string().optional(),
 
@@ -288,12 +330,16 @@ export const envSchema = z
       }
     }
 
+    // D-21/D-24: this only enforces the SHAPE (leading dot). Satisfying it
+    // does not mean the SCOPE is right — `.resto.app` is a valid dotted
+    // value but the wrong one; the operator cookie belongs on
+    // `.admin.resto.app` only (see the field comment above).
     if (env.AUTH_COOKIE_DOMAIN && !env.AUTH_COOKIE_DOMAIN.startsWith('.')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['AUTH_COOKIE_DOMAIN'],
         message:
-          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".resto.app").',
+          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".admin.resto.app").',
       });
     }
   });
