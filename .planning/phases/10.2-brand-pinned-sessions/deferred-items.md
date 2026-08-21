@@ -411,3 +411,39 @@ properties of null (reading 'getInstance')` at
   in a Better-Auth-wiring file without dedicated review). Verified the actual PII-column fix
   directly against the SQL function instead (`10.2-18-SUMMARY.md` has the live probe) since the
   literal CLI smoke-test cannot run until this separate bug is fixed.
+
+## From plan 16
+
+- **`apps/admin/src/components/roles/permission-catalog.tsx` and `preset-picker.tsx` still carry
+  a stale `brand` permission resource.** Task 2's own action text instructs: "these render the
+  permission matrix from `PERMISSIONS_STATEMENT`... If the matrix is generated from the statement
+  rather than hardcoded, confirm that by reading and record it in the SUMMARY — then the only work
+  is removing a stale label." Confirmed: `PermissionCatalog` (`permission-catalog.tsx`) is fully
+  dynamic — it iterates `Object.entries(PERMISSIONS_STATEMENT)` and looks up a display label via
+  `RESOURCE_LABELS[resource] ?? resource`. `packages/domain/src/rbac/permissions.ts` no longer
+  defines a `brand` resource key (confirmed via `rg -in "brand"` on that file — zero matches), so
+  `RESOURCE_LABELS.brand = 'Brand'` (line 15) is dead: it is never looked up because `brand` never
+  appears in `PERMISSIONS_STATEMENT`'s own keys. This is genuinely the "stale label" the plan's
+  text anticipated — but it lives in `permission-catalog.tsx`, not in `role-form.tsx` /
+  `role-list.tsx` (the only two files this task's `<files>` list names).
+
+  A second, more serious instance: `preset-picker.tsx`'s three hardcoded `PRESETS` entries
+  (`manager`, `cashier-foh`, `kitchen`) each include a `brand: ['read'(, 'update')]` key in their
+  `permission` object (lines 22, 33, 42). Selecting any of these presets in `RoleForm`
+  (`onSelect={({ permission: presetPermission }) => setPermission(presetPermission)}`) seeds the
+  role's permission state with a resource key the server no longer recognizes — whether this is
+  silently dropped or rejected at `createRole`/`updateRole` time depends on server-side validation
+  this plan did not trace, but at minimum it means a "Manager" preset built from `PRESETS` no
+  longer grants a permission an operator would reasonably expect (whatever `brand:['read','update']`
+  used to gate) and could carry a validation-layer risk instead.
+
+  `grep -l "permission-catalog.tsx"` and `grep -l "preset-picker.tsx"` across every
+  `*-PLAN.md` in this phase both return zero — unowned by any plan. Not fixed here: outside this
+  task's `<files>` list (`role-form.tsx`, `role-list.tsx` only) and outside the scope-boundary rule
+  ("Only auto-fix issues DIRECTLY caused by the current task's changes") — this staleness predates
+  plan 16 and was not introduced by the brandSlug-prop sweep. Flagging as the "log a seventh file"
+  case the phase's verification lessons anticipated (in this instance, two files). Whichever plan
+  next touches the roles UI should: (1) delete the `brand: 'Brand'` row from
+  `RESOURCE_LABELS` in `permission-catalog.tsx`, and (2) delete the `brand: [...]` key from all
+  three `PRESETS` entries in `preset-picker.tsx`, verifying against the live
+  `PERMISSIONS_STATEMENT` shape first.
