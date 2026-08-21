@@ -11,7 +11,7 @@ import {
   Users,
   UtensilsCrossed,
 } from 'lucide-react';
-import { BrandSwitcher, type BrandOption } from '@/components/brand-switcher';
+import { TenantIdentity } from '@/components/tenant-identity';
 import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
@@ -28,14 +28,10 @@ import {
 } from '@/components/ui/sidebar';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  readonly brands: readonly BrandOption[];
-  readonly activeBrandSlug: string | null;
   readonly operator: OperatorSummary;
 }
 
 export function AppSidebar({
-  brands,
-  activeBrandSlug,
   operator,
   variant = 'inset',
   collapsible = 'icon',
@@ -43,24 +39,17 @@ export function AppSidebar({
 }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tOrders } = useTranslation('translation', { keyPrefix: 'orders' });
-  const brandPrefix = activeBrandSlug ? `/${activeBrandSlug}` : '';
   const isOwner = operator.baseRole === 'owner';
-  const locationsEnabled = isOwner && activeBrandSlug !== null;
   const { data: locationsResult } = useQuery({
     ...meLocationsQuery(),
-    enabled: locationsEnabled,
+    enabled: isOwner,
   });
   const locations = locationsResult?.data?.locations ?? [];
 
   const { locationId: effectiveLocationId } = useEffectiveLocation();
-  const unacceptedFeedEnabled = activeBrandSlug !== null && effectiveLocationId !== undefined;
   const { data: unacceptedFeedResult } = useQuery({
-    ...ordersFeedQuery(
-      activeBrandSlug ?? '',
-      effectiveLocationId ?? 'all',
-      DEFAULT_ORDER_FEED_FILTERS,
-    ),
-    enabled: unacceptedFeedEnabled,
+    ...ordersFeedQuery(effectiveLocationId ?? 'all', DEFAULT_ORDER_FEED_FILTERS),
+    enabled: effectiveLocationId !== undefined,
     refetchInterval: 5_000,
     refetchIntervalInBackground: true,
   });
@@ -71,70 +60,62 @@ export function AppSidebar({
   const navMain: NavMainItem[] = [
     {
       title: t('dashboard'),
-      url: activeBrandSlug ? `/${activeBrandSlug}` : '/',
+      url: '/',
       icon: LayoutDashboard,
-      scope: 'any',
     },
     {
       title: t('orders'),
-      url: `${brandPrefix}/orders`,
+      url: '/orders',
       icon: ClipboardList,
-      scope: 'brand',
       badge: unacceptedCount,
       badgeAriaLabel: tOrders('card.sidebarBadgeAria', { count: unacceptedCount }),
     },
     {
       title: t('menu'),
-      url: `${brandPrefix}/menu/items`,
+      url: '/menu/items',
       icon: UtensilsCrossed,
-      scope: 'brand',
       isActive: false,
       items: [
-        { title: t('menuCategories'), url: `${brandPrefix}/menu/categories` },
-        { title: t('menuItems'), url: `${brandPrefix}/menu/items` },
-        { title: t('menuModifiers'), url: `${brandPrefix}/menu/modifier-groups` },
-        { title: t('menuStopList'), url: `${brandPrefix}/menu/stop-list` },
+        { title: t('menuCategories'), url: '/menu/categories' },
+        { title: t('menuItems'), url: '/menu/items' },
+        { title: t('menuModifiers'), url: '/menu/modifier-groups' },
+        { title: t('menuStopList'), url: '/menu/stop-list' },
       ],
     },
     {
       title: 'Locations',
-      url: `${brandPrefix}/locations`,
+      url: '/locations',
       icon: MapPin,
-      scope: 'brand',
     },
     {
       title: t('payments'),
-      url: `${brandPrefix}/payouts`,
+      url: '/tenant/payouts',
       icon: CreditCard,
-      scope: 'brand',
     },
     {
       title: t('team'),
-      url: `${brandPrefix}/team`,
+      url: '/team',
       icon: Users,
-      scope: 'tenant',
     },
     {
       title: 'Roles',
-      url: `${brandPrefix}/roles`,
+      url: '/roles',
       icon: KeyRound,
-      scope: 'tenant',
     },
     {
       title: t('settings'),
-      url: `${brandPrefix}/settings`,
+      url: '/settings',
       icon: Settings2,
-      scope: 'tenant',
     },
   ];
   return (
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader>
-        <BrandSwitcher brands={brands} activeBrandSlug={activeBrandSlug} />
+        <TenantIdentity />
         <LocationSwitcher isOwner={isOwner} locations={locations} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} activeBrandSlug={activeBrandSlug} />
+        <NavMain items={navMain} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser operator={operator} />

@@ -10,13 +10,13 @@ import { fromLocalizedText } from '@/lib/menu/localized';
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/items/$id',
-  loader: ({ context: { queryClient }, params: { brandSlug, id } }) => {
+  loader: ({ context: { queryClient }, params: { id } }) => {
     const loaders: Promise<unknown>[] = [
-      queryClient.ensureQueryData(categoriesQuery(brandSlug)),
-      queryClient.ensureQueryData(modifierGroupsQuery(brandSlug)),
+      queryClient.ensureQueryData(categoriesQuery()),
+      queryClient.ensureQueryData(modifierGroupsQuery()),
     ];
     if (id !== 'new') {
-      loaders.push(queryClient.ensureQueryData(itemQuery(brandSlug, id)));
+      loaders.push(queryClient.ensureQueryData(itemQuery(id)));
     }
     return Promise.all(loaders);
   },
@@ -25,13 +25,13 @@ export const Route = createRoute({
 
 function ItemDetailPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
-  const { brandSlug, id } = Route.useParams();
-  const { data: catResult } = useSuspenseQuery(categoriesQuery(brandSlug));
-  const { data: mgResult } = useSuspenseQuery(modifierGroupsQuery(brandSlug));
+  const { id } = Route.useParams();
+  const { data: catResult } = useSuspenseQuery(categoriesQuery());
+  const { data: mgResult } = useSuspenseQuery(modifierGroupsQuery());
 
   const isNew = id === 'new';
   const { data: itemResult } = useQuery({
-    ...itemQuery(brandSlug, id),
+    ...itemQuery(id),
     enabled: !isNew,
   });
 
@@ -54,7 +54,6 @@ function ItemDetailPage() {
 
   return (
     <ItemEditorShell
-      brandSlug={brandSlug}
       title={title}
       initialItem={item}
       categories={categories}

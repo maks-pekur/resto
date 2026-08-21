@@ -20,27 +20,26 @@ export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/stop-list',
   loaderDeps: ({ search }) => ({ location: search.location }),
-  loader: ({ context: { queryClient }, params: { brandSlug }, deps }) => {
+  loader: ({ context: { queryClient }, deps }) => {
     if (deps.location === undefined) return undefined;
     if (deps.location === 'all') {
-      return queryClient.ensureQueryData(stopListAggregateQuery(brandSlug));
+      return queryClient.ensureQueryData(stopListAggregateQuery());
     }
-    return queryClient.ensureQueryData(stopListQuery(brandSlug, deps.location));
+    return queryClient.ensureQueryData(stopListQuery(deps.location));
   },
   component: StopListPage,
 });
 
 function StopListPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
-  const { brandSlug } = Route.useParams();
   const { mode, locationId } = useEffectiveLocation();
 
   const { data: singleResult } = useQuery({
-    ...stopListQuery(brandSlug, locationId ?? ''),
+    ...stopListQuery(locationId ?? ''),
     enabled: mode === 'single' && locationId !== undefined,
   });
   const { data: aggregateResult } = useQuery({
-    ...stopListAggregateQuery(brandSlug),
+    ...stopListAggregateQuery(),
     enabled: mode === 'all',
   });
 
@@ -56,7 +55,7 @@ function StopListPage() {
         title={t('pageTitle')}
         action={
           mode === 'single' && locationId !== undefined ? (
-            <TodaysWidgetResetButton brandSlug={brandSlug} locationId={locationId} />
+            <TodaysWidgetResetButton locationId={locationId} />
           ) : undefined
         }
       />
@@ -69,7 +68,7 @@ function StopListPage() {
             totalStoppedItems={totalStoppedItems}
           />
         ) : (
-          <StopListTable brandSlug={brandSlug} items={items} locationId={locationId ?? ''} />
+          <StopListTable items={items} locationId={locationId ?? ''} />
         )}
       </div>
     </>

@@ -6,10 +6,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
 import { Archive } from 'lucide-react';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import {
-  brandLocationsQuery,
+  tenantLocationsQuery,
   createLocationMutation,
   archiveLocationMutation,
   friendlyLocationError,
@@ -48,21 +48,20 @@ const CreateLocationSchema = z.object({
 type CreateLocationForm = z.infer<typeof CreateLocationSchema>;
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/locations',
-  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
+  loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),
-      queryClient.ensureQueryData(brandLocationsQuery(brandSlug)),
+      queryClient.ensureQueryData(tenantLocationsQuery()),
     ]),
   component: LocationsPage,
 });
 
 function LocationsPage() {
-  const { brandSlug } = Route.useParams();
   const qc = useQueryClient();
   const { data: meResult } = useSuspenseQuery(meQuery());
-  const { data: locationsResult, isPending } = useQuery(brandLocationsQuery(brandSlug));
+  const { data: locationsResult, isPending } = useQuery(tenantLocationsQuery());
   const [archiveTarget, setArchiveTarget] = useState<LocationView | null>(null);
 
   const {
@@ -73,13 +72,13 @@ function LocationsPage() {
   } = useForm<CreateLocationForm>({ resolver: zodResolver(CreateLocationSchema) });
 
   const invalidateLocations = () => {
-    void qc.invalidateQueries({ queryKey: ['locations', brandSlug] });
+    void qc.invalidateQueries({ queryKey: ['locations'] });
     void qc.invalidateQueries({ queryKey: ['identity', 'me-locations'] });
   };
 
   const createMutation = useMutation({
     mutationFn: (data: CreateLocationForm) =>
-      createLocationMutation(brandSlug, {
+      createLocationMutation({
         name: data.name,
         address: data.address && data.address.length > 0 ? data.address : null,
         timezone: data.timezone && data.timezone.length > 0 ? data.timezone : null,
@@ -104,7 +103,7 @@ function LocationsPage() {
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (location: LocationView) => archiveLocationMutation(brandSlug, location.id),
+    mutationFn: (location: LocationView) => archiveLocationMutation(location.id),
     onSuccess: (res, location) => {
       if (!res.ok) {
         toast.error(friendlyLocationError(res.status, res.data as { detail?: string } | null));
@@ -141,7 +140,7 @@ function LocationsPage() {
 
   return (
     <>
-      <PageHeading title="Locations" description="Create and manage this brand's locations." />
+      <PageHeading title="Locations" description="Create and manage your locations." />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <Card>
           <CardHeader>

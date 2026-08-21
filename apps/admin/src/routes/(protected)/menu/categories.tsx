@@ -13,15 +13,13 @@ import * as React from 'react';
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/categories',
-  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
-    queryClient.ensureQueryData(categoriesQuery(brandSlug)),
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(categoriesQuery()),
   component: CategoriesPage,
 });
 
 function CategoriesPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
-  const { brandSlug } = Route.useParams();
-  const { data } = useSuspenseQuery(categoriesQuery(brandSlug));
+  const { data } = useSuspenseQuery(categoriesQuery());
   const categories = data.data?.items ?? [];
   const [createOpen, setCreateOpen] = React.useState(false);
 
@@ -41,7 +39,7 @@ function CategoriesPage() {
         }
       />
       <div className="px-4 lg:px-6">
-        <CategoriesTable brandSlug={brandSlug} categories={categories} />
+        <CategoriesTable categories={categories} />
       </div>
 
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
@@ -51,7 +49,6 @@ function CategoriesPage() {
           </SheetHeader>
           <div className="px-4 pb-4">
             <CategoryForm
-              brandSlug={brandSlug}
               mode="create"
               allCategories={categories}
               onClose={() => {

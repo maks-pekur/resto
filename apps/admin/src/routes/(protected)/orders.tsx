@@ -3,7 +3,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import {
   ordersFeedQuery,
   DEFAULT_ORDER_FEED_FILTERS,
@@ -26,14 +26,12 @@ import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
 import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/orders',
   loaderDeps: ({ search }) => ({ location: search.location }),
-  loader: ({ context: { queryClient }, params: { brandSlug }, deps }) => {
+  loader: ({ context: { queryClient }, deps }) => {
     if (deps.location === undefined) return undefined;
-    return queryClient.ensureQueryData(
-      ordersFeedQuery(brandSlug, deps.location, DEFAULT_ORDER_FEED_FILTERS),
-    );
+    return queryClient.ensureQueryData(ordersFeedQuery(deps.location, DEFAULT_ORDER_FEED_FILTERS));
   },
   component: OrdersPage,
 });
@@ -66,13 +64,11 @@ function groupFeedRows(rows: readonly OrderFeedRowApi[]): FeedGroups {
 }
 
 function FeedGroupSection({
-  brandSlug,
   title,
   rows,
   showLocationBadge,
   onOpenDetail,
 }: {
-  readonly brandSlug: string;
   readonly title: string;
   readonly rows: readonly OrderFeedRowApi[];
   readonly showLocationBadge: boolean;
@@ -88,7 +84,6 @@ function FeedGroupSection({
         {rows.map((row) => (
           <OrderCard
             key={row.id}
-            brandSlug={brandSlug}
             row={row}
             showLocationBadge={showLocationBadge}
             onOpenDetail={onOpenDetail}
@@ -103,7 +98,6 @@ function OrdersPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const { t: tNav } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
-  const { brandSlug } = Route.useParams();
   const { mode, locationId } = useEffectiveLocation();
   const feedLocationId = mode === 'all' ? undefined : locationId;
 
@@ -117,7 +111,7 @@ function OrdersPage() {
   const filters = useMemo(() => ({ statusFilter, datePreset }), [statusFilter, datePreset]);
 
   const feedQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', filters),
+    ...ordersFeedQuery(feedLocationId ?? 'all', filters),
     enabled: feedLocationId !== undefined,
     refetchInterval: 5_000,
     refetchIntervalInBackground: true,
@@ -128,7 +122,7 @@ function OrdersPage() {
   const mainEmpty = feedQuery.isSuccess && rows.length === 0;
 
   const activationCheckQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', {
+    ...ordersFeedQuery(feedLocationId ?? 'all', {
       statusFilter: 'all_today',
       datePreset: 'week',
       limit: 1,
@@ -141,7 +135,7 @@ function OrdersPage() {
     (activationCheckQuery.data.data?.total ?? 0) === 0;
 
   const refundFailedCountQuery = useQuery({
-    ...ordersFeedQuery(brandSlug, feedLocationId ?? 'all', {
+    ...ordersFeedQuery(feedLocationId ?? 'all', {
       statusFilter: 'refund_failed',
       datePreset: 'week',
       limit: 1,
@@ -234,7 +228,7 @@ function OrdersPage() {
             </Button>
           </div>
         ) : isActivationEmpty ? (
-          <OrdersEmptyState brandSlug={brandSlug} />
+          <OrdersEmptyState />
         ) : mainEmpty ? (
           <EmptyState
             variant="empty"
@@ -244,21 +238,18 @@ function OrdersPage() {
         ) : (
           <div className="flex flex-col gap-6">
             <FeedGroupSection
-              brandSlug={brandSlug}
               title={t('feed.groupWaiting')}
               rows={groups.waiting}
               showLocationBadge={showLocationBadge}
               onOpenDetail={setOpenOrder}
             />
             <FeedGroupSection
-              brandSlug={brandSlug}
               title={t('feed.groupInProgress')}
               rows={groups.inProgress}
               showLocationBadge={showLocationBadge}
               onOpenDetail={setOpenOrder}
             />
             <FeedGroupSection
-              brandSlug={brandSlug}
               title={t('feed.groupDone')}
               rows={groups.done}
               showLocationBadge={showLocationBadge}
@@ -268,7 +259,6 @@ function OrdersPage() {
         )}
       </div>
       <OrderDetailSheet
-        brandSlug={brandSlug}
         order={openOrder}
         onOpenChange={(open) => {
           if (!open) setOpenOrder(null);

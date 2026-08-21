@@ -2,7 +2,7 @@ import { createRoute, useNavigate } from '@tanstack/react-router';
 import { useState } from 'react';
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { rolesQuery, archiveRole, friendlyRoleError, type RoleView } from '@/lib/queries/roles';
 import { PageHeading } from '@/components/page-heading';
@@ -21,7 +21,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/roles',
   loader: ({ context: { queryClient } }) =>
     Promise.all([
@@ -32,7 +32,6 @@ export const Route = createRoute({
 });
 
 function RolesPage() {
-  const { brandSlug } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: meResult } = useSuspenseQuery(meQuery());
@@ -84,8 +83,8 @@ function RolesPage() {
             size="sm"
             onClick={() => {
               void navigate({
-                to: '/$brandSlug/roles/$roleId',
-                params: { brandSlug, roleId: 'new' },
+                to: '/roles/$roleId',
+                params: { roleId: 'new' },
               });
             }}
           >
@@ -106,8 +105,8 @@ function RolesPage() {
                 size="sm"
                 onClick={() => {
                   void navigate({
-                    to: '/$brandSlug/roles/$roleId',
-                    params: { brandSlug, roleId: 'new' },
+                    to: '/roles/$roleId',
+                    params: { roleId: 'new' },
                   });
                 }}
               >
@@ -118,7 +117,6 @@ function RolesPage() {
         ) : (
           <RoleList
             roles={roles}
-            brandSlug={brandSlug}
             onArchive={(role) => {
               setArchiveTarget(role);
             }}

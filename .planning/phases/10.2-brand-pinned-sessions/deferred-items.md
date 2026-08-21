@@ -447,3 +447,51 @@ properties of null (reading 'getInstance')` at
   `RESOURCE_LABELS` in `permission-catalog.tsx`, and (2) delete the `brand: [...]` key from all
   three `PRESETS` entries in `preset-picker.tsx`, verifying against the live
   `PERMISSIONS_STATEMENT` shape first.
+
+## From plan 15
+
+- **`apps/admin/test/catalog-spa.spec.tsx` does not compile** — a pre-`--skip-nx-cache` stale
+  suite (its own `describe` titles cite "Plan 07.6-05 Task 4") asserting the PRE-plan-14 3-argument
+  `categoriesQuery(slug)`/`itemsQuery(slug, filters)`/`stopListQuery(slug, locationId)` shape and
+  passing a `brandSlug` prop into `ItemsTable`/`StickyPublishBar`, both removed by plan 14 (query
+  signatures) and plan 16 (component props) respectively. `grep -l "catalog-spa.spec"
+.planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → zero results across every plan including
+  this one — unowned. Confirmed pre-existing: `apps/admin/tsconfig.json`'s `include` is
+  `src/**/*` only (`test/` is excluded), so this file is outside both this plan's own `<verify>`
+  gate (`tsc -p tsconfig.json`) and `pnpm --filter admin build` (Vite only bundles from
+  `main.tsx`'s import graph) — neither ran or could have caught it. Not fixed here: none of this
+  plan's own tasks touch `queries/catalog.ts`, `items-table.tsx`, or `sticky-publish-bar.tsx` (all
+  already brand-free before this plan started), so the breakage is not caused by this plan's
+  changes — it predates plan 14/16, unlike `location-search-schema.spec.ts` and
+  `index-redirect.spec.ts` (both fixed/deleted in this plan because THIS plan's own route move
+  directly broke their import paths). Whichever plan next touches `apps/admin/src/components/menu/`
+  or does the phase's final green-gate sweep (plan 19 pattern) should rewrite this spec's query-key
+  assertions to the brand-free shape or delete it if superseded by the specs plan 16 already
+  strengthened (`accept-popover.spec.tsx` et al. cover the same components' rendered behavior).
+
+- **`apps/admin/src/routes/(protected)/_layout.tsx`'s onboarding redirect targets
+  `/onboarding/brand`, not `/onboarding`.** D-31/this plan's own action text describe the target as
+  `/onboarding` (a bare index route), matching UI-SPEC S4's "recommend `index.tsx`" naming. That
+  route does not exist in this worktree — `onboarding/index.tsx` is explicitly plan 17's file
+  (`grep -l "onboarding/index.tsx" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` →
+  `10.2-17-PLAN.md` only), and plan 17 has not landed. Targeting the nonexistent `/onboarding`
+  path would itself be a `TS2322` typed-router error — exactly the class of error this plan closes
+  everywhere else. Redirects to the one onboarding path that is actually registered today,
+  `/onboarding/brand` (a `const ONBOARDING_ROUTE` in `_layout.tsx`, one edit site). When plan 17
+  lands `onboarding/index.tsx` and folds `onboarding/brand.tsx`'s one-field form into it (per
+  UI-SPEC S4), it should update this one constant to `/onboarding`.
+
+- **`apps/admin/src/routes/(protected)/onboarding/brand.tsx` rewritten beyond a mechanical
+  repoint, to close the `apps/admin` zero-error bar.** This file is explicitly plan 17's
+  (`10.2-17-PLAN.md` lists it), but it was already failing to compile before this plan touched
+  anything — `meBrandsQuery` (deleted by plan 14), `@/lib/slugify-brand` (deleted by plan 14) — and
+  this plan's own route deletion added one more break (`navigate({ to: '/$brandSlug', params: {
+brandSlug: brand.slug } })`, the exact route this plan removes). Per the phase's explicit
+  "apps/admin at zero typecheck errors, not just routes" bar, left broken this file alone would
+  have failed the whole-package gate. Fixed with the MINIMUM contract-correct change, not a UI-SPEC
+  S4 pass: dropped the slug input and its live-availability check entirely (`GET
+/v1/me/brands/slug-availability` no longer exists; D-30 says the slug is server-derived, not
+  asked), posted `{ displayName }` only to the real, live `POST /v1/me/tenants/onboarding`
+  (`me-tenants.controller.ts`), and navigated to `/` (not `/$brandSlug`) on success. No host-preview
+  string, no i18n keys, no copy polish beyond the one-field form working — plan 17's own UI-SPEC S4
+  read_first should treat this as a working skeleton, not the finished screen.

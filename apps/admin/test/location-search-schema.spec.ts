@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { locationSearchSchema } from '../src/routes/(protected)/$brandSlug/_layout';
+import { locationSearchSchema } from '../src/routes/(protected)/_layout';
 
 describe('locationSearchSchema', () => {
   it('accepts "all"', () => {

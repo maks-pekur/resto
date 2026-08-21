@@ -21,34 +21,22 @@ import { StatusBadge } from '@/components/menu/status-badge';
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/modifier-groups',
-  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
-    queryClient.ensureQueryData(modifierGroupsQuery(brandSlug)),
+  loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(modifierGroupsQuery()),
   component: ModifierGroupsPage,
 });
 
 function ModifierGroupsPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
-  const { brandSlug } = Route.useParams();
   const navigate = useNavigate();
-  const { data } = useSuspenseQuery(modifierGroupsQuery(brandSlug));
+  const { data } = useSuspenseQuery(modifierGroupsQuery());
   const groups = data.data?.items ?? [];
 
   const goToNew = (): void => {
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-    void (navigate as any)({
-      to: '/dashboard/$brandSlug/menu/modifier-groups/$id',
-      params: { brandSlug, id: 'new' },
-    });
-    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+    void navigate({ to: '/menu/modifier-groups/$id', params: { id: 'new' } });
   };
 
   const goToGroup = (id: string): void => {
-    /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-    void (navigate as any)({
-      to: '/dashboard/$brandSlug/menu/modifier-groups/$id',
-      params: { brandSlug, id },
-    });
-    /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+    void navigate({ to: '/menu/modifier-groups/$id', params: { id } });
   };
 
   return (

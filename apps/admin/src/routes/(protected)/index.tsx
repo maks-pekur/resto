@@ -1,10 +1,9 @@
 import { createRoute, Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Route as brandSlugLayoutRoute } from './_layout';
-import { meBrandsQuery } from '@/lib/queries/identity';
+import { Route as protectedLayoutRoute } from './_layout';
 import { stopListQuery, stopListAggregateQuery } from '@/lib/queries/catalog';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { useQuery } from '@tanstack/react-query';
 import { SetupChecklistCard } from '@/components/setup-checklist-card';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
@@ -12,30 +11,28 @@ import { TodaysWidget } from '@/components/menu/todays-86-widget';
 import { Button } from '@/components/ui/button';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/',
-  component: BrandIndexPage,
+  component: DashboardIndexPage,
 });
 
-function BrandIndexPage() {
+function DashboardIndexPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
-  const { brandSlug } = Route.useParams();
-  const { data: brandsResult } = useQuery(meBrandsQuery());
-  const brandsCount = (brandsResult?.data?.brands ?? []).length;
 
   // D-17: `all` gets the aggregate branch so the dashboard never
-  // white-screens (location.context_required) for a brand-global owner —
-  // closes the 08.4 gap. D-07: only stop-list-derived counters render here,
-  // never a silently-empty order counter (order feed is Phase 10).
+  // white-screens (location.context_required) for an owner with no
+  // location selected — closes the 08.4 gap. D-07: only stop-list-derived
+  // counters render here, never a silently-empty order counter (order feed
+  // is Phase 10).
   const { mode, locationId } = useEffectiveLocation();
 
   const { data: singleResult } = useQuery({
-    ...stopListQuery(brandSlug, locationId ?? ''),
-    enabled: brandSlug !== '' && mode === 'single' && locationId !== undefined,
+    ...stopListQuery(locationId ?? ''),
+    enabled: mode === 'single' && locationId !== undefined,
   });
   const { data: aggregateResult } = useQuery({
-    ...stopListAggregateQuery(brandSlug),
-    enabled: brandSlug !== '' && mode === 'all',
+    ...stopListAggregateQuery(),
+    enabled: mode === 'all',
   });
 
   const stopCount =
@@ -56,15 +53,13 @@ function BrandIndexPage() {
             description={t('noLocationsDescription')}
             action={
               <Button asChild>
-                <Link to="/$brandSlug/locations" params={{ brandSlug }}>
-                  {t('createLocationCta')}
-                </Link>
+                <Link to="/locations">{t('createLocationCta')}</Link>
               </Button>
             }
           />
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
-            <SetupChecklistCard brandsCount={brandsCount} />
+            <SetupChecklistCard />
             <TodaysWidget count={stopCount} />
           </div>
         )}
