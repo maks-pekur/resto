@@ -15,7 +15,6 @@ import type { ModifierGroupDetailApi } from '@/lib/queries/catalog';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
 
 export interface GroupEditorShellProps {
-  readonly brandSlug: string;
   readonly title: string;
   readonly initialGroup: ModifierGroupDetailApi | null;
   readonly groupId: string;
@@ -36,7 +35,6 @@ const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
 });
 
 export function GroupEditorShell({
-  brandSlug,
   title,
   initialGroup,
   groupId,
@@ -86,7 +84,6 @@ export function GroupEditorShell({
           </CardHeader>
           <CardContent>
             <ModifierGroupFormComponent
-              brandSlug={brandSlug}
               initialValues={initialValues}
               groupId={currentGroupId}
               onSaved={setCurrentGroupId}
@@ -103,7 +100,6 @@ export function GroupEditorShell({
           </CardHeader>
           <CardContent>
             <ModifierOptionsList
-              brandSlug={brandSlug}
               groupId={currentGroupId}
               options={currentOptions}
               onOptionsChange={setCurrentOptions}

@@ -36,11 +36,10 @@ export const REASON_LABEL_KEYS: Record<OrderCancelReasonCode, string> = {
 const OTHER_NOTE_MAX_LENGTH = 500;
 
 export interface RejectPopoverProps {
-  readonly brandSlug: string;
   readonly order: OrderFeedRowApi;
 }
 
-export function RejectPopover({ brandSlug, order }: RejectPopoverProps): React.ReactElement {
+export function RejectPopover({ order }: RejectPopoverProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
@@ -49,7 +48,7 @@ export function RejectPopover({ brandSlug, order }: RejectPopoverProps): React.R
 
   const mutation = useMutation({
     mutationFn: (input: { reasonCode: OrderCancelReasonCode; cancelNote?: string }) =>
-      cancelOrderMutation(brandSlug, {
+      cancelOrderMutation({
         orderId: order.id,
         locationId: order.locationId,
         reasonCode: input.reasonCode,

@@ -90,7 +90,7 @@ describe('RejectPopover', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <RejectPopover brandSlug="test-brand" order={baseOrder} />
+        <RejectPopover order={baseOrder} />
       </Wrap>,
     );
 
@@ -105,10 +105,13 @@ describe('RejectPopover', () => {
       expect.objectContaining({
         method: 'POST',
         body: { reasonCode: 'kitchen_too_busy' },
-        brandSlug: 'test-brand',
         locationId: 'loc-1',
       }),
     );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'orders.reasons.kitchenBusy' })).toBeNull();
+    });
   });
 
   it('shows an error toast when the cancel mutation fails', async () => {
@@ -116,7 +119,7 @@ describe('RejectPopover', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <RejectPopover brandSlug="test-brand" order={baseOrder} />
+        <RejectPopover order={baseOrder} />
       </Wrap>,
     );
 
@@ -126,6 +129,7 @@ describe('RejectPopover', () => {
     await waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalled();
     });
+    expect(screen.queryByRole('button', { name: 'orders.reasons.outOfStock' })).not.toBeNull();
   });
 });
 
@@ -148,16 +152,13 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={acceptedRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
-    const advanceBtn = screen.getByRole('button', { name: 'orders.card.startPreparingBtn' });
+    const advanceBtn = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'orders.card.startPreparingBtn',
+    });
     await user.click(advanceBtn);
 
     await waitFor(() => {
@@ -168,6 +169,7 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     });
 
     expect(toastErrorMock).not.toHaveBeenCalled();
+    expect(advanceBtn.disabled).toBe(false);
   });
 
   it('shows an error toast when the advance mutation truly fails', async () => {
@@ -180,19 +182,18 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={acceptedRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
-    await user.click(screen.getByRole('button', { name: 'orders.card.startPreparingBtn' }));
+    const advanceBtn = screen.getByRole<HTMLButtonElement>('button', {
+      name: 'orders.card.startPreparingBtn',
+    });
+    await user.click(advanceBtn);
 
     await waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalled();
     });
+    expect(advanceBtn.disabled).toBe(false);
   });
 });

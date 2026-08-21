@@ -38,16 +38,11 @@ export interface CancelDialogOrder {
 }
 
 export interface CancelDialogProps {
-  readonly brandSlug: string;
   readonly order: CancelDialogOrder;
   readonly onCanceled?: () => void;
 }
 
-export function CancelDialog({
-  brandSlug,
-  order,
-  onCanceled,
-}: CancelDialogProps): React.ReactElement {
+export function CancelDialog({ order, onCanceled }: CancelDialogProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
@@ -56,7 +51,7 @@ export function CancelDialog({
 
   const mutation = useMutation({
     mutationFn: (selectedReasonCode: OrderCancelReasonCode) =>
-      cancelOrderMutation(brandSlug, {
+      cancelOrderMutation({
         orderId: order.id,
         locationId: order.locationId,
         reasonCode: selectedReasonCode,

@@ -17,14 +17,12 @@ const TOAST_ID = 'publish-countdown' as const;
 const SUCCESS_AUTO_DISMISS_MS = 3_000;
 
 export interface StickyPublishBarProps {
-  readonly brandSlug: string;
   readonly unpublishedCount: number;
   readonly diffItems: readonly DraftDiffEntry[];
   readonly truncatedCount?: number;
 }
 
 export function StickyPublishBar({
-  brandSlug,
   unpublishedCount,
   diffItems,
   truncatedCount,
@@ -41,23 +39,23 @@ export function StickyPublishBar({
   const [isDiffOpen, setIsDiffOpen] = React.useState(false);
 
   const cancelMutation = useMutation({
-    mutationFn: () => cancelPublish(brandSlug),
+    mutationFn: () => cancelPublish(),
     onSuccess: (res) => {
       if (!res.ok) {
         showError(null, t('cancelFailed'), { id: TOAST_ID });
       } else if (res.data?.cancelled) {
         showSuccess(t('cancelledToast'), { id: TOAST_ID });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff'] });
       } else {
         toast.info(t('alreadyPublishedToast'), { id: TOAST_ID });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff'] });
       }
       setIsPublishing(false);
     },
   });
 
   const publishMutation = useMutation({
-    mutationFn: () => schedulePublish(brandSlug),
+    mutationFn: () => schedulePublish(),
     onSuccess: (res) => {
       if (!res.ok) {
         showError(null, t('cancelFailed'), { id: TOAST_ID });
@@ -85,10 +83,10 @@ export function StickyPublishBar({
   const handleElapse = (): void => {
     showSuccess(t('publishedToast'), { id: TOAST_ID, duration: SUCCESS_AUTO_DISMISS_MS });
     setIsPublishing(false);
-    void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff', brandSlug] });
-    void queryClient.invalidateQueries({ queryKey: ['catalog', 'items', brandSlug] });
-    void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
-    void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups', brandSlug] });
+    void queryClient.invalidateQueries({ queryKey: ['catalog', 'draft-diff'] });
+    void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
+    void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories'] });
+    void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });
   };
 
   const handlePublish = (): void => {

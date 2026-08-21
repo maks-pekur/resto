@@ -83,7 +83,7 @@ describe('AcceptPopover', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <AcceptPopover brandSlug="test-brand" order={baseOrder} />
+        <AcceptPopover order={baseOrder} />
       </Wrap>,
     );
 
@@ -98,10 +98,13 @@ describe('AcceptPopover', () => {
       expect.objectContaining({
         method: 'POST',
         body: { prepMinutes: 20 },
-        brandSlug: 'test-brand',
         locationId: 'loc-1',
       }),
     );
+
+    await waitFor(() => {
+      expect(screen.queryByRole('button', { name: 'orders.accept.chip20' })).toBeNull();
+    });
   });
 
   it('custom path reveals an input and confirms with the typed minutes', async () => {
@@ -109,7 +112,7 @@ describe('AcceptPopover', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <AcceptPopover brandSlug="test-brand" order={baseOrder} />
+        <AcceptPopover order={baseOrder} />
       </Wrap>,
     );
 
@@ -134,7 +137,7 @@ describe('AcceptPopover', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <AcceptPopover brandSlug="test-brand" order={baseOrder} />
+        <AcceptPopover order={baseOrder} />
       </Wrap>,
     );
 
@@ -144,5 +147,6 @@ describe('AcceptPopover', () => {
     await waitFor(() => {
       expect(toastErrorMock).toHaveBeenCalled();
     });
+    expect(screen.queryByRole('button', { name: 'orders.accept.chip15' })).not.toBeNull();
   });
 });

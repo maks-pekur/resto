@@ -60,14 +60,12 @@ const FULFILLMENT_LABEL_KEY: Record<OrderFeedRowApi['fulfillmentMode'], string> 
 };
 
 export interface OrderCardProps {
-  readonly brandSlug: string;
   readonly row: OrderFeedRowApi;
   readonly showLocationBadge: boolean;
   readonly onOpenDetail: (row: OrderFeedRowApi) => void;
 }
 
 export function OrderCard({
-  brandSlug,
   row,
   showLocationBadge,
   onOpenDetail,
@@ -81,7 +79,7 @@ export function OrderCard({
 
   const advanceMutation = useMutation({
     mutationFn: (targetStatus: 'preparing' | 'ready' | 'completed') =>
-      advanceOrderStatusMutation(brandSlug, {
+      advanceOrderStatusMutation({
         orderId: row.id,
         locationId: row.locationId,
         targetStatus,
@@ -99,8 +97,7 @@ export function OrderCard({
   });
 
   const retryMutation = useMutation({
-    mutationFn: () =>
-      retryRefundMutation(brandSlug, { orderId: row.id, locationId: row.locationId }),
+    mutationFn: () => retryRefundMutation({ orderId: row.id, locationId: row.locationId }),
     onSuccess: (res) => {
       if (!res.ok || !res.data) {
         showError(null, t('refund.failedToast'));
@@ -196,8 +193,8 @@ export function OrderCard({
 
       {state === 'new' || state === 'escalated' ? (
         <div className="flex gap-2">
-          <AcceptPopover brandSlug={brandSlug} order={row} />
-          <RejectPopover brandSlug={brandSlug} order={row} />
+          <AcceptPopover order={row} />
+          <RejectPopover order={row} />
         </div>
       ) : state === 'accepted' ? (
         <Button

@@ -67,19 +67,18 @@ interface TimelineRow {
 }
 
 interface OrderDetailBodyProps {
-  readonly brandSlug: string;
   readonly order: OrderFeedRowApi;
   readonly onClose: () => void;
 }
 
-function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): React.ReactElement {
+function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const now = Date.now();
 
-  const detailQuery = useQuery(orderDetailQuery(brandSlug, order.id, order.locationId));
+  const detailQuery = useQuery(orderDetailQuery(order.id, order.locationId));
   const detail = detailQuery.data?.data ?? null;
 
   const [refundAmount, setRefundAmount] = React.useState('');
@@ -91,7 +90,7 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
 
   const advanceMutation = useMutation({
     mutationFn: (targetStatus: 'preparing' | 'ready' | 'completed') =>
-      advanceOrderStatusMutation(brandSlug, {
+      advanceOrderStatusMutation({
         orderId: order.id,
         locationId: order.locationId,
         targetStatus,
@@ -111,7 +110,7 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
 
   const refundMutation = useMutation({
     mutationFn: () =>
-      refundOrderMutation(brandSlug, {
+      refundOrderMutation({
         orderId: order.id,
         locationId: order.locationId,
         amountMinor: toMinorUnits(refundAmount),
@@ -135,8 +134,7 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
   });
 
   const retryMutation = useMutation({
-    mutationFn: () =>
-      retryRefundMutation(brandSlug, { orderId: order.id, locationId: order.locationId }),
+    mutationFn: () => retryRefundMutation({ orderId: order.id, locationId: order.locationId }),
     onSuccess: (res) => {
       if (!res.ok || !res.data) {
         showError(null, t('refund.failedToast'));
@@ -404,7 +402,6 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
 
         {canCancel ? (
           <CancelDialog
-            brandSlug={brandSlug}
             order={{
               id: detail.id,
               shortNumber: detail.shortNumber,
@@ -421,13 +418,11 @@ function OrderDetailBody({ brandSlug, order, onClose }: OrderDetailBodyProps): R
 }
 
 export interface OrderDetailSheetProps {
-  readonly brandSlug: string;
   readonly order: OrderFeedRowApi | null;
   readonly onOpenChange: (open: boolean) => void;
 }
 
 export function OrderDetailSheet({
-  brandSlug,
   order,
   onOpenChange,
 }: OrderDetailSheetProps): React.ReactElement {
@@ -442,7 +437,6 @@ export function OrderDetailSheet({
         </SheetHeader>
         {order ? (
           <OrderDetailBody
-            brandSlug={brandSlug}
             order={order}
             onClose={() => {
               onOpenChange(false);

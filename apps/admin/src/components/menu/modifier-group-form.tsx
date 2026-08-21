@@ -18,7 +18,6 @@ export interface ModifierGroupFormState {
 }
 
 export interface ModifierGroupFormProps {
-  readonly brandSlug: string;
   readonly initialValues: ModifierGroupForm;
   readonly groupId: string;
   readonly onSaved: (savedId: string) => void;
@@ -27,7 +26,6 @@ export interface ModifierGroupFormProps {
 }
 
 export function ModifierGroupFormComponent({
-  brandSlug,
   initialValues,
   groupId,
   onSaved,
@@ -54,10 +52,9 @@ export function ModifierGroupFormComponent({
   }, [isNew, isDirty, pending, onStateChange]);
 
   const mutation = useMutation({
-    mutationFn: (values: ModifierGroupForm) =>
-      upsertModifierGroup(brandSlug, isNew ? null : groupId, values),
+    mutationFn: (values: ModifierGroupForm) => upsertModifierGroup(isNew ? null : groupId, values),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups', brandSlug] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });
     },
   });
 
@@ -73,13 +70,11 @@ export function ModifierGroupFormComponent({
       const savedId = res.data?.id ?? '';
       onSaved(savedId);
       if (isNew) {
-        /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-        void (navigate as any)({
-          to: '/dashboard/$brandSlug/menu/modifier-groups/$id',
-          params: { brandSlug, id: savedId },
+        void navigate({
+          to: '/menu/modifier-groups/$id',
+          params: { id: savedId },
           replace: true,
         });
-        /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
       } else {
         form.reset(values);
       }
