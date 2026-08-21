@@ -83,14 +83,13 @@ const buildFeedQueryString = (filters: OrderFeedFilters): string => {
 };
 
 export const ordersFeedQuery = (
-  brandSlug: string,
   // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
   locationId: string | 'all',
   filters: OrderFeedFilters = DEFAULT_ORDER_FEED_FILTERS,
 ) => ({
-  queryKey: ['orders', 'feed', brandSlug, locationId, filters] as const,
+  queryKey: ['orders', 'feed', locationId, filters] as const,
   queryFn: ({ signal }: { signal: AbortSignal }) =>
-    apiFetch<OrderFeedResponse>(buildFeedQueryString(filters), { brandSlug, locationId, signal }),
+    apiFetch<OrderFeedResponse>(buildFeedQueryString(filters), { locationId, signal }),
 });
 
 export interface OrderModifierApi {
@@ -116,7 +115,6 @@ export interface OrderItemApi {
 export interface OrderDetailApi {
   readonly id: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly locationId: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
@@ -155,10 +153,10 @@ export interface OrderDetailApi {
   readonly failedRefundReason: string | null;
 }
 
-export const orderDetailQuery = (brandSlug: string, orderId: string, locationId: string) => ({
-  queryKey: ['orders', 'detail', brandSlug, orderId, locationId] as const,
+export const orderDetailQuery = (orderId: string, locationId: string) => ({
+  queryKey: ['orders', 'detail', orderId, locationId] as const,
   queryFn: ({ signal }: { signal: AbortSignal }) =>
-    apiFetch<OrderDetailApi>(`/v1/orders/${orderId}/detail`, { brandSlug, locationId, signal }),
+    apiFetch<OrderDetailApi>(`/v1/orders/${orderId}/detail`, { locationId, signal }),
 });
 
 export type OrderSnapshotApi = Omit<OrderDetailApi, 'hasFailedRefund'>;
@@ -169,11 +167,10 @@ export interface AcceptOrderMutationInput {
   readonly prepMinutes: number;
 }
 
-export const acceptOrderMutation = (brandSlug: string, input: AcceptOrderMutationInput) =>
+export const acceptOrderMutation = (input: AcceptOrderMutationInput) =>
   apiFetch<OrderSnapshotApi>(`/v1/orders/${input.orderId}/accept`, {
     method: 'POST',
     body: { prepMinutes: input.prepMinutes },
-    brandSlug,
     locationId: input.locationId,
   });
 
@@ -183,14 +180,10 @@ export interface AdvanceOrderStatusMutationInput {
   readonly targetStatus: 'preparing' | 'ready' | 'completed';
 }
 
-export const advanceOrderStatusMutation = (
-  brandSlug: string,
-  input: AdvanceOrderStatusMutationInput,
-) =>
+export const advanceOrderStatusMutation = (input: AdvanceOrderStatusMutationInput) =>
   apiFetch<OrderSnapshotApi>(`/v1/orders/${input.orderId}/advance`, {
     method: 'POST',
     body: { targetStatus: input.targetStatus },
-    brandSlug,
     locationId: input.locationId,
   });
 
@@ -212,14 +205,13 @@ export interface CancelOrderMutationInput {
   readonly cancelNote?: string;
 }
 
-export const cancelOrderMutation = (brandSlug: string, input: CancelOrderMutationInput) =>
+export const cancelOrderMutation = (input: CancelOrderMutationInput) =>
   apiFetch<OrderCancelResponseApi>(`/v1/orders/${input.orderId}/cancel`, {
     method: 'POST',
     body: {
       reasonCode: input.reasonCode,
       ...(input.cancelNote !== undefined ? { cancelNote: input.cancelNote } : {}),
     },
-    brandSlug,
     locationId: input.locationId,
   });
 
@@ -236,11 +228,10 @@ export interface RefundOrderMutationInput {
   readonly reason: string;
 }
 
-export const refundOrderMutation = (brandSlug: string, input: RefundOrderMutationInput) =>
+export const refundOrderMutation = (input: RefundOrderMutationInput) =>
   apiFetch<RefundOrderResponseApi>(`/v1/orders/${input.orderId}/refund`, {
     method: 'POST',
     body: { amountMinor: input.amountMinor, reason: input.reason },
-    brandSlug,
     locationId: input.locationId,
   });
 
@@ -249,9 +240,8 @@ export interface RetryRefundMutationInput {
   readonly locationId: string;
 }
 
-export const retryRefundMutation = (brandSlug: string, input: RetryRefundMutationInput) =>
+export const retryRefundMutation = (input: RetryRefundMutationInput) =>
   apiFetch<RefundOrderResponseApi>(`/v1/orders/${input.orderId}/refund/retry`, {
     method: 'POST',
-    brandSlug,
     locationId: input.locationId,
   });

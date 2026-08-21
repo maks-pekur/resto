@@ -7,7 +7,6 @@ export interface MeResponse {
   readonly tenantId?: string;
   readonly baseRole?: 'owner' | 'admin' | 'staff';
   readonly twoFactorEnabled?: boolean;
-  readonly activeBrandId?: string | null;
   readonly permissions?: Record<string, readonly string[]>;
 }
 
@@ -16,9 +15,13 @@ export interface OperatorSummary {
   readonly baseRole?: 'owner' | 'admin' | 'staff';
 }
 
-export interface MeBrandsResponse {
-  readonly brands: readonly { id: string; slug: string; displayName: string }[];
-  readonly canViewAllBrands: boolean;
+export interface MeTenantsResponse {
+  readonly tenants: readonly {
+    id: string;
+    slug: string;
+    displayName: string;
+    status: string;
+  }[];
 }
 
 export const meQuery = () => ({
@@ -27,9 +30,9 @@ export const meQuery = () => ({
   staleTime: 30_000,
 });
 
-export const meBrandsQuery = () => ({
-  queryKey: ['identity', 'me-brands'] as const,
-  queryFn: () => apiFetch<MeBrandsResponse>('/v1/me/brands'),
+export const meTenantsQuery = () => ({
+  queryKey: ['identity', 'me-tenants'] as const,
+  queryFn: () => apiFetch<MeTenantsResponse>('/v1/me/tenants'),
   staleTime: 30_000,
 });
 

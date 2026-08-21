@@ -44,7 +44,6 @@ export const apiFetch = async <T>(
   opts: {
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
     body?: unknown;
-    brandSlug?: string;
     // 'all' or a uuid; absent/'all' -> omit header. D-12: apiFetch is a dumb
     // passthrough — the caller (use-effective-location hook) resolves the
     // per-role value; no session read for location happens in here.
@@ -63,7 +62,6 @@ export const apiFetch = async <T>(
   const headers: Record<string, string> = {
     accept: 'application/json',
     ...(tenantId !== undefined ? { 'x-tenant-id': tenantId } : {}),
-    ...(opts.brandSlug !== undefined ? { 'x-brand-slug': opts.brandSlug } : {}),
     ...(opts.locationId !== undefined && opts.locationId !== 'all'
       ? { 'x-location-id': opts.locationId }
       : {}),
