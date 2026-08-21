@@ -4,25 +4,21 @@ import { useQuery } from '@tanstack/react-query';
 import { Check, Copy, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { getBrandPaymentStatus } from '@/lib/brand-payments-api';
+import { getTenantPaymentStatus } from '@/lib/tenant-payments-api';
 import { itemsQuery } from '@/lib/queries/catalog';
-import { brandLocationsQuery } from '@/lib/queries/locations';
+import { tenantLocationsQuery } from '@/lib/queries/locations';
 import { tenantDomainsQuery } from '@/lib/queries/tenancy';
 import { showSuccess } from '@/lib/ui/toast-helpers';
 
-export interface OrdersEmptyStateProps {
-  readonly brandSlug: string;
-}
-
-export function OrdersEmptyState({ brandSlug }: OrdersEmptyStateProps): React.ReactElement {
+export function OrdersEmptyState(): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.empty' });
 
   const paymentsQuery = useQuery({
-    queryKey: ['brand-payment-status', brandSlug] as const,
-    queryFn: () => getBrandPaymentStatus(brandSlug),
+    queryKey: ['tenant-payment-status'] as const,
+    queryFn: () => getTenantPaymentStatus(),
   });
-  const menuQuery = useQuery(itemsQuery(brandSlug, { status: 'published', limit: 1 }));
-  const locationsQuery = useQuery(brandLocationsQuery(brandSlug));
+  const menuQuery = useQuery(itemsQuery({ status: 'published', limit: 1 }));
+  const locationsQuery = useQuery(tenantLocationsQuery());
   const domainsQuery = useQuery(tenantDomainsQuery());
 
   const paymentsConnected = paymentsQuery.data?.data?.canAcceptPayments ?? false;

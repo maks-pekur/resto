@@ -9,11 +9,10 @@ const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);
 
 interface RoleListProps {
   readonly roles: RoleView[];
-  readonly brandSlug: string;
   readonly onArchive: (role: RoleView) => void;
 }
 
-export function RoleList({ roles, brandSlug, onArchive }: RoleListProps) {
+export function RoleList({ roles, onArchive }: RoleListProps) {
   const navigate = useNavigate();
 
   return (
@@ -61,8 +60,8 @@ export function RoleList({ roles, brandSlug, onArchive }: RoleListProps) {
                         aria-label={`Edit ${role.role} role`}
                         onClick={() => {
                           void navigate({
-                            to: '/$brandSlug/roles/$roleId',
-                            params: { brandSlug, roleId: role.role },
+                            to: '/roles/$roleId',
+                            params: { roleId: role.role },
                           });
                         }}
                       >

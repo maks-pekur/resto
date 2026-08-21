@@ -83,12 +83,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
   it('a failed-refund terminal card renders undimmed and with a retry action', () => {
     const { container } = render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={failedRefundRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -104,12 +99,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     canMock.mockReturnValue(false);
     render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={failedRefundRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -121,12 +111,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={failedRefundRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -149,12 +134,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard
-          brandSlug="test-brand"
-          row={failedRefundRow}
-          showLocationBadge={false}
-          onOpenDetail={vi.fn()}
-        />
+        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -165,7 +145,6 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
         '/v1/orders/order-1/refund/retry',
         expect.objectContaining({
           method: 'POST',
-          brandSlug: 'test-brand',
           locationId: 'loc-1',
         }),
       );

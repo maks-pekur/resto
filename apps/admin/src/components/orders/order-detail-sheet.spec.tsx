@@ -74,7 +74,6 @@ const feedRow: OrderFeedRowApi = {
 const detail: OrderDetailApi = {
   id: 'order-1',
   tenantId: 'tenant-1',
-  brandId: 'brand-1',
   locationId: 'loc-1',
   orderNumber: '20260810-A7K2M',
   status: 'accepted',
@@ -138,7 +137,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -159,7 +158,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -178,7 +177,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -201,7 +200,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -214,7 +213,7 @@ describe('OrderDetailSheet', () => {
     canMock.mockReturnValue(false);
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -229,7 +228,7 @@ describe('OrderDetailSheet', () => {
     canMock.mockReturnValue(true);
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -250,7 +249,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 
@@ -279,7 +278,7 @@ describe('OrderDetailSheet', () => {
     });
     render(
       <Wrap>
-        <OrderDetailSheet brandSlug="test-brand" order={feedRow} onOpenChange={vi.fn()} />
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
       </Wrap>,
     );
 

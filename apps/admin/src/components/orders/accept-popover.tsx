@@ -13,11 +13,10 @@ const FIXED_MINUTES = [15, 20, 30, 45] as const;
 const HIGHLIGHTED_MINUTES = 20;
 
 export interface AcceptPopoverProps {
-  readonly brandSlug: string;
   readonly order: OrderFeedRowApi;
 }
 
-export function AcceptPopover({ brandSlug, order }: AcceptPopoverProps): React.ReactElement {
+export function AcceptPopover({ order }: AcceptPopoverProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
@@ -26,7 +25,7 @@ export function AcceptPopover({ brandSlug, order }: AcceptPopoverProps): React.R
 
   const mutation = useMutation({
     mutationFn: (prepMinutes: number) =>
-      acceptOrderMutation(brandSlug, {
+      acceptOrderMutation({
         orderId: order.id,
         locationId: order.locationId,
         prepMinutes,

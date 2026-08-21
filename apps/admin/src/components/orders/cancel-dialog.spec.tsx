@@ -61,7 +61,7 @@ describe('CancelDialog', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <CancelDialog brandSlug="test-brand" order={order} />
+        <CancelDialog order={order} />
       </Wrap>,
     );
 
@@ -81,7 +81,7 @@ describe('CancelDialog', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <CancelDialog brandSlug="test-brand" order={order} />
+        <CancelDialog order={order} />
       </Wrap>,
     );
 
@@ -105,7 +105,7 @@ describe('CancelDialog', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <CancelDialog brandSlug="test-brand" order={order} />
+        <CancelDialog order={order} />
       </Wrap>,
     );
 
@@ -125,7 +125,6 @@ describe('CancelDialog', () => {
         expect.objectContaining({
           method: 'POST',
           body: { reasonCode: 'kitchen_too_busy' },
-          brandSlug: 'test-brand',
           locationId: 'loc-1',
         }),
       );
@@ -136,7 +135,7 @@ describe('CancelDialog', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <CancelDialog brandSlug="test-brand" order={order} />
+        <CancelDialog order={order} />
       </Wrap>,
     );
 

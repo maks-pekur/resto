@@ -24,13 +24,12 @@ import { createRole, updateRole, archiveRole, friendlyRoleError } from '@/lib/qu
 import type { RoleView } from '@/lib/queries/roles';
 
 interface RoleFormProps {
-  readonly brandSlug: string;
   readonly isNew: boolean;
   readonly existingRole?: RoleView;
   readonly memberCount: number;
 }
 
-export function RoleForm({ brandSlug, isNew, existingRole, memberCount }: RoleFormProps) {
+export function RoleForm({ isNew, existingRole, memberCount }: RoleFormProps) {
   const navigate = useNavigate();
   const qc = useQueryClient();
 
@@ -44,7 +43,7 @@ export function RoleForm({ brandSlug, isNew, existingRole, memberCount }: RoleFo
 
   const afterSuccess = () => {
     void qc.invalidateQueries({ queryKey: ['roles'] });
-    void navigate({ to: '/$brandSlug/roles', params: { brandSlug } });
+    void navigate({ to: '/roles' });
   };
 
   const saveMutation = useMutation({
@@ -183,7 +182,7 @@ export function RoleForm({ brandSlug, isNew, existingRole, memberCount }: RoleFo
             variant="outline"
             size="sm"
             onClick={() => {
-              void navigate({ to: '/$brandSlug/roles', params: { brandSlug } });
+              void navigate({ to: '/roles' });
             }}
           >
             Cancel
