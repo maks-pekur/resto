@@ -1,13 +1,13 @@
 import { ForbiddenException, Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
-import { createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, gt, isNull } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
-import { tenantRole as tenantRoleTable } from '@resto/db/schema';
+import { invitation as invitationTable, tenantRole as tenantRoleTable } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -457,6 +457,40 @@ export const buildAuth = (opts: BuildOpts) =>
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         const path = ctx.path;
+        if (path.endsWith('/sign-up/email')) {
+          // D-29: close the public route while keeping `auth.api.signUpEmail`
+          // working for server-side callers (bootstrap-owner.service.ts).
+          // `ctx.request` is only populated when BA's own web-standard
+          // handler routes a real HTTP request (better-call router.mjs);
+          // direct `auth.api.*` calls never pass one — confirmed against BA's
+          // own crud-invites.mjs, which uses the identical truthy check to
+          // distinguish client vs. server calls.
+          if (!ctx.request) return;
+          const body = (ctx.body ?? {}) as { email?: unknown };
+          const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+          const hasValidInvitation =
+            email.length > 0 &&
+            (
+              await opts.authDb.db
+                .select({ id: invitationTable.id })
+                .from(invitationTable)
+                .where(
+                  and(
+                    eq(invitationTable.email, email),
+                    eq(invitationTable.status, 'pending'),
+                    gt(invitationTable.expiresAt, new Date()),
+                  ),
+                )
+                .limit(1)
+            ).length > 0;
+          if (!hasValidInvitation) {
+            throw new APIError('FORBIDDEN', {
+              code: 'signup.direct_disabled',
+              message: 'Direct signup is disabled. Create an account via POST /v1/signup.',
+            });
+          }
+          return;
+        }
         if (path.endsWith('/sign-out')) {
           if (!opts.onSignedOut) return;
           const token = await ctx.getSignedCookie(
