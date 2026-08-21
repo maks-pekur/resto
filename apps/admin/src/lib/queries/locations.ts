@@ -8,7 +8,6 @@ export interface LocationContactsView {
 
 export interface LocationView {
   readonly id: string;
-  readonly brandId: string;
   readonly name: string;
   readonly address: string | null;
   readonly timezone: string | null;
@@ -22,7 +21,6 @@ export interface LocationView {
 export interface PinnableLocation {
   readonly id: string;
   readonly name: string;
-  readonly brandId: string;
 }
 
 export interface CreateLocationInput {
@@ -38,9 +36,9 @@ interface ProblemDetails {
   readonly detail?: string;
 }
 
-export const brandLocationsQuery = (brandSlug: string) => ({
-  queryKey: ['locations', brandSlug] as const,
-  queryFn: () => apiFetch<LocationView[]>('/v1/tenancy/locations', { brandSlug }),
+export const tenantLocationsQuery = () => ({
+  queryKey: ['locations'] as const,
+  queryFn: () => apiFetch<LocationView[]>('/v1/tenancy/locations'),
   staleTime: 30_000,
 });
 
@@ -63,17 +61,15 @@ export const activeLocationIdQuery = () => ({
   staleTime: 0,
 });
 
-export const createLocationMutation = (brandSlug: string, input: CreateLocationInput) =>
+export const createLocationMutation = (input: CreateLocationInput) =>
   apiFetch<LocationView>('/v1/tenancy/locations', {
     method: 'POST',
     body: input,
-    brandSlug,
   });
 
-export const archiveLocationMutation = (brandSlug: string, id: string) =>
+export const archiveLocationMutation = (id: string) =>
   apiFetch<{ scopedMemberCount: number }>(`/v1/tenancy/locations/${id}/archive`, {
     method: 'PATCH',
-    brandSlug,
   });
 
 export const friendlyLocationError = (status: number, body: ProblemDetails | null): string => {
