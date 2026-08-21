@@ -8,18 +8,13 @@ interface ChecklistItem {
   readonly done: boolean;
 }
 
-export interface SetupChecklistCardProps {
-  readonly brandsCount: number;
-}
-
-export function SetupChecklistCard({ brandsCount }: SetupChecklistCardProps) {
+export function SetupChecklistCard() {
   const items: ChecklistItem[] = [
+    // The protected layout only ever renders this page once the tenant
+    // exists and is past `pending_setup` (D-31) — "restaurant set up" is
+    // unconditionally true by the time this checklist can render.
     { label: 'Account created', caption: 'Welcome', done: true },
-    {
-      label: 'Brand set up',
-      caption: brandsCount >= 1 ? 'Done' : 'Add your first brand',
-      done: brandsCount >= 1,
-    },
+    { label: 'Restaurant set up', caption: 'Done', done: true },
     { label: 'Catalog', caption: 'Coming in Phase 4', done: false },
     { label: 'Customer site', caption: 'Coming in Phase 5', done: false },
     { label: 'Accepting orders', caption: 'Coming in Phase 7', done: false },

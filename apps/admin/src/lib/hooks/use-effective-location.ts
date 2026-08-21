@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { Route as brandSlugLayoutRoute } from '@/routes/(protected)/$brandSlug/_layout';
+import { Route as protectedLayoutRoute } from '@/routes/(protected)/_layout';
 import { meQuery, toOperatorSummary } from '@/lib/queries/identity';
 import { meLocationsQuery, activeLocationIdQuery } from '@/lib/queries/locations';
 
@@ -22,14 +22,14 @@ export function useEffectiveLocation(): EffectiveLocation {
   const operator = meResult.data ? toOperatorSummary(meResult.data) : null;
   const isOwner = operator?.baseRole === 'owner';
 
-  const search = brandSlugLayoutRoute.useSearch();
+  const search = protectedLayoutRoute.useSearch();
   // `from` is for the search-updater's type narrowing only — this hook runs
-  // under every brand-scoped leaf route, so the D-18 fallback redirect must
+  // under every protected leaf route, so the D-18 fallback redirect must
   // target the CURRENT pathname (an explicit absolute `to`), not `from`
-  // re-interpolated (which would always bounce to the brand-layout's own
+  // re-interpolated (which would always bounce to the protected layout's own
   // index route regardless of which page the owner was actually viewing —
   // found via the 08.5-05 browser smoke, RES-085-nav).
-  const navigate = useNavigate({ from: brandSlugLayoutRoute.fullPath });
+  const navigate = useNavigate({ from: protectedLayoutRoute.fullPath });
   const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   const { data: locationsResult } = useQuery({ ...meLocationsQuery(), enabled: isOwner });

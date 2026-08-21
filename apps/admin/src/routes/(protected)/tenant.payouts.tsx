@@ -1,41 +1,37 @@
 import { useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { createRoute, useParams } from '@tanstack/react-router';
+import { createRoute } from '@tanstack/react-router';
 import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/connect-js';
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { toast } from 'sonner';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  getBrandPaymentStatus,
-  startBrandEmbeddedSession,
-  startBrandHostedLink,
-  startBrandOAuth,
-} from '@/lib/brand-payments-api';
+  getTenantPaymentStatus,
+  startTenantEmbeddedSession,
+  startTenantHostedLink,
+  startTenantOAuth,
+} from '@/lib/tenant-payments-api';
 import { VITE_STRIPE_PUBLISHABLE_KEY } from '@/env';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
-  path: '/payouts',
-  component: BrandPayoutsPage,
+  getParentRoute: () => protectedLayoutRoute,
+  path: '/tenant/payouts',
+  component: TenantPayoutsPage,
 });
 
-function BrandPayoutsPage() {
-  const { brandSlug } = useParams({ strict: false });
-  const slug = brandSlug ?? '';
-
+function TenantPayoutsPage() {
   const statusQuery = useQuery({
-    queryKey: ['brand-payment-status', slug],
-    queryFn: () => getBrandPaymentStatus(slug),
-    enabled: slug !== '',
+    queryKey: ['tenant-payment-status'] as const,
+    queryFn: () => getTenantPaymentStatus(),
   });
 
   const [showEmbedded, setShowEmbedded] = useState(false);
 
   const fetchClientSecret = useRef(async () => {
-    const res = await startBrandEmbeddedSession(slug);
+    const res = await startTenantEmbeddedSession();
     if (!res.ok || res.data === null) throw new Error('account-session failed');
     return res.data.clientSecret;
   });
@@ -49,7 +45,7 @@ function BrandPayoutsPage() {
   }, []);
 
   const hostedLinkMutation = useMutation({
-    mutationFn: () => startBrandHostedLink(slug),
+    mutationFn: () => startTenantHostedLink(),
     onSuccess: (res) => {
       if (!res.ok || res.data === null) {
         toast.error('Failed to start onboarding. Please try again.');
@@ -61,7 +57,7 @@ function BrandPayoutsPage() {
   });
 
   const oauthMutation = useMutation({
-    mutationFn: () => startBrandOAuth(slug),
+    mutationFn: () => startTenantOAuth(),
     onSuccess: (res) => {
       if (!res.ok || res.data === null) {
         toast.error('Failed to start Stripe OAuth. Please try again.');
@@ -78,14 +74,12 @@ function BrandPayoutsPage() {
 
   return (
     <>
-      <PageHeading title="Brand Payouts" />
+      <PageHeading title="Payouts" />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         <Card>
           <CardHeader>
             <CardTitle>Stripe Connect</CardTitle>
-            <CardDescription>
-              Accept payments for <span className="font-mono">{slug}</span> via Stripe.
-            </CardDescription>
+            <CardDescription>Accept payments via Stripe.</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
             {isLoading ? (

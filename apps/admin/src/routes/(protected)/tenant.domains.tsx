@@ -1,29 +1,26 @@
-import { createRoute, useParams } from '@tanstack/react-router';
+import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { tenantDomainsQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
-  path: '/domains',
+  getParentRoute: () => protectedLayoutRoute,
+  path: '/tenant/domains',
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(tenantDomainsQuery()),
-  component: BrandDomainsPage,
+  component: TenantDomainsPage,
 });
 
-function BrandDomainsPage() {
-  const { brandSlug } = useParams({ strict: false });
+function TenantDomainsPage() {
   const { data } = useSuspenseQuery(tenantDomainsQuery());
   const domains = data.data ?? [];
 
   return (
     <>
-      <PageHeading title="Brand Domains" />
+      <PageHeading title="Domains" />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {domains.length === 0 ? (
-          <p className="text-muted-foreground text-sm">
-            No custom domains configured for brand <span className="font-mono">{brandSlug}</span>.
-          </p>
+          <p className="text-muted-foreground text-sm">No custom domains configured.</p>
         ) : (
           <div className="rounded-md border">
             <table className="w-full text-sm">

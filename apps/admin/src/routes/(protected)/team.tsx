@@ -1,11 +1,11 @@
 import { createRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { invitationListQuery } from '@/lib/queries/team';
 import { roleMembersQuery, rolesQuery } from '@/lib/queries/roles';
-import { brandLocationsQuery } from '@/lib/queries/locations';
+import { tenantLocationsQuery } from '@/lib/queries/locations';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
 import { Badge } from '@/components/ui/badge';
@@ -13,26 +13,25 @@ import { TeamInviteButton } from '@/components/team/team-invite-button';
 import { MemberLocationRoleMatrix } from '@/components/team/member-location-role-matrix';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/team',
-  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
+  loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),
       queryClient.ensureQueryData(roleMembersQuery()),
       queryClient.ensureQueryData(rolesQuery()),
-      queryClient.ensureQueryData(brandLocationsQuery(brandSlug)),
+      queryClient.ensureQueryData(tenantLocationsQuery()),
     ]),
   component: TeamPage,
 });
 
 function TeamPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
-  const { brandSlug } = Route.useParams();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: invitationsResult } = useQuery(invitationListQuery());
   const { data: membersResult } = useQuery(roleMembersQuery());
   const { data: rolesResult } = useQuery(rolesQuery());
-  const { data: locationsResult } = useQuery(brandLocationsQuery(brandSlug));
+  const { data: locationsResult } = useQuery(tenantLocationsQuery());
 
   const me = meResult.data;
   if (me?.kind !== 'operator') return null;
@@ -91,9 +90,8 @@ function TeamPage() {
               </table>
             </div>
             <p className="text-muted-foreground text-xs">
-              Roles are assigned per location, not tenant-wide. A member&apos;s brand access is
-              derived from the brands of the locations they are scoped to — there is no separate
-              brand-scope setting.
+              Roles are assigned per location, not tenant-wide. A member&apos;s access is derived
+              from the locations they are scoped to — there is no separate tenant-scope setting.
             </p>
           </>
         )}

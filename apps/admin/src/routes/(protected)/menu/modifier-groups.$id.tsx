@@ -9,20 +9,20 @@ import { GroupEditorShell } from '@/components/menu/group-editor-shell';
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/modifier-groups/$id',
-  loader: ({ context: { queryClient }, params: { brandSlug, id } }) => {
+  loader: ({ context: { queryClient }, params: { id } }) => {
     if (id === 'new') return Promise.resolve();
-    return queryClient.ensureQueryData(modifierGroupQuery(brandSlug, id));
+    return queryClient.ensureQueryData(modifierGroupQuery(id));
   },
   component: ModifierGroupDetailPage,
 });
 
 function ModifierGroupDetailPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
-  const { brandSlug, id } = Route.useParams();
+  const { id } = Route.useParams();
   const isNew = id === 'new';
 
   const { data } = useQuery({
-    ...modifierGroupQuery(brandSlug, id),
+    ...modifierGroupQuery(id),
     enabled: !isNew,
   });
 
@@ -40,5 +40,5 @@ function ModifierGroupDetailPage() {
     );
   }
 
-  return <GroupEditorShell brandSlug={brandSlug} title={title} initialGroup={group} groupId={id} />;
+  return <GroupEditorShell title={title} initialGroup={group} groupId={id} />;
 }

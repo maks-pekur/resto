@@ -1,6 +1,6 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
-import { Route as brandSlugLayoutRoute } from './_layout';
+import { Route as protectedLayoutRoute } from './_layout';
 import { meQuery } from '@/lib/queries/identity';
 import { rolesQuery, roleQuery, roleMembersQuery } from '@/lib/queries/roles';
 import { PageHeading } from '@/components/page-heading';
@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/empty-state';
 import { RoleForm } from '@/components/roles/role-form';
 
 export const Route = createRoute({
-  getParentRoute: () => brandSlugLayoutRoute,
+  getParentRoute: () => protectedLayoutRoute,
   path: '/roles/$roleId',
   loader: ({ context: { queryClient }, params: { roleId } }) => {
     const loaders: Promise<unknown>[] = [
@@ -25,7 +25,7 @@ export const Route = createRoute({
 });
 
 function RoleDetailPage() {
-  const { brandSlug, roleId } = Route.useParams();
+  const { roleId } = Route.useParams();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: membersResult } = useQuery({
     ...roleMembersQuery(),
@@ -65,12 +65,7 @@ function RoleDetailPage() {
     <>
       <PageHeading title={pageTitle} />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <RoleForm
-          brandSlug={brandSlug}
-          isNew={isNew}
-          existingRole={existingRole}
-          memberCount={memberCount}
-        />
+        <RoleForm isNew={isNew} existingRole={existingRole} memberCount={memberCount} />
       </div>
     </>
   );

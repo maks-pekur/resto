@@ -28,17 +28,16 @@ export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
   path: '/items',
   validateSearch: searchSchema,
-  loader: ({ context: { queryClient }, params: { brandSlug } }) =>
+  loader: ({ context: { queryClient } }) =>
     Promise.all([
-      queryClient.ensureQueryData(itemsQuery(brandSlug, { limit: PAGE_SIZE, offset: 0 })),
-      queryClient.ensureQueryData(categoriesQuery(brandSlug)),
+      queryClient.ensureQueryData(itemsQuery({ limit: PAGE_SIZE, offset: 0 })),
+      queryClient.ensureQueryData(categoriesQuery()),
     ]),
   component: ItemsPage,
 });
 
 function ItemsPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.items' });
-  const { brandSlug } = Route.useParams();
   const search = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
@@ -48,7 +47,7 @@ function ItemsPage() {
   const page = search.page;
 
   const { data: itemsResult } = useSuspenseQuery(
-    itemsQuery(brandSlug, {
+    itemsQuery({
       status,
       categoryId,
       q: q || undefined,
@@ -56,7 +55,7 @@ function ItemsPage() {
       offset: (page - 1) * PAGE_SIZE,
     }),
   );
-  const { data: catResult } = useSuspenseQuery(categoriesQuery(brandSlug));
+  const { data: catResult } = useSuspenseQuery(categoriesQuery());
   const { locationId } = useEffectiveLocation();
   const stopListLocationId =
     locationId !== undefined && locationId !== 'all' ? locationId : undefined;
@@ -91,12 +90,7 @@ function ItemsPage() {
           <Button
             size="sm"
             onClick={() => {
-              /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-              void (navigate as any)({
-                to: '/dashboard/$brandSlug/menu/items/$id',
-                params: { brandSlug, id: 'new' },
-              });
-              /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
+              void navigate({ to: '/menu/items/$id', params: { id: 'new' } });
             }}
           >
             {t('addItem')}
@@ -124,7 +118,6 @@ function ItemsPage() {
           }}
         />
         <ItemsTable
-          brandSlug={brandSlug}
           items={items}
           totalCount={total}
           pagination={{ page, pageSize: PAGE_SIZE }}
