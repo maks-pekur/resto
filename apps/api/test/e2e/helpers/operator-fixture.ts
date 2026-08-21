@@ -41,7 +41,11 @@ export const provisionTenant = async (
     payload: {
       slug,
       displayName: `E2E Tenant ${slug}`,
-      defaultCurrency: 'USD',
+      // D-34/D-35: ProvisionTenantInputSchema requires `country`, not
+      // `defaultCurrency` — currency is derived from country, never
+      // collected directly. This helper predates that model; every e2e
+      // spec importing it shared the same 400 until this line changed.
+      country: 'GB',
       locale: 'en',
     },
   });
