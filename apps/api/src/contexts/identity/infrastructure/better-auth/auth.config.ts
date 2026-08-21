@@ -12,6 +12,7 @@ import type { IdentityEventEmitterPort } from '../../application/ports/identity-
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
+import { organizationSwitch } from './organization-switch.plugin';
 
 export type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
 export type SendResetPassword = NonNullable<
@@ -87,7 +88,6 @@ interface BuildOpts {
   minPasswordLength?: number;
   /** From env — see config/env.schema.ts. Default 128. */
   maxPasswordLength?: number;
-  onInitialBrandPin?: (userId: string, tenantId: string) => Promise<string | null>;
   onInitialLocationPin?: (userId: string, tenantId: string) => Promise<string | null>;
   /**
    * Invoked when an operator sets the active organization on their session
@@ -135,11 +135,11 @@ interface BuildOpts {
 // WeakMap prevents property pollution on BA internals and allows GC to drop
 // entries when the context is dropped. Replaces the prior `as { __resto* }`
 // cast pattern that mutated enumerable properties on an internal BA object.
-interface BrandPinDoneStash {
+interface LocationPinDoneStash {
   readonly done: true;
 }
 
-const brandPinDone = new WeakMap<object, BrandPinDoneStash>();
+const locationPinDone = new WeakMap<object, LocationPinDoneStash>();
 interface SignOutStash {
   readonly userId: string;
   readonly tenantId: string;
@@ -344,6 +344,7 @@ export const buildAuth = (opts: BuildOpts) =>
           },
         },
       }) as unknown as BetterAuthPlugin,
+      organizationSwitch(),
       twoFactor(),
       bearer(),
     ],
@@ -361,12 +362,6 @@ export const buildAuth = (opts: BuildOpts) =>
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling
       additionalFields: {
-        activeBrandId: {
-          type: 'string',
-          defaultValue: null,
-          input: false,
-          returned: true,
-        },
         activeLocationId: {
           type: 'string',
           defaultValue: null,
@@ -381,13 +376,11 @@ export const buildAuth = (opts: BuildOpts) =>
           after: async (session, ctx) => {
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
-            if ((session as { activeBrandId?: string | null }).activeBrandId) return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
             if (path !== '/api/auth/organization/set-active') return;
 
             const ctxContext = (ctx as { context?: object } | null)?.context;
-            if (ctxContext && brandPinDone.has(ctxContext)) return;
 
             const internalAdapter = (
               ctx as {
@@ -401,35 +394,24 @@ export const buildAuth = (opts: BuildOpts) =>
                 };
               } | null
             )?.context?.internalAdapter;
-            let pinnedBrandId: string | null = null;
-            if (internalAdapter?.updateSession && opts.onInitialBrandPin) {
-              if (ctxContext) brandPinDone.set(ctxContext, { done: true });
-              try {
-                const initialBrandId = await opts.onInitialBrandPin(
-                  session.userId,
-                  session.activeOrganizationId,
-                );
-                if (initialBrandId !== null) {
-                  pinnedBrandId = initialBrandId;
-                  await internalAdapter.updateSession(session.token, {
-                    activeBrandId: initialBrandId,
-                  });
-                }
-              } catch (err) {
-                new Logger('IdentityEventHook').error(
-                  { err, userId: session.userId, tenantId: session.activeOrganizationId },
-                  'Failed to set initial activeBrandId on org-switch',
-                );
-              }
-            }
 
-            // D-11: shares the brandPinDone per-ctx gate above — single-fire, only
-            // once a brand was freshly pinned this call (owner: brand-global null OK).
-            if (internalAdapter?.updateSession && opts.onInitialLocationPin && pinnedBrandId) {
+            // D-19/D-40/D-41: the initial-pin hook this replaced gated location-pin
+            // on a value produced by a sibling pin step that no longer exists (the
+            // merged entity's id doubles as that successor value). Single-fire per
+            // request context, and skipped once a location is already bound so a
+            // later, unrelated session update on this same path cannot clobber an
+            // explicit user pick.
+            if (
+              !(session as { activeLocationId?: string | null }).activeLocationId &&
+              !(ctxContext && locationPinDone.has(ctxContext)) &&
+              internalAdapter?.updateSession &&
+              opts.onInitialLocationPin
+            ) {
+              if (ctxContext) locationPinDone.set(ctxContext, { done: true });
               try {
                 const initialLocationId = await opts.onInitialLocationPin(
                   session.userId,
-                  pinnedBrandId,
+                  session.activeOrganizationId,
                 );
                 if (initialLocationId !== null) {
                   await internalAdapter.updateSession(session.token, {
@@ -438,7 +420,7 @@ export const buildAuth = (opts: BuildOpts) =>
                 }
               } catch (err) {
                 new Logger('IdentityEventHook').error(
-                  { err, userId: session.userId, brandId: pinnedBrandId },
+                  { err, userId: session.userId, tenantId: session.activeOrganizationId },
                   'Failed to set initial activeLocationId on org-switch',
                 );
               }
