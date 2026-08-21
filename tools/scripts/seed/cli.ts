@@ -25,6 +25,11 @@ Commands:
                      country: UA, GB, ES), 5 locations, 2 staff roles,
                      2 categories + 2 items per organization.
                      Dev only (NODE_ENV=development).
+                     [--payments-ready]  Makes the "pizza" organization able
+                     to take a real Stripe test-mode payment (stamps
+                     stripe_account_id/charges_enabled/payouts_enabled/
+                     onboarding_status). Refused outside development/test.
+                     Requires SEED_STRIPE_TEST_ACCOUNT_ID — see below.
   sync-preset-roles  Re-syncs PRESET_ROLES permission JSON onto existing
                      tenants' organization_role rows (a preset edit does
                      not otherwise reach an already-provisioned tenant).
@@ -44,6 +49,11 @@ Optional env vars:
 seed-demo additionally requires:
   NODE_ENV=development
   BETTER_AUTH_DATABASE_URL  Direct resto_auth connection (staff member rows).
+
+seed-demo --payments-ready additionally requires:
+  SEED_STRIPE_TEST_ACCOUNT_ID  Real Stripe TEST-mode connected account id
+                                (acct_...). The seed cannot fabricate one —
+                                see tools/scripts/seed/README.md.
 `;
 
 const main = async (): Promise<void> => {
