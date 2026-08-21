@@ -277,6 +277,9 @@ provision-brand.service.spec.ts` (already flagged above). `grep -l` confirms non
 use-effective-location.ts pick-location.tsx` — no matches), so the stale field is inert,
   not a live bug; left for plan 14 to drop alongside its own work on this file.
 
+  **RESOLVED (10.2 plan 14, Task 2, 2026-08-21):** `PinnableLocation.brandId` dropped from
+  `apps/admin/src/lib/queries/locations.ts` alongside the rest of the brand-dimension sweep.
+
 ## From plan 12
 
 - **`apps/api/test/e2e/helpers/operator-fixture.ts`'s `addMemberWithRole` still inserts
@@ -310,3 +313,59 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   prescribed (`organizationId` → `tenantId`). `brand-isolation`, `catalog-rbac` and
   `tenants-controller` still have their own, unrelated pre-existing breakage (see their own
   entries elsewhere in this file / plan 19's territory) and were not run or touched here.
+
+## From plan 14
+
+- **`apps/admin/src/lib/i18n/messages/{en,ru,es}.json` still carry `brand`-flavored keys**
+  (`brand`, `addBrand`, `noBrands`, `noBrandsDescription`, `brandDomainsTitle`,
+  `brandDomainsDescription`, `brandPayoutsTitle`, `brandPayoutsDescription`, `brandThemeTitle` —
+  all around line 499-517 in each file). `grep -l "lib/i18n/messages"
+.planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → zero results, and this plan's own
+  `files_modified` does not list these three files — unowned. Not renamed here: an i18n key
+  rename is only safe done atomically with every `t('...')` call site that reads it, and every
+  current reader lives under `apps/admin/src/routes/(protected)/$brandSlug/` and
+  `apps/admin/src/components/` — explicitly plan 15/16/17's territory this plan was told not to
+  touch. Renaming the JSON keys alone would silently break every existing call site's lookup
+  (empty-string render, not a compile error, since i18next keys are untyped strings) without
+  fixing anything. Whichever plan rewrites the settings/payouts/domains screens (UI-SPEC S4/S5
+  territory — plans 15-17) should rename these keys alongside their own call-site rewrite.
+
+- **`apps/admin/src/lib/hooks/use-effective-location.ts` retains one structural `brand` match**
+  it cannot clear: `import { Route as brandSlugLayoutRoute } from
+'@/routes/(protected)/$brandSlug/_layout'` plus the local alias's two use sites and two prose
+  comments. This plan's own Task 2 action text says "touch ONLY the brand dimension" and the
+  hook's actual query calls (`meLocationsQuery()`, `activeLocationIdQuery()`) already take zero
+  brand-flavored arguments — there was no query-key brand dimension to remove. The remaining
+  match is a hard dependency on the route file's own path (`$brandSlug/_layout.tsx`), which this
+  plan's own instructions name as explicitly plan 15's to delete/restructure, not this plan's.
+  `rg -in "brand" apps/admin/src/lib/` therefore does not return zero, contrary to the plan's own
+  literal `<verification>` text — the residual is entirely this one file, entirely this one
+  unavoidable cross-plan dependency. Whichever plan rewrites `$brandSlug/_layout.tsx` (plan 15)
+  should update this hook's import path and local alias in the same commit.
+
+- **Worklist for plans 15/16 — every remaining `brand`-flavored query key literal found outside
+  `apps/admin/src/lib/`** (components/routes still invalidate or key queries by the pre-sweep
+  brand-shaped key; the query functions themselves no longer accept a `brandSlug` argument after
+  this plan's Task 2, so every one of these call sites is now also a compile error, not just a
+  stale-cache risk):
+  `apps/admin/src/components/menu/category-form.tsx`,
+  `apps/admin/src/components/menu/categories-table.tsx`,
+  `apps/admin/src/components/menu/todays-86-reset-button.tsx`,
+  `apps/admin/src/components/menu/modifier-options-list.tsx`,
+  `apps/admin/src/components/menu/item-sizes-card.tsx`,
+  `apps/admin/src/components/menu/sticky-publish-bar.tsx`,
+  `apps/admin/src/components/menu/stop-list-table.tsx`,
+  `apps/admin/src/components/menu/item-modifier-groups-card.tsx`,
+  `apps/admin/src/components/menu/item-detail-form.tsx`,
+  `apps/admin/src/components/menu/modifier-group-form.tsx`,
+  `apps/admin/src/components/menu/items-table.tsx`,
+  `apps/admin/src/components/orders/orders-empty-state.tsx` (`'brand-payment-status'` key, also
+  imports the now-deleted `getBrandPaymentStatus` from `brand-payments-api.ts`),
+  `apps/admin/src/routes/index.tsx`,
+  `apps/admin/src/routes/(protected)/$brandSlug/brands.$slug.payouts.tsx` (same
+  `'brand-payment-status'` key, plus `getBrandPaymentStatus`/`startBrandEmbeddedSession`/
+  `startBrandHostedLink`/`startBrandOAuth`, all deleted by this plan's Task 3 —
+  the merged replacements are `getTenantPaymentStatus`/`startTenantEmbeddedSession`/
+  `startTenantHostedLink`/`startTenantOAuth` in `tenant-payments-api.ts`, taking zero
+  slug/id argument since the route is tenant-scoped via session, not a path param),
+  `apps/admin/src/routes/(protected)/$brandSlug/locations.tsx`.
