@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Currency, TenantSlug } from '@resto/domain';
+import { CountryCodeValue, TenantSlug } from '@resto/domain';
 import { ApiClient } from '../lib/api-client';
 import { log, logWarn } from '../lib/logger';
 import { parseFlags, requireFlag, type RuntimeOptions } from '../lib/options';
@@ -13,7 +13,7 @@ import { printCredentialsBlock } from '../lib/credentials-block';
 const Input = z.object({
   slug: TenantSlug,
   displayName: z.string().min(1).max(120),
-  defaultCurrency: Currency,
+  country: CountryCodeValue,
   locations: z.coerce.number().int().positive().default(1),
   ownerEmail: z.string().trim().toLowerCase().email().optional(),
   ownerName: z.string().min(1).max(120).optional(),
@@ -61,7 +61,7 @@ export const runProvisionTenant = async (
   const parsed = Input.parse({
     slug: requireFlag(flags, 'slug'),
     displayName: requireFlag(flags, 'name'),
-    defaultCurrency: flags.named.get('currency') ?? 'USD',
+    country: requireFlag(flags, 'country'),
     ...(flags.named.has('locations') ? { locations: flags.named.get('locations') } : {}),
     ...(flags.named.has('owner-email') ? { ownerEmail: flags.named.get('owner-email') } : {}),
     ...(flags.named.has('owner-name') ? { ownerName: flags.named.get('owner-name') } : {}),
@@ -85,8 +85,7 @@ export const runProvisionTenant = async (
   const tenant = await api.post<ProvisionTenantResponse>('/internal/v1/tenants', {
     slug: parsed.slug,
     displayName: parsed.displayName,
-    defaultCurrency: parsed.defaultCurrency,
-    locale: 'en',
+    country: parsed.country,
   });
 
   if (parsed.locations !== 1) {

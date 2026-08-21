@@ -23,11 +23,27 @@ provisioned slug is a no-op.
 pnpm resto:seed provision-tenant \
   --slug cafe-roma \
   --name "Cafe Roma" \
-  --currency USD
+  --country GB
 ```
 
-Creates the tenant row + the auto subdomain in the api. Logs the
-new tenant id as JSON to stdout.
+Creates the tenant row + the auto subdomain in the api. `--country` is
+required — one of `UA`, `GB`, `ES` — and the currency is derived from it
+(never accepted as an input, D-35). Logs the new tenant id as JSON to
+stdout.
+
+### `seed-demo`
+
+```bash
+NODE_ENV=development BETTER_AUTH_DATABASE_URL=... pnpm resto:seed seed-demo
+```
+
+Dev-only fixture (refuses outside `NODE_ENV=development`). Idempotently
+provisions 3 organizations — one per supported country (`pizza`/UA,
+`burger`/GB, `tapas`/ES) — each with its own locations and catalog, one
+owner (`owner@demo.local`) belonging to all three, and two staff accounts
+each scoped to a single organization. The first organization also gets a
+handful of demo orders across the order lifecycle. Credentials are printed
+to stdout at the end — not persisted anywhere.
 
 ### `seed-menu`
 
