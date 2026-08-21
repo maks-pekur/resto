@@ -7,6 +7,11 @@ import { log } from '../lib/logger';
 import type { RuntimeOptions } from '../lib/options';
 import { OperatorHttpClient, signInAsOperator } from '../lib/operator-http';
 import { createAppDb, seedDemoOrder, DEMO_ORDER_SPECS } from '../lib/demo-orders';
+import {
+  assertPaymentsReadyAllowed,
+  markTenantPaymentsReady,
+  requireStripeTestAccountId,
+} from '../lib/payments-ready';
 
 const DEMO_PASSWORD = 'DevPassword123!';
 const ADMIN_URL = 'http://localhost:4000';
@@ -49,6 +54,16 @@ interface OrgDef {
   readonly country: CountryCodeValue;
   readonly locations: readonly string[];
 }
+
+/**
+ * The one organization `--payments-ready` (10.2 plan 18 Task 3) makes able
+ * to accept a real test payment. Deliberately not all three — a demo where
+ * every restaurant is payment-ready hides the `payments.not_enabled` path,
+ * which is real behaviour worth being able to see. `pizza` already gets
+ * demo orders below (`index === 0`), so it is also the organization with
+ * something to actually check out.
+ */
+const PAYMENTS_READY_ORG_SLUG = 'pizza';
 
 // D-33/D-34/D-35: one entry per market so the fixture exercises all three
 // supported countries and their derived currencies, not a single happy path.
@@ -335,7 +350,7 @@ const seedDemoOrdersForOrg = async (
 };
 
 export const runSeedDemo = async (
-  _argv: readonly string[],
+  argv: readonly string[],
   options: RuntimeOptions,
 ): Promise<void> => {
   if (process.env.NODE_ENV !== 'development') {
@@ -345,14 +360,31 @@ export const runSeedDemo = async (
   }
   const authDatabaseUrl = requireEnv('BETTER_AUTH_DATABASE_URL');
 
+  // 10.2 plan 18 Task 3, Option A: gated behind an explicit flag, refused
+  // outside development/test even though the check above already narrows
+  // to development — this guard is the one that stays correct if
+  // markTenantPaymentsReady is ever called from a path with a looser
+  // outer guard (mirrors how assertProdGuardrails mirrors env.schema.ts).
+  const paymentsReadyRequested = argv.includes('--payments-ready');
+  if (paymentsReadyRequested) {
+    assertPaymentsReadyAllowed(process.env.NODE_ENV);
+  }
+
   if (options.dryRun) {
     log('seed-demo.plan', {
       owner: 'owner@demo.local',
       organizations: ORGANIZATIONS.map((o) => ({ slug: o.slug, country: o.country })),
       staff: STAFF.map((s) => s.email),
+      paymentsReady: paymentsReadyRequested ? PAYMENTS_READY_ORG_SLUG : null,
     });
     return;
   }
+
+  // Fail fast, before any provisioning call, if the flag is set but the
+  // real account id isn't available — never partially seed.
+  const stripeAccountId = paymentsReadyRequested
+    ? requireStripeTestAccountId(process.env)
+    : undefined;
 
   const api = new ApiClient({ apiUrl: options.apiUrl, internalToken: options.internalToken });
   const authDb = createAuthDb(authDatabaseUrl);
@@ -418,6 +450,25 @@ export const runSeedDemo = async (
       if (index === 0) {
         await seedDemoOrdersForOrg(op, options.apiUrl, tenant, org, locationsByName);
       }
+
+      if (paymentsReadyRequested && org.slug === PAYMENTS_READY_ORG_SLUG) {
+        if (stripeAccountId === undefined) {
+          throw new Error(
+            'Unreachable: --payments-ready requested but no account id was resolved before provisioning started.',
+          );
+        }
+        const appDb = createAppDb(requireEnv('DATABASE_URL'));
+        try {
+          await markTenantPaymentsReady(appDb, tenant.id, stripeAccountId);
+          log('seed-demo.payments_ready', {
+            organization: org.slug,
+            tenantId: tenant.id,
+            stripeAccountId,
+          });
+        } finally {
+          await appDb.end({ timeout: 5 });
+        }
+      }
     }
   } finally {
     await authDb.end({ timeout: 5 });
@@ -445,4 +496,11 @@ export const runSeedDemo = async (
       note: 'scoped to 1 location — auto-pinned, no interstitial',
     },
   ]);
+
+  if (paymentsReadyRequested) {
+    log('seed-demo.payments_ready.summary', {
+      organization: PAYMENTS_READY_ORG_SLUG,
+      note: 'guest checkout for this organization now uses a real Stripe test-mode PaymentIntent — the other two organizations are left without payments (payments.not_enabled by design)',
+    });
+  }
 };

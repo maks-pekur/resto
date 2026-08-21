@@ -45,6 +45,43 @@ each scoped to a single organization. The first organization also gets a
 handful of demo orders across the order lifecycle. Credentials are printed
 to stdout at the end — not persisted anywhere.
 
+#### `--payments-ready`
+
+```bash
+NODE_ENV=development SEED_STRIPE_TEST_ACCOUNT_ID=acct_xxx \
+  pnpm resto:seed seed-demo --payments-ready
+```
+
+Makes the `pizza` organization (only — `burger` and `tapas` are
+deliberately left without payments, so `payments.not_enabled` stays
+visible) able to take a real Stripe test-mode payment. Refused outside
+`NODE_ENV ∈ {development, test}` (allowlist, matching the
+`assertProdGuardrails`/`db:reset` precedent).
+
+The seed cannot fabricate a working connected account: the payments module
+always calls the real Stripe SDK, and Express accounts can only accept
+Stripe's Terms of Service through Stripe's own hosted onboarding form —
+that one step cannot be scripted. `SEED_STRIPE_TEST_ACCOUNT_ID` must be a
+real Stripe **test-mode** connected account id (`acct_...`) that already
+exists under your Stripe account. Get one once:
+
+1. Run the seed without `--payments-ready` and sign in as
+   `owner@demo.local` at the admin URL printed in the credentials block.
+2. Start Stripe Connect onboarding for `pizza` from the admin UI (or call
+   `POST /v1/tenancy/onboarding/account-link` directly) and complete the
+   Stripe-hosted form once, in **test mode** — Stripe's test mode has a
+   one-click "skip and use test data" shortcut, no real business details
+   needed.
+3. Read the resulting id back: `SELECT stripe_account_id FROM tenants
+WHERE slug = 'pizza';`, or from the Stripe test-mode dashboard under
+   Connect → Accounts.
+4. Re-run the seed with `--payments-ready` and that id — every future
+   `--payments-ready` run reuses the same id, so this manual step is
+   one-time per Stripe test account, not per seed run.
+
+If `SEED_STRIPE_TEST_ACCOUNT_ID` is unset, the command fails immediately
+with instructions matching the above, before any tenant is provisioned.
+
 ### `seed-menu`
 
 ```bash
