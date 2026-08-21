@@ -21,13 +21,20 @@ import {
   TenantNotSuspendedError,
   TenantOffboardingCoolOffExpiredError,
   TenantOffboardingNotAllowedError,
+  TenantSetupNotPendingError,
   TenantSuspensionNotAllowedError,
 } from './errors';
 
 const COOL_OFF_DAYS = 30;
 const COOL_OFF_MS = COOL_OFF_DAYS * 24 * 60 * 60 * 1000;
 
-export type TenantStatus = 'active' | 'suspended' | 'archived' | 'pending_offboarding' | 'erased';
+export type TenantStatus =
+  | 'pending_setup'
+  | 'active'
+  | 'suspended'
+  | 'archived'
+  | 'pending_offboarding'
+  | 'erased';
 
 /**
  * Statuses whose public surface (QR menu, marketing site) stays live.
@@ -90,7 +97,21 @@ export interface ProvisionInput {
   readonly locale?: string;
   /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
   readonly primaryDomainHostname: string;
+  /**
+   * D-25/D-30 (10.2 plan 13): defaults to `'active'`. Signup provisions
+   * `'pending_setup'` so an owner who has not yet named the restaurant
+   * cannot be mistaken for one who has; onboarding's `finalizeSetup`
+   * is the only path that flips it to `'active'`.
+   */
+  readonly status?: TenantStatus;
   readonly now?: Date;
+}
+
+export interface FinalizeSetupInput {
+  readonly displayName: string;
+  readonly slug: TenantSlug;
+  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  readonly primaryDomainHostname: string;
 }
 
 /**
@@ -127,7 +148,7 @@ export class Tenant {
       id,
       slug: input.slug,
       displayName: input.displayName,
-      status: 'active',
+      status: input.status ?? 'active',
       locale: input.locale ?? defaultLocaleForCountry(input.country),
       country: input.country,
       defaultCurrency,
@@ -162,6 +183,27 @@ export class Tenant {
       occurredAt: now,
     });
     return tenant;
+  }
+
+  /**
+   * D-30/D-31 (10.2 plan 13): the only path off `'pending_setup'`. Guards
+   * against a race between two concurrent onboarding submits on the same
+   * tenant — the identity layer performs the same check before calling
+   * in, but the aggregate re-asserts it so a direct caller can never
+   * silently rename an already-active restaurant through this path.
+   */
+  finalizeSetup(input: FinalizeSetupInput, now: Date = new Date()): void {
+    if (this.snapshot.status !== 'pending_setup') {
+      throw new TenantSetupNotPendingError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      displayName: input.displayName,
+      slug: input.slug,
+      status: 'active',
+      primaryDomain: { ...this.snapshot.primaryDomain, domain: input.primaryDomainHostname },
+      updatedAt: now,
+    };
   }
 
   archive(now: Date = new Date()): void {

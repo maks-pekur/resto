@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CurrencyValue } from '@resto/domain';
+import { CountryCodeValue } from '@resto/domain';
 
 const RoleNameSchema = z
   .string()
@@ -34,15 +34,21 @@ export type AssignRoleInput = z.infer<typeof AssignRoleInputSchema>;
 export class AssignRoleInputDto extends createZodDto(AssignRoleInputSchema) {}
 
 export const SignUpInputSchema = z.object({
+  // D-27: the PERSON's name — goes to the Better Auth user, never to the
+  // organization. The organization's real name is collected at onboarding.
+  name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(12).max(128),
-  displayName: z.string().min(2).max(120),
-  defaultCurrency: CurrencyValue,
-  locale: z
-    .string()
-    .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
-    .default('en'),
+  // D-32/D-34: collected here, applied to the organization at onboarding;
+  // currency and locale are ALWAYS derived from it, never separate inputs.
+  country: CountryCodeValue,
 });
 export type SignUpInput = z.infer<typeof SignUpInputSchema>;
 
 export class SignUpInputDto extends createZodDto(SignUpInputSchema) {}
+
+export const FinalizeTenantSetupInputSchema = z.object({
+  displayName: z.string().trim().min(1).max(120),
+});
+export type FinalizeTenantSetupInput = z.infer<typeof FinalizeTenantSetupInputSchema>;
+export class FinalizeTenantSetupInputDto extends createZodDto(FinalizeTenantSetupInputSchema) {}

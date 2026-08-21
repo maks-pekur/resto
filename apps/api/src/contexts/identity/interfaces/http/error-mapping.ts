@@ -22,7 +22,11 @@ import {
   SelfRoleAssignmentError,
   TenantMismatchError,
 } from '../../domain/errors';
-import { SignupBetterAuthFailureError, SlugUnavailableError } from '../../domain/signup-errors';
+import {
+  SignupBetterAuthFailureError,
+  SlugUnavailableError,
+  TenantSetupNotPendingError,
+} from '../../domain/signup-errors';
 
 const SIGNUP_FAILURE_CODE: Record<SignupBetterAuthFailureError['stage'], string> = {
   signUpEmail: 'signup.signup_failed',
@@ -57,6 +61,9 @@ export const mapIdentityError = (err: unknown): unknown => {
       code: SIGNUP_FAILURE_CODE[err.stage],
       message: 'Sign-up could not be completed; please try again or sign in.',
     });
+  }
+  if (err instanceof TenantSetupNotPendingError) {
+    return new ConflictException({ code: 'tenant.setup_not_pending', message: err.message });
   }
 
   if (err instanceof TenantMismatchError) {

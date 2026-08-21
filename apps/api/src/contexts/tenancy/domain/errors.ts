@@ -40,6 +40,13 @@ export class TenantSlugArchivedError extends Error {
   }
 }
 
+export class TenantSetupNotPendingError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" is not pending setup; onboarding cannot be finalized again.`);
+    this.name = 'TenantSetupNotPendingError';
+  }
+}
+
 export class TenantOffboardingNotAllowedError extends Error {
   constructor(
     public readonly tenantId: string,

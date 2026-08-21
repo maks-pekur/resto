@@ -30,6 +30,7 @@ import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
 
 const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
+  'pending_setup',
   'active',
   'suspended',
   'archived',
@@ -224,7 +225,23 @@ export class TenantDrizzleRepository implements TenantRepository {
               updatedAt: domain.createdAt,
               archivedAt: null,
             })
-            .onConflictDoNothing({ target: schema.tenantDomains.id });
+            // WHY: onboarding's `finalizeSetup` (10.2 plan 13) rewrites the
+            // primary domain's hostname in place, keeping the same row id —
+            // `onConflictDoNothing` would silently skip that update and
+            // leave the stale `<random>.menu.resto.app` hostname live.
+            // Updating the same four mutable fields on conflict is a no-op
+            // for every OTHER caller of `save`, which always re-supplies the
+            // snapshot's current values.
+            .onConflictDoUpdate({
+              target: schema.tenantDomains.id,
+              set: {
+                domain: domain.domain,
+                kind: domain.kind,
+                isPrimary: domain.isPrimary,
+                verifiedAt: domain.verifiedAt,
+                updatedAt: new Date(),
+              },
+            });
         }
 
         for (const event of events) {

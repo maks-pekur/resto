@@ -29,6 +29,7 @@ import { MeController } from './interfaces/http/me.controller';
 import { InternalBootstrapController } from './interfaces/http/internal-bootstrap.controller';
 import { SignUpController } from './interfaces/http/signup.controller';
 import { SignUpService } from './application/signup.service';
+import { FinalizeTenantSetupService } from './application/finalize-tenant-setup.service';
 import { ListMyTenantsService } from './application/list-my-tenants.service';
 import { CheckTenantSlugAvailabilityService } from './application/check-tenant-slug-availability.service';
 import { SetActiveLocationService } from './application/set-active-location.service';
@@ -74,6 +75,7 @@ import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.
     ListMemberLocationRolesService,
     ListMembersService,
     SignUpService,
+    FinalizeTenantSetupService,
     ListMyTenantsService,
     CheckTenantSlugAvailabilityService,
     SetActiveLocationService,
