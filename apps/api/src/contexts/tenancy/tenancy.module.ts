@@ -5,6 +5,7 @@ import type { Env } from '../../config/env.schema';
 import { IdentityCoreModule } from '../identity/identity-core.module';
 import { SeedPresetRolesService } from '../identity/application/seed-preset-roles.service';
 import { ProvisionTenantService } from './application/provision-tenant.service';
+import { FinalizeTenantOnboardingService } from './application/finalize-tenant-onboarding.service';
 import { ArchiveTenantService } from './application/archive-tenant.service';
 import { OffboardTenantService } from './application/offboard-tenant.service';
 import { SuspendTenantService } from './application/suspend-tenant.service';
@@ -51,6 +52,7 @@ import {
       },
     },
     ProvisionTenantService,
+    FinalizeTenantOnboardingService,
     ArchiveTenantService,
     OffboardTenantService,
     SuspendTenantService,
@@ -70,6 +72,7 @@ import {
     TenantQueriesService,
     OffboardTenantService,
     ProvisionTenantService,
+    FinalizeTenantOnboardingService,
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,

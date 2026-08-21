@@ -21,6 +21,7 @@ import {
   TenantNotSuspendedError,
   TenantOffboardingCoolOffExpiredError,
   TenantOffboardingNotAllowedError,
+  TenantSetupNotPendingError,
   TenantSuspensionNotAllowedError,
 } from './errors';
 
@@ -106,6 +107,13 @@ export interface ProvisionInput {
   readonly now?: Date;
 }
 
+export interface FinalizeSetupInput {
+  readonly displayName: string;
+  readonly slug: TenantSlug;
+  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  readonly primaryDomainHostname: string;
+}
+
 /**
  * Aggregate root for the tenancy bounded context. Owns lifecycle
  * (provision / archive) plus invariants over the tenant's domain
@@ -175,6 +183,27 @@ export class Tenant {
       occurredAt: now,
     });
     return tenant;
+  }
+
+  /**
+   * D-30/D-31 (10.2 plan 13): the only path off `'pending_setup'`. Guards
+   * against a race between two concurrent onboarding submits on the same
+   * tenant — the identity layer performs the same check before calling
+   * in, but the aggregate re-asserts it so a direct caller can never
+   * silently rename an already-active restaurant through this path.
+   */
+  finalizeSetup(input: FinalizeSetupInput, now: Date = new Date()): void {
+    if (this.snapshot.status !== 'pending_setup') {
+      throw new TenantSetupNotPendingError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      displayName: input.displayName,
+      slug: input.slug,
+      status: 'active',
+      primaryDomain: { ...this.snapshot.primaryDomain, domain: input.primaryDomainHostname },
+      updatedAt: now,
+    };
   }
 
   archive(now: Date = new Date()): void {

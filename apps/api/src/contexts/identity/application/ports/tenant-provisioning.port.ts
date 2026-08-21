@@ -24,14 +24,24 @@ export interface ProvisionIdentityTenantInput {
   readonly status?: 'pending_setup';
 }
 
+export interface FinalizeIdentityTenantSetupInput {
+  readonly tenantId: TenantId;
+  readonly displayName: string;
+  readonly slug: TenantSlug;
+}
+
 /**
  * Tenant write port consumed by the identity context. The adapter calls
- * tenancy's `ProvisionTenantService` and translates the returned
- * `TenantSnapshot` into the `IdentityTenantView`.
+ * tenancy's `ProvisionTenantService` / `FinalizeTenantOnboardingService`
+ * and translates their returned `TenantSnapshot` into `IdentityTenantView`.
  *
  * Reads (`findBySlug`) are handled by the pre-existing `TenantLookupPort`
- * which already exposes a slug-lookup with the fields identity needs.
+ * which already exposes a slug-lookup with the fields identity needs;
+ * `findById` lives here because it needs `status`, which `TenantLookupPort`
+ * deliberately omits (`TenantSummary` predates D-25's pending_setup status).
  */
 export interface TenantProvisioningPort {
   provision(input: ProvisionIdentityTenantInput): Promise<IdentityTenantView>;
+  findById(id: string): Promise<IdentityTenantView | null>;
+  finalizeSetup(input: FinalizeIdentityTenantSetupInput): Promise<IdentityTenantView>;
 }
