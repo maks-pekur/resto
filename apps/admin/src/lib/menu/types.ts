@@ -1,11 +1,5 @@
 export type Status = 'draft' | 'modified' | 'published' | 'paused' | 'archived';
 
-export type SaveState =
-  | { readonly kind: 'idle' }
-  | { readonly kind: 'saving' }
-  | { readonly kind: 'saved'; readonly at: number }
-  | { readonly kind: 'failed'; readonly retry: () => void };
-
 export type DraftDiffEntityType = 'item' | 'category' | 'modifier-group';
 
 export interface DraftDiffEntry {
