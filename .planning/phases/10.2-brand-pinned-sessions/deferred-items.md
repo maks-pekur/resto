@@ -276,3 +276,29 @@ provision-brand.service.spec.ts` (already flagged above). `grep -l` confirms non
   `.brandId` off a `PinnableLocation` (`grep -n "brandId" app-sidebar.tsx
 use-effective-location.ts pick-location.tsx` — no matches), so the stale field is inert,
   not a live bug; left for plan 14 to drop alongside its own work on this file.
+
+## From plan 12
+
+- **`apps/api/test/e2e/helpers/operator-fixture.ts`'s `addMemberWithRole` still inserts
+  `schema.member` rows with `organizationId: input.tenantId`.** `member`'s Drizzle property is
+  `tenantId` (D-41, `packages/db/src/schema/auth.ts:91`) — `organizationId` does not exist on
+  the insert type, so this line is one of the pre-existing `apps/api/test/` compile errors
+  (`operator-fixture.ts(182,41): error TS2769`, confirmed via `tsc` before this plan touched
+  anything) and, worse, would throw a NOT NULL violation on `tenant_id` at runtime if ever
+  called — `member.tenantId` would be `undefined`, not merely mistyped.
+
+  `grep -l "operator-fixture" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → zero
+  results, unowned by any plan. This plan's own Task 3 needed the file's `provisionTenant`
+  helper (which had an **adjacent but distinct** bug — sent `defaultCurrency` to an endpoint
+  that now requires `country`, D-34/D-35 — fixed here, see 10.2-12-SUMMARY.md) and fixed only
+  that one, mechanical, single-line rename, verified by the resulting e2e spec running green.
+  `addMemberWithRole` was NOT touched: Task 3's own tests never call it (case 1–4 all seed
+  memberships via a local `addMembership` helper written directly in the new spec, using the
+  correct `tenantId` field), so fixing it was not required to complete this plan's own task,
+  and touching a second, unrelated bug in an unowned file stretches past "the minimal fix this
+  task needs." 4 of the 38 e2e specs that import `operator-fixture` call `addMemberWithRole`
+  (`grep -l "addMemberWithRole" apps/api/test/e2e/*.spec.ts`: `brand-isolation`,
+  `catalog-rbac`, `identity-invitation`, `tenants-controller`) and will hit this at runtime the
+  first time any of them actually execute against a live/testcontainer database. Whichever plan
+  next runs these specs for real (plan 19's green-gate sweep is the most likely owner) should
+  rename `organizationId` → `tenantId` on that one `.values({...})` call.
