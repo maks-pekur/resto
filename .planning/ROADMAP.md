@@ -843,7 +843,7 @@ _Original question, kept for the record:_ brand currently comes from the URL seg
 
 **Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
 
-**Plans:** 13/22 plans executed
+**Plans:** 14/22 plans executed
 
 Plans:
 **Wave 1**
@@ -881,7 +881,7 @@ Plans:
 
 **Wave 8**
 
-- [ ] 10.2-13-PLAN.md — Signup (name/email/password/country), onboarding finalize, closing public Better Auth signup
+- [x] 10.2-13-PLAN.md — Signup (name/email/password/country), onboarding finalize, closing public Better Auth signup
 
 **Wave 9**
 
