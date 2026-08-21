@@ -185,7 +185,7 @@ export const addMemberWithRole = async (
   const authDb = app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
   await authDb.db.insert(schema.member).values({
     id: randomUUID(),
-    organizationId: input.tenantId,
+    tenantId: input.tenantId,
     userId: user.userId,
     role: input.role,
     createdAt: new Date(),

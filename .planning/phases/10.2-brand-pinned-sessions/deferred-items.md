@@ -302,3 +302,11 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   first time any of them actually execute against a live/testcontainer database. Whichever plan
   next runs these specs for real (plan 19's green-gate sweep is the most likely owner) should
   rename `organizationId` → `tenantId` on that one `.values({...})` call.
+
+  **RESOLVED (10.2 plan 13, Task 3, 2026-08-21):** `identity-invitation.e2e.spec.ts`'s own
+  carve-out cases call `addMemberWithRole` indirectly via the shared fixture module load, and
+  the plan's own `<verify>` step runs this exact spec — so the bug now blocks Task 3 directly,
+  not just a hypothetical future run. Fixed with the one-line rename this note already
+  prescribed (`organizationId` → `tenantId`). `brand-isolation`, `catalog-rbac` and
+  `tenants-controller` still have their own, unrelated pre-existing breakage (see their own
+  entries elsewhere in this file / plan 19's territory) and were not run or touched here.
