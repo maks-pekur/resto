@@ -310,3 +310,45 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   prescribed (`organizationId` → `tenantId`). `brand-isolation`, `catalog-rbac` and
   `tenants-controller` still have their own, unrelated pre-existing breakage (see their own
   entries elsewhere in this file / plan 19's territory) and were not run or touched here.
+
+## From plan 18
+
+- **`tools/scripts/seed/commands/sync-preset-roles.ts` still queries `organization_role` /
+  `organization_id` — both renamed by migration 0079 (`tenant_role` / `tenant_id`, D-41).**
+  `grep -l "tools/scripts/seed/commands/sync-preset-roles\.ts" .planning/phases/10.2-brand-pinned-sessions/*-PLAN.md`
+  returns zero — unowned by any plan in this phase (a _different_ file,
+  `apps/api/src/contexts/identity/application/sync-preset-roles.service.ts`, was fixed by plan
+  22 — homonym, not this CLI script). Every query in this file (`syncOrganization`'s
+  `SELECT`/`UPDATE`/`INSERT ... FROM/INTO organization_role WHERE organization_id = ...`) will
+  fail with "relation/column does not exist" the moment it runs against the live schema. Not
+  fixed here — outside this plan's `files_modified`, not exercised by Task 1's or Task 2's
+  `<verify>` commands (neither calls `sync-preset-roles`). This is the "log a seventh" file the
+  plan's verification lessons anticipated.
+
+- **`packages/db/test/integration/erase-includes-brands.spec.ts` does not exist — plan 03
+  deleted it outright (`git show e5e1e3ed --stat`, 105 deletions / 0 additions), not merely
+  left it stale.** Plan 19's own Task 2 read_first and action text ("rewrite, do not delete")
+  assume this file is still present to rewrite. It is gone. Plan 19 will need to _create_
+  `packages/db/test/integration/erase-tenant.spec.ts` (or similar) from scratch rather than
+  edit an existing file — flagging so that executor isn't surprised mid-task. The erasure
+  mechanism this new spec needs to assert against is documented in this plan's own
+  `10.2-18-SUMMARY.md` and `packages/db/migrations/0080_tenancy_erase_tenant_pii.sql`.
+
+- **`pnpm resto:erase-tenant --help` (this plan's own Task 2 `<verify>` command) throws before
+  reaching any of this plan's code**, unrelated to PII-column coverage: `TypeError: Cannot read
+properties of null (reading 'getInstance')` at
+  `apps/api/src/contexts/identity/identity-http.module.ts:107`. `IdentityHttpModule.onModuleInit`
+  unconditionally calls `this.httpHost.httpAdapter.getInstance()` to register Better Auth's
+  Fastify handler; `tools/scripts/erase-tenant/cli.ts` boots the app via
+  `NestFactory.createApplicationContext(AppModule)` (no HTTP adapter, by design — it's a
+  one-shot script, not a server), so `httpHost.httpAdapter` is `null`. Traced via `git log
+--oneline -- apps/api/src/contexts/identity/identity-http.module.ts`: this `onModuleInit`
+  pattern dates to `b5636acd` (`RES-106`, pre-dates phase 10.2 entirely) — a long-standing,
+  unrelated bootstrap-context bug, not something the brand→tenant merge introduced or something
+  Task 2's PII-column fix could plausibly cause. `grep -l "identity-http.module.ts"
+.planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → plans 08 and 13 (both merged,
+  neither touched `onModuleInit`). Not fixed here — out of this plan's scope per the
+  scope-boundary rule (pre-existing, unrelated to erasure/PII work, and risky to patch casually
+  in a Better-Auth-wiring file without dedicated review). Verified the actual PII-column fix
+  directly against the SQL function instead (`10.2-18-SUMMARY.md` has the live probe) since the
+  literal CLI smoke-test cannot run until this separate bug is fixed.

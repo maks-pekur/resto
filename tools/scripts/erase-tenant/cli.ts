@@ -48,6 +48,10 @@ const main = async (): Promise<void> => {
       console.log('Confirmation did not match — aborting.');
       process.exit(4);
     }
+    // PII column coverage (legal_name, legal_form, tax_id, stripe_account_id
+    // on `tenants`, D-04) is anonymized inside the tenancy_erase_tenant() SQL
+    // function (packages/db/migrations/0080_tenancy_erase_tenant_pii.sql),
+    // not enumerated here — this CLI only drives OffboardTenantService.
     const result = await service.executeErasure({ tenantId: tenant.id });
     console.log(
       `Erased: tenant id ${result.id}, status ${result.status}, executedAt ${result.offboardingExecutedAt?.toISOString() ?? '(none)'}`,
