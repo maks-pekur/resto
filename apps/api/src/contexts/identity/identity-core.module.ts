@@ -227,9 +227,18 @@ export const buildAuthFromEnv = (
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
   // Admin (and other browser callers) hit BA from a different origin
   // than the api's `baseURL`; BA enforces an Origin allowlist on
-  // mutating requests. Add `ADMIN_WEB_URL` when configured.
+  // mutating requests. ADMIN_WEB_URL is the apex (pre-organization
+  // sign-in/signup); ADMIN_WEB_ORIGIN_WILDCARD (D-21) is the
+  // per-organization SPA host — both are needed, not either/or.
+  // BA's own static-array `matchesOriginPattern` does the matching (its
+  // `*` may span dots within the matched segment, looser than this repo's
+  // `buildOriginMatcher`, which forbids that via `[^./:]+`) — safe here
+  // only because tenant slugs cannot contain dots (`TenantSlugValue`).
+  // trustedOrigins stays a plain array, never a function, so D-39 is not
+  // reintroducing the matcher BA already provides.
   const trustedOrigins: string[] = [];
   if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
+  if (env.ADMIN_WEB_ORIGIN_WILDCARD) trustedOrigins.push(env.ADMIN_WEB_ORIGIN_WILDCARD);
 
   const { sendInvitationEmail, sendResetPassword, sendVerificationEmail } = buildBaCallbacks(
     env,
