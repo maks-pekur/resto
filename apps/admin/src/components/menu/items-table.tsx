@@ -34,7 +34,6 @@ import type { Status } from '@/lib/menu/types';
 const PAGE_SIZE_DEFAULT = 50;
 
 export interface ItemsTableProps {
-  readonly brandSlug: string;
   readonly items: readonly ItemListItemApi[];
   readonly totalCount: number;
   readonly pagination: {
@@ -64,7 +63,6 @@ const buildCategoryPath = (item: ItemListItemApi): string => {
 };
 
 export function ItemsTable({
-  brandSlug,
   items,
   totalCount,
   pagination,
@@ -109,7 +107,7 @@ export function ItemsTable({
 
   const toggleMutation = useMutation({
     mutationFn: ({ itemId, next }: { itemId: string; next: 'paused' | 'published' }) =>
-      toggleStopList(brandSlug, itemId, next, stopListLocationId ?? ''),
+      toggleStopList(itemId, next, stopListLocationId ?? ''),
     onSettled: (_data, _err, { itemId }) => {
       setPendingIds((prev) => {
         const copy = new Set(prev);
@@ -122,7 +120,7 @@ export function ItemsTable({
         showSuccess(next === 'paused' ? t('addedToStopList') : t('removedFromStopList'), {
           duration: 1500,
         });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
       } else {
         setOptimistic((prev) => ({ ...prev, [itemId]: undefined }));
         showError(null, t('stopListFailed'));
@@ -135,10 +133,10 @@ export function ItemsTable({
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => archiveItem(brandSlug, id),
+    mutationFn: (id: string) => archiveItem(id),
     onSuccess: (res) => {
       if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'items', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
       } else {
         showError(null, t('archiveFailed'));
       }
@@ -180,12 +178,10 @@ export function ItemsTable({
         action={
           <Button
             onClick={() => {
-              /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-              void (navigate as any)({
-                to: '/dashboard/$brandSlug/menu/items/$id',
-                params: { brandSlug, id: 'new' },
+              void navigate({
+                to: '/menu/items/$id',
+                params: { id: 'new' },
               });
-              /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
             }}
           >
             {t('addItem')}
@@ -218,12 +214,10 @@ export function ItemsTable({
             const switchLabel = isOnStopList ? t('stopSwitchOff') : t('stopSwitchOn');
 
             const openItem = (): void => {
-              /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-              void (navigate as any)({
-                to: '/dashboard/$brandSlug/menu/items/$id',
-                params: { brandSlug, id: item.id },
+              void navigate({
+                to: '/menu/items/$id',
+                params: { id: item.id },
               });
-              /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
             };
             const stopPropagation = (e: React.SyntheticEvent): void => {
               e.stopPropagation();

@@ -19,7 +19,6 @@ import { toggleStopList } from '@/lib/queries/catalog';
 import type { StopListItemApi } from '@/lib/queries/catalog';
 
 export interface StopListTableProps {
-  readonly brandSlug: string;
   readonly items: readonly StopListItemApi[];
   readonly locationId: string;
 }
@@ -32,18 +31,14 @@ const buildCategoryPath = (item: StopListItemApi): string => {
   return parent.length > 0 ? `${parent} → ${child}` : child;
 };
 
-export function StopListTable({
-  brandSlug,
-  items,
-  locationId,
-}: StopListTableProps): React.ReactElement {
+export function StopListTable({ items, locationId }: StopListTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const queryClient = useQueryClient();
   const [removedIds, setRemovedIds] = React.useState<ReadonlySet<string>>(new Set());
 
   const toggleMutation = useMutation({
-    mutationFn: (itemId: string) => toggleStopList(brandSlug, itemId, 'published', locationId),
+    mutationFn: (itemId: string) => toggleStopList(itemId, 'published', locationId),
     onSuccess: (res, itemId) => {
       if (res.ok) {
         setRemovedIds((prev) => {
@@ -52,7 +47,7 @@ export function StopListTable({
           return copy;
         });
         showSuccess(tItems('removedFromStopList'), { duration: 1500 });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
       } else {
         showError(null, tItems('stopListFailed'));
       }

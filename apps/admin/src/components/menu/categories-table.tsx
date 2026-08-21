@@ -54,7 +54,6 @@ const INDENT_WIDTH_PX = 32;
 const HOLD_TO_NEST_MS = 600;
 
 export interface CategoriesTableProps {
-  readonly brandSlug: string;
   readonly categories: readonly CategoryListItemApi[];
 }
 
@@ -73,7 +72,6 @@ const compareSiblings = (a: CategoryListItemApi, b: CategoryListItemApi): number
   a.sortOrder - b.sortOrder || a.id.localeCompare(b.id);
 
 interface SortableCategoryRowProps {
-  readonly brandSlug: string;
   readonly category: CategoryListItemApi;
   readonly isChild: boolean;
   readonly parentName: string;
@@ -234,10 +232,7 @@ const isNestEligible = (
   return true;
 };
 
-export function CategoriesTable({
-  brandSlug,
-  categories,
-}: CategoriesTableProps): React.ReactElement {
+export function CategoriesTable({ categories }: CategoriesTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
@@ -256,17 +251,17 @@ export function CategoriesTable({
   }, [categories]);
 
   const reorderMutation = useMutation({
-    mutationFn: (moves: CategoryMoveInput[]) => reorderCategories(brandSlug, moves),
+    mutationFn: (moves: CategoryMoveInput[]) => reorderCategories(moves),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories'] });
     },
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => archiveCategory(brandSlug, id),
+    mutationFn: (id: string) => archiveCategory(id),
     onSuccess: (res) => {
       if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories'] });
       } else {
         showError(null, t('archiveFailed'));
       }
@@ -433,7 +428,6 @@ export function CategoriesTable({
                 {rows.map(({ category, isChild }) => (
                   <SortableCategoryRow
                     key={category.id}
-                    brandSlug={brandSlug}
                     category={category}
                     isChild={isChild}
                     parentName={
@@ -475,7 +469,6 @@ export function CategoriesTable({
           <div className="px-4 pb-4">
             {editing ? (
               <CategoryForm
-                brandSlug={brandSlug}
                 mode="edit"
                 category={editing}
                 allCategories={categories}

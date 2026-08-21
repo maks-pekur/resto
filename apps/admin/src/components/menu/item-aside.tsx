@@ -14,7 +14,6 @@ const STATUS_VARIANT: Record<Status, 'default' | 'secondary' | 'outline' | 'dest
 };
 
 export interface ItemAsideProps {
-  readonly brandSlug: string;
   readonly itemId: string;
   readonly currentPhotoS3Key: string | null;
   readonly currentPhotoUrl: string | null;
@@ -24,7 +23,6 @@ export interface ItemAsideProps {
 }
 
 export function ItemAside({
-  brandSlug,
   itemId,
   currentPhotoS3Key,
   currentPhotoUrl,
@@ -43,7 +41,6 @@ export function ItemAside({
         </CardHeader>
         <CardContent>
           <PhotoUpload
-            brandSlug={brandSlug}
             itemId={itemId}
             currentS3Key={currentPhotoS3Key}
             currentPhotoUrl={currentPhotoUrl}

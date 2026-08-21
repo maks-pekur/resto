@@ -36,7 +36,6 @@ export interface AvailableGroup {
 }
 
 export interface ItemModifierGroupsCardProps {
-  readonly brandSlug: string;
   readonly itemId: string;
   readonly initialModifierGroupIds: readonly string[];
   readonly availableGroups: readonly AvailableGroup[];
@@ -49,7 +48,6 @@ const commaListFromInput = (raw: string): string[] =>
     .filter((s) => s.length > 0);
 
 export function ItemModifierGroupsCard({
-  brandSlug,
   itemId,
   initialModifierGroupIds,
   availableGroups,
@@ -75,18 +73,17 @@ export function ItemModifierGroupsCard({
   const isNewItem = itemId === 'new';
 
   const assignMutation = useMutation({
-    mutationFn: (nextIds: readonly string[]) =>
-      upsertItemModifierGroups(brandSlug, itemId, nextIds),
+    mutationFn: (nextIds: readonly string[]) => upsertItemModifierGroups(itemId, nextIds),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', brandSlug, itemId] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', itemId] });
     },
   });
 
   const createMutation = useMutation({
     mutationFn: (values: { name: string; minSelectable: number; maxSelectable: number }) =>
-      upsertModifierGroup(brandSlug, null, values),
+      upsertModifierGroup(null, values),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups', brandSlug] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });
     },
   });
 
@@ -138,12 +135,10 @@ export function ItemModifierGroupsCard({
       setSheetOpen(false);
       const newId = res.data?.id ?? '';
       setKnownGroups((prev) => [...prev, { id: newId, name: newName, optionCount: 0 }]);
-      /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-      void (navigate as any)({
-        to: '/dashboard/$brandSlug/menu/modifier-groups/$id',
-        params: { brandSlug, id: newId },
+      void navigate({
+        to: '/menu/modifier-groups/$id',
+        params: { id: newId },
       });
-      /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
     } catch {
       showError(null, t('createFailed'));
     }

@@ -11,7 +11,6 @@ import { fromLocalizedText } from '@/lib/menu/localized';
 import type { CategoryListItemApi } from '@/lib/queries/catalog';
 
 export interface CategoryFormProps {
-  readonly brandSlug: string;
   readonly mode: 'create' | 'edit';
   readonly category?: CategoryListItemApi;
   readonly allCategories: readonly CategoryListItemApi[];
@@ -19,7 +18,6 @@ export interface CategoryFormProps {
 }
 
 export function CategoryForm({
-  brandSlug,
   mode,
   category,
   allCategories,
@@ -34,14 +32,14 @@ export function CategoryForm({
 
   const mutation = useMutation({
     mutationFn: () =>
-      upsertCategory(brandSlug, category?.id ?? null, {
+      upsertCategory(category?.id ?? null, {
         name,
         parentId,
         sortOrder: category?.sortOrder ?? 0,
       }),
     onSuccess: (res) => {
       if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'categories'] });
         onClose();
       } else {
         setError(tCommon('errorGeneric'));

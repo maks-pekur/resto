@@ -15,7 +15,6 @@ import type { ItemSizeApi } from '@/lib/queries/catalog';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 
 export interface ItemSizesCardProps {
-  readonly brandSlug: string;
   readonly itemId: string;
   readonly sizes: readonly ItemSizeApi[];
   readonly onSizesChange: (sizes: readonly ItemSizeApi[]) => void;
@@ -41,7 +40,6 @@ const rowsEqual = (a: RowDraft, b: ItemSizeApi): boolean =>
   a.name === b.name && a.price.toFixed(2) === b.price.toFixed(2) && a.isDefault === b.isDefault;
 
 export function ItemSizesCard({
-  brandSlug,
   itemId,
   sizes,
   onSizesChange,
@@ -71,14 +69,14 @@ export function ItemSizesCard({
 
   const upsertMutation = useMutation({
     mutationFn: (data: { id?: string; name: string; price: number; isDefault: boolean }) =>
-      upsertItemSize(brandSlug, itemId, {
+      upsertItemSize(itemId, {
         ...(data.id ? { id: data.id } : {}),
         name: data.name,
         price: data.price,
         isDefault: data.isDefault,
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', brandSlug, itemId] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', itemId] });
     },
   });
 

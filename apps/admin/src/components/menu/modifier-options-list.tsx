@@ -11,7 +11,6 @@ import type { ModifierOptionApi } from '@/lib/queries/catalog';
 export type { ModifierOptionApi };
 
 export interface ModifierOptionsListProps {
-  readonly brandSlug: string;
   readonly groupId: string;
   readonly options: readonly ModifierOptionApi[];
   readonly onOptionsChange: (options: readonly ModifierOptionApi[]) => void;
@@ -42,7 +41,6 @@ const rowsEqual = (a: RowDraft, b: ModifierOptionApi): boolean =>
   a.freeAmount === b.freeAmount;
 
 export function ModifierOptionsList({
-  brandSlug,
   groupId,
   options,
   onOptionsChange,
@@ -75,7 +73,7 @@ export function ModifierOptionsList({
       defaultAmount: number;
       freeAmount: number;
     }) =>
-      upsertModifierOption(brandSlug, groupId, {
+      upsertModifierOption(groupId, {
         ...(data.id ? { id: data.id } : {}),
         name: data.name,
         priceDelta: data.priceDelta,
@@ -84,7 +82,7 @@ export function ModifierOptionsList({
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: ['catalog', 'modifier-group', brandSlug, groupId],
+        queryKey: ['catalog', 'modifier-group', groupId],
       });
     },
   });

@@ -10,7 +10,6 @@ import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
 
 export interface ItemEditorShellProps {
-  readonly brandSlug: string;
   readonly title: string;
   readonly initialItem: ItemDetailApi | null;
   readonly categories: readonly CategoryListItemApi[];
@@ -57,7 +56,6 @@ const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
 });
 
 export function ItemEditorShell({
-  brandSlug,
   title,
   initialItem,
   categories,
@@ -118,7 +116,6 @@ export function ItemEditorShell({
         <div className="grid gap-6 lg:grid-cols-[1.7fr_1fr]">
           <div className="flex flex-col gap-6">
             <ItemDetailForm
-              brandSlug={brandSlug}
               initialValues={initialValues}
               categories={categories}
               currentItemId={currentItemId}
@@ -138,7 +135,6 @@ export function ItemEditorShell({
           </div>
           <aside className="lg:sticky lg:top-[calc(var(--header-height)+1rem)] lg:self-start">
             <ItemAside
-              brandSlug={brandSlug}
               itemId={currentItemId}
               currentPhotoS3Key={currentPhotoS3Key}
               currentPhotoUrl={currentPhotoUrl}
