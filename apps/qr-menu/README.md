@@ -9,19 +9,19 @@ LCP under 1.5s on a throttled 4G profile.
 - **Routing.** No router dependency in the bundle. `window.location`
   drives a tiny client-side router (`/` for the full menu, `/items/:id`
   for the deep-linked detail view).
-- **Brand resolution.** The brand (and its tenant) is resolved from the
-  subdomain. The app is served from `<brand-slug>.menu.<domain>` and
+- **Tenant resolution.** The tenant is resolved from the
+  subdomain. The app is served from `<tenant-slug>.menu.<domain>` and
   fetches the api **same-origin** with a relative `/v1` path, so the api
-  resolves the brand from the request `Host`. In dev the Vite server
+  resolves the tenant from the request `Host`. In dev the Vite server
   proxies `/v1` to the api on `:3000` with `changeOrigin: false`,
-  preserving the brand `Host`. See `docs/dev-subdomains.md`.
+  preserving the tenant `Host`. See `docs/dev-subdomains.md`.
 - **i18n.** JSON resources for `en` and `ru` under `src/i18n/`.
   Locale auto-detected from `navigator.languages` with English
   fallback. `localized(text)` picks the best string from a
   `LocalizedText` map; `t(key, replacements)` for static copy.
 - **Theming.** Base tokens come from `@resto/config-tailwind`
   (`tokens.css`: `--primary`, `--background`, `--radius`, …). A tenant's
-  `brand.theme.primaryColor` overrides `--primary` at runtime via
+  `tenant.theme.primaryColor` overrides `--primary` at runtime via
   `buildTenantThemeVars` after the menu loads.
 
 ## Dev
@@ -32,9 +32,9 @@ pnpm exec nx serve api               # api on :3000
 pnpm exec nx run qr-menu:serve       # qr-menu on :3003
 ```
 
-Open `http://<brand-slug>.menu.lvh.me:3003/` (e.g.
+Open `http://<tenant-slug>.menu.lvh.me:3003/` (e.g.
 `http://dovezuka.menu.lvh.me:3003/`) — `*.lvh.me` resolves to 127.0.0.1,
-and the brand resolves from the subdomain. See `docs/dev-subdomains.md`.
+and the tenant resolves from the subdomain. See `docs/dev-subdomains.md`.
 
 ## Build
 

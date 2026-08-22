@@ -7,7 +7,7 @@ import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { PRESET_ROLES } from './preset-roles';
 
 export interface SeedPresetRolesInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
 }
 
 @Injectable()
@@ -20,7 +20,7 @@ export class SeedPresetRolesService {
     const existing = await this.authDb.db
       .select({ role: tenantRoleTable.role })
       .from(tenantRoleTable)
-      .where(eq(tenantRoleTable.tenantId, input.organizationId));
+      .where(eq(tenantRoleTable.tenantId, input.tenantId));
 
     const existingSlugs = new Set(existing.map((r) => r.role));
 
@@ -29,14 +29,14 @@ export class SeedPresetRolesService {
       try {
         await this.authDb.db.insert(tenantRoleTable).values({
           id: randomUUID(),
-          tenantId: input.organizationId,
+          tenantId: input.tenantId,
           role: preset.slug,
           permission: JSON.stringify(preset.permission),
           createdAt: new Date(),
         });
       } catch (err) {
         this.logger.warn(
-          { err, slug: preset.slug, organizationId: input.organizationId },
+          { err, slug: preset.slug, tenantId: input.tenantId },
           'Failed to seed preset role — skipping',
         );
       }

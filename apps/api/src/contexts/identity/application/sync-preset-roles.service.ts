@@ -7,11 +7,11 @@ import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { PRESET_ROLES } from './preset-roles';
 
 export interface SyncPresetRolesInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
 }
 
 export interface SyncPresetRolesResult {
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly updated: number;
   readonly inserted: number;
   readonly skippedArchived: number;
@@ -39,7 +39,7 @@ export class SyncPresetRolesService {
         archivedAt: tenantRoleTable.archivedAt,
       })
       .from(tenantRoleTable)
-      .where(eq(tenantRoleTable.tenantId, input.organizationId));
+      .where(eq(tenantRoleTable.tenantId, input.tenantId));
 
     const existingBySlug = new Map(existingRows.map((row) => [row.role, row]));
 
@@ -67,7 +67,7 @@ export class SyncPresetRolesService {
           updated += 1;
         } catch (err) {
           this.logger.warn(
-            { err, slug: preset.slug, organizationId: input.organizationId },
+            { err, slug: preset.slug, tenantId: input.tenantId },
             'Failed to update preset role — skipping',
           );
         }
@@ -77,7 +77,7 @@ export class SyncPresetRolesService {
       try {
         await this.authDb.db.insert(tenantRoleTable).values({
           id: randomUUID(),
-          tenantId: input.organizationId,
+          tenantId: input.tenantId,
           role: preset.slug,
           permission: targetPermission,
           createdAt: new Date(),
@@ -85,14 +85,14 @@ export class SyncPresetRolesService {
         inserted += 1;
       } catch (err) {
         this.logger.warn(
-          { err, slug: preset.slug, organizationId: input.organizationId },
+          { err, slug: preset.slug, tenantId: input.tenantId },
           'Failed to insert missing preset role — skipping',
         );
       }
     }
 
     const result: SyncPresetRolesResult = {
-      organizationId: input.organizationId,
+      tenantId: input.tenantId,
       updated,
       inserted,
       skippedArchived,

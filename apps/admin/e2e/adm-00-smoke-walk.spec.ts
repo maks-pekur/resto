@@ -17,7 +17,7 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
   // The `?expired=1` notice covers the other, more common case: a 401 on a live
   // page, emitted by api-client's 401 handler.
 
-  test('scenario 1: sign-in with exactly one organization hard-navigates to its own host', async ({
+  test('scenario 1: sign-in with exactly one tenant hard-navigates to its own host', async ({
     operatorSession,
   }) => {
     const { context, page } = await operatorSession(FIXTURES.soloOwner);
@@ -28,20 +28,20 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await context.close();
   });
 
-  test('scenario 2: an operator with an unnamed organization lands on onboarding', async ({
+  test('scenario 2: an operator with an unnamed tenant lands on onboarding', async ({
     operatorSession,
   }) => {
     const { context, page } = await operatorSession(FIXTURES.pendingOwner);
-    // login.tsx's own single-organization branch binds the session and
-    // hard-navigates to the org's own host BEFORE (protected)/_layout.tsx's
+    // login.tsx's own single-tenant branch binds the session and
+    // hard-navigates to the tenant's own host BEFORE (protected)/_layout.tsx's
     // pending_setup check runs the client-side redirect to /onboarding — the
-    // final URL carries the org host, not the apex.
+    // final URL carries the tenant host, not the apex.
     await expect(page).toHaveURL(orgHostRegex(FIXTURES.pendingOwner.tenantSlug, '/onboarding'));
     await expect(page.locator('#displayName')).toBeVisible();
     await context.close();
   });
 
-  test('scenario 3: the organization identity block is a static label, not a switcher (D-10)', async ({
+  test('scenario 3: the tenant identity block is a static label, not a switcher (D-10)', async ({
     operatorSession,
   }) => {
     const { context, page } = await operatorSession(FIXTURES.soloOwner);
@@ -68,11 +68,11 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await context.close();
   });
 
-  // Scenario 4 (non-owner role gets a filtered organization list) is deleted,
+  // Scenario 4 (non-owner role gets a filtered tenant list) is deleted,
   // not downgraded to `.fixme` (10.2 plan 19). `GET /v1/me/brands` is gone;
   // its replacement, `GET /v1/me/tenants`, has its own cross-tenant leak case
   // proven server-side with a real second tenant and a real non-member user —
-  // apps/api/test/e2e/me-tenants.e2e.spec.ts, "never lists an organization
+  // apps/api/test/e2e/me-tenants.e2e.spec.ts, "never lists a tenant
   // the user is not a member of — the leak boundary". `apps/api` still has no
   // internal endpoint to bootstrap a non-owner member (the exact blocker the
   // original `oneBrandStaff` fixture comment named), so this admin e2e layer
@@ -102,12 +102,12 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     await context.close();
   });
 
-  test('scenario 6: switching organizations kills the token it replaced (D-15)', async ({
+  test('scenario 6: switching tenants kills the token it replaced (D-15)', async ({
     operatorSession,
     request,
   }) => {
     const { context, page } = await operatorSession(FIXTURES.twoOrgOwner);
-    await expect(page).toHaveURL(/\/pick-organization$/);
+    await expect(page).toHaveURL(/\/pick-tenant$/);
 
     await page
       .getByRole('button', { name: FIXTURES.twoOrgOwner.tenantADisplayName, exact: true })
@@ -133,8 +133,8 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
     // held BEFORE the switch is what proves the old token is dead, not
     // merely superseded — this is how plan 17 proved the same guarantee.
     await page.getByTestId('nav-user-trigger').click();
-    await page.getByTestId('nav-switch-organization').click();
-    await page.waitForURL(/\/pick-organization$/);
+    await page.getByTestId('nav-switch-tenant').click();
+    await page.waitForURL(/\/pick-tenant$/);
     await page
       .getByRole('button', { name: FIXTURES.twoOrgOwner.tenantBDisplayName, exact: true })
       .click();
@@ -149,10 +149,10 @@ test.describe('ADM-00 scaffold smoke-walk', () => {
   });
 
   // ADM-04 brand creation roundtrip (scenarios 7a/7b) is deleted, not
-  // downgraded to `.fixme`. The create-organization entry point (the old
+  // downgraded to `.fixme`. The create-tenant entry point (the old
   // switcher's "+ Add brand" item) was deliberately not rebuilt when the
   // switcher itself was deleted (D-10) — 10.2-CONTEXT.md tracks this as an
-  // open GAP: an owner cannot create a second organization from inside the
+  // open GAP: an owner cannot create a second tenant from inside the
   // app today. There is nothing left to click and no route to drive a
   // Playwright scenario against; when a later phase closes the GAP, its own
   // plan should add the coverage fresh rather than un-park these two.

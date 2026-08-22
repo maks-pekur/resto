@@ -16,7 +16,7 @@ const RESERVED_SYSTEM_SLUGS = new Set(['owner', 'admin', 'staff']);
 export interface CreateRoleServiceInput {
   readonly roleName: string;
   readonly permission: Record<string, string[]>;
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly actorUserId: string;
   readonly headers: Headers;
 }
@@ -42,14 +42,14 @@ export class CreateRoleService {
 
     const result = await roleApi(this.auth).createOrgRole({
       body: {
-        organizationId: input.organizationId,
+        organizationId: input.tenantId,
         role: input.roleName,
         permission: input.permission,
       },
       headers: input.headers,
     });
 
-    const tenantId = TenantId.parse(input.organizationId);
+    const tenantId = TenantId.parse(input.tenantId);
     try {
       await this.emitter.emit(
         buildEnvelope(

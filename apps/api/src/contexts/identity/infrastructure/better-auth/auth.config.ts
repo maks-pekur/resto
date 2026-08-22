@@ -90,14 +90,14 @@ interface BuildOpts {
   maxPasswordLength?: number;
   onInitialLocationPin?: (userId: string, tenantId: string) => Promise<string | null>;
   /**
-   * Invoked when an operator sets the active organization on their session
+   * Invoked when an operator sets the active tenant on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
    * the canonical "operator signed in" moment. The callback runs in a
    * separate transaction from BA's session update; failures are logged at
    * error level and swallowed — audit pipeline is eventually-consistent
    * observability; we never block sign-in on an audit-write failure.
    */
-  onActiveOrganizationSet?: (
+  onActiveTenantSet?: (
     session: { userId: string; activeOrganizationId?: string | null },
     ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
   ) => Promise<void>;
@@ -426,10 +426,10 @@ export const buildAuth = (opts: BuildOpts) =>
               }
             }
 
-            if (opts.onActiveOrganizationSet) {
+            if (opts.onActiveTenantSet) {
               try {
                 const reqHeaders = rawRequest?.headers;
-                await opts.onActiveOrganizationSet(
+                await opts.onActiveTenantSet(
                   {
                     userId: session.userId,
                     activeOrganizationId: session.activeOrganizationId,

@@ -874,8 +874,6 @@ export interface components {
             /** Format: uuid */
             tenantId: string;
             userId: string;
-            /** Format: uuid */
-            organizationId: string;
             /** Format: email */
             email: string;
             requiresPasswordChange: boolean;

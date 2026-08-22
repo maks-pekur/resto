@@ -13,7 +13,7 @@ import {
 } from '../../../src/contexts/identity/application/effective-permissions';
 import type { Auth } from '../../../src/contexts/identity/infrastructure/better-auth/auth.config';
 
-const ORG_ID = '00000000-0000-0000-0000-000000000001';
+const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 const ACTOR_USER_ID = '00000000-0000-0000-0000-000000000002';
 const ACTOR_MEMBER_ID = 'member-actor';
 const TARGET_MEMBER_ID = 'member-target';
@@ -32,7 +32,7 @@ const makeAuth = (roleApi: ReturnType<typeof makeRoleApi>): Auth =>
   ({ api: roleApi }) as unknown as Auth;
 
 // where() serves both the member lookup (.limit(1)) and the direct roles query
-// (awaited via .then) that listActiveCustomRoles issues against organization_role.
+// (awaited via .then) that listActiveCustomRoles issues against tenant_role.
 const makeAuthDb = (
   actorMember: { id: string; role: string } | null,
   roleRows: { id: string; role: string; permission: Record<string, string[]> }[] = [],
@@ -108,7 +108,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'owner',
@@ -124,7 +124,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'staff',
@@ -142,7 +142,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: ACTOR_MEMBER_ID,
         roleSlug: 'cashier',
@@ -158,7 +158,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'nonexistent',
@@ -174,7 +174,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'cashier',
@@ -192,7 +192,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'cashier',
@@ -210,7 +210,7 @@ describe('AssignRoleService', () => {
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         actorUserId: ACTOR_USER_ID,
         targetMemberId: TARGET_MEMBER_ID,
         roleSlug: 'super-cashier',
@@ -220,14 +220,14 @@ describe('AssignRoleService', () => {
     expect(api.updateMemberRole).not.toHaveBeenCalled();
   });
 
-  it('calls updateMemberRole exactly once with ALS organizationId on valid assignment', async () => {
+  it('calls updateMemberRole exactly once with ALS tenantId on valid assignment', async () => {
     const api = makeRoleApi();
     const authDb = makeAuthDb({ id: ACTOR_MEMBER_ID, role: 'owner' }, [
       { id: 'r1', role: 'cashier', permission: { menu: ['read'] } },
     ]);
     const svc = new AssignRoleService(makeAuth(api), authDb as never);
     await svc.execute({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       actorUserId: ACTOR_USER_ID,
       targetMemberId: TARGET_MEMBER_ID,
       roleSlug: 'cashier',
@@ -236,7 +236,7 @@ describe('AssignRoleService', () => {
     expect(api.updateMemberRole).toHaveBeenCalledOnce();
     expect(api.updateMemberRole).toHaveBeenCalledWith(
       expect.objectContaining({
-        body: expect.objectContaining({ organizationId: ORG_ID }),
+        body: expect.objectContaining({ organizationId: TENANT_ID }),
       }),
     );
   });

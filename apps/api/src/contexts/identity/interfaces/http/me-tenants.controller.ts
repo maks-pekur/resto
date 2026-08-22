@@ -69,9 +69,9 @@ export class MeTenantsController {
   ) {}
 
   /**
-   * The organizations the signed-in user is a member of (D-02). Backs the
+   * The tenants the signed-in user is a member of (D-02). Backs the
    * sign-in picker (D-17) — deliberately NOT `@RequiresTenantContext`,
-   * since a fresh session has no organization bound yet and this endpoint
+   * since a fresh session has no tenant bound yet and this endpoint
    * is exactly how the picker learns what to offer. `@Permissions` is
    * deliberately ALSO absent here (found live, 10.2-17): BA's org-scoped
    * `hasPermission` needs an already-bound `activeOrganizationId` to
@@ -123,8 +123,8 @@ export class MeTenantsController {
 
   /**
    * D-30/D-31: names the restaurant, derives its slug and flips the
-   * organization from `'pending_setup'` to `'active'`. Deliberately reads
-   * the target organization from the session (`activeOrganizationId`), not
+   * tenant from `'pending_setup'` to `'active'`. Deliberately reads
+   * the target tenant from the session (`activeOrganizationId`), not
    * a body parameter — T-10.2-13-02. Intentionally NOT `@RequiresTenantContext`
    * — every write here goes through `db.withoutTenant` (system-context
    * services), never `ScopedTx`, so there is no ALS tenant binding to

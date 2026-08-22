@@ -48,7 +48,7 @@ interface ItemListResponse {
   readonly items: readonly ItemListItem[];
 }
 
-interface OrgDef {
+interface TenantDef {
   readonly slug: string;
   readonly displayName: string;
   readonly country: CountryCodeValue;
@@ -56,18 +56,18 @@ interface OrgDef {
 }
 
 /**
- * The one organization `--payments-ready` (10.2 plan 18 Task 3) makes able
+ * The one tenant `--payments-ready` (10.2 plan 18 Task 3) makes able
  * to accept a real test payment. Deliberately not all three — a demo where
  * every restaurant is payment-ready hides the `payments.not_enabled` path,
  * which is real behaviour worth being able to see. `pizza` already gets
- * demo orders below (`index === 0`), so it is also the organization with
+ * demo orders below (`index === 0`), so it is also the tenant with
  * something to actually check out.
  */
-const PAYMENTS_READY_ORG_SLUG = 'pizza';
+const PAYMENTS_READY_TENANT_SLUG = 'pizza';
 
 // D-33/D-34/D-35: one entry per market so the fixture exercises all three
 // supported countries and their derived currencies, not a single happy path.
-const ORGANIZATIONS: readonly OrgDef[] = [
+const TENANTS: readonly TenantDef[] = [
   {
     slug: 'pizza',
     displayName: 'Pizza Palace',
@@ -150,24 +150,24 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
 interface StaffDef {
   readonly email: string;
   readonly name: string;
-  readonly organization: string;
+  readonly tenant: string;
   readonly roleSlug: string;
   readonly locations: readonly string[];
 }
 
-// D-17: staff belong to exactly one organization — never several.
+// D-17: staff belong to exactly one tenant — never several.
 const STAFF: readonly StaffDef[] = [
   {
     email: 'manager@demo.local',
     name: 'Demo Manager',
-    organization: 'pizza',
+    tenant: 'pizza',
     roleSlug: 'manager',
     locations: ['Kyiv Center', 'Kyiv Left Bank'],
   },
   {
     email: 'cashier@demo.local',
     name: 'Demo Cashier',
-    organization: 'burger',
+    tenant: 'burger',
     roleSlug: 'cashier-foh',
     locations: ['Central'],
   },
@@ -181,14 +181,14 @@ const requireEnv = (name: string): string => {
 
 const ensureLocations = async (
   op: OperatorHttpClient,
-  org: OrgDef,
+  tenantDef: TenantDef,
 ): Promise<Map<string, string>> => {
   const existing = await op.get<LocationResponse[]>('/v1/tenancy/locations');
   const byName = new Map(existing.map((l) => [l.name, l.id]));
 
-  for (const name of org.locations) {
+  for (const name of tenantDef.locations) {
     if (byName.has(name)) {
-      log('seed-demo.location.exists', { organization: org.slug, name });
+      log('seed-demo.location.exists', { tenant: tenantDef.slug, name });
       continue;
     }
     const created = await op.post<LocationResponse>('/v1/tenancy/locations', {
@@ -198,23 +198,23 @@ const ensureLocations = async (
       contacts: null,
     });
     byName.set(name, created.id);
-    log('seed-demo.location.created', { organization: org.slug, name, id: created.id });
+    log('seed-demo.location.created', { tenant: tenantDef.slug, name, id: created.id });
   }
   return byName;
 };
 
 const ensureCatalog = async (
   op: OperatorHttpClient,
-  orgSlug: string,
+  tenantSlug: string,
   currency: CurrencyValue,
 ): Promise<void> => {
   const existingCategories = await op.get<CategoryListResponse>('/v1/catalog/categories');
   const categoryBySlug = new Map(existingCategories.items.map((c) => [c.slug, c.id]));
 
-  for (const category of CATALOG[orgSlug] ?? []) {
+  for (const category of CATALOG[tenantSlug] ?? []) {
     let categoryId = categoryBySlug.get(category.slug);
     if (categoryId) {
-      log('seed-demo.category.exists', { organization: orgSlug, slug: category.slug });
+      log('seed-demo.category.exists', { tenant: tenantSlug, slug: category.slug });
     } else {
       const created = await op.post<{ id: string }>('/v1/catalog/categories', {
         slug: category.slug,
@@ -226,7 +226,7 @@ const ensureCatalog = async (
       });
       categoryId = created.id;
       log('seed-demo.category.created', {
-        organization: orgSlug,
+        tenant: tenantSlug,
         slug: category.slug,
         id: categoryId,
       });
@@ -250,14 +250,14 @@ const ensureCatalog = async (
       };
       await op.post('/v1/catalog/items', payload);
       log(existingId ? 'seed-demo.item.updated' : 'seed-demo.item.created', {
-        organization: orgSlug,
+        tenant: tenantSlug,
         slug: item.slug,
       });
     }
   }
 
   await op.post('/v1/catalog/publish', {}).catch((err: unknown) => {
-    log('seed-demo.publish.skipped', { organization: orgSlug, err: String(err) });
+    log('seed-demo.publish.skipped', { tenant: tenantSlug, err: String(err) });
   });
 };
 
@@ -269,8 +269,8 @@ const ensureCatalog = async (
  * would now 403. `/internal/v1/tenants/:id/owner` is the one remaining
  * internal-token-gated path that creates a BA account without that gate,
  * but it always grants `role: 'owner'`. Safe here only because staff are
- * bootstrapped before the real owner for the same organization (see
- * `runSeedDemo`), so the org has no owner-role member yet; the role is
+ * bootstrapped before the real owner for the same tenant (see
+ * `runSeedDemo`), so the tenant has no owner-role member yet; the role is
  * downgraded to 'staff' immediately after.
  */
 const ensureStaffAccount = async (
@@ -302,17 +302,17 @@ const ensureStaffAccount = async (
   return memberId;
 };
 
-const seedDemoOrdersForOrg = async (
+const seedDemoOrdersForTenant = async (
   op: OperatorHttpClient,
   apiUrl: string,
   tenant: TenantResponse,
-  org: OrgDef,
+  tenantDef: TenantDef,
   locationsByName: Map<string, string>,
 ): Promise<void> => {
-  const locationName = org.locations[0];
+  const locationName = tenantDef.locations[0];
   const locationId = locationName ? locationsByName.get(locationName) : undefined;
   if (!locationId) {
-    log('seed-demo.orders.skipped', { reason: 'no location resolved', organization: org.slug });
+    log('seed-demo.orders.skipped', { reason: 'no location resolved', tenant: tenantDef.slug });
     return;
   }
   const items = await op.get<{ items: { id: string; slug: string }[] }>(
@@ -322,7 +322,7 @@ const seedDemoOrdersForOrg = async (
   if (!firstItem) {
     log('seed-demo.orders.skipped', {
       reason: 'no published catalog item',
-      organization: org.slug,
+      tenant: tenantDef.slug,
     });
     return;
   }
@@ -338,7 +338,7 @@ const seedDemoOrdersForOrg = async (
         spec,
       });
       log('seed-demo.order.seeded', {
-        organization: org.slug,
+        tenant: tenantDef.slug,
         location: locationName,
         shortNumber: seeded.shortNumber,
         status: seeded.status,
@@ -373,9 +373,9 @@ export const runSeedDemo = async (
   if (options.dryRun) {
     log('seed-demo.plan', {
       owner: 'owner@demo.local',
-      organizations: ORGANIZATIONS.map((o) => ({ slug: o.slug, country: o.country })),
+      tenants: TENANTS.map((t) => ({ slug: t.slug, country: t.country })),
       staff: STAFF.map((s) => s.email),
-      paymentsReady: paymentsReadyRequested ? PAYMENTS_READY_ORG_SLUG : null,
+      paymentsReady: paymentsReadyRequested ? PAYMENTS_READY_TENANT_SLUG : null,
     });
     return;
   }
@@ -390,17 +390,21 @@ export const runSeedDemo = async (
   const authDb = createAuthDb(authDatabaseUrl);
 
   try {
-    for (const [index, org] of ORGANIZATIONS.entries()) {
+    for (const [index, tenantDef] of TENANTS.entries()) {
       const tenant = await api.post<TenantResponse>('/internal/v1/tenants', {
-        slug: org.slug,
-        displayName: org.displayName,
-        country: org.country,
+        slug: tenantDef.slug,
+        displayName: tenantDef.displayName,
+        country: tenantDef.country,
       });
-      log('seed-demo.tenant.ready', { id: tenant.id, slug: tenant.slug, country: org.country });
+      log('seed-demo.tenant.ready', {
+        id: tenant.id,
+        slug: tenant.slug,
+        country: tenantDef.country,
+      });
 
-      const staffForOrg = STAFF.filter((s) => s.organization === org.slug);
+      const staffForTenant = STAFF.filter((s) => s.tenant === tenantDef.slug);
       const memberIdByEmail = new Map<string, string>();
-      for (const staff of staffForOrg) {
+      for (const staff of staffForTenant) {
         memberIdByEmail.set(staff.email, await ensureStaffAccount(api, authDb, tenant, staff));
       }
 
@@ -409,7 +413,7 @@ export const runSeedDemo = async (
         password: DEMO_PASSWORD,
         name: 'Demo Owner',
       });
-      log('seed-demo.owner.ready', { email: 'owner@demo.local', organization: org.slug });
+      log('seed-demo.owner.ready', { email: 'owner@demo.local', tenant: tenantDef.slug });
 
       const ownerCookie = await signInAsOperator(
         options.apiUrl,
@@ -421,17 +425,17 @@ export const runSeedDemo = async (
         'x-tenant-slug': tenant.slug,
       });
 
-      const locationsByName = await ensureLocations(op, org);
-      await ensureCatalog(op, org.slug, currencyForCountry(org.country));
+      const locationsByName = await ensureLocations(op, tenantDef);
+      await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country));
 
-      for (const staff of staffForOrg) {
+      for (const staff of staffForTenant) {
         const memberId = memberIdByEmail.get(staff.email);
         if (!memberId) throw new Error(`Missing memberId for ${staff.email}`);
         for (const locationName of staff.locations) {
           const locationId = locationsByName.get(locationName);
           if (!locationId) {
             throw new Error(
-              `Location "${locationName}" for organization "${org.slug}" was not provisioned.`,
+              `Location "${locationName}" for tenant "${tenantDef.slug}" was not provisioned.`,
             );
           }
           await op.post(`/v1/members/${memberId}/location-roles`, {
@@ -440,7 +444,7 @@ export const runSeedDemo = async (
           });
           log('seed-demo.staff.location_role_assigned', {
             email: staff.email,
-            organization: org.slug,
+            tenant: tenantDef.slug,
             location: locationName,
             role: staff.roleSlug,
           });
@@ -448,10 +452,10 @@ export const runSeedDemo = async (
       }
 
       if (index === 0) {
-        await seedDemoOrdersForOrg(op, options.apiUrl, tenant, org, locationsByName);
+        await seedDemoOrdersForTenant(op, options.apiUrl, tenant, tenantDef, locationsByName);
       }
 
-      if (paymentsReadyRequested && org.slug === PAYMENTS_READY_ORG_SLUG) {
+      if (paymentsReadyRequested && tenantDef.slug === PAYMENTS_READY_TENANT_SLUG) {
         if (stripeAccountId === undefined) {
           throw new Error(
             'Unreachable: --payments-ready requested but no account id was resolved before provisioning started.',
@@ -461,7 +465,7 @@ export const runSeedDemo = async (
         try {
           await markTenantPaymentsReady(appDb, tenant.id, stripeAccountId);
           log('seed-demo.payments_ready', {
-            organization: org.slug,
+            tenant: tenantDef.slug,
             tenantId: tenant.id,
             stripeAccountId,
           });
@@ -479,28 +483,28 @@ export const runSeedDemo = async (
       role: 'owner',
       email: 'owner@demo.local',
       password: DEMO_PASSWORD,
-      scope: `all organizations (${ORGANIZATIONS.map((o) => `${o.slug} [${o.country}]`).join(', ')}), all locations`,
+      scope: `all tenants (${TENANTS.map((t) => `${t.slug} [${t.country}]`).join(', ')}), all locations`,
     },
     {
       role: 'manager (pizza)',
       email: 'manager@demo.local',
       password: DEMO_PASSWORD,
-      scope: 'organization pizza — locations Kyiv Center + Kyiv Left Bank',
+      scope: 'tenant pizza — locations Kyiv Center + Kyiv Left Bank',
       note: 'scoped to 2 locations — expect the pick-location interstitial after login',
     },
     {
       role: 'cashier-foh (burger)',
       email: 'cashier@demo.local',
       password: DEMO_PASSWORD,
-      scope: 'organization burger — location Central',
+      scope: 'tenant burger — location Central',
       note: 'scoped to 1 location — auto-pinned, no interstitial',
     },
   ]);
 
   if (paymentsReadyRequested) {
     log('seed-demo.payments_ready.summary', {
-      organization: PAYMENTS_READY_ORG_SLUG,
-      note: 'guest checkout for this organization now uses a real Stripe test-mode PaymentIntent — the other two organizations are left without payments (payments.not_enabled by design)',
+      tenant: PAYMENTS_READY_TENANT_SLUG,
+      note: 'guest checkout for this tenant now uses a real Stripe test-mode PaymentIntent — the other two tenants are left without payments (payments.not_enabled by design)',
     });
   }
 };

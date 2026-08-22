@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { PRESET_ROLES } from '@resto/domain';
 import { SyncPresetRolesService } from '../../../src/contexts/identity/application/sync-preset-roles.service';
 
-const ORG_ID = '00000000-0000-0000-0000-000000000001';
+const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 
 interface ExistingRow {
   readonly id: string;
@@ -41,11 +41,11 @@ describe('SyncPresetRolesService', () => {
   it('inserts all 3 presets for an organization with none provisioned', async () => {
     const authDb = makeAuthDb([]);
     const svc = new SyncPresetRolesService(authDb as never);
-    const result = await svc.execute({ organizationId: ORG_ID });
+    const result = await svc.execute({ tenantId: TENANT_ID });
     expect(authDb.db.insert).toHaveBeenCalledTimes(3);
     expect(authDb.db.update).not.toHaveBeenCalled();
     expect(result).toEqual({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       updated: 0,
       inserted: 3,
       skippedArchived: 0,
@@ -62,7 +62,7 @@ describe('SyncPresetRolesService', () => {
       })),
     );
     const svc = new SyncPresetRolesService(authDb as never);
-    const result = await svc.execute({ organizationId: ORG_ID });
+    const result = await svc.execute({ tenantId: TENANT_ID });
     expect(authDb.db.update).toHaveBeenCalledTimes(3);
     expect(authDb.db.insert).not.toHaveBeenCalled();
     expect(result.updated).toBe(3);
@@ -80,11 +80,11 @@ describe('SyncPresetRolesService', () => {
       })),
     );
     const svc = new SyncPresetRolesService(authDb as never);
-    const result = await svc.execute({ organizationId: ORG_ID });
+    const result = await svc.execute({ tenantId: TENANT_ID });
     expect(authDb.db.update).not.toHaveBeenCalled();
     expect(authDb.db.insert).not.toHaveBeenCalled();
     expect(result).toEqual({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       updated: 0,
       inserted: 0,
       skippedArchived: 0,
@@ -107,7 +107,7 @@ describe('SyncPresetRolesService', () => {
       },
     ]);
     const svc = new SyncPresetRolesService(authDb as never);
-    const result = await svc.execute({ organizationId: ORG_ID });
+    const result = await svc.execute({ tenantId: TENANT_ID });
     expect(authDb.db.update).not.toHaveBeenCalled();
     expect(authDb.db.insert).toHaveBeenCalledTimes(1);
     expect(result.skippedArchived).toBe(1);

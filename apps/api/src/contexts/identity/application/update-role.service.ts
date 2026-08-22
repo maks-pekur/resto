@@ -16,7 +16,7 @@ import {
 export interface UpdateRoleServiceInput {
   readonly roleSlug: string;
   readonly permission: Record<string, string[]>;
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly actorUserId: string;
   readonly headers: Headers;
 }
@@ -32,7 +32,7 @@ export class UpdateRoleService {
   ) {}
 
   async execute(input: UpdateRoleServiceInput): Promise<void> {
-    const existing = (await listActiveCustomRoles(this.authDb, input.organizationId)).find(
+    const existing = (await listActiveCustomRoles(this.authDb, input.tenantId)).find(
       (r) => r.role === input.roleSlug,
     );
     if (!existing) {
@@ -46,14 +46,14 @@ export class UpdateRoleService {
 
     await roleApi(this.auth).updateOrgRole({
       body: {
-        organizationId: input.organizationId,
+        organizationId: input.tenantId,
         roleName: input.roleSlug,
         data: { permission: input.permission },
       },
       headers: input.headers,
     });
 
-    const tenantId = TenantId.parse(input.organizationId);
+    const tenantId = TenantId.parse(input.tenantId);
     try {
       await this.emitter.emit(
         buildEnvelope(

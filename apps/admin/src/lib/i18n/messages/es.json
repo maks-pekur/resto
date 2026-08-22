@@ -66,11 +66,11 @@
       "languageLabel": "Idioma",
       "localeRu": "Русский",
       "localeEn": "English",
-      "switchOrganizationItem": "Cambiar de restaurante",
+      "switchTenantItem": "Cambiar de restaurante",
       "localeEs": "Español"
     }
   },
-  "pickOrganization": {
+  "pickTenant": {
     "title": "Elige tu restaurante",
     "description": "Tienes acceso a más de un restaurante. Elige uno para continuar.",
     "loading": "Cargando…",
@@ -496,11 +496,7 @@
     }
   },
   "dashboard": {
-    "addBrand": "Añadir marca",
-    "brand": "Marca",
     "addAccount": "Añadir cuenta",
-    "noBrands": "Todavía no tienes marcas",
-    "noBrandsDescription": "Crea tu primera marca para empezar.",
     "title": "Panel",
     "noLocationsTitle": "Todavía no tienes locales",
     "noLocationsDescription": "Crea tu primer local para empezar a seguir la lista de pausados de hoy.",
@@ -510,11 +506,6 @@
     "teamInviteBtn": "Invitar",
     "teamInviteTitle": "Invitar a un compañero",
     "teamInviteDescription": "Envía una invitación por email. El enlace es válido durante 48 horas.",
-    "brandDomainsTitle": "Dominios",
-    "brandDomainsDescription": "Los dominios personalizados por marca llegarán en un próximo ticket.",
-    "brandPayoutsTitle": "Pagos a la cuenta",
-    "brandPayoutsDescription": "La integración de Stripe Connect llegará en un próximo ticket.",
-    "brandThemeTitle": "Tema de la marca",
     "editItemTitle": "Editar plato",
     "newItemTitle": "Nuevo plato",
     "editGroupTitle": "Editar grupo de modificadores",

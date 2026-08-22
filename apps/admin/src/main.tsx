@@ -9,7 +9,7 @@ import { ThemeProvider } from './components/theme-provider';
 import { authClient } from './lib/auth-client';
 import { apiFetch } from './lib/api-client';
 import type { MeTenantsResponse } from './lib/queries/identity';
-import { parseOrgSlugFromHost, adminUrlForOrg } from './lib/admin-host';
+import { parseTenantSlugFromHost, adminUrlForTenant } from './lib/admin-host';
 import { Route as rootRoute } from './routes/__root';
 import { Route as authLayoutRoute } from './routes/(auth)/_layout';
 import { Route as loginRoute } from './routes/(auth)/login';
@@ -18,7 +18,7 @@ import { Route as forgotPasswordRoute } from './routes/(auth)/forgot-password';
 import { Route as resetPasswordRoute } from './routes/(auth)/reset-password';
 import { Route as acceptInvitationRoute } from './routes/(auth)/accept-invitation.$id';
 import { Route as pickLocationRoute } from './routes/(auth)/pick-location';
-import { Route as pickOrganizationRoute } from './routes/(auth)/pick-organization';
+import { Route as pickTenantRoute } from './routes/(auth)/pick-tenant';
 import { Route as protectedLayoutRoute } from './routes/(protected)/_layout';
 import { Route as dashboardIndexRoute } from './routes/(protected)/index';
 import { Route as settingsRoute } from './routes/(protected)/settings';
@@ -62,7 +62,7 @@ const authRouteTree = authLayoutRoute.addChildren([
   resetPasswordRoute,
   acceptInvitationRoute,
   pickLocationRoute,
-  pickOrganizationRoute,
+  pickTenantRoute,
 ]);
 
 const menuRouteTree = menuLayoutRoute.addChildren([
@@ -107,24 +107,24 @@ declare module '@tanstack/react-router' {
 }
 
 // D-21: the single bootstrap host-vs-session reconciliation check. Runs once,
-// here only — not in a route file. The apex host (no org slug) is where
+// here only — not in a route file. The apex host (no tenant slug) is where
 // sign-in/signup live and is intentionally left alone; a session with no
-// bound organization yet is also left alone (route guards handle that case).
+// bound tenant yet is also left alone (route guards handle that case).
 async function reconcileHostWithSession(): Promise<void> {
-  const hostSlug = parseOrgSlugFromHost(window.location.hostname);
+  const hostSlug = parseTenantSlugFromHost(window.location.hostname);
   if (hostSlug === null) return;
   const session = await authClient.getSession();
   const sessionData =
     session.data !== null
       ? (session.data as { session?: { activeOrganizationId?: string } }).session
       : undefined;
-  const boundOrganizationId = sessionData?.activeOrganizationId;
-  if (boundOrganizationId === undefined) return;
+  const boundTenantId = sessionData?.activeOrganizationId;
+  if (boundTenantId === undefined) return;
   const tenantsRes = await apiFetch<MeTenantsResponse>('/v1/me/tenants');
-  const boundTenant = tenantsRes.data?.tenants.find((tenant) => tenant.id === boundOrganizationId);
+  const boundTenant = tenantsRes.data?.tenants.find((tenant) => tenant.id === boundTenantId);
   if (!boundTenant || boundTenant.slug === hostSlug) return;
   window.location.replace(
-    adminUrlForOrg(boundTenant.slug, `${window.location.pathname}${window.location.search}`),
+    adminUrlForTenant(boundTenant.slug, `${window.location.pathname}${window.location.search}`),
   );
 }
 

@@ -30,7 +30,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   let theme: { primaryColor?: string | null } | null = null;
   try {
     const menu = await fetchMenuPublic();
-    theme = menu.brand?.theme ?? null;
+    theme = menu.tenant?.theme ?? null;
   } catch {
     // unresolved host / cold Redis / suspended — render default theme
   }

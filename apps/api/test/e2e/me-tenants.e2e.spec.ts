@@ -22,11 +22,11 @@ if (!dockerOk) console.warn('[me-tenants.e2e] Docker not available — skipping.
 // by a per-member scope table, with a POST half for creating additional
 // labels. Neither survives as a like-for-like rename: a tenant can no
 // longer hold multiple of those labels (D-03), and creating a second
-// organization for an existing owner is a deliberately deferred entry
+// tenant for an existing owner is a deliberately deferred entry
 // point (CONTEXT.md GAP, D-39) with no
 // backend route to test. `GET /v1/me/tenants` is a genuinely different
 // endpoint that happens to occupy the same naming slot: it lists the
-// ORGANIZATIONS the signed-in user is a MEMBER of, backing the sign-in
+// TENANTS the signed-in user is a MEMBER of, backing the sign-in
 // picker (D-17). This file tests that endpoint on its own terms, per the
 // plan's own instruction.
 suite('GET /v1/me/tenants', () => {
@@ -44,7 +44,7 @@ suite('GET /v1/me/tenants', () => {
     if (stack) await stopRealStack(stack);
   });
 
-  it('a user who belongs to exactly one organization sees exactly one', async () => {
+  it('a user who belongs to exactly one tenant sees exactly one', async () => {
     const slug = `mt-one-${randomUUID().slice(0, 8)}`;
     const email = `owner-${slug}@example.com`;
     const tenant = await provisionTenant(stack.app, slug, INTERNAL_TOKEN);
@@ -62,7 +62,7 @@ suite('GET /v1/me/tenants', () => {
     expect(body.tenants[0]?.id).toBe(tenant.id);
   }, 60_000);
 
-  it('a user who belongs to two organizations sees exactly two — the picker depends on this', async () => {
+  it('a user who belongs to two tenants sees exactly two — the picker depends on this', async () => {
     const slugA = `mt-two-a-${randomUUID().slice(0, 8)}`;
     const slugB = `mt-two-b-${randomUUID().slice(0, 8)}`;
     const email = `owner-${slugA}@example.com`;
@@ -99,7 +99,7 @@ suite('GET /v1/me/tenants', () => {
     expect(ids).toEqual([tenantA.id, tenantB.id].sort());
   }, 60_000);
 
-  it('never lists an organization the user is not a member of — the leak boundary', async () => {
+  it('never lists a tenant the user is not a member of — the leak boundary', async () => {
     const slugA = `mt-leak-a-${randomUUID().slice(0, 8)}`;
     const slugB = `mt-leak-b-${randomUUID().slice(0, 8)}`;
     const emailA = `owner-${slugA}@example.com`;
@@ -121,7 +121,7 @@ suite('GET /v1/me/tenants', () => {
     expect(ids).not.toContain(tenantB.id);
   }, 60_000);
 
-  it('works pre-bind: a fresh sign-in with no active organization can still call it (D-17)', async () => {
+  it('works pre-bind: a fresh sign-in with no active tenant can still call it (D-17)', async () => {
     const slug = `mt-prebind-${randomUUID().slice(0, 8)}`;
     const email = `owner-${slug}@example.com`;
     await provisionTenant(stack.app, slug, INTERNAL_TOKEN);

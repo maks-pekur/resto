@@ -4,7 +4,7 @@ import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 
 export interface ListRolesInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly headers: Headers;
 }
 
@@ -19,7 +19,7 @@ export class ListRolesService {
   constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
 
   async execute(input: ListRolesInput): Promise<{ roles: RoleView[] }> {
-    const roles = await listActiveCustomRoles(this.authDb, input.organizationId);
+    const roles = await listActiveCustomRoles(this.authDb, input.tenantId);
     return { roles };
   }
 }

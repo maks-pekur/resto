@@ -227,9 +227,9 @@ export const buildAuthFromEnv = (
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
   // Admin (and other browser callers) hit BA from a different origin
   // than the api's `baseURL`; BA enforces an Origin allowlist on
-  // mutating requests. ADMIN_WEB_URL is the apex (pre-organization
+  // mutating requests. ADMIN_WEB_URL is the apex (pre-tenant
   // sign-in/signup); ADMIN_WEB_ORIGIN_WILDCARD (D-21) is the
-  // per-organization SPA host — both are needed, not either/or.
+  // per-tenant SPA host — both are needed, not either/or.
   // BA's own static-array `matchesOriginPattern` does the matching (its
   // `*` may span dots within the matched segment, looser than this repo's
   // `buildOriginMatcher`, which forbids that via `[^./:]+`) — safe here
@@ -309,7 +309,7 @@ export const buildAuthFromEnv = (
     },
     onInitialLocationPin: (userId, tenantId) =>
       locationResolver.resolveForUserInTenant(userId, tenantId),
-    onActiveOrganizationSet: async (session, ctx) => {
+    onActiveTenantSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
       const xff = readHeader(ctx.headers, 'x-forwarded-for');
       const xffFirst = xff?.split(',')[0]?.trim();

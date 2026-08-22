@@ -38,24 +38,27 @@ const buildAuthMock = () => ({
       response: { user: { id: 'u-1' } },
       headers: new Headers({ 'set-cookie': 'better-auth.session_token=abc; Path=/; HttpOnly' }),
     }),
-    setActiveOrganization: vi.fn().mockResolvedValue({
-      headers: new Headers({
-        'set-cookie': 'better-auth.session_token=abc-active; Path=/; HttpOnly',
-      }),
-    }),
   },
+});
+
+const buildTenantActivatorMock = () => ({
+  activateTenant: vi.fn().mockResolvedValue({
+    headers: new Headers({
+      'set-cookie': 'better-auth.session_token=abc-active; Path=/; HttpOnly',
+    }),
+  }),
 });
 
 interface BaUserReaderMock {
   findUserByEmail: ReturnType<typeof vi.fn>;
-  findOwnerByOrganization: ReturnType<typeof vi.fn>;
+  findOwnerByTenant: ReturnType<typeof vi.fn>;
 }
 
 const buildUsersMock = (
   existingUser: { id: string; email: string } | null = null,
 ): BaUserReaderMock => ({
   findUserByEmail: vi.fn().mockResolvedValue(existingUser),
-  findOwnerByOrganization: vi.fn().mockResolvedValue(null),
+  findOwnerByTenant: vi.fn().mockResolvedValue(null),
 });
 
 describe('SignUpService', () => {
@@ -71,6 +74,7 @@ describe('SignUpService', () => {
   };
   let authMock: ReturnType<typeof buildAuthMock>;
   let usersMock: BaUserReaderMock;
+  let tenantActivatorMock: ReturnType<typeof buildTenantActivatorMock>;
 
   const buildService = (): SignUpService =>
     new SignUpService(
@@ -79,6 +83,7 @@ describe('SignUpService', () => {
       tenantLookupMock,
       authMock as never,
       usersMock,
+      tenantActivatorMock,
     );
 
   const baseInput = {
@@ -94,6 +99,7 @@ describe('SignUpService', () => {
     tenantLookupMock = { findBySlug: vi.fn(), findById: vi.fn() };
     authMock = buildAuthMock();
     usersMock = buildUsersMock();
+    tenantActivatorMock = buildTenantActivatorMock();
   });
 
   it('uses base slug when free', async () => {
@@ -130,7 +136,7 @@ describe('SignUpService', () => {
     tenantLookupMock.findBySlug.mockResolvedValue(null);
     tenantProvisioningMock.provision.mockResolvedValue(tenantView());
     bootstrapMock.execute.mockResolvedValue({});
-    authMock.api.setActiveOrganization.mockRejectedValueOnce(new Error('no-org-membership'));
+    tenantActivatorMock.activateTenant.mockRejectedValueOnce(new Error('no-tenant-membership'));
     const result = await buildService().execute(baseInput);
     expect(result.setCookie[0]).toMatch(/=abc;/);
   });
@@ -217,16 +223,13 @@ describe('SignUpService', () => {
     expect((err as SignupBetterAuthFailureError).stage).toBe('signInEmail');
   });
 
-  it('passes tenantId to setActiveOrganization', async () => {
+  it('passes tenantId to the tenant activator port', async () => {
     tenantLookupMock.findBySlug.mockResolvedValue(null);
     tenantProvisioningMock.provision.mockResolvedValue(tenantView({ id: TENANT_ID_ALT }));
     bootstrapMock.execute.mockResolvedValue({});
     await buildService().execute(baseInput);
-    expect(authMock.api.setActiveOrganization).toHaveBeenCalledWith(
-      expect.objectContaining({
-        body: { organizationId: TENANT_ID_ALT },
-        returnHeaders: true,
-      }),
+    expect(tenantActivatorMock.activateTenant).toHaveBeenCalledWith(
+      expect.objectContaining({ tenantId: TENANT_ID_ALT }),
     );
   });
 });

@@ -14,7 +14,7 @@ import {
 
 export interface ArchiveRoleServiceInput {
   readonly roleSlug: string;
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly actorUserId: string;
   readonly headers: Headers;
 }
@@ -29,7 +29,7 @@ export class ArchiveRoleService {
   ) {}
 
   async execute(input: ArchiveRoleServiceInput): Promise<void> {
-    const activeRoles = await listActiveCustomRoles(this.authDb, input.organizationId);
+    const activeRoles = await listActiveCustomRoles(this.authDb, input.tenantId);
     if (!activeRoles.some((r) => r.role === input.roleSlug)) {
       throw new RoleNotFoundError(input.roleSlug);
     }
@@ -38,7 +38,7 @@ export class ArchiveRoleService {
     const memberRows = await this.authDb.db
       .select({ id: memberTable.id, role: memberTable.role })
       .from(memberTable)
-      .where(eq(memberTable.tenantId, input.organizationId));
+      .where(eq(memberTable.tenantId, input.tenantId));
 
     const occupyingMembers = memberRows.filter((m) => {
       const parts = m.role.split(',').map((r) => r.trim());
@@ -53,11 +53,9 @@ export class ArchiveRoleService {
     await this.authDb.db
       .update(tenantRole)
       .set({ archivedAt: new Date() })
-      .where(
-        and(eq(tenantRole.tenantId, input.organizationId), eq(tenantRole.role, input.roleSlug)),
-      );
+      .where(and(eq(tenantRole.tenantId, input.tenantId), eq(tenantRole.role, input.roleSlug)));
 
-    const tenantId = TenantId.parse(input.organizationId);
+    const tenantId = TenantId.parse(input.tenantId);
     try {
       await this.emitter.emit(
         buildEnvelope(

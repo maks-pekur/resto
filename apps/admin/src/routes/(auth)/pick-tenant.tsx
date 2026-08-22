@@ -5,23 +5,23 @@ import { useQuery } from '@tanstack/react-query';
 import { Route as authLayoutRoute } from './_layout';
 import { apiFetch } from '@/lib/api-client';
 import { meTenantsQuery } from '@/lib/queries/identity';
-import { adminUrlForOrg } from '@/lib/admin-host';
+import { adminUrlForTenant } from '@/lib/admin-host';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-interface SwitchOrganizationResponse {
+interface SwitchTenantResponse {
   readonly organizationId: string;
   readonly slug: string;
 }
 
 export const Route = createRoute({
   getParentRoute: () => authLayoutRoute,
-  path: '/pick-organization',
-  component: PickOrganizationPage,
+  path: '/pick-tenant',
+  component: PickTenantPage,
 });
 
-function PickOrganizationPage() {
-  const { t } = useTranslation('translation', { keyPrefix: 'pickOrganization' });
+function PickTenantPage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'pickTenant' });
   const { data: tenantsResult, isPending } = useQuery(meTenantsQuery());
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -32,9 +32,9 @@ function PickOrganizationPage() {
     setPendingId(tenantId);
     setError(null);
     // D-15/D-16/D-21: revoke-and-reissue, then a HARD navigation — the
-    // organization lives in the host, and a client-side route push cannot
+    // tenant lives in the host, and a client-side route push cannot
     // cross origins.
-    const res = await apiFetch<SwitchOrganizationResponse>('/api/auth/switch-organization', {
+    const res = await apiFetch<SwitchTenantResponse>('/api/auth/switch-organization', {
       method: 'POST',
       body: { organizationId: tenantId },
     });
@@ -43,7 +43,7 @@ function PickOrganizationPage() {
       setPendingId(null);
       return;
     }
-    window.location.assign(adminUrlForOrg(res.data.slug, '/dashboard'));
+    window.location.assign(adminUrlForTenant(res.data.slug, '/dashboard'));
   };
 
   return (

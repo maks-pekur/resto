@@ -35,11 +35,11 @@ export class AssignRoleInputDto extends createZodDto(AssignRoleInputSchema) {}
 
 export const SignUpInputSchema = z.object({
   // D-27: the PERSON's name — goes to the Better Auth user, never to the
-  // organization. The organization's real name is collected at onboarding.
+  // tenant. The tenant's real name is collected at onboarding.
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(12).max(128),
-  // D-32/D-34: collected here, applied to the organization at onboarding;
+  // D-32/D-34: collected here, applied to the tenant at onboarding;
   // currency and locale are ALWAYS derived from it, never separate inputs.
   country: CountryCodeValue,
 });

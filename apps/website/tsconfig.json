@@ -2,9 +2,12 @@
   "extends": "@resto/config-typescript/nextjs.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": ".",
+    "rootDir": "../..",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@resto/api-client": ["../../packages/api-client/src/index.ts"],
+      "@resto/api-client/public": ["../../packages/api-client/src/public.ts"],
+      "@resto/api-client/internal": ["../../packages/api-client/src/internal.ts"]
     },
     "types": ["node"],
     "exactOptionalPropertyTypes": false

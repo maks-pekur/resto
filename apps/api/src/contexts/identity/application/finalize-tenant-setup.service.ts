@@ -21,10 +21,10 @@ export interface FinalizeTenantSetupResult {
 }
 
 /**
- * D-30/D-31: an owner names their restaurant once. The organization is
+ * D-30/D-31: an owner names their restaurant once. The tenant is
  * resolved from the session's `activeOrganizationId` (never a body
  * parameter — see the controller) and must be `'pending_setup'`; a second
- * call on an already-active organization is a 409, not a rename tool.
+ * call on an already-active tenant is a 409, not a rename tool.
  */
 @Injectable()
 export class FinalizeTenantSetupService {

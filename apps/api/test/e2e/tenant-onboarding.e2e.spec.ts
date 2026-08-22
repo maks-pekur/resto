@@ -144,7 +144,7 @@ describe('POST /v1/me/tenants/onboarding (D-30/D-31)', () => {
     expect(domains[0]?.isPrimary).toBe(true);
   }, 60_000);
 
-  it('a second onboarding submission on the same organization returns 409', async () => {
+  it('a second onboarding submission on the same tenant returns 409', async () => {
     const { cookie } = await signUpAndSignIn();
 
     const first = await app.inject({

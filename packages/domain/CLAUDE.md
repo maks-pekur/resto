@@ -77,7 +77,7 @@ z.object({ … })` — they will drift.
 ### RBAC
 
 - **System roles are immutable in code** (`owner`, `admin`, `staff` per
-  ADR-0013). Tenant-creatable roles persist in BA's `organization_role`
+  ADR-0013). Tenant-creatable roles persist in BA's `tenant_role`
   table; the domain does not model them.
 - **Adding a permission to `admin` requires a passing regression test
   that pins what admin must NOT receive** (e.g., `tenant:delete`,

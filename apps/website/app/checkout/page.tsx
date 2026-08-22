@@ -7,8 +7,8 @@ import { CheckoutForm } from '@/components/checkout/checkout-form';
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const menu = await fetchMenuPublic();
-    const brandName = menu.brand?.displayName ?? 'Restaurant';
-    return { title: `Checkout — ${brandName}`, robots: { index: false } };
+    const tenantName = menu.tenant?.displayName ?? 'Restaurant';
+    return { title: `Checkout — ${tenantName}`, robots: { index: false } };
   } catch {
     return {};
   }
@@ -19,7 +19,7 @@ export default async function CheckoutPage() {
     const menu = await fetchMenuPublic();
     return (
       <>
-        <TenantHeader brand={menu.brand} />
+        <TenantHeader tenant={menu.tenant} />
         <CheckoutForm />
       </>
     );

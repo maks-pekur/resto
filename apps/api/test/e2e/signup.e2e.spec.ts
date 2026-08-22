@@ -164,7 +164,7 @@ describe('Identity — public signup (D-06 enumeration-safe contract)', () => {
     );
 
     // Exactly one tenant was ever created for this email — the dup branch
-    // never provisions a second organization.
+    // never provisions a second tenant.
     const { member } = await findTenantByOwnerEmail(body.email);
     expect(member.role).toBe('owner');
   }, 60_000);

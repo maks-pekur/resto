@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { apiFetch } from '@/lib/api-client';
 import { slugifyTenantName } from '@/lib/slugify-tenant';
-import { adminUrlForOrg } from '@/lib/admin-host';
+import { adminUrlForTenant } from '@/lib/admin-host';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,10 +41,9 @@ function OnboardingPage() {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const previewHost = adminUrlForOrg(slugifyTenantName(displayName) || 'your-restaurant').replace(
-    /^https?:\/\//,
-    '',
-  );
+  const previewHost = adminUrlForTenant(
+    slugifyTenantName(displayName) || 'your-restaurant',
+  ).replace(/^https?:\/\//, '');
 
   const onSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -69,7 +68,7 @@ function OnboardingPage() {
     toast.success(t('createdToast', { name: tenant.displayName }));
     // The server-returned slug wins, not the locally-previewed one — it may
     // differ after collision resolution.
-    window.location.assign(adminUrlForOrg(tenant.slug, '/dashboard'));
+    window.location.assign(adminUrlForTenant(tenant.slug, '/dashboard'));
   };
 
   return (

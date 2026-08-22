@@ -8,8 +8,8 @@ import { getSeededContent, type ContentPageKey } from '@/lib/content';
 export async function contentMetadata(label: string): Promise<Metadata> {
   try {
     const menu = await fetchMenuPublic();
-    const brandName = menu.brand?.displayName ?? 'Restaurant';
-    return { title: `${label} — ${brandName}`, robots: { index: true, follow: true } };
+    const tenantName = menu.tenant?.displayName ?? 'Restaurant';
+    return { title: `${label} — ${tenantName}`, robots: { index: true, follow: true } };
   } catch {
     return {};
   }
@@ -18,11 +18,11 @@ export async function contentMetadata(label: string): Promise<Metadata> {
 export async function ContentRouteServer({ pageKey }: { pageKey: ContentPageKey }) {
   try {
     const menu = await fetchMenuPublic();
-    const brandName = menu.brand?.displayName ?? 'Restaurant';
-    const { heading, body } = getSeededContent(pageKey, brandName);
+    const tenantName = menu.tenant?.displayName ?? 'Restaurant';
+    const { heading, body } = getSeededContent(pageKey, tenantName);
     return (
       <>
-        <TenantHeader brand={menu.brand} />
+        <TenantHeader tenant={menu.tenant} />
         <ContentPage heading={heading} body={body} />
       </>
     );

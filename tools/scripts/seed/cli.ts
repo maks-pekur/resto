@@ -21,19 +21,19 @@ Commands:
   bootstrap-owner    --tenant <slug> --email <email>
                      [--name "Owner Name"] [--password-stdin]
                      [--owner-password ... (dev only)]
-  seed-demo          Idempotently seeds 3 organizations (one per supported
+  seed-demo          Idempotently seeds 3 tenants (one per supported
                      country: UA, GB, ES), 5 locations, 2 staff roles,
-                     2 categories + 2 items per organization.
+                     2 categories + 2 items per tenant.
                      Dev only (NODE_ENV=development).
-                     [--payments-ready]  Makes the "pizza" organization able
+                     [--payments-ready]  Makes the "pizza" tenant able
                      to take a real Stripe test-mode payment (stamps
                      stripe_account_id/charges_enabled/payouts_enabled/
                      onboarding_status). Refused outside development/test.
                      Requires SEED_STRIPE_TEST_ACCOUNT_ID — see below.
   sync-preset-roles  Re-syncs PRESET_ROLES permission JSON onto existing
-                     tenants' organization_role rows (a preset edit does
+                     tenants' tenant_role rows (a preset edit does
                      not otherwise reach an already-provisioned tenant).
-                     --tenant <organizationId> | --all
+                     --tenant <tenantId> | --all
                      Idempotent; skips roles the owner archived.
 
 Global flags:

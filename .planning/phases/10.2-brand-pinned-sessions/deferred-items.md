@@ -330,6 +330,14 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   fixing anything. Whichever plan rewrites the settings/payouts/domains screens (UI-SPEC S4/S5
   territory — plans 15-17) should rename these keys alongside their own call-site rewrite.
 
+  **RESOLVED (10.2 plan 21, 2026-08-22):** plans 15-17 landed the settings/payouts/domains
+  screens (`tenant.domains.tsx`, `tenant.theme.tsx`, `tenant.payouts.tsx`) without ever wiring
+  these keys — confirmed via `grep -rn "addBrand\|noBrandsDescription\|noBrands\b\|brandDomainsTitle\|
+brandDomainsDescription\|brandPayoutsTitle\|brandPayoutsDescription\|brandThemeTitle"
+  apps/admin/src` returning zero call sites outside the message files themselves. All nine keys
+  were dead, not stale — deleted outright (D-39) from all three catalogues rather than renamed.
+  `i18n.spec.ts` (key-set parity across ru/en/es) still passes 8/8.
+
 - **`apps/admin/src/lib/hooks/use-effective-location.ts` retains one structural `brand` match**
   it cannot clear: `import { Route as brandSlugLayoutRoute } from
 '@/routes/(protected)/$brandSlug/_layout'` plus the local alias's two use sites and two prose
@@ -383,6 +391,13 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   fixed here — outside this plan's `files_modified`, not exercised by Task 1's or Task 2's
   `<verify>` commands (neither calls `sync-preset-roles`). This is the "log a seventh" file the
   plan's verification lessons anticipated.
+
+  **RESOLVED (10.2 plan 21, 2026-08-22):** `organization_role`→`tenant_role`,
+  `organization_id`→`tenant_id` in all four raw SQL statements (`SELECT`/`UPDATE`/`INSERT`), plus
+  `syncOrganization`→`syncTenant`, `organizationIds`→`tenantIds`, `OrgRow`→`TenantRow` for
+  consistency. Live-verified against the real dev database (not just typecheck): `pnpm resto:seed
+sync-preset-roles --all` ran clean against all 304 live tenants, zero errors — confirms the
+  previous "relation does not exist" failure is gone.
 
 - **`packages/db/test/integration/erase-includes-brands.spec.ts` does not exist — plan 03
   deleted it outright (`git show e5e1e3ed --stat`, 105 deletions / 0 additions), not merely
@@ -447,6 +462,12 @@ properties of null (reading 'getInstance')` at
   `RESOURCE_LABELS` in `permission-catalog.tsx`, and (2) delete the `brand: [...]` key from all
   three `PRESETS` entries in `preset-picker.tsx`, verifying against the live
   `PERMISSIONS_STATEMENT` shape first.
+
+  **RESOLVED (10.2 plan 21, 2026-08-22):** both fixed exactly as prescribed — the `brand: 'Brand'`
+  row deleted from `RESOURCE_LABELS`, and the `brand: [...]` key deleted from all three `PRESETS`
+  entries (`manager`, `cashier-foh`, `kitchen`). `rg -n "brand" packages/domain/src/rbac/permissions.ts`
+  confirmed zero matches before editing, matching plan 16's own confirmation that `brand` is dropped,
+  not renamed, from `PERMISSIONS_STATEMENT`.
 
 ## From plan 15
 
@@ -545,3 +566,43 @@ expected string, received number`), which TanStack Router's `CatchBoundaryImpl` 
   admin e2e suite should rewrite `adm-01`/`adm-02`/`adm-03` onto the flat routes + `GET /v1/me/tenants`
   model, following the same pattern `adm-00`'s `fixtures/seed-tenants.ts` now uses (provision via
   `/internal/v1/tenants` + `/internal/v1/tenants/:id/owner`, no brand creation call).
+
+## From plan 21
+
+- **Two pre-existing `apps/api/test/e2e` failures found during this plan's live verification,
+  confirmed NOT caused by the vocabulary sweep.** Both were discovered running specs individually
+  against the real dev stack (Docker Postgres on :5433) while verifying the identity port-boundary
+  refactor and the `organizationId`→`tenantId` DTO rename.
+  - `identity-role-changed.e2e.spec.ts` — "records identity.role_changed.v1 in audit_log when an
+    owner promotes a staff member to admin" gets a 403/500 instead of 200/201. Root cause traced live:
+    `auth.config.ts`'s `beforeUpdateMemberRole` hook resolves `SYSTEM_ROLES.admin` as the target
+    permission set and rejects it via `containsNonDelegatable(targetPermission)` — meaning promoting
+    staff to the built-in `admin` role is currently rejected as "non-delegatable," which looks like a
+    genuine authorization bug unrelated to any rename (`SYSTEM_ROLES` lives in `packages/domain`,
+    untouched by this plan; `beforeUpdateMemberRole`'s logic, also untouched — verified via
+    `git diff 551ad8c...HEAD -- apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts`,
+    the only change in that file is the unrelated `onActiveOrganizationSet`→`onActiveTenantSet` rename).
+  - `tenants-controller.e2e.spec.ts` — "returns 200 and clears offboardingScheduledAt for owner"
+    (`DELETE /v1/tenants/me/offboard`) gets 403 immediately after the identical owner's `POST
+/v1/tenants/me/offboard` succeeds with 202 in the same test, using the identical
+    `@Permissions({ tenant: ['delete'] })` decorator on both routes. Confirmed not caused by this
+    plan: the only two files this plan touched that are anywhere near this path are
+    `location-scope.guard.ts` (one error-message string, verified via diff against the base commit)
+    and `provision-tenant.service.ts` (the `seedPresets.execute({organizationId→tenantId})` call,
+    verified working live via `signup.e2e.spec.ts` and `tenant-onboarding.e2e.spec.ts` both passing
+    6/6 and 8/8 with the renamed field) — neither is on the offboard permission-check path.
+  - Both are individually reproducible (not cross-test pollution — re-run each file alone, same
+    result). Not fixed here: outside this plan's scope-boundary rule (pre-existing, unrelated to
+    `organization`/`brand` vocabulary). `packages/domain/src/rbac/permissions.ts` (the likely home of
+    the `admin` non-delegatable-permission question) was read but not modified by this plan. Flagging
+    for whichever plan next touches `beforeUpdateMemberRole` or the tenant-offboard permission path.
+
+- **`apps/admin/e2e/fixtures/seed-orders.ts:225`'s raw SQL still inserts into `member`'s
+  `organization_id` column** — renamed to `tenant_id` by migration 0079 (D-41). This raw INSERT would
+  throw "column organization_id does not exist" the moment it runs. Not fixed here: this fixture is
+  used only by `adm-02-orders-workflow-smoke.spec.ts` and `adm-03-guest-status-loop.spec.ts`, both
+  already flagged stale and out of scope by plan 19's own deferred-items.md entry ("From plan 19") —
+  fixing this one column name would not make either spec runnable, since both also call the deleted
+  `POST /v1/me/brands` endpoint and reference brand-slug routes. Whichever plan rewrites `adm-01`/
+  `adm-02`/`adm-03` onto the merged tenant model (per plan 19's entry above) should fix this
+  alongside that larger rewrite.

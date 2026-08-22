@@ -66,11 +66,11 @@
       "languageLabel": "Язык",
       "localeRu": "Русский",
       "localeEn": "English",
-      "switchOrganizationItem": "Сменить ресторан",
+      "switchTenantItem": "Сменить ресторан",
       "localeEs": "Español"
     }
   },
-  "pickOrganization": {
+  "pickTenant": {
     "title": "Выберите ресторан",
     "description": "У вас есть доступ к нескольким ресторанам. Выберите один, чтобы продолжить.",
     "loading": "Загружаем…",
@@ -496,11 +496,7 @@
     }
   },
   "dashboard": {
-    "addBrand": "Добавить бренд",
-    "brand": "Бренд",
     "addAccount": "Добавить аккаунт",
-    "noBrands": "У вас пока нет брендов",
-    "noBrandsDescription": "Создайте первый бренд, чтобы начать.",
     "title": "Дашборд",
     "noLocationsTitle": "У вас пока нет точек",
     "noLocationsDescription": "Создайте первую точку, чтобы начать отслеживать стоп-лист.",
@@ -510,11 +506,6 @@
     "teamInviteBtn": "Пригласить",
     "teamInviteTitle": "Пригласить сотрудника",
     "teamInviteDescription": "Отправьте e-mail приглашение. Ссылка действует 48 часов.",
-    "brandDomainsTitle": "Домены",
-    "brandDomainsDescription": "Кастомные домены брендов появятся в одном из следующих тикетов.",
-    "brandPayoutsTitle": "Выплаты",
-    "brandPayoutsDescription": "Подключение Stripe Connect появится в одном из следующих тикетов.",
-    "brandThemeTitle": "Тема бренда",
     "editItemTitle": "Редактирование блюда",
     "newItemTitle": "Новое блюдо",
     "editGroupTitle": "Редактирование группы модификаторов",

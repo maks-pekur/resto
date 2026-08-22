@@ -40,8 +40,8 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
   const initial = avatarInitial(operator.email);
   const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
   // Same conditional-render shape as location-switcher.tsx:35 — staff and
-  // single-organization owners see no item at all, not a disabled one (D-17).
-  const canSwitchOrganization =
+  // single-tenant owners see no item at all, not a disabled one (D-17).
+  const canSwitchTenant =
     operator.baseRole === 'owner' && (tenantsResult.data?.tenants.length ?? 0) >= 2;
 
   const signOut = async () => {
@@ -87,13 +87,13 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            {canSwitchOrganization ? (
+            {canSwitchTenant ? (
               <>
                 <DropdownMenuGroup>
                   <DropdownMenuItem asChild>
-                    <Link to="/pick-organization" data-testid="nav-switch-organization">
+                    <Link to="/pick-tenant" data-testid="nav-switch-tenant">
                       <Building2 />
-                      {t('switchOrganizationItem')}
+                      {t('switchTenantItem')}
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuGroup>

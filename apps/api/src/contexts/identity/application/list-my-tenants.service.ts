@@ -21,10 +21,10 @@ export interface ListMyTenantsResult {
 
 /**
  * Post-merge replacement for the brand-scoped listing (D-07/D-40): there is
- * no scope dimension left inside an organization, so this is a plain
+ * no scope dimension left inside a tenant, so this is a plain
  * membership lookup — every tenant `userId` has a `member` row for. Backs
  * the sign-in picker (D-02/D-17), which needs this to run before any
- * organization is bound to the session.
+ * tenant is bound to the session.
  */
 @Injectable()
 export class ListMyTenantsService {

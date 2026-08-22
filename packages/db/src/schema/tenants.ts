@@ -37,10 +37,10 @@ export const tenants = pgTable(
     locale: text('locale').notNull().default('en'),
     defaultCurrency: text('default_currency').notNull().default('USD'),
     /**
-     * D-34: collected at signup, applied to the organization at
+     * D-34: collected at signup, applied to the tenant at
      * onboarding. NOT NULL — D-12 gives a database reset, so there are no
      * legacy rows to backfill, and a nullable column would let a
-     * provisioning path silently create a market-less organization whose
+     * provisioning path silently create a market-less tenant whose
      * currency/locale cannot be derived.
      */
     country: text('country').notNull(),
@@ -104,7 +104,7 @@ export const tenants = pgTable(
     ),
     // NOTE (D-04): the brands table's former per-tenant case-insensitive
     // unique-display-name index is deliberately NOT ported. Post-merge
-    // there is no tenant above the organization for it to be scoped
+    // there is no parent entity for a tenant to be scoped
     // within — the only faithful translation would be a GLOBAL unique
     // display name, which would forbid two unrelated restaurants both
     // being called "Pizzeria". `tenants_slug_uq` remains the global

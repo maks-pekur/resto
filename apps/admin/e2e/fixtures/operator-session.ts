@@ -18,9 +18,9 @@ export interface OperatorSessionFixtures {
  * Drives a real Better Auth sign-in via the rendered `/login` form so the
  * e2e suite exercises the full server-action fan-out (sign-in ->
  * GET /v1/me/tenants -> branch on count). The post-submit destination
- * depends on how many organizations the operator belongs to (D-17): zero
+ * depends on how many tenants the operator belongs to (D-17): zero
  * lands on `/onboarding`, exactly one hard-navigates cross-host to
- * `<slug>.admin.localhost:4000`, two or more lands on `/pick-organization`
+ * `<slug>.admin.localhost:4000`, two or more lands on `/pick-tenant`
  * — callers assert their own expected destination, this fixture only
  * waits for the async submit handler to leave `/login`.
  *

@@ -42,7 +42,6 @@ class BootstrapOwnerInputDto extends createZodDto(BootstrapOwnerInputSchema) {}
 const BootstrapOwnerResponseSchema = z.object({
   tenantId: z.string().uuid(),
   userId: z.string(),
-  organizationId: z.string().uuid(),
   email: z.string().email(),
   requiresPasswordChange: z.boolean(),
 });

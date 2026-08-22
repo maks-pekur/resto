@@ -74,7 +74,7 @@ describe('Better Auth trustedOrigins wildcard matching (D-24)', () => {
       }),
     );
 
-  it('accepts a legitimate per-organization admin host', async () => {
+  it('accepts a legitimate per-tenant admin host', async () => {
     const res = await probeOrigin('https://acme.admin.resto.app');
     expect(res.status).toBe(200);
   });

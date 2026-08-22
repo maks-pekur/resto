@@ -36,7 +36,10 @@
       "@resto/db": ["packages/db/src/index.ts"],
       "@resto/db/*": ["packages/db/src/*"],
       "@resto/events": ["packages/events/src/index.ts"],
-      "@resto/events/*": ["packages/events/src/*"]
+      "@resto/events/*": ["packages/events/src/*"],
+      "@resto/api-client": ["packages/api-client/src/index.ts"],
+      "@resto/api-client/public": ["packages/api-client/src/public.ts"],
+      "@resto/api-client/internal": ["packages/api-client/src/internal.ts"]
     }
   },
   "exclude": ["node_modules", "tmp", "dist", "build"]

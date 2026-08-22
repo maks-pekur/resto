@@ -274,7 +274,7 @@ The wrappers do NOT rebind ALS; they read once at the top of `op`.
 - Logged at WARN by `logger.ts` with shape:
   `{ pkg: '@resto/db', reason: '<value>', msg: 'Running database operation without a tenant context (RLS bypass)' }`.
 - Convention: lowercase `<context>.<action>` dot-notation —
-  `'outbox.dispatch'`, `'tenancy.brands.findByDomainHost'`,
+  `'outbox.dispatch'`, `'tenancy.findByDomainHost'`,
   `'migrate.create-extension'`. Test seeds may use sentence fragments
   (`'seed cross-tenant isolation fixture'`).
 - NOT an enum. Adding a bypass site should not require a `@resto/db`

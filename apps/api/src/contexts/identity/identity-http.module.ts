@@ -45,6 +45,8 @@ import { BA_USER_READER } from './application/ports/ba-user-reader.port';
 import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';
 import { TENANT_PROVISIONING_PORT } from './application/ports/tenant-provisioning.port';
 import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.adapter';
+import { SESSION_ACTIVE_TENANT_ACTIVATOR } from './application/ports/session-active-tenant-activator.port';
+import { BetterAuthSessionActiveTenantActivator } from './infrastructure/better-auth/session-active-tenant.adapter';
 
 /**
  * HTTP-side composition for the identity context. Imports
@@ -93,6 +95,11 @@ import { TenantProvisioningAdapter } from './infrastructure/tenant-provisioning.
     BaUserDrizzleReader,
     { provide: TENANT_PROVISIONING_PORT, useClass: TenantProvisioningAdapter },
     TenantProvisioningAdapter,
+    {
+      provide: SESSION_ACTIVE_TENANT_ACTIVATOR,
+      useClass: BetterAuthSessionActiveTenantActivator,
+    },
+    BetterAuthSessionActiveTenantActivator,
     TenantSlugRateLimitGuard,
   ],
 })

@@ -4,7 +4,7 @@ import { PRESET_ROLES } from '@resto/domain';
 import { log } from '../lib/logger';
 import { parseFlags, type RuntimeOptions } from '../lib/options';
 
-interface OrgRow {
+interface TenantRow {
   readonly id: string;
 }
 
@@ -27,11 +27,11 @@ const requireEnv = (name: string): string => {
   return value;
 };
 
-const syncOrganization = async (sql: Sql, organizationId: string): Promise<SyncCounts> => {
+const syncTenant = async (sql: Sql, tenantId: string): Promise<SyncCounts> => {
   const rows = await sql<ExistingRoleRow[]>`
     SELECT id, role, permission, archived_at AS "archivedAt"
-    FROM organization_role
-    WHERE organization_id = ${organizationId}
+    FROM tenant_role
+    WHERE tenant_id = ${tenantId}
   `;
   const bySlug = new Map(rows.map((row) => [row.role, row]));
 
@@ -49,14 +49,14 @@ const syncOrganization = async (sql: Sql, organizationId: string): Promise<SyncC
         continue;
       }
       if (existing.permission === target) continue;
-      await sql`UPDATE organization_role SET permission = ${target} WHERE id = ${existing.id}`;
+      await sql`UPDATE tenant_role SET permission = ${target} WHERE id = ${existing.id}`;
       updated += 1;
       continue;
     }
 
     await sql`
-      INSERT INTO organization_role (id, organization_id, role, permission, created_at)
-      VALUES (${randomUUID()}, ${organizationId}, ${preset.slug}, ${target}, now())
+      INSERT INTO tenant_role (id, tenant_id, role, permission, created_at)
+      VALUES (${randomUUID()}, ${tenantId}, ${preset.slug}, ${target}, now())
     `;
     inserted += 1;
   }
@@ -85,19 +85,19 @@ export const runSyncPresetRoles = async (
 
   const sql = postgres(authDatabaseUrl, { max: 1, prepare: false });
   try {
-    let organizationIds: readonly string[];
+    let tenantIds: readonly string[];
     if (all) {
-      const rows = await sql<OrgRow[]>`
+      const rows = await sql<TenantRow[]>`
         SELECT id FROM tenants WHERE status NOT IN ('archived', 'erased')
       `;
-      organizationIds = rows.map((row) => row.id);
+      tenantIds = rows.map((row) => row.id);
     } else if (tenantFlag !== undefined) {
-      organizationIds = [tenantFlag];
+      tenantIds = [tenantFlag];
     } else {
-      organizationIds = [];
+      tenantIds = [];
     }
 
-    if (organizationIds.length === 0) {
+    if (tenantIds.length === 0) {
       log('sync-preset-roles.none', {});
       return;
     }
@@ -106,16 +106,16 @@ export const runSyncPresetRoles = async (
     let totalInserted = 0;
     let totalSkippedArchived = 0;
 
-    for (const organizationId of organizationIds) {
-      const counts = await syncOrganization(sql, organizationId);
-      log('sync-preset-roles.tenant', { organizationId, ...counts });
+    for (const tenantId of tenantIds) {
+      const counts = await syncTenant(sql, tenantId);
+      log('sync-preset-roles.tenant', { tenantId, ...counts });
       totalUpdated += counts.updated;
       totalInserted += counts.inserted;
       totalSkippedArchived += counts.skippedArchived;
     }
 
     log('sync-preset-roles.done', {
-      tenants: organizationIds.length,
+      tenants: tenantIds.length,
       updated: totalUpdated,
       inserted: totalInserted,
       skippedArchived: totalSkippedArchived,

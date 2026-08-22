@@ -11,7 +11,7 @@ export type {
   MenuModifierGroupDto,
   MenuItemDto,
   MenuCategoryDto,
-  MenuBrandThemeDto,
-  MenuBrandDto,
+  MenuTenantThemeDto,
+  MenuTenantDto,
   MenuDto,
 } from './menu-types.js';

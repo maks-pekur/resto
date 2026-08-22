@@ -8,7 +8,7 @@ const buildMenu = (): MenuDto => ({
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'USD',
-  brand: null,
+  tenant: null,
   categories: [
     { id: 'cat-1', slug: 'pizza', name: { en: 'Pizza' }, description: null, sortOrder: 0 },
   ],
