@@ -12,7 +12,6 @@ const RESOURCE_LABELS: Record<string, string> = {
   reports: 'Reports',
   settings: 'Settings',
   billing: 'Billing',
-  brand: 'Brand',
   tenant: 'Tenant',
 };
 

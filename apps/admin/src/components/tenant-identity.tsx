@@ -14,8 +14,8 @@ const initialsOf = (displayName: string): string => {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 };
 
-// UI-SPEC S5: a static, non-interactive organization-identity block —
-// D-15's one-session-one-organization model means there is nothing to
+// UI-SPEC S5: a static, non-interactive tenant-identity block —
+// D-15's one-session-one-tenant model means there is nothing to
 // switch between, but the address bar alone (D-21) is not enough for the
 // tablet-in-the-kitchen usage this admin targets. Deliberately a plain,
 // non-focusable, non-clickable element with no menu or expand affordance —

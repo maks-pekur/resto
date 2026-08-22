@@ -19,7 +19,6 @@ const PRESETS: readonly Preset[] = [
       order: ['read', 'update-status'],
       staff: ['invite'],
       reports: ['read'],
-      brand: ['read', 'update'],
       settings: ['update'],
     },
   },
@@ -30,7 +29,6 @@ const PRESETS: readonly Preset[] = [
     permission: {
       order: ['read', 'update-status'],
       menu: ['read'],
-      brand: ['read'],
     },
   },
   {
@@ -39,7 +37,6 @@ const PRESETS: readonly Preset[] = [
     description: 'View and update order status from the kitchen.',
     permission: {
       order: ['read', 'update-status'],
-      brand: ['read'],
     },
   },
 ];

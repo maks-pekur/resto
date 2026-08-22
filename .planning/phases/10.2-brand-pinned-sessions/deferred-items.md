@@ -455,6 +455,12 @@ properties of null (reading 'getInstance')` at
   three `PRESETS` entries in `preset-picker.tsx`, verifying against the live
   `PERMISSIONS_STATEMENT` shape first.
 
+  **RESOLVED (10.2 plan 21, 2026-08-22):** both fixed exactly as prescribed — the `brand: 'Brand'`
+  row deleted from `RESOURCE_LABELS`, and the `brand: [...]` key deleted from all three `PRESETS`
+  entries (`manager`, `cashier-foh`, `kitchen`). `rg -n "brand" packages/domain/src/rbac/permissions.ts`
+  confirmed zero matches before editing, matching plan 16's own confirmation that `brand` is dropped,
+  not renamed, from `PERMISSIONS_STATEMENT`.
+
 ## From plan 15
 
 - **`apps/admin/test/catalog-spa.spec.tsx` does not compile** — a pre-`--skip-nx-cache` stale
@@ -582,3 +588,13 @@ expected string, received number`), which TanStack Router's `CatchBoundaryImpl` 
     `organization`/`brand` vocabulary). `packages/domain/src/rbac/permissions.ts` (the likely home of
     the `admin` non-delegatable-permission question) was read but not modified by this plan. Flagging
     for whichever plan next touches `beforeUpdateMemberRole` or the tenant-offboard permission path.
+
+- **`apps/admin/e2e/fixtures/seed-orders.ts:225`'s raw SQL still inserts into `member`'s
+  `organization_id` column** — renamed to `tenant_id` by migration 0079 (D-41). This raw INSERT would
+  throw "column organization_id does not exist" the moment it runs. Not fixed here: this fixture is
+  used only by `adm-02-orders-workflow-smoke.spec.ts` and `adm-03-guest-status-loop.spec.ts`, both
+  already flagged stale and out of scope by plan 19's own deferred-items.md entry ("From plan 19") —
+  fixing this one column name would not make either spec runnable, since both also call the deleted
+  `POST /v1/me/brands` endpoint and reference brand-slug routes. Whichever plan rewrites `adm-01`/
+  `adm-02`/`adm-03` onto the merged tenant model (per plan 19's entry above) should fix this
+  alongside that larger rewrite.

@@ -11,7 +11,7 @@ import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api-client';
 import type { MeResponse } from '@/lib/queries/identity';
 import { meTenantsQuery } from '@/lib/queries/identity';
-import { adminUrlForOrg } from '@/lib/admin-host';
+import { adminUrlForTenant } from '@/lib/admin-host';
 import { safeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,7 +37,7 @@ const SearchSchema = z.object({
     .optional(),
 });
 
-interface SwitchOrganizationResponse {
+interface SwitchTenantResponse {
   readonly organizationId: string;
   readonly slug: string;
 }
@@ -69,17 +69,17 @@ function LoginPage() {
       return;
     }
 
-    // D-17: exactly one organization skips the picker entirely; two or more
+    // D-17: exactly one tenant skips the picker entirely; two or more
     // always shows it; staff belong to exactly one and never see it.
     const tenantsRes = await meTenantsQuery().queryFn();
     const tenants = tenantsRes.data?.tenants ?? [];
     if (tenants.length === 0) {
-      // Defensive — /v1/signup guarantees at least one organization.
+      // Defensive — /v1/signup guarantees at least one tenant.
       void navigate({ to: '/onboarding' });
       return;
     }
     if (tenants.length >= 2) {
-      void navigate({ to: '/pick-organization' });
+      void navigate({ to: '/pick-tenant' });
       return;
     }
     const only = tenants[0];
@@ -90,9 +90,9 @@ function LoginPage() {
 
     // D-15/D-21: bind through the same revoke-and-reissue endpoint the
     // picker uses — its response carries the slug the final hard
-    // navigation needs, and every organization-bind on this session goes
+    // navigation needs, and every tenant-bind on this session goes
     // through one mechanism, not two.
-    const switchRes = await apiFetch<SwitchOrganizationResponse>('/api/auth/switch-organization', {
+    const switchRes = await apiFetch<SwitchTenantResponse>('/api/auth/switch-organization', {
       method: 'POST',
       body: { organizationId: only.id },
     });
@@ -113,7 +113,7 @@ function LoginPage() {
       void navigate({ to: '/pick-location', search: { next } });
       return;
     }
-    window.location.assign(adminUrlForOrg(switchRes.data.slug, safeNext(next ?? '/dashboard')));
+    window.location.assign(adminUrlForTenant(switchRes.data.slug, safeNext(next ?? '/dashboard')));
   };
 
   return (

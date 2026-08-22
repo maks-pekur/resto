@@ -66,11 +66,11 @@
       "languageLabel": "Language",
       "localeRu": "Русский",
       "localeEn": "English",
-      "switchOrganizationItem": "Switch organization",
+      "switchTenantItem": "Switch restaurant",
       "localeEs": "Español"
     }
   },
-  "pickOrganization": {
+  "pickTenant": {
     "title": "Choose your restaurant",
     "description": "You have access to more than one restaurant. Pick one to continue.",
     "loading": "Loading…",
