@@ -545,3 +545,33 @@ expected string, received number`), which TanStack Router's `CatchBoundaryImpl` 
   admin e2e suite should rewrite `adm-01`/`adm-02`/`adm-03` onto the flat routes + `GET /v1/me/tenants`
   model, following the same pattern `adm-00`'s `fixtures/seed-tenants.ts` now uses (provision via
   `/internal/v1/tenants` + `/internal/v1/tenants/:id/owner`, no brand creation call).
+
+## From plan 21
+
+- **Two pre-existing `apps/api/test/e2e` failures found during this plan's live verification,
+  confirmed NOT caused by the vocabulary sweep.** Both were discovered running specs individually
+  against the real dev stack (Docker Postgres on :5433) while verifying the identity port-boundary
+  refactor and the `organizationId`→`tenantId` DTO rename.
+  - `identity-role-changed.e2e.spec.ts` — "records identity.role_changed.v1 in audit_log when an
+    owner promotes a staff member to admin" gets a 403/500 instead of 200/201. Root cause traced live:
+    `auth.config.ts`'s `beforeUpdateMemberRole` hook resolves `SYSTEM_ROLES.admin` as the target
+    permission set and rejects it via `containsNonDelegatable(targetPermission)` — meaning promoting
+    staff to the built-in `admin` role is currently rejected as "non-delegatable," which looks like a
+    genuine authorization bug unrelated to any rename (`SYSTEM_ROLES` lives in `packages/domain`,
+    untouched by this plan; `beforeUpdateMemberRole`'s logic, also untouched — verified via
+    `git diff 551ad8c...HEAD -- apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts`,
+    the only change in that file is the unrelated `onActiveOrganizationSet`→`onActiveTenantSet` rename).
+  - `tenants-controller.e2e.spec.ts` — "returns 200 and clears offboardingScheduledAt for owner"
+    (`DELETE /v1/tenants/me/offboard`) gets 403 immediately after the identical owner's `POST
+/v1/tenants/me/offboard` succeeds with 202 in the same test, using the identical
+    `@Permissions({ tenant: ['delete'] })` decorator on both routes. Confirmed not caused by this
+    plan: the only two files this plan touched that are anywhere near this path are
+    `location-scope.guard.ts` (one error-message string, verified via diff against the base commit)
+    and `provision-tenant.service.ts` (the `seedPresets.execute({organizationId→tenantId})` call,
+    verified working live via `signup.e2e.spec.ts` and `tenant-onboarding.e2e.spec.ts` both passing
+    6/6 and 8/8 with the renamed field) — neither is on the offboard permission-check path.
+  - Both are individually reproducible (not cross-test pollution — re-run each file alone, same
+    result). Not fixed here: outside this plan's scope-boundary rule (pre-existing, unrelated to
+    `organization`/`brand` vocabulary). `packages/domain/src/rbac/permissions.ts` (the likely home of
+    the `admin` non-delegatable-permission question) was read but not modified by this plan. Flagging
+    for whichever plan next touches `beforeUpdateMemberRole` or the tenant-offboard permission path.
