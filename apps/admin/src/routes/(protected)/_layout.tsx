@@ -26,9 +26,7 @@ export const locationSearchSchema = z.object({
     .catch(undefined),
 });
 
-// The redirect target predates plan 17's `/onboarding` index route (D-31);
-// `/onboarding/brand` is the only registered onboarding path until plan 17 lands.
-const ONBOARDING_ROUTE = '/onboarding/brand';
+const ONBOARDING_ROUTE = '/onboarding';
 const ONBOARDING_PATH_PREFIX = '/onboarding';
 
 export const Route = createRoute({

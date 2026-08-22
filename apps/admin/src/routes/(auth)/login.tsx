@@ -10,6 +10,8 @@ import { Route as authLayoutRoute } from './_layout';
 import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api-client';
 import type { MeResponse } from '@/lib/queries/identity';
+import { meTenantsQuery } from '@/lib/queries/identity';
+import { adminUrlForOrg } from '@/lib/admin-host';
 import { safeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +28,11 @@ const SearchSchema = z.object({
   next: z.string().optional(),
   expired: z.string().optional(),
 });
+
+interface SwitchOrganizationResponse {
+  readonly organizationId: string;
+  readonly slug: string;
+}
 
 export const Route = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -53,10 +60,39 @@ function LoginPage() {
       setError('Invalid email or password.');
       return;
     }
-    const orgs = await authClient.organization.list();
-    if (orgs.data?.[0]) {
-      await authClient.organization.setActive({ organizationId: orgs.data[0].id });
+
+    // D-17: exactly one organization skips the picker entirely; two or more
+    // always shows it; staff belong to exactly one and never see it.
+    const tenantsRes = await meTenantsQuery().queryFn();
+    const tenants = tenantsRes.data?.tenants ?? [];
+    if (tenants.length === 0) {
+      // Defensive — /v1/signup guarantees at least one organization.
+      void navigate({ to: '/onboarding' });
+      return;
     }
+    if (tenants.length >= 2) {
+      void navigate({ to: '/pick-organization' });
+      return;
+    }
+    const only = tenants[0];
+    if (!only) {
+      void navigate({ to: '/onboarding' });
+      return;
+    }
+
+    // D-15/D-21: bind through the same revoke-and-reissue endpoint the
+    // picker uses — its response carries the slug the final hard
+    // navigation needs, and every organization-bind on this session goes
+    // through one mechanism, not two.
+    const switchRes = await apiFetch<SwitchOrganizationResponse>('/api/auth/switch-organization', {
+      method: 'POST',
+      body: { organizationId: only.id },
+    });
+    if (!switchRes.ok || !switchRes.data) {
+      setError('Could not sign in. Please try again.');
+      return;
+    }
+
     const meResult = await apiFetch<MeResponse>('/v1/me');
     const baseRole = meResult.data?.baseRole;
     const session = await authClient.getSession();
@@ -69,7 +105,7 @@ function LoginPage() {
       void navigate({ to: '/pick-location', search: { next } });
       return;
     }
-    void navigate({ to: safeNext(next ?? '/dashboard') });
+    window.location.assign(adminUrlForOrg(switchRes.data.slug, safeNext(next ?? '/dashboard')));
   };
 
   return (
