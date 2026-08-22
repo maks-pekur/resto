@@ -35,8 +35,8 @@ const MemberLocationRolesResponseSchema = z.object({
 });
 class MemberLocationRolesResponseDto extends createZodDto(MemberLocationRolesResponseSchema) {}
 
-// D-15: brand-neutral (mirrors member-roles.controller.ts) — assigns
-// roles across a brand's locations, not scoped to one pinned location.
+// D-15: location-neutral (mirrors member-roles.controller.ts) — assigns
+// roles across a tenant's locations, not scoped to one pinned location.
 @ApiTags('identity')
 @LocationNeutral()
 @Controller('v1/members')
