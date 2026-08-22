@@ -85,6 +85,41 @@ describe('POST /api/auth/switch-organization (D-15/D-16)', () => {
     return { statusCode: res.statusCode, body: res.json<GetSessionBody>() };
   };
 
+  // Ported from the deleted set-active-brand.e2e.spec.ts's "D-09 tamper"
+  // case (10.2 plan 19): the old `activeBrandId` was a plain
+  // session.additionalFields entry, directly reachable from a generic
+  // session-update call. `activeOrganizationId`/`activeTenantId` is not —
+  // it is owned entirely by Better Auth's `organization` plugin and is
+  // written only by `setActiveOrganization`/`switch-organization`, both of
+  // which verify membership before writing (case 2 proves this from the
+  // other direction: a switch to a non-member org is rejected outright).
+  // This case pins the architectural guarantee: an unrelated write path
+  // cannot forge the field, so nobody can silently regress it back into a
+  // directly-settable additionalField.
+  it('tamper: /update-user cannot forge activeOrganizationId/activeTenantId', async () => {
+    const slug = `orgsw-tamper-${randomUUID().slice(0, 6)}`;
+    const email = `owner-${slug}@example.com`;
+    const password = 'correct-horse-battery-staple-orgsw-tamper';
+    const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slug, email, password, name: 'Tamper Owner' });
+    const cookie = await signIn(app, email, password);
+
+    const forgedTenantId = randomUUID();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/auth/update-user',
+      headers: { 'content-type': 'application/json', cookie },
+      payload: { activeOrganizationId: forgedTenantId, activeTenantId: forgedTenantId },
+    });
+    expect(res.statusCode).not.toBe(500);
+
+    const session = await getSession(cookie);
+    expect(session.statusCode).toBe(200);
+    expect(session.body.session?.activeOrganizationId ?? null).not.toBe(forgedTenantId);
+
+    void tenant;
+  }, 60_000);
+
   it('case 1: switching to B kills the token bound to A and issues one bound to B', async () => {
     const slugA = `orgsw-a-${randomUUID().slice(0, 6)}`;
     const slugB = `orgsw-b-${randomUUID().slice(0, 6)}`;
