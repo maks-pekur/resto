@@ -26,10 +26,10 @@ const expectEtag = (value: string | string[] | undefined): string => {
   return value;
 };
 
-interface SeededBrand {
-  brandId: string;
-  brandSlug: string;
-  brandHost: string;
+interface SeededTenant {
+  tenantId: string;
+  tenantHost: string;
+  ownerCookie: string;
   authed: Record<string, string>;
   firstItemId: string;
   secondItemId: string;
@@ -37,50 +37,56 @@ interface SeededBrand {
 
 suite('GET /v1/menu/availability — stop-version ETag', () => {
   let stack: RealStack;
-  let tenantId: string;
-  let tenantSlug: string;
-  let tenantHost: string;
-  let brandA: SeededBrand;
-  let brandB: SeededBrand;
+  let tenantA: SeededTenant;
+  let tenantB: SeededTenant;
 
-  const seedBrand = async (params: {
+  const seedTenant = async (params: {
     displayName: string;
-  }): Promise<{ brandId: string; brandSlug: string; brandHost: string }> => {
-    const brandId = randomUUID();
-    const brandSlug = `avail-brand-${randomUUID().slice(0, 8)}`;
-    const brandHost = `${brandSlug}.menu.resto.app`;
+  }): Promise<{ tenantId: string; tenantHost: string; ownerCookie: string }> => {
+    const tenantId = randomUUID();
+    const tenantSlug = `avail-tenant-${randomUUID().slice(0, 8)}`;
+    const tenantHost = `${tenantSlug}.menu.resto.app`;
     const db = stack.app.get(TenantAwareDb);
-    await db.withoutTenant('seed brand for menu-availability e2e', async (tx) => {
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: brandSlug,
+    await db.withoutTenant('seed tenant for menu-availability e2e', async (tx) => {
+      await tx.insert(schema.tenants).values({
+        id: tenantId,
+        slug: tenantSlug,
         displayName: params.displayName,
+        locale: 'en',
+        country: 'GB',
+        defaultCurrency: 'USD',
       });
-      await tx.insert(schema.brandDomains).values({
-        brandId,
+      await tx.insert(schema.tenantDomains).values({
         tenantId,
-        domain: brandHost,
+        domain: tenantHost,
         kind: 'subdomain',
         isPrimary: true,
       });
     });
-    return { brandId, brandSlug, brandHost };
+    const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
+    await runBootstrap({
+      tenantSlug,
+      email,
+      password: PASSWORD,
+      name: `Owner ${params.displayName}`,
+    });
+    const ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
+    return { tenantId, tenantHost, ownerCookie };
   };
 
   const seedPublishedItems = async (params: {
-    brandSlug: string;
+    tenantId: string;
+    ownerCookie: string;
   }): Promise<{ authed: Record<string, string>; firstItemId: string; secondItemId: string }> => {
     const preLocationAuthed = {
-      cookie: ownerCookie,
-      'x-tenant-id': tenantId,
-      'x-brand-slug': params.brandSlug,
+      cookie: params.ownerCookie,
+      'x-tenant-id': params.tenantId,
     };
     const locationRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers: preLocationAuthed,
-      payload: { name: `${params.brandSlug} location` },
+      payload: { name: 'Availability location' },
     });
     if (locationRes.statusCode !== 200) {
       throw new Error(
@@ -150,8 +156,6 @@ suite('GET /v1/menu/availability — stop-version ETag', () => {
     }
   };
 
-  let ownerCookie: string;
-
   beforeAll(async () => {
     process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
@@ -171,38 +175,13 @@ suite('GET /v1/menu/availability — stop-version ETag', () => {
       ],
     });
 
-    tenantId = randomUUID();
-    tenantSlug = `avail-tenant-${randomUUID().slice(0, 8)}`;
-    tenantHost = `${tenantSlug}.menu.resto.app`;
-    const db = stack.app.get(TenantAwareDb);
+    const a = await seedTenant({ displayName: 'Tenant A' });
+    const aItems = await seedPublishedItems({ tenantId: a.tenantId, ownerCookie: a.ownerCookie });
+    tenantA = { ...a, ...aItems };
 
-    await db.withoutTenant('seed tenant for menu-availability e2e', async (tx) => {
-      await tx.insert(schema.tenants).values({
-        id: tenantId,
-        slug: tenantSlug,
-        displayName: 'Availability Tenant',
-        locale: 'en',
-        defaultCurrency: 'USD',
-      });
-      await tx.insert(schema.tenantDomains).values({
-        tenantId,
-        domain: tenantHost,
-        kind: 'subdomain',
-        isPrimary: true,
-      });
-    });
-
-    const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
-    await runBootstrap({ tenantSlug, email, password: PASSWORD, name: 'Availability Owner' });
-    ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
-
-    const a = await seedBrand({ displayName: 'Brand A' });
-    const aItems = await seedPublishedItems({ brandSlug: a.brandSlug });
-    brandA = { ...a, ...aItems };
-
-    const b = await seedBrand({ displayName: 'Brand B' });
-    const bItems = await seedPublishedItems({ brandSlug: b.brandSlug });
-    brandB = { ...b, ...bItems };
+    const b = await seedTenant({ displayName: 'Tenant B' });
+    const bItems = await seedPublishedItems({ tenantId: b.tenantId, ownerCookie: b.ownerCookie });
+    tenantB = { ...b, ...bItems };
   }, 240_000);
 
   afterAll(async () => {
@@ -210,17 +189,17 @@ suite('GET /v1/menu/availability — stop-version ETag', () => {
   });
 
   it('returns stopped item ids with cache headers and an ETag', async () => {
-    await stopItem(brandA.authed, brandA.firstItemId);
+    await stopItem(tenantA.authed, tenantA.firstItemId);
 
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost },
+      headers: { host: tenantA.tenantHost },
     });
 
     expect(res.statusCode).toBe(200);
     const body = res.json<{ stoppedItemIds: string[] }>();
-    expect(body.stoppedItemIds).toContain(brandA.firstItemId);
+    expect(body.stoppedItemIds).toContain(tenantA.firstItemId);
     expect(res.headers['cache-control']).toBe('public, s-maxage=5');
     expect(typeof res.headers.etag).toBe('string');
   }, 60_000);
@@ -229,60 +208,51 @@ suite('GET /v1/menu/availability — stop-version ETag', () => {
     const before = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost },
+      headers: { host: tenantA.tenantHost },
     });
     const previousEtag = expectEtag(before.headers.etag);
 
     const notModified = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost, 'if-none-match': previousEtag },
+      headers: { host: tenantA.tenantHost, 'if-none-match': previousEtag },
     });
     expect(notModified.statusCode).toBe(304);
     expect(notModified.body).toBe('');
 
-    await stopItem(brandA.authed, brandA.secondItemId);
+    await stopItem(tenantA.authed, tenantA.secondItemId);
 
     const after = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost, 'if-none-match': previousEtag },
+      headers: { host: tenantA.tenantHost, 'if-none-match': previousEtag },
     });
     expect(after.statusCode).toBe(200);
     const currentEtag = expectEtag(after.headers.etag);
     expect(currentEtag).not.toBe(previousEtag);
     const afterBody = after.json<{ stoppedItemIds: string[] }>();
-    expect(afterBody.stoppedItemIds).toContain(brandA.firstItemId);
-    expect(afterBody.stoppedItemIds).toContain(brandA.secondItemId);
+    expect(afterBody.stoppedItemIds).toContain(tenantA.firstItemId);
+    expect(afterBody.stoppedItemIds).toContain(tenantA.secondItemId);
 
     const revalidated = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost, 'if-none-match': currentEtag },
+      headers: { host: tenantA.tenantHost, 'if-none-match': currentEtag },
     });
     expect(revalidated.statusCode).toBe(304);
     expect(revalidated.body).toBe('');
   }, 60_000);
 
-  it('isolates stopped item ids per brand', async () => {
-    await stopItem(brandB.authed, brandB.firstItemId);
+  it('isolates stopped item ids per tenant', async () => {
+    await stopItem(tenantB.authed, tenantB.firstItemId);
 
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/availability',
-      headers: { host: brandA.brandHost },
+      headers: { host: tenantA.tenantHost },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{ stoppedItemIds: string[] }>();
-    expect(body.stoppedItemIds).not.toContain(brandB.firstItemId);
-  }, 60_000);
-
-  it('returns 404 on a host that resolves a tenant without a brand', async () => {
-    const res = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/menu/availability',
-      headers: { host: tenantHost },
-    });
-    expect(res.statusCode).toBe(404);
+    expect(body.stoppedItemIds).not.toContain(tenantB.firstItemId);
   }, 60_000);
 });

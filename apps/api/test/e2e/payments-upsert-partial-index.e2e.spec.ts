@@ -23,7 +23,6 @@ suite(
     beforeAll(async () => {
       stack = await startDbStack();
       tenantId = randomUUID();
-      const brandId = randomUUID();
       orderId = randomUUID();
 
       await stack.db.withoutTenant('seed for payments partial-index e2e', async (tx) => {
@@ -32,26 +31,19 @@ suite(
           slug: `pay-upsert-${tenantId.slice(0, 8)}`,
           displayName: 'Payments Upsert Test Tenant',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'EUR',
-        });
-
-        await tx.insert(schema.brands).values({
-          id: brandId,
-          tenantId,
-          slug: `pay-upsert-brand-${brandId.slice(0, 8)}`,
-          displayName: 'Test Brand',
         });
 
         const [location] = await tx
           .insert(schema.locations)
-          .values({ tenantId, brandId, name: 'Payments Upsert Test Location' })
+          .values({ tenantId, name: 'Payments Upsert Test Location' })
           .returning({ id: schema.locations.id });
         if (!location) throw new Error('seed for payments partial-index e2e: location failed.');
 
         await tx.insert(schema.orders).values({
           id: orderId,
           tenantId,
-          brandId,
           locationId: location.id,
           idempotencyKey: randomUUID(),
           orderNumber: 'ORD-001',

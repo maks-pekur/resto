@@ -24,7 +24,7 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 
 interface SeededTenant {
   id: string;
-  brandHost: string;
+  tenantHost: string;
 }
 
 const seedPublishedTenant = async (
@@ -33,11 +33,8 @@ const seedPublishedTenant = async (
   label: string,
 ): Promise<SeededTenant> => {
   const tenantId = randomUUID();
-  const brandId = randomUUID();
   const tenantSlug = `${label}-t-${randomUUID().slice(0, 8)}`;
-  const brandSlug = `${label}-b-${randomUUID().slice(0, 8)}`;
   const tenantHost = `${tenantSlug}.menu.resto.app`;
-  const brandHost = `${brandSlug}.menu.resto.app`;
 
   await db.withoutTenant('seed tenant for public-menu-servable e2e', async (tx) => {
     await tx.insert(schema.tenants).values({
@@ -45,6 +42,7 @@ const seedPublishedTenant = async (
       slug: tenantSlug,
       displayName: `Servable ${label}`,
       locale: 'en',
+      country: 'GB',
       defaultCurrency: 'USD',
     });
     await tx.insert(schema.tenantDomains).values({
@@ -53,25 +51,12 @@ const seedPublishedTenant = async (
       kind: 'subdomain',
       isPrimary: true,
     });
-    await tx.insert(schema.brands).values({
-      id: brandId,
-      tenantId,
-      slug: brandSlug,
-      displayName: `Brand ${label}`,
-    });
-    await tx.insert(schema.brandDomains).values({
-      brandId,
-      tenantId,
-      domain: brandHost,
-      kind: 'subdomain',
-      isPrimary: true,
-    });
   });
 
   const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
   await runBootstrap({ tenantSlug, email, password: PASSWORD, name: `Owner ${label}` });
   const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenantId);
-  const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+  const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId };
 
   const categoryRes = await app.inject({
     method: 'POST',
@@ -104,7 +89,7 @@ const seedPublishedTenant = async (
   });
   expect(publishRes.statusCode).toBe(200);
 
-  return { id: tenantId, brandHost };
+  return { id: tenantId, tenantHost };
 };
 
 suite('Public menu read — only an active tenant is served (AUDIT #21)', () => {
@@ -142,7 +127,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     const active = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: tenant.brandHost },
+      headers: { host: tenant.tenantHost },
     });
     expect(active.statusCode).toBe(200);
 
@@ -157,7 +142,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     const suspended = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: tenant.brandHost },
+      headers: { host: tenant.tenantHost },
     });
     expect(suspended.statusCode).toBe(404);
 
@@ -174,7 +159,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     const reserved = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: tenant.brandHost },
+      headers: { host: tenant.tenantHost },
     });
     expect(reserved.statusCode).toBe(200);
   }, 120_000);
@@ -185,7 +170,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     const active = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: tenant.brandHost },
+      headers: { host: tenant.tenantHost },
     });
     expect(active.statusCode).toBe(200);
 
@@ -199,7 +184,7 @@ suite('Public menu read — only an active tenant is served (AUDIT #21)', () => 
     const archived = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: tenant.brandHost },
+      headers: { host: tenant.tenantHost },
     });
     expect(archived.statusCode).toBe(404);
     const body = archived.json<{ items?: unknown }>();

@@ -20,7 +20,7 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 
 suite('GET /v1/menu — degraded image presign (AUDIT #20)', () => {
   let stack: RealStack;
-  let brandHost: string;
+  let tenantHost: string;
   let itemSlug: string;
 
   beforeAll(async () => {
@@ -41,20 +41,18 @@ suite('GET /v1/menu — degraded image presign (AUDIT #20)', () => {
     });
 
     const tenantId = randomUUID();
-    const brandId = randomUUID();
     const tenantSlug = `presign-t-${randomUUID().slice(0, 8)}`;
-    const brandSlug = `presign-b-${randomUUID().slice(0, 8)}`;
-    const tenantHost = `${tenantSlug}.menu.resto.app`;
-    brandHost = `${brandSlug}.menu.resto.app`;
+    tenantHost = `${tenantSlug}.menu.resto.app`;
     itemSlug = 'classic';
     const db = stack.app.get(TenantAwareDb);
 
-    await db.withoutTenant('seed brand for presign-degraded e2e', async (tx) => {
+    await db.withoutTenant('seed tenant for presign-degraded e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
         id: tenantId,
         slug: tenantSlug,
         displayName: 'Presign Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       });
       await tx.insert(schema.tenantDomains).values({
@@ -63,25 +61,12 @@ suite('GET /v1/menu — degraded image presign (AUDIT #20)', () => {
         kind: 'subdomain',
         isPrimary: true,
       });
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: brandSlug,
-        displayName: 'Presign Brand',
-      });
-      await tx.insert(schema.brandDomains).values({
-        brandId,
-        tenantId,
-        domain: brandHost,
-        kind: 'subdomain',
-        isPrimary: true,
-      });
     });
 
     const email = `owner-${randomUUID().slice(0, 8)}@example.com`;
     await runBootstrap({ tenantSlug, email, password: PASSWORD, name: 'Presign Owner' });
     const ownerCookie = await signInAsOperator(stack.app, email, PASSWORD, tenantId);
-    const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+    const authed = { cookie: ownerCookie, 'x-tenant-id': tenantId };
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
@@ -131,7 +116,7 @@ suite('GET /v1/menu — degraded image presign (AUDIT #20)', () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     expect(res.statusCode).toBe(200);
     const body = res.json<{
