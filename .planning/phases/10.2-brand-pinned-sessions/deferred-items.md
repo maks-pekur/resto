@@ -384,6 +384,13 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   `<verify>` commands (neither calls `sync-preset-roles`). This is the "log a seventh" file the
   plan's verification lessons anticipated.
 
+  **RESOLVED (10.2 plan 21, 2026-08-22):** `organization_role`→`tenant_role`,
+  `organization_id`→`tenant_id` in all four raw SQL statements (`SELECT`/`UPDATE`/`INSERT`), plus
+  `syncOrganization`→`syncTenant`, `organizationIds`→`tenantIds`, `OrgRow`→`TenantRow` for
+  consistency. Live-verified against the real dev database (not just typecheck): `pnpm resto:seed
+sync-preset-roles --all` ran clean against all 304 live tenants, zero errors — confirms the
+  previous "relation does not exist" failure is gone.
+
 - **`packages/db/test/integration/erase-includes-brands.spec.ts` does not exist — plan 03
   deleted it outright (`git show e5e1e3ed --stat`, 105 deletions / 0 additions), not merely
   left it stale.** Plan 19's own Task 2 read*first and action text ("rewrite, do not delete")

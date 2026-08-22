@@ -38,10 +38,10 @@ NODE_ENV=development BETTER_AUTH_DATABASE_URL=... pnpm resto:seed seed-demo
 ```
 
 Dev-only fixture (refuses outside `NODE_ENV=development`). Idempotently
-provisions 3 organizations — one per supported country (`pizza`/UA,
+provisions 3 tenants — one per supported country (`pizza`/UA,
 `burger`/GB, `tapas`/ES) — each with its own locations and catalog, one
 owner (`owner@demo.local`) belonging to all three, and two staff accounts
-each scoped to a single organization. The first organization also gets a
+each scoped to a single tenant. The first tenant also gets a
 handful of demo orders across the order lifecycle. Credentials are printed
 to stdout at the end — not persisted anywhere.
 
@@ -52,7 +52,7 @@ NODE_ENV=development SEED_STRIPE_TEST_ACCOUNT_ID=acct_xxx \
   pnpm resto:seed seed-demo --payments-ready
 ```
 
-Makes the `pizza` organization (only — `burger` and `tapas` are
+Makes the `pizza` tenant (only — `burger` and `tapas` are
 deliberately left without payments, so `payments.not_enabled` stays
 visible) able to take a real Stripe test-mode payment. Refused outside
 `NODE_ENV ∈ {development, test}` (allowlist, matching the
