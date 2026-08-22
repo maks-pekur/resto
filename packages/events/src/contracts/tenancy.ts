@@ -4,9 +4,9 @@ import { defineEventContract } from '../envelope';
 
 /**
  * Emitted when a new tenant has been provisioned: the tenant row exists,
- * its Keycloak organization is created, the owner user has a one-time
- * password, and the subdomain is registered. This is the canonical
- * "first event in the system" — the pattern other contexts follow.
+ * the owner user has a one-time password, and the subdomain is
+ * registered. This is the canonical "first event in the system" — the
+ * pattern other contexts follow.
  */
 export const TenantProvisionedV1Payload = z.object({
   tenantId: TenantId,

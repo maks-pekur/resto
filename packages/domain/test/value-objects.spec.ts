@@ -121,7 +121,7 @@ describe('TenantSlugValue', () => {
     expect(TenantSlugValue.safeParse('cafe-roma').success).toBe(true);
   });
 
-  it("rejects 'pick-organization' — reserved to prevent shadowing the admin route", () => {
-    expect(TenantSlugValue.safeParse('pick-organization').success).toBe(false);
+  it("rejects 'pick-tenant' — reserved to prevent shadowing the admin route", () => {
+    expect(TenantSlugValue.safeParse('pick-tenant').success).toBe(false);
   });
 });

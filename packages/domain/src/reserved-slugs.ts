@@ -13,7 +13,7 @@ export const ADMIN_ROOT_ROUTE_SEGMENTS: readonly string[] = [
   'accept-invitation',
   'onboarding',
   'pick-location',
-  'pick-organization',
+  'pick-tenant',
 ];
 
 /**
@@ -41,7 +41,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   'menu',
   'onboarding',
   'pick-location',
-  'pick-organization',
+  'pick-tenant',
   'public',
   'reset-password',
   'resto',

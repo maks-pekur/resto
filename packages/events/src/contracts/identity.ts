@@ -93,7 +93,7 @@ export const IdentityEmailDispatchFailedV1 = defineEventContract({
  *
  * `previousRole` / `newRole` are BA role-slug strings; in practice these
  * are the system presets `owner` / `admin` / `staff` plus any custom
- * tenant-creatable role (which BA stores in `organization_role`).
+ * tenant-creatable role (which BA stores in `tenant_role`).
  */
 export const IdentityRoleChangedV1Payload = z.object({
   userId: z.string().uuid(),
