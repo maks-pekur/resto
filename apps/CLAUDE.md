@@ -75,12 +75,14 @@ not depend on each other.
   redirect is the easiest phishing primitive (apps/admin CR-01).
 - **All cookies must include `secure: process.env.NODE_ENV === 'production'`.**
   Session cookies leak over passive HTTP otherwise.
-- **Tenant, brand and location context is server-side, never its own cookie.**
-  The session cookie identifies the session; `session.active_organization_id`,
-  `active_brand_id` and `active_location_id` hold the context and cannot be
+- **Tenant and location context is server-side, never its own cookie.**
+  The session cookie identifies the session; Better Auth's own
+  `session.activeOrganizationId` (mapped to `active_tenant_id` in our
+  schema, D-41) and `active_location_id` hold the context and cannot be
   forged. A signed `resto.active_brand` cookie existed (phase 02-03, HMAC +
-  dedicated secret + four I/O sites) and was retired for brand-in-URL (D-03);
-  do not reintroduce a context cookie.
+  dedicated secret + four I/O sites) and was retired for brand-in-URL
+  (D-03); the brand dimension itself was later merged into tenant
+  (D-04/D-40, phase 10.2). Do not reintroduce a context cookie.
 - **`INTERNAL_API_TOKEN` is server-only.** Never reach it from a client
   component or import a module that uses it from a client boundary. The
   build will succeed; it just ships the token to the browser.
@@ -115,6 +117,6 @@ not depend on each other.
   `Cache-Control: public` + an `ETag` (menu = `menuVersion`/`s-maxage=300`,
   availability = `stopVersion`/`s-maxage=5`) and MUST stay `Set-Cookie`-free
   and never gain `Cache-Control: private`/`no-store`. A stop changes only the
-  availability ETag, never the menu ETag. The `menu-brand-response.e2e`
+  availability ETag, never the menu ETag. The `menu-response.e2e`
   no-`Set-Cookie` test is the regression net; CDN setup lives in
   `docs/runbooks/menu-edge-caching.md`.

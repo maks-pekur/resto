@@ -111,13 +111,13 @@ export const envSchema = z
     /**
      * Public URL of the admin web app — used as link target in invitation
      * and password-reset emails. Required outside dev. This is the apex
-     * host (pre-organization sign-in/signup); per-organization traffic is
+     * host (pre-tenant sign-in/signup); per-tenant traffic is
      * ADMIN_WEB_ORIGIN_WILDCARD below (D-21).
      */
     ADMIN_WEB_URL: z.string().url().optional(),
 
     /**
-     * Wildcard trusted origin for per-organization admin hosts (D-21,
+     * Wildcard trusted origin for per-tenant admin hosts (D-21,
      * D-24). Optional — absent means only the apex ADMIN_WEB_URL is
      * trusted. e.g. `https://*.admin.resto.app`; local dev
      * `http://*.admin.localhost:4000`.

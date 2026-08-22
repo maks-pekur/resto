@@ -1,5 +1,5 @@
 // AUTH-09 D-16 REINTERPRETED 2026-05-30 (plan-checker B-4): the BA
-// `organization_role` table is BA's DYNAMIC tenant-creatable role storage,
+// `tenant_role` table is BA's DYNAMIC tenant-creatable role storage,
 // NOT static preset storage. Static presets (owner / admin / staff) live
 // in `apps/api/src/contexts/identity/infrastructure/better-auth/access-
 // control.ts:6-9` and are wired at BA init via the organization() plugin's

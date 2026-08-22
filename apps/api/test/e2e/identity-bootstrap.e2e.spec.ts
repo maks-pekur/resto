@@ -166,9 +166,8 @@ describe('identity bootstrap E2E', () => {
         payload: { email, password, name: 'HTTP Owner' },
       });
       expect(res.statusCode).toBe(201);
-      const body = res.json<{ tenantId: string; userId: string; organizationId: string }>();
+      const body = res.json<{ tenantId: string; userId: string }>();
       expect(body.tenantId).toBe(tenant.id);
-      expect(body.organizationId).toBe(tenant.id);
       expect(body.userId).toBeTruthy();
 
       // Operator can sign in + set-active using the bootstrapped credentials.

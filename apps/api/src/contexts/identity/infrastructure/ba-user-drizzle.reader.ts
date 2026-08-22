@@ -18,7 +18,7 @@ export class BaUserDrizzleReader implements BaUserReader {
     return rows[0] ?? null;
   }
 
-  async findOwnerByOrganization(organizationId: string): Promise<BaUserRecord | null> {
+  async findOwnerByTenant(organizationId: string): Promise<BaUserRecord | null> {
     const rows = await this.authDb.db
       .select({ id: userTable.id, email: userTable.email })
       .from(memberTable)

@@ -1430,9 +1430,6 @@ components:
           format: uuid
         userId:
           type: string
-        organizationId:
-          type: string
-          format: uuid
         email:
           type: string
           format: email
@@ -1441,7 +1438,6 @@ components:
       required:
         - tenantId
         - userId
-        - organizationId
         - email
         - requiresPasswordChange
     SignUpInputDto:

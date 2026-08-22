@@ -4,6 +4,10 @@ import { defaultLocaleForCountry, TenantSlug } from '@resto/domain';
 import { AUTH_TOKEN } from '../identity.tokens';
 import type { Auth } from '../infrastructure/better-auth/auth.config';
 import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
+import {
+  SESSION_ACTIVE_TENANT_ACTIVATOR,
+  type SessionActiveTenantActivator,
+} from './ports/session-active-tenant-activator.port';
 import { BootstrapOwnerService } from './bootstrap-owner.service';
 import {
   OwnerAlreadyExistsError,
@@ -93,6 +97,8 @@ export class SignUpService {
     @Inject(TENANT_LOOKUP_PORT) private readonly tenantLookup: TenantLookupPort,
     @Inject(AUTH_TOKEN) private readonly auth: Auth,
     @Inject(BA_USER_READER) private readonly users: BaUserReader,
+    @Inject(SESSION_ACTIVE_TENANT_ACTIVATOR)
+    private readonly tenantActivator: SessionActiveTenantActivator,
   ) {}
 
   /**
@@ -148,7 +154,7 @@ export class SignUpService {
     if (await this.userExistsByEmail(input.email)) {
       throw new SignupEmailAlreadyExistsError(input.email);
     }
-    // D-27: the person's name never becomes the organization's name. The
+    // D-27: the person's name never becomes the tenant's name. The
     // provisional slug/displayName are derived from it plus a random
     // suffix (so two "Roma" signups never collide) purely as a scratch
     // identifier — onboarding replaces both before the owner sees a
@@ -225,19 +231,7 @@ export class SignUpService {
     const cookieHeader = this.cookieHeaderFromSetCookie(this.collectSetCookies(signInHeaders));
 
     try {
-      const result = await (
-        this.auth.api as unknown as {
-          setActiveOrganization: (args: {
-            body: { organizationId: string };
-            headers: Record<string, string>;
-            returnHeaders: true;
-          }) => Promise<{ headers: Headers }>;
-        }
-      ).setActiveOrganization({
-        body: { organizationId: tenantId },
-        headers: { cookie: cookieHeader },
-        returnHeaders: true,
-      });
+      const result = await this.tenantActivator.activateTenant({ tenantId, cookieHeader });
       const setActiveCookies = this.collectSetCookies(result.headers);
       const merged =
         setActiveCookies.length > 0 ? setActiveCookies : this.collectSetCookies(signInHeaders);
@@ -245,7 +239,7 @@ export class SignUpService {
     } catch (err) {
       this.logger.warn(
         { tenantId, err: err instanceof Error ? err.message : String(err) },
-        'set-active-organization failed; falling back to sign-in cookies (user will need to set-active manually).',
+        'set-active-tenant failed; falling back to sign-in cookies (user will need to set-active manually).',
       );
       return { userId, setCookie: this.collectSetCookies(signInHeaders) };
     }

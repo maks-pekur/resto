@@ -20,7 +20,6 @@ export interface BootstrapOwnerInput {
 export interface BootstrapOwnerResult {
   readonly tenantId: string;
   readonly userId: string;
-  readonly organizationId: string;
   readonly email: string;
   readonly requiresPasswordChange: boolean;
 }
@@ -73,7 +72,7 @@ export class BootstrapOwnerService {
       tenantId: tenant.id,
     });
 
-    const existingOwner = await this.users.findOwnerByOrganization(tenant.id);
+    const existingOwner = await this.users.findOwnerByTenant(tenant.id);
     if (existingOwner) {
       if (existingOwner.email.toLowerCase() === email) {
         this.logger.log({
@@ -84,7 +83,6 @@ export class BootstrapOwnerService {
         return {
           tenantId: tenant.id,
           userId: existingOwner.id,
-          organizationId: tenant.id,
           email,
           // Re-run is a no-op: we do not mutate the user, so we cannot
           // assert anything about their pending password-change state.
@@ -113,7 +111,6 @@ export class BootstrapOwnerService {
     return {
       tenantId: tenant.id,
       userId,
-      organizationId: tenant.id,
       email,
       requiresPasswordChange: true,
     };
@@ -135,15 +132,15 @@ export class BootstrapOwnerService {
     }
   }
 
-  private async addOwnerMember(userId: string, organizationId: string): Promise<void> {
+  private async addOwnerMember(userId: string, tenantId: string): Promise<void> {
     try {
       await orgApi(this.auth).addMember({
-        body: { userId, organizationId, role: 'owner' },
+        body: { userId, organizationId: tenantId, role: 'owner' },
       });
       this.logger.log({
         event: 'identity.owner_bootstrap.member_added',
         userId,
-        organizationId,
+        tenantId,
       });
     } catch (err) {
       throw new BetterAuthBootstrapFailureError('addMember', err);
