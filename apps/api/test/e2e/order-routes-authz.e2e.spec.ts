@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -23,37 +23,10 @@ if (!dockerOk) {
   console.warn('[order-routes-authz.e2e] Docker not available — skipping.');
 }
 
-const createBrand = async (
-  stack: RealStack,
-  ownerCookie: string,
-  tenantId: string,
-  slug: string,
-): Promise<string> => {
-  const res = await stack.app.inject({
-    method: 'POST',
-    url: '/v1/me/brands',
-    headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-    payload: { slug, displayName: slug },
-  });
-  expect(res.statusCode).toBe(201);
-  const db = stack.app.get(TenantAwareDb);
-  const rows = await db.withoutTenant('lookup brand id', (tx) =>
-    tx
-      .select({ id: schema.brands.id })
-      .from(schema.brands)
-      .where(and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug))),
-  );
-  const brand = rows[0];
-  if (!brand) throw new Error(`brand ${slug} not found after create`);
-  return brand.id;
-};
-
 suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
   describe('Cases 1-7 — location scope, cross-location denial, non-owner cancel, owner-only refund', () => {
     let stack: RealStack;
     let tenantId: string;
-    let brandId: string;
-    let brandSlug: string;
     let locationL1Id: string;
     let locationL2Id: string;
     let ownerCookie: string;
@@ -63,7 +36,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
     let orderMutateWithoutLocationId: string;
     let orderOwnerConcreteLocationId: string;
     let otherTenantId: string;
-    let otherTenantBrandSlug: string;
     let otherTenantLocationId: string;
     let otherTenantOwnerCookie: string;
     let crossTenantOrderId: string;
@@ -71,14 +43,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
     const ownerHeaders = (extra: Record<string, string> = {}) => ({
       cookie: ownerCookie,
       'x-tenant-id': tenantId,
-      'x-brand-slug': brandSlug,
       ...extra,
     });
 
     const nonOwnerHeaders = (extra: Record<string, string> = {}) => ({
       cookie: nonOwnerCookie,
       'x-tenant-id': tenantId,
-      'x-brand-slug': brandSlug,
       ...extra,
     });
 
@@ -86,7 +56,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       const res = await stack.app.inject({
         method: 'POST',
         url: '/v1/tenancy/locations',
-        headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
+        headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
         payload: { name },
       });
       expect(res.statusCode).toBe(200);
@@ -100,7 +70,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         await tx.insert(schema.orders).values({
           id: orderId,
           tenantId,
-          brandId,
           locationId,
           idempotencyKey: randomUUID(),
           orderNumber: `ORD-AUTHZ-${orderId.slice(0, 8)}`,
@@ -152,9 +121,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       await runBootstrap({ tenantSlug, email: ownerEmail, password: PASSWORD, name: 'Owner' });
       ownerCookie = await signInAsOperator(stack.app, ownerEmail, PASSWORD, tenantId);
 
-      brandSlug = `authz-brand-${randomUUID().slice(0, 8)}`;
-      brandId = await createBrand(stack, ownerCookie, tenantId, brandSlug);
-
       locationL1Id = await createLocation('Location 1');
       locationL2Id = await createLocation('Location 2');
 
@@ -171,7 +137,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       const memberId = randomUUID();
       await authDb.db.insert(schema.member).values({
         id: memberId,
-        organizationId: tenantId,
+        tenantId,
         userId: nonOwnerUser.userId,
         role: 'admin',
         createdAt: new Date(),
@@ -205,15 +171,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         PASSWORD,
         otherTenantId,
       );
-      otherTenantBrandSlug = `authz-other-brand-${randomUUID().slice(0, 8)}`;
-      await createBrand(stack, otherTenantOwnerCookie, otherTenantId, otherTenantBrandSlug);
       const otherLocRes = await stack.app.inject({
         method: 'POST',
         url: '/v1/tenancy/locations',
         headers: {
           cookie: otherTenantOwnerCookie,
           'x-tenant-id': otherTenantId,
-          'x-brand-slug': otherTenantBrandSlug,
         },
         payload: { name: 'Other Tenant Location' },
       });
@@ -337,7 +300,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         headers: {
           cookie: otherTenantOwnerCookie,
           'x-tenant-id': otherTenantId,
-          'x-brand-slug': otherTenantBrandSlug,
           'x-location-id': otherTenantLocationId,
         },
       });
@@ -349,7 +311,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         headers: {
           cookie: otherTenantOwnerCookie,
           'x-tenant-id': otherTenantId,
-          'x-brand-slug': otherTenantBrandSlug,
           'x-location-id': otherTenantLocationId,
         },
         payload: { targetStatus: 'preparing' },
@@ -363,21 +324,15 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
   describe('Cases 8-9 — per-principal poll rate limiting, guest checkout survival', () => {
     let stack: RealStack;
     let tenantAId: string;
-    let brandASlug: string;
     let ownerACookie: string;
     let tenantBId: string;
-    let brandBSlug: string;
     let ownerBCookie: string;
     const SHARED_IP = '203.0.113.77';
     const CAP = 8;
     let locationAId: string;
 
-    const firstLocationId = async (
-      cookie: string,
-      tenantId: string,
-      brandSlug: string,
-    ): Promise<string> => {
-      const headers = { cookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug };
+    const firstLocationId = async (cookie: string, tenantId: string): Promise<string> => {
+      const headers = { cookie, 'x-tenant-id': tenantId };
       const listed = await stack.app.inject({
         method: 'GET',
         url: '/v1/tenancy/locations',
@@ -416,8 +371,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         name: 'Owner A',
       });
       ownerACookie = await signInAsOperator(stack.app, ownerAEmail, PASSWORD, tenantAId, SHARED_IP);
-      brandASlug = `authz-rl-brand-a-${randomUUID().slice(0, 8)}`;
-      await createBrand(stack, ownerACookie, tenantAId, brandASlug);
 
       const tenantBSlug = `authz-rl-b-${randomUUID().slice(0, 8)}`;
       const ownerBEmail = `owner-rl-b-${randomUUID().slice(0, 8)}@example.com`;
@@ -430,9 +383,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         name: 'Owner B',
       });
       ownerBCookie = await signInAsOperator(stack.app, ownerBEmail, PASSWORD, tenantBId, SHARED_IP);
-      locationAId = await firstLocationId(ownerACookie, tenantAId, brandASlug);
-      brandBSlug = `authz-rl-brand-b-${randomUUID().slice(0, 8)}`;
-      await createBrand(stack, ownerBCookie, tenantBId, brandBSlug);
+      locationAId = await firstLocationId(ownerACookie, tenantAId);
     }, 240_000);
 
     afterAll(async () => {
@@ -448,7 +399,6 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
           headers: {
             cookie: ownerACookie,
             'x-tenant-id': tenantAId,
-            'x-brand-slug': brandASlug,
             'x-location-id': locationAId,
           },
           remoteAddress: SHARED_IP,
@@ -467,8 +417,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         headers: {
           cookie: ownerBCookie,
           'x-tenant-id': tenantBId,
-          'x-brand-slug': brandBSlug,
-          'x-location-id': await firstLocationId(ownerBCookie, tenantBId, brandBSlug),
+          'x-location-id': await firstLocationId(ownerBCookie, tenantBId),
         },
         remoteAddress: SHARED_IP,
       });
@@ -481,12 +430,10 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         url: '/v1/orders',
         headers: {
           'x-tenant-id': tenantAId,
-          'x-brand-slug': brandASlug,
           'content-type': 'application/json',
         },
         remoteAddress: SHARED_IP,
         payload: {
-          brandId: tenantAId,
           items: [],
           customerName: 'Guest',
           customerPhone: '+1234567890',
