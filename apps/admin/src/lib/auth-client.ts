@@ -1,9 +1,11 @@
 import { createAuthClient } from 'better-auth/react';
 import { organizationClient, twoFactorClient } from 'better-auth/client/plugins';
-import { VITE_API_ORIGIN } from '../env';
 
+// No `baseURL`: Better Auth's client falls back to `window.location.origin`
+// + `/api/auth` (better-auth/dist/utils/url.mjs:getBaseURL), which is what
+// vite.config.ts's `/api` proxy (dev) and the production reverse proxy
+// (see 10.2-17-SUMMARY.md) require for the session cookie to be first-party.
 export const authClient = createAuthClient({
-  baseURL: VITE_API_ORIGIN,
   fetchOptions: { credentials: 'include' },
   plugins: [organizationClient(), twoFactorClient()],
 });
