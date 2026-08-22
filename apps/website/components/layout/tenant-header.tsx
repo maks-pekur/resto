@@ -4,17 +4,17 @@ import Image from 'next/image';
 import { ShoppingCart } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import type { MenuBrandDto } from '@resto/api-client/public';
+import type { MenuTenantDto } from '@resto/api-client/public';
 
 interface TenantHeaderProps {
-  brand: MenuBrandDto | null;
+  tenant: MenuTenantDto | null;
   cartItemCount?: number;
   onOpenCart?: () => void;
 }
 
-export function TenantHeader({ brand, cartItemCount = 0, onOpenCart }: TenantHeaderProps) {
-  const displayName = brand?.displayName ?? 'Restaurant';
-  const logoUrl = brand?.theme?.logoUrl ?? null;
+export function TenantHeader({ tenant, cartItemCount = 0, onOpenCart }: TenantHeaderProps) {
+  const displayName = tenant?.displayName ?? 'Restaurant';
+  const logoUrl = tenant?.theme?.logoUrl ?? null;
 
   return (
     <header className="sticky top-0 z-50 h-16 w-full border-b bg-[oklch(0.97_0_0)]">

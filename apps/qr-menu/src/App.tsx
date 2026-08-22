@@ -82,7 +82,7 @@ export const App = () => {
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
-    const theme = state.menu.brand?.theme;
+    const theme = state.menu.tenant?.theme;
     if (!theme) return;
     const vars = buildTenantThemeVars(theme);
     for (const [name, value] of Object.entries(vars)) {

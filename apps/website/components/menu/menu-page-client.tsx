@@ -69,7 +69,7 @@ export function MenuPageClient({ menu, stoppedItemIds }: MenuPageClientProps) {
   return (
     <>
       <TenantHeader
-        brand={menu.brand}
+        tenant={menu.tenant}
         cartItemCount={displayCount}
         onOpenCart={() => {
           setCartOpen(true);
