@@ -1,17 +1,20 @@
 import { useState } from 'react';
-import { createRoute, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import { createRoute } from '@tanstack/react-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { apiFetch } from '@/lib/api-client';
+import { slugifyTenantName } from '@/lib/slugify-tenant';
+import { adminUrlForOrg } from '@/lib/admin-host';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { toast } from 'sonner';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
-  path: '/onboarding/brand',
+  path: '/onboarding',
   component: OnboardingPage,
 });
 
@@ -32,11 +35,16 @@ interface ProblemDetails {
 const MIN_NAME_LEN = 1;
 
 function OnboardingPage() {
-  const navigate = useNavigate();
+  const { t } = useTranslation('translation', { keyPrefix: 'onboarding' });
   const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+
+  const previewHost = adminUrlForOrg(slugifyTenantName(displayName) || 'your-restaurant').replace(
+    /^https?:\/\//,
+    '',
+  );
 
   const onSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,13 +61,15 @@ function OnboardingPage() {
     setPending(false);
     if (!res.ok) {
       const body = res.data as ProblemDetails | null;
-      setError(body?.message ?? body?.detail ?? 'Something went wrong. Please try again.');
+      setError(body?.message ?? body?.detail ?? t('errorGeneric'));
       return;
     }
     const tenant = res.data as OnboardingResponse;
     await queryClient.invalidateQueries({ queryKey: ['identity'] });
-    toast.success(`"${tenant.displayName}" created.`);
-    void navigate({ to: '/' });
+    toast.success(t('createdToast', { name: tenant.displayName }));
+    // The server-returned slug wins, not the locally-previewed one — it may
+    // differ after collision resolution.
+    window.location.assign(adminUrlForOrg(tenant.slug, '/dashboard'));
   };
 
   return (
@@ -67,12 +77,12 @@ function OnboardingPage() {
       <div className="w-full max-w-sm">
         <Card>
           <CardHeader>
-            <CardTitle className="text-xl">Create your restaurant</CardTitle>
+            <CardTitle className="text-xl">{t('title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={(e) => void onSubmit(e)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="displayName">Restaurant name</Label>
+                <Label htmlFor="displayName">{t('nameLabel')}</Label>
                 <Input
                   id="displayName"
                   required
@@ -83,6 +93,11 @@ function OnboardingPage() {
                     setDisplayName(e.target.value);
                   }}
                 />
+                {/* Advisory only — the server may append a suffix on collision
+                    and its returned slug is authoritative. */}
+                <p className="font-mono text-muted-foreground text-xs">
+                  {t('hostPreview', { host: previewHost })}
+                </p>
               </div>
               {error ? (
                 <p className="text-destructive text-sm" role="alert">
@@ -90,7 +105,7 @@ function OnboardingPage() {
                 </p>
               ) : null}
               <Button type="submit" className="w-full" disabled={pending}>
-                {pending ? 'Creating…' : 'Continue'}
+                {pending ? t('submitPending') : t('submitIdle')}
               </Button>
             </form>
           </CardContent>
