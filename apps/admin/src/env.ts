@@ -1,5 +1,4 @@
 const devDefaults: Partial<Record<string, string>> = {
-  VITE_API_ORIGIN: 'http://localhost:5001',
   VITE_ADMIN_HOST_SUFFIX: 'admin.localhost',
 };
 
@@ -18,6 +17,5 @@ export const getEnv = (key: string): string => {
   return val ?? (import.meta.env.DEV ? (devDefaults[key] ?? '') : '');
 };
 
-export const VITE_API_ORIGIN = getEnv('VITE_API_ORIGIN');
 export const VITE_STRIPE_PUBLISHABLE_KEY = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
 export const VITE_ADMIN_HOST_SUFFIX = getEnv('VITE_ADMIN_HOST_SUFFIX');

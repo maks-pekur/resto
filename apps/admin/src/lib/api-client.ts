@@ -1,4 +1,3 @@
-import { VITE_API_ORIGIN } from '../env';
 import { authClient } from './auth-client';
 
 const TIMEOUT_GET_MS = 10_000;
@@ -69,7 +68,7 @@ export const apiFetch = async <T>(
   };
   const maxAttempts = isGet ? 2 : 1;
   for (let attempt = 1; ; attempt += 1) {
-    const res = await fetch(`${VITE_API_ORIGIN}${path}`, {
+    const res = await fetch(path, {
       method: opts.method ?? 'GET',
       headers,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,

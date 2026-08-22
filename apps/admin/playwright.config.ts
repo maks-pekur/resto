@@ -48,13 +48,13 @@ export default defineConfig({
   },
   webServer: [
     {
+      // No VITE_API_ORIGIN: the admin app calls the api via same-origin
+      // relative paths through vite.config.ts's own /api and /v1 proxy
+      // (hardcoded to localhost:5001, matching this suite's apiOrigin default).
       command: `pnpm --filter @resto/admin exec vite --port ${String(adminPort)}`,
       url: `${baseURL}/login`,
       reuseExistingServer: !process.env.CI,
       timeout: 60_000,
-      env: {
-        VITE_API_ORIGIN: apiOrigin,
-      },
     },
     {
       command: `pnpm --filter website exec next dev --port ${String(websitePort)}`,
