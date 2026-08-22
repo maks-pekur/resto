@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
-stopped_at: Phase 10.2 UI-SPEC approved
-last_updated: '2026-08-20T07:24:03.126Z'
+status: ready_to_plan
+stopped_at: Phase 10.2 complete (22/22) — ready to discuss Phase 18
+last_updated: 2026-08-22T22:24:32.675Z
 last_activity: 2026-08-20 -- Phase 10.2 execution started
 progress:
   total_phases: 28
   completed_phases: 14
   total_plans: 141
-  completed_plans: 112
+  completed_plans: 134
   percent: 50
 ---
 
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 10.2 — brand-pinned-sessions
+**Current focus:** Phase 18 — real time order feed sse
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -34,8 +34,8 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Next after the pause:** a working demo environment (seeded paid orders), then a `restos` namespace in llm-wiki for norms, then refresh the codebase map (stale since 13 June — predates 08.2–08.5 and 10), then the testing/UI cleanup pass.
 
-Phase: 10.2 (brand-pinned-sessions) — EXECUTING
-Plan: 1 of 20
+Phase: 18
+Plan: Not started
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 
@@ -45,8 +45,8 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Executing Phase 10.2
-Last activity: 2026-08-20 -- Phase 10.2 execution started
+Status: Ready to plan
+Last activity: 2026-08-22
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -74,7 +74,7 @@ Still deferred to Phase 03:
 
 **Velocity:**
 
-- Total plans completed: 23
+- Total plans completed: 45
 - Average duration: —
 - Total execution time: 0 hours
 
@@ -87,6 +87,7 @@ Still deferred to Phase 03:
 | 04a   | 7     | -     | -        |
 | 08.2  | 6     | -     | -        |
 | 08.5  | 5     | -     | -        |
+| 10.2  | 22    | -     | -        |
 
 **Recent Trend:**
 
