@@ -22,7 +22,6 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
           ac: ['create', 'read', 'update', 'delete'],
         },
       },
@@ -34,10 +33,9 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           reports: ['read'],
           settings: ['update'],
           tenant: ['read'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      staffRole: { statements: { tenant: ['read'], brand: ['read'] } },
+      staffRole: { statements: { tenant: ['read'] } },
     }));
     const { assertSystemRolesPresent, SystemRoleDriftError } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -64,7 +62,6 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
           ac: ['create', 'read', 'update', 'delete'],
         },
       },
@@ -76,10 +73,9 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           reports: ['read'],
           settings: ['update'],
           tenant: ['read', 'delete'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      staffRole: { statements: { tenant: ['read'], brand: ['read'] } },
+      staffRole: { statements: { tenant: ['read'] } },
     }));
     const { assertSystemRolesPresent, SystemRoleDriftError } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -100,7 +96,6 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
           ac: ['create', 'read', 'update', 'delete'],
         },
       },
@@ -112,10 +107,9 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
           reports: ['read'],
           settings: ['update'],
           tenant: ['read'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      staffRole: { statements: { tenant: ['read'], brand: ['read', 'create'] } },
+      staffRole: { statements: { tenant: ['read', 'create'] } },
     }));
     const { assertSystemRolesPresent } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -126,7 +120,7 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
       captured = err as Error;
     }
     expect(captured).toBeDefined();
-    expect(captured?.message).toMatch(/staff\.brand/);
+    expect(captured?.message).toMatch(/staff\.tenant/);
     expect(captured?.message).toContain('refusing to start');
   });
 });

@@ -15,19 +15,28 @@ const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 
 if (!dockerOk) {
-  console.warn('[menu-brand-response.e2e] Docker not available — skipping.');
+  console.warn('[menu-response.e2e] Docker not available — skipping.');
 }
 
 const PASSWORD = 'Sup3r-Secret-Pw!';
 
-suite('GET /v1/menu — brand object in response', () => {
+// Replaces the deleted pre-merge response-shape spec (10.2 plan 19). The
+// "returns id/slug/displayName/theme" and "404 on a tenant with no
+// sub-label" cases are dropped, not ported: `PublishedMenu`
+// (domain/published-menu.ts) carries no nested-entity field post-merge,
+// and a tenant is always itself menu-servable — there is no dangling
+// "tenant with no sub-label" state left to 404 on. Every ETag/
+// Cache-Control/If-None-Match/no-Set-Cookie assertion survives unchanged,
+// just on the tenant's own host directly (the guest menu host collapses
+// from a two-label subdomain to `<tenantSlug>.menu.<domain>`, D-22/D-23).
+// apps/CLAUDE.md names this file as the regression net for the
+// no-Set-Cookie invariant — keep and extend it, per the plan's own
+// instruction.
+suite('GET /v1/menu — response shape and caching', () => {
   let stack: RealStack;
   let tenantId: string;
-  let brandId: string;
   let tenantSlug: string;
-  let brandSlug: string;
   let tenantHost: string;
-  let brandHost: string;
   let authed: Record<string, string>;
   let itemId: string;
 
@@ -41,7 +50,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     expect(res.statusCode).toBe(200);
     return expectEtag(res.headers.etag);
@@ -77,38 +86,22 @@ suite('GET /v1/menu — brand object in response', () => {
     });
 
     tenantId = randomUUID();
-    brandId = randomUUID();
     tenantSlug = `res154-tenant-${randomUUID().slice(0, 8)}`;
-    brandSlug = `res154-brand-${randomUUID().slice(0, 8)}`;
     tenantHost = `${tenantSlug}.menu.resto.app`;
-    brandHost = `${brandSlug}.menu.resto.app`;
     const db = stack.app.get(TenantAwareDb);
 
-    await db.withoutTenant('seed brand for menu-brand-response e2e', async (tx) => {
+    await db.withoutTenant('seed tenant for menu-response e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
         id: tenantId,
         slug: tenantSlug,
         displayName: 'RES-154 Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       });
       await tx.insert(schema.tenantDomains).values({
         tenantId,
         domain: tenantHost,
-        kind: 'subdomain',
-        isPrimary: true,
-      });
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: brandSlug,
-        displayName: 'RES-154 Brand',
-        theme: { logoUrl: 'https://cdn.example/r154.png', primaryColor: '#FF5733', font: 'Inter' },
-      });
-      await tx.insert(schema.brandDomains).values({
-        brandId,
-        tenantId,
-        domain: brandHost,
         kind: 'subdomain',
         isPrimary: true,
       });
@@ -120,7 +113,6 @@ suite('GET /v1/menu — brand object in response', () => {
     const preLocationAuthed = {
       cookie: ownerCookie,
       'x-tenant-id': tenantId,
-      'x-brand-slug': brandSlug,
     };
 
     const locationRes = await stack.app.inject({
@@ -182,56 +174,11 @@ suite('GET /v1/menu — brand object in response', () => {
     await stopRealStack(stack);
   });
 
-  it('returns brand id, slug, displayName, and theme on the brand subdomain', async () => {
-    const res = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/menu',
-      headers: { host: brandHost },
-    });
-    expect(res.statusCode).toBe(200);
-    const body = res.json<{
-      brand: {
-        id: string;
-        slug: string;
-        displayName: string;
-        theme: { logoUrl: string | null; primaryColor: string | null; font: string | null } | null;
-      } | null;
-      items: {
-        slug: string;
-        imageUrl: string | null;
-        photos: { s3Key: string; url: string; sortOrder: number }[];
-        proteins: string | null;
-        sizes: unknown[];
-      }[];
-      modifierGroups: unknown[];
-    }>();
-    expect(body.brand).toEqual({
-      id: brandId,
-      slug: brandSlug,
-      displayName: 'RES-154 Brand',
-      theme: { logoUrl: 'https://cdn.example/r154.png', primaryColor: '#FF5733', font: 'Inter' },
-    });
-    // D-4a-09: public DTO carries the new fields automatically.
-    expect(body).toHaveProperty('modifierGroups');
-    // Brand-scoped read may filter out items not tagged to this brand; the
-    // shape check is enough — the item shape itself is exercised by the
-    // catalog.e2e tenant-scoped reads.
-  }, 60_000);
-
-  it('returns 404 when the request resolves a tenant without a brand', async () => {
-    const res = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/menu',
-      headers: { host: tenantHost },
-    });
-    expect(res.statusCode).toBe(404);
-  }, 60_000);
-
   it('GET /v1/menu carries a menu-version ETag and the Cache-Control directive', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     expect(res.statusCode).toBe(200);
     expect(res.headers['cache-control']).toBe('public, s-maxage=300, stale-while-revalidate=60');
@@ -240,24 +187,41 @@ suite('GET /v1/menu — brand object in response', () => {
 
   it('public menu reads carry no Set-Cookie so an edge cache can store them', async () => {
     for (const url of ['/v1/menu', '/v1/menu/availability']) {
-      const res = await stack.app.inject({ method: 'GET', url, headers: { host: brandHost } });
+      const res = await stack.app.inject({ method: 'GET', url, headers: { host: tenantHost } });
       expect(res.statusCode).toBe(200);
       expect(res.headers['set-cookie']).toBeUndefined();
     }
+  }, 60_000);
+
+  // D-24 companion: the guest menu host must never receive the operator
+  // session cookie, even when the request happens to carry one (e.g. a
+  // browser tab that also has an operator session cookie for a DIFFERENT,
+  // same-registrable-domain host). AUTH_COOKIE_DOMAIN scopes the cookie to
+  // `.admin.<domain>`, so it is never sent to `.menu.<domain>` by the
+  // browser in the first place — this asserts the server side of that
+  // contract: the guest response itself never sets or echoes one back.
+  it('a request to the guest menu host never receives an operator session cookie', async () => {
+    const res = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: tenantHost, cookie: 'better-auth.session_token=forged-operator-token' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers['set-cookie']).toBeUndefined();
   }, 60_000);
 
   it('honours If-None-Match: a current ETag yields an empty 304, a stale one yields 200', async () => {
     const before = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     const currentEtag = expectEtag(before.headers.etag);
 
     const notModified = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost, 'if-none-match': currentEtag },
+      headers: { host: tenantHost, 'if-none-match': currentEtag },
     });
     expect(notModified.statusCode).toBe(304);
     expect(notModified.body).toBe('');
@@ -275,7 +239,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const stale = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost, 'if-none-match': currentEtag },
+      headers: { host: tenantHost, 'if-none-match': currentEtag },
     });
     expect(stale.statusCode).toBe(200);
     expect(expectEtag(stale.headers.etag)).toBe(newEtag);
@@ -284,7 +248,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const fresh = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost, 'if-none-match': newEtag },
+      headers: { host: tenantHost, 'if-none-match': newEtag },
     });
     expect(fresh.statusCode).toBe(304);
     expect(fresh.body).toBe('');
@@ -294,7 +258,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const before = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     const etagBeforeStop = expectEtag(before.headers.etag);
     const itemsBefore = before.json<{ items: { id: string }[] }>().items;
@@ -311,7 +275,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const after = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     expect(after.statusCode).toBe(200);
     const etagAfterStop = expectEtag(after.headers.etag);
@@ -326,7 +290,7 @@ suite('GET /v1/menu — brand object in response', () => {
     const detail = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${itemId}`,
-      headers: { host: brandHost },
+      headers: { host: tenantHost },
     });
     expect(detail.statusCode).toBe(200);
     expect(detail.json<{ id: string }>().id).toBe(itemId);

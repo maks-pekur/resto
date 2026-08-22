@@ -25,14 +25,12 @@ if (!dockerOk) {
 suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, outbox', () => {
   let stack: DbStack;
   let tenantId: string;
-  let brandId: string;
   let locationId: string;
   let shortNumberCounter = 1;
 
   beforeAll(async () => {
     stack = await startDbStack();
     tenantId = randomUUID();
-    brandId = randomUUID();
 
     await stack.db.withoutTenant('seed order-lifecycle e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
@@ -40,17 +38,12 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
         slug: `lifecycle-${tenantId.slice(0, 8)}`,
         displayName: 'Lifecycle Test Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
-      });
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: `lifecycle-brand-${brandId.slice(0, 8)}`,
-        displayName: 'Lifecycle Test Brand',
       });
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'Lifecycle Test Location' })
+        .values({ tenantId, name: 'Lifecycle Test Location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed order-lifecycle e2e: location insert failed.');
       locationId = location.id;
@@ -67,7 +60,6 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
       await tx.insert(schema.orders).values({
         id: orderId,
         tenantId,
-        brandId,
         locationId,
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-LIFECYCLE-${orderId.slice(0, 8)}`,
@@ -437,6 +429,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
           slug: `lifecycle-other-${otherTenantId.slice(0, 8)}`,
           displayName: 'Other Tenant',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'EUR',
         });
       },

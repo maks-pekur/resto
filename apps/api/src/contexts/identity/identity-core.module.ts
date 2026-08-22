@@ -308,7 +308,7 @@ export const buildAuthFromEnv = (
       );
     },
     onInitialLocationPin: (userId, tenantId) =>
-      locationResolver.resolveForUserInBrand(userId, tenantId),
+      locationResolver.resolveForUserInTenant(userId, tenantId),
     onActiveOrganizationSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
       const xff = readHeader(ctx.headers, 'x-forwarded-for');

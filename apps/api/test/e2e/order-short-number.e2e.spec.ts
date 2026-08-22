@@ -29,9 +29,7 @@ suite(
       repo = new OrderSequenceDrizzleRepository(stack.db);
 
       tenantId = randomUUID();
-      const brandId = randomUUID();
       const otherTenantId = randomUUID();
-      const otherBrandId = randomUUID();
 
       await stack.db.withoutTenant('seed order-short-number e2e', async (tx) => {
         await tx.insert(schema.tenants).values([
@@ -40,6 +38,7 @@ suite(
             slug: `short-num-${tenantId.slice(0, 8)}`,
             displayName: 'Short Number Test Tenant',
             locale: 'en',
+            country: 'GB',
             defaultCurrency: 'EUR',
           },
           {
@@ -47,36 +46,22 @@ suite(
             slug: `short-num-other-${otherTenantId.slice(0, 8)}`,
             displayName: 'Short Number Other Tenant',
             locale: 'en',
+            country: 'GB',
             defaultCurrency: 'EUR',
-          },
-        ]);
-
-        await tx.insert(schema.brands).values([
-          {
-            id: brandId,
-            tenantId,
-            slug: `short-num-brand-${brandId.slice(0, 8)}`,
-            displayName: 'Test Brand',
-          },
-          {
-            id: otherBrandId,
-            tenantId: otherTenantId,
-            slug: `short-num-other-brand-${otherBrandId.slice(0, 8)}`,
-            displayName: 'Other Tenant Brand',
           },
         ]);
 
         const [locA] = await tx
           .insert(schema.locations)
-          .values({ tenantId, brandId, name: 'Short Number Location A' })
+          .values({ tenantId, name: 'Short Number Location A' })
           .returning({ id: schema.locations.id });
         const [locB] = await tx
           .insert(schema.locations)
-          .values({ tenantId, brandId, name: 'Short Number Location B' })
+          .values({ tenantId, name: 'Short Number Location B' })
           .returning({ id: schema.locations.id });
         const [locOther] = await tx
           .insert(schema.locations)
-          .values({ tenantId: otherTenantId, brandId: otherBrandId, name: 'Other Tenant Location' })
+          .values({ tenantId: otherTenantId, name: 'Other Tenant Location' })
           .returning({ id: schema.locations.id });
         if (!locA || !locB || !locOther) {
           throw new Error('seed order-short-number e2e: location insert failed.');

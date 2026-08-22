@@ -24,7 +24,7 @@
 //   `test_rls_fence` table created in the spec, four rows seeded across
 //   two tenants, and symmetric assertions under both tenants.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { eq, sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -47,8 +47,6 @@ interface I1Fixture {
   tenantA: { id: string; slug: string };
   tenantB: { id: string; slug: string };
   operatorACookie: string;
-  brandA: string;
-  brandB: string;
   categoryA: string;
   categoryB: string;
   itemA: string;
@@ -80,24 +78,13 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
   const db = stack.app.get(TenantAwareDb);
 
   const seeded = await db.withoutTenant('seed I-1 fixture rows', async (tx) => {
-    const [brandA] = await tx
-      .insert(schema.brands)
-      .values({ tenantId: tenantA.id, slug: 'flagship-i1a', displayName: 'Flagship A' })
-      .returning({ id: schema.brands.id });
-    const [brandB] = await tx
-      .insert(schema.brands)
-      .values({ tenantId: tenantB.id, slug: 'flagship-i1b', displayName: 'Flagship B' })
-      .returning({ id: schema.brands.id });
-
-    if (!brandA || !brandB) throw new Error('seed I1 fixture: brand insert failed');
-
     const [categoryA] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantA.id, brandId: brandA.id, slug: 'pizza', name: { en: 'Pizza A' } })
+      .values({ tenantId: tenantA.id, slug: 'pizza', name: { en: 'Pizza A' } })
       .returning({ id: schema.menuCategories.id });
     const [categoryB] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantB.id, brandId: brandB.id, slug: 'pizza', name: { en: 'Pizza B' } })
+      .values({ tenantId: tenantB.id, slug: 'pizza', name: { en: 'Pizza B' } })
       .returning({ id: schema.menuCategories.id });
 
     if (!categoryA || !categoryB) throw new Error('seed I1 fixture: category insert failed');
@@ -106,7 +93,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantA.id,
-        brandId: brandA.id,
         categoryId: categoryA.id,
         slug: 'margherita',
         name: { en: 'Margherita A' },
@@ -119,7 +105,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantB.id,
-        brandId: brandB.id,
         categoryId: categoryB.id,
         slug: 'margherita',
         name: { en: 'Margherita B' },
@@ -155,8 +140,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
     }
 
     return {
-      brandA: brandA.id,
-      brandB: brandB.id,
       categoryA: categoryA.id,
       categoryB: categoryB.id,
       itemA: itemA.id,
@@ -204,7 +187,7 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
       const res = await stack.app.inject({
         method: 'GET',
         url: '/v1/menu',
-        headers: { 'x-tenant-slug': fixture.tenantA.slug, 'x-brand-slug': 'flagship-i1a' },
+        headers: { host: `${fixture.tenantA.slug}.menu.resto.app` },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json<{ items: { id: string; slug: string }[] }>();
@@ -215,17 +198,17 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
   });
 
   describe('identity', () => {
-    it('GET /v1/me/brands under operator-A cookie returns only A brands, not B brand with same slug', async () => {
+    it('GET /v1/me/tenants under operator-A cookie returns only tenant A, not tenant B', async () => {
       const res = await stack.app.inject({
         method: 'GET',
-        url: '/v1/me/brands',
+        url: '/v1/me/tenants',
         headers: { cookie: fixture.operatorACookie, 'x-tenant-slug': fixture.tenantA.slug },
       });
       expect(res.statusCode).toBe(200);
-      const body = res.json<{ brands: { id: string }[] }>();
-      const ids = body.brands.map((b) => b.id);
-      expect(ids).toContain(fixture.brandA);
-      expect(ids).not.toContain(fixture.brandB);
+      const body = res.json<{ tenants: { id: string }[] }>();
+      const ids = body.tenants.map((t) => t.id);
+      expect(ids).toContain(fixture.tenantA.id);
+      expect(ids).not.toContain(fixture.tenantB.id);
     });
   });
 
@@ -255,291 +238,12 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
   });
 });
 
-suite('RES-08.2-06: cross-BRAND RLS isolation matrix (Plan 08.2-06 Task 2)', () => {
-  let stack: RealStack;
-  let tenantId: string;
-  let brandAId: string;
-  let brandBId: string;
-  let categoryAId: string;
-  let categoryBId: string;
-  let itemAId: string;
-  let itemBId: string;
-  let modGroupAId: string;
-  let modGroupBId: string;
-  let locationAId: string;
-  let locationBId: string;
-
-  beforeAll(async () => {
-    stack = await startRealStack({ natsEnabledInApp: false });
-    const db = stack.app.get(TenantAwareDb);
-
-    const seeded = await db.withoutTenant('seed cross-brand RLS matrix', async (tx) => {
-      const [tenantA] = await tx
-        .insert(schema.tenants)
-        .values({
-          slug: 'brand-rls-tenant',
-          displayName: 'Brand RLS Tenant',
-          defaultCurrency: 'USD',
-          locale: 'en',
-        })
-        .returning({ id: schema.tenants.id });
-      if (!tenantA) throw new Error('tenant insert failed');
-
-      const [bA] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantA.id, slug: 'rls-brand-a', displayName: 'RLS A' })
-        .returning({ id: schema.brands.id });
-      const [bB] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantA.id, slug: 'rls-brand-b', displayName: 'RLS B' })
-        .returning({ id: schema.brands.id });
-      if (!bA || !bB) throw new Error('brand insert failed');
-
-      const [catA] = await tx
-        .insert(schema.menuCategories)
-        .values({
-          tenantId: tenantA.id,
-          brandId: bA.id,
-          slug: 'cat-rls-a',
-          name: { en: 'A' },
-          sortOrder: 0,
-        })
-        .returning({ id: schema.menuCategories.id });
-      const [catB] = await tx
-        .insert(schema.menuCategories)
-        .values({
-          tenantId: tenantA.id,
-          brandId: bB.id,
-          slug: 'cat-rls-b',
-          name: { en: 'B' },
-          sortOrder: 0,
-        })
-        .returning({ id: schema.menuCategories.id });
-      if (!catA || !catB) throw new Error('category insert failed');
-
-      const [itemA] = await tx
-        .insert(schema.menuItems)
-        .values({
-          tenantId: tenantA.id,
-          brandId: bA.id,
-          categoryId: catA.id,
-          slug: 'item-rls-a',
-          name: { en: 'Item A' },
-          basePrice: '5.00',
-          currency: 'USD',
-          status: 'published',
-        })
-        .returning({ id: schema.menuItems.id });
-      const [itemB] = await tx
-        .insert(schema.menuItems)
-        .values({
-          tenantId: tenantA.id,
-          brandId: bB.id,
-          categoryId: catB.id,
-          slug: 'item-rls-b',
-          name: { en: 'Item B' },
-          basePrice: '5.00',
-          currency: 'USD',
-          status: 'published',
-        })
-        .returning({ id: schema.menuItems.id });
-      if (!itemA || !itemB) throw new Error('item insert failed');
-
-      const [mgA, mgB] = await tx
-        .insert(schema.menuModifierGroups)
-        .values([
-          {
-            tenantId: tenantA.id,
-            brandId: bA.id,
-            name: { en: 'MG A' },
-            minSelectable: 0,
-            maxSelectable: 1,
-            isRequired: false,
-          },
-          {
-            tenantId: tenantA.id,
-            brandId: bB.id,
-            name: { en: 'MG B' },
-            minSelectable: 0,
-            maxSelectable: 1,
-            isRequired: false,
-          },
-        ])
-        .returning({ id: schema.menuModifierGroups.id });
-
-      const [locA, locB] = await tx
-        .insert(schema.locations)
-        .values([
-          { tenantId: tenantA.id, brandId: bA.id, name: 'Loc A' },
-          { tenantId: tenantA.id, brandId: bB.id, name: 'Loc B' },
-        ])
-        .returning({ id: schema.locations.id });
-      if (!locA || !locB) throw new Error('location insert failed');
-
-      await tx.insert(schema.catalogLocationStopVersion).values([
-        { tenantId: tenantA.id, locationId: locA.id },
-        { tenantId: tenantA.id, locationId: locB.id },
-      ]);
-
-      if (!mgA || !mgB) throw new Error('modifier group insert failed');
-      return {
-        tenantId: tenantA.id,
-        brandAId: bA.id,
-        brandBId: bB.id,
-        categoryAId: catA.id,
-        categoryBId: catB.id,
-        itemAId: itemA.id,
-        itemBId: itemB.id,
-        modGroupAId: mgA.id,
-        modGroupBId: mgB.id,
-        locationAId: locA.id,
-        locationBId: locB.id,
-      };
-    });
-
-    tenantId = seeded.tenantId;
-    brandAId = seeded.brandAId;
-    brandBId = seeded.brandBId;
-    categoryAId = seeded.categoryAId;
-    categoryBId = seeded.categoryBId;
-    itemAId = seeded.itemAId;
-    itemBId = seeded.itemBId;
-    modGroupAId = seeded.modGroupAId;
-    modGroupBId = seeded.modGroupBId;
-    locationAId = seeded.locationAId;
-    locationBId = seeded.locationBId;
-  }, 120_000);
-
-  afterAll(async () => {
-    if (stack) await stopRealStack(stack);
-  });
-
-  describe('brand-bound reads return only the bound brand rows (RLS live)', () => {
-    it('menu_categories: brand-A binding returns A rows only, zero B rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
-        return tx
-          .select({ id: schema.menuCategories.id })
-          .from(schema.menuCategories)
-          .where(eq(schema.menuCategories.tenantId, tenantId));
-      });
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(categoryAId);
-      expect(ids).not.toContain(categoryBId);
-    });
-
-    it('menu_items: brand-A binding returns A rows only, zero B rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
-        return tx
-          .select({ id: schema.menuItems.id })
-          .from(schema.menuItems)
-          .where(eq(schema.menuItems.tenantId, tenantId));
-      });
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(itemAId);
-      expect(ids).not.toContain(itemBId);
-    });
-
-    it('menu_modifier_groups: brand-A binding returns A rows only, zero B rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandAId}, false)`);
-        return tx
-          .select({ id: schema.menuModifierGroups.id })
-          .from(schema.menuModifierGroups)
-          .where(eq(schema.menuModifierGroups.tenantId, tenantId));
-      });
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(modGroupAId);
-      expect(ids).not.toContain(modGroupBId);
-    });
-
-    it('catalog_location_stop_version: location-A binding returns A row only, zero B rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_location(${locationAId})`);
-        return tx
-          .select({ locationId: schema.catalogLocationStopVersion.locationId })
-          .from(schema.catalogLocationStopVersion)
-          .where(eq(schema.catalogLocationStopVersion.tenantId, tenantId));
-      });
-      const locationIds = rows.map((r) => r.locationId);
-      expect(locationIds).toContain(locationAId);
-      expect(locationIds).not.toContain(locationBId);
-    });
-  });
-
-  describe('IS NULL pass-through — tenant-level (no brand bound) reads see both brands rows', () => {
-    it('menu_categories: no brand binding (IS NULL) returns rows for BOTH brands', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) =>
-        tx
-          .select({ id: schema.menuCategories.id })
-          .from(schema.menuCategories)
-          .where(eq(schema.menuCategories.tenantId, tenantId)),
-      );
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(categoryAId);
-      expect(ids).toContain(categoryBId);
-    });
-
-    it('menu_items: no brand binding returns rows for BOTH brands', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) =>
-        tx
-          .select({ id: schema.menuItems.id })
-          .from(schema.menuItems)
-          .where(eq(schema.menuItems.tenantId, tenantId)),
-      );
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(itemAId);
-      expect(ids).toContain(itemBId);
-    });
-
-    it('catalog_location_stop_version: no location binding returns both locations rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) =>
-        tx
-          .select({ locationId: schema.catalogLocationStopVersion.locationId })
-          .from(schema.catalogLocationStopVersion)
-          .where(eq(schema.catalogLocationStopVersion.tenantId, tenantId)),
-      );
-      const locationIds = rows.map((r) => r.locationId);
-      expect(locationIds).toContain(locationAId);
-      expect(locationIds).toContain(locationBId);
-    });
-  });
-
-  describe('symmetric brand-B binding — B rows visible, A rows invisible', () => {
-    it('menu_categories: brand-B binding returns B rows only, zero A rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandBId}, false)`);
-        return tx
-          .select({ id: schema.menuCategories.id })
-          .from(schema.menuCategories)
-          .where(eq(schema.menuCategories.tenantId, tenantId));
-      });
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(categoryBId);
-      expect(ids).not.toContain(categoryAId);
-    });
-
-    it('menu_items: brand-B binding returns B rows only, zero A rows', async () => {
-      const db = stack.app.get(TenantAwareDb);
-      const rows = await db.withTenantId(tenantId, async (tx) => {
-        await tx.execute(sql`SELECT app_bind_brand(${brandBId}, false)`);
-        return tx
-          .select({ id: schema.menuItems.id })
-          .from(schema.menuItems)
-          .where(eq(schema.menuItems.tenantId, tenantId));
-      });
-      const ids = rows.map((r) => r.id);
-      expect(ids).toContain(itemBId);
-      expect(ids).not.toContain(itemAId);
-    });
-  });
-});
+// RES-08.2-06's "cross-label RLS isolation matrix" suite (a SECURITY DEFINER
+// GUC-binding function, the IS-NULL-pass-through case, symmetric second-label
+// binding) is deleted outright, not rewritten: that function and its GUC no
+// longer exist (D-09; migration 0079 drops both overloads, verified absent
+// via `to_regprocedure` in packages/db/test/integration/tenant-isolation.spec.ts).
+// A tenant can no longer contain two of those labels to bind between (D-03)
+// — the property this suite tested has no post-merge equivalent. Tenant-grain
+// RLS for the same tables is covered by tenant-isolation.spec.ts's canonical
+// net.

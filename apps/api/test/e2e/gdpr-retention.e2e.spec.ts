@@ -70,7 +70,7 @@ suite('GDPR retention sweep — invitation + verification (D-21)', () => {
     ] as const) {
       await authDb.db.insert(schema.invitation).values({
         id,
-        organizationId: tenantId,
+        tenantId,
         email: `${id}@example.com`,
         role: 'staff',
         status,
@@ -84,7 +84,7 @@ suite('GDPR retention sweep — invitation + verification (D-21)', () => {
     const remaining = await authDb.db
       .select({ id: schema.invitation.id })
       .from(schema.invitation)
-      .where(and(eq(schema.invitation.organizationId, tenantId)));
+      .where(and(eq(schema.invitation.tenantId, tenantId)));
 
     const remainingIds = remaining.map((r) => r.id);
 

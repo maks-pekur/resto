@@ -33,6 +33,7 @@ const seedTenants = (db: TenantAwareDb): Promise<void> =>
         slug: 'odp-a',
         displayName: 'Outbox Dispatcher Tenant A',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       },
       {
@@ -40,6 +41,7 @@ const seedTenants = (db: TenantAwareDb): Promise<void> =>
         slug: 'odp-b',
         displayName: 'Outbox Dispatcher Tenant B',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       },
     ]);

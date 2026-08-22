@@ -379,4 +379,26 @@ ALTER POLICY catalog_brand_stop_version_iso
 -- database object name.
 ALTER TABLE tenant_role RENAME CONSTRAINT organization_role_pkey TO tenant_role_pkey;--> statement-breakpoint
 ALTER POLICY organization_role_tenant_isolation ON tenant_role RENAME TO tenant_role_tenant_isolation;--> statement-breakpoint
-ALTER POLICY organization_role_resto_auth_full ON tenant_role RENAME TO tenant_role_resto_auth_full;
+-- ── 14. `organization_role_resto_auth_full` (migration 0054) is itself created
+-- inside an `IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_auth')`
+-- guard — 0054 was written to no-op gracefully when a fresh database migrates
+-- before the resto_auth role is provisioned (role provisioning is a separate
+-- step from the migration chain; see packages/db/src/roles.ts). None of this
+-- repo's testcontainer harnesses provision resto_auth before calling
+-- migrate(), so on every from-scratch test run this policy never existed to
+-- rename — the prior unconditional `ALTER POLICY ... RENAME` failed with
+-- "policy does not exist" on every fresh-container migration replay
+-- (deferred-items.md, plans 05/06/19). Guarded the same way 0054 guards the
+-- CREATE, so the rename is skipped, not fatal, when the policy is absent.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'tenant_role'
+      AND policyname = 'organization_role_resto_auth_full'
+  )
+  THEN
+    EXECUTE 'ALTER POLICY organization_role_resto_auth_full ON tenant_role RENAME TO tenant_role_resto_auth_full';
+  END IF;
+END
+$$;

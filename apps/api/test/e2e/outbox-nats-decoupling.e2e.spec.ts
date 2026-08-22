@@ -76,10 +76,8 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
   let service: CreateOrderService;
 
   const tenantId = randomUUID();
-  const brandId = randomUUID();
 
-  const inContext = <T>(op: () => Promise<T>): Promise<T> =>
-    runInTenantContext({ tenantId, brandId }, op);
+  const inContext = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId }, op);
 
   beforeAll(async () => {
     stack = await startDbStack();
@@ -94,18 +92,11 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
         slug: `decoupling-${tenantId.slice(0, 8)}`,
         displayName: 'Decoupling Test Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
-      });
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: `brand-${brandId.slice(0, 8)}`,
-        displayName: 'Decoupling Test Brand',
-        status: 'active',
       });
       await tx.insert(schema.locations).values({
         tenantId,
-        brandId,
         name: 'Decoupling Test Location',
       });
     });

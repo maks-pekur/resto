@@ -63,10 +63,10 @@ export const memberLocationScope = pgTable(
       name: 'member_location_scope_pk',
       columns: [table.memberId, table.locationId],
     }),
-    foreignKey({
+    compositeTenantFk({
       name: 'member_location_scope_member_fk',
-      columns: [table.memberId],
-      foreignColumns: [member.id],
+      child: { id: table.memberId, tenantId: table.tenantId },
+      parent: { id: member.id, tenantId: member.tenantId },
     }).onDelete('cascade'),
     compositeTenantFk({
       name: 'member_location_scope_location_fk',

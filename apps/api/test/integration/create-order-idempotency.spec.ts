@@ -88,14 +88,12 @@ suite('CreateOrderService — idempotency', () => {
 
   const tenantIdA = randomUUID();
   const tenantIdB = randomUUID();
-  const brandA = randomUUID();
-  const brandB = randomUUID();
 
   const inTenantA = <T>(op: () => Promise<T>): Promise<T> =>
-    runInTenantContext({ tenantId: tenantIdA, brandId: brandA }, op);
+    runInTenantContext({ tenantId: tenantIdA }, op);
 
   const inTenantB = <T>(op: () => Promise<T>): Promise<T> =>
-    runInTenantContext({ tenantId: tenantIdB, brandId: brandB }, op);
+    runInTenantContext({ tenantId: tenantIdB }, op);
 
   beforeAll(async () => {
     stack = await startDbStack();
@@ -111,6 +109,7 @@ suite('CreateOrderService — idempotency', () => {
           slug: 'idem-tenant-a',
           displayName: 'Idem Tenant A',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
         {
@@ -118,16 +117,13 @@ suite('CreateOrderService — idempotency', () => {
           slug: 'idem-tenant-b',
           displayName: 'Idem Tenant B',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
       ]);
-      await tx.insert(schema.brands).values([
-        { id: brandA, tenantId: tenantIdA, slug: 'brand-a', displayName: 'Brand A' },
-        { id: brandB, tenantId: tenantIdB, slug: 'brand-b', displayName: 'Brand B' },
-      ]);
       await tx.insert(schema.locations).values([
-        { tenantId: tenantIdA, brandId: brandA, name: 'Idem Location A' },
-        { tenantId: tenantIdB, brandId: brandB, name: 'Idem Location B' },
+        { tenantId: tenantIdA, name: 'Idem Location A' },
+        { tenantId: tenantIdB, name: 'Idem Location B' },
       ]);
     });
   }, 180_000);

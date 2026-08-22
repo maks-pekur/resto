@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -29,48 +28,25 @@ if (!dockerOk) {
 }
 
 // LOW-11 (08.5, ACCEPTED not fixed): afterUpdateMemberRole does not reset
-// activeLocationId/activeBrandId on role change. Demoted owner->staff fails
-// closed (null pin -> 404 until re-login). Promoted staff->owner is
-// neutralized by this phase's own design — owners derive location authority
-// from the URL and bypass LocationScopeGuard entirely, so a stale staff pin
-// on a promoted owner has no effect.
+// activeLocationId on role change. Demoted owner->staff fails closed (null
+// pin -> 404 until re-login). Promoted staff->owner is neutralized by this
+// phase's own design — owners derive location authority from the URL and
+// bypass LocationScopeGuard entirely, so a stale staff pin on a promoted
+// owner has no effect.
 suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
   let stack: RealStack;
   let tenantId: string;
-  let brand1Slug: string;
-  let brand2Slug: string;
-  let brand1Id: string;
   let locationAId: string;
   let locationBId: string;
   let locationCId: string;
   let ownerCookie: string;
   let staffCookie: string;
 
-  const createBrand = async (slug: string): Promise<string> => {
-    const res = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/me/brands',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-      payload: { slug, displayName: slug },
-    });
-    expect(res.statusCode).toBe(201);
-    const db = stack.app.get(TenantAwareDb);
-    const rows = await db.withoutTenant('lookup brand id', (tx) =>
-      tx
-        .select({ id: schema.brands.id })
-        .from(schema.brands)
-        .where(and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug))),
-    );
-    const id = rows[0]?.id;
-    if (!id) throw new Error(`brand ${slug} not found after create`);
-    return id;
-  };
-
-  const createLocation = async (brandSlug: string, name: string): Promise<string> => {
+  const createLocation = async (name: string): Promise<string> => {
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/tenancy/locations',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: { name },
     });
     expect(res.statusCode).toBe(200);
@@ -90,7 +66,7 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     const memberId = randomUUID();
     await authDb.db.insert(schema.member).values({
       id: memberId,
-      organizationId: tenantId,
+      tenantId,
       userId: user.userId,
       role: 'admin',
       createdAt: new Date(),
@@ -102,25 +78,13 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     return signInAsOperator(stack.app, email, PASSWORD, tenantId);
   };
 
-  const setActiveBrand = async (cookie: string, brandId: string): Promise<string> => {
-    const res = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/me/set-active-brand',
-      headers: { cookie, 'x-tenant-id': tenantId },
-      payload: { brandId },
-    });
-    expect(res.statusCode).toBe(200);
-    return extractCookies(res.headers['set-cookie']) || cookie;
-  };
-
-  const getStopList = (cookie: string, brandSlug: string, locationId: string) =>
+  const getStopList = (cookie: string, locationId: string) =>
     stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/stop-list',
       headers: {
         cookie,
         'x-tenant-id': tenantId,
-        'x-brand-slug': brandSlug,
         'x-location-id': locationId,
       },
     });
@@ -160,19 +124,12 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     await runBootstrap({ tenantSlug, email: ownerEmail, password: PASSWORD, name: 'Owner' });
     ownerCookie = await signInAsOperator(stack.app, ownerEmail, PASSWORD, tenantId);
 
-    brand1Slug = `brand1-${randomUUID().slice(0, 8)}`;
-    brand2Slug = `brand2-${randomUUID().slice(0, 8)}`;
-    brand1Id = await createBrand(brand1Slug);
-    await createBrand(brand2Slug);
+    locationAId = await createLocation('Location A');
+    locationBId = await createLocation('Location B');
+    locationCId = await createLocation('Location C');
 
-    locationAId = await createLocation(brand1Slug, 'Location A');
-    locationBId = await createLocation(brand1Slug, 'Location B');
-    locationCId = await createLocation(brand2Slug, 'Location C');
-
-    // D-14: non-owner set-active-brand is now closed (403), so staff can no
-    // longer be pinned via an explicit call here — sign-in's built-in
-    // onInitialBrandPin/onInitialLocationPin hooks (auth.config.ts) already
-    // auto-pin the single reachable brand/location from member_location_scope.
+    // Sign-in's built-in onInitialLocationPin hook (auth.config.ts) auto-pins
+    // the single reachable location from member_location_scope.
     const staffEmail = `staff-${randomUUID().slice(0, 8)}@example.com`;
     staffCookie = await seedScopedStaff(staffEmail, locationAId);
   }, 240_000);
@@ -181,41 +138,41 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     if (stack) await stopRealStack(stack);
   });
 
-  describe('Task 1 — out-of-scope 404/403, owner bypass, brand derivation', () => {
+  describe('Task 1 — out-of-scope 404/403, owner bypass', () => {
     describe('D-05 non-owner forged x-location-id (session-vs-request mismatch)', () => {
       it('staff pinned to A requesting B on a location-scoped route returns 404 (not 403)', async () => {
-        const res = await getStopList(staffCookie, brand1Slug, locationBId);
+        const res = await getStopList(staffCookie, locationBId);
         expect(res.statusCode).toBe(404);
       });
     });
 
-    describe('D-04 non-owner brand with zero scoped locations is unreachable', () => {
-      it('staff pinned to brand1/A hitting brand2 (no location scope there) returns 404 (existence-hiding)', async () => {
-        const res = await getStopList(staffCookie, brand2Slug, locationCId);
+    describe('D-04 non-owner requesting an unscoped location is refused', () => {
+      it('staff pinned to A hitting C (no location scope there) returns 404 (existence-hiding)', async () => {
+        const res = await getStopList(staffCookie, locationCId);
         expect(res.statusCode).toBe(404);
       });
     });
 
     describe('positive control — non-owner in-scope access', () => {
       it('staff pinned to A reaching A on the location-scoped route succeeds (200)', async () => {
-        const res = await getStopList(staffCookie, brand1Slug, locationAId);
+        const res = await getStopList(staffCookie, locationAId);
         expect(res.statusCode).toBe(200);
       });
     });
 
-    describe('owner bypass — unrestricted across locations and brands', () => {
-      it('owner reaches location A (brand1)', async () => {
-        const res = await getStopList(ownerCookie, brand1Slug, locationAId);
+    describe('owner bypass — unrestricted across locations', () => {
+      it('owner reaches location A', async () => {
+        const res = await getStopList(ownerCookie, locationAId);
         expect(res.statusCode).toBe(200);
       });
 
-      it('owner reaches location B (brand1)', async () => {
-        const res = await getStopList(ownerCookie, brand1Slug, locationBId);
+      it('owner reaches location B', async () => {
+        const res = await getStopList(ownerCookie, locationBId);
         expect(res.statusCode).toBe(200);
       });
 
-      it('owner reaches location C (brand2)', async () => {
-        const res = await getStopList(ownerCookie, brand2Slug, locationCId);
+      it('owner reaches location C', async () => {
+        const res = await getStopList(ownerCookie, locationCId);
         expect(res.statusCode).toBe(200);
       });
     });
@@ -245,48 +202,31 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
 
     describe('D-13 owner server-side location pin retired — set-active-location is a no-op', () => {
       it('owner posting a valid location id gets 200 with locationId: null (no server pin; URL is the authority)', async () => {
-        const cookie = await setActiveBrand(ownerCookie, brand1Id);
-        const result = await setActiveLocation(cookie, locationAId);
+        const result = await setActiveLocation(ownerCookie, locationAId);
         expect(result.status).toBe(200);
         expect(result.body.locationId).toBeNull();
       });
 
       it('owner posting null also gets 200 with locationId: null', async () => {
-        const cookie = await setActiveBrand(ownerCookie, brand1Id);
-        const result = await setActiveLocation(cookie, null);
+        const result = await setActiveLocation(ownerCookie, null);
         expect(result.status).toBe(200);
         expect(result.body.locationId).toBeNull();
       });
     });
 
-    describe('D-14 non-owner set-active-brand is closed outright (403)', () => {
-      it('staff calling POST /v1/me/set-active-brand receives 403 identity.non_owner_brand_switch_forbidden', async () => {
-        const res = await stack.app.inject({
-          method: 'POST',
-          url: '/v1/me/set-active-brand',
-          headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
-          payload: { brandId: brand1Id },
-        });
-        expect(res.statusCode).toBe(403);
-        expect(res.json<{ code?: string }>().code).toBe(
-          'identity.non_owner_brand_switch_forbidden',
-        );
-      });
-    });
-
     describe('D-17 archiving a location removes scoped-only staff access (default-deny)', () => {
-      it('after owner archives location A, staff loses access on the next request (their only location was also their only reachable brand)', async () => {
+      it('after owner archives location A, staff loses access on the next request (their only location was also their only reachable scope)', async () => {
         const archiveRes = await stack.app.inject({
           method: 'PATCH',
           url: `/v1/tenancy/locations/${locationAId}/archive`,
-          headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brand1Slug },
+          headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
         });
         expect(archiveRes.statusCode).toBe(200);
         expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(1);
 
-        const res = await getStopList(staffCookie, brand1Slug, locationAId);
+        const res = await getStopList(staffCookie, locationAId);
         expect(res.statusCode).toBe(403);
-        expect(res.json<{ code?: string }>().code).toBe('brand.access_denied');
+        expect(res.json<{ code?: string }>().code).toBe('location.access_denied');
       });
     });
   });

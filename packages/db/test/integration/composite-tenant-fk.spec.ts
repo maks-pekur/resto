@@ -19,6 +19,8 @@ interface FixtureBundle {
   modifierA: string;
   modifierB: string;
   memberId: string;
+  memberBId: string;
+  locationA: string;
 }
 
 interface FkCase {
@@ -99,6 +101,21 @@ const CASES: FkCase[] = [
         }),
       ),
   },
+  {
+    // 10.2 plan 19: composite-ized in migration 0081 after 0079's
+    // organization_id -> tenant_id rename on `member` surfaced this as a
+    // pre-existing I-2 gap (member_location_scope_member_fk was
+    // single-column) — see db:audit-fks.
+    name: 'member_location_scope.member_id → member(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: member_location_scope.member_id', async (tx) =>
+        tx.insert(schema.memberLocationScope).values({
+          tenantId: fx.tenantA,
+          memberId: fx.memberBId,
+          locationId: fx.locationA,
+        }),
+      ),
+  },
 ];
 
 suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () => {
@@ -130,6 +147,17 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         .returning({ id: schema.user.id });
       if (!userRow) throw new Error('seed user failed');
 
+      const [userRowB] = await tx
+        .insert(schema.user)
+        .values({
+          id: 'i2-user-b',
+          name: 'I-2 User B',
+          email: 'i2-b@example.test',
+          emailVerified: true,
+        })
+        .returning({ id: schema.user.id });
+      if (!userRowB) throw new Error('seed user B failed');
+
       const [memberRow] = await tx
         .insert(schema.member)
         .values({
@@ -141,6 +169,24 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         })
         .returning({ id: schema.member.id });
       if (!memberRow) throw new Error('seed member failed');
+
+      const [memberRowB] = await tx
+        .insert(schema.member)
+        .values({
+          id: 'i2-member-b',
+          tenantId: tenantB.id,
+          userId: userRowB.id,
+          role: 'admin',
+          createdAt: new Date(),
+        })
+        .returning({ id: schema.member.id });
+      if (!memberRowB) throw new Error('seed member B failed');
+
+      const [locationA] = await tx
+        .insert(schema.locations)
+        .values({ tenantId: tenantA.id, name: 'I-2 Location A' })
+        .returning({ id: schema.locations.id });
+      if (!locationA) throw new Error('seed location A failed');
 
       const [categoryA] = await tx
         .insert(schema.menuCategories)
@@ -204,6 +250,8 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         modifierA: modifierA.id,
         modifierB: modifierB.id,
         memberId: memberRow.id,
+        memberBId: memberRowB.id,
+        locationA: locationA.id,
       } satisfies FixtureBundle;
     });
   }, 90_000);

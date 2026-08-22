@@ -568,6 +568,13 @@
       "when": 1784678400000,
       "tag": "0080_tenancy_erase_tenant_pii",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1784764800000,
+      "tag": "0081_member_location_scope_composite_fk",
+      "breakpoints": true
     }
   ]
 }

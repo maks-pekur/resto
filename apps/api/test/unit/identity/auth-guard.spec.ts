@@ -181,7 +181,7 @@ describe('AuthGuard', () => {
     });
     const lookup = buildLookupStub();
     const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
-    const ctx = buildContext({ headers: {}, url: '/v1/me/brands' });
+    const ctx = buildContext({ headers: {}, url: '/v1/me/tenants' });
     await expect(guard.canActivate(ctx)).rejects.toMatchObject({
       response: { code: 'auth.tenant_context_missing' },
     });

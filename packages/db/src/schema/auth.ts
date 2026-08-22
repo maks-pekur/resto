@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
 
 export const user = pgTable('user', {
@@ -86,17 +87,21 @@ export const tenantRole = pgTable('tenant_role', {
  */
 export const organization = tenants;
 
-export const member = pgTable('member', {
-  id: text('id').primaryKey(),
-  tenantId: uuid('tenant_id')
-    .notNull()
-    .references(() => tenants.id, { onDelete: 'cascade' }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  role: text('role').default('member').notNull(),
-  createdAt: timestamp('created_at').notNull(),
-});
+export const member = pgTable(
+  'member',
+  {
+    id: text('id').primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').default('member').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+  },
+  (table) => [tenantParentUniqueIndex('member', { id: table.id, tenantId: table.tenantId })],
+);
 
 export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),

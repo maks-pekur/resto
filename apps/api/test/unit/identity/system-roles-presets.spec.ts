@@ -68,20 +68,19 @@ describe('AUTH-09 D-16: SYSTEM_ROLES regression', () => {
     });
   });
 
-  describe('staff is read-only on tenant/brand', () => {
+  describe('staff is read-only on tenant', () => {
     it('tenant: read only, no write actions', () => {
       expect(SYSTEM_ROLES.staff.tenant ?? []).toEqual(['read']);
     });
 
-    it('brand: read only, no write actions', () => {
-      expect(SYSTEM_ROLES.staff.brand ?? []).toEqual(['read']);
-    });
-
     it('does NOT have menu / order / staff / reports / settings / billing', () => {
-      // staff is intentionally narrow — read tenant + brand only. Cast to
-      // Record<string,...> for the same reason as the admin.billing test:
-      // structural absence is a compile-time fact, runtime regression net
-      // still needed.
+      // staff is intentionally narrow — read tenant only. A merge-era RBAC
+      // resource was dropped outright, not renamed, in D-40; the RBAC
+      // resource union type itself is the regression net for that (a
+      // reintroduced key would need a type change this file's own compile
+      // step would catch). Cast to Record<string,...> for the same reason
+      // as the admin.billing test: structural absence is a compile-time
+      // fact, runtime regression net still useful for the resources below.
       const staff = SYSTEM_ROLES.staff as Record<string, readonly string[] | undefined>;
       expect(staff.menu).toBeUndefined();
       expect(staff.order).toBeUndefined();

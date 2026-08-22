@@ -62,13 +62,13 @@ suite('TEN-08 Fixture 3 — Concurrent withTenant writes do not drift tenant_id'
     // Provision two tenants via admin (the resto_app role cannot INSERT
     // into the tenants table — only the tenancy domain code can).
     const [a] = await admin<{ id: string }[]>`
-      INSERT INTO tenants (slug, display_name)
-      VALUES ('cwr-a', 'Concurrent Writes A')
+      INSERT INTO tenants (slug, display_name, country)
+      VALUES ('cwr-a', 'Concurrent Writes A', 'GB')
       RETURNING id
     `;
     const [b] = await admin<{ id: string }[]>`
-      INSERT INTO tenants (slug, display_name)
-      VALUES ('cwr-b', 'Concurrent Writes B')
+      INSERT INTO tenants (slug, display_name, country)
+      VALUES ('cwr-b', 'Concurrent Writes B', 'GB')
       RETURNING id
     `;
     if (!a || !b) throw new Error('failed to seed tenants');

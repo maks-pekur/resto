@@ -46,7 +46,7 @@ suite('RES-255: db:audit-fks detects non-composite parent FKs on tenant-scoped c
         CREATE TABLE audit_fks_violation_fixture (
           id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
           tenant_id uuid NOT NULL REFERENCES tenants(id),
-          brand_id uuid NOT NULL REFERENCES brands(id)
+          location_id uuid NOT NULL REFERENCES locations(id)
         )
       `);
     } finally {
@@ -57,8 +57,8 @@ suite('RES-255: db:audit-fks detects non-composite parent FKs on tenant-scoped c
     expect(violations).toContainEqual(
       expect.objectContaining({
         childTable: 'audit_fks_violation_fixture',
-        childCol: 'brand_id',
-        parentTable: 'brands',
+        childCol: 'location_id',
+        parentTable: 'locations',
       }),
     );
   });

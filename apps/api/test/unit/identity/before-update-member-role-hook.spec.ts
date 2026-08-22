@@ -29,7 +29,7 @@ const runBeforeHook = async (
   const SYSTEM_ROLES: Record<string, Record<string, readonly string[]>> = {
     owner: { ac: ['create', 'read', 'update', 'delete'], billing: ['read', 'update'] },
     admin: { menu: ['read'] },
-    staff: { brand: ['read'] },
+    staff: { tenant: ['read'] },
   };
 
   let targetPermission: Record<string, string[]> | null = null;

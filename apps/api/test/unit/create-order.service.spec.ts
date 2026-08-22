@@ -19,7 +19,6 @@ import {
 import type { Order } from '../../src/contexts/ordering/domain/order.aggregate';
 
 const tenantId = randomUUID();
-const brandId = randomUUID();
 const locationId = randomUUID();
 
 const pizzaId = randomUUID();
@@ -125,7 +124,7 @@ class FakeOrderRepository implements OrderRepository {
 const pricing: MenuPricingPort = { loadSnapshot: () => Promise.resolve(snapshot) };
 
 const defaultLocation = {
-  resolveForBrand: () => Promise.resolve(locationId),
+  resolveForTenant: () => Promise.resolve(locationId),
 } as unknown as DefaultLocationResolverService;
 
 const orderSequence: OrderSequencePort = { nextShortNumber: () => Promise.resolve(1) };
@@ -145,7 +144,7 @@ const makeService = (): { service: CreateOrderService; repo: FakeOrderRepository
   };
 };
 
-const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId, brandId }, op);
+const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId }, op);
 
 const baseInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput => ({
   items: [{ itemId: pizzaId, sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],
@@ -243,7 +242,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
     expect(repo.saved[0]?.toSnapshot().total).toBe('15.00');
   });
 
-  it('rejects an unknown / cross-brand item with 422 and persists nothing', async () => {
+  it('rejects an unknown / cross-tenant item with 422 and persists nothing', async () => {
     const { service, repo } = makeService();
     await expect(
       run(() =>
