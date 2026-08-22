@@ -4,7 +4,7 @@
  * `req.principal`; controllers consume via @CurrentPrincipal decorators.
  *
  * `tenantId` is optional on OperatorPrincipal because a freshly email-
- * signed-up user has no organization membership yet — that case is
+ * signed-up user has no tenant membership yet — that case is
  * exercised by Phase A's smoke test and remains valid here.
  */
 export interface OperatorPrincipal {
