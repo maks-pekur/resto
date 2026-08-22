@@ -66,7 +66,7 @@ suite(
       const authDb = stack.app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
       await authDb.db.insert(schema.member).values({
         id: randomUUID(),
-        organizationId: tenantId,
+        tenantId,
         userId: adminUserId,
         role: 'admin',
         createdAt: new Date(),

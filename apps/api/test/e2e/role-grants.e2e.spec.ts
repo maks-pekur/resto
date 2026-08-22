@@ -29,6 +29,7 @@ suite('Role grants — resto_app cannot DELETE', () => {
         slug: 'role-grants',
         displayName: 'Role Grants Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       });
     });

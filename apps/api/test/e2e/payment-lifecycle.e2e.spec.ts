@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { schema } from '@resto/db';
-import { BrandId, OrderId, TenantId } from '@resto/domain';
+import { Currency, OrderId, TenantId } from '@resto/domain';
 import { runInTenantContext } from '@resto/db';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
 import { PaymentDrizzleRepository } from '../../src/contexts/payments/infrastructure/payment-drizzle.repository';
@@ -12,8 +12,8 @@ import { CancelOrderService } from '../../src/contexts/payments/application/canc
 import { RefundOrderService } from '../../src/contexts/payments/application/refund-order.service';
 import { isDockerAvailable, startDbStack, stopDbStack } from './helpers/with-db-stack';
 import type { DbStack } from './helpers/with-db-stack';
-import type { BrandRepository } from '../../src/contexts/tenancy/domain/ports';
-import type { BrandSnapshot } from '../../src/contexts/tenancy/domain/brand.aggregate';
+import type { TenantRepository } from '../../src/contexts/tenancy/domain/ports';
+import type { TenantSnapshot } from '../../src/contexts/tenancy/domain/tenant.aggregate';
 import type { PaymentProviderPort } from '../../src/contexts/payments/domain/ports';
 
 const dockerOk = isDockerAvailable();
@@ -25,17 +25,67 @@ if (!dockerOk) {
 
 const STRIPE_ACCOUNT_ID = 'acct_1TestLifecycle0099';
 
+const makeFakeTenantSnap = (tid: string, slug: string): TenantSnapshot => ({
+  id: TenantId.parse(tid),
+  slug,
+  displayName: 'Test Tenant',
+  status: 'active',
+  locale: 'en',
+  country: 'GB',
+  defaultCurrency: Currency.parse('GBP'),
+  theme: null,
+  legalName: null,
+  legalForm: null,
+  taxId: null,
+  stripeAccountId: STRIPE_ACCOUNT_ID,
+  paymentProvider: 'stripe',
+  accountType: 'express',
+  stripeChargesEnabled: true,
+  stripePayoutsEnabled: true,
+  stripeOnboardingStatus: 'complete',
+  stripeRequirementsDue: null,
+  fiscalizationConfig: null,
+  primaryDomain: {
+    id: randomUUID(),
+    tenantId: tid,
+    domain: `${slug}.menu.resto.app`,
+    kind: 'subdomain',
+    isPrimary: true,
+    verifiedAt: new Date(),
+    createdAt: new Date(),
+  },
+  customDomains: [],
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  archivedAt: null,
+  offboardingScheduledAt: null,
+  offboardingExecutedAt: null,
+  offboardingRequestedBy: null,
+});
+
+const makeTenantRepoMock = (overrides: Partial<TenantRepository> = {}): TenantRepository => ({
+  findById: vi.fn().mockResolvedValue(null),
+  findBySlug: vi.fn().mockResolvedValue(null),
+  findByDomainHost: vi.fn().mockResolvedValue(null),
+  findByStripeAccountId: vi.fn().mockResolvedValue(null),
+  save: vi.fn().mockResolvedValue(undefined),
+  listDomains: vi.fn().mockResolvedValue([]),
+  findCurrentTenant: vi.fn().mockResolvedValue(null),
+  listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
+  eraseTenant: vi.fn(),
+  listScheduledForErasure: vi.fn().mockResolvedValue([]),
+  ...overrides,
+});
+
 suite('Payment lifecycle e2e — order created→requires_action→paid→refunded (PAY-BUG3/4)', () => {
   let stack: DbStack;
   let tenantId: string;
-  let brandId: string;
   let orderId: string;
   let locationId: string;
 
   beforeAll(async () => {
     stack = await startDbStack();
     tenantId = randomUUID();
-    brandId = randomUUID();
     orderId = randomUUID();
 
     await stack.db.withoutTenant('seed lifecycle e2e', async (tx) => {
@@ -44,14 +94,8 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         slug: `lifecycle-${tenantId.slice(0, 8)}`,
         displayName: 'Lifecycle Test Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
-      });
-
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: `lifecycle-brand-${brandId.slice(0, 8)}`,
-        displayName: 'Test Brand',
         stripeAccountId: STRIPE_ACCOUNT_ID,
         stripeChargesEnabled: true,
         stripePayoutsEnabled: true,
@@ -60,7 +104,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'Lifecycle Test Location' })
+        .values({ tenantId, name: 'Lifecycle Test Location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed lifecycle e2e: location insert failed.');
       locationId = location.id;
@@ -68,7 +112,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       await tx.insert(schema.orders).values({
         id: orderId,
         tenantId,
-        brandId,
         locationId: location.id,
         idempotencyKey: randomUUID(),
         orderNumber: 'ORD-LIFECYCLE-001',
@@ -94,7 +137,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       await tx.insert(schema.orders).values({
         id: newOrderId,
         tenantId,
-        brandId,
         locationId,
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-PERSIST-${newOrderId.slice(0, 8)}`,
@@ -153,34 +195,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     const piId = `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const clientSecret = `${piId}_secret_test`;
 
-    const fakeBrandSnap: BrandSnapshot = {
-      id: BrandId.parse(brandId),
-      tenantId: TenantId.parse(tenantId),
-      slug: `lifecycle-brand-${brandId.slice(0, 8)}`,
-      displayName: 'Test Brand',
-      status: 'active',
-      theme: null,
-      paymentProvider: 'stripe',
-      accountType: 'express',
-      defaultCurrency: 'EUR',
-      stripeAccountId: STRIPE_ACCOUNT_ID,
-      stripeChargesEnabled: true,
-      stripePayoutsEnabled: true,
-      stripeOnboardingStatus: 'complete',
-      stripeRequirementsDue: null,
-    };
-
-    const brandRepoMock: BrandRepository = {
-      findById: vi.fn().mockResolvedValue(fakeBrandSnap),
-      findBySlug: vi.fn().mockResolvedValue(null),
-      findByTenantAndSlug: vi.fn().mockResolvedValue(null),
-      findByDomainHost: vi.fn().mockResolvedValue(null),
-      listForTenant: vi.fn().mockResolvedValue([]),
-      save: vi.fn().mockResolvedValue(undefined),
-      findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
-      findByStripeAccountId: vi.fn().mockResolvedValue(null),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
-    };
+    const tenantRepoMock = makeTenantRepoMock({
+      findById: vi
+        .fn()
+        .mockResolvedValue(makeFakeTenantSnap(tenantId, `lifecycle-${tenantId.slice(0, 8)}`)),
+    });
 
     const providerMock: PaymentProviderPort = {
       ensureOnboardingAccount: vi.fn().mockResolvedValue({ accountId: STRIPE_ACCOUNT_ID }),
@@ -204,7 +223,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const checkoutService = new CreateCheckoutPaymentService(
       orderRepo,
-      brandRepoMock,
+      tenantRepoMock,
       paymentRepo,
       providerMock,
       stack.db,
@@ -254,17 +273,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       existingPaymentRow?.paymentIntentId ?? `pi_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
     const stripeEventId = `evt_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
 
-    const brandRepoMock: BrandRepository = {
-      findById: vi.fn().mockResolvedValue(null),
-      findBySlug: vi.fn().mockResolvedValue(null),
-      findByTenantAndSlug: vi.fn().mockResolvedValue(null),
-      findByDomainHost: vi.fn().mockResolvedValue(null),
-      listForTenant: vi.fn().mockResolvedValue([]),
-      save: vi.fn().mockResolvedValue(undefined),
-      findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
-      findByStripeAccountId: vi.fn().mockResolvedValue(null),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
-    };
+    const tenantRepoMock = makeTenantRepoMock();
 
     const providerMock: PaymentProviderPort = {
       ensureOnboardingAccount: vi.fn(),
@@ -280,7 +289,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const handlerService = new HandleStripeEventService(
       stack.db,
-      brandRepoMock,
+      tenantRepoMock,
       orderRepo,
       paymentRepo,
       providerMock,
@@ -379,32 +388,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     const piId = existingPaymentRow?.paymentIntentId ?? `pi_fallback`;
     const chargeEventId = `evt_${randomUUID().replace(/-/g, '').slice(0, 24)}`;
 
-    const brandRepoMock4: BrandRepository = {
-      findById: vi.fn().mockResolvedValue(null),
-      findBySlug: vi.fn().mockResolvedValue(null),
-      findByTenantAndSlug: vi.fn().mockResolvedValue(null),
-      findByDomainHost: vi.fn().mockResolvedValue(null),
-      listForTenant: vi.fn().mockResolvedValue([]),
-      save: vi.fn().mockResolvedValue(undefined),
-      findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
-      findByStripeAccountId: vi.fn().mockResolvedValue({
-        id: BrandId.parse(brandId),
-        tenantId: TenantId.parse(tenantId),
-        slug: `lifecycle-brand-${brandId.slice(0, 8)}`,
-        displayName: 'Test Brand',
-        status: 'active',
-        theme: null,
-        paymentProvider: 'stripe',
-        accountType: 'express',
-        defaultCurrency: 'EUR',
-        stripeAccountId: STRIPE_ACCOUNT_ID,
-        stripeChargesEnabled: true,
-        stripePayoutsEnabled: true,
-        stripeOnboardingStatus: 'complete',
-        stripeRequirementsDue: null,
-      }),
-      updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
-    };
+    const tenantRepoMock4 = makeTenantRepoMock({
+      findByStripeAccountId: vi
+        .fn()
+        .mockResolvedValue(makeFakeTenantSnap(tenantId, `lifecycle-${tenantId.slice(0, 8)}`)),
+    });
 
     const providerMock4: PaymentProviderPort = {
       ensureOnboardingAccount: vi.fn(),
@@ -422,7 +410,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const handlerService = new HandleStripeEventService(
       stack.db,
-      brandRepoMock4,
+      tenantRepoMock4,
       orderRepo,
       paymentRepo,
       providerMock4,

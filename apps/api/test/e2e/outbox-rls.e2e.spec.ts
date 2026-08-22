@@ -37,6 +37,7 @@ suite('Outbox RLS — INSERT policy enforcement', () => {
           slug: 'rls-a',
           displayName: 'RLS Tenant A',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
         {
@@ -44,6 +45,7 @@ suite('Outbox RLS — INSERT policy enforcement', () => {
           slug: 'rls-b',
           displayName: 'RLS Tenant B',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
       ]);

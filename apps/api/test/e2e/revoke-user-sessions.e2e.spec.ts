@@ -35,7 +35,7 @@ const seedUser = async (authDb: AuthDrizzle): Promise<string> => {
 const seedMember = async (authDb: AuthDrizzle, userId: string, orgId: string): Promise<void> => {
   await authDb.db.insert(schema.member).values({
     id: `member-${randomUUID().slice(0, 8)}`,
-    organizationId: orgId,
+    tenantId: orgId,
     userId,
     role: 'owner',
     createdAt: new Date(),
@@ -45,13 +45,13 @@ const seedMember = async (authDb: AuthDrizzle, userId: string, orgId: string): P
 const seedSession = async (
   authDb: AuthDrizzle,
   userId: string,
-  activeOrganizationId: string,
+  activeTenantId: string,
 ): Promise<string> => {
   const id = `session-${randomUUID().slice(0, 8)}`;
   await authDb.db.insert(schema.session).values({
     id,
     userId,
-    activeOrganizationId,
+    activeTenantId,
     token: randomUUID(),
     expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
     updatedAt: new Date(),

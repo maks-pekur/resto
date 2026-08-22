@@ -24,7 +24,20 @@ const makeFakeTenant = (tenantId: string): Tenant =>
     displayName: 'Inbox Dedup Test Tenant',
     status: 'active',
     locale: 'en',
+    country: 'ES',
     defaultCurrency: Currency.parse('EUR'),
+    theme: null,
+    legalName: null,
+    legalForm: null,
+    taxId: null,
+    stripeAccountId: STRIPE_ACCOUNT_ID,
+    paymentProvider: 'stripe',
+    accountType: null,
+    stripeChargesEnabled: false,
+    stripePayoutsEnabled: false,
+    stripeOnboardingStatus: 'not_started',
+    stripeRequirementsDue: null,
+    fiscalizationConfig: null,
     primaryDomain: {
       id: randomUUID(),
       tenantId: TenantId.parse(tenantId),
@@ -72,6 +85,7 @@ suite('stripe webhook inbox dedup — evt_ id accepted after 0056 migration (PAY
         slug: `inbox-dedup-${tenantId.slice(0, 8)}`,
         displayName: 'Inbox Dedup Test Tenant',
         locale: 'en',
+        country: 'ES',
         defaultCurrency: 'EUR',
       });
     });

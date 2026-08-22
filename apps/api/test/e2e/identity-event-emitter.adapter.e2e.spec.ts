@@ -47,6 +47,7 @@ suite('IdentityEventEmitterAdapter — RLS WITH CHECK on tenant-bound emits', ()
           slug: 'emit-a',
           displayName: 'Emit Tenant A',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
         {
@@ -54,6 +55,7 @@ suite('IdentityEventEmitterAdapter — RLS WITH CHECK on tenant-bound emits', ()
           slug: 'emit-b',
           displayName: 'Emit Tenant B',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
       ]);
