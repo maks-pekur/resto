@@ -495,3 +495,30 @@ brandSlug: brand.slug } })`, the exact route this plan removes). Per the phase's
   (`me-tenants.controller.ts`), and navigated to `/` (not `/$brandSlug`) on success. No host-preview
   string, no i18n keys, no copy polish beyond the one-field form working — plan 17's own UI-SPEC S4
   read_first should treat this as a working skeleton, not the finished screen.
+
+## From plan 17
+
+- **`apps/admin/src/routes/(auth)/login.tsx`'s `expired` search param crashes the route on a fresh
+  navigation to `/login?expired=1`** — the exact URL `apiFetch`'s own 401 handler navigates to
+  (`window.location.href = '/login?expired=1'`) and the exact URL a stale second tab is supposed to
+  land on (UI-SPEC S3, this plan's own success criterion). TanStack Router's default `parseSearch`
+  coerces a numeric-looking query value (`expired=1`) to the JS number `1` before `validateSearch`
+  runs; `SearchSchema`'s `expired: z.string().optional()` then rejects it (`SearchParamError:
+expected string, received number`), which TanStack Router's `CatchBoundaryImpl` catches and
+  renders as the generic `RouteError` fallback ("Something went wrong. Please try again.") instead
+  of the login card with the `tAuth('sessionExpired')` banner. Confirmed live (Playwright,
+  `page.goto('http://admin.localhost:4000/login?expired=1')` — a full navigation, identical in kind
+  to what `window.location.href` produces): the login page never renders; only the error fallback
+  does. `git log -p -- apps/admin/src/routes/'(auth)'/login.tsx` shows `SearchSchema` unchanged by
+  this plan (`expired: z.string().optional()` predates plan 17's own edits) — pre-existing, not
+  caused by this plan's rewrite of the file's post-sign-in branching. `grep -l "login.tsx"
+.planning/phases/10.2-brand-pinned-sessions/*-PLAN.md` → plans 02 (done, added the banner/i18n
+  key this bug now prevents from rendering) and this plan only — no later plan in this phase's
+  numbering currently owns `login.tsx`. Not fixed here: outside the scope-boundary rule (pre-existing,
+  not introduced by this plan's own changes) and the fix touches TanStack Router's search-param
+  parsing contract (either a custom `parseSearch`/`stringifySearch` pair on the router, or loosening
+  `SearchSchema` to accept `z.union([z.string(), z.number()]).transform(String)`), which is a
+  judgment call about the router-wide search-parsing convention, not a one-line fix scoped to this
+  file alone. Whichever plan next touches `apps/admin/src/main.tsx`'s router construction or does
+  the phase's final green-gate sweep should decide the router-wide fix and confirm this exact URL
+  renders the banner, not the error fallback.
