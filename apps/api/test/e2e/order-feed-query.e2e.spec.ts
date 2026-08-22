@@ -20,20 +20,15 @@ if (!dockerOk) {
 suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant isolation', () => {
   let stack: DbStack;
   let tenantId: string;
-  let brandId: string;
-  let emptyBrandId: string;
   let locationAId: string;
   let locationBId: string;
   let otherTenantId: string;
-  let otherBrandId: string;
   let otherLocationId: string;
   let shortNumberCounter = 1;
 
   beforeAll(async () => {
     stack = await startDbStack();
     tenantId = randomUUID();
-    brandId = randomUUID();
-    emptyBrandId = randomUUID();
     otherTenantId = randomUUID();
 
     await stack.db.withoutTenant('seed order-feed-query e2e', async (tx) => {
@@ -42,28 +37,17 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         slug: `feed-${tenantId.slice(0, 8)}`,
         displayName: 'Feed Test Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
-      });
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: `feed-brand-${brandId.slice(0, 8)}`,
-        displayName: 'Feed Test Brand',
-      });
-      await tx.insert(schema.brands).values({
-        id: emptyBrandId,
-        tenantId,
-        slug: `feed-empty-brand-${emptyBrandId.slice(0, 8)}`,
-        displayName: 'Feed Empty Brand',
       });
 
       const [locA] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'Location A' })
+        .values({ tenantId, name: 'Location A' })
         .returning({ id: schema.locations.id });
       const [locB] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'Location B' })
+        .values({ tenantId, name: 'Location B' })
         .returning({ id: schema.locations.id });
       if (!locA || !locB) throw new Error('seed order-feed-query e2e: location insert failed.');
       locationAId = locA.id;
@@ -74,18 +58,12 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         slug: `feed-other-${otherTenantId.slice(0, 8)}`,
         displayName: 'Other Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
-      });
-      otherBrandId = randomUUID();
-      await tx.insert(schema.brands).values({
-        id: otherBrandId,
-        tenantId: otherTenantId,
-        slug: `feed-other-brand-${otherBrandId.slice(0, 8)}`,
-        displayName: 'Other Brand',
       });
       const [otherLoc] = await tx
         .insert(schema.locations)
-        .values({ tenantId: otherTenantId, brandId: otherBrandId, name: 'Other Location' })
+        .values({ tenantId: otherTenantId, name: 'Other Location' })
         .returning({ id: schema.locations.id });
       if (!otherLoc) throw new Error('seed order-feed-query e2e: other-tenant location failed.');
       otherLocationId = otherLoc.id;
@@ -98,7 +76,6 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
   const seedOrder = async (opts: {
     tenantIdOverride?: string;
-    brandIdOverride?: string;
     locationId: string;
     status: string;
     channel?: 'site' | 'qr-menu';
@@ -109,7 +86,6 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
       await tx.insert(schema.orders).values({
         id: orderId,
         tenantId: opts.tenantIdOverride ?? tenantId,
-        brandId: opts.brandIdOverride ?? brandId,
         locationId: opts.locationId,
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-FEED-${orderId.slice(0, 8)}`,
@@ -149,7 +125,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'active' }),
     );
 
@@ -175,7 +151,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'all_today', channel: 'site' }),
     );
 
@@ -204,17 +180,15 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
 
     const service = makeListOrdersService();
-    const todayResult = await runInTenantContext(
-      { tenantId, brandId, locationId: locationAId },
-      () => service.execute({ statusPreset: 'all_today', datePreset: 'today' }),
+    const todayResult = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
+      service.execute({ statusPreset: 'all_today', datePreset: 'today' }),
     );
     const todayIds = todayResult.rows.map((r) => r.id);
     expect(todayIds).toContain(todayOrderId);
     expect(todayIds).not.toContain(yesterdayOrderId);
 
-    const yesterdayResult = await runInTenantContext(
-      { tenantId, brandId, locationId: locationAId },
-      () => service.execute({ statusPreset: 'all_today', datePreset: 'yesterday' }),
+    const yesterdayResult = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
+      service.execute({ statusPreset: 'all_today', datePreset: 'yesterday' }),
     );
     const yesterdayIds = yesterdayResult.rows.map((r) => r.id);
     expect(yesterdayIds).toContain(yesterdayOrderId);
@@ -232,7 +206,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({
         statusPreset: 'all_today',
         since: { createdAt: base, id: olderId },
@@ -250,10 +224,10 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const orderBId = await seedOrder({ locationId: locationBId, status: 'paid', createdAt: now });
 
     const service = makeListOrdersService();
-    const resultA = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const resultA = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
-    const resultB = await runInTenantContext({ tenantId, brandId, locationId: locationBId }, () =>
+    const resultB = await runInTenantContext({ tenantId, locationId: locationBId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
 
@@ -263,19 +237,17 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     expect(resultB.rows.map((r) => r.id)).not.toContain(orderAId);
   });
 
-  it('a missing location context is refused rather than widened to the brand', async () => {
+  it('a missing location context is refused rather than widened to the whole tenant', async () => {
     const service = makeListOrdersService();
     await expect(
-      runInTenantContext({ tenantId, brandId }, () =>
-        service.execute({ statusPreset: 'all_today' }),
-      ),
+      runInTenantContext({ tenantId }, () => service.execute({ statusPreset: 'all_today' })),
     ).rejects.toMatchObject({ status: 403 });
   });
 
-  it('a location outside the brand is not readable', async () => {
+  it('a location belonging to a different tenant is not readable', async () => {
     const service = makeListOrdersService();
     await expect(
-      runInTenantContext({ tenantId, brandId: emptyBrandId, locationId: locationAId }, () =>
+      runInTenantContext({ tenantId, locationId: otherLocationId }, () =>
         service.execute({ statusPreset: 'all_today' }),
       ),
     ).rejects.toMatchObject({ status: 404 });
@@ -322,7 +294,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
 
@@ -336,7 +308,6 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const now = new Date();
     const otherTenantOrderId = await seedOrder({
       tenantIdOverride: otherTenantId,
-      brandIdOverride: otherBrandId,
       locationId: otherLocationId,
       status: 'paid',
       createdAt: now,
@@ -344,7 +315,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const ownOrderId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
 
     const service = makeListOrdersService();
-    const result = await runInTenantContext({ tenantId, brandId, locationId: locationAId }, () =>
+    const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
       service.execute({ statusPreset: 'all_today' }),
     );
 
