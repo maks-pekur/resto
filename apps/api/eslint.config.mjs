@@ -119,7 +119,6 @@ export default [
     //
     // TEN-15 selectors stay active for the same reason as above.
     files: [
-      'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
       'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
       'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
       // AUTH-01 / Phase 3 / D-05 + D-17: Resend adapter pre-org-bind
@@ -129,9 +128,6 @@ export default [
       // PAY-12: outbox backlog age probe. See
       // packages/db/src/withoutTenant.allowlist.ts for the matching entry.
       'src/infrastructure/outbox-dispatcher.service.ts',
-      // 08.4: initial-location session bootstrap. See
-      // packages/db/src/withoutTenant.allowlist.ts for the matching entry.
-      'src/contexts/identity/infrastructure/initial-location-drizzle.repository.ts',
     ],
     rules: {
       'no-restricted-syntax': ['error', ...FORBIDDEN_CORRELATION_ID_LITERALS],
