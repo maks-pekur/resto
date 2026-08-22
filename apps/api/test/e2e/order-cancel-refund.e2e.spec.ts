@@ -27,14 +27,12 @@ const STRIPE_ACCOUNT_ID = 'acct_test_cancel_refund';
 suite('Order cancel + refund e2e — payment-derived refundability, D-11 restructure', () => {
   let stack: DbStack;
   let tenantId: string;
-  let brandId: string;
   let locationId: string;
   let shortNumberCounter = 1;
 
   beforeAll(async () => {
     stack = await startDbStack();
     tenantId = randomUUID();
-    brandId = randomUUID();
 
     await stack.db.withoutTenant('seed order-cancel-refund e2e', async (tx) => {
       await tx.insert(schema.tenants).values({
@@ -42,14 +40,8 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
         slug: `cancel-refund-${tenantId.slice(0, 8)}`,
         displayName: 'Cancel/Refund Test Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
-      });
-
-      await tx.insert(schema.brands).values({
-        id: brandId,
-        tenantId,
-        slug: `cancel-refund-brand-${brandId.slice(0, 8)}`,
-        displayName: 'Test Brand',
         stripeAccountId: STRIPE_ACCOUNT_ID,
         stripeChargesEnabled: true,
         stripePayoutsEnabled: true,
@@ -58,7 +50,7 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
 
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, brandId, name: 'Cancel/Refund Test Location' })
+        .values({ tenantId, name: 'Cancel/Refund Test Location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed order-cancel-refund e2e: location insert failed.');
       locationId = location.id;
@@ -75,7 +67,6 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
       await tx.insert(schema.orders).values({
         id: orderId,
         tenantId,
-        brandId,
         locationId,
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-CXR-${orderId.slice(0, 8)}`,
@@ -446,6 +437,7 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
         slug: `cancel-refund-other-${otherTenantId.slice(0, 8)}`,
         displayName: 'Other Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'EUR',
       });
     });

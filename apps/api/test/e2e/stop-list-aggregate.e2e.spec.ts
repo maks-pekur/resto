@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { and, eq } from 'drizzle-orm';
 import { schema, TenantAwareDb } from '@resto/db';
 import {
   isDockerAvailable,
@@ -35,63 +34,40 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
   let stack: RealStack;
   let tenantId: string;
   let ownerCookie: string;
-  let brand1Slug: string;
-  let brand2Slug: string;
   let locationAId: string;
   let locationBId: string;
   let locationDId: string;
-  let locationCId: string;
+  let foreignTenantLocationId: string;
   let itemId: string;
   let nonOwnerCookie: string;
 
-  const createBrand = async (slug: string): Promise<string> => {
-    const res = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/me/brands',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-      payload: { slug, displayName: slug },
-    });
-    expect(res.statusCode).toBe(201);
-    const db = stack.app.get(TenantAwareDb);
-    const rows = await db.withoutTenant('lookup brand id', (tx) =>
-      tx
-        .select({ id: schema.brands.id })
-        .from(schema.brands)
-        .where(and(eq(schema.brands.tenantId, tenantId), eq(schema.brands.slug, slug))),
-    );
-    const id = rows[0]?.id;
-    if (!id) throw new Error(`brand ${slug} not found after create`);
-    return id;
-  };
-
-  const createLocation = async (brandSlug: string, name: string): Promise<string> => {
+  const createLocation = async (name: string): Promise<string> => {
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/tenancy/locations',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: { name },
     });
     expect(res.statusCode).toBe(200);
     return res.json<{ id: string }>().id;
   };
 
-  const archiveLocation = async (brandSlug: string, locationId: string): Promise<void> => {
+  const archiveLocation = async (locationId: string): Promise<void> => {
     const res = await stack.app.inject({
       method: 'PATCH',
       url: `/v1/tenancy/locations/${locationId}/archive`,
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
     });
     expect(res.statusCode).toBe(200);
   };
 
-  const stopItemAt = async (brandSlug: string, locationId: string, id: string): Promise<void> => {
+  const stopItemAt = async (locationId: string, id: string): Promise<void> => {
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/stop-list',
       headers: {
         cookie: ownerCookie,
         'x-tenant-id': tenantId,
-        'x-brand-slug': brandSlug,
         'x-location-id': locationId,
       },
       payload: { itemId: id, reason: '86' },
@@ -99,21 +75,20 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     expect(res.statusCode).toBe(200);
   };
 
-  const getAggregate = (cookie: string, brandSlug: string) =>
+  const getAggregate = (cookie: string) =>
     stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/stop-list/aggregate',
-      headers: { cookie, 'x-tenant-id': tenantId, 'x-brand-slug': brandSlug },
+      headers: { cookie, 'x-tenant-id': tenantId },
     });
 
-  const getStopList = (cookie: string, brandSlug: string, locationId: string) =>
+  const getStopList = (cookie: string, locationId: string) =>
     stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/stop-list',
       headers: {
         cookie,
         'x-tenant-id': tenantId,
-        'x-brand-slug': brandSlug,
         'x-location-id': locationId,
       },
     });
@@ -131,7 +106,7 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     const memberId = randomUUID();
     await authDb.db.insert(schema.member).values({
       id: memberId,
-      organizationId: tenantId,
+      tenantId,
       userId: user.userId,
       role: 'admin',
       createdAt: new Date(),
@@ -157,20 +132,26 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     await runBootstrap({ tenantSlug, email: ownerEmail, password: PASSWORD, name: 'Owner' });
     ownerCookie = await signInAsOperator(stack.app, ownerEmail, PASSWORD, tenantId);
 
-    brand1Slug = `agg-brand1-${randomUUID().slice(0, 8)}`;
-    brand2Slug = `agg-brand2-${randomUUID().slice(0, 8)}`;
-    await createBrand(brand1Slug);
-    await createBrand(brand2Slug);
+    locationAId = await createLocation('Location A');
+    locationBId = await createLocation('Location B');
+    locationDId = await createLocation('Location D (to archive)');
 
-    locationAId = await createLocation(brand1Slug, 'Location A');
-    locationBId = await createLocation(brand1Slug, 'Location B');
-    locationDId = await createLocation(brand1Slug, 'Location D (to archive)');
-    locationCId = await createLocation(brand2Slug, 'Location C');
+    const foreignTenantSlug = `agg-foreign-${randomUUID().slice(0, 8)}`;
+    const foreignTenant = await provisionTenant(stack.app, foreignTenantSlug, INTERNAL_TOKEN);
+    const db = stack.app.get(TenantAwareDb);
+    const [foreignLocation] = await db.withoutTenant('seed foreign-tenant location', (tx) =>
+      tx
+        .insert(schema.locations)
+        .values({ tenantId: foreignTenant.id, name: 'Foreign Tenant Location' })
+        .returning({ id: schema.locations.id }),
+    );
+    if (!foreignLocation) throw new Error('seed foreign-tenant location failed');
+    foreignTenantLocationId = foreignLocation.id;
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/categories',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brand1Slug },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: { slug: 'agg-cat', name: { en: 'Aggregate Category' }, sortOrder: 0 },
     });
     expect(categoryRes.statusCode).toBe(200);
@@ -179,7 +160,7 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     const itemRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/items',
-      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId, 'x-brand-slug': brand1Slug },
+      headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
       payload: {
         categoryId,
         slug: 'agg-item',
@@ -193,11 +174,11 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     itemId = itemRes.json<{ id: string }>().id;
 
     // Stopped at both active locations (A, B) — expected stoppedLocationCount === 2.
-    await stopItemAt(brand1Slug, locationAId, itemId);
-    await stopItemAt(brand1Slug, locationBId, itemId);
+    await stopItemAt(locationAId, itemId);
+    await stopItemAt(locationBId, itemId);
     // Stopped at D too, then D is archived — this stop must not count toward N or M (D-06).
-    await stopItemAt(brand1Slug, locationDId, itemId);
-    await archiveLocation(brand1Slug, locationDId);
+    await stopItemAt(locationDId, itemId);
+    await archiveLocation(locationDId);
 
     const nonOwnerEmail = `admin-${randomUUID().slice(0, 8)}@example.com`;
     nonOwnerCookie = await seedScopedAdmin(nonOwnerEmail, locationAId);
@@ -209,7 +190,7 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
 
   describe('BLOCK-1 / D-09 — non-owner cannot reach the aggregate', () => {
     it('non-owner scoped to location A gets 404 with no other-location data', async () => {
-      const res = await getAggregate(nonOwnerCookie, brand1Slug);
+      const res = await getAggregate(nonOwnerCookie);
       expect(res.statusCode).toBe(404);
       const body = res.json<Record<string, unknown>>();
       expect(body.items).toBeUndefined();
@@ -220,7 +201,7 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
 
   describe('D-06 — owner all-mode aggregate: N/M semantics', () => {
     it('owner GET aggregate returns 200 with totalActiveLocations excluding the archived location', async () => {
-      const res = await getAggregate(ownerCookie, brand1Slug);
+      const res = await getAggregate(ownerCookie);
       expect(res.statusCode).toBe(200);
       const body = res.json<{
         items: AggregateStopListItem[];
@@ -236,7 +217,7 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
 
   describe('WR-01 — totalStoppedItems reflects the true distinct-item total, not the page size', () => {
     it('totalStoppedItems equals the distinct stopped-item count across active locations', async () => {
-      const res = await getAggregate(ownerCookie, brand1Slug);
+      const res = await getAggregate(ownerCookie);
       expect(res.statusCode).toBe(200);
       const body = res.json<{ items: AggregateStopListItem[]; totalStoppedItems: number }>();
       expect(body.totalStoppedItems).toBe(body.items.length);
@@ -246,26 +227,26 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
 
   describe('D-16 — aggregate is off the edge cache', () => {
     it('aggregate response carries Cache-Control: private, no-store and no Set-Cookie', async () => {
-      const res = await getAggregate(ownerCookie, brand1Slug);
+      const res = await getAggregate(ownerCookie);
       expect(res.statusCode).toBe(200);
       expect(res.headers['cache-control']).toBe('private, no-store');
       expect(res.headers['set-cookie']).toBeUndefined();
     });
   });
 
-  describe('D-10 — owner single-location read is server-validated against the active brand', () => {
-    it('foreign brand location -> 404 (existence-hiding)', async () => {
-      const res = await getStopList(ownerCookie, brand1Slug, locationCId);
+  describe('D-10 — owner single-location read is server-validated against the active tenant', () => {
+    it('foreign-tenant location -> 404 (existence-hiding)', async () => {
+      const res = await getStopList(ownerCookie, foreignTenantLocationId);
       expect(res.statusCode).toBe(404);
     });
 
     it('archived location -> 404 (existence-hiding)', async () => {
-      const res = await getStopList(ownerCookie, brand1Slug, locationDId);
+      const res = await getStopList(ownerCookie, locationDId);
       expect(res.statusCode).toBe(404);
     });
 
-    it('in-brand active location -> 200', async () => {
-      const res = await getStopList(ownerCookie, brand1Slug, locationAId);
+    it('in-tenant active location -> 200', async () => {
+      const res = await getStopList(ownerCookie, locationAId);
       expect(res.statusCode).toBe(200);
     });
   });
