@@ -68,13 +68,14 @@ describe('AUTH-09 D-16: SYSTEM_ROLES regression', () => {
     });
   });
 
-  describe('staff is read-only on tenant/brand', () => {
+  describe('staff is read-only on tenant', () => {
     it('tenant: read only, no write actions', () => {
       expect(SYSTEM_ROLES.staff.tenant ?? []).toEqual(['read']);
     });
 
-    it('brand: read only, no write actions', () => {
-      expect(SYSTEM_ROLES.staff.brand ?? []).toEqual(['read']);
+    it('does NOT have brand — the resource was dropped, not renamed, in the merge (D-40)', () => {
+      const staff = SYSTEM_ROLES.staff as Record<string, readonly string[] | undefined>;
+      expect(staff.brand).toBeUndefined();
     });
 
     it('does NOT have menu / order / staff / reports / settings / billing', () => {

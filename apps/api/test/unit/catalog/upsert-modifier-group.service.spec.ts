@@ -6,7 +6,6 @@ import { UpsertModifierGroupInputSchema } from '../../../src/contexts/catalog/ap
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
-const BRAND_ID = '33333333-3333-4333-8333-333333333333';
 
 const buildRepo = (): CatalogRepository =>
   ({
@@ -35,14 +34,13 @@ describe('UpsertModifierGroupService', () => {
     const repo = buildRepo();
     const service = new UpsertModifierGroupService(repo);
 
-    const result = await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
+    const result = await runInTenantContext({ tenantId: TENANT_ID }, () =>
       service.execute(baseInput),
     );
 
     expect(result).toEqual({ id: 'modifier-group-uuid' });
     expect(repo.upsertModifierGroup).toHaveBeenCalledWith({
       tenantId: TENANT_ID,
-      brandId: BRAND_ID,
       name: { en: 'Spice level' },
       minSelectable: 0,
       maxSelectable: 1,
@@ -65,28 +63,5 @@ describe('UpsertModifierGroupService', () => {
     await expect(
       service.execute(UpsertModifierGroupInputSchema.parse({ name: { en: 'X' } })),
     ).rejects.toThrow(/tenant context/i);
-  });
-
-  it('passes brandId from ALS to the repo when bound', async () => {
-    const repo = buildRepo();
-    const service = new UpsertModifierGroupService(repo);
-
-    await runInTenantContext({ tenantId: TENANT_ID, brandId: BRAND_ID }, () =>
-      service.execute(baseInput),
-    );
-
-    expect(repo.upsertModifierGroup).toHaveBeenCalledWith(
-      expect.objectContaining({ brandId: BRAND_ID }),
-    );
-  });
-
-  it('throws when no brand context is bound', async () => {
-    const repo = buildRepo();
-    const service = new UpsertModifierGroupService(repo);
-
-    await expect(
-      runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(baseInput)),
-    ).rejects.toThrow(/brand context/i);
-    expect(repo.upsertModifierGroup).not.toHaveBeenCalled();
   });
 });

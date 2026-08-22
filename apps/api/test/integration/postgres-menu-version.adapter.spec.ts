@@ -22,8 +22,6 @@ suite('PostgresMenuVersionAdapter', () => {
   let stack: DbStack;
   let adapter: PostgresMenuVersionAdapter;
   const tenantId = randomUUID();
-  const brandA = randomUUID();
-  const brandB = randomUUID();
   const locationA = randomUUID();
   const locationB = randomUUID();
 
@@ -39,15 +37,12 @@ suite('PostgresMenuVersionAdapter', () => {
         slug: 'mv-tenant',
         displayName: 'MV Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       });
-      await tx.insert(schema.brands).values([
-        { id: brandA, tenantId, slug: 'brand-a', displayName: 'Brand A' },
-        { id: brandB, tenantId, slug: 'brand-b', displayName: 'Brand B' },
-      ]);
       await tx.insert(schema.locations).values([
-        { id: locationA, tenantId, brandId: brandA, name: 'Location A' },
-        { id: locationB, tenantId, brandId: brandB, name: 'Location B' },
+        { id: locationA, tenantId, name: 'Location A' },
+        { id: locationB, tenantId, name: 'Location B' },
       ]);
       await tx.insert(schema.catalogMenuVersion).values({ tenantId });
       await tx.insert(schema.catalogLocationStopVersion).values([

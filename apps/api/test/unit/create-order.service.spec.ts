@@ -19,7 +19,6 @@ import {
 import type { Order } from '../../src/contexts/ordering/domain/order.aggregate';
 
 const tenantId = randomUUID();
-const brandId = randomUUID();
 const locationId = randomUUID();
 
 const pizzaId = randomUUID();
@@ -145,7 +144,7 @@ const makeService = (): { service: CreateOrderService; repo: FakeOrderRepository
   };
 };
 
-const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId, brandId }, op);
+const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId }, op);
 
 const baseInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput => ({
   items: [{ itemId: pizzaId, sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],

@@ -32,7 +32,6 @@ const buildOrderCreatedEnvelope = (orderId: string, tenantId: string): EventEnve
   payload: {
     orderId,
     tenantId,
-    brandId: randomUUID(),
     orderNumber: '20260614-TEST1',
     fulfillmentMode: 'pickup',
     total: 1200,
@@ -67,6 +66,7 @@ suite(
           slug: `ord09-${tenantId.slice(0, 8)}`,
           displayName: 'ORD-09 Tenant',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         });
       });
@@ -106,6 +106,7 @@ suite(
           slug: `ord09b-${tenantId.slice(0, 8)}`,
           displayName: 'ORD-09b Tenant',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         });
       });
