@@ -180,7 +180,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tenancy/stripe-onboarding": {
+    "/v1/tenancy/onboarding/account-session": {
         parameters: {
             query?: never;
             header?: never;
@@ -189,21 +189,37 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        post: operations["StripeOnboardingController_startOnboarding"];
+        post: operations["TenantOnboardingController_createAccountSession"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/tenancy/stripe-status": {
+    "/v1/tenancy/onboarding/account-link": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["StripeOnboardingController_getStripeStatus"];
+        get?: never;
+        put?: never;
+        post: operations["TenantOnboardingController_createAccountLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/onboarding/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TenantOnboardingController_getStatus"];
         put?: never;
         post?: never;
         delete?: never;
@@ -212,62 +228,14 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/tenancy/brands/{slug}/onboarding/account-session": {
+    "/v1/tenancy/onboarding/oauth/start": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
-        put?: never;
-        post: operations["BrandOnboardingController_createAccountSession"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tenancy/brands/{slug}/onboarding/account-link": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        post: operations["BrandOnboardingController_createAccountLink"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tenancy/brands/{slug}/onboarding/status": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BrandOnboardingController_getStatus"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/v1/tenancy/brands/{slug}/onboarding/oauth/start": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get: operations["BrandOnboardingController_startOAuth"];
+        get: operations["TenantOnboardingController_startOAuth"];
         put?: never;
         post?: never;
         delete?: never;
@@ -283,13 +251,45 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["BrandOAuthCallbackController_handleOAuthCallback"];
+        get: operations["TenantOAuthCallbackController_handleOAuthCallback"];
         put?: never;
         post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["LocationsController_list"];
+        put?: never;
+        post: operations["LocationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/locations/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["LocationsController_archive"];
         trace?: never;
     };
     "/v1/me": {
@@ -308,30 +308,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/me/brands": {
+    "/v1/me/tenants": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["MeBrandsController_getBrands"];
+        get: operations["MeTenantsController_getTenants"];
         put?: never;
-        post: operations["MeBrandsController_createBrand"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/v1/me/brands/slug-availability": {
+    "/v1/me/tenants/slug-availability": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get: operations["MeBrandsController_slugAvailability"];
+        get: operations["MeTenantsController_slugAvailability"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/tenants/onboarding": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MeTenantsController_finalizeOnboarding"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/set-active-location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["SetActiveLocationController_setActiveLocation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/me/locations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["SetActiveLocationController_listPinnableLocations"];
         put?: never;
         post?: never;
         delete?: never;
@@ -367,6 +415,102 @@ export interface paths {
         put?: never;
         post: operations["SignUpController_create"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RolesController_listRolesHandler"];
+        put?: never;
+        post: operations["RolesController_createRoleHandler"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles/{roleSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["RolesController_getRoleHandler"];
+        put: operations["RolesController_updateRoleHandler"];
+        post?: never;
+        delete: operations["RolesController_archiveRoleHandler"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles/{roleSlug}/assign": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["MemberRolesController_assignRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/roles/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberRolesController_listMembers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/members/{memberId}/location-roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["MemberLocationRolesController_listLocationRoles"];
+        put?: never;
+        post: operations["MemberLocationRolesController_assignLocationRole"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/members/{memberId}/location-roles/{locationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["MemberLocationRolesController_removeLocationRole"];
         options?: never;
         head?: never;
         patch?: never;
@@ -660,6 +804,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalog/stop-list/aggregate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_stopListAggregate"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalog/draft-diff": {
         parameters: {
             query?: never;
@@ -702,6 +862,70 @@ export interface paths {
         get: operations["OrdersController_getStatus"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/feed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OperatorOrdersController_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/detail": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OperatorOrdersController_detail"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OperatorOrdersController_accept"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{id}/advance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OperatorOrdersController_advance"];
         delete?: never;
         options?: never;
         head?: never;
@@ -756,6 +980,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/{orderId}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OrderCancelController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/{orderId}/refund/retry": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OrderCancelController_retry"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -763,9 +1019,11 @@ export interface components {
         ProvisionTenantInputDto: {
             slug: string;
             displayName: string;
-            /** @default en */
-            locale: string;
-            defaultCurrency: string;
+            /** @enum {string} */
+            country: "UA" | "GB" | "ES";
+            locale?: string;
+            /** @enum {string} */
+            status?: "pending_setup" | "active";
         };
         TenantResponseDto: {
             /** Format: uuid */
@@ -774,7 +1032,33 @@ export interface components {
             displayName: string;
             status: string;
             locale: string;
+            /** @enum {string} */
+            country: "UA" | "GB" | "ES";
             defaultCurrency: string;
+            theme: {
+                /**
+                 * Format: uri
+                 * @default null
+                 */
+                logoUrl: string | null;
+                /** @default null */
+                primaryColor: string | null;
+                /** @default null */
+                font: string | null;
+            } | null;
+            legalName: string | null;
+            /** @enum {string|null} */
+            legalForm: "IP" | "OOO" | "LLC" | "SOLE_PROP" | "OTHER" | null;
+            taxId: string | null;
+            /** @enum {string} */
+            paymentProvider: "stripe";
+            /** @enum {string|null} */
+            accountType: "express" | "standard" | null;
+            stripeChargesEnabled: boolean;
+            stripePayoutsEnabled: boolean;
+            /** @enum {string} */
+            stripeOnboardingStatus: "not_started" | "pending" | "complete" | "restricted";
+            stripeRequirementsDue: string[] | null;
             primaryDomain: string;
             createdAt: string;
             updatedAt: string;
@@ -808,18 +1092,6 @@ export interface components {
             isPrimary: boolean;
             verifiedAt: string | null;
         };
-        OnboardingResponseDto: {
-            /** Format: uri */
-            onboardingUrl: string;
-        };
-        StripeStatusResponseDto: {
-            /** @enum {string} */
-            onboardingStatus: "not_started" | "pending" | "complete" | "restricted";
-            chargesEnabled: boolean;
-            payoutsEnabled: boolean;
-            canAcceptPayments: boolean;
-            requirementsDue: string[] | null;
-        };
         AccountSessionResponseDto: {
             clientSecret: string;
         };
@@ -841,28 +1113,73 @@ export interface components {
             /** Format: uri */
             authorizeUrl: string;
         };
-        MeBrandsResponseDto: {
-            brands: {
+        CreateLocationInputDto: {
+            name: string;
+            /** @default null */
+            address: string | null;
+            /** @default null */
+            timezone: string | null;
+            /** @default null */
+            contacts: {
+                phone?: string;
+                /** Format: email */
+                email?: string;
+            } | null;
+        };
+        LocationResponseDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            address: string | null;
+            timezone: string | null;
+            contacts: {
+                phone?: string;
+                /** Format: email */
+                email?: string;
+            } | null;
+            /** @enum {string} */
+            status: "active" | "archived";
+            createdAt: string;
+            updatedAt: string;
+            archivedAt: string | null;
+        };
+        ArchiveLocationResponseDto: {
+            scopedMemberCount: number;
+        };
+        MeTenantsResponseDto: {
+            tenants: {
                 /** Format: uuid */
                 id: string;
                 slug: string;
                 displayName: string;
+                status: string;
             }[];
-            canViewAllBrands: boolean;
-        };
-        CreateBrandInputDto: {
-            slug: string;
-            displayName: string;
-        };
-        MeBrandDto: {
-            /** Format: uuid */
-            id: string;
-            slug: string;
-            displayName: string;
         };
         SlugAvailabilityResponseDto: {
             available: boolean;
             suggestion: string | null;
+        };
+        FinalizeTenantSetupInputDto: {
+            displayName: string;
+        };
+        OnboardingResponseDto: {
+            /** Format: uuid */
+            id: string;
+            slug: string;
+            displayName: string;
+            /** @enum {string} */
+            status: "active";
+        };
+        SetActiveLocationResponseDto: {
+            /** Format: uuid */
+            locationId: string | null;
+        };
+        ListPinnableLocationsResponseDto: {
+            locations: {
+                /** Format: uuid */
+                id: string;
+                name: string;
+            }[];
         };
         BootstrapOwnerInputDto: {
             /** Format: email */
@@ -879,13 +1196,12 @@ export interface components {
             requiresPasswordChange: boolean;
         };
         SignUpInputDto: {
+            name: string;
             /** Format: email */
             email: string;
             password: string;
-            displayName: string;
-            defaultCurrency: string;
-            /** @default en */
-            locale: string;
+            /** @enum {string} */
+            country: "UA" | "GB" | "ES";
         };
         SignUpResponseDto: {
             /** @enum {string} */
@@ -899,18 +1215,6 @@ export interface components {
             tenantId: string;
             version: number;
             currency: string;
-            brand: {
-                /** Format: uuid */
-                id: string;
-                slug: string;
-                displayName: string;
-                theme: {
-                    /** Format: uri */
-                    logoUrl: string | null;
-                    primaryColor: string | null;
-                    font: string | null;
-                } | null;
-            } | null;
             categories: {
                 /** Format: uuid */
                 id: string;
@@ -1376,6 +1680,23 @@ export interface components {
                 reason: string | null;
             }[];
         };
+        AggregateStopListResponseDto: {
+            items: {
+                /** Format: uuid */
+                itemId: string;
+                itemName: {
+                    [key: string]: string;
+                } | null;
+                categoryName: {
+                    [key: string]: string;
+                } | null;
+                stoppedLocationCount: number;
+                /** Format: date-time */
+                lastStoppedAt: string;
+            }[];
+            totalActiveLocations: number;
+            totalStoppedItems: number;
+        };
         DraftDiffResponseDto: {
             unpublishedCount: number;
             items: {
@@ -1417,6 +1738,13 @@ export interface components {
             idempotencyKey: string;
             /** Format: date-time */
             scheduledFor?: string;
+            /**
+             * @default site
+             * @enum {string}
+             */
+            channel: "site" | "qr-menu";
+            /** @default false */
+            marketingConsent: boolean;
         };
         OrderResponseDto: {
             /** Format: uuid */
@@ -1425,6 +1753,9 @@ export interface components {
             status: string;
             total: string;
             currency: string;
+            shortNumber: number;
+            /** @enum {string} */
+            channel: "site" | "qr-menu";
         };
         OrderStatusResponseDto: {
             status: string;
@@ -1439,6 +1770,163 @@ export interface components {
             cancelReason: string | null;
             canceledFromStatus: string | null;
         };
+        OrderFeedListResponseDto: {
+            rows: {
+                /** Format: uuid */
+                id: string;
+                shortNumber: number;
+                /** @enum {string} */
+                status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+                /** Format: uuid */
+                locationId: string;
+                locationName: string;
+                /** @enum {string} */
+                fulfillmentMode: "dine_in" | "pickup" | "delivery";
+                tableIdentifier: string | null;
+                total: string;
+                currency: string;
+                itemCount: number;
+                /** @enum {string} */
+                channel: "site" | "qr-menu";
+                createdAt: string;
+                acceptedAt: string | null;
+                preparingAt: string | null;
+                readyAt: string | null;
+                completedAt: string | null;
+                canceledAt: string | null;
+                etaAt: string | null;
+                cancelReason: string | null;
+                canceledFromStatus: string | null;
+                hasFailedRefund: boolean;
+            }[];
+            total: number;
+            limit: number;
+            offset: number;
+        };
+        OrderDetailResponseDto: {
+            id: string;
+            tenantId: string;
+            locationId: string;
+            orderNumber: string;
+            /** @enum {string} */
+            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            /** @enum {string} */
+            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            tableIdentifier: string | null;
+            customerName: string | null;
+            customerPhone: string | null;
+            customerEmail: string | null;
+            items: {
+                id: string;
+                menuItemId: string;
+                nameSnapshot: string;
+                unitPrice: string;
+                currency: string;
+                modifiers: {
+                    optionId: string;
+                    nameSnapshot: string;
+                    priceDelta: string;
+                    amount: number;
+                    modifierGroupId: string | null;
+                }[];
+                quantity: number;
+                lineTotal: string;
+                categoryId: string;
+            }[];
+            subtotal: string;
+            deliveryFee: string;
+            serviceFee: string;
+            discount: string;
+            total: string;
+            currency: string;
+            scheduledFor: string | null;
+            shortNumber: number;
+            /** @enum {string} */
+            channel: "site" | "qr-menu";
+            acceptedAt: string | null;
+            preparingAt: string | null;
+            readyAt: string | null;
+            completedAt: string | null;
+            canceledAt: string | null;
+            acceptedByUserId: string | null;
+            canceledByUserId: string | null;
+            cancelReason: string | null;
+            cancelNote: string | null;
+            /** @enum {string|null} */
+            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            etaAt: string | null;
+            marketingConsent: boolean;
+            marketingConsentAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+            hasFailedRefund: boolean;
+            failedRefundAmount: string | null;
+            failedRefundReason: string | null;
+        };
+        AcceptOrderInputDto: {
+            prepMinutes: number;
+        };
+        OrderSnapshotResponseDto: {
+            id: string;
+            tenantId: string;
+            locationId: string;
+            orderNumber: string;
+            /** @enum {string} */
+            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            /** @enum {string} */
+            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            tableIdentifier: string | null;
+            customerName: string | null;
+            customerPhone: string | null;
+            customerEmail: string | null;
+            items: {
+                id: string;
+                menuItemId: string;
+                nameSnapshot: string;
+                unitPrice: string;
+                currency: string;
+                modifiers: {
+                    optionId: string;
+                    nameSnapshot: string;
+                    priceDelta: string;
+                    amount: number;
+                    modifierGroupId: string | null;
+                }[];
+                quantity: number;
+                lineTotal: string;
+                categoryId: string;
+            }[];
+            subtotal: string;
+            deliveryFee: string;
+            serviceFee: string;
+            discount: string;
+            total: string;
+            currency: string;
+            scheduledFor: string | null;
+            shortNumber: number;
+            /** @enum {string} */
+            channel: "site" | "qr-menu";
+            acceptedAt: string | null;
+            preparingAt: string | null;
+            readyAt: string | null;
+            completedAt: string | null;
+            canceledAt: string | null;
+            acceptedByUserId: string | null;
+            canceledByUserId: string | null;
+            cancelReason: string | null;
+            cancelNote: string | null;
+            /** @enum {string|null} */
+            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            etaAt: string | null;
+            marketingConsent: boolean;
+            marketingConsentAt: string | null;
+            createdAt: string;
+            updatedAt: string;
+        };
+        AdvanceOrderStatusInputDto: {
+            /** @enum {string} */
+            targetStatus: "preparing" | "ready" | "completed";
+        };
         CreatePaymentIntentInputDto: {
             /** Format: uuid */
             orderId: string;
@@ -1452,6 +1940,25 @@ export interface components {
         RefundInputDto: {
             amountMinor?: number;
             reason: string;
+        };
+        CancelOrderInputDto: {
+            /** @enum {string} */
+            reasonCode: "guest_no_show" | "kitchen_out_of_stock" | "kitchen_too_busy" | "guest_requested" | "payment_issue" | "duplicate_order" | "other";
+            cancelNote?: string;
+        };
+        CancelOrderResponseDto: {
+            canceled: boolean;
+            refund: {
+                attempted: boolean;
+                /** @enum {string} */
+                outcome: "succeeded" | "failed" | "none";
+                amountMinor: number | null;
+            };
+        };
+        RetryRefundResponseDto: {
+            stripeRefundId: string;
+            amountMinor: number;
+            fullyRefunded: boolean;
         };
     };
     responses: never;
@@ -1880,45 +2387,7 @@ export interface operations {
             };
         };
     };
-    StripeOnboardingController_startOnboarding: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["OnboardingResponseDto"];
-                };
-            };
-        };
-    };
-    StripeOnboardingController_getStripeStatus: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["StripeStatusResponseDto"];
-                };
-            };
-        };
-    };
-    BrandOnboardingController_createAccountSession: {
+    TenantOnboardingController_createAccountSession: {
         parameters: {
             query?: never;
             header?: never;
@@ -1937,7 +2406,7 @@ export interface operations {
             };
         };
     };
-    BrandOnboardingController_createAccountLink: {
+    TenantOnboardingController_createAccountLink: {
         parameters: {
             query?: never;
             header?: never;
@@ -1956,7 +2425,7 @@ export interface operations {
             };
         };
     };
-    BrandOnboardingController_getStatus: {
+    TenantOnboardingController_getStatus: {
         parameters: {
             query?: never;
             header?: never;
@@ -1975,7 +2444,7 @@ export interface operations {
             };
         };
     };
-    BrandOnboardingController_startOAuth: {
+    TenantOnboardingController_startOAuth: {
         parameters: {
             query?: never;
             header?: never;
@@ -1994,7 +2463,7 @@ export interface operations {
             };
         };
     };
-    BrandOAuthCallbackController_handleOAuthCallback: {
+    TenantOAuthCallbackController_handleOAuthCallback: {
         parameters: {
             query?: never;
             header?: never;
@@ -2008,6 +2477,99 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    LocationsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponseDto"][];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateLocationInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_archive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArchiveLocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
             };
         };
     };
@@ -2028,7 +2590,7 @@ export interface operations {
             };
         };
     };
-    MeBrandsController_getBrands: {
+    MeTenantsController_getTenants: {
         parameters: {
             query?: never;
             header?: never;
@@ -2042,7 +2604,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["MeBrandsResponseDto"];
+                    "application/json": components["schemas"]["MeTenantsResponseDto"];
                 };
             };
             403: {
@@ -2055,47 +2617,7 @@ export interface operations {
             };
         };
     };
-    MeBrandsController_createBrand: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateBrandInputDto"];
-            };
-        };
-        responses: {
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["MeBrandDto"];
-                };
-            };
-            403: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-            /** @description brand slug taken globally */
-            409: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProblemDetailsDto"];
-                };
-            };
-        };
-    };
-    MeBrandsController_slugAvailability: {
+    MeTenantsController_slugAvailability: {
         parameters: {
             query: {
                 slug: string;
@@ -2112,6 +2634,91 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SlugAvailabilityResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    MeTenantsController_finalizeOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FinalizeTenantSetupInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    SetActiveLocationController_setActiveLocation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetActiveLocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    SetActiveLocationController_listPinnableLocations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListPinnableLocationsResponseDto"];
                 };
             };
             403: {
@@ -2212,6 +2819,176 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["ProblemDetailsDto"];
                 };
+            };
+        };
+    };
+    RolesController_listRolesHandler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RolesController_createRoleHandler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RolesController_getRoleHandler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RolesController_updateRoleHandler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    RolesController_archiveRoleHandler: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberRolesController_assignRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberRolesController_listMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberLocationRolesController_listLocationRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberLocationRolesController_assignLocationRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    MemberLocationRolesController_removeLocationRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -2850,6 +3627,33 @@ export interface operations {
             };
         };
     };
+    CatalogController_stopListAggregate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AggregateStopListResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     CatalogController_getDraftDiff: {
         parameters: {
             query?: never;
@@ -2919,6 +3723,90 @@ export interface operations {
             };
         };
     };
+    OperatorOrdersController_feed: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderFeedListResponseDto"];
+                };
+            };
+        };
+    };
+    OperatorOrdersController_detail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderDetailResponseDto"];
+                };
+            };
+        };
+    };
+    OperatorOrdersController_accept: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptOrderInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSnapshotResponseDto"];
+                };
+            };
+        };
+    };
+    OperatorOrdersController_advance: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdvanceOrderStatusInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderSnapshotResponseDto"];
+                };
+            };
+        };
+    };
     StripeWebhookController_handleWebhook: {
         parameters: {
             query?: never;
@@ -2977,6 +3865,48 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+        };
+    };
+    OrderCancelController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelOrderInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancelOrderResponseDto"];
+                };
+            };
+        };
+    };
+    OrderCancelController_retry: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RetryRefundResponseDto"];
+                };
             };
         };
     };
