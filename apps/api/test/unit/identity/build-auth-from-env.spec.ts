@@ -62,7 +62,7 @@ const envFor = (nodeEnv: Env['NODE_ENV']): Env =>
 const stubAuthDb = {} as AuthDrizzle;
 const stubEmitter: IdentityEventEmitterPort = { emit: vi.fn() };
 const stubLocationResolver = {
-  resolveForUserInBrand: vi.fn().mockResolvedValue(null),
+  resolveForUserInTenant: vi.fn().mockResolvedValue(null),
 } as unknown as InitialLocationDrizzleRepository;
 const stubEmailAdapter: EmailAdapterPort = {
   adapterName: 'resend',

@@ -91,7 +91,7 @@ describe('computeEffectivePermissions', () => {
   it('merges system role and custom role permissions', () => {
     const lookup = (slug: string) => (slug === 'custom-gm' ? { reports: ['read'] } : null);
     const effective = computeEffectivePermissions('staff,custom-gm', lookup);
-    expect(effective.brand).toContain('read');
+    expect(effective.tenant).toContain('read');
     expect(effective.reports).toContain('read');
   });
 

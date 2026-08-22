@@ -12,7 +12,7 @@ export class InitialLocationDrizzleRepository {
   // satellite table was dropped — the second positional argument (still supplied by
   // the unrewritten BA hook at identity-core.module.ts:302/auth.config.ts:428) IS the
   // tenant id now. No lookup table remains to translate one into the other.
-  async resolveForUserInBrand(userId: string, tenantId: string): Promise<string | null> {
+  async resolveForUserInTenant(userId: string, tenantId: string): Promise<string | null> {
     try {
       const boundTenantId = getTenantContext()?.tenantId;
       if (boundTenantId) {
@@ -23,7 +23,7 @@ export class InitialLocationDrizzleRepository {
         this.#resolveScoped(tx, userId, tenantId),
       );
     } catch (err) {
-      this.logger.error({ err, userId, tenantId }, 'resolveForUserInBrand failed');
+      this.logger.error({ err, userId, tenantId }, 'resolveForUserInTenant failed');
       return null;
     }
   }
