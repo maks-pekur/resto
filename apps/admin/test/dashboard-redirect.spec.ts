@@ -18,7 +18,7 @@ describe('resolveLegacyDashboardRedirect', () => {
     expect(resolveLegacyDashboardRedirect('\\evil.com')).toBe('/');
   });
 
-  it('keeps a brand payouts deep link intact', () => {
+  it('keeps a payouts deep link intact', () => {
     expect(resolveLegacyDashboardRedirect('acme/payouts')).toBe('/acme/payouts');
   });
 });

@@ -496,11 +496,7 @@
     }
   },
   "dashboard": {
-    "addBrand": "Add brand",
-    "brand": "Brand",
     "addAccount": "Add account",
-    "noBrands": "You don't have any brands yet",
-    "noBrandsDescription": "Create your first brand to begin.",
     "title": "Dashboard",
     "noLocationsTitle": "You don't have any locations yet",
     "noLocationsDescription": "Create your first location to start tracking today's stop list.",
@@ -510,11 +506,6 @@
     "teamInviteBtn": "Invite",
     "teamInviteTitle": "Invite a teammate",
     "teamInviteDescription": "Send an email invitation. Recipient gets a link valid for 48 hours.",
-    "brandDomainsTitle": "Domains",
-    "brandDomainsDescription": "Per-brand custom domains ship in a follow-up ticket.",
-    "brandPayoutsTitle": "Payouts",
-    "brandPayoutsDescription": "Stripe Connect onboarding ships in a follow-up ticket.",
-    "brandThemeTitle": "Brand theme",
     "editItemTitle": "Edit item",
     "newItemTitle": "New item",
     "editGroupTitle": "Edit modifier group",

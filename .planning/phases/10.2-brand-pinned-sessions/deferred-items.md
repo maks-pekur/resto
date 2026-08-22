@@ -330,6 +330,14 @@ use-effective-location.ts pick-location.tsx` — no matches), so the stale field
   fixing anything. Whichever plan rewrites the settings/payouts/domains screens (UI-SPEC S4/S5
   territory — plans 15-17) should rename these keys alongside their own call-site rewrite.
 
+  **RESOLVED (10.2 plan 21, 2026-08-22):** plans 15-17 landed the settings/payouts/domains
+  screens (`tenant.domains.tsx`, `tenant.theme.tsx`, `tenant.payouts.tsx`) without ever wiring
+  these keys — confirmed via `grep -rn "addBrand\|noBrandsDescription\|noBrands\b\|brandDomainsTitle\|
+brandDomainsDescription\|brandPayoutsTitle\|brandPayoutsDescription\|brandThemeTitle"
+  apps/admin/src` returning zero call sites outside the message files themselves. All nine keys
+  were dead, not stale — deleted outright (D-39) from all three catalogues rather than renamed.
+  `i18n.spec.ts` (key-set parity across ru/en/es) still passes 8/8.
+
 - **`apps/admin/src/lib/hooks/use-effective-location.ts` retains one structural `brand` match**
   it cannot clear: `import { Route as brandSlugLayoutRoute } from
 '@/routes/(protected)/$brandSlug/_layout'` plus the local alias's two use sites and two prose
