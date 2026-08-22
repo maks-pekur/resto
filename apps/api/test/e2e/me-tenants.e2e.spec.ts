@@ -17,12 +17,13 @@ const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 if (!dockerOk) console.warn('[me-tenants.e2e] Docker not available — skipping.');
 
-// Replaces me-brands.e2e.spec.ts (10.2 plan 19). `GET /v1/me/brands`
-// listed brands WITHIN one tenant, scoped by member_brand_scope, with a
-// POST half for creating additional brands. Neither survives as a
-// like-for-like rename: a tenant can no longer hold multiple brands
-// (D-03), and creating a second organization for an existing owner is a
-// deliberately deferred entry point (CONTEXT.md GAP, D-39) with no
+// Replaces the deleted pre-merge per-restaurant-label listing spec (10.2
+// plan 19). The old endpoint listed sub-labels WITHIN one tenant, scoped
+// by a per-member scope table, with a POST half for creating additional
+// labels. Neither survives as a like-for-like rename: a tenant can no
+// longer hold multiple of those labels (D-03), and creating a second
+// organization for an existing owner is a deliberately deferred entry
+// point (CONTEXT.md GAP, D-39) with no
 // backend route to test. `GET /v1/me/tenants` is a genuinely different
 // endpoint that happens to occupy the same naming slot: it lists the
 // ORGANIZATIONS the signed-in user is a MEMBER of, backing the sign-in

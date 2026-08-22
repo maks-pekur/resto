@@ -19,10 +19,11 @@ if (!dockerOk) {
   console.warn('[tenant-slug-lookup.e2e] Docker not available — skipping.');
 }
 
-// Replaces brand-slug-lookup.e2e.spec.ts (10.2 plan 19). The rate-limited
-// slug check survives renamed (D-40), but the row-cap logic it tested
-// moved from a public BrandDrizzleRepository method to a PRIVATE method on
-// CheckTenantSlugAvailabilityService querying `tenants` directly — there
+// Replaces the deleted pre-merge per-restaurant-label slug-lookup spec
+// (10.2 plan 19). The rate-limited slug check survives renamed (D-40), but
+// the row-cap logic it tested moved from a public repository method on the
+// deleted class to a PRIVATE method on CheckTenantSlugAvailabilityService
+// querying `tenants` directly — there
 // is no longer a repository method to probe in isolation. Exercised here
 // through the service's own public `execute`, resolved from the real DI
 // container (the service depends on the `resto_auth`-scoped AuthDrizzle,
