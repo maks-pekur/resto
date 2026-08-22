@@ -26,7 +26,9 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 ## Current Position
 
-**Phase 10 (admin-order-intake) — PARKED at the plan-13 human checkpoint (2026-08-18).** 12 of 13 plans complete and merged; plan 13's automatable work done, its SUMMARY intentionally unwritten pending founder sign-off. Blocked on a manual two-screen walkthrough that needs a real Stripe-test payment — `seed-demo` never makes a brand payment-ready, so guest checkout returns `payments.not_enabled`. Full state, what is machine-proven vs human-only, the five post-review fixes, and how to resume: `10-13-CHECKPOINT.md`.
+**Phase 10 (admin-order-intake) — PARKED at the plan-13 human checkpoint, but the blocker is gone (2026-08-23).** 12 of 13 plans complete and merged; plan 13's automatable work done, its SUMMARY intentionally unwritten pending founder sign-off. It was blocked because `seed-demo` could not make a restaurant payment-ready — phase 10.2 plan 18 fixed that (`--payments-ready`). The one remaining step is a founder-supplied Stripe test connected account, which cannot be automated. `10-13-CHECKPOINT.md` was refreshed against the post-10.2 model; read its "the ground moved" section first, because two route paths in the original resume steps no longer exist.
+
+**Phase 10.2 (organization-per-restaurant) — COMPLETE (2026-08-22).** 22 plans, verification 7/7. Brand is gone: one restaurant = one tenant = one Better Auth organization. Signup→onboarding→dashboard walked live in a browser. 48 findings in `10.2-FINDINGS.md`, norms folded into llm-wiki; 82 migrations squashed to a proven baseline. Five deferred items carry owners in `10.2-20-SUMMARY.md`.
 
 **Phase 10.1 (location schedule + pause ordering)** — context and research being gathered in a parallel session.
 
@@ -34,8 +36,10 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Next after the pause:** a working demo environment (seeded paid orders), then a `restos` namespace in llm-wiki for norms, then refresh the codebase map (stale since 13 June — predates 08.2–08.5 and 10), then the testing/UI cleanup pass.
 
-Phase: 18
+Phase: 10 (parked, one founder action from closing) — then 10.1
 Plan: Not started
+
+**Do not start Phase 18 next.** It is MVP-2 (real-time SSE, split out of Phase 10 on 2026-08-11); `phase.complete` advanced to it mechanically as the next unchecked number, not by decision. MVP-1 still has Phase 10 (one Stripe step from done) and Phase 10.1 (pause ordering + weekly schedule) open.
 
 CR-04 SPLIT DECISION (founder, 2026-06-26):
 

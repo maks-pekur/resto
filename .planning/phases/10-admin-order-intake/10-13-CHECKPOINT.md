@@ -4,7 +4,7 @@ phase: 10-admin-order-intake
 plan: 13
 parked: 2026-08-18
 blocked_on: human-verify — two-screen walkthrough with a real Stripe test payment
-blocker_cause: seed-demo does not make a brand payment-ready; guest checkout returns payments.not_enabled
+blocker_cause: RESOLVED 2026-08-23 by phase 10.2 plan 18 — seed-demo gained --payments-ready; the only remaining step is a founder-supplied Stripe test connected account
 ---
 
 # Phase 10 — parked at the plan 13 checkpoint
@@ -16,11 +16,13 @@ sign-off on the manual walkthrough first.
 ## Why it is parked rather than complete
 
 The walkthrough needs a guest to place a real Stripe-test-mode order. The demo
-fixture never configures payments, so `POST /v1/checkout/payment-intent` returns
-`payments.not_enabled` (409): `Brand.canAcceptPayments()` requires both
-`stripe_account_id` and `stripe_charges_enabled`, and `seed-demo` sets neither.
-`brands.default_currency` is also null — it is populated during Stripe
-onboarding, by design, not at brand creation.
+fixture never configured payments, so `POST /v1/checkout/payment-intent` returned
+`payments.not_enabled` (409).
+
+**This blocker was removed on 2026-08-23** by phase 10.2 plan 18, which taught the
+seed to do it: `pnpm resto:seed seed-demo --payments-ready` stamps the Stripe
+columns on one seeded restaurant. What it cannot do is invent a connected account
+— see "To resume" below.
 
 Wiring the existing `StubProviderAdapter` does not solve this: it returns a
 synthetic `clientSecret`, which Stripe Elements in the browser rejects. Only real
@@ -70,11 +72,38 @@ website dev default (`ae524092`, plus the test that pinned the wrong port), the
 seed CLI default (`92b7c421`), and the untracked local `apps/website/.env.local`,
 which overrode both.
 
+## Read this before resuming — the ground moved
+
+This checkpoint was written on 2026-08-18, **before phase 10.2 merged brand into
+tenant**. Everything below that names a brand is stale vocabulary, and two route
+paths in the original resume steps no longer exist. The order-feed behaviour
+this phase built is unchanged; only the surrounding model is different.
+
+What changed underneath:
+
+- `Brand.canAcceptPayments()` is now `Tenant.canAcceptPayments()`; there is no
+  `brands` table and no `brand_id` column anywhere.
+- The `/$brandSlug` route segment is gone. `onboarding/brand` is now
+  `/onboarding`; `brands/$slug/payouts` is now `/tenant/payouts`.
+- The organization lives in the hostname: sign-in at `admin.localhost:4000`,
+  the dashboard at `<slug>.admin.localhost:4000`.
+- One session is bound to one restaurant. Switching revokes the session, so a
+  second open window will die mid-walkthrough — expected, not a defect.
+
 ## To resume
 
-1. Make a brand payment-ready — real Connect onboarding in test mode via
-   `onboarding/brand` / `brands/$slug/payouts`, or teach `seed-demo` to do it.
-2. Run the walkthrough in `10-13-PLAN.md` `<how-to-verify>` steps 3–10, noting
-   that step 9 no longer applies — the all-locations mode was removed by choice.
-3. Reply `approved`, or describe what diverged. Then plan 13's SUMMARY is written
+1. **Create a Stripe test-mode connected account** and put its id in
+   `SEED_STRIPE_TEST_ACCOUNT_ID`. This is the only step nobody can automate:
+   Express accounts accept Stripe's terms through Stripe's own hosted form, and
+   that form cannot be scripted. Roughly a minute of clicking.
+2. `pnpm resto:seed seed-demo --payments-ready` — stamps the Stripe columns on
+   the `pizza` restaurant only, so the `payments.not_enabled` path stays visible
+   on the other two. Refuses to run outside development/test.
+3. Run the walkthrough in `10-13-PLAN.md` `<how-to-verify>` steps 3–10, reading
+   the route changes above as you go. Step 9 no longer applies — the
+   all-locations mode was removed by choice.
+4. Reply `approved`, or describe what diverged. Then plan 13's SUMMARY is written
    and the phase closes.
+
+The full walkthrough, including which card number to use, is in
+`.planning/phases/10.2-brand-pinned-sessions/10.2-18-SUMMARY.md`.
