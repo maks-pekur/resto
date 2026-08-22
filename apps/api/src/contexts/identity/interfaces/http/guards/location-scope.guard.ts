@@ -52,7 +52,7 @@ export class LocationScopeGuard implements CanActivate {
     if (!principal.tenantId) {
       throw new ForbiddenException({
         code: 'location.tenant_required',
-        message: 'Operator must have an active organization to access location-scoped routes.',
+        message: 'Operator must have an active tenant to access location-scoped routes.',
       });
     }
 
