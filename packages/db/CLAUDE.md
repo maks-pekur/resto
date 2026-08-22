@@ -9,12 +9,12 @@ place in the monorepo that knows about Postgres.
 ## Layout
 
 - `src/schema/` — Drizzle table definitions, one file per logical group
-  (`tenants`, `brands`, `menu`, `audit`, `outbox`, `inbox`, `auth`,
+  (`tenants`, `menu`, `audit`, `outbox`, `inbox`, `auth`,
   `customer-profiles`). `_columns.ts` / `_types.ts` are shared helpers.
 - `src/cli/` — `migrate.ts` and `reset.ts`. Both are operationally
   dangerous; both have hard guards (see Rules below).
 - `src/client.ts` + `src/context.ts` — `TenantAwareDb` wiring, ALS bridge,
-  `withTenant` / `withoutTenant` / `withBrand` wrappers.
+  `withTenant` / `withoutTenant` wrappers.
 - `src/roles.ts` + `src/auth-role.ts` — Postgres role provisioning
   (`resto_app` NOBYPASSRLS, `resto_admin` schema owner, `resto_auth`
   NOBYPASSRLS for Better Auth — reaches BA-owned RLS tables via explicit
@@ -120,7 +120,7 @@ calls`set_config`outside`client.ts`.
   replaces the former `BYPASSRLS` attribute (ADR-0013 original mechanism)
   which RDS cannot confer on a non-superuser. Table access is now policy-based:
   `CREATE POLICY ... FOR ALL TO resto_auth USING(true)` on member, invitation,
-  organization_role, and tenants — scoped TO resto_auth only, not affecting
+  tenant_role, and tenants — scoped TO resto_auth only, not affecting
   `resto_app`'s tenant isolation. `assertAuthRoleNoBypass(adminUrl)` in
   `src/preflight.ts` verifies this for runbook/plan-06 dry-checks.
 
