@@ -25,11 +25,10 @@ interface AuthedTenant {
   id: string;
   slug: string;
   locationId: string;
-  authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
+  authed: { cookie: string; 'x-tenant-id': string };
   atLocation: {
     cookie: string;
     'x-tenant-id': string;
-    'x-brand-slug': string;
     'x-location-id': string;
   };
 }
@@ -43,16 +42,8 @@ const setupAuthedTenant = async (
   const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
   await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
   const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
-  const brandSlug = `brand-${randomUUID().slice(0, 8)}`;
-  const brandRes = await app.inject({
-    method: 'POST',
-    url: '/v1/me/brands',
-    headers: { cookie: ownerCookie, 'x-tenant-id': tenant.id },
-    payload: { slug: brandSlug, displayName: `Brand ${label}` },
-  });
-  expect(brandRes.statusCode).toBe(201);
 
-  const authed = { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug };
+  const authed = { cookie: ownerCookie, 'x-tenant-id': tenant.id };
   const locationRes = await app.inject({
     method: 'POST',
     url: '/v1/tenancy/locations',
@@ -110,17 +101,17 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
     expect(res.statusCode === 401 || res.statusCode === 403).toBe(true);
   }, 30_000);
 
-  it('GET v1/catalog/categories returns 403 when x-brand-slug is out of scope', async () => {
+  it('GET v1/catalog/categories returns 403 when x-tenant-id does not match the session', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/categories',
       headers: {
         cookie: readsA.authed.cookie,
-        'x-tenant-id': readsA.authed['x-tenant-id'],
-        'x-brand-slug': readsB.authed['x-brand-slug'],
+        'x-tenant-id': readsB.authed['x-tenant-id'],
       },
     });
     expect(res.statusCode).toBe(403);
+    expect(res.json<{ code?: string }>().code).toBe('auth.tenant_mismatch');
   }, 30_000);
 
   it('GET /categories returns own-tenant categories filtered by parentId and sorted by sortOrder', async () => {
@@ -446,7 +437,7 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
     expect(entry?.stoppedAt).toMatch(/\d{4}-\d{2}-\d{2}T/);
   }, 60_000);
 
-  it('GET /draft-diff returns unpublishedCount and capped items for the active brand', async () => {
+  it('GET /draft-diff returns unpublishedCount and capped items for the active tenant', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/catalog/draft-diff',
