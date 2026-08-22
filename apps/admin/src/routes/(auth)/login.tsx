@@ -26,7 +26,15 @@ type LoginForm = z.infer<typeof LoginSchema>;
 
 const SearchSchema = z.object({
   next: z.string().optional(),
-  expired: z.string().optional(),
+  // TanStack Router's default `parseSearch` coerces a numeric-looking query
+  // value (`?expired=1`) to the JS number `1` before this schema runs — a
+  // plain `z.string()` then rejects it and the whole route falls to the
+  // generic error boundary instead of rendering the banner (10.2 plan 19,
+  // deferred-items.md "From plan 17"). Accept both shapes.
+  expired: z
+    .union([z.string(), z.number()])
+    .transform((v) => String(v))
+    .optional(),
 });
 
 interface SwitchOrganizationResponse {

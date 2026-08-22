@@ -522,3 +522,26 @@ expected string, received number`), which TanStack Router's `CatchBoundaryImpl` 
   file alone. Whichever plan next touches `apps/admin/src/main.tsx`'s router construction or does
   the phase's final green-gate sweep should decide the router-wide fix and confirm this exact URL
   renders the banner, not the error fallback.
+
+  **RESOLVED (10.2 plan 19, 2026-08-22):** fixed with the scoped schema loosening this entry itself
+  named as an option — `expired: z.union([z.string(), z.number()]).transform((v) => String(v)).optional()`
+  — rather than a router-wide `parseSearch`/`stringifySearch` change, since this is the only search
+  param in the app that collides with TanStack Router's default numeric coercion. Verified live
+  (Playwright, `page.goto('http://admin.localhost:4000/login?expired=1')`): status 200, the
+  `session-expired-notice` banner renders, no `RouteError` fallback text present.
+
+## From plan 19 (2026-08-22)
+
+- **`apps/admin/e2e/adm-01-all-mode-smoke.spec.ts` and `adm-02-orders-workflow-smoke.spec.ts` (and
+  likely `adm-03-guest-status-loop.spec.ts`) are stale in the same way `adm-00-smoke-walk.spec.ts`
+  was before this plan** — `rg -in "brand"` on `adm-01`/`adm-02` returns dozens of matches: both seed
+  via `POST /v1/me/brands` (deleted endpoint), send `x-brand-slug` headers, and navigate to
+  `/${brandSlug}/...` paths (routes deleted by plan 15). Out of scope for this plan: the orchestrator's
+  own objective named only the five parked `adm-00` scenarios, and rewriting three more full spec files
+  plus their shared `seed-orders.ts` fixture is a materially larger, unbounded task — not a mechanical
+  sweep. `pnpm --filter admin e2e` (the whole directory) will still fail on `adm-01`/`adm-02` even
+  though `adm-00-smoke-walk.spec.ts` now passes standalone (verified:
+  `npx playwright test e2e/adm-00-smoke-walk.spec.ts` → 5/5 green). Whichever plan next touches the
+  admin e2e suite should rewrite `adm-01`/`adm-02`/`adm-03` onto the flat routes + `GET /v1/me/tenants`
+  model, following the same pattern `adm-00`'s `fixtures/seed-tenants.ts` now uses (provision via
+  `/internal/v1/tenants` + `/internal/v1/tenants/:id/owner`, no brand creation call).

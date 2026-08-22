@@ -64,13 +64,13 @@ const seedFixture = async (stack: RealStack): Promise<PaymentsIsolationFixture> 
     const orderIdB = randomUUID();
 
     await tx.execute(sql`
-      INSERT INTO orders (id, tenant_id, location_id, idempotency_key, order_number, status,
-        fulfillment_mode, subtotal, delivery_fee, service_fee, discount, total, currency)
+      INSERT INTO orders (id, tenant_id, location_id, idempotency_key, order_number, short_number,
+        status, fulfillment_mode, subtotal, delivery_fee, service_fee, discount, total, currency)
       VALUES
-        (${orderIdA}, ${tenantA.id}, ${locationA.id}, ${randomUUID()}, 'ORD-ISOA', 'paid',
-         'dine_in', '20.00', '0.00', '0.00', '0.00', '20.00', 'EUR'),
-        (${orderIdB}, ${tenantB.id}, ${locationB.id}, ${randomUUID()}, 'ORD-ISOB', 'paid',
-         'dine_in', '20.00', '0.00', '0.00', '0.00', '20.00', 'EUR')
+        (${orderIdA}, ${tenantA.id}, ${locationA.id}, ${randomUUID()}, 'ORD-ISOA', 1,
+         'paid', 'dine_in', '20.00', '0.00', '0.00', '0.00', '20.00', 'EUR'),
+        (${orderIdB}, ${tenantB.id}, ${locationB.id}, ${randomUUID()}, 'ORD-ISOB', 1,
+         'paid', 'dine_in', '20.00', '0.00', '0.00', '0.00', '20.00', 'EUR')
     `);
 
     const paymentIdA = randomUUID();
@@ -88,9 +88,9 @@ const seedFixture = async (stack: RealStack): Promise<PaymentsIsolationFixture> 
 
     const refundIdA = randomUUID();
     await tx.execute(sql`
-      INSERT INTO payment_refunds (id, tenant_id, payment_id, stripe_refund_id, amount, reason, status)
+      INSERT INTO payment_refunds (id, tenant_id, payment_id, stripe_refund_id, refund_request_id, amount, reason, status)
       VALUES
-        (${refundIdA}, ${tenantA.id}, ${paymentIdA}, 're_iso_test_a', '5.00', 'test refund A', 'succeeded')
+        (${refundIdA}, ${tenantA.id}, ${paymentIdA}, 're_iso_test_a', 'req_iso_test_a', '5.00', 'test refund A', 'succeeded')
     `);
 
     return { orderIdA, orderIdB, paymentIdA, paymentIdB };
@@ -161,8 +161,8 @@ suite('cross-tenant payment/refund isolation (PAY-09 / ADR-0020)', () => {
     const refundIdB = randomUUID();
     await db.withoutTenant('seed refund B for isolation check', async (tx) => {
       await tx.execute(sql`
-        INSERT INTO payment_refunds (id, tenant_id, payment_id, stripe_refund_id, amount, reason, status)
-        VALUES (${refundIdB}, ${fixture.tenantB.id}, ${fixture.paymentIdB}, 're_iso_test_b2', '5.00', 'test B', 'succeeded')
+        INSERT INTO payment_refunds (id, tenant_id, payment_id, stripe_refund_id, refund_request_id, amount, reason, status)
+        VALUES (${refundIdB}, ${fixture.tenantB.id}, ${fixture.paymentIdB}, 're_iso_test_b2', 'req_iso_test_b2', '5.00', 'test B', 'succeeded')
       `);
     });
 

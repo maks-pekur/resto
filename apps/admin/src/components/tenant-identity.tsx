@@ -33,7 +33,10 @@ export function TenantIdentity() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <div className="flex h-12 w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!">
+        <div
+          data-testid="tenant-identity"
+          className="flex h-12 w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-0!"
+        >
           <div className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg">
             <span className="text-xs font-semibold">{initialsOf(label)}</span>
           </div>
