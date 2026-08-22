@@ -110,7 +110,7 @@ describe('MeController', () => {
       {
         id: 'role-1',
         role: 'cashier-foh',
-        permission: { order: ['read', 'update-status', 'cancel'], menu: ['read'], brand: ['read'] },
+        permission: { order: ['read', 'update-status', 'cancel'], menu: ['read'] },
       },
     ]);
     const controller = new MeController(authDb);

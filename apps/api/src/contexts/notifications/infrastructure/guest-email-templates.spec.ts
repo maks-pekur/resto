@@ -98,9 +98,9 @@ describe('renderGuestEmail', () => {
       expect(result.html).not.toContain('javascript:');
     });
 
-    it('escapes brand name html entities', () => {
-      const result = renderGuestEmail('order_confirmation', 'en', null, '<Evil&Brand>', baseVars);
-      expect(result.html).toContain('&lt;Evil&amp;Brand&gt;');
+    it('escapes tenant name html entities', () => {
+      const result = renderGuestEmail('order_confirmation', 'en', null, '<Evil&Tenant>', baseVars);
+      expect(result.html).toContain('&lt;Evil&amp;Tenant&gt;');
       expect(result.html).not.toContain('<Evil');
     });
   });
