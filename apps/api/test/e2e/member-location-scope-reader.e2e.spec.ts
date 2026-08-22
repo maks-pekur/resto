@@ -31,13 +31,14 @@ const MEMBER_UNSCOPED = 'member-unscoped';
 const MEMBER_SCOPED = 'member-scoped';
 const MEMBER_OTHER_TENANT = 'member-other-tenant';
 
-// Replaces the deleted brand-scope-guard.e2e.spec.ts (10.2 plan 19): that
-// file exercised MemberBrandScopeDrizzleReader, deleted with the brand
-// dimension (D-10). The isolation property it proved — a reader backed by a
-// real DB query must not leak another tenant's scope rows even when the
-// userId matches — has a direct location-scoped successor
-// (MemberLocationScopeDrizzleReader) and no other test exercises it against
-// a live database: location-scope.guard.spec.ts mocks the reader entirely.
+// Replaces the deleted pre-merge per-restaurant-label scope reader spec
+// (10.2 plan 19): that file exercised the deleted per-label scope reader
+// class, removed with that dimension (D-10). The isolation property it
+// proved — a reader backed by a real DB query must not leak another
+// tenant's scope rows even when the userId matches — has a direct
+// location-scoped successor (MemberLocationScopeDrizzleReader) and no
+// other test exercises it against a live database: location-scope.guard.
+// spec.ts mocks the reader entirely.
 suite('MemberLocationScopeDrizzleReader', () => {
   let stack: DbStack;
   let reader: MemberLocationScopeDrizzleReader;
@@ -139,7 +140,7 @@ suite('MemberLocationScopeDrizzleReader', () => {
     expect(ids).not.toContain(LOCATION_B1_ID);
   });
 
-  it('findPinnableLocations for an owner returns every active tenant location, widened from brand-scope (F-28)', async () => {
+  it('findPinnableLocations for an owner returns every active tenant location, widened from the deleted per-label scope (F-28)', async () => {
     const result = await runInTenantContext({ tenantId: TENANT_A_ID }, () =>
       reader.findPinnableLocations({
         userId: USER_UNSCOPED,

@@ -14,11 +14,11 @@ const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 if (!dockerOk) console.warn('[catalog-tenant-isolation.e2e] Docker not available — skipping.');
 
-// Replaces catalog-brand-isolation.e2e.spec.ts (10.2 plan 19). The isolation
-// SHAPE survives unchanged — write-path id-hijack defense across the
-// boundary that separates two restaurants' menus — only the dimension moves
-// from brand-within-a-tenant to tenant-vs-tenant, since a tenant can no
-// longer hold two brands (D-03).
+// Replaces the deleted pre-merge per-restaurant-label isolation spec (10.2
+// plan 19). The isolation SHAPE survives unchanged — write-path id-hijack
+// defense across the boundary that separates two restaurants' menus — only
+// the dimension moves from within-a-tenant to tenant-vs-tenant, since a
+// tenant can no longer hold two of those labels (D-03).
 suite('Catalog — cross-tenant write isolation (AUDIT #2/#3)', () => {
   let stack: RealStack;
   let ownerACookie: string;

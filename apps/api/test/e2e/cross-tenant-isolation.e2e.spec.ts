@@ -187,7 +187,7 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
       const res = await stack.app.inject({
         method: 'GET',
         url: '/v1/menu',
-        headers: { 'x-tenant-slug': fixture.tenantA.slug },
+        headers: { host: `${fixture.tenantA.slug}.menu.resto.app` },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json<{ items: { id: string; slug: string }[] }>();
@@ -238,11 +238,12 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
   });
 });
 
-// RES-08.2-06's "cross-BRAND RLS isolation matrix" suite (app_bind_brand-bound
-// reads, the IS-NULL-pass-through case, symmetric brand-B binding) is deleted
-// outright, not rewritten: `app_bind_brand` and its GUC no longer exist
-// (D-09; migration 0079 drops both overloads, verified absent via
-// `to_regprocedure` in packages/db/test/integration/tenant-isolation.spec.ts).
-// A tenant can no longer contain two brands to bind between (D-03) — the
-// property this suite tested has no post-merge equivalent. Tenant-grain RLS
-// for the same tables is covered by tenant-isolation.spec.ts's canonical net.
+// RES-08.2-06's "cross-label RLS isolation matrix" suite (a SECURITY DEFINER
+// GUC-binding function, the IS-NULL-pass-through case, symmetric second-label
+// binding) is deleted outright, not rewritten: that function and its GUC no
+// longer exist (D-09; migration 0079 drops both overloads, verified absent
+// via `to_regprocedure` in packages/db/test/integration/tenant-isolation.spec.ts).
+// A tenant can no longer contain two of those labels to bind between (D-03)
+// — the property this suite tested has no post-merge equivalent. Tenant-grain
+// RLS for the same tables is covered by tenant-isolation.spec.ts's canonical
+// net.

@@ -85,10 +85,11 @@ describe('POST /api/auth/switch-organization (D-15/D-16)', () => {
     return { statusCode: res.statusCode, body: res.json<GetSessionBody>() };
   };
 
-  // Ported from the deleted set-active-brand.e2e.spec.ts's "D-09 tamper"
-  // case (10.2 plan 19): the old `activeBrandId` was a plain
-  // session.additionalFields entry, directly reachable from a generic
-  // session-update call. `activeOrganizationId`/`activeTenantId` is not —
+  // Ported from the deleted pre-merge per-restaurant-label pin spec's
+  // "D-09 tamper" case (10.2 plan 19): the old session pin field was a
+  // plain session.additionalFields entry, directly reachable from a
+  // generic session-update call. `activeOrganizationId`/`activeTenantId`
+  // is not —
   // it is owned entirely by Better Auth's `organization` plugin and is
   // written only by `setActiveOrganization`/`switch-organization`, both of
   // which verify membership before writing (case 2 proves this from the

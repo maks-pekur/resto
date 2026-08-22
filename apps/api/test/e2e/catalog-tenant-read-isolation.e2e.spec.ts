@@ -14,9 +14,9 @@ const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 if (!dockerOk) console.warn('[catalog-tenant-read-isolation.e2e] Docker not available — skipping.');
 
-// Replaces catalog-brand-read-isolation.e2e.spec.ts (10.2 plan 19). Same
-// isolation shape, one fewer dimension: two tenants instead of two brands
-// inside one tenant (D-03).
+// Replaces the deleted pre-merge per-restaurant-label read-isolation spec
+// (10.2 plan 19). Same isolation shape, one fewer dimension: two tenants
+// instead of two labels inside one tenant (D-03).
 suite('Catalog — cross-tenant read-path isolation (AUDIT #7/#8/#9)', () => {
   let stack: RealStack;
   let ownerACookie: string;
@@ -28,11 +28,13 @@ suite('Catalog — cross-tenant read-path isolation (AUDIT #7/#8/#9)', () => {
 
   const wA = () => ({ cookie: ownerACookie, 'x-tenant-id': tenantAId });
   const wB = () => ({ cookie: ownerBCookie, 'x-tenant-id': tenantBId });
+  // Guest reads resolve by HOST (D-22), not by an operator-style header —
+  // `provisionTenant` already writes the `<slug>.menu.resto.app` domain row.
   const readMenu = (slug: string | null) =>
     stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: slug ? { 'x-tenant-slug': slug } : {},
+      headers: slug ? { host: `${slug}.menu.resto.app` } : {},
     });
 
   const createLocation = async (

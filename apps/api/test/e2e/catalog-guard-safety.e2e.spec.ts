@@ -16,11 +16,12 @@ const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
 if (!dockerOk) console.warn('[catalog-guard-safety.e2e] Docker not available — skipping.');
 
-// Replaces brand-isolation.e2e.spec.ts (10.2 plan 19, Plan 08.2-06's
-// SC-4 suite). Disposition, decided per-case, not as a block:
+// Replaces the deleted per-restaurant-label isolation net from before the
+// tenant/organization merge (10.2 plan 19, Plan 08.2-06's SC-4 suite).
+// Disposition, decided per-case, not as a block:
 //
-// - D-10 pin reconciliation, D-08 default-deny, the in-scope positive
-//   control, and owner bypass all tested BrandScopeGuard on
+// - The pin-reconciliation, default-deny, in-scope-positive-control, and
+//   owner-bypass cases all tested the deleted per-label scope guard on
 //   `POST /v1/catalog/categories`. That route is `@LocationNeutral()`
 //   today (catalog structure is tenant-wide, not per-location) — there is
 //   no scope guard left on it to test. The identical SHAPE of assertion
@@ -29,23 +30,26 @@ if (!dockerOk) console.warn('[catalog-guard-safety.e2e] Docker not available —
 //   still scope-guarded, `/v1/catalog/stop-list` — already covered by
 //   location-isolation.e2e.spec.ts's Task 1 describe blocks. Not
 //   duplicated here.
-// - "D-09 pin un-forgeable" (a raw `/api/auth/update-session` write
-//   attempting to move `activeBrandId`) has a direct successor in
-//   organization-switch.e2e.spec.ts's ported tamper case, proving
-//   `activeOrganizationId`/`activeTenantId` cannot be forged the same way.
-// - "GUC-binding proof" asserted `app_bind_brand()` sets a GUC that RLS
-//   reads. The function and its GUC are dropped outright (D-09); the
-//   negative-existence assertion lives in
+// - The pin-un-forgeable case (a raw `/api/auth/update-session` write
+//   attempting to move the deleted per-label session pin) has a direct
+//   successor in organization-switch.e2e.spec.ts's ported tamper case,
+//   proving `activeOrganizationId`/`activeTenantId` cannot be forged the
+//   same way.
+// - The GUC-binding proof asserted a SECURITY DEFINER function set a GUC
+//   that RLS read. The function and its GUC are dropped outright (D-09);
+//   the negative-existence assertion lives in
 //   packages/db/test/integration/tenant-isolation.spec.ts.
 //
 // What survives here: public/guest routes must never be gated by an
-// operator-scope guard. This property has no brand OR location dimension
-// — it is about guard placement, not about what the guard checks — so it
-// is kept as its own file rather than folded into a scope-specific spec.
+// operator-scope guard. This property has no per-label OR per-location
+// dimension — it is about guard placement, not about what the guard
+// checks — so it is kept as its own file rather than folded into a
+// scope-specific spec.
 suite('Public routes are never gated by an operator-scope guard', () => {
   let stack: RealStack;
   let tenantId: string;
   let tenantSlug: string;
+  let tenantHost: string;
 
   beforeAll(async () => {
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
@@ -55,6 +59,7 @@ suite('Public routes are never gated by an operator-scope guard', () => {
     stack = await startRealStack({ natsEnabledInApp: false });
 
     tenantSlug = `guardsafe-${randomUUID().slice(0, 8)}`;
+    tenantHost = `${tenantSlug}.menu.resto.app`;
     const ownerEmail = `owner-${randomUUID().slice(0, 8)}@example.com`;
     const tenant = await provisionTenant(stack.app, tenantSlug, INTERNAL_TOKEN);
     tenantId = tenant.id;
@@ -70,13 +75,10 @@ suite('Public routes are never gated by an operator-scope guard', () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-id': tenantId },
+      headers: { host: tenantHost },
     });
 
     const SCOPE_GUARD_CODES = [
-      'brand.operator_required',
-      'brand.context_required',
-      'brand.access_denied',
       'location.operator_required',
       'location.context_required',
       'location.access_denied',
@@ -106,9 +108,6 @@ suite('Public routes are never gated by an operator-scope guard', () => {
     });
 
     const SCOPE_GUARD_CODES = [
-      'brand.operator_required',
-      'brand.context_required',
-      'brand.access_denied',
       'location.operator_required',
       'location.context_required',
       'location.access_denied',
