@@ -18,7 +18,7 @@ import { listActiveCustomRoles } from './list-active-custom-roles';
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);
 
 export interface AssignRoleServiceInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly actorUserId: string;
   readonly targetMemberId: string;
   readonly roleSlug: string;
@@ -41,10 +41,7 @@ export class AssignRoleService {
       .select({ id: memberTable.id, role: memberTable.role })
       .from(memberTable)
       .where(
-        and(
-          eq(memberTable.userId, input.actorUserId),
-          eq(memberTable.tenantId, input.organizationId),
-        ),
+        and(eq(memberTable.userId, input.actorUserId), eq(memberTable.tenantId, input.tenantId)),
       )
       .limit(1);
 
@@ -57,7 +54,7 @@ export class AssignRoleService {
       throw new SelfRoleAssignmentError();
     }
 
-    const activeRoles = await listActiveCustomRoles(this.authDb, input.organizationId);
+    const activeRoles = await listActiveCustomRoles(this.authDb, input.tenantId);
 
     const targetRole = activeRoles.find((r) => r.role === input.roleSlug);
 
@@ -86,7 +83,7 @@ export class AssignRoleService {
       body: {
         memberId: input.targetMemberId,
         role: input.roleSlug,
-        organizationId: input.organizationId,
+        organizationId: input.tenantId,
       },
       headers: input.headers,
     });

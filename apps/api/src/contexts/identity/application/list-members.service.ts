@@ -12,7 +12,7 @@ export interface MemberView {
 }
 
 export interface ListMembersInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
 }
 
 @Injectable()
@@ -23,7 +23,7 @@ export class ListMembersService {
     const members = await this.authDb.db
       .select({ id: memberTable.id, userId: memberTable.userId, role: memberTable.role })
       .from(memberTable)
-      .where(eq(memberTable.tenantId, input.organizationId));
+      .where(eq(memberTable.tenantId, input.tenantId));
 
     if (members.length === 0) return { members: [] };
 

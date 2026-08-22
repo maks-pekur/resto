@@ -58,7 +58,7 @@ export class ProvisionTenantService {
 
     // D-07 (08.3): seed 3 preset roles; non-blocking — owner can still manage roles if this fails
     try {
-      await this.seedPresets.execute({ organizationId: snapshot.id });
+      await this.seedPresets.execute({ tenantId: snapshot.id });
     } catch (err) {
       this.logger.warn(
         { err, tenantId: snapshot.id },

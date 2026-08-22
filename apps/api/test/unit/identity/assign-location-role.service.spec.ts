@@ -9,7 +9,7 @@ import {
 import { AssignLocationRoleService } from '../../../src/contexts/identity/application/assign-location-role.service';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
-const ORG_ID = '00000000-0000-0000-0000-000000000001';
+const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 const MEMBER_ID = 'member-target';
 const LOCATION_ID = '00000000-0000-0000-0000-000000000002';
 
@@ -58,7 +58,7 @@ describe('AssignLocationRoleService', () => {
     const svc = new AssignLocationRoleService(authDb, db);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         memberId: MEMBER_ID,
         locationId: LOCATION_ID,
         roleSlug: 'super-manager',
@@ -73,7 +73,7 @@ describe('AssignLocationRoleService', () => {
     const svc = new AssignLocationRoleService(authDb, db);
     await expect(
       svc.execute({
-        organizationId: ORG_ID,
+        tenantId: TENANT_ID,
         memberId: MEMBER_ID,
         locationId: LOCATION_ID,
         roleSlug: 'nonexistent',
@@ -87,7 +87,7 @@ describe('AssignLocationRoleService', () => {
     const { db, insertInto, onConflictDoUpdate } = makeTenantAwareDb();
     const svc = new AssignLocationRoleService(authDb, db);
     await svc.execute({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       memberId: MEMBER_ID,
       locationId: LOCATION_ID,
       roleSlug: 'owner',
@@ -104,7 +104,7 @@ describe('AssignLocationRoleService', () => {
     const { db, insertInto, onConflictDoUpdate } = makeTenantAwareDb();
     const svc = new AssignLocationRoleService(authDb, db);
     await svc.execute({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       memberId: MEMBER_ID,
       locationId: LOCATION_ID,
       roleSlug: 'cashier',
@@ -126,7 +126,7 @@ describe('AssignLocationRoleService', () => {
     const { db, insertInto, onConflictDoUpdate } = makeTenantAwareDb();
     const svc = new AssignLocationRoleService(authDb, db);
     await svc.execute({
-      organizationId: ORG_ID,
+      tenantId: TENANT_ID,
       memberId: MEMBER_ID,
       locationId: LOCATION_ID,
       roleSlug: null,

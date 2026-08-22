@@ -9,7 +9,7 @@ import { listActiveCustomRoles } from './list-active-custom-roles';
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);
 
 export interface AssignLocationRoleServiceInput {
-  readonly organizationId: string;
+  readonly tenantId: string;
   readonly memberId: string;
   readonly locationId: string;
   readonly roleSlug: string | null;
@@ -26,7 +26,7 @@ export class AssignLocationRoleService {
 
   async execute(input: AssignLocationRoleServiceInput): Promise<void> {
     if (input.roleSlug !== null && !SYSTEM_ROLE_SLUGS.has(input.roleSlug)) {
-      const activeRoles = await listActiveCustomRoles(this.authDb, input.organizationId);
+      const activeRoles = await listActiveCustomRoles(this.authDb, input.tenantId);
       const targetRole = activeRoles.find((r) => r.role === input.roleSlug);
       if (!targetRole) {
         throw new RoleNotFoundError(input.roleSlug);

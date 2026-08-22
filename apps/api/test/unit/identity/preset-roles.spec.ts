@@ -60,21 +60,21 @@ describe('SeedPresetRolesService', () => {
   it('issues 3 INSERT calls for a fresh organization', async () => {
     const authDb = makeAuthDb([]);
     const svc = new SeedPresetRolesService(authDb as never);
-    await svc.execute({ organizationId: '00000000-0000-0000-0000-000000000001' });
+    await svc.execute({ tenantId: '00000000-0000-0000-0000-000000000001' });
     expect(authDb.db.insert).toHaveBeenCalledTimes(3);
   });
 
   it('issues 0 INSERT calls when all 3 presets already exist (idempotent)', async () => {
     const authDb = makeAuthDb(['manager', 'cashier-foh', 'kitchen']);
     const svc = new SeedPresetRolesService(authDb as never);
-    await svc.execute({ organizationId: '00000000-0000-0000-0000-000000000001' });
+    await svc.execute({ tenantId: '00000000-0000-0000-0000-000000000001' });
     expect(authDb.db.insert).not.toHaveBeenCalled();
   });
 
   it('inserts only missing presets when some already exist', async () => {
     const authDb = makeAuthDb(['manager']);
     const svc = new SeedPresetRolesService(authDb as never);
-    await svc.execute({ organizationId: '00000000-0000-0000-0000-000000000001' });
+    await svc.execute({ tenantId: '00000000-0000-0000-0000-000000000001' });
     expect(authDb.db.insert).toHaveBeenCalledTimes(2);
   });
 });

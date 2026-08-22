@@ -50,7 +50,7 @@ describe('CreateRoleService', () => {
       svc.execute({
         roleName: 'manager',
         permission: { billing: ['update'] },
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -65,7 +65,7 @@ describe('CreateRoleService', () => {
       svc.execute({
         roleName: 'manager',
         permission: { ac: ['create'] },
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -80,7 +80,7 @@ describe('CreateRoleService', () => {
       svc.execute({
         roleName: 'Owner',
         permission: { menu: ['read'] },
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -94,7 +94,7 @@ describe('CreateRoleService', () => {
     await svc.execute({
       roleName: 'manager',
       permission: { menu: ['read'] },
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       actorUserId: '00000000-0000-0000-0000-000000000002',
       headers: makeHeaders(),
     });
@@ -103,13 +103,13 @@ describe('CreateRoleService', () => {
     expect(envelope.payload.actorUserId).toBe('00000000-0000-0000-0000-000000000002');
   });
 
-  it('calls BA createOrgRole with organizationId from ALS input (never from body)', async () => {
+  it('calls BA createOrgRole with tenantId from ALS input (never from body)', async () => {
     const api = makeRoleApi();
     const svc = new CreateRoleService(makeAuth(api), makeEmitter());
     await svc.execute({
       roleName: 'cashier',
       permission: { order: ['read'] },
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       actorUserId: '00000000-0000-0000-0000-000000000002',
       headers: makeHeaders(),
     });
@@ -132,7 +132,7 @@ describe('UpdateRoleService', () => {
       svc.execute({
         roleSlug: 'cashier',
         permission: { tenant: ['delete'] },
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -148,7 +148,7 @@ describe('UpdateRoleService', () => {
       svc.execute({
         roleSlug: 'nonexistent',
         permission: { menu: ['read'] },
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -163,7 +163,7 @@ describe('UpdateRoleService', () => {
     await svc.execute({
       roleSlug: 'cashier',
       permission: { order: ['read'] },
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       actorUserId: '00000000-0000-0000-0000-000000000002',
       headers: makeHeaders(),
     });
@@ -211,7 +211,7 @@ describe('ArchiveRoleService', () => {
     await expect(
       svc.execute({
         roleSlug: 'cashier',
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -226,7 +226,7 @@ describe('ArchiveRoleService', () => {
     const svc = new ArchiveRoleService(authDb as never, emitter);
     await svc.execute({
       roleSlug: 'cashier',
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       actorUserId: '00000000-0000-0000-0000-000000000002',
       headers: makeHeaders(),
     });
@@ -239,7 +239,7 @@ describe('ArchiveRoleService', () => {
     const svc = new ArchiveRoleService(authDb as never, emitter);
     await svc.execute({
       roleSlug: 'cashier',
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       actorUserId: '00000000-0000-0000-0000-000000000002',
       headers: makeHeaders(),
     });
@@ -254,7 +254,7 @@ describe('ArchiveRoleService', () => {
     await expect(
       svc.execute({
         roleSlug: 'ghost',
-        organizationId: '00000000-0000-0000-0000-000000000001',
+        tenantId: '00000000-0000-0000-0000-000000000001',
         actorUserId: '00000000-0000-0000-0000-000000000002',
         headers: makeHeaders(),
       }),
@@ -265,11 +265,11 @@ describe('ArchiveRoleService', () => {
 });
 
 describe('ListRolesService', () => {
-  it('maps organization_role rows to RoleView with JSON-parsed permission', async () => {
+  it('maps tenant_role rows to RoleView with JSON-parsed permission', async () => {
     const authDb = makeRolesDb([{ id: 'r1', role: 'cashier', permission: { menu: ['read'] } }]);
     const svc = new ListRolesService(authDb as never);
     const result = await svc.execute({
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       headers: makeHeaders(),
     });
     expect(result.roles).toHaveLength(1);
@@ -283,7 +283,7 @@ describe('ListRolesService', () => {
     ]);
     const svc = new ListRolesService(authDb as never);
     const result = await svc.execute({
-      organizationId: '00000000-0000-0000-0000-000000000001',
+      tenantId: '00000000-0000-0000-0000-000000000001',
       headers: makeHeaders(),
     });
     expect(result.roles).toHaveLength(2);

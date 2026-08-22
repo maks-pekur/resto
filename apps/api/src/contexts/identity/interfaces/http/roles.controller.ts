@@ -75,12 +75,12 @@ export class RolesController {
     @Req() req: FastifyRequest,
   ) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.createRole.execute({
         roleName: input.roleName,
         permission: input.permission,
-        organizationId,
+        tenantId,
         actorUserId: operator.userId,
         headers: toWebHeaders(req.headers),
       }),
@@ -97,12 +97,12 @@ export class RolesController {
     @Req() req: FastifyRequest,
   ) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.updateRole.execute({
         roleSlug,
         permission: input.permission,
-        organizationId,
+        tenantId,
         actorUserId: operator.userId,
         headers: toWebHeaders(req.headers),
       }),
@@ -119,11 +119,11 @@ export class RolesController {
     @Req() req: FastifyRequest,
   ) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.archiveRole.execute({
         roleSlug,
-        organizationId,
+        tenantId,
         actorUserId: operator.userId,
         headers: toWebHeaders(req.headers),
       }),
@@ -135,10 +135,10 @@ export class RolesController {
   @Permissions({ ac: ['read'] })
   listRolesHandler(@Req() req: FastifyRequest) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.listRoles.execute({
-        organizationId,
+        tenantId,
         headers: toWebHeaders(req.headers),
       }),
     );
@@ -149,10 +149,10 @@ export class RolesController {
   @Permissions({ ac: ['read'] })
   getRoleHandler(@Param('roleSlug') roleSlug: string, @Req() req: FastifyRequest) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(async () => {
       const { roles } = await this.listRoles.execute({
-        organizationId,
+        tenantId,
         headers: toWebHeaders(req.headers),
       });
       const role = roles.find((r) => r.role === roleSlug);

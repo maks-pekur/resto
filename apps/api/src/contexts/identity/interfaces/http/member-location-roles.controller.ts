@@ -53,9 +53,9 @@ export class MemberLocationRolesController {
   @Permissions({ ac: ['update'] })
   listLocationRoles(@Param('memberId') memberId: string): Promise<MemberLocationRolesResponseDto> {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(async () => {
-      const rows = await this.listLocationRolesSvc.execute({ organizationId, memberId });
+      const rows = await this.listLocationRolesSvc.execute({ tenantId, memberId });
       return { locationRoles: rows.map((r) => ({ locationId: r.locationId, role: r.role })) };
     });
   }
@@ -69,10 +69,10 @@ export class MemberLocationRolesController {
     @Body(new RestoZodValidationPipe(AssignLocationRoleInputDto)) input: AssignLocationRoleInput,
   ) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.assignLocationRoleSvc.execute({
-        organizationId,
+        tenantId,
         memberId,
         locationId: input.locationId,
         roleSlug: input.roleSlug,
@@ -86,10 +86,10 @@ export class MemberLocationRolesController {
   @Permissions({ ac: ['update'] })
   removeLocationRole(@Param('memberId') memberId: string, @Param('locationId') locationId: string) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.assignLocationRoleSvc.execute({
-        organizationId,
+        tenantId,
         memberId,
         locationId,
         roleSlug: null,

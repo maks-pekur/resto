@@ -64,10 +64,10 @@ export class MemberRolesController {
     @Req() req: FastifyRequest,
   ) {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
+    const tenantId = TenantId.parse(ctx.tenantId);
     return wrap(() =>
       this.assignRoleSvc.execute({
-        organizationId,
+        tenantId,
         actorUserId: operator.userId,
         targetMemberId: input.memberId,
         roleSlug,
@@ -81,7 +81,7 @@ export class MemberRolesController {
   @Permissions({ ac: ['read'] })
   listMembers() {
     const ctx = requireTenantContext();
-    const organizationId = TenantId.parse(ctx.tenantId);
-    return wrap(() => this.listMembersSvc.execute({ organizationId }));
+    const tenantId = TenantId.parse(ctx.tenantId);
+    return wrap(() => this.listMembersSvc.execute({ tenantId }));
   }
 }

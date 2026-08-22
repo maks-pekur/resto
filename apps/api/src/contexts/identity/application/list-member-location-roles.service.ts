@@ -6,7 +6,7 @@ import {
 } from './ports/member-location-scope-reader.port';
 
 export interface ListMemberLocationRolesInput {
-  readonly organizationId: TenantId;
+  readonly tenantId: TenantId;
   readonly memberId: string;
 }
 
@@ -24,7 +24,7 @@ export class ListMemberLocationRolesService {
   execute(input: ListMemberLocationRolesInput): Promise<readonly MemberLocationRoleView[]> {
     return this.reader.listLocationRolesForMember({
       memberId: input.memberId,
-      tenantId: input.organizationId,
+      tenantId: input.tenantId,
     });
   }
 }
