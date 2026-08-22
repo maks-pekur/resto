@@ -19,15 +19,15 @@ const loadRepoEnv = (key: string): string | undefined => {
 const internalApiToken = loadRepoEnv('INTERNAL_API_TOKEN');
 if (internalApiToken !== undefined) process.env.INTERNAL_API_TOKEN = internalApiToken;
 
-// Vite (apps/admin) serves on :4000 (vite.config.ts) — this also matches
-// the api's default CORS_ALLOWED_ORIGINS/ADMIN_WEB_URL dev defaults
-// (env.schema.ts), so no server-side env overrides are needed to run this
-// suite locally. The prior :3001 value + NEXT_PUBLIC_*/ACTIVE_BRAND_COOKIE_*
-// env vars were Next.js-era leftovers from before the Vite SPA migration
-// (07.6) and did not match this app's real dev topology.
+// Vite (apps/admin) serves on :4000 (vite.config.ts). D-21 (10.2 plan 17):
+// the apex dev host is `admin.localhost`, not bare `localhost` — Better
+// Auth's own `trustedOrigins` rejects the bare host once ADMIN_WEB_URL is
+// set to the real apex (.env.example), and sign-in hard-navigates to
+// `<slug>.admin.localhost:4000`, a genuinely different host bare `localhost`
+// cannot reach cookies from (AUTH_COOKIE_DOMAIN=.admin.localhost).
 const adminPort = 4000;
 const websitePort = 3002;
-const baseURL = process.env.ADMIN_E2E_BASE_URL ?? `http://localhost:${adminPort}`;
+const baseURL = process.env.ADMIN_E2E_BASE_URL ?? `http://admin.localhost:${adminPort}`;
 const apiOrigin = process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
 export const websiteBaseURL =
   process.env.WEBSITE_E2E_BASE_URL ?? `http://localhost:${String(websitePort)}`;
