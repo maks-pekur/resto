@@ -72,10 +72,17 @@ export class MeTenantsController {
    * The organizations the signed-in user is a member of (D-02). Backs the
    * sign-in picker (D-17) — deliberately NOT `@RequiresTenantContext`,
    * since a fresh session has no organization bound yet and this endpoint
-   * is exactly how the picker learns what to offer.
+   * is exactly how the picker learns what to offer. `@Permissions` is
+   * deliberately ALSO absent here (found live, 10.2-17): BA's org-scoped
+   * `hasPermission` needs an already-bound `activeOrganizationId` to
+   * evaluate against, which a fresh sign-in never has — the decorator
+   * 403'd every call, defeating this endpoint's own stated purpose. Safe
+   * without it: the query is scoped to `operator.userId` (AuthGuard's own
+   * default-deny already requires an authenticated operator principal),
+   * never a client-supplied id, so there is no cross-tenant read here to
+   * gate.
    */
   @Get('tenants')
-  @Permissions({ tenant: ['read'] })
   @ApiOkResponse({ type: MeTenantsResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   async getTenants(@CurrentOperator() operator: OperatorPrincipal): Promise<MeTenantsResponseDto> {
