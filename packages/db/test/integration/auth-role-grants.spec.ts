@@ -10,7 +10,7 @@ import {
   provisionAppRole,
   RESTO_APP_ROLE,
 } from '../../src/index';
-import { isDockerAvailable } from '../setup';
+import { ensureAuthRoleExists, isDockerAvailable } from '../setup';
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../migrations', import.meta.url));
 const AUTH_PWD = 'auth_role_grants_test_pwd_1234';
@@ -46,6 +46,7 @@ suite('RES-205: resto_auth role grants are restricted to BA-owned tables', () =>
     const adminUrl = container.getConnectionUri();
     const admin = postgres(adminUrl, { max: 1, prepare: false });
     try {
+      await ensureAuthRoleExists(admin, AUTH_PWD);
       await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
       await provisionAuthRole(admin, { authPassword: AUTH_PWD });
 
@@ -165,6 +166,7 @@ suite('RES-206: resto_app cannot access BA credential tables', () => {
     const adminUrl = container.getConnectionUri();
     const admin = postgres(adminUrl, { max: 1, prepare: false });
     try {
+      await ensureAuthRoleExists(admin, AUTH_PWD);
       await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
       await provisionAppRole(admin, { appPassword: APP_PWD });
     } finally {
@@ -232,6 +234,7 @@ suite(
       const adminUrl = container.getConnectionUri();
       const admin = postgres(adminUrl, { max: 1, prepare: false });
       try {
+        await ensureAuthRoleExists(admin, AUTH_PWD);
         await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
         await provisionAuthRole(admin, { authPassword: NOBYPASS_AUTH_PWD });
 
@@ -379,6 +382,7 @@ suite('D-04: resto_app isolation is intact after the resto_auth permissive-polic
     const adminUrl = container.getConnectionUri();
     const admin = postgres(adminUrl, { max: 1, prepare: false });
     try {
+      await ensureAuthRoleExists(admin, AUTH_PWD);
       await migrate(drizzle(admin), { migrationsFolder: MIGRATIONS_FOLDER });
       await provisionAuthRole(admin, { authPassword: NOBYPASS_AUTH_PWD });
       await provisionAppRole(admin, { appPassword: NOBYPASS_APP_PWD });

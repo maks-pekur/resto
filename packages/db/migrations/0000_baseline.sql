@@ -1214,3 +1214,16 @@ ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 CREATE POLICY tenants_resto_auth_full ON public.tenants TO resto_auth USING (true) WITH CHECK (true);
 --> statement-breakpoint
 CREATE POLICY tenants_self_iso ON public.tenants USING ((public.is_system_session() OR (id = public.current_tenant_id())));
+--> statement-breakpoint
+-- pg_dump does not emit REVOKEs against default PUBLIC privileges, so these must be written by
+-- hand and re-checked whenever this baseline is regenerated. Without them every SECURITY DEFINER
+-- helper below — tenant-GUC binding and tenant erasure included — is callable by PUBLIC.
+REVOKE EXECUTE ON FUNCTION pg_catalog.set_config(text, text, boolean) FROM PUBLIC;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION public.app_bind_tenant(text, boolean) FROM PUBLIC;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION public.app_bind_location(text) FROM PUBLIC;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION public.app_allow_erasure(uuid) FROM PUBLIC;
+--> statement-breakpoint
+REVOKE EXECUTE ON FUNCTION public.tenancy_erase_tenant(uuid, text, text) FROM PUBLIC;
