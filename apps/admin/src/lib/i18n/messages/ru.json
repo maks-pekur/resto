@@ -68,7 +68,9 @@
       "localeEn": "English",
       "switchTenantItem": "Сменить ресторан",
       "localeEs": "Español"
-    }
+    },
+    "groupOperations": "Работа",
+    "groupAdministration": "Администрирование"
   },
   "pickTenant": {
     "title": "Выберите ресторан",

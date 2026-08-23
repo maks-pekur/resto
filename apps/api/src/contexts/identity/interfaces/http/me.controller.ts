@@ -1,12 +1,14 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Req } from '@nestjs/common';
+import type { FastifyRequest } from 'fastify';
 import { ApiTags } from '@nestjs/swagger';
-import { and, eq } from 'drizzle-orm';
-import { member as memberTable } from '@resto/db/schema';
 import { LocationNeutral } from '../../../../shared/auth';
 import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
 import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
-import { computeEffectivePermissions } from '@resto/domain';
-import { listActiveCustomRoles } from '../../application/roles/list-active-custom-roles';
+import { resolveEffectivePermissions } from '../../application/location-scope/resolve-effective-permissions';
+import {
+  MEMBER_LOCATION_SCOPE_READER,
+  type MemberLocationScopeReader,
+} from '../../application/ports/member-location-scope-reader.port';
 import { CurrentPrincipal } from './decorators/current-principal.decorator';
 import type { Principal } from '../../domain/principal';
 
@@ -24,13 +26,25 @@ interface MeResponse {
 @LocationNeutral()
 @Controller('/v1/me')
 export class MeController {
-  constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
+  constructor(
+    @Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle,
+    @Inject(MEMBER_LOCATION_SCOPE_READER) private readonly scopeReader: MemberLocationScopeReader,
+  ) {}
 
   @Get()
-  async me(@CurrentPrincipal() actor: Principal): Promise<MeResponse> {
+  async me(@CurrentPrincipal() actor: Principal, @Req() req: FastifyRequest): Promise<MeResponse> {
     if (actor.kind === 'operator') {
+      // Same union the PermissionsGuard applies. Reporting anything narrower would make the admin
+      // hide screens the server would in fact serve.
+      const activeLocationId = (req as FastifyRequest & { activeLocationId?: string | null })
+        .activeLocationId;
       const permissions = actor.tenantId
-        ? await this.resolvePermissions(actor.userId, actor.tenantId)
+        ? await resolveEffectivePermissions(this.authDb, this.scopeReader, {
+            userId: actor.userId,
+            tenantId: actor.tenantId,
+            baseRole: actor.baseRole,
+            activeLocationId,
+          })
         : {};
       return {
         kind: actor.kind,
@@ -53,29 +67,5 @@ export class MeController {
       };
     }
     return { kind: 'anonymous', permissions: {} };
-  }
-
-  private async resolvePermissions(
-    userId: string,
-    tenantId: string,
-  ): Promise<Record<string, string[]>> {
-    const rows = await this.authDb.db
-      .select({ role: memberTable.role })
-      .from(memberTable)
-      .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
-      .limit(1);
-    const memberRoleCsv = rows[0]?.role;
-    if (!memberRoleCsv) return {};
-
-    const activeRoles = await listActiveCustomRoles(this.authDb, tenantId);
-    const customRoleLookup = (slug: string): Record<string, string[]> | null =>
-      activeRoles.find((r) => r.role === slug)?.permission ?? null;
-
-    const effective = computeEffectivePermissions(memberRoleCsv, customRoleLookup);
-    const result: Record<string, string[]> = {};
-    for (const [resource, actions] of Object.entries(effective)) {
-      result[resource] = [...actions];
-    }
-    return result;
   }
 }

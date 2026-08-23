@@ -68,7 +68,9 @@
       "localeEn": "English",
       "switchTenantItem": "Cambiar de restaurante",
       "localeEs": "Español"
-    }
+    },
+    "groupOperations": "Operación",
+    "groupAdministration": "Administración"
   },
   "pickTenant": {
     "title": "Elige tu restaurante",

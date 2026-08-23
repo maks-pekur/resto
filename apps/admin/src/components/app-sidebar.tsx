@@ -16,6 +16,7 @@ import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import type { OperatorSummary } from '@/lib/queries/identity';
+import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
@@ -40,6 +41,13 @@ export function AppSidebar({
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tOrders } = useTranslation('translation', { keyPrefix: 'orders' });
   const isOwner = operator.baseRole === 'owner';
+
+  // Hiding is convenience, not security — every route still refuses a direct link. This only stops
+  // an operator being offered a door that will not open for them.
+  const { data: meResult } = useQuery(meQuery());
+  const permissions = meResult?.data?.permissions ?? {};
+  const can = (resource: string, action: string): boolean =>
+    isOwner || (permissions[resource]?.includes(action) ?? false);
   const { data: locationsResult } = useQuery({
     ...meLocationsQuery(),
     enabled: isOwner,
@@ -57,56 +65,49 @@ export function AppSidebar({
     (row) => row.status === 'paid' && row.acceptedAt === null,
   ).length;
 
-  const navMain: NavMainItem[] = [
-    {
-      title: t('dashboard'),
-      url: '/',
-      icon: LayoutDashboard,
-    },
-    {
-      title: t('orders'),
-      url: '/orders',
-      icon: ClipboardList,
-      badge: unacceptedCount,
-      badgeAriaLabel: tOrders('card.sidebarBadgeAria', { count: unacceptedCount }),
-    },
-    {
-      title: t('menu'),
-      url: '/menu/items',
-      icon: UtensilsCrossed,
-      isActive: false,
-      items: [
-        { title: t('menuCategories'), url: '/menu/categories' },
-        { title: t('menuItems'), url: '/menu/items' },
-        { title: t('menuModifiers'), url: '/menu/modifier-groups' },
-        { title: t('menuStopList'), url: '/menu/stop-list' },
-      ],
-    },
-    {
-      title: 'Locations',
-      url: '/locations',
-      icon: MapPin,
-    },
-    {
-      title: t('payments'),
-      url: '/tenant/payouts',
-      icon: CreditCard,
-    },
-    {
-      title: t('team'),
-      url: '/team',
-      icon: Users,
-    },
-    {
-      title: 'Roles',
-      url: '/roles',
-      icon: KeyRound,
-    },
-    {
-      title: t('settings'),
-      url: '/settings',
-      icon: Settings2,
-    },
+  const navOperations: NavMainItem[] = [
+    { title: t('dashboard'), url: '/', icon: LayoutDashboard },
+    ...(can('order', 'read')
+      ? [
+          {
+            title: t('orders'),
+            url: '/orders',
+            icon: ClipboardList,
+            badge: unacceptedCount,
+            badgeAriaLabel: tOrders('card.sidebarBadgeAria', { count: unacceptedCount }),
+          },
+        ]
+      : []),
+    ...(can('menu', 'read')
+      ? [
+          {
+            title: t('menu'),
+            url: '/menu/items',
+            icon: UtensilsCrossed,
+            isActive: false,
+            items: [
+              { title: t('menuCategories'), url: '/menu/categories' },
+              { title: t('menuItems'), url: '/menu/items' },
+              { title: t('menuModifiers'), url: '/menu/modifier-groups' },
+              { title: t('menuStopList'), url: '/menu/stop-list' },
+            ],
+          },
+        ]
+      : []),
+  ];
+
+  // Brand grain: these configure the restaurant company, not a point. Grouping them apart is the
+  // same distinction the URL makes — no location slug in their addresses.
+  const navAdministration: NavMainItem[] = [
+    ...(can('location', 'create') ? [{ title: 'Locations', url: '/locations', icon: MapPin }] : []),
+    ...(can('billing', 'read')
+      ? [{ title: t('payments'), url: '/tenant/payouts', icon: CreditCard }]
+      : []),
+    ...(can('staff', 'invite') ? [{ title: t('team'), url: '/team', icon: Users }] : []),
+    ...(can('ac', 'read') ? [{ title: 'Roles', url: '/roles', icon: KeyRound }] : []),
+    ...(can('settings', 'update')
+      ? [{ title: t('settings'), url: '/settings', icon: Settings2 }]
+      : []),
   ];
   return (
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
@@ -115,7 +116,8 @@ export function AppSidebar({
         <LocationSwitcher isOwner={isOwner} locations={locations} />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navMain} />
+        <NavMain items={navOperations} label={t('groupOperations')} />
+        <NavMain items={navAdministration} label={t('groupAdministration')} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser operator={operator} />

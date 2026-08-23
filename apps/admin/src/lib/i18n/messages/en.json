@@ -68,7 +68,9 @@
       "localeEn": "English",
       "switchTenantItem": "Switch restaurant",
       "localeEs": "Español"
-    }
+    },
+    "groupOperations": "Operations",
+    "groupAdministration": "Administration"
   },
   "pickTenant": {
     "title": "Choose your restaurant",
