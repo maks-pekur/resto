@@ -68,5 +68,9 @@
     "global_learnings": true
   },
   "mode": "yolo",
-  "granularity": "fine"
+  "granularity": "fine",
+  "model_overrides": {
+    "gsd-plan-checker": "opus",
+    "gsd-verifier": "opus"
+  }
 }
