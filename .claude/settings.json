@@ -68,7 +68,8 @@
       "WebFetch(domain:tanstack.com)",
       "Bash(find /Users/mp_dev/projects/RestOS/apps/admin/src/routes/\\\\\\(protected\\\\\\)/\\\\$brandSlug -type f | sort)",
       "Bash(RESTO_SPINE_MIGRATION=1 git commit:*)",
-      "Bash(curl -s -u \"$STRIPE_SECRET_KEY:\" https://api.stripe.com/v1/accounts:*)"
+      "Bash(curl -s -u \"$STRIPE_SECRET_KEY:\" https://api.stripe.com/v1/accounts:*)",
+      "Bash(gh pr merge:*)"
     ],
     "additionalDirectories": [
       "/Users/mp_dev/projects/RestOS/.git",
