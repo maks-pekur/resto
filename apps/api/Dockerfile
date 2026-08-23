@@ -27,6 +27,14 @@ COPY tsconfig.base.json ./
 COPY apps ./apps
 COPY packages ./packages
 
+# After the sources, not before: `COPY packages` would otherwise land on top of these and the
+# workspace symlinks would vanish. esbuild bundles packages/* sources too, so it needs each
+# package's own node_modules to resolve `@resto/*` and third-party imports from inside them —
+# without this the build fails with "Could not resolve @resto/domain" and friends.
+COPY --from=deps /workspace/packages/db/node_modules ./packages/db/node_modules
+COPY --from=deps /workspace/packages/domain/node_modules ./packages/domain/node_modules
+COPY --from=deps /workspace/packages/events/node_modules ./packages/events/node_modules
+
 RUN pnpm --filter @resto/api exec node build.mjs
 
 FROM node:22-alpine AS runtime
