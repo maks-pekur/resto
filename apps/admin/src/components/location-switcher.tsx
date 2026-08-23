@@ -1,4 +1,5 @@
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { isLocationScopedPath } from '@/lib/location-scoped-paths';
 import { ChevronsUpDown, MapPin } from 'lucide-react';
 import { Route as protectedLayoutRoute } from '@/routes/(protected)/_layout';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
@@ -32,7 +33,10 @@ export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) 
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { mode, locationId } = useEffectiveLocation();
 
-  if (!isOwner || locations.length === 0) return null;
+  // Nothing to scope on a tenant-grain page — the locations list shows every location, the team
+  // page every member. Showing a per-location control there invites the operator to believe the
+  // page is filtered.
+  if (!isOwner || locations.length === 0 || !isLocationScopedPath(pathname)) return null;
 
   const activeLocation =
     mode === 'single' && locationId !== undefined
