@@ -7,10 +7,7 @@ import {
   SelfRoleAssignmentError,
 } from '../../../src/contexts/identity/domain/errors';
 import { AssignRoleService } from '../../../src/contexts/identity/application/assign-role.service';
-import {
-  computeEffectivePermissions,
-  isSubsetOf,
-} from '../../../src/contexts/identity/application/effective-permissions';
+import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
 import type { Auth } from '../../../src/contexts/identity/infrastructure/better-auth/auth.config';
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';

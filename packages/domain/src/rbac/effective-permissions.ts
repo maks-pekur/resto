@@ -1,4 +1,4 @@
-import { SYSTEM_ROLES } from '@resto/domain';
+import { SYSTEM_ROLES } from './system-roles';
 
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff'] as const);
 

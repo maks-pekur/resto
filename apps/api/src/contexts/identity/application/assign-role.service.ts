@@ -12,7 +12,7 @@ import {
   SelfRoleAssignmentError,
   AssignmentExceedsAuthorityError,
 } from '../domain/errors';
-import { computeEffectivePermissions, isSubsetOf } from './effective-permissions';
+import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);

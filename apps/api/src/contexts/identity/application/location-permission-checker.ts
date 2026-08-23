@@ -8,7 +8,7 @@ import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
 } from './ports/member-location-scope-reader.port';
-import { computeEffectivePermissions, isSubsetOf } from './effective-permissions';
+import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 
 // D-08 / Pitfall 2 (RESEARCH): a non-owner's effective permissions come
