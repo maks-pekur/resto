@@ -71,6 +71,10 @@ const DOMAIN_REASON_CODES = [
   'other',
 ] as const;
 
+// What CancelOrderService actually sends — the reject-a-paid-order path, and the only refund
+// most operators will ever trigger.
+const CANCEL_PREFIXED_REASONS = DOMAIN_REASON_CODES.map((c) => `cancel:${c}` as const);
+
 describe('toStripeRefundReason', () => {
   it('passes Stripe’s own three values through unchanged', () => {
     expect(toStripeRefundReason('duplicate')).toBe('duplicate');
@@ -93,15 +97,20 @@ describe('toStripeRefundReason', () => {
   });
 
   it('never returns a value outside Stripe’s enum, for any domain reason', () => {
-    for (const code of DOMAIN_REASON_CODES) {
+    for (const code of [...DOMAIN_REASON_CODES, ...CANCEL_PREFIXED_REASONS]) {
       const mapped = toStripeRefundReason(code);
       if (mapped !== undefined) expect(STRIPE_ACCEPTED_REASONS.has(mapped)).toBe(true);
     }
   });
+
+  it('strips the cancel: prefix CancelOrderService adds', () => {
+    expect(toStripeRefundReason('cancel:duplicate_order')).toBe('duplicate');
+    expect(toStripeRefundReason('cancel:guest_requested')).toBeUndefined();
+  });
 });
 
 describe('StripeProviderAdapter.createRefund', () => {
-  it.each(DOMAIN_REASON_CODES)(
+  it.each([...DOMAIN_REASON_CODES, ...CANCEL_PREFIXED_REASONS])(
     'succeeds against a contract-faithful Stripe for reason %s',
     async (reason) => {
       const { client, lastParams } = createContractFake();

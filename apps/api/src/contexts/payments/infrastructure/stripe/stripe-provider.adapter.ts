@@ -28,7 +28,11 @@ const STRIPE_REFUND_REASONS = ['duplicate', 'fraudulent', 'requested_by_customer
 export const toStripeRefundReason = (
   domainReason: string,
 ): Stripe.RefundCreateParams.Reason | undefined => {
-  const normalized = domainReason.trim().toLowerCase();
+  // CancelOrderService sends `cancel:<reasonCode>`; strip it so the one mappable code still maps.
+  const normalized = domainReason
+    .trim()
+    .toLowerCase()
+    .replace(/^cancel:/, '');
   if ((STRIPE_REFUND_REASONS as readonly string[]).includes(normalized)) {
     return normalized as Stripe.RefundCreateParams.Reason;
   }
