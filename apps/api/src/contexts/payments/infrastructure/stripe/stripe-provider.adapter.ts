@@ -21,6 +21,21 @@ import type {
 const RETRY_DELAYS_MS = [0, 250, 1000, 4000] as const;
 const CALL_TIMEOUT_MS = 5500;
 
+const STRIPE_REFUND_REASONS = ['duplicate', 'fraudulent', 'requested_by_customer'] as const;
+
+// F-51: an unmappable reason is omitted, never coerced — `fraudulent`/`duplicate` feed Stripe's
+// risk signals and `requested_by_customer` is false when the kitchen ran out. Real reason → metadata.
+export const toStripeRefundReason = (
+  domainReason: string,
+): Stripe.RefundCreateParams.Reason | undefined => {
+  const normalized = domainReason.trim().toLowerCase();
+  if ((STRIPE_REFUND_REASONS as readonly string[]).includes(normalized)) {
+    return normalized as Stripe.RefundCreateParams.Reason;
+  }
+  if (normalized === 'duplicate_order') return 'duplicate';
+  return undefined;
+};
+
 const sleep = (ms: number): Promise<void> => new Promise((resolve) => setTimeout(resolve, ms));
 
 const jitter = (): number => Math.floor(Math.random() * 100);
@@ -266,12 +281,14 @@ export class StripeProviderAdapter implements PaymentProviderPort {
 
   async createRefund(input: CreateRefundInput): Promise<CreateRefundResult> {
     const idempotencyKey = `refund:${input.refundRequestId}`;
+    const stripeReason = toStripeRefundReason(input.reason);
     const refund = await withRetry(this.#logger, 'refunds.create', () =>
       this.#client.refunds.create(
         {
           payment_intent: input.paymentIntentId,
           ...(input.amountMinor !== undefined ? { amount: input.amountMinor } : {}),
-          reason: input.reason as Stripe.RefundCreateParams.Reason,
+          ...(stripeReason !== undefined ? { reason: stripeReason } : {}),
+          metadata: { resto_reason: input.reason },
         },
         {
           stripeAccount: input.connectedAccountId,
