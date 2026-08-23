@@ -1704,7 +1704,6 @@ components:
           default: null
       required:
         - name
-        - contacts
     LocationResponseDto:
       type: object
       properties:
@@ -2398,7 +2397,6 @@ components:
           default: null
       required:
         - name
-        - description
     IdResponseDto:
       type: object
       properties:
@@ -2622,7 +2620,6 @@ components:
       required:
         - categoryId
         - name
-        - description
         - basePrice
         - currency
     UpsertModifierGroupInputDto:
