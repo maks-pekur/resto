@@ -27,6 +27,6 @@
     "postgres": "^3.4.5",
     "testcontainers": "^10.16.0",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.6"
   }
 }
