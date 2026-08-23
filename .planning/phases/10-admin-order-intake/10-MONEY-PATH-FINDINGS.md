@@ -136,37 +136,55 @@ account is `custom` — cosmetic today because nothing branches on it.
 GB while the `pizza` fixture prices in UAH. That mismatch is what makes F-52 easy to hit: the GBP
 floor applies to converted UAH amounts.
 
-## F-54 — the squashed baseline references a role it does not create
+## F-54 — FIXED: the squashed baseline lost every REVOKE, and a role it grants to
 
-**Severity: blocker for the test suite, found while verifying this work; not caused by it.** All 21
-`packages/db` integration suites fail at `migrate()` with
+**Severity: blocker. Found while verifying this work, not caused by it. Fixed 2026-08-23.**
 
-```
-PostgresError: role "resto_auth" does not exist
-CREATE POLICY invitation_resto_auth_full ON public.invitation TO resto_auth ...
-```
+Two defects in `0000_baseline.sql`, both from the same root cause: the squash was produced with
+`pg_dump`, and verified against the dev database — which already carried everything the dump omits.
+A fresh database was never tried, so the proof passed for the wrong reason.
 
-`0000_baseline.sql` has 40 unguarded `CREATE POLICY` statements, several granting to `resto_auth`,
-but nothing in the migration creates that role. The suites use Testcontainers — a **fresh** Postgres
-per file — and `test/setup.ts` calls only `provisionAppRole`, and calls it _after_ `migrate()`.
-`provisionAuthRole` exists in `packages/db/src/auth-role.ts` and is never called from the harness.
+**1. Zero REVOKE statements survived.** `pg_dump` does not emit REVOKEs against default PUBLIC
+privileges. All five were silently dropped:
 
-This has been red since the phase 10.2 migration squash and went unnoticed because the dev database
-already has `resto_auth`, so `db:migrate` succeeds there — the squash was verified dump-to-dump
-against a database that already carried the role. Same shape as the rename-completeness lesson: the
-probe passed for the wrong reason.
+| function                                   | lost from                               | consequence on a fresh database                                |
+| ------------------------------------------ | --------------------------------------- | -------------------------------------------------------------- |
+| `pg_catalog.set_config(text,text,boolean)` | 0023                                    | `resto_app` can forge `app.current_tenant` and read any tenant |
+| `app_bind_tenant(text,boolean)`            | 0022                                    | GUC binding callable directly, bypassing the rebind guard      |
+| `app_bind_location(text)`                  | 0065                                    | same, for location scope                                       |
+| `app_allow_erasure(uuid)`                  | 0026                                    | erasure gate callable by anyone                                |
+| `tenancy_erase_tenant(uuid,text,text)`     | 0011/0019/0026/0041/0051/0072/0074/0077 | **any role can irreversibly erase another tenant's data**      |
 
-Likely fix: provision both roles before `migrate()` in `test/setup.ts`, matching the production
-ordering where roles exist before the migration Job runs. Not attempted here — outside this task.
+Only the `set_config` one has a runtime net (`assertSetConfigRevoked` fails boot closed). The
+erasure grant has none. This bites exactly when a database is provisioned fresh — a new
+environment, a DR restore, the first production deploy.
+
+**2. The baseline grants policies to a role it never creates.** Four `CREATE POLICY … TO
+resto_auth` statements, no `CREATE ROLE`. Fresh Postgres → `role "resto_auth" does not exist` at
+`migrate()`. This is what made all 21 `packages/db` integration suites red since the squash;
+unnoticed because the dev database already had the role.
+
+**Fixed.** The five REVOKEs are folded into `0000_baseline.sql` with a comment saying they are
+hand-written and must be re-checked whenever the baseline is regenerated. `test/setup.ts` gained
+`ensureAuthRoleExists`, called before `migrate()` in all four container setups — matching production,
+where roles exist before the migration Job runs. `packages/db` is **25/25** against fresh
+Testcontainers, and `db:migrate` against the dev database is still a no-op.
+
+**The lesson worth keeping:** a squashed baseline must be proven against an empty database, never
+against the one it was dumped from. Same shape as the rename-completeness rule — the probe passed
+because the environment already supplied what the artefact was missing.
 
 ## Suggested order of work
 
 F-51 and F-49 are **fixed and verified against live Stripe test money** — see
 `.planning/quick/260823-d5n-fix-refund-money-path-blockers/`. F-50 was withdrawn as not a defect.
 
-Still open, in order: **F-54** (the db integration suite is red for everyone), then **F-52** (needs a
-small design decision about where an order minimum lives), then **F-53** (documentation, plus
-optionally teaching the seed to create the connected account so the manual step disappears).
+**F-54** is fixed — the baseline lost every REVOKE and the role it grants to; `packages/db` is back
+to 25/25 against fresh containers.
+
+Still open: **F-52** (needs a small design decision about where an order minimum lives), then
+**F-53** (documentation, plus optionally teaching the seed to create the connected account so the
+manual step disappears).
 
 Each fix needs a regression test that would fail against the real provider — a stub-only test is what
 allowed all of these.
