@@ -399,6 +399,85 @@ describe('HandleStripeEventService', () => {
     });
   });
 
+  describe('refund.updated (F-49)', () => {
+    const REFUND_ID = 're_live_shape_1';
+
+    const makeRefundUpdatedEvent = (status: string) =>
+      makeStripeEvent(
+        'refund.updated',
+        {
+          id: REFUND_ID,
+          object: 'refund',
+          payment_intent: PAYMENT_INTENT_ID,
+          amount: 5995,
+          status,
+        },
+        STRIPE_ACCOUNT_ID,
+      );
+
+    let tenantIdOfSnap: string;
+
+    beforeEach(() => {
+      const snap = makeTenantSnap();
+      tenantIdOfSnap = snap.id;
+      tenantRepo.findByStripeAccountId.mockResolvedValue(snap);
+      paymentRepo.findRefundByStripeId.mockResolvedValue({
+        id: '00000000-0000-0000-0000-0000000000aa',
+        stripeRefundId: REFUND_ID,
+        amount: '59.95',
+        status: 'succeeded',
+      });
+    });
+
+    it('never touches payment totals — the Refund payload has no cumulative amount to read', async () => {
+      await service.handle(makeRefundUpdatedEvent('succeeded'));
+
+      expect(paymentRepo.upsertByPaymentIntentId).not.toHaveBeenCalled();
+      expect(paymentRepo.findByPaymentIntentId).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['succeeded', 'succeeded'],
+      ['failed', 'failed'],
+      ['canceled', 'failed'],
+      ['pending', 'pending'],
+      ['requires_action', 'pending'],
+    ])('syncs the ledger row: stripe %s becomes %s', async (stripeStatus, ledgerStatus) => {
+      await service.handle(makeRefundUpdatedEvent(stripeStatus));
+
+      expect(paymentRepo.updateRefundStatusByStripeId).toHaveBeenCalledWith(
+        tenantIdOfSnap,
+        REFUND_ID,
+        ledgerStatus,
+        expect.anything(),
+      );
+    });
+
+    it('ignores a status outside the ledger check constraint', async () => {
+      await service.handle(makeRefundUpdatedEvent('something_new'));
+
+      expect(paymentRepo.updateRefundStatusByStripeId).not.toHaveBeenCalled();
+      expect(paymentRepo.upsertByPaymentIntentId).not.toHaveBeenCalled();
+    });
+
+    it('ignores a refund it has no ledger row for', async () => {
+      paymentRepo.findRefundByStripeId.mockResolvedValue(null);
+
+      await service.handle(makeRefundUpdatedEvent('succeeded'));
+
+      expect(paymentRepo.updateRefundStatusByStripeId).not.toHaveBeenCalled();
+    });
+
+    it('ignores an event from an account no tenant owns', async () => {
+      tenantRepo.findByStripeAccountId.mockResolvedValue(null);
+
+      await service.handle(makeRefundUpdatedEvent('succeeded'));
+
+      expect(paymentRepo.updateRefundStatusByStripeId).not.toHaveBeenCalled();
+      expect(paymentRepo.upsertByPaymentIntentId).not.toHaveBeenCalled();
+    });
+  });
+
   describe('charge.dispute.created', () => {
     it('records dispute and appends dispute_opened event', async () => {
       const disputeObj = {

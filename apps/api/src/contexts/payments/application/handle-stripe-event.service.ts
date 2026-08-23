@@ -29,6 +29,22 @@ import {
 
 const CONSUMER_NAME = 'payments-webhook';
 
+// payment_refunds_status_chk allows only these three; Stripe also emits requires_action/canceled.
+const toLedgerRefundStatus = (stripeStatus: string | null | undefined): string | null => {
+  switch (stripeStatus) {
+    case 'succeeded':
+      return 'succeeded';
+    case 'failed':
+    case 'canceled':
+      return 'failed';
+    case 'pending':
+    case 'requires_action':
+      return 'pending';
+    default:
+      return null;
+  }
+};
+
 type RunDedupedFn = (
   db: TenantAwareDb,
   envelope: { id: string; tenantId: string },
@@ -68,8 +84,10 @@ export class HandleStripeEventService {
         await this.handlePaymentIntentFailed(event);
         break;
       case 'charge.refunded':
+        await this.handleChargeRefunded(event);
+        break;
       case 'refund.updated':
-        await this.handleRefund(event);
+        await this.handleRefundUpdated(event);
         break;
       case 'charge.dispute.created':
         await this.handleDisputeCreated(event);
@@ -303,7 +321,9 @@ export class HandleStripeEventService {
     });
   }
 
-  private async handleRefund(event: WebhookEvent): Promise<void> {
+  // F-49: only the Charge carries cumulative refund totals. `refund.updated` delivers a Refund,
+  // whose missing amount_refunded read as 0 and clobbered a completed full refund back to partial.
+  private async handleChargeRefunded(event: WebhookEvent): Promise<void> {
     const rawCharge = (
       event as {
         account?: string;
@@ -398,6 +418,71 @@ export class HandleStripeEventService {
         aggregateId: payment.orderId,
       });
     });
+  }
+
+  private async handleRefundUpdated(event: WebhookEvent): Promise<void> {
+    const rawRefund = (
+      event as {
+        account?: string;
+        data: { object: { id?: string; status?: string | null } };
+      }
+    ).data.object;
+
+    const refundId = rawRefund.id;
+    if (!refundId) {
+      this.logger.warn({ eventId: event.id }, 'refund.updated missing refund id — ignoring.');
+      return;
+    }
+
+    const ledgerStatus = toLedgerRefundStatus(rawRefund.status);
+    if (!ledgerStatus) {
+      this.logger.warn(
+        { eventId: event.id, refundId, status: rawRefund.status },
+        'refund.updated with an unrecognized status — ignoring.',
+      );
+      return;
+    }
+
+    const accountId = (event as { account?: string }).account;
+    if (!accountId) {
+      this.logger.warn(
+        { eventId: event.id },
+        'refund.updated missing event.account — cannot resolve tenant, ignoring.',
+      );
+      return;
+    }
+
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
+      this.logger.warn(
+        { accountId, eventId: event.id },
+        'refund.updated for unregistered account — ignoring (W3).',
+      );
+      return;
+    }
+
+    const tenantId = tenantSnap.id;
+
+    await this.runDedupedFn(
+      this.db,
+      { id: event.id, tenantId },
+      CONSUMER_NAME,
+      async (tx: RestoTx) => {
+        const existing = await this.paymentRepo.findRefundByStripeId(tenantId, refundId, tx);
+        if (!existing) {
+          this.logger.warn(
+            { refundId, tenantId },
+            'refund.updated for an unknown refund row — ignoring.',
+          );
+          return;
+        }
+        await this.paymentRepo.updateRefundStatusByStripeId(tenantId, refundId, ledgerStatus, tx);
+        this.logger.log(
+          { refundId, tenantId, status: ledgerStatus },
+          'refund.updated: refund ledger status synced; payment totals untouched (F-49).',
+        );
+      },
+    );
   }
 
   private async handleDisputeCreated(event: WebhookEvent): Promise<void> {
