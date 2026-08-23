@@ -378,6 +378,16 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 
 <!-- GSD:workflow-end -->
 
+## Finishing a task
+
+- **Commit and push are part of finishing, not a separate request.** When a task is done, commit it
+  and push the branch without being asked. This overrides the "ask before `git push`" rule in
+  `~/projects/CLAUDE.md` for this repo only — pushing a feature branch is cheap and reversible, and
+  leaving work unpushed loses it.
+- **Never merge without asking.** Opening a PR is fine; merging it into the default branch is the
+  founder's call every time, no matter how green CI is. Say what is red and why, then wait.
+- A task is not finished while a check that was green before your change is red after it.
+
 <!-- GSD:profile-start -->
 
 ## Developer Profile
