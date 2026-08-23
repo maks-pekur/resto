@@ -87,28 +87,91 @@ describe('LocationPermissionChecker', () => {
     expect(allowed).toBe(false);
   });
 
-  it('returns false for a non-owner with no activeLocationId', async () => {
-    const reader = makeReader('staff');
+  it('falls back to the tenant base role when there is no activeLocationId', async () => {
+    const reader = makeReader('manager');
     const checker = new LocationPermissionChecker(reader, makeAuthDb());
-    const allowed = await checker.hasPermission(
-      makeOperator('staff'),
-      { location: ['read'] },
-      undefined,
-      null,
-    );
-    expect(allowed).toBe(false);
+
+    // `staff` grants location:read tenant-wide, so this passes without any location...
+    expect(
+      await checker.hasPermission(makeOperator('staff'), { location: ['read'] }, undefined, null),
+    ).toBe(true);
+    // ...but nothing the location role would have added is reachable.
+    expect(
+      await checker.hasPermission(makeOperator('staff'), { order: ['cancel'] }, undefined, null),
+    ).toBe(false);
     expect(reader.findRoleForMemberAtLocation).not.toHaveBeenCalled();
   });
 
-  it('returns false for a non-owner with no role at the location', async () => {
+  it('falls back to the tenant base role when the member has no role at the location', async () => {
     const reader = makeReader(null);
     const checker = new LocationPermissionChecker(reader, makeAuthDb());
-    const allowed = await checker.hasPermission(
-      makeOperator('staff'),
-      { location: ['read'] },
-      undefined,
-      LOCATION_ID,
+
+    expect(
+      await checker.hasPermission(
+        makeOperator('staff'),
+        { location: ['read'] },
+        undefined,
+        LOCATION_ID,
+      ),
+    ).toBe(true);
+    expect(
+      await checker.hasPermission(
+        makeOperator('staff'),
+        { order: ['cancel'] },
+        undefined,
+        LOCATION_ID,
+      ),
+    ).toBe(false);
+  });
+
+  it('unions the tenant base role with the role held at the active location', async () => {
+    const reader = makeReader('manager');
+    // `manager` is a preset role, so its permissions come from tenant_role, not SYSTEM_ROLES.
+    const checker = new LocationPermissionChecker(
+      reader,
+      makeAuthDb([
+        {
+          id: 'role-1',
+          role: 'manager',
+          permission: { order: ['read', 'update-status', 'cancel'], menu: ['read'] },
+        },
+      ]),
     );
-    expect(allowed).toBe(false);
+    const staffOperator = makeOperator('staff');
+
+    // from `staff`
+    expect(
+      await checker.hasPermission(staffOperator, { location: ['read'] }, undefined, LOCATION_ID),
+    ).toBe(true);
+    // from the `manager` preset held at this location
+    expect(
+      await checker.hasPermission(staffOperator, { order: ['cancel'] }, undefined, LOCATION_ID),
+    ).toBe(true);
+    // neither grants it — the union must not become a blank cheque
+    expect(
+      await checker.hasPermission(staffOperator, { billing: ['update'] }, undefined, LOCATION_ID),
+    ).toBe(false);
+  });
+
+  // Regression (08.4-07 follow-up): picking a location goes through
+  // POST /v1/me/set-active-location, itself gated on `tenant: ['read']`. A location-only checker
+  // denies that call, so a member with no location can never acquire one — every non-owner locked
+  // out. This is what kept the checker unwired for months.
+  it('does not deadlock the set-active-location bootstrap', async () => {
+    const reader = makeReader(null);
+    const checker = new LocationPermissionChecker(reader, makeAuthDb());
+    expect(
+      await checker.hasPermission(makeOperator('staff'), { tenant: ['read'] }, undefined, null),
+    ).toBe(true);
+  });
+
+  it('denies a non-owner carrying no base role and no location role', async () => {
+    const reader = makeReader(null);
+    const checker = new LocationPermissionChecker(reader, makeAuthDb());
+    // exactOptionalPropertyTypes: omit the key rather than assigning undefined.
+    const { baseRole: _omitted, ...roleless } = makeOperator('staff');
+    expect(
+      await checker.hasPermission(roleless, { tenant: ['read'] }, undefined, LOCATION_ID),
+    ).toBe(false);
   });
 });

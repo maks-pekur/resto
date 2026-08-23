@@ -44,7 +44,16 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const headers = toWebHeaders(req.headers);
-    const allowed = await this.checker.hasPermission(principal, required, headers);
+    // D-06: a non-owner's role lives on member_location_scope, so the checker needs the session's
+    // active location. AuthGuard has already resolved it onto the request.
+    const activeLocationId = (req as FastifyRequest & { activeLocationId?: string | null })
+      .activeLocationId;
+    const allowed = await this.checker.hasPermission(
+      principal,
+      required,
+      headers,
+      activeLocationId,
+    );
 
     if (!allowed) {
       throw new ForbiddenException({
