@@ -8,6 +8,7 @@ import type { Principal } from '../../../src/contexts/identity/domain/principal'
 const buildContext = (req: {
   principal?: Principal;
   headers?: Record<string, string>;
+  activeLocationId?: string | null;
 }): ExecutionContext =>
   ({
     switchToHttp: () => ({ getRequest: () => req }),
@@ -70,6 +71,26 @@ describe('PermissionsGuard', () => {
       operator,
       { menu: ['update'] },
       expect.anything(),
+      undefined,
+    );
+  });
+
+  // The bug this guards against (08.4-07 follow-up): the guard called hasPermission with three
+  // arguments while the location-aware checker expected a fourth, so activeLocationId was always
+  // undefined and every non-owner was denied everything. Nothing failed — the extra parameter on an
+  // implementation is invisible to callers.
+  it('threads the session active location through to the checker', async () => {
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue({ order: ['cancel'] });
+    const checker = { hasPermission: vi.fn().mockResolvedValue(true) };
+    const guard = new PermissionsGuard(reflector, checker);
+    const ctx = buildContext({ principal: operator, headers: {}, activeLocationId: 'loc-42' });
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(checker.hasPermission).toHaveBeenCalledWith(
+      operator,
+      { order: ['cancel'] },
+      expect.anything(),
+      'loc-42',
     );
   });
 

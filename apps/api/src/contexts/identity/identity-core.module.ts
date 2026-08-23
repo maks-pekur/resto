@@ -346,9 +346,13 @@ const authProvider: Provider = {
   useFactory: buildAuthFromEnv,
 };
 
+// D-06/D-08 (08.4): permissions come from member_location_scope at the session's active location,
+// not from BA's tenant-wide member role — BA has no location concept. 08.4-07 built and unit-proved
+// this checker but left it unwired because PermissionsGuard did not pass activeLocationId; it does
+// now. Owners short-circuit to true, so only non-owners change behaviour.
 const permissionCheckerProvider: Provider = {
   provide: PERMISSION_CHECKER,
-  useClass: BetterAuthPermissionChecker,
+  useClass: LocationPermissionChecker,
 };
 
 // D-08/T-084-21: registered here (not identity-http.module.ts, where the

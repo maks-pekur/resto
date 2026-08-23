@@ -28,19 +28,30 @@ export class LocationPermissionChecker implements PermissionChecker {
     activeLocationId?: string | null,
   ): Promise<boolean> {
     if (principal.baseRole === 'owner') return true;
-    if (!activeLocationId || !principal.tenantId) return false;
+    if (!principal.tenantId) return false;
 
-    const roleSlug = await this.reader.findRoleForMemberAtLocation({
-      userId: principal.userId,
-      locationId: activeLocationId,
-    });
-    if (!roleSlug) return false;
+    // Union of the tenant-level system role and the role held at the active location. Both are
+    // real: `staff` carries the tenant-wide baseline (tenant:read, location:read) that bootstraps
+    // a session, and `member_location_scope.role` adds what the member may do *there* (D-06).
+    //
+    // Location-only would deadlock. Picking a location goes through
+    // `POST /v1/me/set-active-location`, which is itself gated on `tenant: ['read']` — so a member
+    // with no location yet could never acquire one.
+    const locationRole = activeLocationId
+      ? await this.reader.findRoleForMemberAtLocation({
+          userId: principal.userId,
+          locationId: activeLocationId,
+        })
+      : null;
+
+    const roleCsv = [principal.baseRole, locationRole].filter(Boolean).join(',');
+    if (!roleCsv) return false;
 
     const activeRoles = await listActiveCustomRoles(this.authDb, principal.tenantId);
     const customRoleLookup = (slug: string): Record<string, string[]> | null =>
       activeRoles.find((r) => r.role === slug)?.permission ?? null;
 
-    const effective = computeEffectivePermissions(roleSlug, customRoleLookup);
+    const effective = computeEffectivePermissions(roleCsv, customRoleLookup);
     return isSubsetOf(required as Record<string, string[]>, effective);
   }
 }

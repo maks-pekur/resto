@@ -13,12 +13,19 @@ import type { OperatorPrincipal } from '../../domain/principal';
  * `headers` carries the BA session cookie / Bearer token built from the
  * Fastify request headers. The adapter needs them to resolve the active
  * session; passing `undefined` is treated as "deny" (no session).
+ *
+ * `activeLocationId` comes from the session row via `AuthGuard`. D-06 puts a
+ * non-owner's role on `member_location_scope`, so without it a location-aware
+ * implementation can only deny. It is declared here rather than only on the
+ * implementation because an extra parameter on the class is invisible to every
+ * caller — which is exactly how it stayed unwired (08.4-07).
  */
 export interface PermissionChecker {
   hasPermission(
     principal: OperatorPrincipal,
     required: Permission,
     headers?: Headers,
+    activeLocationId?: string | null,
   ): Promise<boolean>;
 }
 
