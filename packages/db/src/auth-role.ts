@@ -35,26 +35,6 @@ const readGrantsSql = (): string =>
  * `assertRoleAttributes` verifies the resulting role has NOBYPASSRLS and
  * no SUPERUSER / CREATEROLE / CREATEDB attributes.
  */
-/**
- * Create `resto_auth` if absent, without touching grants. Migrations grant RLS policies TO
- * resto_auth, so the role must exist *before* the migrator runs — grants cannot be applied that
- * early because the tables do not exist yet. Production provisions roles ahead of the migration
- * Job for the same reason; `provisionAuthRole` still runs afterwards to apply the grants.
- */
-export const ensureAuthRoleExists = async (
-  client: Sql,
-  options: { authPassword: string },
-): Promise<void> => {
-  validateRolePassword('ensureAuthRoleExists', options.authPassword);
-  const rows = await client<{ exists: boolean }[]>`
-    SELECT EXISTS(SELECT 1 FROM pg_roles WHERE rolname = 'resto_auth') AS exists
-  `;
-  if (rows[0]?.exists) return;
-  await client.unsafe(
-    `CREATE ROLE resto_auth WITH LOGIN NOSUPERUSER NOBYPASSRLS PASSWORD '${options.authPassword}'`,
-  );
-};
-
 export const provisionAuthRole = async (
   client: Sql,
   options: { authPassword: string },

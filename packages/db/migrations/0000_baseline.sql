@@ -18,9 +18,26 @@
 -- The squash is cheap now because there is no production database. It would not
 -- be later.
 --
--- Role grants are NOT here: `packages/db/sql/roles.sql` and `auth-role.sql` are
--- applied separately by `provision-roles-ci.ts`, after migrate.
+-- Role GRANTS are NOT here: `packages/db/sql/roles.sql` and `auth-role.sql` are applied separately
+-- by `provision-roles-ci.ts`, after migrate. Role EXISTENCE is, because the policies below name
+-- resto_auth and the migrator runs before any provisioning.
+--
+-- WARNING for whoever regenerates this file. `pg_dump --no-privileges` emits no GRANT and no REVOKE,
+-- and a dump-to-dump diff cannot see what both sides are equally blind to. The first squash lost all
+-- five function REVOKEs that way — including EXECUTE on `tenancy_erase_tenant` — and nobody noticed
+-- because it was only ever applied to databases that already had them. Re-verify against an EMPTY
+-- database, and check the REVOKE block at the end of this file by hand.
 
+-- resto_auth is created NOLOGIN and without a password; provisionAuthRole later grants it LOGIN, a
+-- password and table privileges. Here it only has to exist so the policies below can name it.
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_auth') THEN
+    CREATE ROLE resto_auth NOLOGIN NOSUPERUSER NOBYPASSRLS;
+  END IF;
+END
+$$;
+--> statement-breakpoint
 CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
 --> statement-breakpoint
 COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';

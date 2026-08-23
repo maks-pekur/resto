@@ -8,7 +8,6 @@ import {
   createDb,
   provisionAppRole,
   provisionAuthRole,
-  ensureAuthRoleExists,
   RESTO_APP_ROLE,
   type TenantAwareDb,
 } from '../src/index';
@@ -53,7 +52,6 @@ export const startPostgres = async (): Promise<TestPg> => {
 
   const adminClient = postgres(adminUrl, { max: 1, prepare: false });
   try {
-    await ensureAuthRoleExists(adminClient, { authPassword: AUTH_ROLE_PASSWORD });
     await migrate(drizzle(adminClient), { migrationsFolder: MIGRATIONS_FOLDER });
     await provisionAppRole(adminClient, { appPassword: APP_ROLE_PASSWORD });
     await provisionAuthRole(adminClient, { authPassword: AUTH_ROLE_PASSWORD });

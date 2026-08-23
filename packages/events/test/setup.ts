@@ -5,18 +5,11 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
-import {
-  createDb,
-  ensureAuthRoleExists,
-  provisionAppRole,
-  RESTO_APP_ROLE,
-  type TenantAwareDb,
-} from '@resto/db';
+import { createDb, provisionAppRole, RESTO_APP_ROLE, type TenantAwareDb } from '@resto/db';
 import { NatsJetStreamPublisher, NatsJetStreamSubscriber } from '../src/index';
 
 const DB_MIGRATIONS_FOLDER = resolve(import.meta.dirname, '..', '..', 'db', 'migrations');
 const APP_ROLE_PASSWORD = 'resto_app_events_test_local';
-const AUTH_ROLE_PASSWORD = 'resto_auth_events_test_local';
 const NATS_STREAM = 'RESTO_EVENTS_TEST';
 
 export interface TestEnv {
@@ -42,7 +35,6 @@ const startPostgres = async (): Promise<{
 
   const adminClient = postgres(adminUrl, { max: 1, prepare: false });
   try {
-    await ensureAuthRoleExists(adminClient, { authPassword: AUTH_ROLE_PASSWORD });
     await migrate(drizzle(adminClient), { migrationsFolder: DB_MIGRATIONS_FOLDER });
     await provisionAppRole(adminClient, { appPassword: APP_ROLE_PASSWORD });
   } finally {

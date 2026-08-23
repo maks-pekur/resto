@@ -86,55 +86,63 @@ const Wrap = ({ children }: { children: React.ReactNode }): React.ReactElement =
 // 1. Query key factories
 // ---------------------------------------------------------------------------
 
-describe('catalog query key factories (Plan 07.6-05 Task 4)', () => {
-  const slug = 'burger-barn';
-
-  it('categoriesQuery key is ["catalog","categories",brandSlug]', () => {
-    expect(categoriesQuery(slug).queryKey).toEqual(['catalog', 'categories', slug]);
+describe('catalog query key factories', () => {
+  it('categoriesQuery key is ["catalog","categories"]', () => {
+    expect(categoriesQuery().queryKey).toEqual(['catalog', 'categories']);
   });
 
-  it('itemsQuery key contains brandSlug at index 2', () => {
-    const key = itemsQuery(slug, { limit: 50, offset: 0 }).queryKey;
-    expect(key[2]).toBe(slug);
-    expect(key[0]).toBe('catalog');
-    expect(key[1]).toBe('items');
+  it('itemsQuery key carries the filters, not a tenant', () => {
+    const filters = { limit: 50, offset: 0 };
+    expect(itemsQuery(filters).queryKey).toEqual(['catalog', 'items', filters]);
   });
 
-  it('stopListQuery key is ["catalog","stop-list",brandSlug,locationId]', () => {
-    expect(stopListQuery(slug, 'loc-1').queryKey).toEqual(['catalog', 'stop-list', slug, 'loc-1']);
+  it('stopListQuery key is ["catalog","stop-list",locationId]', () => {
+    expect(stopListQuery('loc-1').queryKey).toEqual(['catalog', 'stop-list', 'loc-1']);
   });
 
-  it('draftDiffQuery key is ["catalog","draft-diff",brandSlug]', () => {
-    expect(draftDiffQuery(slug).queryKey).toEqual(['catalog', 'draft-diff', slug]);
+  it('draftDiffQuery key is ["catalog","draft-diff"]', () => {
+    expect(draftDiffQuery().queryKey).toEqual(['catalog', 'draft-diff']);
   });
 
-  it('modifierGroupsQuery key is ["catalog","modifier-groups",brandSlug]', () => {
-    expect(modifierGroupsQuery(slug).queryKey).toEqual(['catalog', 'modifier-groups', slug]);
+  it('modifierGroupsQuery key is ["catalog","modifier-groups"]', () => {
+    expect(modifierGroupsQuery().queryKey).toEqual(['catalog', 'modifier-groups']);
   });
 
-  it('itemQuery key is ["catalog","item",brandSlug,id]', () => {
-    expect(itemQuery(slug, 'item-abc').queryKey).toEqual(['catalog', 'item', slug, 'item-abc']);
+  it('itemQuery key is ["catalog","item",id]', () => {
+    expect(itemQuery('item-abc').queryKey).toEqual(['catalog', 'item', 'item-abc']);
   });
 
-  it('items loader prefetches both itemsQuery and categoriesQuery (distinct keys)', () => {
-    const itemsKey = itemsQuery(slug, { limit: 50, offset: 0 }).queryKey;
-    const catKey = categoriesQuery(slug).queryKey;
-    expect(itemsKey[0]).toBe('catalog');
-    expect(catKey[0]).toBe('catalog');
-    expect(itemsKey).not.toEqual(catKey);
+  // D-41: one session is bound to one organization, so a tenant discriminator in the key would be
+  // dead weight at best and a stale-cache trap at worst. Switching organizations reissues the session.
+  it('no key carries a tenant discriminator', () => {
+    const keys = [
+      categoriesQuery().queryKey,
+      itemsQuery({ limit: 50, offset: 0 }).queryKey,
+      stopListQuery('loc-1').queryKey,
+      draftDiffQuery().queryKey,
+      modifierGroupsQuery().queryKey,
+      itemQuery('item-abc').queryKey,
+    ];
+    for (const key of keys) {
+      expect(key.filter((part) => typeof part === 'string')).not.toContain('burger-barn');
+    }
   });
 
-  it('item detail loader prefetches categories + modifierGroups when id != "new"', () => {
-    const catKey = categoriesQuery(slug).queryKey;
-    const mgKey = modifierGroupsQuery(slug).queryKey;
-    const iKey = itemQuery(slug, 'some-id').queryKey;
-    expect(catKey).toEqual(['catalog', 'categories', slug]);
-    expect(mgKey).toEqual(['catalog', 'modifier-groups', slug]);
-    expect(iKey).toEqual(['catalog', 'item', slug, 'some-id']);
+  it('items and categories loaders prefetch distinct keys', () => {
+    expect(itemsQuery({ limit: 50, offset: 0 }).queryKey).not.toEqual(categoriesQuery().queryKey);
+  });
+
+  it('item detail loader prefetches three distinct keys', () => {
+    const keys = [
+      categoriesQuery().queryKey,
+      modifierGroupsQuery().queryKey,
+      itemQuery('some-id').queryKey,
+    ].map((k) => JSON.stringify(k));
+    expect(new Set(keys).size).toBe(3);
   });
 
   it('draftDiff staleTime is shorter than categories staleTime (draft-aware)', () => {
-    expect(draftDiffQuery(slug).staleTime).toBeLessThan(categoriesQuery(slug).staleTime);
+    expect(draftDiffQuery().staleTime).toBeLessThan(categoriesQuery().staleTime);
   });
 });
 
@@ -329,11 +337,7 @@ describe('dashboard TodaysWidget count from stopListQuery (Plan 07.6-05 Task 4)'
   });
 
   it('stopListQuery key prefix is "catalog" (confirms apiFetch routing)', () => {
-    const key = stopListQuery('my-brand', 'loc-1').queryKey;
-    expect(key[0]).toBe('catalog');
-    expect(key[1]).toBe('stop-list');
-    expect(key[2]).toBe('my-brand');
-    expect(key[3]).toBe('loc-1');
+    expect(stopListQuery('loc-1').queryKey).toEqual(['catalog', 'stop-list', 'loc-1']);
   });
 
   it('dashboard index maps stopListQuery result.data.items.length to widget count', () => {
