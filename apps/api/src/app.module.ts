@@ -47,13 +47,16 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
     // Correlation runs first so every later middleware (including the
     // tenant resolver's own DB query) is traceable via the same id.
-    consumer.apply(CorrelationMiddleware).forRoutes('*');
+    // Nest 11 moved to path-to-regexp v8, where a bare '*' no longer matches — the wildcard must be
+    // named. Getting this wrong is silent: the middleware simply never runs, and tenant binding
+    // disappears from every request.
+    consumer.apply(CorrelationMiddleware).forRoutes({ path: '*path', method: RequestMethod.ALL });
     consumer
       .apply(TenantContextMiddleware)
       .exclude(
         { path: 'healthz', method: RequestMethod.GET },
         { path: 'readyz', method: RequestMethod.GET },
       )
-      .forRoutes('*');
+      .forRoutes({ path: '*path', method: RequestMethod.ALL });
   }
 }
