@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { containsNonDelegatable } from '@resto/domain';
-import { PRESET_ROLES } from '../../../src/contexts/identity/application/preset-roles';
+import { PRESET_ROLES } from '@resto/domain';
 import { SeedPresetRolesService } from '../../../src/contexts/identity/application/seed-preset-roles.service';
 
 describe('PRESET_ROLES', () => {

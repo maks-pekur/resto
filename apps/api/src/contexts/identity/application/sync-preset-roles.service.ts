@@ -4,7 +4,7 @@ import { eq } from 'drizzle-orm';
 import { tenantRole as tenantRoleTable } from '@resto/db/schema';
 import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
 import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { PRESET_ROLES } from './preset-roles';
+import { PRESET_ROLES } from '@resto/domain';
 
 export interface SyncPresetRolesInput {
   readonly tenantId: string;
