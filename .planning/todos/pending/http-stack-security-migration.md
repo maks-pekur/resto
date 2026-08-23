@@ -4,10 +4,26 @@ date: 2026-08-23
 priority: high
 blocks: nothing yet
 blocked_by: nothing — this is schedulable work, and the longer it waits the further the gap grows
-status: pending
+status: done — Fastify 5 + NestJS 11 landed 2026-08-23; the other three majors remain
 ---
 
 # The API's HTTP stack has no security patches left
+
+> **Resolved 2026-08-23 for Fastify/NestJS.** `apps/api` now runs NestJS 11.2.1 and Fastify 5.12.1.
+> `@fastify/middie` has left the dependency tree entirely — the critical middleware auth bypass is
+> gone, along with the `fastify`, `find-my-way`, `@fastify/static`, `@nestjs/platform-fastify` and
+> `@nestjs/core` advisories. Audit 38 → 21. The three other majors below are still open.
+>
+> The one breaking change that bit: Nest 11 moved to path-to-regexp v8, where a bare `'*'` in
+> `forRoutes` no longer matches. It fails **silently** — the middleware simply never runs. Both
+> `CorrelationMiddleware` and `TenantContextMiddleware` were on `forRoutes('*')`, so the whole
+> tenant-binding layer would have quietly disappeared. Now `{ path: '*path', method: RequestMethod.ALL }`,
+> and verified live rather than by test: the host boundary still resolves and still refuses, and a
+> problem response still carries a correlationId.
+>
+> Also moved: `tools/scripts` was the last package pinning NestJS 10 and kept the whole 10.x tree
+> (and middie 8) alive after `apps/api` had moved. A stale `node_modules` hid that for one round —
+> the lockfile is the truth, not the installed folders.
 
 Found while clearing the dependency audit on 2026-08-23. The audit went from 109 advisories to 38;
 what remains is not a long tail of stragglers but four coupled migrations, and one of them matters
