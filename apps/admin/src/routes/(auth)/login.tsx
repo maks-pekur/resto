@@ -18,6 +18,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
+// A blanket "invalid email or password" hides the failure that is actually happening — a rejected
+// origin, a cookie the browser refused, a dead API — and sends the reader hunting for a password
+// problem that is not there. Only 401/403 is a credential verdict; everything else says so.
+const describeSignInError = (error: { status?: number; message?: string }): string => {
+  const status = error.status;
+  if (status === 401 || status === 403) return 'Invalid email or password.';
+  if (status === 429) return 'Too many attempts. Wait a minute and try again.';
+  if (status === undefined) {
+    return 'Could not reach the server. Check that the API is running and you are on the right host.';
+  }
+  return `Sign-in failed (${String(status)})${error.message ? `: ${error.message}` : ''}.`;
+};
+
 const LoginSchema = z.object({
   email: z.string().trim().toLowerCase().email(),
   password: z.string().min(1),
@@ -65,7 +78,7 @@ function LoginPage() {
     setError(null);
     const res = await authClient.signIn.email({ email: data.email, password: data.password });
     if (res.error) {
-      setError('Invalid email or password.');
+      setError(describeSignInError(res.error));
       return;
     }
 

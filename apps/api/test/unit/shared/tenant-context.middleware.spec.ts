@@ -72,7 +72,7 @@ const buildRepo = (): TenantRepository => ({
 
 const setup = (env: Env, repoOverride?: TenantRepository) => {
   const repo = repoOverride ?? buildRepo();
-  const resolver = new TenantResolverService(repo);
+  const resolver = new TenantResolverService(repo, env);
   const resolveBySlug = vi.spyOn(resolver, 'resolveBySlug');
   const resolveByHost = vi.spyOn(resolver, 'resolveByHost');
   const middleware = new TenantContextMiddleware(env, resolver);
@@ -237,9 +237,10 @@ describe('TenantContextMiddleware — x-tenant-id header (operator routes)', () 
     repo.findByDomainHost = vi.fn().mockResolvedValue(customerTenant);
     repo.findById = vi.fn().mockResolvedValue(null);
 
-    const resolver = new TenantResolverService(repo);
+    const prodEnv = baseEnv({ NODE_ENV: 'production' });
+    const resolver = new TenantResolverService(repo, prodEnv);
     const resolveById = vi.spyOn(resolver, 'resolveById');
-    const middleware = new TenantContextMiddleware(baseEnv({ NODE_ENV: 'production' }), resolver);
+    const middleware = new TenantContextMiddleware(prodEnv, resolver);
 
     let boundCtx: ReturnType<typeof getTenantContext>;
     next = vi.fn(() => {
