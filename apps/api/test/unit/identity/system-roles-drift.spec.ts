@@ -1,16 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 
-/**
- * AUTH-09 / D-16 drift-simulation spec.
- *
- * Mocks the access-control module to inject drifted role registrations
- * and asserts that `assertSystemRolesPresent` throws `SystemRoleDriftError`
- * with a diff that names the bad resource/action(s). Test 8 from the plan
- * (boot-time misconfiguration regression) is satisfied here at the unit
- * layer — the boot wiring in main.ts is one bare call, so the assertion's
- * throw IS the boot failure.
- */
-
 describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -28,28 +17,25 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
         statements: {
           menu: ['read', 'create', 'update', 'delete'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
+          ac: ['create', 'read', 'update', 'delete'],
         },
       },
       adminRole: {
-        // Drift: admin.menu missing 'delete' (regression scenario — a refactor
-        // silently weakens admin's menu authority).
         statements: {
           menu: ['read', 'create', 'update'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
           tenant: ['read'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      staffRole: { statements: { tenant: ['read'], brand: ['read'] } },
+      staffRole: { statements: { tenant: ['read'] } },
     }));
     const { assertSystemRolesPresent, SystemRoleDriftError } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -71,28 +57,25 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
         statements: {
           menu: ['read', 'create', 'update', 'delete'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
+          ac: ['create', 'read', 'update', 'delete'],
         },
       },
       adminRole: {
         statements: {
           menu: ['read', 'create', 'update', 'delete'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
-          // Drift: admin granted 'delete' on tenant — the exact escalation
-          // packages/domain/CLAUDE.md regression rule was written to catch.
           tenant: ['read', 'delete'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      staffRole: { statements: { tenant: ['read'], brand: ['read'] } },
+      staffRole: { statements: { tenant: ['read'] } },
     }));
     const { assertSystemRolesPresent, SystemRoleDriftError } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -108,27 +91,25 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
         statements: {
           menu: ['read', 'create', 'update', 'delete'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
           billing: ['read', 'update'],
           tenant: ['read', 'delete', 'transfer'],
-          brand: ['read', 'create', 'update', 'delete'],
+          ac: ['create', 'read', 'update', 'delete'],
         },
       },
       adminRole: {
         statements: {
           menu: ['read', 'create', 'update', 'delete'],
           order: ['read', 'update-status'],
-          staff: ['invite', 'remove', 'role:create', 'role:update'],
+          staff: ['invite', 'remove', 'roleCreate', 'roleUpdate'],
           reports: ['read'],
           settings: ['update'],
           tenant: ['read'],
-          brand: ['read', 'create', 'update', 'delete'],
         },
       },
-      // Drift: staff has an extra resource action.
-      staffRole: { statements: { tenant: ['read'], brand: ['read', 'create'] } },
+      staffRole: { statements: { tenant: ['read', 'create'] } },
     }));
     const { assertSystemRolesPresent } =
       await import('../../../src/bootstrap/assert-system-roles-present');
@@ -139,7 +120,7 @@ describe('AUTH-09 D-16: assertSystemRolesPresent drift detection', () => {
       captured = err as Error;
     }
     expect(captured).toBeDefined();
-    expect(captured?.message).toMatch(/staff\.brand/);
+    expect(captured?.message).toMatch(/staff\.tenant/);
     expect(captured?.message).toContain('refusing to start');
   });
 });

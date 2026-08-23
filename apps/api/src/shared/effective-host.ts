@@ -1,8 +1,8 @@
 /**
  * The host the request was addressed to. When the app sits behind a trusted
- * proxy (`TRUST_PROXY` configured), the original brand subdomain arrives in
+ * proxy (`TRUST_PROXY` configured), the original tenant subdomain arrives in
  * `x-forwarded-host` (the literal `Host` is the proxy/loopback). We honor it
- * ONLY when trustProxy is on, so an untrusted client cannot spoof a brand.
+ * ONLY when trustProxy is on, so an untrusted client cannot spoof a tenant.
  * `/v1/menu` is public, and authenticated routes still pass the AuthGuard
  * tenant-mismatch cross-check (RES-172), so this is safe under the gate.
  */

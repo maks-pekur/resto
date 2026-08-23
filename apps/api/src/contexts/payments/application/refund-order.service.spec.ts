@@ -7,7 +7,11 @@ import type { OrderRepository } from '../../ordering/domain/ports';
 import type { PaymentProviderPort } from '../domain/ports';
 import type { PaymentRepository } from '../domain/ports';
 import { RefundOrderService } from './refund-order.service';
-import { RefundReasonRequiredError, PaymentNotRefundableError } from '../domain/errors';
+import {
+  RefundReasonRequiredError,
+  PaymentNotRefundableError,
+  RefundProviderFailedError,
+} from '../domain/errors';
 import { RefundExceedsCapturedError } from '../../ordering/domain/errors';
 
 const TENANT_ID = TenantId.parse('00000000-0000-0000-0000-000000000001');
@@ -27,7 +31,7 @@ const makeOrder = (status: string, total = '20.00') =>
   Order.fromSnapshot({
     id: ORDER_ID,
     tenantId: TENANT_ID,
-    brandId: '00000000-0000-0000-0000-000000000003',
+    locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status: status as Parameters<typeof Order.fromSnapshot>[0]['status'],
@@ -44,6 +48,21 @@ const makeOrder = (status: string, total = '20.00') =>
     total,
     currency: Currency.parse('EUR'),
     scheduledFor: null,
+    shortNumber: 1,
+    channel: 'site' as const,
+    acceptedAt: null,
+    preparingAt: null,
+    readyAt: null,
+    completedAt: null,
+    canceledAt: null,
+    acceptedByUserId: null,
+    canceledByUserId: null,
+    cancelReason: null,
+    cancelNote: null,
+    canceledFromStatus: null,
+    etaAt: null,
+    marketingConsent: false,
+    marketingConsentAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -85,8 +104,11 @@ describe('RefundOrderService', () => {
       findByOrderId: vi.fn(),
       upsertByPaymentIntentId: vi.fn().mockResolvedValue(makePaymentRow()),
       findRefundByStripeId: vi.fn().mockResolvedValue(null),
+      findRefundByRequestId: vi.fn().mockResolvedValue(null),
       upsertRefund: vi.fn().mockResolvedValue({ id: 'refund-row-1' }),
-      updateRefundStatus: vi.fn().mockResolvedValue(undefined),
+      updateRefundOutcome: vi.fn().mockResolvedValue(undefined),
+      updateRefundStatusByStripeId: vi.fn().mockResolvedValue(undefined),
+      findFailedRefundsForOrders: vi.fn().mockResolvedValue([]),
     };
 
     provider = {
@@ -134,12 +156,12 @@ describe('RefundOrderService', () => {
     ).rejects.toBeInstanceOf(RefundReasonRequiredError);
   });
 
-  it('rejects refund on non-paid order', async () => {
+  it('does not gate on order status — succeeds when order is created but a captured payment row exists (10-03 / RESEARCH.md C.9)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow());
     await expect(
       service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'test' }),
-    ).rejects.toBeDefined();
+    ).resolves.toBeDefined();
   });
 
   it('rejects refund with no payment row', async () => {
@@ -174,10 +196,17 @@ describe('RefundOrderService', () => {
       expect.objectContaining({
         tenantId: TENANT_ID,
         paymentId: PAYMENT_ID,
-        stripeRefundId: 're_test_123',
+        stripeRefundId: null,
         reason: 'item out of stock',
-        status: 'succeeded',
+        status: 'pending',
+        refundRequestId: expect.stringContaining('refund:'),
       }),
+      expect.anything(),
+    );
+    expect(paymentRepo.updateRefundOutcome).toHaveBeenCalledWith(
+      TENANT_ID,
+      expect.stringContaining('refund:'),
+      expect.objectContaining({ status: 'succeeded', stripeRefundId: 're_test_123' }),
       expect.anything(),
     );
     expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
@@ -186,11 +215,13 @@ describe('RefundOrderService', () => {
       }),
       expect.anything(),
     );
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('paid');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
-  it('full refund transitions order to refunded', async () => {
+  it('full refund keeps order status unchanged — money-completeness lives on payments.status, not orders.status (10-03 / T-10-03-01)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
@@ -201,8 +232,10 @@ describe('RefundOrderService', () => {
       reason: 'full refund',
     });
 
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
-    expect(savedOrder.toSnapshot().status).toBe('refunded');
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+    expect(savedOrder.toSnapshot().status).toBe('paid');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('BUG-6 (a): full refund flips payment status to refunded (not left as succeeded)', async () => {
@@ -240,7 +273,7 @@ describe('RefundOrderService', () => {
     );
   });
 
-  it('second refund completing the total transitions order to refunded', async () => {
+  it('second refund completing the total keeps order status unchanged (10-03 / T-10-03-01)', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('15.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
@@ -252,8 +285,10 @@ describe('RefundOrderService', () => {
       reason: 'remaining refund',
     });
 
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
-    expect(savedOrder.toSnapshot().status).toBe('refunded');
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+    expect(savedOrder.toSnapshot().status).toBe('paid');
+    expect(orderRepo.update).toHaveBeenCalledWith(expect.anything(), expect.anything());
+    expect(orderRepo.save).not.toHaveBeenCalled();
   });
 
   it('over-refund throws RefundExceedsCapturedError', async () => {
@@ -285,7 +320,7 @@ describe('RefundOrderService', () => {
 
     const key1 = provider.createRefund.mock.calls[0]?.[0].refundRequestId as string;
 
-    orderRepo.save.mockClear();
+    orderRepo.update.mockClear();
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
 
@@ -298,5 +333,55 @@ describe('RefundOrderService', () => {
 
     const key2 = provider.createRefund.mock.calls[1]?.[0].refundRequestId as string;
     expect(key1).toBe(key2);
+  });
+
+  it('provider failure records a failed outcome and rethrows RefundProviderFailedError (D-11)', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+    provider.createRefund.mockRejectedValue(new Error('stripe unavailable'));
+
+    await expect(
+      service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'test' }),
+    ).rejects.toBeInstanceOf(RefundProviderFailedError);
+
+    expect(paymentRepo.updateRefundOutcome).toHaveBeenCalledWith(
+      TENANT_ID,
+      expect.stringContaining('refund:'),
+      expect.objectContaining({ status: 'failed', failureReason: 'stripe unavailable' }),
+      expect.anything(),
+    );
+    expect(orderRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('short-circuits without calling Stripe when a succeeded refund already exists for this exact request', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+    paymentRepo.findRefundByRequestId.mockResolvedValue({
+      id: 'refund-row-existing',
+      tenantId: TENANT_ID,
+      paymentId: PAYMENT_ID,
+      stripeRefundId: 're_already_done',
+      refundRequestId: 'refund:whatever',
+      amount: '20.00',
+      reason: 'test',
+      status: 'succeeded',
+      failureReason: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reason: 'test',
+    });
+
+    expect(provider.createRefund).not.toHaveBeenCalled();
+    expect(paymentRepo.upsertRefund).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      stripeRefundId: 're_already_done',
+      amountMinor: 2000,
+      fullyRefunded: true,
+    });
   });
 });

@@ -1,12 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { requireBrandContext, requireTenantContext } from '@resto/db';
+import { requireTenantContext, schema, TenantAwareDb, withLocation } from '@resto/db';
 import { Currency, TenantId } from '@resto/domain';
+import { eq } from 'drizzle-orm';
+import { DefaultLocationResolverService } from '../../catalog/application/default-location-resolver.service';
 import {
   MENU_PRICING_PORT,
   ORDER_REPOSITORY,
+  ORDER_SEQUENCE_PORT,
   type MenuPricingPort,
   type PricedMenuItem,
   type OrderRepository,
+  type OrderSequencePort,
 } from '../domain/ports';
 import {
   OrderItemNotOrderableError,
@@ -24,14 +28,23 @@ export class CreateOrderService {
   constructor(
     @Inject(ORDER_REPOSITORY) private readonly repo: OrderRepository,
     @Inject(MENU_PRICING_PORT) private readonly pricing: MenuPricingPort,
+    @Inject(ORDER_SEQUENCE_PORT) private readonly orderSequence: OrderSequencePort,
+    @Inject(DefaultLocationResolverService)
+    private readonly defaultLocation: DefaultLocationResolverService,
+    @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
   ) {}
 
   async execute(input: CreateOrderInput): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const brandId = requireBrandContext();
+    const locationId = await this.defaultLocation.resolveForTenant(tenantId);
 
-    const snapshot = await this.pricing.loadSnapshot(tenantId, brandId);
+    const existingOrder = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
+    if (existingOrder) {
+      return toOrderResponse(existingOrder.toSnapshot());
+    }
+
+    const snapshot = await this.pricing.loadSnapshot(tenantId);
     const currency = Currency.parse(snapshot.currency);
     const itemsById = new Map(snapshot.items.map((i) => [i.itemId, i]));
     const groupsById = new Map(snapshot.modifierGroups.map((g) => [g.groupId, g]));
@@ -109,9 +122,16 @@ export class CreateOrderService {
       };
     });
 
+    const businessDate = await this.resolveBusinessDate(locationId);
+    const shortNumber = await this.orderSequence.nextShortNumber({
+      tenantId,
+      locationId,
+      businessDate,
+    });
+
     const order = Order.create({
       tenantId,
-      brandId,
+      locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber,
       fulfillmentMode: input.fulfillmentMode,
@@ -123,20 +143,17 @@ export class CreateOrderService {
       currency,
       discountSpec: null,
       scheduledFor: input.scheduledFor ? new Date(input.scheduledFor) : null,
+      shortNumber,
+      channel: input.channel,
+      marketingConsent: input.marketingConsent,
     });
 
-    await this.repo.save(order);
+    await withLocation(locationId, () => this.repo.save(order));
 
     const existing = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     const snap = existing?.toSnapshot() ?? order.toSnapshot();
 
-    return {
-      orderId: snap.id,
-      orderNumber: snap.orderNumber,
-      status: snap.status,
-      total: snap.total,
-      currency: snap.currency,
-    };
+    return toOrderResponse(snap);
   }
 
   private resolveUnitPrice(item: PricedMenuItem, sizeId: string | null): string {
@@ -149,4 +166,47 @@ export class CreateOrderService {
     }
     return size.price;
   }
+
+  private async resolveBusinessDate(locationId: string): Promise<string> {
+    const rows = await this.db.withTenant(async (_tx, scoped) =>
+      scoped.selectFrom(schema.locations, eq(schema.locations.id, locationId)).limit(1),
+    );
+    const timeZone = rows[0]?.timezone ?? 'UTC';
+
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(new Date());
+    const year = parts.find((p) => p.type === 'year')?.value;
+    const month = parts.find((p) => p.type === 'month')?.value;
+    const day = parts.find((p) => p.type === 'day')?.value;
+    if (!year || !month || !day) {
+      throw new Error(
+        `resolveBusinessDate: could not format a business date for timeZone=${timeZone}.`,
+      );
+    }
+    return `${year}-${month}-${day}`;
+  }
+}
+
+function toOrderResponse(snap: {
+  id: string;
+  orderNumber: string;
+  status: string;
+  total: string;
+  currency: string;
+  shortNumber: number;
+  channel: 'site' | 'qr-menu';
+}): OrderResponse {
+  return {
+    orderId: snap.id,
+    orderNumber: snap.orderNumber,
+    status: snap.status,
+    total: snap.total,
+    currency: snap.currency,
+    shortNumber: snap.shortNumber,
+    channel: snap.channel,
+  };
 }

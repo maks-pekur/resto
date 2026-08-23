@@ -9,7 +9,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
  */
 export interface TenantContext {
   readonly tenantId: string;
-  readonly brandId?: string;
+  readonly locationId?: string;
   /**
    * Optional correlation id propagated end-to-end (HTTP middleware → DB
    * → outbox → events). Mirrors OpenTelemetry baggage; populated on
@@ -34,9 +34,9 @@ export const runInTenantContext = <T>(context: TenantContext, op: () => Promise<
       new Error(`Invalid tenant id: expected a uuid, got ${JSON.stringify(context.tenantId)}.`),
     );
   }
-  if (context.brandId !== undefined && !isUuid(context.brandId)) {
+  if (context.locationId !== undefined && !isUuid(context.locationId)) {
     return Promise.reject(
-      new Error(`Invalid brand id: expected a uuid, got ${JSON.stringify(context.brandId)}.`),
+      new Error(`Invalid location id: expected a uuid, got ${JSON.stringify(context.locationId)}.`),
     );
   }
   return storage.run(context, op);
@@ -68,30 +68,32 @@ export const requireTenantContext = (): TenantContext => {
   return ctx;
 };
 
-export const getBrandId = (): string | undefined => storage.getStore()?.brandId;
+export const getLocationId = (): string | undefined => storage.getStore()?.locationId;
 
-export const withBrand = <T>(brandId: string, op: () => Promise<T>): Promise<T> => {
-  if (!isUuid(brandId)) {
+export const withLocation = <T>(locationId: string, op: () => Promise<T>): Promise<T> => {
+  if (!isUuid(locationId)) {
     return Promise.reject(
-      new Error(`Invalid brand id: expected a uuid, got ${JSON.stringify(brandId)}.`),
+      new Error(`Invalid location id: expected a uuid, got ${JSON.stringify(locationId)}.`),
     );
   }
   const parent = storage.getStore();
   if (parent === undefined) {
     return Promise.reject(
-      new Error('withBrand requires a parent tenant context. Wrap in runInTenantContext() first.'),
+      new Error(
+        'withLocation requires a parent tenant context. Wrap in runInTenantContext() first.',
+      ),
     );
   }
-  return storage.run({ ...parent, brandId }, op);
+  return storage.run({ ...parent, locationId }, op);
 };
 
-export const requireBrandContext = (): string => {
-  const brandId = storage.getStore()?.brandId;
-  if (brandId === undefined) {
+export const requireLocationContext = (): string => {
+  const locationId = storage.getStore()?.locationId;
+  if (locationId === undefined) {
     throw new Error(
-      'No brand context bound. Wrap the call in a request that resolves a brand ' +
-        '(via TenantContextMiddleware) or use withBrand(brandId, op) explicitly.',
+      'No location context bound. Wrap the call in a request that resolves a location ' +
+        '(via TenantContextMiddleware) or use withLocation(locationId, op) explicitly.',
     );
   }
-  return brandId;
+  return locationId;
 };

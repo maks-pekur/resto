@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
-import { PublishMenuService } from '../../../src/contexts/catalog/application/publish-menu.service';
+import { PublishMenuService } from '../../../src/contexts/catalog/application/publishing/publish-menu.service';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';
@@ -27,6 +27,7 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     getModifierGroupById: vi.fn(),
     listStopListWithStoppedAt: vi.fn(),
     listStoppedItemIds: vi.fn(),
+    listStopListAggregateAcrossLocations: vi.fn(),
     computeDraftDiff: vi.fn(),
     archiveCategory: vi.fn(),
     archiveItem: vi.fn(),

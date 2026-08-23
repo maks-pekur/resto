@@ -303,35 +303,9 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
-  /v1/tenancy/stripe-onboarding:
+  /v1/tenancy/onboarding/account-session:
     post:
-      operationId: StripeOnboardingController_startOnboarding
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/OnboardingResponseDto"
-      tags:
-        - tenancy
-  /v1/tenancy/stripe-status:
-    get:
-      operationId: StripeOnboardingController_getStripeStatus
-      parameters: []
-      responses:
-        "200":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/StripeStatusResponseDto"
-      tags:
-        - tenancy
-  /v1/tenancy/brands/{slug}/onboarding/account-session:
-    post:
-      operationId: BrandOnboardingController_createAccountSession
+      operationId: TenantOnboardingController_createAccountSession
       parameters: []
       responses:
         "200":
@@ -342,9 +316,9 @@ paths:
                 $ref: "#/components/schemas/AccountSessionResponseDto"
       tags:
         - tenancy
-  /v1/tenancy/brands/{slug}/onboarding/account-link:
+  /v1/tenancy/onboarding/account-link:
     post:
-      operationId: BrandOnboardingController_createAccountLink
+      operationId: TenantOnboardingController_createAccountLink
       parameters: []
       responses:
         "200":
@@ -355,9 +329,9 @@ paths:
                 $ref: "#/components/schemas/AccountLinkResponseDto"
       tags:
         - tenancy
-  /v1/tenancy/brands/{slug}/onboarding/status:
+  /v1/tenancy/onboarding/status:
     get:
-      operationId: BrandOnboardingController_getStatus
+      operationId: TenantOnboardingController_getStatus
       parameters: []
       responses:
         "200":
@@ -368,9 +342,9 @@ paths:
                 $ref: "#/components/schemas/OnboardingStatusResponseDto"
       tags:
         - tenancy
-  /v1/tenancy/brands/{slug}/onboarding/oauth/start:
+  /v1/tenancy/onboarding/oauth/start:
     get:
-      operationId: BrandOnboardingController_startOAuth
+      operationId: TenantOnboardingController_startOAuth
       parameters: []
       responses:
         "200":
@@ -383,11 +357,81 @@ paths:
         - tenancy
   /v1/tenancy/onboarding/oauth/callback:
     get:
-      operationId: BrandOAuthCallbackController_handleOAuthCallback
+      operationId: TenantOAuthCallbackController_handleOAuthCallback
       parameters: []
       responses:
         "200":
           description: ""
+      tags:
+        - tenancy
+  /v1/tenancy/locations:
+    post:
+      operationId: LocationsController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLocationInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+    get:
+      operationId: LocationsController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/locations/{id}/archive:
+    patch:
+      operationId: LocationsController_archive
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveLocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
   /v1/me:
@@ -399,9 +443,9 @@ paths:
           description: ""
       tags:
         - identity
-  /v1/me/brands:
+  /v1/me/tenants:
     get:
-      operationId: MeBrandsController_getBrands
+      operationId: MeTenantsController_getTenants
       parameters: []
       responses:
         "200":
@@ -409,7 +453,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/MeBrandsResponseDto"
+                $ref: "#/components/schemas/MeTenantsResponseDto"
         "403":
           description: ""
           content:
@@ -418,39 +462,9 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - identity
-    post:
-      operationId: MeBrandsController_createBrand
-      parameters: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateBrandInputDto"
-      responses:
-        "201":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MeBrandDto"
-        "403":
-          description: ""
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-        "409":
-          description: brand slug taken globally
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProblemDetailsDto"
-      tags:
-        - identity
-  /v1/me/brands/slug-availability:
+  /v1/me/tenants/slug-availability:
     get:
-      operationId: MeBrandsController_slugAvailability
+      operationId: MeTenantsController_slugAvailability
       parameters:
         - name: slug
           required: true
@@ -464,6 +478,69 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SlugAvailabilityResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - identity
+  /v1/me/tenants/onboarding:
+    post:
+      operationId: MeTenantsController_finalizeOnboarding
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinalizeTenantSetupInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - identity
+  /v1/me/set-active-location:
+    post:
+      operationId: SetActiveLocationController_setActiveLocation
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetActiveLocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - identity
+  /v1/me/locations:
+    get:
+      operationId: SetActiveLocationController_listPinnableLocations
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListPinnableLocationsResponseDto"
         "403":
           description: ""
           content:
@@ -538,6 +615,92 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - identity
+  /v1/roles:
+    post:
+      operationId: RolesController_createRoleHandler
+      parameters: []
+      responses:
+        "201":
+          description: ""
+      tags:
+        - identity
+    get:
+      operationId: RolesController_listRolesHandler
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+  /v1/roles/{roleSlug}:
+    put:
+      operationId: RolesController_updateRoleHandler
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+    delete:
+      operationId: RolesController_archiveRoleHandler
+      parameters: []
+      responses:
+        "204":
+          description: ""
+      tags:
+        - identity
+    get:
+      operationId: RolesController_getRoleHandler
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+  /v1/roles/{roleSlug}/assign:
+    post:
+      operationId: MemberRolesController_assignRole
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+  /v1/roles/members:
+    get:
+      operationId: MemberRolesController_listMembers
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+  /v1/members/{memberId}/location-roles:
+    get:
+      operationId: MemberLocationRolesController_listLocationRoles
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+    post:
+      operationId: MemberLocationRolesController_assignLocationRole
+      parameters: []
+      responses:
+        "200":
+          description: ""
+      tags:
+        - identity
+  /v1/members/{memberId}/location-roles/{locationId}:
+    delete:
+      operationId: MemberLocationRolesController_removeLocationRole
+      parameters: []
+      responses:
+        "204":
+          description: ""
       tags:
         - identity
   /v1/menu/availability:
@@ -1008,6 +1171,25 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - catalog
+  /v1/catalog/stop-list/aggregate:
+    get:
+      operationId: CatalogController_stopListAggregate
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregateStopListResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - catalog
   /v1/catalog/draft-diff:
     get:
       operationId: CatalogController_getDraftDiff
@@ -1059,6 +1241,70 @@ paths:
                 $ref: "#/components/schemas/OrderStatusResponseDto"
       tags:
         - ordering
+  /v1/orders/feed:
+    get:
+      operationId: OperatorOrdersController_feed
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderFeedListResponseDto"
+      tags:
+        - ordering
+  /v1/orders/{id}/detail:
+    get:
+      operationId: OperatorOrdersController_detail
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetailResponseDto"
+      tags:
+        - ordering
+  /v1/orders/{id}/accept:
+    post:
+      operationId: OperatorOrdersController_accept
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptOrderInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSnapshotResponseDto"
+      tags:
+        - ordering
+  /v1/orders/{id}/advance:
+    post:
+      operationId: OperatorOrdersController_advance
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdvanceOrderStatusInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderSnapshotResponseDto"
+      tags:
+        - ordering
   /webhook/stripe:
     post:
       operationId: StripeWebhookController_handleWebhook
@@ -1102,6 +1348,38 @@ paths:
           description: ""
       tags:
         - orders
+  /v1/orders/{orderId}/cancel:
+    post:
+      operationId: OrderCancelController_cancel
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CancelOrderInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CancelOrderResponseDto"
+      tags:
+        - orders
+  /v1/orders/{orderId}/refund/retry:
+    post:
+      operationId: OrderCancelController_retry
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RetryRefundResponseDto"
+      tags:
+        - orders
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.
@@ -1126,17 +1404,24 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        country:
+          type: string
+          enum:
+            - UA
+            - GB
+            - ES
         locale:
           type: string
           pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
-          default: en
-        defaultCurrency:
+        status:
           type: string
-          pattern: ^[A-Z]{3}$
+          enum:
+            - pending_setup
+            - active
       required:
         - slug
         - displayName
-        - defaultCurrency
+        - country
     TenantResponseDto:
       type: object
       properties:
@@ -1145,14 +1430,83 @@ components:
           format: uuid
         slug:
           type: string
+          pattern: ^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$
         displayName:
           type: string
         status:
           type: string
         locale:
           type: string
+        country:
+          type: string
+          enum:
+            - UA
+            - GB
+            - ES
         defaultCurrency:
           type: string
+          pattern: ^[A-Z]{3}$
+        theme:
+          type: object
+          properties:
+            logoUrl:
+              type: string
+              format: uri
+              nullable: true
+              default: null
+            primaryColor:
+              type: string
+              pattern: ^#[0-9A-Fa-f]{6}$
+              nullable: true
+              default: null
+            font:
+              type: string
+              minLength: 1
+              maxLength: 64
+              nullable: true
+              default: null
+          nullable: true
+        legalName:
+          type: string
+          nullable: true
+        legalForm:
+          type: string
+          enum:
+            - IP
+            - OOO
+            - LLC
+            - SOLE_PROP
+            - OTHER
+          nullable: true
+        taxId:
+          type: string
+          nullable: true
+        paymentProvider:
+          type: string
+          enum:
+            - stripe
+        accountType:
+          type: string
+          enum:
+            - express
+            - standard
+          nullable: true
+        stripeChargesEnabled:
+          type: boolean
+        stripePayoutsEnabled:
+          type: boolean
+        stripeOnboardingStatus:
+          type: string
+          enum:
+            - not_started
+            - pending
+            - complete
+            - restricted
+        stripeRequirementsDue:
+          type: array
+          items:
+            type: string
+          nullable: true
         primaryDomain:
           type: string
         createdAt:
@@ -1177,7 +1531,18 @@ components:
         - displayName
         - status
         - locale
+        - country
         - defaultCurrency
+        - theme
+        - legalName
+        - legalForm
+        - taxId
+        - paymentProvider
+        - accountType
+        - stripeChargesEnabled
+        - stripePayoutsEnabled
+        - stripeOnboardingStatus
+        - stripeRequirementsDue
         - primaryDomain
         - createdAt
         - updatedAt
@@ -1249,41 +1614,6 @@ components:
         - kind
         - isPrimary
         - verifiedAt
-    OnboardingResponseDto:
-      type: object
-      properties:
-        onboardingUrl:
-          type: string
-          format: uri
-      required:
-        - onboardingUrl
-    StripeStatusResponseDto:
-      type: object
-      properties:
-        onboardingStatus:
-          type: string
-          enum:
-            - not_started
-            - pending
-            - complete
-            - restricted
-        chargesEnabled:
-          type: boolean
-        payoutsEnabled:
-          type: boolean
-        canAcceptPayments:
-          type: boolean
-        requirementsDue:
-          type: array
-          items:
-            type: string
-          nullable: true
-      required:
-        - onboardingStatus
-        - chargesEnabled
-        - payoutsEnabled
-        - canAcceptPayments
-        - requirementsDue
     AccountSessionResponseDto:
       type: object
       properties:
@@ -1341,10 +1671,100 @@ components:
           format: uri
       required:
         - authorizeUrl
-    MeBrandsResponseDto:
+    CreateLocationInputDto:
       type: object
       properties:
-        brands:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+          default: null
+        timezone:
+          type: string
+          maxLength: 64
+          pattern: ^[A-Za-z_]+\/[A-Za-z_]+$
+          nullable: true
+          default: null
+        contacts:
+          type: object
+          properties:
+            phone:
+              type: string
+              maxLength: 32
+            email:
+              type: string
+              format: email
+              maxLength: 255
+          nullable: true
+          default: null
+      required:
+        - name
+        - contacts
+    LocationResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        address:
+          type: string
+          nullable: true
+        timezone:
+          type: string
+          nullable: true
+        contacts:
+          type: object
+          properties:
+            phone:
+              type: string
+              maxLength: 32
+            email:
+              type: string
+              format: email
+              maxLength: 255
+          nullable: true
+        status:
+          type: string
+          enum:
+            - active
+            - archived
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+          nullable: true
+      required:
+        - id
+        - name
+        - address
+        - timezone
+        - contacts
+        - status
+        - createdAt
+        - updatedAt
+        - archivedAt
+    ArchiveLocationResponseDto:
+      type: object
+      properties:
+        scopedMemberCount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - scopedMemberCount
+    MeTenantsResponseDto:
+      type: object
+      properties:
+        tenants:
           type: array
           items:
             type: object
@@ -1356,43 +1776,15 @@ components:
                 type: string
               displayName:
                 type: string
+              status:
+                type: string
             required:
               - id
               - slug
               - displayName
-        canViewAllBrands:
-          type: boolean
+              - status
       required:
-        - brands
-        - canViewAllBrands
-    CreateBrandInputDto:
-      type: object
-      properties:
-        slug:
-          type: string
-          minLength: 3
-          maxLength: 64
-        displayName:
-          type: string
-          minLength: 1
-          maxLength: 120
-      required:
-        - slug
-        - displayName
-    MeBrandDto:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        slug:
-          type: string
-        displayName:
-          type: string
-      required:
-        - id
-        - slug
-        - displayName
+        - tenants
     SlugAvailabilityResponseDto:
       type: object
       properties:
@@ -1404,6 +1796,61 @@ components:
       required:
         - available
         - suggestion
+    FinalizeTenantSetupInputDto:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+        - displayName
+    OnboardingResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+        displayName:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+      required:
+        - id
+        - slug
+        - displayName
+        - status
+    SetActiveLocationResponseDto:
+      type: object
+      properties:
+        locationId:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+        - locationId
+    ListPinnableLocationsResponseDto:
+      type: object
+      properties:
+        locations:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              name:
+                type: string
+            required:
+              - id
+              - name
+      required:
+        - locations
     BootstrapOwnerInputDto:
       type: object
       properties:
@@ -1430,9 +1877,6 @@ components:
           format: uuid
         userId:
           type: string
-        organizationId:
-          type: string
-          format: uuid
         email:
           type: string
           format: email
@@ -1441,12 +1885,15 @@ components:
       required:
         - tenantId
         - userId
-        - organizationId
         - email
         - requiresPasswordChange
     SignUpInputDto:
       type: object
       properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
         email:
           type: string
           format: email
@@ -1454,22 +1901,17 @@ components:
           type: string
           minLength: 12
           maxLength: 128
-        displayName:
+        country:
           type: string
-          minLength: 2
-          maxLength: 120
-        defaultCurrency:
-          type: string
-          pattern: ^[A-Z]{3}$
-        locale:
-          type: string
-          pattern: ^[a-z]{2}(?:-[A-Z]{2})?$
-          default: en
+          enum:
+            - UA
+            - GB
+            - ES
       required:
+        - name
         - email
         - password
-        - displayName
-        - defaultCurrency
+        - country
     SignUpResponseDto:
       type: object
       properties:
@@ -1502,40 +1944,6 @@ components:
         currency:
           type: string
           pattern: ^[A-Z]{3}$
-        brand:
-          type: object
-          properties:
-            id:
-              type: string
-              format: uuid
-            slug:
-              type: string
-            displayName:
-              type: string
-            theme:
-              type: object
-              properties:
-                logoUrl:
-                  type: string
-                  format: uri
-                  nullable: true
-                primaryColor:
-                  type: string
-                  nullable: true
-                font:
-                  type: string
-                  nullable: true
-              required:
-                - logoUrl
-                - primaryColor
-                - font
-              nullable: true
-          required:
-            - id
-            - slug
-            - displayName
-            - theme
-          nullable: true
         categories:
           type: array
           items:
@@ -1797,7 +2205,6 @@ components:
         - tenantId
         - version
         - currency
-        - brand
         - categories
         - items
         - modifierGroups
@@ -2857,6 +3264,54 @@ components:
               - reason
       required:
         - items
+    AggregateStopListResponseDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              itemId:
+                type: string
+                format: uuid
+              itemName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              categoryName:
+                type: object
+                additionalProperties:
+                  type: string
+                  minLength: 1
+                nullable: true
+              stoppedLocationCount:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: false
+              lastStoppedAt:
+                type: string
+                format: date-time
+            required:
+              - itemId
+              - itemName
+              - categoryName
+              - stoppedLocationCount
+              - lastStoppedAt
+        totalActiveLocations:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        totalStoppedItems:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - items
+        - totalActiveLocations
+        - totalStoppedItems
     DraftDiffResponseDto:
       type: object
       properties:
@@ -2976,6 +3431,15 @@ components:
         scheduledFor:
           type: string
           format: date-time
+        channel:
+          type: string
+          enum:
+            - site
+            - qr-menu
+          default: site
+        marketingConsent:
+          type: boolean
+          default: false
       required:
         - items
         - fulfillmentMode
@@ -2997,32 +3461,626 @@ components:
         currency:
           type: string
           pattern: ^[A-Z]{3}$
+        shortNumber:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        channel:
+          type: string
+          enum:
+            - site
+            - qr-menu
       required:
         - orderId
         - orderNumber
         - status
         - total
         - currency
+        - shortNumber
+        - channel
     OrderStatusResponseDto:
       type: object
       properties:
         status:
           type: string
+        shortNumber:
+          type: integer
+          nullable: true
+        orderNumber:
+          type: string
         total:
           type: string
         currency:
           type: string
-        orderNumber:
-          type: string
-        eta:
+        etaAt:
           type: string
           format: date-time
           nullable: true
+        fulfillmentMode:
+          type: string
+          enum:
+            - dine_in
+            - pickup
+            - delivery
+        cancelReason:
+          type: string
+          nullable: true
+        canceledFromStatus:
+          type: string
+          nullable: true
       required:
         - status
+        - shortNumber
+        - orderNumber
         - total
         - currency
+        - etaAt
+        - fulfillmentMode
+        - cancelReason
+        - canceledFromStatus
+    OrderFeedListResponseDto:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              shortNumber:
+                type: integer
+              status:
+                type: string
+                enum:
+                  - created
+                  - requires_action
+                  - paid
+                  - accepted
+                  - preparing
+                  - ready
+                  - completed
+                  - canceled
+                  - refunded
+                  - failed
+              locationId:
+                type: string
+                format: uuid
+              locationName:
+                type: string
+              fulfillmentMode:
+                type: string
+                enum:
+                  - dine_in
+                  - pickup
+                  - delivery
+              tableIdentifier:
+                type: string
+                nullable: true
+              total:
+                type: string
+              currency:
+                type: string
+              itemCount:
+                type: integer
+              channel:
+                type: string
+                enum:
+                  - site
+                  - qr-menu
+              createdAt:
+                type: string
+              acceptedAt:
+                type: string
+                nullable: true
+              preparingAt:
+                type: string
+                nullable: true
+              readyAt:
+                type: string
+                nullable: true
+              completedAt:
+                type: string
+                nullable: true
+              canceledAt:
+                type: string
+                nullable: true
+              etaAt:
+                type: string
+                nullable: true
+              cancelReason:
+                type: string
+                nullable: true
+              canceledFromStatus:
+                type: string
+                nullable: true
+              hasFailedRefund:
+                type: boolean
+            required:
+              - id
+              - shortNumber
+              - status
+              - locationId
+              - locationName
+              - fulfillmentMode
+              - tableIdentifier
+              - total
+              - currency
+              - itemCount
+              - channel
+              - createdAt
+              - acceptedAt
+              - preparingAt
+              - readyAt
+              - completedAt
+              - canceledAt
+              - etaAt
+              - cancelReason
+              - canceledFromStatus
+              - hasFailedRefund
+        total:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        limit:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        offset:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - rows
+        - total
+        - limit
+        - offset
+    OrderDetailResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        locationId:
+          type: string
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum:
+            - created
+            - requires_action
+            - paid
+            - accepted
+            - preparing
+            - ready
+            - completed
+            - canceled
+            - refunded
+            - failed
+        fulfillmentMode:
+          type: string
+          enum:
+            - dine_in
+            - pickup
+            - delivery
+        tableIdentifier:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        customerPhone:
+          type: string
+          nullable: true
+        customerEmail:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              menuItemId:
+                type: string
+              nameSnapshot:
+                type: string
+              unitPrice:
+                type: string
+              currency:
+                type: string
+              modifiers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    optionId:
+                      type: string
+                    nameSnapshot:
+                      type: string
+                    priceDelta:
+                      type: string
+                    amount:
+                      type: integer
+                    modifierGroupId:
+                      type: string
+                      nullable: true
+                  required:
+                    - optionId
+                    - nameSnapshot
+                    - priceDelta
+                    - amount
+                    - modifierGroupId
+              quantity:
+                type: integer
+              lineTotal:
+                type: string
+              categoryId:
+                type: string
+            required:
+              - id
+              - menuItemId
+              - nameSnapshot
+              - unitPrice
+              - currency
+              - modifiers
+              - quantity
+              - lineTotal
+              - categoryId
+        subtotal:
+          type: string
+        deliveryFee:
+          type: string
+        serviceFee:
+          type: string
+        discount:
+          type: string
+        total:
+          type: string
+        currency:
+          type: string
+        scheduledFor:
+          type: string
+          nullable: true
+        shortNumber:
+          type: integer
+        channel:
+          type: string
+          enum:
+            - site
+            - qr-menu
+        acceptedAt:
+          type: string
+          nullable: true
+        preparingAt:
+          type: string
+          nullable: true
+        readyAt:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          nullable: true
+        canceledAt:
+          type: string
+          nullable: true
+        acceptedByUserId:
+          type: string
+          nullable: true
+        canceledByUserId:
+          type: string
+          nullable: true
+        cancelReason:
+          type: string
+          nullable: true
+        cancelNote:
+          type: string
+          nullable: true
+        canceledFromStatus:
+          type: string
+          enum:
+            - created
+            - requires_action
+            - paid
+            - accepted
+            - preparing
+            - ready
+            - completed
+            - canceled
+            - refunded
+            - failed
+          nullable: true
+        etaAt:
+          type: string
+          nullable: true
+        marketingConsent:
+          type: boolean
+        marketingConsentAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        hasFailedRefund:
+          type: boolean
+        failedRefundAmount:
+          type: string
+          nullable: true
+        failedRefundReason:
+          type: string
+          nullable: true
+      required:
+        - id
+        - tenantId
+        - locationId
         - orderNumber
+        - status
+        - fulfillmentMode
+        - tableIdentifier
+        - customerName
+        - customerPhone
+        - customerEmail
+        - items
+        - subtotal
+        - deliveryFee
+        - serviceFee
+        - discount
+        - total
+        - currency
+        - scheduledFor
+        - shortNumber
+        - channel
+        - acceptedAt
+        - preparingAt
+        - readyAt
+        - completedAt
+        - canceledAt
+        - acceptedByUserId
+        - canceledByUserId
+        - cancelReason
+        - cancelNote
+        - canceledFromStatus
+        - etaAt
+        - marketingConsent
+        - marketingConsentAt
+        - createdAt
+        - updatedAt
+        - hasFailedRefund
+        - failedRefundAmount
+        - failedRefundReason
+    AcceptOrderInputDto:
+      type: object
+      properties:
+        prepMinutes:
+          type: integer
+          minimum: 5
+          exclusiveMinimum: false
+          maximum: 180
+          exclusiveMaximum: false
+      required:
+        - prepMinutes
+    OrderSnapshotResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+        tenantId:
+          type: string
+        locationId:
+          type: string
+        orderNumber:
+          type: string
+        status:
+          type: string
+          enum:
+            - created
+            - requires_action
+            - paid
+            - accepted
+            - preparing
+            - ready
+            - completed
+            - canceled
+            - refunded
+            - failed
+        fulfillmentMode:
+          type: string
+          enum:
+            - dine_in
+            - pickup
+            - delivery
+        tableIdentifier:
+          type: string
+          nullable: true
+        customerName:
+          type: string
+          nullable: true
+        customerPhone:
+          type: string
+          nullable: true
+        customerEmail:
+          type: string
+          nullable: true
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              menuItemId:
+                type: string
+              nameSnapshot:
+                type: string
+              unitPrice:
+                type: string
+              currency:
+                type: string
+              modifiers:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    optionId:
+                      type: string
+                    nameSnapshot:
+                      type: string
+                    priceDelta:
+                      type: string
+                    amount:
+                      type: integer
+                    modifierGroupId:
+                      type: string
+                      nullable: true
+                  required:
+                    - optionId
+                    - nameSnapshot
+                    - priceDelta
+                    - amount
+                    - modifierGroupId
+              quantity:
+                type: integer
+              lineTotal:
+                type: string
+              categoryId:
+                type: string
+            required:
+              - id
+              - menuItemId
+              - nameSnapshot
+              - unitPrice
+              - currency
+              - modifiers
+              - quantity
+              - lineTotal
+              - categoryId
+        subtotal:
+          type: string
+        deliveryFee:
+          type: string
+        serviceFee:
+          type: string
+        discount:
+          type: string
+        total:
+          type: string
+        currency:
+          type: string
+        scheduledFor:
+          type: string
+          nullable: true
+        shortNumber:
+          type: integer
+        channel:
+          type: string
+          enum:
+            - site
+            - qr-menu
+        acceptedAt:
+          type: string
+          nullable: true
+        preparingAt:
+          type: string
+          nullable: true
+        readyAt:
+          type: string
+          nullable: true
+        completedAt:
+          type: string
+          nullable: true
+        canceledAt:
+          type: string
+          nullable: true
+        acceptedByUserId:
+          type: string
+          nullable: true
+        canceledByUserId:
+          type: string
+          nullable: true
+        cancelReason:
+          type: string
+          nullable: true
+        cancelNote:
+          type: string
+          nullable: true
+        canceledFromStatus:
+          type: string
+          enum:
+            - created
+            - requires_action
+            - paid
+            - accepted
+            - preparing
+            - ready
+            - completed
+            - canceled
+            - refunded
+            - failed
+          nullable: true
+        etaAt:
+          type: string
+          nullable: true
+        marketingConsent:
+          type: boolean
+        marketingConsentAt:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - tenantId
+        - locationId
+        - orderNumber
+        - status
+        - fulfillmentMode
+        - tableIdentifier
+        - customerName
+        - customerPhone
+        - customerEmail
+        - items
+        - subtotal
+        - deliveryFee
+        - serviceFee
+        - discount
+        - total
+        - currency
+        - scheduledFor
+        - shortNumber
+        - channel
+        - acceptedAt
+        - preparingAt
+        - readyAt
+        - completedAt
+        - canceledAt
+        - acceptedByUserId
+        - canceledByUserId
+        - cancelReason
+        - cancelNote
+        - canceledFromStatus
+        - etaAt
+        - marketingConsent
+        - marketingConsentAt
+        - createdAt
+        - updatedAt
+    AdvanceOrderStatusInputDto:
+      type: object
+      properties:
+        targetStatus:
+          type: string
+          enum:
+            - preparing
+            - ready
+            - completed
+      required:
+        - targetStatus
     CreatePaymentIntentInputDto:
       type: object
       properties:
@@ -3059,3 +4117,60 @@ components:
           minLength: 1
       required:
         - reason
+    CancelOrderInputDto:
+      type: object
+      properties:
+        reasonCode:
+          type: string
+          enum:
+            - guest_no_show
+            - kitchen_out_of_stock
+            - kitchen_too_busy
+            - guest_requested
+            - payment_issue
+            - duplicate_order
+            - other
+        cancelNote:
+          type: string
+          maxLength: 500
+      required:
+        - reasonCode
+    CancelOrderResponseDto:
+      type: object
+      properties:
+        canceled:
+          type: boolean
+        refund:
+          type: object
+          properties:
+            attempted:
+              type: boolean
+            outcome:
+              type: string
+              enum:
+                - succeeded
+                - failed
+                - none
+            amountMinor:
+              type: integer
+              nullable: true
+          required:
+            - attempted
+            - outcome
+            - amountMinor
+      required:
+        - canceled
+        - refund
+    RetryRefundResponseDto:
+      type: object
+      properties:
+        stripeRefundId:
+          type: string
+        amountMinor:
+          type: integer
+        fullyRefunded:
+          type: boolean
+      required:
+        - stripeRefundId
+        - amountMinor
+        - fullyRefunded

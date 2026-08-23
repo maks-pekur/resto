@@ -12,7 +12,7 @@ import { expect } from 'vitest';
 import { schema } from '@resto/db';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { BootstrapModule } from '../../../src/contexts/identity/bootstrap.module';
-import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../../src/contexts/identity/application/signup/bootstrap-owner.service';
 import { AUTH_DRIZZLE_TOKEN } from '../../../src/contexts/identity/identity.tokens';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
@@ -41,7 +41,11 @@ export const provisionTenant = async (
     payload: {
       slug,
       displayName: `E2E Tenant ${slug}`,
-      defaultCurrency: 'USD',
+      // D-34/D-35: ProvisionTenantInputSchema requires `country`, not
+      // `defaultCurrency` — currency is derived from country, never
+      // collected directly. This helper predates that model; every e2e
+      // spec importing it shared the same 400 until this line changed.
+      country: 'GB',
       locale: 'en',
     },
   });
@@ -181,7 +185,7 @@ export const addMemberWithRole = async (
   const authDb = app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
   await authDb.db.insert(schema.member).values({
     id: randomUUID(),
-    organizationId: input.tenantId,
+    tenantId: input.tenantId,
     userId: user.userId,
     role: input.role,
     createdAt: new Date(),

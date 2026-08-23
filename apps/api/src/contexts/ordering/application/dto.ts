@@ -19,6 +19,8 @@ const CartLineItemSchema = z.object({
   quantity: z.number().int().positive(),
 });
 
+const OrderChannelSchema = z.enum(['site', 'qr-menu']);
+
 export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
@@ -36,6 +38,8 @@ export const CreateOrderInputSchema = z
         message: 'scheduledFor must be in the future',
       })
       .optional(),
+    channel: OrderChannelSchema.optional().default('site'),
+    marketingConsent: z.boolean().optional().default(false),
   })
   .refine(
     (data) => {
@@ -71,6 +75,8 @@ export const OrderResponseSchema = z.object({
   status: z.string(),
   total: z.string(),
   currency: z.string().regex(/^[A-Z]{3}$/),
+  shortNumber: z.number().int().positive(),
+  channel: OrderChannelSchema,
 });
 export type OrderResponse = z.infer<typeof OrderResponseSchema>;
 

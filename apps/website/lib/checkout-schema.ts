@@ -17,6 +17,7 @@ export function createCheckoutSchema(mode: CartMode) {
       email: z.string().email('Enter a valid email address'),
       address: z.string().optional(),
       orderTime: orderTimeSchema,
+      marketingConsent: z.boolean().default(false),
     })
     .superRefine((value, ctx) => {
       if (
@@ -33,4 +34,5 @@ export function createCheckoutSchema(mode: CartMode) {
 }
 
 export const CheckoutFormSchema = createCheckoutSchema(null);
+export type CheckoutFormInput = z.input<ReturnType<typeof createCheckoutSchema>>;
 export type CheckoutForm = z.infer<ReturnType<typeof createCheckoutSchema>>;

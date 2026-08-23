@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import type { BrandSnapshot } from '../../tenancy/domain/brand.aggregate';
-import type { BrandQueriesService } from '../../tenancy/application/brand-queries.service';
 import type { EmailAdapterPort, SendGuestNotificationInput } from '../domain/ports';
+import type { Env } from '../../../config/env.schema';
 import type {
   NotificationOrderRepository,
   NotificationOrderRow,
@@ -10,34 +9,24 @@ import { SendGuestNotificationService } from './send-guest-notification.service'
 
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 const ORDER_ID = '22222222-2222-2222-2222-222222222222';
-const BRAND_ID = '33333333-3333-3333-3333-333333333333';
+const WEBSITE_PUBLIC_URL = 'https://order.resto.app';
 
-const baseOrder = {
+const baseOrder: NotificationOrderRow = {
   id: ORDER_ID,
-  tenantId: TENANT_ID,
-  brandId: BRAND_ID,
   orderNumber: 'ORD-001',
   customerEmail: 'guest@example.com',
   total: '25.00',
   currency: 'EUR',
+  etaAt: null,
+  shortNumber: null,
+  locationTimezone: null,
+  tenantDisplayName: 'Acme',
+  tenantLocale: 'en',
+  tenantTheme: { logoUrl: 'https://cdn.acme.com/logo.png', primaryColor: '#16a34a', font: null },
 };
 
-const baseBrand: BrandSnapshot = {
-  id: BRAND_ID as BrandSnapshot['id'],
-  tenantId: TENANT_ID as BrandSnapshot['tenantId'],
-  slug: 'acme',
-  displayName: 'Acme',
-  status: 'active',
-  theme: { logoUrl: 'https://cdn.acme.com/logo.png', primaryColor: '#16a34a', font: null },
-  paymentProvider: 'stripe',
-  accountType: null,
-  defaultCurrency: null,
-  stripeAccountId: null,
-  stripeChargesEnabled: false,
-  stripePayoutsEnabled: false,
-  stripeOnboardingStatus: 'not_started',
-  stripeRequirementsDue: null,
-};
+const makeEnv = (websitePublicUrl: string | undefined): Env =>
+  ({ WEBSITE_PUBLIC_URL: websitePublicUrl }) as unknown as Env;
 
 const makeOrderRepo = (
   order: NotificationOrderRow | null,
@@ -46,11 +35,6 @@ const makeOrderRepo = (
   findOrder: vi.fn(() => Promise.resolve(order)),
   findOrderItems: vi.fn(() => Promise.resolve(items)),
 });
-
-const makeBrandQueries = (brand: BrandSnapshot | null): BrandQueriesService =>
-  ({
-    listForTenant: vi.fn(() => Promise.resolve(brand ? [brand] : [])),
-  }) as unknown as BrandQueriesService;
 
 const makeEmailAdapter = (): EmailAdapterPort & { calls: SendGuestNotificationInput[] } => {
   const calls: SendGuestNotificationInput[] = [];
@@ -70,12 +54,12 @@ const makeEmailAdapter = (): EmailAdapterPort & { calls: SendGuestNotificationIn
 
 describe('SendGuestNotificationService', () => {
   describe('GNOTIF-01: order_confirmation', () => {
-    it('sends one email to customerEmail with kind order_confirmation', async () => {
+    it('sends one email to customerEmail with kind order_confirmation, tenant name and rendered subject content', async () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder, [{ nameSnapshot: 'Burger', quantity: 1 }]),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -88,16 +72,17 @@ describe('SendGuestNotificationService', () => {
       const call = email.calls[0];
       expect(call?.to).toBe('guest@example.com');
       expect(call?.kind).toBe('order_confirmation');
-      expect(call?.brandName).toBe('Acme');
+      expect(call?.tenantName).toBe('Acme');
       expect(call?.vars.orderNumber).toBe('ORD-001');
+      expect(call?.vars.itemsSummary).toContain('Burger');
     });
 
     it('idempotencyKey is gnotif:<orderId>:order_confirmation', async () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -109,12 +94,12 @@ describe('SendGuestNotificationService', () => {
       expect(email.calls[0]?.idempotencyKey).toBe(`gnotif:${ORDER_ID}:order_confirmation`);
     });
 
-    it('applies brand theme to the notification input (GNOTIF-04)', async () => {
+    it('applies the tenant theme to the notification input (GNOTIF-04)', async () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -123,7 +108,41 @@ describe('SendGuestNotificationService', () => {
         transition: 'order_confirmation',
       });
 
-      expect(email.calls[0]?.brandTheme).toMatchObject({ accentColor: '#16a34a' });
+      expect(email.calls[0]?.tenantTheme).toMatchObject({ accentColor: '#16a34a' });
+    });
+
+    it('reads the notification locale from the tenant row (D-36)', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo({ ...baseOrder, tenantLocale: 'ru' }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.locale).toBe('ru');
+    });
+
+    it('falls back to en when the tenant locale is not yet supported by the email adapter (D-38)', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo({ ...baseOrder, tenantLocale: 'es' }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.locale).toBe('en');
     });
   });
 
@@ -132,8 +151,8 @@ describe('SendGuestNotificationService', () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({
@@ -153,8 +172,8 @@ describe('SendGuestNotificationService', () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo({ ...baseOrder, customerEmail: null }),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await expect(
@@ -168,8 +187,8 @@ describe('SendGuestNotificationService', () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(null),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await expect(
@@ -185,13 +204,87 @@ describe('SendGuestNotificationService', () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
-        makeBrandQueries(baseBrand),
         makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
       );
 
       await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
 
       expect(email.calls[0]?.kind).toBe('order_accepted');
+    });
+  });
+
+  describe('D-15: ETA plumbing', () => {
+    it('reaches vars as a localized clock-time string when etaAt is set', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo({
+          ...baseOrder,
+          etaAt: new Date('2026-06-28T19:45:00Z'),
+          locationTimezone: 'UTC',
+        }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
+
+      expect(email.calls[0]?.vars.eta).toBe('19:45');
+    });
+
+    it('is absent from vars when etaAt is null', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo({ ...baseOrder, etaAt: null }),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.vars.eta).toBeUndefined();
+    });
+  });
+
+  describe('Growth HIGH-10: status-page link', () => {
+    it('vars.statusUrl contains the order id and the configured website origin', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo(baseOrder),
+        makeEnv(WEBSITE_PUBLIC_URL),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      const statusUrl = email.calls[0]?.vars.statusUrl;
+      expect(statusUrl).toContain(WEBSITE_PUBLIC_URL);
+      expect(statusUrl).toContain(ORDER_ID);
+    });
+
+    it('falls back to a relative path when WEBSITE_PUBLIC_URL is unset', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo(baseOrder),
+        makeEnv(undefined),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.vars.statusUrl).toBe(`/checkout/confirmation/${ORDER_ID}`);
     });
   });
 });

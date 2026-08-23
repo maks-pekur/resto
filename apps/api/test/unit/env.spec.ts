@@ -11,7 +11,7 @@ describe('loadEnv', () => {
   it('parses a minimal valid environment', () => {
     const env = loadEnv(baseEnv);
     expect(env.NODE_ENV).toBe('development');
-    expect(env.API_PORT).toBe(3000);
+    expect(env.API_PORT).toBe(5001);
     expect(env.NATS_STREAM).toBe('RESTO_EVENTS');
   });
 
@@ -49,6 +49,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      WEBSITE_PUBLIC_URL: 'https://order.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
@@ -92,6 +93,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      WEBSITE_PUBLIC_URL: 'https://order.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
@@ -167,6 +169,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      WEBSITE_PUBLIC_URL: 'https://order.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
@@ -189,6 +192,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      WEBSITE_PUBLIC_URL: 'https://order.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',
@@ -210,6 +214,7 @@ describe('loadEnv', () => {
       BETTER_AUTH_BASE_URL: 'https://api.resto.app',
       BETTER_AUTH_DATABASE_URL: 'postgres://auth@localhost:5432/resto',
       ADMIN_WEB_URL: 'https://admin.resto.app',
+      WEBSITE_PUBLIC_URL: 'https://order.resto.app',
       AUTH_COOKIE_DOMAIN: '.resto.app',
       AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
       TRUST_PROXY: '10.0.0.0/8',

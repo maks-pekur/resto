@@ -30,6 +30,8 @@ import { IS_PUBLIC_KEY, REQUIRES_TENANT_CONTEXT_KEY } from '../../../../../share
 declare module 'fastify' {
   interface FastifyRequest {
     principal?: Principal;
+    activeLocationId?: string | null;
+    sessionToken?: string;
   }
 }
 
@@ -88,18 +90,20 @@ export class AuthGuard implements CanActivate {
     // plugin augments the session object with activeOrganizationId at runtime
     // but the cast above (`as unknown as BetterAuthPlugin`) in auth.config.ts
     // loses that type information. Cast to the narrower shape we depend on.
-    const principal = buildPrincipal(
-      session as {
-        user: {
-          id: string;
-          email: string;
-          phoneNumber?: string | null;
-          twoFactorEnabled?: boolean | null;
-        };
-        session: { activeOrganizationId?: string | null };
-      },
-      alsTenantId,
-    );
+    const sessionData = session as {
+      user: {
+        id: string;
+        email: string;
+        phoneNumber?: string | null;
+        twoFactorEnabled?: boolean | null;
+      };
+      session: {
+        activeOrganizationId?: string | null;
+        activeLocationId?: string | null;
+        token: string;
+      };
+    };
+    const principal = buildPrincipal(sessionData, alsTenantId);
 
     // Existing cross-check: when BOTH the principal and the request
     // resolved a tenant, they MUST match — otherwise an operator with
@@ -141,20 +145,28 @@ export class AuthGuard implements CanActivate {
     }
 
     req.principal = principal;
+    req.activeLocationId = sessionData.session.activeLocationId ?? null;
+    req.sessionToken = sessionData.session.token;
     return true;
   }
 
   private async lookupBaseRole(
     userId: string,
-    organizationId: string,
+    tenantId: string,
   ): Promise<'owner' | 'admin' | 'staff' | undefined> {
     const rows = await this.authDb.db
       .select({ role: memberTable.role })
       .from(memberTable)
-      .where(and(eq(memberTable.userId, userId), eq(memberTable.organizationId, organizationId)))
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
       .limit(1);
     const role = rows[0]?.role;
-    if (role === 'owner' || role === 'admin' || role === 'staff') return role;
+    if (!role) return undefined;
+    // D-15 (08.3): BA stores member.role as CSV when a member holds both a system
+    // role and a custom role slug. Split and return the highest system role present.
+    const parts = role.split(',').map((r) => r.trim());
+    if (parts.includes('owner')) return 'owner';
+    if (parts.includes('admin')) return 'admin';
+    if (parts.includes('staff')) return 'staff';
     return undefined;
   }
 }
@@ -190,7 +202,10 @@ const buildPrincipal = (
       phoneNumber?: string | null;
       twoFactorEnabled?: boolean | null;
     };
-    session: { activeOrganizationId?: string | null };
+    session: {
+      activeOrganizationId?: string | null;
+      token: string;
+    };
   },
   alsTenantId: string | undefined,
 ): Principal => {

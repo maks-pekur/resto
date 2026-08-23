@@ -50,7 +50,7 @@ suite('RES-205: resto_auth role grants are restricted to BA-owned tables', () =>
       await provisionAuthRole(admin, { authPassword: AUTH_PWD });
 
       const [t] = await admin<{ id: string }[]>`
-        INSERT INTO tenants (slug, display_name) VALUES ('auth-grants-t', 'AuthGrants T')
+        INSERT INTO tenants (slug, display_name, country) VALUES ('auth-grants-t', 'AuthGrants T', 'GB')
         RETURNING id
       `;
       if (!t) throw new Error('failed to seed tenant');
@@ -71,19 +71,17 @@ suite('RES-205: resto_auth role grants are restricted to BA-owned tables', () =>
   });
 
   describe('domain tables — privileges MUST be denied', () => {
-    it('cannot SELECT from menu_items, outbox_events, audit_log, brands, customer_profiles, member_brand_scope', async () => {
+    it('cannot SELECT from menu_items, outbox_events, audit_log, customer_profiles', async () => {
       await expectPermissionDenied(authClient`SELECT 1 FROM menu_items LIMIT 1`);
       await expectPermissionDenied(authClient`SELECT 1 FROM outbox_events LIMIT 1`);
       await expectPermissionDenied(authClient`SELECT 1 FROM audit_log LIMIT 1`);
-      await expectPermissionDenied(authClient`SELECT 1 FROM brands LIMIT 1`);
       await expectPermissionDenied(authClient`SELECT 1 FROM customer_profiles LIMIT 1`);
-      await expectPermissionDenied(authClient`SELECT 1 FROM member_brand_scope LIMIT 1`);
     });
 
-    it('cannot INSERT into brands', async () => {
+    it('cannot INSERT into menu_items', async () => {
       await expectPermissionDenied(authClient`
-        INSERT INTO brands (tenant_id, slug, display_name)
-        VALUES (${tenantId}, 'forged', 'Forged Brand')
+        INSERT INTO menu_items (tenant_id, category_id, slug, name, base_price, currency, status)
+        VALUES (${tenantId}, gen_random_uuid(), 'forged', '{}'::jsonb, '0.00', 'USD', 'draft')
       `);
     });
 
@@ -141,7 +139,7 @@ suite('RES-205: resto_auth role grants are restricted to BA-owned tables', () =>
 
     it('cannot INSERT into tenants (lifecycle owned by tenancy context)', async () => {
       await expectPermissionDenied(authClient`
-        INSERT INTO tenants (slug, display_name) VALUES ('forged-by-auth', 'Forged')
+        INSERT INTO tenants (slug, display_name, country) VALUES ('forged-by-auth', 'Forged', 'GB')
       `);
     });
 
@@ -238,7 +236,7 @@ suite(
         await provisionAuthRole(admin, { authPassword: NOBYPASS_AUTH_PWD });
 
         const [t] = await admin<{ id: string }[]>`
-          INSERT INTO tenants (slug, display_name) VALUES ('nobypass-t', 'NoBypasS T')
+          INSERT INTO tenants (slug, display_name, country) VALUES ('nobypass-t', 'NoBypasS T', 'GB')
           RETURNING id
         `;
         if (!t) throw new Error('failed to seed tenant');
@@ -255,18 +253,18 @@ suite(
         invitationId = `nobypass-i-${Date.now()}`;
         orgRoleId = `nobypass-r-${Date.now()}`;
 
-        // Pre-seed member/invitation/organization_role as admin so resto_auth
+        // Pre-seed member/invitation/tenant_role as admin so resto_auth
         // can UPDATE and DELETE them in the CRUD round-trip below.
         await admin`
-          INSERT INTO member (id, organization_id, user_id, role, created_at)
+          INSERT INTO member (id, tenant_id, user_id, role, created_at)
           VALUES (${orgMemberId}, ${tenantId}, ${userId}, 'member', now())
         `;
         await admin`
-          INSERT INTO invitation (id, organization_id, email, role, status, inviter_id, expires_at)
+          INSERT INTO invitation (id, tenant_id, email, role, status, inviter_id, expires_at)
           VALUES (${invitationId}, ${tenantId}, 'invite@example.com', 'member', 'pending', ${userId}, now() + interval '1 day')
         `;
         await admin`
-          INSERT INTO organization_role (id, organization_id, role, permission)
+          INSERT INTO tenant_role (id, tenant_id, role, permission)
           VALUES (${orgRoleId}, ${tenantId}, 'editor', 'create:content')
         `;
       } finally {
@@ -307,7 +305,7 @@ suite(
         VALUES (${userId2}, 'U2', ${'u2@example.com'}, false, false)
       `;
       await authClient`
-        INSERT INTO member (id, organization_id, user_id, role, created_at)
+        INSERT INTO member (id, tenant_id, user_id, role, created_at)
         VALUES (${newId}, ${tenantId}, ${userId2}, 'admin', now())
       `;
       await authClient`UPDATE member SET role = 'owner' WHERE id = ${newId}`;
@@ -327,26 +325,26 @@ suite(
         VALUES (${invUserId}, 'InvU', ${'invu@example.com'}, false, false)
       `;
       await authClient`
-        INSERT INTO invitation (id, organization_id, email, role, status, inviter_id, expires_at)
+        INSERT INTO invitation (id, tenant_id, email, role, status, inviter_id, expires_at)
         VALUES (${newInvId}, ${tenantId}, 'newinvite@example.com', 'member', 'pending', ${invUserId}, now() + interval '1 day')
       `;
       await authClient`UPDATE invitation SET status = 'accepted' WHERE id = ${newInvId}`;
       await authClient`DELETE FROM invitation WHERE id = ${newInvId}`;
     });
 
-    it('can SELECT / INSERT / UPDATE / DELETE on organization_role WITHOUT setting app.current_tenant', async () => {
+    it('can SELECT / INSERT / UPDATE / DELETE on tenant_role WITHOUT setting app.current_tenant', async () => {
       const sel = await authClient<{ id: string }[]>`
-        SELECT id FROM organization_role WHERE id = ${orgRoleId}
+        SELECT id FROM tenant_role WHERE id = ${orgRoleId}
       `;
       expect(sel.length).toBe(1);
 
       const newRoleId = `nobypass-r2-${Date.now()}`;
       await authClient`
-        INSERT INTO organization_role (id, organization_id, role, permission)
+        INSERT INTO tenant_role (id, tenant_id, role, permission)
         VALUES (${newRoleId}, ${tenantId}, 'viewer', 'read:content')
       `;
-      await authClient`UPDATE organization_role SET role = 'reader' WHERE id = ${newRoleId}`;
-      await authClient`DELETE FROM organization_role WHERE id = ${newRoleId}`;
+      await authClient`UPDATE tenant_role SET role = 'reader' WHERE id = ${newRoleId}`;
+      await authClient`DELETE FROM tenant_role WHERE id = ${newRoleId}`;
     });
 
     it('can SELECT / UPDATE on tenants WITHOUT setting app.current_tenant', async () => {
@@ -357,9 +355,9 @@ suite(
       await authClient`UPDATE tenants SET display_name = 'Renamed by auth' WHERE id = ${tenantId}`;
     });
 
-    it('is still denied on domain tables not granted to resto_auth (member_brand_scope)', async () => {
+    it('is still denied on domain tables not granted to resto_auth (menu_categories)', async () => {
       // Proves access comes from grant+policy, not a residual bypass.
-      await expectPermissionDenied(authClient`SELECT 1 FROM member_brand_scope LIMIT 1`);
+      await expectPermissionDenied(authClient`SELECT 1 FROM menu_categories LIMIT 1`);
     });
   },
 );
@@ -386,10 +384,10 @@ suite('D-04: resto_app isolation is intact after the resto_auth permissive-polic
       await provisionAppRole(admin, { appPassword: NOBYPASS_APP_PWD });
 
       const [tA] = await admin<{ id: string }[]>`
-        INSERT INTO tenants (slug, display_name) VALUES ('iso-a', 'Iso A') RETURNING id
+        INSERT INTO tenants (slug, display_name, country) VALUES ('iso-a', 'Iso A', 'GB') RETURNING id
       `;
       const [tB] = await admin<{ id: string }[]>`
-        INSERT INTO tenants (slug, display_name) VALUES ('iso-b', 'Iso B') RETURNING id
+        INSERT INTO tenants (slug, display_name, country) VALUES ('iso-b', 'Iso B', 'GB') RETURNING id
       `;
       if (!tA || !tB) throw new Error('failed to seed isolation tenants');
       tenantAId = tA.id;
@@ -403,7 +401,7 @@ suite('D-04: resto_app isolation is intact after the resto_auth permissive-polic
       `;
       memberAId = `iso-m-${Date.now()}`;
       await admin`
-        INSERT INTO member (id, organization_id, user_id, role, created_at)
+        INSERT INTO member (id, tenant_id, user_id, role, created_at)
         VALUES (${memberAId}, ${tenantAId}, ${userId}, 'member', now())
       `;
     } finally {
@@ -444,7 +442,7 @@ suite('D-04: resto_app isolation is intact after the resto_auth permissive-polic
     // so tenant B's rows remain invisible — FORCE RLS is unaffected.
     await appClient`SELECT app_bind_tenant(${tenantAId}, false)`;
     const rows = await appClient<{ id: string }[]>`
-      SELECT id FROM member WHERE organization_id = ${tenantBId}
+      SELECT id FROM member WHERE tenant_id = ${tenantBId}
     `;
     expect(rows).toHaveLength(0);
   });

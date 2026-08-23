@@ -1,10 +1,11 @@
-import { BadgeCheck, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
+import { BadgeCheck, Building2, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '@/hooks/use-theme';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { useTheme } from '@/components/theme-provider';
 import { authClient } from '@/lib/auth-client';
-import type { OperatorSummary } from '@/lib/queries/identity';
+import { meTenantsQuery, type OperatorSummary } from '@/lib/queries/identity';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { LocaleSwitcherItems } from '@/components/locale-switcher-items';
 import {
@@ -35,8 +36,13 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
   const { setTheme } = useTheme();
   const { t } = useTranslation('translation', { keyPrefix: 'nav.user' });
   const navigate = useNavigate();
+  const { data: tenantsResult } = useSuspenseQuery(meTenantsQuery());
   const initial = avatarInitial(operator.email);
   const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
+  // Same conditional-render shape as location-switcher.tsx:35 — staff and
+  // single-tenant owners see no item at all, not a disabled one (D-17).
+  const canSwitchTenant =
+    operator.baseRole === 'owner' && (tenantsResult.data?.tenants.length ?? 0) >= 2;
 
   const signOut = async () => {
     await authClient.signOut();
@@ -50,6 +56,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
+              data-testid="nav-user-trigger"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
@@ -80,9 +87,22 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            {canSwitchTenant ? (
+              <>
+                <DropdownMenuGroup>
+                  <DropdownMenuItem asChild>
+                    <Link to="/pick-tenant" data-testid="nav-switch-tenant">
+                      <Building2 />
+                      {t('switchTenantItem')}
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             <DropdownMenuGroup>
               <DropdownMenuItem asChild>
-                <Link to="/dashboard/settings">
+                <Link to="/settings">
                   <BadgeCheck />
                   {t('accountItem')}
                 </Link>

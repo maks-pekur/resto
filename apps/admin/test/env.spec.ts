@@ -17,43 +17,43 @@ describe('getEnv (G-05 fail-loud)', () => {
     restoreEnv(saved);
   });
 
-  it('returns dev default when VITE_API_ORIGIN is unset in DEV mode', async () => {
+  it('returns dev default when VITE_ADMIN_HOST_SUFFIX is unset in DEV mode', async () => {
     saved = saveEnv();
     metaEnv.PROD = false;
     metaEnv.DEV = true;
-    delete metaEnv.VITE_API_ORIGIN;
+    delete metaEnv.VITE_ADMIN_HOST_SUFFIX;
 
     const { getEnv } = await import('@/env');
-    expect(getEnv('VITE_API_ORIGIN')).toBe('http://localhost:3000');
+    expect(getEnv('VITE_ADMIN_HOST_SUFFIX')).toBe('admin.localhost');
   });
 
-  it('throws when VITE_API_ORIGIN is empty in PROD mode', async () => {
+  it('throws when a required var is empty in PROD mode', async () => {
     saved = saveEnv();
     metaEnv.PROD = true;
     metaEnv.DEV = false;
-    metaEnv.VITE_API_ORIGIN = '';
+    metaEnv.VITE_STRIPE_PUBLISHABLE_KEY = '';
 
     const { getEnv } = await import('@/env');
-    expect(() => getEnv('VITE_API_ORIGIN')).toThrow(/Missing required env var/);
+    expect(() => getEnv('VITE_STRIPE_PUBLISHABLE_KEY')).toThrow(/Missing required env var/);
   });
 
-  it('throws when VITE_API_ORIGIN is a localhost URL in PROD mode (G-05)', async () => {
+  it('throws when a required var is a localhost URL in PROD mode (G-05)', async () => {
     saved = saveEnv();
     metaEnv.PROD = true;
     metaEnv.DEV = false;
-    metaEnv.VITE_API_ORIGIN = 'http://localhost:3000';
+    metaEnv.VITE_STRIPE_PUBLISHABLE_KEY = 'http://localhost:3000';
 
     const { getEnv } = await import('@/env');
-    expect(() => getEnv('VITE_API_ORIGIN')).toThrow(/localhost/);
+    expect(() => getEnv('VITE_STRIPE_PUBLISHABLE_KEY')).toThrow(/localhost/);
   });
 
-  it('returns real HTTPS origin in PROD mode', async () => {
+  it('returns the real value in PROD mode', async () => {
     saved = saveEnv();
     metaEnv.PROD = true;
     metaEnv.DEV = false;
-    metaEnv.VITE_API_ORIGIN = 'https://api.resto.app';
+    metaEnv.VITE_STRIPE_PUBLISHABLE_KEY = 'pk_live_abc123';
 
     const { getEnv } = await import('@/env');
-    expect(getEnv('VITE_API_ORIGIN')).toBe('https://api.resto.app');
+    expect(getEnv('VITE_STRIPE_PUBLISHABLE_KEY')).toBe('pk_live_abc123');
   });
 });

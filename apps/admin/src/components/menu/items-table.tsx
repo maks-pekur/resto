@@ -34,7 +34,6 @@ import type { Status } from '@/lib/menu/types';
 const PAGE_SIZE_DEFAULT = 50;
 
 export interface ItemsTableProps {
-  readonly brandSlug: string;
   readonly items: readonly ItemListItemApi[];
   readonly totalCount: number;
   readonly pagination: {
@@ -42,6 +41,10 @@ export interface ItemsTableProps {
     readonly pageSize: number;
   };
   readonly onPageChange: (page: number) => void;
+  // D-05: the inline stop/resume toggle is a write action — it requires a
+  // concrete location the same way the dedicated stop-list page does.
+  // undefined (owner in `all`/zero-location mode) disables the toggle.
+  readonly stopListLocationId?: string;
 }
 
 type OptimisticState = Record<string, 'paused' | 'published' | undefined>;
@@ -60,16 +63,17 @@ const buildCategoryPath = (item: ItemListItemApi): string => {
 };
 
 export function ItemsTable({
-  brandSlug,
   items,
   totalCount,
   pagination,
   onPageChange,
+  stopListLocationId,
 }: ItemsTableProps): React.ReactElement {
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
+  const canToggleStopList = stopListLocationId !== undefined;
 
   const formatPrice = (basePrice: string, hasSizes: boolean): string => {
     const trimmed = trimPrice(basePrice);
@@ -81,9 +85,29 @@ export function ItemsTable({
   const [archiveTarget, setArchiveTarget] = React.useState<ItemListItemApi | null>(null);
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
 
+  const openMenuRef = React.useRef<HTMLDivElement | null>(null);
+
+  React.useEffect(() => {
+    if (openMenuId === null) return undefined;
+    const onPointerDown = (event: PointerEvent): void => {
+      const root = openMenuRef.current;
+      if (root && event.target instanceof Node && root.contains(event.target)) return;
+      setOpenMenuId(null);
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpenMenuId(null);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [openMenuId]);
+
   const toggleMutation = useMutation({
     mutationFn: ({ itemId, next }: { itemId: string; next: 'paused' | 'published' }) =>
-      toggleStopList(brandSlug, itemId, next),
+      toggleStopList(itemId, next, stopListLocationId ?? ''),
     onSettled: (_data, _err, { itemId }) => {
       setPendingIds((prev) => {
         const copy = new Set(prev);
@@ -96,7 +120,7 @@ export function ItemsTable({
         showSuccess(next === 'paused' ? t('addedToStopList') : t('removedFromStopList'), {
           duration: 1500,
         });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
       } else {
         setOptimistic((prev) => ({ ...prev, [itemId]: undefined }));
         showError(null, t('stopListFailed'));
@@ -109,10 +133,10 @@ export function ItemsTable({
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => archiveItem(brandSlug, id),
+    mutationFn: (id: string) => archiveItem(id),
     onSuccess: (res) => {
       if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'items', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
       } else {
         showError(null, t('archiveFailed'));
       }
@@ -132,7 +156,7 @@ export function ItemsTable({
   };
 
   const handleToggleStop = (item: ItemListItemApi): void => {
-    if (pendingIds.has(item.id)) return;
+    if (pendingIds.has(item.id) || !canToggleStopList) return;
     const currentEffective = optimistic[item.id] ?? item.status;
     const isCurrentlyPaused = currentEffective === 'paused';
     const next: 'paused' | 'published' = isCurrentlyPaused ? 'published' : 'paused';
@@ -154,12 +178,10 @@ export function ItemsTable({
         action={
           <Button
             onClick={() => {
-              /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-              void (navigate as any)({
-                to: '/dashboard/$brandSlug/menu/items/$id',
-                params: { brandSlug, id: 'new' },
+              void navigate({
+                to: '/menu/items/$id',
+                params: { id: 'new' },
               });
-              /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
             }}
           >
             {t('addItem')}
@@ -192,12 +214,10 @@ export function ItemsTable({
             const switchLabel = isOnStopList ? t('stopSwitchOff') : t('stopSwitchOn');
 
             const openItem = (): void => {
-              /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-              void (navigate as any)({
-                to: '/dashboard/$brandSlug/menu/items/$id',
-                params: { brandSlug, id: item.id },
+              void navigate({
+                to: '/menu/items/$id',
+                params: { id: item.id },
               });
-              /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
             };
             const stopPropagation = (e: React.SyntheticEvent): void => {
               e.stopPropagation();
@@ -242,20 +262,25 @@ export function ItemsTable({
                 <TableCell onClick={stopPropagation}>
                   <div className={isPending ? 'pointer-events-none opacity-50' : ''}>
                     <Switch
+                      className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                       checked={isOnStopList}
                       onCheckedChange={() => {
                         handleToggleStop(item);
                       }}
                       aria-label={switchLabel}
-                      disabled={isPending}
+                      disabled={isPending || !canToggleStopList}
                     />
                   </div>
                 </TableCell>
                 <TableCell className="text-right" onClick={stopPropagation}>
-                  <div className="relative inline-block">
+                  <div
+                    className="relative inline-block"
+                    ref={openMenuId === item.id ? openMenuRef : undefined}
+                  >
                     <Button
                       variant="ghost"
                       size="icon"
+                      className="min-h-11 min-w-11"
                       aria-label={t('actionsAriaLabel', { name })}
                       aria-haspopup="menu"
                       aria-expanded={openMenuId === item.id}

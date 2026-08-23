@@ -1,13 +1,21 @@
+import { readFileSync } from 'node:fs';
 import type { Sql } from 'postgres';
-import GRANTS_SQL from '../sql/auth-role.sql';
 import { validateRolePassword } from './internal/password';
 import { assertRoleAttributes } from './preflight';
+
+// Read at call time, not import time: `provisionAppRole`/`provisionAuthRole` are
+// provisioning entry points that only CLI scripts invoke, and `@resto/db`'s index
+// re-exports them into `apps/api`'s bundle. A top-level `import ... from '*.sql'`
+// resolves under esbuild but throws ERR_UNKNOWN_FILE_EXTENSION under tsx/Node ESM,
+// which silently broke `provision-roles-ci` and `db:audit-fks` (10.2-FINDINGS F-15).
+const readGrantsSql = (): string =>
+  readFileSync(new URL('../sql/auth-role.sql', import.meta.url), 'utf8');
 
 /**
  * Provision the `resto_auth` NOBYPASSRLS role for Better Auth's drizzle
  * client. Mirrors `provisionAppRole` exactly (NOSUPERUSER NOBYPASSRLS).
  * resto_auth reaches the four RLS-enabled BA-owned tables it operates on
- * (member, invitation, organization_role, tenants) via explicit permissive
+ * (member, invitation, tenant_role, tenants) via explicit permissive
  * RLS policies created by migration 0054 (Option A, D-04 / RDS). This
  * removes the dependency on the BYPASSRLS attribute, which AWS RDS cannot
  * confer on a non-superuser (rds_superuser is not a true SUPERUSER).
@@ -53,7 +61,7 @@ export const provisionAuthRole = async (
     );
   }
 
-  await client.unsafe(GRANTS_SQL);
+  await client.unsafe(readGrantsSql());
 
   await assertRoleAttributes(client, 'resto_auth', {
     rolsuper: false,

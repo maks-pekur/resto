@@ -12,16 +12,24 @@ import {
   Post,
   Put,
   Query,
+  Res,
 } from '@nestjs/common';
 import { ApiBody, ApiForbiddenResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import type { FastifyReply } from 'fastify';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Permissions, RequireBrand, RequiresTenantContext } from '../../../../shared/auth';
 import {
+  LocationNeutral,
+  OwnerOnly,
+  Permissions,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
+import {
+  AggregateStopListResponseDto,
   CategoryListResponseDto,
   DraftDiffResponseDto,
   ItemDetailResponseDto,
@@ -41,25 +49,26 @@ import {
   UpsertModifierGroupInputDto,
   UpsertModifierOptionInputDto,
 } from '../../application/dto';
-import { ArchiveCategoryService } from '../../application/archive-category.service';
-import { ArchiveItemService } from '../../application/archive-item.service';
-import { DelayedPublishService } from '../../application/delayed-publish.service';
-import { GetDraftDiffService } from '../../application/get-draft-diff.service';
-import { GetItemService } from '../../application/get-item.service';
-import { GetModifierGroupService } from '../../application/get-modifier-group.service';
+import { ArchiveCategoryService } from '../../application/categories/archive-category.service';
+import { ArchiveItemService } from '../../application/items/archive-item.service';
+import { DelayedPublishService } from '../../application/publishing/delayed-publish.service';
+import { GetDraftDiffService } from '../../application/publishing/get-draft-diff.service';
+import { GetItemService } from '../../application/items/get-item.service';
+import { GetModifierGroupService } from '../../application/modifiers/get-modifier-group.service';
 import { GetPhotoUploadUrlService } from '../../application/get-photo-upload-url.service';
-import { GetStopListService } from '../../application/get-stop-list.service';
-import { ListCategoriesService } from '../../application/list-categories.service';
-import { ListItemsService } from '../../application/list-items.service';
-import { ListModifierGroupsService } from '../../application/list-modifier-groups.service';
-import { ReorderCategoriesService } from '../../application/reorder-categories.service';
-import { StopListService } from '../../application/stop-list.service';
-import { UpsertCategoryService } from '../../application/upsert-category.service';
-import { UpsertItemService } from '../../application/upsert-item.service';
-import { SetItemModifierGroupsService } from '../../application/set-item-modifier-groups.service';
-import { UpsertItemSizeService } from '../../application/upsert-item-size.service';
-import { UpsertModifierGroupService } from '../../application/upsert-modifier-group.service';
-import { UpsertModifierOptionService } from '../../application/upsert-modifier-option.service';
+import { GetStopListAggregateService } from '../../application/availability/get-stop-list-aggregate.service';
+import { GetStopListService } from '../../application/availability/get-stop-list.service';
+import { ListCategoriesService } from '../../application/categories/list-categories.service';
+import { ListItemsService } from '../../application/items/list-items.service';
+import { ListModifierGroupsService } from '../../application/modifiers/list-modifier-groups.service';
+import { ReorderCategoriesService } from '../../application/categories/reorder-categories.service';
+import { StopListService } from '../../application/availability/stop-list.service';
+import { UpsertCategoryService } from '../../application/categories/upsert-category.service';
+import { UpsertItemService } from '../../application/items/upsert-item.service';
+import { SetItemModifierGroupsService } from '../../application/modifiers/set-item-modifier-groups.service';
+import { UpsertItemSizeService } from '../../application/items/upsert-item-size.service';
+import { UpsertModifierGroupService } from '../../application/modifiers/upsert-modifier-group.service';
+import { UpsertModifierOptionService } from '../../application/modifiers/upsert-modifier-option.service';
 import type { ItemStatusFilter } from '../../domain/ports';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { mapCatalogError } from './error-mapping';
@@ -108,13 +117,15 @@ export class CatalogController {
     @Inject(GetModifierGroupService)
     private readonly getModifierGroupService: GetModifierGroupService,
     @Inject(GetStopListService) private readonly getStopListService: GetStopListService,
+    @Inject(GetStopListAggregateService)
+    private readonly getStopListAggregateService: GetStopListAggregateService,
     @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
   ) {}
 
   @Post('categories')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertCategoryInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -127,7 +138,7 @@ export class CatalogController {
   @Post('categories/reorder')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: ReorderCategoriesInputDto })
   @ApiOkResponse({ type: ReorderCategoriesResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -140,7 +151,7 @@ export class CatalogController {
   @Post('items')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -153,7 +164,7 @@ export class CatalogController {
   @Post('modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertModifierGroupInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -167,7 +178,7 @@ export class CatalogController {
   @Post('modifier-options')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertModifierOptionInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -181,7 +192,7 @@ export class CatalogController {
   @Post('item-sizes')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: UpsertItemSizeInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -194,7 +205,7 @@ export class CatalogController {
   @Put('items/:id/modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiBody({ type: SetItemModifierGroupsInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -211,7 +222,6 @@ export class CatalogController {
   @Post('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @ApiBody({ type: StopItemInputDto })
   @ApiOkResponse({ type: IdResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -224,7 +234,6 @@ export class CatalogController {
   @Delete('stop-list/:itemId')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['update'] })
-  @RequireBrand()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   stopListRemove(@Param('itemId', ParseUUIDPipe) itemId: string): Promise<void> {
     return wrap(() => this.stopList.unstop(itemId));
@@ -233,6 +242,7 @@ export class CatalogController {
   @Post('photo-upload-url')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiBody({ type: PhotoUploadUrlInputDto })
   @ApiOkResponse({ type: PhotoUploadUrlResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
@@ -245,6 +255,7 @@ export class CatalogController {
   @Post('publish')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiOkResponse({ type: PublishScheduledResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   publishMenu(): Promise<PublishScheduledResponseDto> {
@@ -262,6 +273,7 @@ export class CatalogController {
   @Delete('publish')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
+  @LocationNeutral()
   @ApiOkResponse({ type: PublishCancelResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   cancelPublishMenu(): Promise<PublishCancelResponseDto> {
@@ -276,7 +288,7 @@ export class CatalogController {
   @Patch('categories/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveCategory(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveCategoryService.execute(id));
@@ -285,7 +297,7 @@ export class CatalogController {
   @Patch('items/:id/archive')
   @HttpCode(HttpStatus.NO_CONTENT)
   @Permissions({ menu: ['delete'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
@@ -294,7 +306,7 @@ export class CatalogController {
   @Get('categories')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: CategoryListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listCategories(@Query('parentId') parentId?: string): Promise<CategoryListResponseDto> {
@@ -306,7 +318,7 @@ export class CatalogController {
   @Get('items')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ItemListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listItems(
@@ -347,7 +359,7 @@ export class CatalogController {
   @Get('items/:id')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ItemDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getItem(@Param('id', ParseUUIDPipe) id: string): Promise<ItemDetailResponseDto> {
@@ -357,7 +369,7 @@ export class CatalogController {
   @Get('modifier-groups')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listModifierGroups(): Promise<ModifierGroupListResponseDto> {
@@ -367,7 +379,7 @@ export class CatalogController {
   @Get('modifier-groups/:id')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: ModifierGroupDetailResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getModifierGroup(
@@ -379,17 +391,30 @@ export class CatalogController {
   @Get('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
   @ApiOkResponse({ type: StopListResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   listStopList(): Promise<StopListResponseDto> {
     return wrap(() => this.getStopListService.execute());
   }
 
+  @Get('stop-list/aggregate')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @LocationNeutral()
+  @OwnerOnly()
+  @ApiOkResponse({ type: AggregateStopListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  stopListAggregate(
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<AggregateStopListResponseDto> {
+    reply.header('Cache-Control', 'private, no-store');
+    return wrap(() => this.getStopListAggregateService.execute());
+  }
+
   @Get('draft-diff')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['read'] })
-  @RequireBrand()
+  @LocationNeutral()
   @ApiOkResponse({ type: DraftDiffResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   getDraftDiff(): Promise<DraftDiffResponseDto> {

@@ -21,16 +21,16 @@ function SuspendedState() {
 export async function generateMetadata(): Promise<Metadata> {
   try {
     const menu = await fetchMenuPublic();
-    const brandName = menu.brand?.displayName ?? 'Restaurant';
-    const logoUrl = menu.brand?.theme?.logoUrl ?? undefined;
+    const tenantName = menu.tenant?.displayName ?? 'Restaurant';
+    const logoUrl = menu.tenant?.theme?.logoUrl ?? undefined;
 
     return {
-      title: `${brandName} — Menu`,
-      description: `Order online from ${brandName}. Browse our menu and place your order.`,
+      title: `${tenantName} — Menu`,
+      description: `Order online from ${tenantName}. Browse our menu and place your order.`,
       robots: { index: true, follow: true },
       openGraph: {
-        title: `${brandName} — Menu`,
-        description: `Order online from ${brandName}. Browse our menu and place your order.`,
+        title: `${tenantName} — Menu`,
+        description: `Order online from ${tenantName}. Browse our menu and place your order.`,
         images: logoUrl ? [{ url: logoUrl }] : [],
       },
     };

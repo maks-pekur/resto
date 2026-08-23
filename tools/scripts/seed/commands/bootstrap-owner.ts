@@ -32,14 +32,15 @@ interface BootstrapOwnerResult {
  * Resolve a tenant id from its slug by re-issuing the (idempotent)
  * provision call — the api returns the existing tenant when the slug
  * matches an active row. Cheaper than introducing a dedicated
- * `GET /internal/v1/tenants/by-slug` just for this CLI.
+ * `GET /internal/v1/tenants/by-slug` just for this CLI. `country: 'GB'`
+ * only takes effect if the slug does not already exist (fresh-provision
+ * fallback) — bootstrap-owner has no `--country` flag of its own.
  */
 const resolveTenantId = async (api: ApiClient, slug: string): Promise<ProvisionLookup> =>
   api.post<ProvisionLookup>('/internal/v1/tenants', {
     slug,
     displayName: slug,
-    defaultCurrency: 'USD',
-    locale: 'en',
+    country: 'GB',
   });
 
 export const runBootstrapOwner = async (

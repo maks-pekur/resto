@@ -22,14 +22,14 @@
     "test": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run test/unit",
+        "command": "vitest run test/unit src",
         "cwd": "apps/api"
       }
     },
     "e2e": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run test/e2e",
+        "command": "vitest run test/e2e test/integration",
         "cwd": "apps/api"
       }
     },

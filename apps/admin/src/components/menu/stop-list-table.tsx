@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { EmptyState } from '@/components/empty-state';
 import { ImageIcon } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
@@ -18,8 +19,8 @@ import { toggleStopList } from '@/lib/queries/catalog';
 import type { StopListItemApi } from '@/lib/queries/catalog';
 
 export interface StopListTableProps {
-  readonly brandSlug: string;
   readonly items: readonly StopListItemApi[];
+  readonly locationId: string;
 }
 
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
@@ -30,14 +31,14 @@ const buildCategoryPath = (item: StopListItemApi): string => {
   return parent.length > 0 ? `${parent} → ${child}` : child;
 };
 
-export function StopListTable({ brandSlug, items }: StopListTableProps): React.ReactElement {
+export function StopListTable({ items, locationId }: StopListTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const queryClient = useQueryClient();
   const [removedIds, setRemovedIds] = React.useState<ReadonlySet<string>>(new Set());
 
   const toggleMutation = useMutation({
-    mutationFn: (itemId: string) => toggleStopList(brandSlug, itemId, 'published'),
+    mutationFn: (itemId: string) => toggleStopList(itemId, 'published', locationId),
     onSuccess: (res, itemId) => {
       if (res.ok) {
         setRemovedIds((prev) => {
@@ -46,7 +47,7 @@ export function StopListTable({ brandSlug, items }: StopListTableProps): React.R
           return copy;
         });
         showSuccess(tItems('removedFromStopList'), { duration: 1500 });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
       } else {
         showError(null, tItems('stopListFailed'));
       }
@@ -55,6 +56,10 @@ export function StopListTable({ brandSlug, items }: StopListTableProps): React.R
 
   const visibleItems = items.filter((it) => !removedIds.has(it.id));
   const now = Date.now();
+
+  if (visibleItems.length === 0) {
+    return <EmptyState variant="empty" title={t('title')} description={t('titleDescription')} />;
+  }
 
   return (
     <Table>
@@ -101,6 +106,7 @@ export function StopListTable({ brandSlug, items }: StopListTableProps): React.R
               </TableCell>
               <TableCell className="text-right">
                 <Switch
+                  className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                   checked
                   disabled={isPending}
                   onCheckedChange={() => {

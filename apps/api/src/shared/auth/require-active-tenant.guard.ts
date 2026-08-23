@@ -23,7 +23,7 @@ export class RequireActiveTenantGuard implements CanActivate {
     if (!tenant) return true;
     // AUDIT #21: every non-active status goes dark on the public read path.
     // 404 (not 403) so a suspended/archived tenant's existence stays hidden,
-    // matching how a brandless host already collapses to 404.
+    // matching how a tenant-less host already collapses to 404.
     if (!tenant.isPubliclyServable()) {
       throw new NotFoundException('No tenant resolved for this host.');
     }

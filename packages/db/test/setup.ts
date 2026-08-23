@@ -4,7 +4,13 @@ import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testconta
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
-import { createDb, provisionAppRole, RESTO_APP_ROLE, type TenantAwareDb } from '../src/index';
+import {
+  createDb,
+  provisionAppRole,
+  provisionAuthRole,
+  RESTO_APP_ROLE,
+  type TenantAwareDb,
+} from '../src/index';
 
 export interface TestPg {
   readonly container: StartedPostgreSqlContainer;
@@ -23,6 +29,7 @@ export interface TestPg {
 
 const MIGRATIONS_FOLDER = resolve(import.meta.dirname, '..', 'migrations');
 const APP_ROLE_PASSWORD = 'resto_app_test_password_local';
+const AUTH_ROLE_PASSWORD = 'resto_auth_test_password_local';
 
 /**
  * Start a fresh Postgres 16 container, apply all migrations, provision
@@ -47,6 +54,7 @@ export const startPostgres = async (): Promise<TestPg> => {
   try {
     await migrate(drizzle(adminClient), { migrationsFolder: MIGRATIONS_FOLDER });
     await provisionAppRole(adminClient, { appPassword: APP_ROLE_PASSWORD });
+    await provisionAuthRole(adminClient, { authPassword: AUTH_ROLE_PASSWORD });
   } finally {
     await adminClient.end({ timeout: 5 });
   }

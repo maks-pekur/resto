@@ -96,7 +96,7 @@ suite('Identity role-change audit pipeline — BA hook → outbox → NATS → a
     const memberRowId = randomUUID();
     await authDb.db.insert(schema.member).values({
       id: memberRowId,
-      organizationId: tenant.id,
+      tenantId: tenant.id,
       userId: staffUser.userId,
       role: 'staff',
       createdAt: new Date(),

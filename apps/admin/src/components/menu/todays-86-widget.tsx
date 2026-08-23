@@ -15,7 +15,11 @@ export function TodaysWidget({ count }: TodaysWidgetProps): React.ReactElement {
       <CardHeader>
         <div className="flex items-center justify-between gap-3">
           <CardTitle>{t('todayTitle')}</CardTitle>
-          <Badge variant={isEmpty ? 'secondary' : 'destructive'} aria-label={t('todayBadgeAria')}>
+          <Badge
+            variant={isEmpty ? 'secondary' : 'destructive'}
+            aria-label={t('todayBadgeAria')}
+            data-testid="todays-widget-count"
+          >
             {count}
           </Badge>
         </div>

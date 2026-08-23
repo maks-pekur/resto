@@ -1,5 +1,5 @@
 const devDefaults: Partial<Record<string, string>> = {
-  VITE_API_ORIGIN: 'http://localhost:3000',
+  VITE_ADMIN_HOST_SUFFIX: 'admin.localhost',
 };
 
 // G-05: reject localhost values in production (same family as ADR-0020 I-3).
@@ -17,5 +17,5 @@ export const getEnv = (key: string): string => {
   return val ?? (import.meta.env.DEV ? (devDefaults[key] ?? '') : '');
 };
 
-export const VITE_API_ORIGIN = getEnv('VITE_API_ORIGIN');
 export const VITE_STRIPE_PUBLISHABLE_KEY = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
+export const VITE_ADMIN_HOST_SUFFIX = getEnv('VITE_ADMIN_HOST_SUFFIX');

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../../src/contexts/identity/application/signup/bootstrap-owner.service';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
 import type { BaUserReader } from '../../../src/contexts/identity/application/ports/ba-user-reader.port';
 
@@ -21,7 +21,7 @@ const makeUsers = (
   existingOwner: { id: string; email: string } | null = null,
   existingUser: { id: string; email: string } | null = null,
 ): BaUserReader => ({
-  findOwnerByOrganization: vi.fn().mockResolvedValue(existingOwner),
+  findOwnerByTenant: vi.fn().mockResolvedValue(existingOwner),
   findUserByEmail: vi.fn().mockResolvedValue(existingUser),
 });
 
@@ -46,7 +46,6 @@ describe('BootstrapOwnerService — happy path', () => {
     expect(result).toEqual({
       tenantId: 'tenant-uuid',
       userId: 'user-uuid',
-      organizationId: 'tenant-uuid',
       email: 'ops@demo.test',
       requiresPasswordChange: true,
     });
@@ -118,7 +117,6 @@ describe('BootstrapOwnerService — idempotency', () => {
     expect(result).toEqual({
       tenantId: 'tenant-uuid',
       userId: 'user-uuid',
-      organizationId: 'tenant-uuid',
       email: 'ops@demo.test',
       requiresPasswordChange: false,
     });

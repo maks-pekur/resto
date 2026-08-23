@@ -15,7 +15,7 @@ const SALT = 'test-salt-must-be-at-least-32-chars';
 suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
   let pg: TestPg;
   let tenantId: string;
-  let brandId: string;
+  let locationId: string;
   let orderId: string;
 
   beforeAll(async () => {
@@ -23,23 +23,23 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
     await pg.db.withoutTenant('seed ordering erase fixtures', async (tx) => {
       const [t] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-ord', displayName: 'EraseOrd' })
+        .values({ slug: 'erase-ord', displayName: 'EraseOrd', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!t) throw new Error('seed tenant failed');
       tenantId = t.id;
 
-      const [b] = await tx
-        .insert(schema.brands)
-        .values({ tenantId, slug: 'erase-ord-brand', displayName: 'EraseOrdBrand' })
-        .returning({ id: schema.brands.id });
-      if (!b) throw new Error('seed brand failed');
-      brandId = b.id;
+      const [loc] = await tx
+        .insert(schema.locations)
+        .values({ tenantId, name: 'EraseOrd Location' })
+        .returning({ id: schema.locations.id });
+      if (!loc) throw new Error('seed location failed');
+      locationId = loc.id;
 
       const [o] = await tx
         .insert(schema.orders)
         .values({
           tenantId,
-          brandId,
+          locationId,
           idempotencyKey: 'erase-ord-idem',
           orderNumber: '20260621-ERS',
           status: 'created',
@@ -50,6 +50,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
           subtotal: '10.00',
           total: '11.50',
           currency: 'USD',
+          shortNumber: 1,
         })
         .returning({ id: schema.orders.id });
       if (!o) throw new Error('seed order failed');
@@ -85,6 +86,29 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         currency: 'USD',
         providerPaymentId: 'pi_stripe_secret_xyz',
       });
+
+      const [payment] = await tx
+        .select({ id: schema.payments.id })
+        .from(schema.payments)
+        .where(eq(schema.payments.tenantId, tenantId));
+      if (!payment) throw new Error('payment fixture missing');
+
+      await tx.insert(schema.paymentRefunds).values({
+        tenantId,
+        paymentId: payment.id,
+        refundRequestId: `refund:${orderId}:0:1150`,
+        amount: '11.50',
+        reason: 'requested_by_customer',
+        status: 'succeeded',
+        stripeRefundId: 're_stripe_xyz',
+      });
+
+      await tx.insert(schema.orderDailySequences).values({
+        tenantId,
+        locationId,
+        businessDate: '2026-08-13',
+        counter: 1,
+      });
     });
   }, 90_000);
 
@@ -92,7 +116,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
     await stopPostgres(pg);
   });
 
-  it('erases orders/items/modifiers/payments and still removes the brand (orders→brands RESTRICT no longer blocks)', async () => {
+  it('erases orders/items/modifiers/payments for the erased tenant', async () => {
     await pg.db.withoutTenant('run erase', async (tx) => {
       await tx.execute(sql`SELECT app_allow_erasure(${tenantId}::uuid)`);
       await tx.execute(
@@ -125,11 +149,17 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
         .where(eq(schema.payments.tenantId, tenantId));
       expect(pays[0]?.n).toBe(0);
 
-      const brands = await tx
+      const refunds = await tx
         .select({ n: sql<number>`count(*)::int` })
-        .from(schema.brands)
-        .where(eq(schema.brands.tenantId, tenantId));
-      expect(brands[0]?.n).toBe(0);
+        .from(schema.paymentRefunds)
+        .where(eq(schema.paymentRefunds.tenantId, tenantId));
+      expect(refunds[0]?.n).toBe(0);
+
+      const sequences = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(schema.orderDailySequences)
+        .where(eq(schema.orderDailySequences.tenantId, tenantId));
+      expect(sequences[0]?.n).toBe(0);
     });
   });
 });

@@ -3,12 +3,13 @@ import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 import ru from './messages/ru.json';
 import en from './messages/en.json';
+import es from './messages/es.json';
 
 void i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: { ru: { translation: ru }, en: { translation: en } },
+    resources: { ru: { translation: ru }, en: { translation: en }, es: { translation: es } },
     fallbackLng: 'ru',
     detection: {
       order: ['cookie', 'localStorage', 'navigator'],

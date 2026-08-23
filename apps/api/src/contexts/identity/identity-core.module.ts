@@ -14,6 +14,9 @@ import {
   type IdentityEventEmitterPort,
 } from './application/ports/identity-event-emitter.port';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
+import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
+import { LocationPermissionChecker } from './application/location-scope/location-permission-checker';
+import { SyncPresetRolesService } from './application/roles/sync-preset-roles.service';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from './domain/ports';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import {
@@ -27,6 +30,8 @@ import { BetterAuthPermissionChecker } from './infrastructure/better-auth/permis
 import { createEmailAdapter } from './infrastructure/email/email-adapter.factory';
 import { getLocale } from './infrastructure/email/get-locale';
 import { IdentityEventEmitterAdapter } from './infrastructure/identity-event-emitter.adapter';
+import { InitialLocationDrizzleRepository } from './infrastructure/initial-location-drizzle.repository';
+import { MemberLocationScopeDrizzleReader } from './infrastructure/member-location-scope-drizzle.reader';
 import { AUTH_DRIZZLE_TOKEN, AUTH_TOKEN } from './identity.tokens';
 
 const DEV_BA_SECRET_FALLBACK = 'dev-only-better-auth-secret-32-chars-padding';
@@ -217,13 +222,23 @@ export const buildAuthFromEnv = (
   env: Env,
   emitter: IdentityEventEmitterPort,
   emailAdapter: EmailAdapterPort,
+  locationResolver: InitialLocationDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
   // Admin (and other browser callers) hit BA from a different origin
   // than the api's `baseURL`; BA enforces an Origin allowlist on
-  // mutating requests. Add `ADMIN_WEB_URL` when configured.
+  // mutating requests. ADMIN_WEB_URL is the apex (pre-tenant
+  // sign-in/signup); ADMIN_WEB_ORIGIN_WILDCARD (D-21) is the
+  // per-tenant SPA host — both are needed, not either/or.
+  // BA's own static-array `matchesOriginPattern` does the matching (its
+  // `*` may span dots within the matched segment, looser than this repo's
+  // `buildOriginMatcher`, which forbids that via `[^./:]+`) — safe here
+  // only because tenant slugs cannot contain dots (`TenantSlugValue`).
+  // trustedOrigins stays a plain array, never a function, so D-39 is not
+  // reintroducing the matcher BA already provides.
   const trustedOrigins: string[] = [];
   if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
+  if (env.ADMIN_WEB_ORIGIN_WILDCARD) trustedOrigins.push(env.ADMIN_WEB_ORIGIN_WILDCARD);
 
   const { sendInvitationEmail, sendResetPassword, sendVerificationEmail } = buildBaCallbacks(
     env,
@@ -292,7 +307,9 @@ export const buildAuthFromEnv = (
         ),
       );
     },
-    onActiveOrganizationSet: async (session, ctx) => {
+    onInitialLocationPin: (userId, tenantId) =>
+      locationResolver.resolveForUserInTenant(userId, tenantId),
+    onActiveTenantSet: async (session, ctx) => {
       if (!session.activeOrganizationId) return;
       const xff = readHeader(ctx.headers, 'x-forwarded-for');
       const xffFirst = xff?.split(',')[0]?.trim();
@@ -319,7 +336,13 @@ export const buildAuthFromEnv = (
 
 const authProvider: Provider = {
   provide: AUTH_TOKEN,
-  inject: [AUTH_DRIZZLE_TOKEN, ENV_TOKEN, IDENTITY_EVENT_EMITTER, EMAIL_ADAPTER_PORT],
+  inject: [
+    AUTH_DRIZZLE_TOKEN,
+    ENV_TOKEN,
+    IDENTITY_EVENT_EMITTER,
+    EMAIL_ADAPTER_PORT,
+    InitialLocationDrizzleRepository,
+  ],
   useFactory: buildAuthFromEnv,
 };
 
@@ -328,13 +351,28 @@ const permissionCheckerProvider: Provider = {
   useClass: BetterAuthPermissionChecker,
 };
 
+// D-08/T-084-21: registered here (not identity-http.module.ts, where the
+// same MEMBER_LOCATION_SCOPE_READER token is also bound) so
+// LocationPermissionChecker resolves within IdentityCoreModule's own DI
+// scope — module-child providers cannot reach up into an importer's
+// bindings.
+const memberLocationScopeReaderProvider: Provider = {
+  provide: MEMBER_LOCATION_SCOPE_READER,
+  useClass: MemberLocationScopeDrizzleReader,
+};
+
 @Module({
   providers: [
     authDrizzleProvider,
     emailAdapterProvider,
+    InitialLocationDrizzleRepository,
     authProvider,
     permissionCheckerProvider,
     BetterAuthPermissionChecker,
+    memberLocationScopeReaderProvider,
+    MemberLocationScopeDrizzleReader,
+    LocationPermissionChecker,
+    SyncPresetRolesService,
     {
       provide: IDENTITY_EVENT_EMITTER,
       useClass: IdentityEventEmitterAdapter,
@@ -347,6 +385,9 @@ const permissionCheckerProvider: Provider = {
     emailAdapterProvider,
     permissionCheckerProvider,
     IDENTITY_EVENT_EMITTER,
+    InitialLocationDrizzleRepository,
+    LocationPermissionChecker,
+    SyncPresetRolesService,
   ],
 })
 export class IdentityCoreModule {}

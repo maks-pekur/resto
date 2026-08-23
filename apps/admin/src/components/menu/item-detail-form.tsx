@@ -37,7 +37,6 @@ export interface ItemDetailFormState {
 }
 
 export interface ItemDetailFormProps {
-  readonly brandSlug: string;
   readonly initialValues: ItemEditorForm;
   readonly categories: readonly CategoryListItemApi[];
   readonly currentItemId: string;
@@ -60,7 +59,6 @@ const commaListFromInput = (raw: string): string[] =>
     .filter((s) => s.length > 0);
 
 export function ItemDetailForm({
-  brandSlug,
   initialValues,
   categories,
   currentItemId,
@@ -97,12 +95,12 @@ export function ItemDetailForm({
 
   const upsertMutation = useMutation({
     mutationFn: (data: ItemEditorForm & { photoS3Key?: string | null }) =>
-      upsertItem(brandSlug, isNew ? null : currentItemId, data),
+      upsertItem(isNew ? null : currentItemId, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'items', brandSlug] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'items'] });
       if (!isNew) {
         void queryClient.invalidateQueries({
-          queryKey: ['catalog', 'item', brandSlug, currentItemId],
+          queryKey: ['catalog', 'item', currentItemId],
         });
       }
     },
@@ -120,13 +118,11 @@ export function ItemDetailForm({
       const savedId = res.data?.id ?? '';
       onSaved(savedId);
       if (isNew) {
-        /* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
-        void (navigate as any)({
-          to: '/dashboard/$brandSlug/menu/items/$id',
-          params: { brandSlug, id: savedId },
+        void navigate({
+          to: '/menu/items/$id',
+          params: { id: savedId },
           replace: true,
         });
-        /* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-call */
       } else {
         form.reset(values);
       }
@@ -146,13 +142,11 @@ export function ItemDetailForm({
       >
         <ItemBasicsCard categories={categories} slug={slug} />
         <ItemSizesCard
-          brandSlug={brandSlug}
           itemId={currentItemId}
           sizes={initialItemSizes}
           onSizesChange={onSizesChange}
         />
         <ItemModifierGroupsCard
-          brandSlug={brandSlug}
           itemId={currentItemId}
           initialModifierGroupIds={initialModifierGroupIds}
           availableGroups={availableModifierGroups}

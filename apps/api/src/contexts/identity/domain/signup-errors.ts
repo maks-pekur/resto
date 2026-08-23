@@ -21,3 +21,16 @@ export class SignupBetterAuthFailureError extends Error {
     this.name = 'SignupBetterAuthFailureError';
   }
 }
+
+/**
+ * D-30/D-31 (10.2 plan 13): the caller's tenant is not (or no longer)
+ * `'pending_setup'` — either onboarding already ran once (idempotent-safe
+ * per the plan's interface contract, not a surfaced error state) or the
+ * tenant id resolved from the session could not be found at all.
+ */
+export class TenantSetupNotPendingError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" is not pending setup.`);
+    this.name = 'TenantSetupNotPendingError';
+  }
+}

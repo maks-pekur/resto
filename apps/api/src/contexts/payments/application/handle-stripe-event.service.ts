@@ -16,10 +16,9 @@ import { toMinorUnits, fromMinorUnits } from '../../ordering/domain/money-utils'
 import { ORDER_REPOSITORY, type OrderRepository } from '../../ordering/domain/ports';
 import { InvalidOrderTransitionError } from '../../ordering/domain/errors';
 import type { OrderId } from '@resto/domain';
-import { BRAND_REPOSITORY, type BrandRepository } from '../../tenancy/domain/ports';
-import { Brand } from '../../tenancy/domain/brand.aggregate';
-import type { BrandOnboardingStatus } from '../../tenancy/domain/brand.aggregate';
-import { StripeAccountId } from '../../tenancy/domain/tenant.aggregate';
+import { TENANT_REPOSITORY, type TenantRepository } from '../../tenancy/domain/ports';
+import { StripeAccountId, Tenant } from '../../tenancy/domain/tenant.aggregate';
+import type { StripeOnboardingStatus } from '../../tenancy/domain/tenant.aggregate';
 import {
   PAYMENT_PROVIDER_PORT,
   PAYMENT_REPOSITORY,
@@ -29,6 +28,22 @@ import {
 } from '../domain/ports';
 
 const CONSUMER_NAME = 'payments-webhook';
+
+// payment_refunds_status_chk allows only these three; Stripe also emits requires_action/canceled.
+const toLedgerRefundStatus = (stripeStatus: string | null | undefined): string | null => {
+  switch (stripeStatus) {
+    case 'succeeded':
+      return 'succeeded';
+    case 'failed':
+    case 'canceled':
+      return 'failed';
+    case 'pending':
+    case 'requires_action':
+      return 'pending';
+    default:
+      return null;
+  }
+};
 
 type RunDedupedFn = (
   db: TenantAwareDb,
@@ -44,7 +59,7 @@ export class HandleStripeEventService {
 
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
-    @Inject(BRAND_REPOSITORY) private readonly brandRepo: BrandRepository,
+    @Inject(TENANT_REPOSITORY) private readonly tenantRepo: TenantRepository,
     @Inject(ORDER_REPOSITORY) private readonly orderRepo: OrderRepository,
     @Inject(PAYMENT_REPOSITORY) private readonly paymentRepo: PaymentRepository,
     @Inject(PAYMENT_PROVIDER_PORT) private readonly provider: PaymentProviderPort,
@@ -69,8 +84,10 @@ export class HandleStripeEventService {
         await this.handlePaymentIntentFailed(event);
         break;
       case 'charge.refunded':
+        await this.handleChargeRefunded(event);
+        break;
       case 'refund.updated':
-        await this.handleRefund(event);
+        await this.handleRefundUpdated(event);
         break;
       case 'charge.dispute.created':
         await this.handleDisputeCreated(event);
@@ -97,8 +114,8 @@ export class HandleStripeEventService {
     }
     const accountId = parsedId.data;
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'account.updated for unregistered Stripe account — ignoring (W3).',
@@ -106,7 +123,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const acct = rawEvent.data.object as {
       charges_enabled?: boolean;
       payouts_enabled?: boolean;
@@ -118,7 +135,7 @@ export class HandleStripeEventService {
     const payoutsEnabled = acct.payouts_enabled ?? false;
     const detailsSubmitted = acct.details_submitted ?? false;
 
-    let onboardingStatus: BrandOnboardingStatus;
+    let onboardingStatus: StripeOnboardingStatus;
     if (chargesEnabled && detailsSubmitted) {
       onboardingStatus = 'complete';
     } else if (acct.requirements?.currently_due && acct.requirements.currently_due.length > 0) {
@@ -129,15 +146,15 @@ export class HandleStripeEventService {
 
     const pseudoEnvelope = { id: event.id, tenantId };
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (_tx) => {
-      const brand = Brand.fromSnapshot(brandSnap);
+      const tenant = Tenant.fromSnapshot(tenantSnap);
       const currentlyDue = acct.requirements?.currently_due ?? null;
-      brand.applyPaymentCapabilities({
+      tenant.applyStripeCapabilities({
         chargesEnabled,
         payoutsEnabled,
         onboardingStatus,
         requirementsDue: currentlyDue ? [...currentlyDue] : null,
       });
-      await this.brandRepo.updatePaymentConnection(brand);
+      await this.tenantRepo.save(tenant);
     });
   }
 
@@ -304,7 +321,9 @@ export class HandleStripeEventService {
     });
   }
 
-  private async handleRefund(event: WebhookEvent): Promise<void> {
+  // F-49: only the Charge carries cumulative refund totals. `refund.updated` delivers a Refund,
+  // whose missing amount_refunded read as 0 and clobbered a completed full refund back to partial.
+  private async handleChargeRefunded(event: WebhookEvent): Promise<void> {
     const rawCharge = (
       event as {
         account?: string;
@@ -331,13 +350,13 @@ export class HandleStripeEventService {
     if (!accountId) {
       this.logger.warn(
         { eventId: event.id },
-        'charge.refunded missing event.account — cannot resolve brand, ignoring.',
+        'charge.refunded missing event.account — cannot resolve tenant, ignoring.',
       );
       return;
     }
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'charge.refunded for unregistered account — ignoring (W3).',
@@ -345,7 +364,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const pseudoEnvelope = { id: event.id, tenantId };
 
     const cumulativeRefundedMinor = rawCharge.amount_refunded ?? 0;
@@ -401,6 +420,71 @@ export class HandleStripeEventService {
     });
   }
 
+  private async handleRefundUpdated(event: WebhookEvent): Promise<void> {
+    const rawRefund = (
+      event as {
+        account?: string;
+        data: { object: { id?: string; status?: string | null } };
+      }
+    ).data.object;
+
+    const refundId = rawRefund.id;
+    if (!refundId) {
+      this.logger.warn({ eventId: event.id }, 'refund.updated missing refund id — ignoring.');
+      return;
+    }
+
+    const ledgerStatus = toLedgerRefundStatus(rawRefund.status);
+    if (!ledgerStatus) {
+      this.logger.warn(
+        { eventId: event.id, refundId, status: rawRefund.status },
+        'refund.updated with an unrecognized status — ignoring.',
+      );
+      return;
+    }
+
+    const accountId = (event as { account?: string }).account;
+    if (!accountId) {
+      this.logger.warn(
+        { eventId: event.id },
+        'refund.updated missing event.account — cannot resolve tenant, ignoring.',
+      );
+      return;
+    }
+
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
+      this.logger.warn(
+        { accountId, eventId: event.id },
+        'refund.updated for unregistered account — ignoring (W3).',
+      );
+      return;
+    }
+
+    const tenantId = tenantSnap.id;
+
+    await this.runDedupedFn(
+      this.db,
+      { id: event.id, tenantId },
+      CONSUMER_NAME,
+      async (tx: RestoTx) => {
+        const existing = await this.paymentRepo.findRefundByStripeId(tenantId, refundId, tx);
+        if (!existing) {
+          this.logger.warn(
+            { refundId, tenantId },
+            'refund.updated for an unknown refund row — ignoring.',
+          );
+          return;
+        }
+        await this.paymentRepo.updateRefundStatusByStripeId(tenantId, refundId, ledgerStatus, tx);
+        this.logger.log(
+          { refundId, tenantId, status: ledgerStatus },
+          'refund.updated: refund ledger status synced; payment totals untouched (F-49).',
+        );
+      },
+    );
+  }
+
   private async handleDisputeCreated(event: WebhookEvent): Promise<void> {
     const rawDispute = (
       event as {
@@ -435,8 +519,8 @@ export class HandleStripeEventService {
       return;
     }
 
-    const brandSnap = await this.brandRepo.findByStripeAccountId(accountId);
-    if (!brandSnap) {
+    const tenantSnap = await this.tenantRepo.findByStripeAccountId(accountId);
+    if (!tenantSnap) {
       this.logger.warn(
         { accountId, eventId: event.id },
         'charge.dispute.created for unregistered account — ignoring (W3).',
@@ -444,7 +528,7 @@ export class HandleStripeEventService {
       return;
     }
 
-    const tenantId = brandSnap.tenantId;
+    const tenantId = tenantSnap.id;
     const pseudoEnvelope = { id: event.id, tenantId };
 
     await this.runDedupedFn(this.db, pseudoEnvelope, CONSUMER_NAME, async (tx) => {

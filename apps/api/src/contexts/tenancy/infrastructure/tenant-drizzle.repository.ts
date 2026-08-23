@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
-import { Currency, TenantId, TenantSlug } from '@resto/domain';
+import { Currency, TenantId, TenantSlug, TenantTheme, type CountryCodeValue } from '@resto/domain';
 import {
   appendToOutbox,
   buildEnvelope,
@@ -8,19 +8,29 @@ import {
   TenantErasureCompletedV1,
   TenantOffboardingCancelledV1,
   TenantOffboardingScheduledV1,
+  TenantPaymentAccountLinkedV1,
+  TenantPaymentCapabilitiesAppliedV1,
   TenantProvisionedV1,
   TenantResumedV1,
   TenantSuspendedV1,
   type EventEnvelope,
 } from '@resto/events';
 import { eq, sql } from 'drizzle-orm';
-import { Tenant, type TenantSnapshot, type TenantStatus } from '../domain/tenant.aggregate';
+import {
+  Tenant,
+  type TenantLegalForm,
+  type TenantPaymentAccountType,
+  type TenantSnapshot,
+  type TenantStatus,
+  type StripeOnboardingStatus,
+} from '../domain/tenant.aggregate';
 import { TenantNotFoundError, TenantSlugTakenError } from '../domain/errors';
 import type { TenantDomainEvent } from '../domain/events';
 import type { TenantDomain, TenantDomainKind } from '../domain/tenant-domain';
 import type { TenantRepository } from '../domain/ports';
 
 const ALLOWED_STATUSES: ReadonlySet<TenantStatus> = new Set([
+  'pending_setup',
   'active',
   'suspended',
   'archived',
@@ -57,11 +67,12 @@ const TENANT_SLUG_CONSTRAINTS: ReadonlySet<string> = new Set(['tenants_slug_uq']
 export class TenantDrizzleRepository implements TenantRepository {
   constructor(@Inject(TenantAwareDb) private readonly db: TenantAwareDb) {}
 
-  async findById(id: TenantId): Promise<Tenant | null> {
-    return this.loadById(id);
+  async findById(id: TenantId): Promise<TenantSnapshot | null> {
+    const tenant = await this.loadById(id);
+    return tenant ? tenant.toSnapshot() : null;
   }
 
-  findBySlug(slug: TenantSlug): Promise<Tenant | null> {
+  findBySlug(slug: string): Promise<TenantSnapshot | null> {
     return this.db.withoutTenant('tenancy.findBySlug', async (tx) => {
       const rows = await tx
         .select({ id: schema.tenants.id })
@@ -70,11 +81,12 @@ export class TenantDrizzleRepository implements TenantRepository {
         .limit(1);
       const id = rows[0]?.id;
       if (!id) return null;
-      return this.loadByIdWithTx(tx, TenantId.parse(id));
+      const tenant = await this.loadByIdWithTx(tx, TenantId.parse(id));
+      return tenant ? tenant.toSnapshot() : null;
     });
   }
 
-  findByDomainHost(host: string): Promise<Tenant | null> {
+  findByDomainHost(host: string): Promise<TenantSnapshot | null> {
     return this.db.withoutTenant('tenancy.findByDomainHost', async (tx) => {
       const rows = await tx
         .select({ tenantId: schema.tenantDomains.tenantId })
@@ -83,7 +95,22 @@ export class TenantDrizzleRepository implements TenantRepository {
         .limit(1);
       const tenantId = rows[0]?.tenantId;
       if (!tenantId) return null;
-      return this.loadByIdWithTx(tx, TenantId.parse(tenantId));
+      const tenant = await this.loadByIdWithTx(tx, TenantId.parse(tenantId));
+      return tenant ? tenant.toSnapshot() : null;
+    });
+  }
+
+  findByStripeAccountId(stripeAccountId: string): Promise<TenantSnapshot | null> {
+    return this.db.withoutTenant('tenancy.findByStripeAccountId', async (tx) => {
+      const rows = await tx
+        .select({ id: schema.tenants.id })
+        .from(schema.tenants)
+        .where(eq(schema.tenants.stripeAccountId, stripeAccountId))
+        .limit(1);
+      const id = rows[0]?.id;
+      if (!id) return null;
+      const tenant = await this.loadByIdWithTx(tx, TenantId.parse(id));
+      return tenant ? tenant.toSnapshot() : null;
     });
   }
 
@@ -133,7 +160,20 @@ export class TenantDrizzleRepository implements TenantRepository {
             displayName: snapshot.displayName,
             status: snapshot.status,
             locale: snapshot.locale,
+            country: snapshot.country,
             defaultCurrency: snapshot.defaultCurrency,
+            theme: snapshot.theme,
+            legalName: snapshot.legalName,
+            legalForm: snapshot.legalForm,
+            taxId: snapshot.taxId,
+            stripeAccountId: snapshot.stripeAccountId,
+            paymentProvider: snapshot.paymentProvider,
+            accountType: snapshot.accountType,
+            stripeChargesEnabled: snapshot.stripeChargesEnabled,
+            stripePayoutsEnabled: snapshot.stripePayoutsEnabled,
+            stripeOnboardingStatus: snapshot.stripeOnboardingStatus,
+            stripeRequirementsDue: snapshot.stripeRequirementsDue,
+            fiscalizationConfig: snapshot.fiscalizationConfig,
             createdAt: snapshot.createdAt,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,
@@ -148,7 +188,20 @@ export class TenantDrizzleRepository implements TenantRepository {
               displayName: snapshot.displayName,
               status: snapshot.status,
               locale: snapshot.locale,
+              country: snapshot.country,
               defaultCurrency: snapshot.defaultCurrency,
+              theme: snapshot.theme,
+              legalName: snapshot.legalName,
+              legalForm: snapshot.legalForm,
+              taxId: snapshot.taxId,
+              stripeAccountId: snapshot.stripeAccountId,
+              paymentProvider: snapshot.paymentProvider,
+              accountType: snapshot.accountType,
+              stripeChargesEnabled: snapshot.stripeChargesEnabled,
+              stripePayoutsEnabled: snapshot.stripePayoutsEnabled,
+              stripeOnboardingStatus: snapshot.stripeOnboardingStatus,
+              stripeRequirementsDue: snapshot.stripeRequirementsDue,
+              fiscalizationConfig: snapshot.fiscalizationConfig,
               updatedAt: snapshot.updatedAt,
               archivedAt: snapshot.archivedAt,
               offboardingScheduledAt: snapshot.offboardingScheduledAt,
@@ -172,7 +225,23 @@ export class TenantDrizzleRepository implements TenantRepository {
               updatedAt: domain.createdAt,
               archivedAt: null,
             })
-            .onConflictDoNothing({ target: schema.tenantDomains.id });
+            // WHY: onboarding's `finalizeSetup` (10.2 plan 13) rewrites the
+            // primary domain's hostname in place, keeping the same row id —
+            // `onConflictDoNothing` would silently skip that update and
+            // leave the stale `<random>.menu.resto.app` hostname live.
+            // Updating the same four mutable fields on conflict is a no-op
+            // for every OTHER caller of `save`, which always re-supplies the
+            // snapshot's current values.
+            .onConflictDoUpdate({
+              target: schema.tenantDomains.id,
+              set: {
+                domain: domain.domain,
+                kind: domain.kind,
+                isPrimary: domain.isPrimary,
+                verifiedAt: domain.verifiedAt,
+                updatedAt: new Date(),
+              },
+            });
         }
 
         for (const event of events) {
@@ -280,7 +349,20 @@ export class TenantDrizzleRepository implements TenantRepository {
       displayName: row.displayName,
       status,
       locale: row.locale,
+      country: row.country as CountryCodeValue,
       defaultCurrency: Currency.parse(row.defaultCurrency),
+      theme: row.theme === null ? null : TenantTheme.parse(row.theme),
+      legalName: row.legalName,
+      legalForm: row.legalForm as TenantLegalForm | null,
+      taxId: row.taxId,
+      stripeAccountId: row.stripeAccountId,
+      paymentProvider: row.paymentProvider as 'stripe',
+      accountType: row.accountType as TenantPaymentAccountType | null,
+      stripeChargesEnabled: row.stripeChargesEnabled,
+      stripePayoutsEnabled: row.stripePayoutsEnabled,
+      stripeOnboardingStatus: row.stripeOnboardingStatus as StripeOnboardingStatus,
+      stripeRequirementsDue: row.stripeRequirementsDue,
+      fiscalizationConfig: row.fiscalizationConfig,
       primaryDomain: rowToTenantDomain(primary),
       customDomains,
       createdAt: row.createdAt,
@@ -381,6 +463,27 @@ const domainEventToEnvelope = (event: TenantDomainEvent): EventEnvelope => {
         {
           tenantId: event.tenantId,
           resumedAt: event.resumedAt,
+        },
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
+    case 'TenantPaymentAccountLinked':
+      return buildEnvelope(
+        TenantPaymentAccountLinkedV1,
+        {
+          tenantId: event.tenantId,
+          stripeAccountId: event.stripeAccountId,
+          accountType: event.accountType,
+        },
+        { tenantId: event.tenantId, occurredAt: event.occurredAt },
+      );
+    case 'TenantPaymentCapabilitiesApplied':
+      return buildEnvelope(
+        TenantPaymentCapabilitiesAppliedV1,
+        {
+          tenantId: event.tenantId,
+          chargesEnabled: event.chargesEnabled,
+          payoutsEnabled: event.payoutsEnabled,
+          onboardingStatus: event.onboardingStatus,
         },
         { tenantId: event.tenantId, occurredAt: event.occurredAt },
       );

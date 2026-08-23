@@ -38,6 +38,7 @@ suite('runDeduped — atomic dedup + handler', () => {
         displayName: 'Run Deduped Test',
         locale: 'en',
         defaultCurrency: 'USD',
+        country: 'GB',
       });
     });
   }, 180_000);

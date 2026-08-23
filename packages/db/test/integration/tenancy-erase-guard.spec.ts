@@ -25,19 +25,19 @@ suite('RES-204: tenancy_erase_tenant requires caller-specific app.allow_erasure'
     await pg.db.withoutTenant('seed four guard tenants', async (tx) => {
       const [t1] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-guard-happy', displayName: 'EG-Happy' })
+        .values({ slug: 'erase-guard-happy', displayName: 'EG-Happy', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [t2] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-guard-mismatch', displayName: 'EG-Mismatch' })
+        .values({ slug: 'erase-guard-mismatch', displayName: 'EG-Mismatch', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [t3] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-guard-plain', displayName: 'EG-Plain' })
+        .values({ slug: 'erase-guard-plain', displayName: 'EG-Plain', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [t4] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'erase-guard-skip', displayName: 'EG-Skip' })
+        .values({ slug: 'erase-guard-skip', displayName: 'EG-Skip', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!t1 || !t2 || !t3 || !t4) throw new Error('seed tenants failed');
       tenantHappy = t1.id;

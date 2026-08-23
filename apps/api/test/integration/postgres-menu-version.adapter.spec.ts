@@ -22,8 +22,8 @@ suite('PostgresMenuVersionAdapter', () => {
   let stack: DbStack;
   let adapter: PostgresMenuVersionAdapter;
   const tenantId = randomUUID();
-  const brandA = randomUUID();
-  const brandB = randomUUID();
+  const locationA = randomUUID();
+  const locationB = randomUUID();
 
   const inTenant = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenantId }, op);
 
@@ -37,16 +37,17 @@ suite('PostgresMenuVersionAdapter', () => {
         slug: 'mv-tenant',
         displayName: 'MV Tenant',
         locale: 'en',
+        country: 'GB',
         defaultCurrency: 'USD',
       });
-      await tx.insert(schema.brands).values([
-        { id: brandA, tenantId, slug: 'brand-a', displayName: 'Brand A' },
-        { id: brandB, tenantId, slug: 'brand-b', displayName: 'Brand B' },
+      await tx.insert(schema.locations).values([
+        { id: locationA, tenantId, name: 'Location A' },
+        { id: locationB, tenantId, name: 'Location B' },
       ]);
       await tx.insert(schema.catalogMenuVersion).values({ tenantId });
-      await tx.insert(schema.catalogBrandStopVersion).values([
-        { brandId: brandA, tenantId },
-        { brandId: brandB, tenantId },
+      await tx.insert(schema.catalogLocationStopVersion).values([
+        { locationId: locationA, tenantId },
+        { locationId: locationB, tenantId },
       ]);
     });
   }, 180_000);
@@ -60,9 +61,9 @@ suite('PostgresMenuVersionAdapter', () => {
     expect(v).toBe(1);
   });
 
-  it('currentStop returns the seeded stop version of 1 per brand', async () => {
-    const a = await inTenant(() => adapter.currentStop(brandA));
-    const b = await inTenant(() => adapter.currentStop(brandB));
+  it('currentStop returns the seeded stop version of 1 per location', async () => {
+    const a = await inTenant(() => adapter.currentStop(locationA));
+    const b = await inTenant(() => adapter.currentStop(locationB));
     expect(a).toBe(1);
     expect(b).toBe(1);
   });
@@ -78,20 +79,20 @@ suite('PostgresMenuVersionAdapter', () => {
     expect(v).toBe(5);
   });
 
-  it('currentStop is per-brand: bumping brand A leaves brand B unchanged', async () => {
-    await stack.db.withoutTenant('bump brand A stop version', async (tx) => {
+  it('currentStop is per-location: bumping location A leaves location B unchanged', async () => {
+    await stack.db.withoutTenant('bump location A stop version', async (tx) => {
       await tx
-        .update(schema.catalogBrandStopVersion)
+        .update(schema.catalogLocationStopVersion)
         .set({ stopVersion: 9 })
         .where(
           and(
-            eq(schema.catalogBrandStopVersion.brandId, brandA),
-            eq(schema.catalogBrandStopVersion.tenantId, tenantId),
+            eq(schema.catalogLocationStopVersion.locationId, locationA),
+            eq(schema.catalogLocationStopVersion.tenantId, tenantId),
           ),
         );
     });
-    const a = await inTenant(() => adapter.currentStop(brandA));
-    const b = await inTenant(() => adapter.currentStop(brandB));
+    const a = await inTenant(() => adapter.currentStop(locationA));
+    const b = await inTenant(() => adapter.currentStop(locationB));
     expect(a).toBe(9);
     expect(b).toBe(1);
   });

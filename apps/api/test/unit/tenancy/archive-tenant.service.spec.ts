@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { Currency, TenantId, TenantSlug } from '@resto/domain';
+import { TenantId, TenantSlug } from '@resto/domain';
 import { ArchiveTenantService } from '../../../src/contexts/tenancy/application/archive-tenant.service';
 import type { IdentityRevocationPort } from '../../../src/contexts/tenancy/application/ports/identity-revocation.port';
 import { TenantNotFoundError } from '../../../src/contexts/tenancy/domain/errors';
@@ -12,6 +12,7 @@ const buildRepo = (): TenantRepository => ({
   findById: vi.fn(),
   findBySlug: vi.fn(),
   findByDomainHost: vi.fn(),
+  findByStripeAccountId: vi.fn(),
   save: vi.fn().mockResolvedValue(undefined),
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
@@ -24,7 +25,7 @@ const buildTenant = (): Tenant =>
   Tenant.provision({
     slug: TenantSlug.parse('cafe-roma'),
     displayName: 'Cafe Roma',
-    defaultCurrency: Currency.parse('USD'),
+    country: 'GB',
     primaryDomainHostname: 'cafe-roma.menu.resto.app',
   });
 
@@ -45,17 +46,18 @@ describe('ArchiveTenantService', () => {
 
   it('archives an existing tenant and persists the aggregate', async () => {
     const tenant = buildTenant();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
 
     await service.execute(TENANT_UUID);
 
-    expect(tenant.toSnapshot().status).toBe('archived');
-    expect(repo.save).toHaveBeenCalledWith(tenant);
+    const saved = vi.mocked(repo.save).mock.calls[0]?.[0];
+    expect(saved?.toSnapshot().status).toBe('archived');
+    expect(repo.save).toHaveBeenCalledWith(saved);
   });
 
   it('persists the archive before revoking sessions', async () => {
     const tenant = buildTenant();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
     revoker.revokeAllSessionsForTenant = vi.fn().mockResolvedValue({ revokedSessionsCount: 3 });
 
     await service.execute(TENANT_UUID);
@@ -68,7 +70,7 @@ describe('ArchiveTenantService', () => {
 
   it('skips revocation and keeps the tenant active when save fails', async () => {
     const tenant = buildTenant();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
     repo.save = vi.fn().mockRejectedValue(new Error('save failed'));
 
     await expect(service.execute(TENANT_UUID)).rejects.toThrow(/save failed/);
@@ -77,12 +79,13 @@ describe('ArchiveTenantService', () => {
 
   it('completes archive even when revocation fails — sessions are best-effort cleanup', async () => {
     const tenant = buildTenant();
-    repo.findById = vi.fn().mockResolvedValue(tenant);
+    repo.findById = vi.fn().mockResolvedValue(tenant.toSnapshot());
     revoker.revokeAllSessionsForTenant = vi.fn().mockRejectedValue(new Error('BA down'));
 
     await expect(service.execute(TENANT_UUID)).resolves.toBeUndefined();
-    expect(repo.save).toHaveBeenCalledWith(tenant);
-    expect(tenant.toSnapshot().status).toBe('archived');
+    const saved = vi.mocked(repo.save).mock.calls[0]?.[0];
+    expect(repo.save).toHaveBeenCalledWith(saved);
+    expect(saved?.toSnapshot().status).toBe('archived');
   });
 
   it('throws TenantNotFoundError when the tenant does not exist', async () => {

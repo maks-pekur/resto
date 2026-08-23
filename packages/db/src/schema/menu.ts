@@ -25,14 +25,13 @@ import {
   timestampsColumns,
 } from './_columns';
 import { tenants } from './tenants';
-import { brands } from './brands';
+import { locations } from './locations';
 
 export const menuCategories = pgTable(
   'menu_categories',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     parentId: uuid('parent_id'),
     slug: text('slug').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
@@ -54,14 +53,13 @@ export const menuCategories = pgTable(
       columns: [table.parentId, table.tenantId],
       foreignColumns: [table.id, table.tenantId],
     }).onDelete('restrict'),
-    compositeTenantFk({
-      name: 'menu_categories_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
-    uniqueIndex('menu_categories_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
-    uniqueIndex('menu_categories_brand_code_uq')
-      .on(table.tenantId, table.brandId, table.code)
+    // NOTE (D-04/plan 04): the second scoping dimension merged into tenant.
+    // Slug/code uniqueness is now per-tenant only; this is a deliberate
+    // behavior change (two categories with the same slug could previously
+    // coexist under two separate scopes of one tenant, no longer possible).
+    uniqueIndex('menu_categories_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_categories_tenant_code_uq')
+      .on(table.tenantId, table.code)
       .where(sql`${table.code} IS NOT NULL`),
     index('menu_categories_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check('menu_categories_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
@@ -86,7 +84,6 @@ export const menuItems = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     categoryId: uuid('category_id').notNull(),
     slug: text('slug').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
@@ -128,14 +125,11 @@ export const menuItems = pgTable(
       child: { id: table.categoryId, tenantId: table.tenantId },
       parent: { id: menuCategories.id, tenantId: menuCategories.tenantId },
     }).onDelete('restrict'),
-    compositeTenantFk({
-      name: 'menu_items_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
-    uniqueIndex('menu_items_brand_slug_uq').on(table.tenantId, table.brandId, table.slug),
-    uniqueIndex('menu_items_brand_code_uq')
-      .on(table.tenantId, table.brandId, table.code)
+    // NOTE (D-04/plan 04): the second scoping dimension merged into tenant —
+    // see menuCategories' note above; same tenant-only uniqueness collapse.
+    uniqueIndex('menu_items_tenant_slug_uq').on(table.tenantId, table.slug),
+    uniqueIndex('menu_items_tenant_code_uq')
+      .on(table.tenantId, table.code)
       .where(sql`${table.code} IS NOT NULL`),
     index('menu_items_tenant_category_status_idx').on(
       table.tenantId,
@@ -167,7 +161,6 @@ export const menuItemSizes = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     menuItemId: uuid('menu_item_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     price: money('price').notNull(),
@@ -186,11 +179,7 @@ export const menuItemSizes = pgTable(
       child: { id: table.menuItemId, tenantId: table.tenantId },
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'menu_item_sizes_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_item_sizes_tenant_item_idx').on(table.tenantId, table.menuItemId, table.sortOrder),
     uniqueIndex('menu_item_sizes_one_default_per_item_uq')
       .on(table.menuItemId)
@@ -204,7 +193,6 @@ export const menuModifierGroups = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     minSelectable: integer('min_selectable').notNull().default(0),
     maxSelectable: integer('max_selectable').notNull().default(1),
@@ -217,11 +205,7 @@ export const menuModifierGroups = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'menu_modifier_groups_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     check(
       'menu_modifier_groups_selectable_range_chk',
       sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
@@ -237,7 +221,6 @@ export const menuModifierOptions = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     modifierGroupId: uuid('modifier_group_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
     priceDelta: money('price_delta').notNull().default('0'),
@@ -259,11 +242,7 @@ export const menuModifierOptions = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'menu_modifier_options_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_modifier_options_tenant_group_idx').on(
       table.tenantId,
       table.modifierGroupId,
@@ -285,7 +264,6 @@ export const menuItemModifierGroups = pgTable(
   'menu_item_modifier_groups',
   {
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
     menuItemId: uuid('menu_item_id').notNull(),
     modifierGroupId: uuid('modifier_group_id').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),
@@ -310,11 +288,7 @@ export const menuItemModifierGroups = pgTable(
       child: { id: table.modifierGroupId, tenantId: table.tenantId },
       parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'menu_item_modifier_groups_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('restrict'),
+    // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
     index('menu_item_modifier_groups_tenant_item_idx').on(table.tenantId, table.menuItemId),
   ],
 );
@@ -326,7 +300,7 @@ export const menuStopList = pgTable(
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     itemId: uuid('item_id').notNull(),
     stoppedAt: timestamp('stopped_at', { withTimezone: true, mode: 'date' })
       .notNull()
@@ -346,11 +320,15 @@ export const menuStopList = pgTable(
       parent: { id: menuItems.id, tenantId: menuItems.tenantId },
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'menu_stop_list_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
+      name: 'menu_stop_list_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
     }).onDelete('restrict'),
-    uniqueIndex('menu_stop_list_item_tenant_uq').on(table.tenantId, table.itemId),
+    uniqueIndex('menu_stop_list_location_item_tenant_uq').on(
+      table.tenantId,
+      table.locationId,
+      table.itemId,
+    ),
     tenantParentUniqueIndex('menu_stop_list', { id: table.id, tenantId: table.tenantId }),
   ],
 );
@@ -407,27 +385,27 @@ export const catalogMenuVersion = pgTable(
   ],
 );
 
-export const catalogBrandStopVersion = pgTable(
-  'catalog_brand_stop_version',
+export const catalogLocationStopVersion = pgTable(
+  'catalog_location_stop_version',
   {
-    brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     tenantId: tenantIdColumn(),
     stopVersion: bigint('stop_version', { mode: 'number' }).notNull().default(1),
   },
   (table) => [
     primaryKey({
-      name: 'catalog_brand_stop_version_pk',
-      columns: [table.brandId, table.tenantId],
+      name: 'catalog_location_stop_version_pk',
+      columns: [table.locationId, table.tenantId],
     }),
     foreignKey({
-      name: 'catalog_brand_stop_version_tenant_fk',
+      name: 'catalog_location_stop_version_tenant_fk',
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }),
     compositeTenantFk({
-      name: 'catalog_brand_stop_version_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
-    }).onDelete('cascade'),
+      name: 'catalog_location_stop_version_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
   ],
 );

@@ -6,21 +6,21 @@ import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { resetStopList } from '@/lib/queries/catalog';
 
 export interface TodaysWidgetResetButtonProps {
-  readonly brandSlug: string;
+  readonly locationId: string;
 }
 
 export function TodaysWidgetResetButton({
-  brandSlug,
+  locationId,
 }: TodaysWidgetResetButtonProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
-    mutationFn: () => resetStopList(brandSlug),
+    mutationFn: () => resetStopList(locationId),
     onSuccess: (res) => {
       if (res.ok) {
         showSuccess(t('resetSuccess'));
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list', brandSlug] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
       } else {
         showError(null, t('resetFailed'));
       }

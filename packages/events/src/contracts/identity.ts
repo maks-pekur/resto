@@ -93,7 +93,7 @@ export const IdentityEmailDispatchFailedV1 = defineEventContract({
  *
  * `previousRole` / `newRole` are BA role-slug strings; in practice these
  * are the system presets `owner` / `admin` / `staff` plus any custom
- * tenant-creatable role (which BA stores in `organization_role`).
+ * tenant-creatable role (which BA stores in `tenant_role`).
  */
 export const IdentityRoleChangedV1Payload = z.object({
   userId: z.string().uuid(),
@@ -107,4 +107,46 @@ export type IdentityRoleChangedV1Payload = z.infer<typeof IdentityRoleChangedV1P
 export const IdentityRoleChangedV1 = defineEventContract({
   type: 'identity.role_changed.v1',
   payload: IdentityRoleChangedV1Payload,
+});
+
+// D-16 (08.3): audit contracts for owner-managed role lifecycle
+export const IdentityRoleCreatedV1Payload = z.object({
+  tenantId: TenantId,
+  roleSlug: z.string().min(1).max(64),
+  permission: z.record(z.string(), z.array(z.string())),
+  actorUserId: z.string().uuid(),
+});
+export type IdentityRoleCreatedV1Payload = z.infer<typeof IdentityRoleCreatedV1Payload>;
+
+export const IdentityRoleCreatedV1 = defineEventContract({
+  type: 'identity.role_created.v1',
+  payload: IdentityRoleCreatedV1Payload,
+});
+
+export const IdentityRolePermissionsChangedV1Payload = z.object({
+  tenantId: TenantId,
+  roleSlug: z.string().min(1).max(64),
+  previousPermission: z.record(z.string(), z.array(z.string())),
+  newPermission: z.record(z.string(), z.array(z.string())),
+  actorUserId: z.string().uuid(),
+});
+export type IdentityRolePermissionsChangedV1Payload = z.infer<
+  typeof IdentityRolePermissionsChangedV1Payload
+>;
+
+export const IdentityRolePermissionsChangedV1 = defineEventContract({
+  type: 'identity.role_permissions_changed.v1',
+  payload: IdentityRolePermissionsChangedV1Payload,
+});
+
+export const IdentityRoleDeletedV1Payload = z.object({
+  tenantId: TenantId,
+  roleSlug: z.string().min(1).max(64),
+  actorUserId: z.string().uuid(),
+});
+export type IdentityRoleDeletedV1Payload = z.infer<typeof IdentityRoleDeletedV1Payload>;
+
+export const IdentityRoleDeletedV1 = defineEventContract({
+  type: 'identity.role_deleted.v1',
+  payload: IdentityRoleDeletedV1Payload,
 });

@@ -1,12 +1,22 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { TenantId } from '@resto/domain';
-import { BrandQueriesService } from '../../tenancy/application/brand-queries.service';
-import { BrandId } from '@resto/domain';
+import { TenantId, TenantTheme } from '@resto/domain';
+import { ENV_TOKEN } from '../../../config/config.module';
+import type { Env } from '../../../config/env.schema';
+import { SUPPORTED_LOCALES, type EmailLocale } from '../../identity/domain/email-locale';
 import {
   NOTIFICATION_ORDER_REPOSITORY,
   type NotificationOrderRepository,
 } from '../infrastructure/notification-order-drizzle.repository';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from '../domain/ports';
+
+// `tenants.locale` (D-35/D-36) is derived from a country registry {ru, en, es}
+// wider than the email-adapter's current `EmailLocale` union {en, ru}. D-38
+// requires a deliberate fallback rather than passing an unsupported locale
+// through — 'es' guest email content does not exist yet.
+const resolveEmailLocale = (tenantLocale: string): EmailLocale =>
+  (SUPPORTED_LOCALES as readonly string[]).includes(tenantLocale)
+    ? (tenantLocale as EmailLocale)
+    : 'en';
 
 export type GuestNotificationTransition =
   | 'order_confirmation'
@@ -21,15 +31,36 @@ export interface SendGuestNotificationInput {
   readonly refundAmountMinor?: number | undefined;
 }
 
+const ETA_CLOCK_TIME_LOCALE = 'ru-RU';
+const ETA_CLOCK_TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+};
+
+const formatEtaClockTime = (etaAt: Date, timezone: string | null): string => {
+  try {
+    return new Intl.DateTimeFormat(ETA_CLOCK_TIME_LOCALE, {
+      ...ETA_CLOCK_TIME_OPTS,
+      timeZone: timezone ?? 'UTC',
+    }).format(etaAt);
+  } catch {
+    return new Intl.DateTimeFormat(ETA_CLOCK_TIME_LOCALE, {
+      ...ETA_CLOCK_TIME_OPTS,
+      timeZone: 'UTC',
+    }).format(etaAt);
+  }
+};
+
 @Injectable()
 export class SendGuestNotificationService {
   private readonly logger = new Logger(SendGuestNotificationService.name);
 
   constructor(
     @Inject(EMAIL_ADAPTER_PORT) private readonly emailAdapter: EmailAdapterPort,
-    @Inject(BrandQueriesService) private readonly brandQueries: BrandQueriesService,
     @Inject(NOTIFICATION_ORDER_REPOSITORY)
     private readonly orderRepo: NotificationOrderRepository,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   async execute(input: SendGuestNotificationInput): Promise<void> {
@@ -53,13 +84,13 @@ export class SendGuestNotificationService {
       return;
     }
 
-    const brands = await this.brandQueries.listForTenant(tenantId, [BrandId.parse(order.brandId)]);
-    const brand = brands[0] ?? null;
-
-    const locale = 'ru';
-    const brandName = brand?.displayName ?? 'RestOS';
-    const brandTheme = brand?.theme
-      ? { logoUrl: brand.theme.logoUrl, accentColor: brand.theme.primaryColor }
+    const locale = resolveEmailLocale(order.tenantLocale);
+    const tenantName = order.tenantDisplayName;
+    const tenantTheme = order.tenantTheme
+      ? (() => {
+          const theme = TenantTheme.parse(order.tenantTheme);
+          return { logoUrl: theme.logoUrl, accentColor: theme.primaryColor };
+        })()
       : null;
 
     const itemsRows = await this.orderRepo.findOrderItems(tenantId, input.orderId);
@@ -72,19 +103,29 @@ export class SendGuestNotificationService {
         ? (input.refundAmountMinor / 100).toFixed(2)
         : undefined;
 
+    const eta =
+      order.etaAt !== null ? formatEtaClockTime(order.etaAt, order.locationTimezone) : undefined;
+
+    const statusUrl =
+      this.env.WEBSITE_PUBLIC_URL !== undefined
+        ? `${this.env.WEBSITE_PUBLIC_URL}/checkout/confirmation/${input.orderId}`
+        : `/checkout/confirmation/${input.orderId}`;
+
     const idempotencyKey = `gnotif:${input.orderId}:${input.transition}`;
 
     await this.emailAdapter.sendGuestNotification({
       to: order.customerEmail,
       locale,
       kind: input.transition,
-      brandTheme,
-      brandName,
+      tenantTheme,
+      tenantName,
       vars: {
         orderNumber: order.orderNumber,
         itemsSummary,
         total: order.total,
         currency: order.currency,
+        statusUrl,
+        ...(eta !== undefined ? { eta } : {}),
         ...(refundAmount !== undefined ? { refundAmount } : {}),
       },
       tenantId,

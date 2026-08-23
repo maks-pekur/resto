@@ -47,8 +47,6 @@ interface I1Fixture {
   tenantA: { id: string; slug: string };
   tenantB: { id: string; slug: string };
   operatorACookie: string;
-  brandA: string;
-  brandB: string;
   categoryA: string;
   categoryB: string;
   itemA: string;
@@ -80,24 +78,13 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
   const db = stack.app.get(TenantAwareDb);
 
   const seeded = await db.withoutTenant('seed I-1 fixture rows', async (tx) => {
-    const [brandA] = await tx
-      .insert(schema.brands)
-      .values({ tenantId: tenantA.id, slug: 'flagship-i1a', displayName: 'Flagship A' })
-      .returning({ id: schema.brands.id });
-    const [brandB] = await tx
-      .insert(schema.brands)
-      .values({ tenantId: tenantB.id, slug: 'flagship-i1b', displayName: 'Flagship B' })
-      .returning({ id: schema.brands.id });
-
-    if (!brandA || !brandB) throw new Error('seed I1 fixture: brand insert failed');
-
     const [categoryA] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantA.id, brandId: brandA.id, slug: 'pizza', name: { en: 'Pizza A' } })
+      .values({ tenantId: tenantA.id, slug: 'pizza', name: { en: 'Pizza A' } })
       .returning({ id: schema.menuCategories.id });
     const [categoryB] = await tx
       .insert(schema.menuCategories)
-      .values({ tenantId: tenantB.id, brandId: brandB.id, slug: 'pizza', name: { en: 'Pizza B' } })
+      .values({ tenantId: tenantB.id, slug: 'pizza', name: { en: 'Pizza B' } })
       .returning({ id: schema.menuCategories.id });
 
     if (!categoryA || !categoryB) throw new Error('seed I1 fixture: category insert failed');
@@ -106,7 +93,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantA.id,
-        brandId: brandA.id,
         categoryId: categoryA.id,
         slug: 'margherita',
         name: { en: 'Margherita A' },
@@ -119,7 +105,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
       .insert(schema.menuItems)
       .values({
         tenantId: tenantB.id,
-        brandId: brandB.id,
         categoryId: categoryB.id,
         slug: 'margherita',
         name: { en: 'Margherita B' },
@@ -155,8 +140,6 @@ const seedI1Fixture = async (stack: RealStack): Promise<I1Fixture> => {
     }
 
     return {
-      brandA: brandA.id,
-      brandB: brandB.id,
       categoryA: categoryA.id,
       categoryB: categoryB.id,
       itemA: itemA.id,
@@ -204,7 +187,7 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
       const res = await stack.app.inject({
         method: 'GET',
         url: '/v1/menu',
-        headers: { 'x-tenant-slug': fixture.tenantA.slug },
+        headers: { host: `${fixture.tenantA.slug}.menu.resto.app` },
       });
       expect(res.statusCode).toBe(200);
       const body = res.json<{ items: { id: string; slug: string }[] }>();
@@ -215,17 +198,17 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
   });
 
   describe('identity', () => {
-    it('GET /v1/me/brands under operator-A cookie returns only A brands, not B brand with same slug', async () => {
+    it('GET /v1/me/tenants under operator-A cookie returns only tenant A, not tenant B', async () => {
       const res = await stack.app.inject({
         method: 'GET',
-        url: '/v1/me/brands',
+        url: '/v1/me/tenants',
         headers: { cookie: fixture.operatorACookie, 'x-tenant-slug': fixture.tenantA.slug },
       });
       expect(res.statusCode).toBe(200);
-      const body = res.json<{ brands: { id: string }[] }>();
-      const ids = body.brands.map((b) => b.id);
-      expect(ids).toContain(fixture.brandA);
-      expect(ids).not.toContain(fixture.brandB);
+      const body = res.json<{ tenants: { id: string }[] }>();
+      const ids = body.tenants.map((t) => t.id);
+      expect(ids).toContain(fixture.tenantA.id);
+      expect(ids).not.toContain(fixture.tenantB.id);
     });
   });
 
@@ -254,3 +237,13 @@ suite('RES-237: ADR-0020 I-1 cross-tenant isolation regression net', () => {
     });
   });
 });
+
+// RES-08.2-06's "cross-label RLS isolation matrix" suite (a SECURITY DEFINER
+// GUC-binding function, the IS-NULL-pass-through case, symmetric second-label
+// binding) is deleted outright, not rewritten: that function and its GUC no
+// longer exist (D-09; migration 0079 drops both overloads, verified absent
+// via `to_regprocedure` in packages/db/test/integration/tenant-isolation.spec.ts).
+// A tenant can no longer contain two of those labels to bind between (D-03)
+// — the property this suite tested has no post-merge equivalent. Tenant-grain
+// RLS for the same tables is covered by tenant-isolation.spec.ts's canonical
+// net.

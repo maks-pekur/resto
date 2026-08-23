@@ -3,8 +3,8 @@ import type { MenuItemPhoto } from '@resto/db';
 import type { PublishedMenu, PublishedMenuItem } from './published-menu';
 
 export interface CatalogRepository {
-  loadPublishedMenu(tenantId: TenantId, version: number, brandId: string): Promise<PublishedMenu>;
-  findPublishedItem(itemId: string, brandId: string): Promise<PublishedMenuItem | null>;
+  loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu>;
+  findPublishedItem(itemId: string): Promise<PublishedMenuItem | null>;
   upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }>;
   upsertItem(input: UpsertItemRow): Promise<{ id: string; slugChanged?: { oldSlug: string } }>;
   upsertModifierGroup(input: UpsertModifierGroupRow): Promise<{ id: string }>;
@@ -12,13 +12,12 @@ export interface CatalogRepository {
   upsertItemSize(input: UpsertItemSizeRow): Promise<{ id: string }>;
   replaceItemModifierGroups(input: {
     itemId: string;
-    brandId: string;
     modifierGroupIds: readonly string[];
   }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
-    brandId: string;
+    locationId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
 
   listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
@@ -30,20 +29,23 @@ export interface CatalogRepository {
     offset: number;
   }): Promise<{ rows: ItemListRow[]; total: number }>;
   getItemById(id: string): Promise<ItemDetailRow | null>;
-  listModifierGroups(brandId: string): Promise<ModifierGroupListRow[]>;
+  listModifierGroups(): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
-  listStopListWithStoppedAt(brandId: string): Promise<StopListEntryRow[]>;
-  listStoppedItemIds(brandId: string): Promise<string[]>;
-  computeDraftDiff(input: { tenantId: TenantId; brandId: string }): Promise<{
+  listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
+  listStoppedItemIds(locationId: string): Promise<string[]>;
+  listStopListAggregateAcrossLocations(
+    tenantId: TenantId,
+    activeLocationIds: readonly string[],
+  ): Promise<{ rows: AggregateStopListRow[]; totalStoppedItems: number }>;
+  computeDraftDiff(input: { tenantId: TenantId }): Promise<{
     items: DraftDiffEntryRow[];
     totalCount: number;
   }>;
 
-  archiveCategory(id: string, brandId: string): Promise<{ found: boolean }>;
-  archiveItem(id: string, brandId: string): Promise<{ found: boolean }>;
+  archiveCategory(id: string): Promise<{ found: boolean }>;
+  archiveItem(id: string): Promise<{ found: boolean }>;
 
   applyCategoryMoves(input: {
-    brandId: string;
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
   }): Promise<{ updated: number }>;
 
@@ -64,7 +66,7 @@ export interface MenuVersionPort {
 export const MENU_VERSION_PORT = Symbol('MENU_VERSION_PORT');
 
 export interface StopVersionPort {
-  currentStop(brandId: string): Promise<number>;
+  currentStop(locationId: string): Promise<number>;
 }
 
 export const STOP_VERSION_PORT = Symbol('STOP_VERSION_PORT');
@@ -86,7 +88,6 @@ export const IMAGE_URL_PORT = Symbol('IMAGE_URL_PORT');
 export interface UpsertCategoryRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly parentId?: string | null;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -98,7 +99,6 @@ export interface UpsertCategoryRow {
 export interface UpsertItemRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly categoryId: string;
   readonly slug: string;
   readonly name: Record<string, string>;
@@ -128,7 +128,6 @@ export interface UpsertItemRow {
 export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly name: Record<string, string>;
   readonly minSelectable: number;
   readonly maxSelectable: number;
@@ -138,7 +137,6 @@ export interface UpsertModifierGroupRow {
 export interface UpsertModifierOptionRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly modifierGroupId: string;
   readonly name: Record<string, string>;
   readonly priceDelta: string;
@@ -152,7 +150,6 @@ export interface UpsertModifierOptionRow {
 export interface UpsertItemSizeRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly brandId: string;
   readonly menuItemId: string;
   readonly name: Record<string, string>;
   readonly price: string;
@@ -163,7 +160,7 @@ export interface UpsertItemSizeRow {
 export interface StopListInsertRow {
   readonly itemId: string;
   readonly tenantId: string;
-  readonly brandId: string;
+  readonly locationId: string;
   readonly reason: string | null;
   readonly stoppedByUserId: string | null;
 }
@@ -269,6 +266,16 @@ export interface StopListEntryRow {
   readonly categoryName: Record<string, string> | null;
   readonly stoppedAt: string;
   readonly reason: string | null;
+}
+
+// D-05: aggregate is read-only across locations; per-location `reason` values
+// can differ, so it is not surfaced here (unlike StopListEntryRow).
+export interface AggregateStopListRow {
+  readonly itemId: string;
+  readonly itemName: Record<string, string> | null;
+  readonly categoryName: Record<string, string> | null;
+  readonly stoppedLocationCount: number;
+  readonly lastStoppedAt: string;
 }
 
 export interface DraftDiffEntryRow {

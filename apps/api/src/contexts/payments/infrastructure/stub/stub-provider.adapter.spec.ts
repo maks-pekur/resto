@@ -10,8 +10,8 @@ describe('StubProviderAdapter', () => {
 
   it('ensureOnboardingAccount returns a stub accountId', async () => {
     const result = await stub.ensureOnboardingAccount({
-      brandId: 'brand-1',
-      displayName: 'Test Brand',
+      tenantId: 'tenant-1',
+      displayName: 'Test Tenant',
       accountType: 'express',
     });
     expect(result).toEqual({ accountId: 'stub_acct_12345' });

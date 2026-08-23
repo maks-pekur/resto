@@ -62,13 +62,13 @@ suite('TEN-08 Fixture 4 — RLS holds when raw tx.select omits the tenant predic
     admin = postgres(pg.adminUrl, { max: 1, prepare: false });
 
     const [a] = await admin<{ id: string }[]>`
-      INSERT INTO tenants (slug, display_name)
-      VALUES ('rls-fence-a', 'RLS Fence A')
+      INSERT INTO tenants (slug, display_name, country)
+      VALUES ('rls-fence-a', 'RLS Fence A', 'GB')
       RETURNING id
     `;
     const [b] = await admin<{ id: string }[]>`
-      INSERT INTO tenants (slug, display_name)
-      VALUES ('rls-fence-b', 'RLS Fence B')
+      INSERT INTO tenants (slug, display_name, country)
+      VALUES ('rls-fence-b', 'RLS Fence B', 'GB')
       RETURNING id
     `;
     if (!a || !b) throw new Error('failed to seed tenants');

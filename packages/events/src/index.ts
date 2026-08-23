@@ -52,10 +52,10 @@ export {
 } from './infrastructure/nats-subscriber';
 
 export {
-  BrandPaymentAccountLinkedV1,
-  BrandPaymentAccountLinkedV1Payload,
-  BrandPaymentCapabilitiesAppliedV1,
-  BrandPaymentCapabilitiesAppliedV1Payload,
+  TenantPaymentAccountLinkedV1,
+  TenantPaymentAccountLinkedV1Payload,
+  TenantPaymentCapabilitiesAppliedV1,
+  TenantPaymentCapabilitiesAppliedV1Payload,
   TenantArchivedV1,
   TenantArchivedV1Payload,
   TenantErasureCompletedV1,
@@ -79,6 +79,12 @@ export {
   IdentityPasswordResetCompletedV1Payload,
   IdentityRoleChangedV1,
   IdentityRoleChangedV1Payload,
+  IdentityRoleCreatedV1,
+  IdentityRoleCreatedV1Payload,
+  IdentityRoleDeletedV1,
+  IdentityRoleDeletedV1Payload,
+  IdentityRolePermissionsChangedV1,
+  IdentityRolePermissionsChangedV1Payload,
   IdentitySignedInV1,
   IdentitySignedInV1Payload,
   IdentitySignedOutV1,

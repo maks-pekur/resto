@@ -1,299 +1,413 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-05-24
+**Analysis Date:** 2026-08-18
+
+This is a refresh of a 2026-06-13 audit. Most of that audit's findings have
+shipped fixes since (Phase 1 tenancy hardening, the deep-audit remediation,
+the Redis-removal/edge-caching rework, and the admin Next.js→Vite migration
+each closed a cluster of them) — those are not repeated here. What follows
+is current as of the Phase 10 pause point: 12/13 plans of Admin Order Intake
+merged, phase 13 parked on a human money-path checkpoint, Phase 10.1 in
+context-gathering.
+
+## Verification Debt
+
+This is the largest open gap in the project right now and the reason
+execution is paused to test rather than continuing to plan. Five completed,
+merged phases have **no verification artifact at all** — nobody has checked
+their shipped work against the phase's own success criteria:
+
+- **`04b-catalog-admin-ui`** (9 plans, all merged) — the entire catalog
+  admin CRUD surface: categories, items, modifiers, modifier groups, sizes,
+  stop-list, photo upload, draft/publish flow with countdown UI. No
+  `04b-VERIFICATION.md` exists. No one has confirmed the publish flow works
+  end to end against the finalized schema.
+- **`07.6-admin-vite-spa`** (plans 01-06 merged; 07-09 explicitly deferred
+  per the CR-04 split decision) — the full Next.js→Vite rewrite of the
+  admin panel: routing, auth, brand switching, dashboard, sidebar. No
+  `07.6-VERIFICATION.md` for what shipped.
+- **`08.1-payments-provider-layer-and-onboarding-ux`** (5 plans, all
+  merged) — embedded Stripe Connect onboarding UX and the
+  `PaymentProviderPort` abstraction. No verification artifact.
+- **`08.4-location-scoped-access`** (11 plans, all merged) — the locations
+  entity, `member_location_scope`, per-location roles, and
+  `LocationScopeGuard`; explicitly security-sensitive (BOLA-shaped: does a
+  staff member see only their own location's data). No
+  `08.4-VERIFICATION.md`. Two real production bugs were found later during
+  ad-hoc use (owner brand-global dashboard white-screen; `activeLocationId`
+  silently reset to null on every brand switch) — both fixed, but found by
+  chance, not by a verification pass, which is exactly the failure mode a
+  verification step exists to catch.
+- **`01-tenancy-hardening`** (6 plans, all merged) — the foundational RLS +
+  composite-FK + GDPR-erasure phase. No `01-VERIFICATION.md`. Lower risk
+  than the other four: the subsequent 28-finding deep audit (`.planning/AUDIT.md`,
+  all closed) effectively re-covered this ground, and `tenant-isolation.spec.ts`
+  is a live regression net — but it was never checked against Phase 1's own
+  stated success criteria as a discrete gate.
+
+Three phases have a verification artifact that resolved to something other
+than a clean pass, and none have been revisited since:
+
+- **Phase 03 (`03-auth-completion`) — `human_needed`.** 11/11 must-haves
+  verified by inspection, but 5 items (role-changed audit semantics, the
+  AUTH-10 DLQ e2e, the invitation flow e2e, others) were never actually run
+  against a live Docker stack at verification time. Running the two
+  identity e2e specs today confirms real red (see Known-red tests below) —
+  the `human_needed` status was warranted, and the gap it flagged is real.
+- **Phase 08 (`08-payments-stripe-connect`) — `gaps_found`, score 4/5.**
+  The D-06 orphan-payment auto-refund path writes a `payments.status =
+'orphan'` row, but `'orphan'` was not in the `payments_status_chk` DB
+  constraint at verification time — the INSERT/UPDATE would fail the
+  constraint, silently breaking the double-charge guard. Not re-verified
+  since; confirm the constraint was widened before trusting this path.
+- **Phase 08.3 (`08.3-owner-managed-roles-and-permissions`) — `human_needed`.**
+  9/9 truths verified by static analysis, but all three e2e specs
+  (privilege-escalation, brand-scope-orthogonality, cross-tenant-isolation)
+  were never run against a live Docker stack at verification time — same
+  gap shape as Phase 03.
+
+Additionally, **Phase 08.2** verified `passed` but left one open
+`human_verification` item unresolved: whether `/` should redirect to the
+session-pinned active brand or deterministic-`brands[0]` is accepted
+behavior. `apps/admin` still redirects to `brands[0]` unconditionally
+(`resolveIndexRedirectSlug`) — nobody has confirmed this is intentional.
+
+## Known-red Tests
+
+Verified live against the current Docker dev stack (not carried from
+memory) on 2026-08-18. Four distinct standing failures, plus two separately
+documented pre-existing gaps from Phase 10's own deferred-items log:
+
+**`identity-bootstrap.e2e.spec.ts` — RESOLVED 2026-08-18.** Was fixture
+drift, not a product defect. The two requests to `GET /v1/tenants/me` sent
+only the session cookie; the route needs an explicit tenant header and
+returned `auth.tenant_context_missing`. Every other operator spec in the
+suite already sends `x-tenant-id`, and the admin's `apiFetch` does too — so
+header-carried tenant context is the live convention and these two calls had
+simply not been updated. Fixed by adding the header; 8/8 pass.
+
+Worth separating from a nearby, genuinely different failure that looks the
+same from the outside: a session created by a bare
+`POST /api/auth/sign-in/email` has no `active_organization_id`, and requests
+on it fail with `auth.forbidden` / "Insufficient permissions" rather than
+anything naming the real cause. The location guard models this properly with
+`location.context_required`; the tenant/permission path does not, and that
+vagueness cost diagnosis time twice. A clearer code on that path is a small
+worthwhile change, not yet made.
+
+**`identity-invitation.e2e.spec.ts` — 2 failures, real pre-existing bug,
+already tracked.** `POST /api/auth/organization/invite-member` returns
+`403` instead of `200`/`201` for a freshly bootstrapped owner. This is the
+bug already named in `.planning/notes/dependency-cve-deferral.md`:
+`runBootstrap` produces unverified user rows, and Better Auth's
+`invite-member` path enforces `emailVerified` independently of the
+`REQUIRE_EMAIL_VERIFICATION` env var the test sets to `false` for sign-in.
+No bootstrapped owner can invite a team member without first verifying
+their own email — a real product gap, not just a test artifact. Flagged
+for re-check during the deferred `better-auth` 1.4→1.6 migration.
+
+**`signup-enumeration.e2e.spec.ts` — 1 failure (`timing parity`), fixture
+problem, not a product defect.** The test pre-seeds 10 signups sequentially
+via `POST /v1/signup` with no rate-limit override in its `beforeAll`
+(unlike its sibling `identity-invitation.e2e.spec.ts`, which does raise
+`RATE_LIMIT_*` env vars). `RATE_LIMIT_AUTH_SIGNUP_PER_MIN` defaults to `5`,
+and `/v1/signup` is now IP-keyed for rate-limiting (the Phase 10 CR-02
+fix), so the 6th+ seed call in the same test process deterministically
+gets `429` instead of `201`. The app is behaving correctly; the test
+fixture was never updated for the credential-route IP-keying that Phase 10
+added.
+
+**`security.e2e.spec.ts` — 1 failure, fixture problem (test-double
+gap), matches `deferred-items.md` exactly.** `GET /internal/v1/*` rate-limit
+test gets `500` instead of `429` — the underlying handler throws first.
+`createApp()`'s hand-rolled `TenantAwareDb` stub's `withoutTenant` mock only
+implements `select().from().where().limit()`; some provider in the
+tenant-provisioning path this test exercises calls `.innerJoin()`, which the
+stub doesn't support. Pre-existing before Phase 10 touched the rate limiter;
+confirmed still present today.
+
+**Two more pre-existing gaps, already logged in
+`.planning/phases/10-admin-order-intake/deferred-items.md`, both confirmed
+still present:**
+
+- `payments-isolation.e2e.spec.ts` — raw SQL fixture INSERTs into `orders`
+  with no `location_id` column; `orders.location_id` has been `NOT NULL`
+  since migration `0070` (Phase 08.4). Fixture bug, not a product defect.
+- `apps/admin/e2e/adm-00-smoke-walk.spec.ts` scenarios 2-8 — written in
+  Phase 2 against the retired Next.js admin, asserting selectors and an
+  inline `/dashboard` `EmptyState` that no longer exists after the
+  Phase 7.5/7.6 Vite rewrite (zero-brand owners now redirect to
+  `/onboarding/brand`). Test-file obsolescence, not a runtime defect; a
+  full spec rewrite, not a patch.
+
+**A cluster of location/brand-scope e2e fixture debt, already named in
+`.planning/STATE.md`, re-confirmed still red today (5 failures across 4
+files: `set-active-brand.e2e.spec.ts` x2, `catalog-reads.e2e.spec.ts` x2,
+plus related brand-isolation assertions).** All seed the pre-D-04
+`member_brand_scope` model; brand reachability has derived from
+`member_location_scope` since Phase 08.4, so these fixtures now get `403
+location.context_required` or a null `activeBrandId` where they expect a
+value. Confirmed NOT a derivation bug — `me-brands`, `catalog`, and
+`cross-tenant-isolation` e2e specs exercise the same code path and are
+green. Pure fixture staleness; scoped to whoever picks up the phase-10
+follow-up test-debt item.
+
+**Not a standing failure despite being grouped with the others in
+`STATE.md`:** `tenancy-offboarding.e2e.spec.ts` (the "offboard-cancel"
+scenario) passes clean (11/11) when run in isolation today. Its earlier
+appearance in a full-suite run is almost certainly the documented
+full-suite 429/timeout contention gotcha (project memory), not a real
+regression — worth removing from the STATE.md note the next time it's
+touched, so it stops being re-litigated as red.
+
+## Dev-environment Traps
+
+**`seed-demo` cannot exercise the money path — this is what's parking
+Phase 10 right now.** `pnpm resto:seed seed-demo` provisions a tenant,
+brand, and catalog, but never runs Stripe Connect onboarding: it sets
+neither `brands.stripe_account_id` nor `stripe_charges_enabled`, and leaves
+`brands.default_currency` null (populated during onboarding by design).
+`Brand.canAcceptPayments()` requires both, so `POST
+/v1/checkout/payment-intent` returns `payments.not_enabled` (409) for every
+demo-seeded brand. Manual testing of guest checkout, the two-screen order
+walkthrough, and the refund path all require standing up real Stripe
+test-mode Connect onboarding by hand first. Recorded in
+`10-13-CHECKPOINT.md`; the recommended fix (teach `seed-demo` to do
+onboarding, or provide a scripted equivalent) is on the resume list for
+Phase 10.
+
+**`StubProviderAdapter` exists but cannot substitute for the above.**
+`apps/api/src/contexts/payments/infrastructure/stub/stub-provider.adapter.ts`
+implements `PaymentProviderPort` but is not wired into
+`payments.module.ts` (confirmed: no reference to it there). Even if wired,
+it returns a synthetic `clientSecret` that Stripe Elements rejects
+client-side — it cannot unblock a real browser checkout walkthrough. Only
+real Stripe test-mode credentials make local money-path testing possible.
+
+## Deferred Infrastructure
+
+**Production deploy is parked until the first paying customer (founder
+decision, 2026-06-26).** Phase 7.5 Wave 0 (RDS decision, boot fixes, direct
+DB connection for the outbox, leader `/readyz`, Sentry, fail-loud env
+guards) is complete and merged; plans 06-10 (the actual live stand-up on a
+VPS + Docker Compose + Cloudflare) are deliberately not scheduled. Current
+exposure: zero — nothing is deployed. This is accepted debt, not a defect;
+re-plan when a paying customer is imminent.
+
+**Framework-major CVE migration deferred to a pre-launch milestone**
+(decision recorded `.planning/notes/dependency-cve-deferral.md`,
+2026-06-13, still current). `pnpm audit` reports high/critical advisories
+in `fastify` 4.28.1, `@nestjs/platform-fastify` ^10.4.15, and (transitively
+via `better-auth`) `vitest`, none of which have an in-major patch — fixing
+requires Fastify 4→5 + NestJS platform-fastify 10→11 + `better-auth`
+1.4→1.6 together, a multi-day breaking migration across the whole API.
+`better-auth` is now pinned exact at `=1.4.22` (tightened from a `~` range
+since the last audit). Current exposure remains zero (no production
+deploy). `Dependency audit` CI stays non-blocking by design. Re-check the
+already-discovered `identity-invitation.e2e.spec.ts` invite-member bug
+above during this migration — the note that flags it explicitly calls this
+out.
+
+## Carried Architectural Gaps
+
+**`LocationPermissionChecker` built, unit-tested, exported — deliberately
+not wired as the live `PERMISSION_CHECKER`. Third explicit re-defer**
+(08.4 → 08.5-03 → Phase 10's own `deferred-items.md` D-07), each time
+re-confirmed rather than left dangling. `identity-core.module.ts` still
+binds `PERMISSION_CHECKER` to `BetterAuthPermissionChecker` (confirmed).
+Wiring it needs two things: (1) `PermissionsGuard.canActivate()` doesn't
+thread `req.activeLocationId` into `hasPermission()` yet (small, one-line
+fix — the field is already populated by `AuthGuard`); (2)
+`LocationPermissionChecker.hasPermission()` returns `false` for any
+non-owner when `activeLocationId` is falsy, which would 403 every
+non-owner on every `@LocationNeutral()` route (menu, brand, team, settings
+— most of the admin surface) if swapped in wholesale. What it would add —
+a different permission set per location for the same person — has no
+product surface yet (no assignment UI beyond the Team location→role
+matrix, no other code path reads that per-location role column). Becomes
+urgent the day a location-differentiated-permissions feature ships;
+`LocationScopeGuard`'s independent location-membership check already
+prevents the security-relevant case (a staff member acting on an order at
+a location they're not scoped to) regardless of this gap.
+
+**An owner in brand-global (`?location=all`) mode cannot read the
+location-grain stop list.** `LocationScopeGuard` throws
+`location.context_required` before the owner-bypass branch is reached, so
+the front end gates the request off rather than surfacing a 500. Documented
+as an 08.4 known gap (c), still true after 08.5's owner-filter UX rework
+(08.5-03 D-11 re-confirms no guard change). A brand-global aggregate view
+for the stop-list specifically is unbuilt; the dashboard and menu/stop-list
+pages do have an aggregate branch (08.5-05), so this is scoped narrowly to
+the stop-list's own read path, not the whole owner-all-mode experience.
+
+**The Team location→role matrix shows a raw location UUID, not a name,
+when a member is scoped to a location belonging to a brand other than the
+one currently open.** Documented 08.4 known gap (d), unresolved since.
+Cosmetic, not a security issue, but a real UX rough edge an owner will hit
+the first time they manage a multi-brand team.
 
 ## Tech Debt
 
-**`correlationId` uses `randomUUID()` instead of OTel span (ADR-0020 I-4):**
+**`feature-flags` package is still an empty placeholder.**
+`packages/feature-flags/` contains only a `.gitkeep`; the workspace still
+lists it. `packages/CLAUDE.md` documents it as "OpenFeature client with the
+configured provider (Unleash self-hosted)" — nothing is implemented. Any
+import from `@resto/feature-flags` fails at build time. Explicitly deferred
+in `STATE.md`'s blockers list; `ONB-05`'s dev-mode toggle was deliberately
+built as a plain `SKIP_PAYMENT_FLOW` env var instead of depending on this
+package. No action needed until a real feature-flag use case appears.
 
-- Issue: Envelopes emitted from identity hooks and tenancy repository construct `correlationId: randomUUID()` directly, breaking the trace link between inbound request and outbox event.
-- Files: `apps/api/src/contexts/identity/identity-core.module.ts:110,127,151`, `apps/api/src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts:300,316,327,342,356`
-- Impact: Events cannot be correlated back to the originating request in distributed traces. The `buildEnvelope` helper referenced in ADR-0020 I-4 and the `@resto/events` CLAUDE.md does not exist yet — the ESLint rule banning `correlationId: randomUUID()` is also not yet implemented.
-- Fix approach: Implement `buildEnvelope(contract, payload, opts)` in `packages/events/src/` that reads `getCorrelationId()` from ALS (already in `packages/events/src/correlation.ts`). Replace all direct `correlationId: randomUUID()` envelope constructions with calls to `buildEnvelope`.
+**`dependency-cruiser` domain-boundary enforcement is still only a
+documented intent, not a rule.** `packages/domain/CLAUDE.md` and
+`packages/CLAUDE.md` both say a `dependency-cruiser` rule (planned) will
+reject `@nestjs/*`/`drizzle-orm`/`pg` imports inside `@resto/domain`. Only
+the Nx ESLint tag-based module-boundaries rule exists
+(`packages/config-eslint/base.mjs`), which does not catch transitive infra
+imports within the package itself. No `.dependency-cruiser.cjs` exists
+anywhere in the repo. Low current risk (`packages/domain/src` has stayed
+clean by convention) but nothing technical prevents drift.
 
-**`appendToOutbox` does not validate the envelope before insert:**
+**`BrandTheme.logoUrl` still accepts `javascript:`/`data:` URLs.**
+`packages/domain/src/brand-theme.ts:12` — `z.string().url().nullable()`
+with no scheme restriction, unchanged since the last audit. `font`
+(`brand-theme.ts:18`) still has no character allowlist beyond
+`.min(1).max(64)`. Neither field is rendered anywhere in `apps/website` or
+`apps/qr-menu` yet (confirmed no usages), so risk stays latent — but the
+schema itself still permits storing an XSS/CSS-injection payload the day
+either field is interpolated into `<img src>`/`<a href>`/`font-family`
+without a client-side re-check.
 
-- Issue: `packages/events/src/outbox/repository.ts:23` calls `tx.insert(schema.outboxEvents)` without running `EventEnvelope.parse(options.envelope)`. The DB `type` constraint is partial; a malformed envelope can reach the wire.
-- Files: `packages/events/src/outbox/repository.ts:23-33`
-- Impact: Malformed events surface as broker-side parse errors in consumers, not as build-time or insert-time failures.
-- Fix approach: Add `EventEnvelope.parse(options.envelope)` at the top of `appendToOutbox` before the `tx.insert`. The parse is cheap and catches contract drift early.
+**`packages/domain/src/schema/tenant.ts`'s `stripeAccountId` is still
+unbounded (`z.string().nullable()`, no `.max()`), but this file appears to
+be dead code.** No non-test import of `schema/tenant.ts` was found anywhere
+in `apps/api`. The live Stripe-account schema is
+`apps/api/src/contexts/tenancy/domain/tenant.aggregate.ts`'s
+`StripeAccountId = z.string().min(1).max(255)`, which is enforced at the
+webhook trust boundary and unit-tested (`PAY-11`). Worth deleting the dead
+`schema/tenant.ts` copy in a cleanup pass rather than fixing it in place —
+carrying an unbounded duplicate of a since-fixed schema is itself a drift
+trap.
 
-**`OutboxDispatcher.stop()` is not idempotent:**
+**`apps/admin/Dockerfile` is a stale artifact from before the Vite SPA
+migration.** Last touched 2026-06-21, before Phase 7.6 rewrote `apps/admin`
+to a static Vite build (`vite build`, deployed to Cloudflare Pages/R2 per
+the roadmap). Nothing in the current build or deploy path references it.
+Low risk (nobody currently runs it) but it will actively mislead whoever
+next touches admin deployment — either delete it or add a comment pointing
+at the static-deploy path.
 
-- Issue: `packages/events/src/outbox/dispatcher.ts:121-124` creates a new `Promise` and overwrites `#stopResolver` on each `stop()` call. A second concurrent `stop()` call orphans the first promise's resolver and the first caller waits forever.
-- Files: `packages/events/src/outbox/dispatcher.ts:118-124`
-- Impact: Graceful-shutdown path (two concurrent stop callers, or a re-entrant NestJS lifecycle hook) can deadlock.
-- Fix approach: Cache the first stop call's promise and return it for subsequent callers: `if (this.#stopPromise) return this.#stopPromise; this.#stopPromise = new Promise(…)`.
-
-**`releaseOutboxClaim` / `markOutboxDelivered` lack claim-ownership predicate:**
-
-- Issue: `packages/events/src/outbox/repository.ts:123-128` releases a claim with only `WHERE id = ? AND deliveredAt IS NULL`. If dispatcher replica B reclaims a row whose visibility timeout expired while A is still processing it, A's `releaseOutboxClaim` clears B's claim.
-- Files: `packages/events/src/outbox/repository.ts:110-128`
-- Impact: Lost-update race under multiple dispatcher replicas; a row can be re-delivered while still being processed.
-- Fix approach: Add a `claimedAt` column snapshot (or a `claim_token` UUID column) to scope `releaseOutboxClaim` and `markOutboxDelivered` to the claiming replica's specific claim.
-
-**BCP-47 locale regex duplicated across two files:**
-
-- Issue: The identical `localeKeyRegex = /^[a-z]{2}(?:-[A-Z]{2})?$/` is defined independently in `packages/domain/src/schema/tenant.ts:17` and `packages/domain/src/localized-text.ts:16`. The `@resto/domain` CLAUDE.md explicitly flags this as a drift trap.
-- Files: `packages/domain/src/schema/tenant.ts:17`, `packages/domain/src/localized-text.ts:16`
-- Impact: A future locale format change (e.g. accepting `zh-Hant`) must be updated in two places; one site will be missed.
-- Fix approach: Export `BcpLocale` from `packages/domain/src/localized-text.ts` (or a new `_locale.ts`) and import it in `tenant.ts`.
-
-**`NEXT_PUBLIC_API_ORIGIN` has a localhost fallback in server-side fetch:**
-
-- Issue: `apps/admin/lib/api-server.ts:21` and `apps/admin/lib/api-server-internal.ts:3` use `process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:3000'`. The `apps/CLAUDE.md` explicitly calls this out as a silent-routing bug: a deploy that forgets the env var routes all real users to a nonexistent local API.
-- Files: `apps/admin/lib/api-server.ts:21`, `apps/admin/lib/api-server-internal.ts:3`
-- Impact: Silent production failure if `NEXT_PUBLIC_API_ORIGIN` is missing from deploy config; no error is raised, traffic silently drops.
-- Fix approach: Move to a centralised `apps/admin/lib/env.ts` that throws loudly when the var is missing outside `NODE_ENV=development`. Pattern mirrors how `apps/api/src/config/env.schema.ts` fails fast.
-
-**`ADMIN_WEB_URL` also has a localhost fallback:**
-
-- Issue: `apps/admin/app/forgot-password/actions.ts:15` uses `process.env.ADMIN_WEB_URL ?? 'http://localhost:3001'`, routing password-reset links to localhost in production if the var is missing.
-- Files: `apps/admin/app/forgot-password/actions.ts:15`, `apps/admin/lib/api-server.ts:23`
-- Impact: Password-reset emails in production contain `localhost` links that are dead.
-- Fix approach: Same centralised env validation approach as above.
-
-**`dependency-cruiser` domain boundary check is planned but absent:**
-
-- Issue: The `packages/domain/CLAUDE.md` and `packages/CLAUDE.md` promise a `dependency-cruiser` rule enforcing zero infra imports from `@resto/domain`. Only a Nx ESLint module-boundaries rule exists (`packages/config-eslint/base.mjs:18-40`), which is tag-based and does not catch transitive imports of `drizzle-orm`, `@nestjs/*`, etc. within the domain package.
-- Files: `packages/config-eslint/base.mjs`, `packages/domain/src/`
-- Impact: An accidental `import { Injectable } from '@nestjs/common'` inside `@resto/domain` would not be caught by CI until the smoke test is written.
-- Fix approach: Add a `dependency-cruiser` config at `packages/domain/.dependency-cruiser.cjs` that rejects any import whose resolved root is `@nestjs`, `drizzle-orm`, `pg`, `ioredis`, `nats`, or `axios`. Wire into `nx run domain:boundary-check`.
-
-**`inbox_processed` table has no retention sweep:**
-
-- Issue: `packages/db/migrations/0009_add_inbox_processed.sql:42` notes "a future retention migration will sweep old rows via DELETE." No job or migration exists yet. The table is also not excluded from the tenant-erase function (it is included, line 35 of `0011_tenancy_erase_function.sql`), but platform-level (null tenant_id) rows are never swept.
-- Files: `packages/db/migrations/0009_add_inbox_processed.sql`, `packages/db/src/schema/inbox.ts:18`
-- Impact: Table grows unbounded over time; large tables slow inbox dedup inserts and the periodic `SELECT ON CONFLICT` path.
-- Fix approach: Add a scheduled SQL function or `@Cron` NestJS task that deletes rows where `processed_at < NOW() - INTERVAL '30 days'`. Document retention SLA.
-
-**`suspend` tenant lifecycle state has no service implementation:**
-
-- Issue: `TenantStatus` type includes `'suspended'` (`apps/api/src/contexts/tenancy/domain/tenant.aggregate.ts:15`) but the tenancy application layer has no `SuspendTenantService`. Only `ArchiveTenantService` and `OffboardTenantService` exist.
-- Files: `apps/api/src/contexts/tenancy/application/` (directory listing confirms no suspend service)
-- Impact: Operators cannot suspend a tenant (e.g. billing failure, abuse). The `suspended` state is unreachable from the API.
-- Fix approach: Add `SuspendTenantService` and expose `POST /internal/v1/tenants/:id/suspend` on `InternalTenantsController`.
-
-**Offboarding erasure has no automated scheduler:**
-
-- Issue: `TenantDrizzleRepository.listScheduledForErasure()` queries tenants past their 30-day cool-off, and `OffboardTenantService.executeErasure()` exists, but nothing calls them automatically. There is no cron job, NestJS `@Cron` decorator, or background task that polls and executes expired offboardings.
-- Files: `apps/api/src/contexts/tenancy/application/offboard-tenant.service.ts:61`, `apps/api/src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts:160-177`
-- Impact: Tenants that pass the 30-day window are not erased until a human manually triggers `POST /internal/v1/tenants/:id/erase` or runs the `erase-tenant` CLI script. GDPR erasure SLAs could be missed.
-- Fix approach: Add a `TenantErasureSchedulerService` with `@Cron('0 2 * * *')` (daily at 02:00) that calls `listScheduledForErasure()` and `executeErasure()` for each expired tenant.
-
-## Known Bugs
-
-**`OutboxDispatcher.stop()` concurrent-call deadlock:**
-
-- Symptoms: If `stop()` is awaited simultaneously by two callers, the second caller receives a promise that never resolves because `#stopResolver` is overwritten.
-- Files: `packages/events/src/outbox/dispatcher.ts:118-124`
-- Trigger: NestJS module destruction calling `onApplicationShutdown` while a test harness also calls `stop()`, or two concurrent integration test teardowns.
-- Workaround: Ensure only one caller invokes `stop()`.
+**`identityBuckets` in-memory rate-limit store still does not survive
+restarts or share state across replicas.**
+`apps/api/src/shared/security.ts` — the per-email sign-in/reset bucket is a
+`Map` in process memory, now with a periodic sweep + LRU cap (`CR-03`,
+fixed since the last audit) bounding unbounded growth, but still
+per-instance. Matches the "single VPS + Docker Compose" target deploy
+topology for MVP-1 (no horizontal scale-out planned before a paying
+customer), so this is accepted-as-is for now, not a live gap — revisit if
+the deploy topology ever adds a second API replica.
 
 ## Security Considerations
 
-**`BrandTheme.logoUrl` accepts `javascript:` and `data:` URLs:**
+**Rate-limiter's session-cookie fallback is still forgeable for
+non-credential public routes, but the highest-value target is now
+fixed.** The Phase 10 fix (`c65af02a`) made credential routes (sign-in,
+sign-up, password reset) key strictly on `req.ip`, closing the brute-force
+bypass CR-02 flagged. Every other `@Public()` route without a validated
+principal (guest checkout, order-status polling, etc.) still falls through
+to hashing the raw, client-supplied `better-auth.session_token` cookie
+value (`readSessionCookieValue`, unauthenticated) before falling back to
+IP. An attacker can still defeat the general `RATE_LIMIT_PUBLIC_PER_MIN`
+bucket on these routes by rotating an arbitrary cookie value per request —
+this only weakens the outer anonymous-surface fence, not the per-email or
+per-tenant fences, which are cookie-independent (re-rated during Phase 10's
+own code review). Residual, lower-severity version of the original
+finding.
 
-- Risk: `packages/domain/src/brand-theme.ts:12` uses `z.string().url().nullable()` with no scheme restriction. A malicious operator can store `javascript:alert(1)` or `data:text/html,...` as their logo URL. If any client app interpolates this into `<img src>` or `<a href>`, it is an XSS vector.
-- Files: `packages/domain/src/brand-theme.ts:12`
-- Current mitigation: None at the schema layer.
-- Recommendations: Add `.refine(u => u === null || /^https?:/i.test(u), 'must be http(s)')` matching the rule stated in `packages/domain/CLAUDE.md`.
+**`CancelOrderService` can report a cancel as failed (409) after it has
+already committed — CR-04 from the Phase 10 backend review, confirmed
+still unfixed.** `cancel-order.service.ts` persists `order.cancel()` +
+`orderRepo.update(order)` unconditionally, then attempts a refund in a
+`try/catch` that only handles `PaymentNotRefundableError` and
+`RefundProviderFailedError`. If the order was already fully refunded by an
+earlier, separate discretionary refund (possible since D-10 decoupled
+refund from fulfillment status), `order.refund()` throws
+`RefundExceedsCapturedError` — a third error type the catch block doesn't
+handle — which propagates as a `409` after the cancel already landed in
+the DB. The operator sees "cancel failed" for an order that is, in fact,
+canceled. Not covered by `order-cancel-refund.e2e.spec.ts`'s 9 cases. Fix
+is small: also catch `RefundExceedsCapturedError` and treat it like "no
+refund needed."
 
-**`BrandTheme.font` has no character allowlist:**
+**`tenancy_erase_tenant()` GDPR erasure gap — CR-03 from the Phase 10
+backend review, fixed (`31bc97e9`).** Migration `0077` now deletes
+`payment_refunds` before `payments`. Carried forward here only as a
+verification note: `erase-includes-ordering.spec.ts` was extended with a
+seeded `payment_refunds` row per the same commit — confirm this still
+passes if migration ordering changes again.
 
-- Risk: `packages/domain/src/brand-theme.ts:18` validates `font` only with `.min(1).max(64)`. If any rendering layer interpolates the value into CSS (`font-family: ${theme.font}`) without sanitization, it enables CSS injection.
-- Files: `packages/domain/src/brand-theme.ts:18`
-- Current mitigation: The font field is not rendered anywhere yet (no usages found in apps). Risk is latent.
-- Recommendations: Restrict to `/^[A-Za-z0-9 ,'"\-]+$/` or a fixed enum of approved font tokens before any rendering layer consumes it.
+**Concurrent Accept/Advance requests have no optimistic-concurrency
+guard — WR-01 from the Phase 10 backend review, confirmed still
+open.** `#runUpdate` in `order-drizzle.repository.ts` only conditions its
+`UPDATE` on `(id, tenantId)`, not on an expected prior status. Two
+concurrent `POST /:id/accept` calls (a double-tap, or two staff on two
+tablets — flagged as an open product question, MED-17) can both pass the
+idempotency short-circuit before either commits, both write, and both fire
+an outbox event — a guest can get two "order accepted" notifications with
+two different ETAs. No fix landed; not blocking Phase 10's close since it
+requires a genuine race window, but worth closing before order volume
+makes it observable in practice.
 
-**`resto.active_brand` cookie missing `secure` flag:**
-
-- Risk: `apps/admin/lib/actions/set-active-brand.ts:32-37` and `apps/admin/lib/actions/create-brand.ts:68-72` set the `resto.active_brand` cookie with `httpOnly: true, sameSite: 'lax'` but no `secure` flag. The `apps/CLAUDE.md` explicitly requires `secure: process.env.NODE_ENV === 'production'` for all server-action-set cookies.
-- Files: `apps/admin/lib/actions/set-active-brand.ts:32-37`, `apps/admin/lib/actions/create-brand.ts:68-72`
-- Current mitigation: None — the cookie is transmitted in plaintext over HTTP in any non-HTTPS context.
-- Recommendations: Add `secure: process.env.NODE_ENV === 'production'` to both `cookieStore.set` calls.
-
-**`stripeAccountId` has no max-length constraint:**
-
-- Risk: `packages/domain/src/schema/tenant.ts:32` declares `stripeAccountId: z.string().nullable()` with no `.max()`. An attacker who can write this field (via a compromised internal endpoint) could store arbitrarily large strings.
-- Files: `packages/domain/src/schema/tenant.ts:32`
-- Current mitigation: The field is only writable by internal tooling (no public endpoint exposes it directly yet).
-- Recommendations: Add `.max(255)` — Stripe account IDs are at most ~32 chars; 255 gives headroom.
-
-**`imageS3Key` and `allergens` strings lack upper-bound constraints:**
-
-- Risk: `apps/api/src/contexts/catalog/application/dto.ts:25-26` accepts `imageS3Key: z.string().min(1)` and `allergens: z.array(z.string().min(1))` with no `.max()` on strings or `.max()` on the array. The `packages/CLAUDE.md` rule requires max lengths on all free-text fields.
-- Files: `apps/api/src/contexts/catalog/application/dto.ts:25-26`
-- Current mitigation: None at the HTTP boundary.
-- Recommendations: `imageS3Key: z.string().min(1).max(1024)`, `allergens: z.array(z.string().min(1).max(64)).max(50).nullable()`.
-
-**Static identity placeholder `operator@example.com` renders in production UI:**
-
-- Risk: `apps/admin/components/app-sidebar.tsx:86` hard-codes `email: 'operator@example.com'` in a `placeholderUser` object and renders it in `<NavUser>`. The `apps/CLAUDE.md` explicitly forbids static identity placeholders in shipping UI as a phishing-cue removal and unfinished-look issue.
-- Files: `apps/admin/components/app-sidebar.tsx:84-88`
-- Current mitigation: None — this value is shown to every signed-in operator.
-- Recommendations: Load real user info from `apiFetch('/api/auth/get-session')` and pass it down from the layout RSC to `<AppSidebar>`.
-
-**Email adapter not wired for `sendResetPassword` and `sendInvitationEmail`:**
-
-- Risk: `apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts:137,152` falls back to `() => Promise.resolve()` for both callbacks. In staging/production, `assertEmailAdapterWired` only checks `sendVerificationEmail` (`apps/api/src/contexts/identity/identity-core.module.ts:28`). Operators who trigger forgot-password or receive team invitations on staging/production see no email.
-- Files: `apps/api/src/contexts/identity/identity-core.module.ts:28-44`, `apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts:137,152`
-- Current mitigation: `assertEmailAdapterWired` will throw on staging/production if `sendVerificationEmail` is missing, but the other two callbacks are silently no-ops.
-- Recommendations: Add `sendResetPassword` and `sendInvitationEmail` to `REQUIRED_EMAIL_CALLBACKS` or add explicit assertions. Wire Resend/SMTP adapter (RES-12).
-
-**NATS consumer missing `max_deliver` and DLQ config:**
-
-- Risk: `packages/events/src/infrastructure/nats-subscriber.ts:60-66` creates consumers with `ack_policy: Explicit` and `max_ack_pending: options.maxInFlight ?? 1` but no `max_deliver` limit and no dead-letter-queue subject. A poison message (malformed envelope that always throws) will redeliver indefinitely, stalling the consumer.
-- Files: `packages/events/src/infrastructure/nats-subscriber.ts:60-66`
-- Current mitigation: None — `RunningSubscription.#run()` calls `msg.nak()` on parse failure and the message redelivers forever.
-- Recommendations: Set `max_deliver: 5` and `dead_letter: 'dlq.${subject}'` in the consumer config; add `ack_wait` aligned to expected handler latency.
-
-**`#run()` in `RunningSubscription` has no top-level try/catch on the iterator:**
-
-- Risk: `packages/events/src/infrastructure/nats-subscriber.ts:123-138` — if the `for await` iterator itself throws (broker disconnect, stream deletion), the rejection is unhandled because `start()` calls `this.#loop = this.#run()` without attaching a rejection handler.
-- Files: `packages/events/src/infrastructure/nats-subscriber.ts:111-112`
-- Current mitigation: `stop()` catches the loop promise (`this.#loop.catch(() => undefined)`), but only at shutdown time. A mid-run iterator error before `stop()` is an unhandled rejection.
-- Recommendations: Wrap the entire `for await` block in a try/catch that re-invokes `#run()` with backoff, or ensure `start()` attaches `.catch(this.#onError)`.
-
-## Performance Bottlenecks
-
-**`apiFetch` in admin makes an extra `GET /api/auth/get-session` per server-side render:**
-
-- Problem: `apps/admin/lib/api-server.ts:157-176` — `getActiveTenantId` fires a BA session lookup before every `apiFetch` call. While `React.cache()` deduplicates within a single render pass, each new RSC render or server action invocation makes a fresh network round-trip to the API.
-- Files: `apps/admin/lib/api-server.ts:157-176`
-- Cause: The active organization ID is not stored in a dedicated cookie; it must be derived by parsing the BA session every time.
-- Improvement path: Persist `activeOrganizationId` to a separate signed `resto.active_tenant_id` cookie (alongside `resto.active_brand`) set during `POST /api/auth/organization/set-active`. Reads become cookie lookups (zero network hops).
-
-**Catalog `PublishedMenu` is fully deserialized on every cache miss:**
-
-- Problem: `apps/api/src/contexts/catalog/infrastructure/catalog-drizzle.repository.ts` assembles the full published menu (all categories, items, variants, modifiers) with multiple sequential queries per request on every Redis cache miss.
-- Files: `apps/api/src/contexts/catalog/infrastructure/catalog-drizzle.repository.ts`
-- Cause: No query batching or DataLoader pattern; N+1 risk on items with variants/modifiers.
-- Improvement path: Use a single JOIN query or `Promise.all` to fan out item fetches. The Redis cache (when healthy) amortizes this to near-zero per qr-menu request, but any Redis outage degrades every public menu request to multiple sequential DB queries.
+**`order_daily_sequences` has no entry in the canonical RLS regression
+test — WR-02 from the Phase 10 backend review, confirmed still open.**
+`packages/db/CLAUDE.md`'s own hard rule ("every new tenant-scoped table
+needs an entry in `tenant-isolation.spec.ts`") was not followed for this
+migration-`0073` table. The RLS policies look correct by inspection; there
+is simply no automated net if a future migration weakens them.
 
 ## Fragile Areas
 
-**Better Auth context stash via `ctx.context as { __restoSignOut? }` cast:**
+**Discretionary refund form and Cancel trigger are now gated by order
+status — CR-01/CR-02 from the Phase 10 frontend review, fixed
+(`6a4fc9cd`).** No longer open; carried forward only as a note that the
+"remaining balance" hint in the refund form still shows the order's full
+original total rather than `total − already-refunded` (acknowledged interim
+gap in `10-12-SUMMARY.md`, not re-opened as a defect since a full refund is
+no longer double-submittable).
 
-- Files: `apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts:220-230, 263-267`
-- Why fragile: The before/after hook pair communicates via a private stash property grafted onto BA's internal `ctx.context` object using `as unknown as { __restoSignOut? }`. This is an undocumented BA internals pattern. A BA upgrade that changes the context object shape would silently break sign-out audit events with no TypeScript error.
-- Safe modification: Test sign-out audit thoroughly after every BA version bump. Consider extracting the stash to a module-level `WeakMap<object, Stash>` keyed on the request to avoid the cast.
-- Test coverage: `apps/api/test/e2e/identity-audit.e2e.spec.ts` covers the happy path; no tests for the case where the stash is not found.
+**Discretionary refund amount still has no client-side bound
+validation — WR-02 from the Phase 10 frontend review, confirmed still
+open.** `order-detail-sheet.tsx`'s `refundDisabled` only checks for an
+empty string or a pending mutation, not that the typed amount is `> 0` and
+`<= remaining`. A stray leading `-` or a fat-fingered extra digit reaches
+the mutation and depends entirely on the server-side check to reject it.
 
-**`NATS_DISABLED` flag bypasses event publication silently:**
+**Guest status tracker's manual retry reads a stale closed-over
+status — WR-03 from the Phase 10 frontend review, confirmed still
+open.** `order-status-poller.tsx`'s polling `useEffect` has a
+`[orderId, initialStatus.status]` dependency array, so it runs once per
+mount; `retryRef.current`'s closure over `status` is permanently bound to
+whatever `status` equaled at that single render. Only reachable on a
+double-failure (a poll fails, the guest taps retry, that retry also
+fails) — narrow blast radius, but still live.
 
-- Files: `apps/api/src/infrastructure/nats.module.ts:57,83`
-- Why fragile: When `NATS_DISABLED=true`, the NATS module provides a null publisher. `OutboxDispatcher` no-ops gracefully, but no warning is emitted to indicate events are being dropped. In a misconfigured staging deploy this is invisible.
-- Safe modification: Log a `warn` at startup when `NATS_DISABLED=true` (not just in the module constructor, but in the dispatcher's `onError` default handler).
-- Test coverage: No test verifies that `NATS_DISABLED=true` still writes outbox rows (only that publishing is skipped).
+**"Has this brand ever had an order" activation check is bounded to 7
+days, not all-time — WR-04 from the Phase 10 frontend review, confirmed
+still open.** `orders.tsx`'s activation-empty-state check uses
+`datePreset: 'week'` (the widest `OrderDatePreset` value available) as a
+proxy for "never had an order." A brand with a multi-week gap between
+visits (slow season, temporary closure) sees the "your first orders will
+appear here" onboarding empty-state instead of a plain filtered-empty
+state.
 
-**`identityBuckets` in-memory rate-limit store does not survive restarts or horizontal scale:**
-
-- Files: `apps/api/src/shared/security.ts:62-75`
-- Why fragile: The per-email rate-limit buckets for sign-in/reset are held in a `Map<string, IdentityBucket>` in process memory. Multiple api replicas do not share the counter, so per-email brute-force protection is only enforced per-instance.
-- Safe modification: This is documented as "acceptable for MVP-1". Replacement path: move the per-email bucket to Redis using `INCR` + `EXPIRE` (the same pattern already used for menu version counters).
-- Test coverage: `apps/api/test/e2e/auth-brute-force.e2e.spec.ts` tests the in-process path; no multi-replica test exists.
-
-**`qr-menu` ships source maps to production (`sourcemap: true`):**
-
-- Files: `apps/qr-menu/vite.config.ts:8`
-- Why fragile: The `apps/CLAUDE.md` explicitly forbids this: "Customer-facing apps must NOT ship source maps to production." Source maps expose the full unminified source tree to any user who opens browser dev tools on the qr-menu domain.
-- Safe modification: Change to `sourcemap: 'hidden'` and configure Sentry (or equivalent) to consume the hidden maps from the CI artifact store.
-- Test coverage: `apps/qr-menu/test/bundle-no-dev-leak.spec.ts` checks for dev-only code leaks but does not assert the source map mode.
-
-**`feature-flags` package is an empty placeholder:**
-
-- Files: `packages/feature-flags/.gitkeep`
-- Why fragile: The `packages/CLAUDE.md` documents it as "OpenFeature client with the configured provider (Unleash self-hosted)." Nothing is implemented. Any code that attempts to import from `@resto/feature-flags` will fail at build time.
-- Safe modification: Either scaffold a minimal always-off stub or remove the package from `pnpm-workspace.yaml` and `tsconfig.base.json` paths until it is needed.
-
-## Scaling Limits
-
-**`INTERNAL_API_TOKEN` is a flat shared secret with no per-caller identity:**
-
-- Current capacity: Single token for all internal callers (seed CLI, admin app, ops scripts).
-- Limit: There is no audit trail of which caller invoked which internal endpoint. A compromised token grants full access to all `/internal/v1/*` routes (tenant provisioning, erasure, bootstrap).
-- Scaling path: ADR-0012 defers per-user IAM to MVP-2. Intermediate step: issue per-caller tokens stored in Vault, rotate on breach.
-
-**Redis catalog version counter is in-process fallback on Redis outage:**
-
-- Current capacity: When Redis is available, per-tenant menu versioning is correct across replicas.
-- Limit: On Redis outage, `bump()` returns `Date.now()` as a fallback version. Two concurrent bumps in the same millisecond return the same "version," causing cache-key collisions where one replica serves a stale menu after a publish.
-- Scaling path: Add an in-DB sequence-backed version counter as the authoritative fallback (Postgres `nextval` on a `menu_versions` table) when Redis is unavailable.
-
-## Dependencies at Risk
-
-**`better-auth` pinned at `~1.4.22` (minor-patch only):**
-
-- Risk: BA's 1.x surface is pre-1.0 stability. The organization plugin's type cast `as unknown as BetterAuthPlugin` (`apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts:153`) and the internal `ctx.context.__restoSignOut` stash are both workarounds for upstream type gaps. BA 1.5.x or 2.x could break both.
-- Impact: Silent runtime regression in sign-in/sign-out audit events; TypeScript errors that block CI.
-- Migration plan: Pin to a specific patch, audit CHANGELOG before every bump, test all identity e2e specs against the new version before merging.
-
-**`nats` package at `^2.29.1`:**
-
-- Risk: NATS.js 3.x is in development and brings breaking API changes to `JetStreamClient`. The current subscriber code uses the `consume()` API introduced in 2.x.
-- Impact: Build or runtime failure if a minor/major bump is auto-resolved.
-- Migration plan: Lock to `~2.29.1`; upgrade intentionally when 3.x stabilises.
-
-## Missing Critical Features
-
-**No automated tenant erasure executor:**
-
-- Problem: `listScheduledForErasure()` + `executeErasure()` are implemented but nothing invokes them automatically.
-- Blocks: GDPR right-to-erasure SLA compliance. Tenants past their 30-day cool-off window accumulate indefinitely until a human runs the CLI.
-
-**Email delivery is a no-op in all environments:**
-
-- Problem: `sendResetPassword` and `sendInvitationEmail` fall back to `() => Promise.resolve()`. The Resend SMTP adapter (RES-12) is not implemented.
-- Blocks: Forgot-password flow (link is never sent), team member invitation flow, email verification for new sign-ups in staging/production.
-
-**Stripe Connect is a no-op adapter:**
-
-- Problem: `apps/api/src/contexts/tenancy/tenancy.module.ts:22` wires `NoopStripeConnectAdapter`. The `stripe_account_id` column is always `NULL`.
-- Blocks: All payment processing, payout routing, and any feature gated on having a Stripe account.
-
-**`suspend` tenant status is unreachable from the API:**
-
-- Problem: `TenantStatus` includes `'suspended'` but no service or HTTP endpoint transitions a tenant to this state.
-- Blocks: Billing-failure lockout, abuse-response suspension.
-
-## Test Coverage Gaps
-
-**BA hook stash failure path not tested:**
-
-- What's not tested: What happens when `ctx.context.__restoSignOut` is absent in the `after` hook (e.g., the `before` hook was not reached, or BA's context shape changed).
-- Files: `apps/api/src/contexts/identity/infrastructure/better-auth/auth.config.ts:262-270`
-- Risk: Silent loss of sign-out audit events without any error surfacing.
-- Priority: Medium
-
-**Multi-replica per-email rate-limit bypass:**
-
-- What's not tested: Two concurrent requests to different api replicas exceeding the per-email cap.
-- Files: `apps/api/src/shared/security.ts:62-75`
-- Risk: An attacker running parallel requests against multiple load-balanced replicas bypasses per-email brute-force protection.
-- Priority: Medium
-
-**`suspend` tenant transition:**
-
-- What's not tested: The `suspended` status is referenced in `TenantStatus` and `brand.aggregate.ts` but there are no unit or integration tests for a suspend path.
-- Files: `apps/api/test/unit/tenancy/`, `apps/api/test/e2e/tenancy.e2e.spec.ts`
-- Risk: When a `SuspendTenantService` is eventually added, the status transition logic will be untested until deliberately added.
-- Priority: Low (feature not yet implemented)
-
-**Source map mode not asserted in qr-menu bundle test:**
-
-- What's not tested: `apps/qr-menu/test/bundle-no-dev-leak.spec.ts` checks for dev code but does not assert that source maps are `'hidden'` rather than `true`.
-- Files: `apps/qr-menu/test/bundle-no-dev-leak.spec.ts`, `apps/qr-menu/vite.config.ts:8`
-- Risk: The current `sourcemap: true` config is a production security concern (full source exposure) that CI does not catch.
-- Priority: High
-
-**Redis outage version-collision scenario:**
-
-- What's not tested: Concurrent `bump()` calls during a Redis outage both returning `Date.now()` and causing a cache-key collision.
-- Files: `apps/api/src/contexts/catalog/infrastructure/redis-catalog-cache.adapter.ts:70-77`
-- Risk: Stale menus served after a publish event during Redis outage; no test would catch a regression.
-- Priority: Low
+**`NATS_DISABLED=true` still silently drops all event publication with no
+startup warning.** `apps/api/src/infrastructure/nats.module.ts` returns a
+null publisher/subscriber and logs nothing beyond an inline comment
+calling it a "test/CI escape hatch." If this env var is ever set by
+accident in a real environment, outbox rows accumulate with nothing
+publishing them and no operator-visible signal. Low likelihood (it's not
+in any committed environment config) but zero cost to add a boot-time
+`logger.warn` if this file is touched again.
 
 ---
 
-_Concerns audit: 2026-05-24_
+_Concerns audit: 2026-08-18_

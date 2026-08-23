@@ -18,12 +18,12 @@ export class BaUserDrizzleReader implements BaUserReader {
     return rows[0] ?? null;
   }
 
-  async findOwnerByOrganization(organizationId: string): Promise<BaUserRecord | null> {
+  async findOwnerByTenant(tenantId: string): Promise<BaUserRecord | null> {
     const rows = await this.authDb.db
       .select({ id: userTable.id, email: userTable.email })
       .from(memberTable)
       .innerJoin(userTable, eq(memberTable.userId, userTable.id))
-      .where(and(eq(memberTable.organizationId, organizationId), eq(memberTable.role, 'owner')))
+      .where(and(eq(memberTable.tenantId, tenantId), eq(memberTable.role, 'owner')))
       .limit(1);
     return rows[0] ?? null;
   }

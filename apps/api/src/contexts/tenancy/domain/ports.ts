@@ -1,12 +1,13 @@
-import type { BrandId, BrandSlug, TenantId, TenantSlug } from '@resto/domain';
-import type { Brand, BrandSnapshot } from './brand.aggregate';
+import type { LocationId, TenantId } from '@resto/domain';
+import type { LocationSnapshot } from './location.aggregate';
 import type { Tenant, TenantSnapshot } from './tenant.aggregate';
 import type { TenantDomain } from './tenant-domain';
 
 export interface TenantRepository {
-  findById(id: TenantId): Promise<Tenant | null>;
-  findBySlug(slug: TenantSlug): Promise<Tenant | null>;
-  findByDomainHost(host: string): Promise<Tenant | null>;
+  findById(id: TenantId): Promise<TenantSnapshot | null>;
+  findBySlug(slug: string): Promise<TenantSnapshot | null>;
+  findByDomainHost(host: string): Promise<TenantSnapshot | null>;
+  findByStripeAccountId(stripeAccountId: string): Promise<TenantSnapshot | null>;
   save(tenant: Tenant): Promise<void>;
   listDomains(id: TenantId): Promise<TenantDomain[]>;
   findCurrentTenant(): Promise<Tenant | null>;
@@ -17,19 +18,11 @@ export interface TenantRepository {
 
 export const TENANT_REPOSITORY = Symbol('TENANT_REPOSITORY');
 
-export interface BrandRepository {
-  findByDomainHost(host: string): Promise<BrandSnapshot | null>;
-  findBySlug(slug: BrandSlug): Promise<BrandSnapshot | null>;
-  findByTenantAndSlug(tenantId: TenantId, slug: BrandSlug): Promise<BrandSnapshot | null>;
-  findById(id: BrandId): Promise<BrandSnapshot | null>;
-  listForTenant(
-    tenantId: TenantId,
-    brandIds?: readonly string[],
-  ): Promise<readonly BrandSnapshot[]>;
-  save(snapshot: BrandSnapshot, primaryDomainHostname: string): Promise<void>;
-  findActiveSlugsByPrefix(prefix: string, limit: number): Promise<readonly string[]>;
-  findByStripeAccountId(stripeAccountId: string): Promise<BrandSnapshot | null>;
-  updatePaymentConnection(brand: Brand): Promise<void>;
+export interface LocationRepository {
+  findById(id: LocationId): Promise<LocationSnapshot | null>;
+  listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
+  save(snapshot: LocationSnapshot): Promise<void>;
+  countScopedMembers(locationId: LocationId): Promise<number>;
 }
 
-export const BRAND_REPOSITORY = Symbol('BRAND_REPOSITORY');
+export const LOCATION_REPOSITORY = Symbol('LOCATION_REPOSITORY');

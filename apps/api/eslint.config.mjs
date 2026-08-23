@@ -92,11 +92,12 @@ export default [
   },
   {
     // Sole legitimate callers of raw tx.* in api production code per
-    // ADR-0020 I-1. The brand repo still uses raw tx.* pending migration
-    // (future RES-235d); the catalog repo retains a single manual brands
-    // projection query that carries an explicit `eq(brands.tenantId, ...)`.
-    // record-audit.service.ts writes to the platform-wide auditLog table
-    // via the tx handed in by runDeduped.
+    // ADR-0020 I-1. tenant-drizzle.repository.ts still uses raw tx.*
+    // pending migration (future RES-235d); the catalog repo retains a
+    // manual query against `tenants` directly (it is not in
+    // TenantScopedTable — id IS the tenant id) that carries an explicit
+    // `eq(tenants.id, ...)`. record-audit.service.ts writes to the
+    // platform-wide auditLog table via the tx handed in by runDeduped.
     //
     // TEN-15: the FORBIDDEN_CORRELATION_ID_LITERALS selectors stay active
     // even in these overrides — the existing 5 sites in tenant-drizzle
@@ -119,7 +120,6 @@ export default [
     //
     // TEN-15 selectors stay active for the same reason as above.
     files: [
-      'src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
       'src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',
       'src/contexts/identity/infrastructure/identity-event-emitter.adapter.ts',
       // AUTH-01 / Phase 3 / D-05 + D-17: Resend adapter pre-org-bind

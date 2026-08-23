@@ -34,7 +34,9 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
-- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_
+- [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
+- [x] **Phase 10.2: Organization-per-restaurant and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_ (completed 2026-08-22)
+- [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -516,18 +518,18 @@ Plans:
 Plans:
 **Wave 1** _(parallel — no file overlap: domain pkg / db pkg / identity session)_
 
-- [ ] 08.2-01-PLAN.md — Reserved-slug expansion + ADMIN_ROOT_ROUTE_SEGMENTS contract + drift spec + D-07 collision detector (D-06/D-07/SC-2)
-- [ ] 08.2-02-PLAN.md — Brand RLS migration 0058 (app_bind_brand GUC + policies on 9 menu tables + orders) + withTenant brand-bind + boot preflight + [BLOCKING] db:migrate; payments documented as app-layer-only accepted debt (D-14/SC-6)
-- [ ] 08.2-03-PLAN.md — Server-session active-brand pin: session.activeBrandId additionalField (input:false) + set-active hook + POST /v1/identity/me/set-active-brand (owner free-switch / non-owner scoped re-pin) + AuthGuard surfacing (D-09/D-12/D-13/SC-5)
+- [x] 08.2-01-PLAN.md — Reserved-slug expansion + ADMIN_ROOT_ROUTE_SEGMENTS contract + drift spec + D-07 collision detector (D-06/D-07/SC-2)
+- [x] 08.2-02-PLAN.md — Brand RLS migration 0058 (app_bind_brand GUC + policies on 9 menu tables + orders) + withTenant brand-bind + boot preflight + [BLOCKING] db:migrate; payments documented as app-layer-only accepted debt (D-14/SC-6)
+- [x] 08.2-03-PLAN.md — Server-session active-brand pin: session.activeBrandId additionalField (input:false) + set-active hook + POST /v1/identity/me/set-active-brand (owner free-switch / non-owner scoped re-pin) + AuthGuard surfacing (D-09/D-12/D-13/SC-5)
 
 **Wave 2** _(after Wave 1)_
 
-- [ ] 08.2-04-PLAN.md — SPA brand-first routing refactor (drop /dashboard, / → active brand, team/settings brand-neutral) + Stripe Connect return-URL fix + brand-switcher API wire (D-03/D-04/D-05/D-12/D-13/SC-1/SC-5) [human-verify checkpoint]
-- [ ] 08.2-05-PLAN.md — Default-deny flip + BrandScopeGuard default-on (@BrandNeutral opt-out) + D-10 session-pin reconciliation (existence-hiding 404) + inverted unit matrix (D-08/D-10/D-11/SC-3/SC-4)
+- [x] 08.2-04-PLAN.md — SPA brand-first routing refactor (drop /dashboard, / → active brand, team/settings brand-neutral) + Stripe Connect return-URL fix + brand-switcher API wire (D-03/D-04/D-05/D-12/D-13/SC-1/SC-5) [human-verify checkpoint]
+- [x] 08.2-05-PLAN.md — Default-deny flip + BrandScopeGuard default-on (@BrandNeutral opt-out) + D-10 session-pin reconciliation (existence-hiding 404) + inverted unit matrix (D-08/D-10/D-11/SC-3/SC-4)
 
 **Wave 3** _(after Waves 1+2 — runs against the migrated DB)_
 
-- [ ] 08.2-06-PLAN.md — SC-4 isolation e2e (forge cookie/URL → existence-hiding 404/403) + cross-brand RLS read matrix (live) + Stripe return-URL regression unit test (D-08/D-09/D-10/D-14/SC-4/SC-6)
+- [x] 08.2-06-PLAN.md — SC-4 isolation e2e (forge cookie/URL → existence-hiding 404/403) + cross-brand RLS read matrix (live) + Stripe return-URL regression unit test (D-08/D-09/D-10/D-14/SC-4/SC-6)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
@@ -545,9 +547,15 @@ Plans:
 3. A role's creator cannot grant a permission they do not themselves hold — creator-subset enforced server-side, proven by test
 4. `dynamicAccessControl` enabled without weakening the fixed system roles; permission-checker resolves system role + custom role
 
-**Plans**: TBD (run /gsd-discuss-phase 08.3)
+**Plans**: 5 plans in 5 waves
 
-- [ ] TBD
+Plans:
+
+- [x] 08.3-01-PLAN.md — domain RBAC prereqs: `ac` resource + colon-action rename, owner-only grant, NON_DELEGATABLE, role-definition event contracts, flip `dynamicAccessControl` + role cap
+- [x] 08.3-02-PLAN.md — RestOS `/v1/roles` wrapper (create/update/archive/list), NON_DELEGATABLE + reserved-name guards, soft-archive, `lookupBaseRole` fix, role-definition audit
+- [x] 08.3-03-PLAN.md — assignment-subset + self-escalation guard, `MemberRolesController` assign surface, definitive `beforeUpdateMemberRole` backstop, preset seed-at-provision
+- [x] 08.3-04-PLAN.md — owner-facing admin UI: Roles list, preset-first role editor (NON_DELEGATABLE hidden), Team assignment surface
+- [x] 08.3-05-PLAN.md — security-regression e2e: privilege-escalation (SC#3/D-04), brand-scope orthogonality (D-03/RBAC-09), cross-tenant isolation (RBAC-14)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
@@ -565,27 +573,145 @@ Plans:
 3. `member_brand_scope` is refined to / superseded by location-level scope; owner (unrestricted) unaffected
 4. The single-active-brand session from 08.2 interplays correctly with multi-location, multi-brand membership
 
-**Plans**: TBD (run /gsd-discuss-phase 08.4)
+**Plans**: 11 plans in 7 waves
 
-- [ ] TBD
+Plans:
+**Wave 1** _(parallel — db pkg / domain pkg, no file overlap)_
+
+- [x] 08.4-01-PLAN.md — DB foundation: locations + member_location_scope tables, app_bind_location GUC, session active_location_id, isolation net (D-01/D-04/D-05/D-11/D-13)
+- [x] 08.4-02-PLAN.md — Domain contracts: LocationId + location RBAC resource + system-role perms + admin-escalation regression (D-06/D-07)
+
+**Wave 2** _(identity vs tenancy, no file overlap)_
+
+- [x] 08.4-03-PLAN.md — Active-location session pin (asymmetric owner/staff), scope reader + reachable-brand derivation, GET /v1/me/locations (D-04/D-08/D-09/D-10/D-11)
+- [x] 08.4-04-PLAN.md — Tenancy Locations CRUD + archive blast-radius warning, no auto-create (D-01/D-12/D-14/D-17)
+
+**Wave 3**
+
+- [x] 08.4-05-PLAN.md — LocationScopeGuard (owner-bypass + existence-hiding 404) + BrandScopeGuard reachable-brand re-point (D-04/D-05)
+- [x] 08.4-06-PLAN.md — Availability/stop-list re-grain to location + default-location resolver + CDN runbook note (D-02)
+
+**Wave 4**
+
+- [x] 08.4-07-PLAN.md — Per-location role assignment (owner-only, NON_DELEGATABLE guard) + LocationPermissionChecker (D-06/D-07/D-08)
+- [x] 08.4-08-PLAN.md — Orders location re-grain (NOT NULL location_id + RLS) + checkout default-location binding (D-03/D-12/D-13)
+
+**Wave 5**
+
+- [x] 08.4-09-PLAN.md — Admin: Locations CRUD page + locationSwitcher + staff pick-location + x-location-id echo [human-verify] (D-09/D-10/D-14/D-16/D-17)
+
+**Wave 6**
+
+- [x] 08.4-10-PLAN.md — Admin: Team (location → role) matrix + stale-copy fix [human-verify] (D-15)
+
+**Wave 7**
+
+- [x] 08.4-11-PLAN.md — Location isolation e2e: out-of-scope 404/403, staff no-self-switch, owner bypass, archive access-loss (D-04/D-05/D-10/D-11/D-17)
       **UI hint**: yes
       **Persona reviewers**: persona-cto, persona-skeptic
 
+### Phase 08.5: Owner location filter UX (URL-param + all-aggregate) (INSERTED)
+
+**Goal:** Rework admin location selection from the 08.4 server-session pin + relogin model into an OWNER-ONLY URL search-param filter (`?location=all|<id>`). `all` = aggregate summary across all brand locations (dashboard + stop-list); a specific location filters dashboard / menu / all surfaces by it. Adds backend aggregate endpoints for the `all` case — resolves the documented 08.4 owner-brand-global stop-list gap. The LocationScopeGuard's non-owner (staff) path is left UNTOUCHED (BLOCK-2/D-08 corrected the original guard mis-read); the owner filter is purely client-side, and the gap is closed by new `@LocationNeutral` aggregate endpoints behind a new backend owner-only gate — not by editing the guard. PRESERVES 08.4 D-10/D-11 for STAFF: staff stay pinned to a single location (pick-location at login, change via re-login) — the URL filter is owner-only; staff session stays scoped to a single brand (login-to-brand).
+**Requirements**: TBD (derive in discuss/plan)
+**Depends on:** Phase 08.4
+**Plans:** 5/5 plans complete
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic (security-sensitive — touches LocationScopeGuard + session model)
+
+Plans:
+
+- [x] 08.5-01-PLAN.md — Backend owner-only gate primitive (@OwnerOnly decorator + OwnerOnlyGuard, 5th APP_GUARD) + guard-untouched regression (D-02/D-08/D-09)
+- [x] 08.5-02-PLAN.md — Backend session-pin cleanup: retire owner pin, 403 non-owner brand-switch, LOW-11 accept (D-13/D-14/D-15)
+- [x] 08.5-03-PLAN.md — `all` aggregate endpoint (@LocationNeutral @OwnerOnly, no-store, N/M badge) + owner single-location server validation (D-05/D-06/D-07/D-09/D-10/D-11/D-16)
+- [x] 08.5-04-PLAN.md — Client location-authority split: apiFetch locationId opt, ?location typed search param, use-effective-location hook (D-01/D-03/D-04/D-12/D-18)
+- [x] 08.5-05-PLAN.md — Surfaces + URL-filter switcher + all-mode completeness sweep + real browser smoke (D-05/D-17/D-19)
+
 ### Phase 10: Admin Order Intake
 
-**Goal**: Give operators a real-time incoming-orders feed in admin with status transitions, cancel/refund actions, order filtering, graceful SSE shutdown, and a public order-status endpoint for guest-facing confirmation page polling
-**Depends on**: Phase 7, Phase 8 _(Phase 9 Delivery Zones moved to MVP-2 in the 2026-06-12 rebalance; the delivery-zone enforcement in criterion 1 activates only once Phase 9 ships)_
-**Requirements**: ORDINT-01, ORDINT-02, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-09, ORDINT-10
+**Goal**: Give operators a working order-intake surface in admin — a polled incoming-orders feed with audible alerting, the full status workflow including reject and cancel-after-accept, refunds, filtering, and a live guest-facing order-status page — so a restaurant can run a service on RestOS end to end
+**Depends on**: Phase 7, Phase 8 _(Phase 9 Delivery Zones moved to MVP-2 in the 2026-06-12 rebalance, so delivery orders carry no zone, fee, address validation, or dispatch state — the feed must not render a delivery lifecycle the backend cannot back)_
+**Requirements**: ORDINT-01, ORDINT-03, ORDINT-04, ORDINT-05, ORDINT-06, ORDINT-07, ORDINT-08, ORDINT-10 _(ORDINT-02 + ORDINT-09 moved to Phase 18 on 2026-08-11 — see below)_
 **Success Criteria** (what must be TRUE):
 
-1. New orders appear in the admin feed in real time via Server-Sent Events without a page refresh; incoming orders are visually flagged; pickup orders work end-to-end, and delivery orders are accepted without polygon enforcement until Phase 9 (Delivery Zones) ships in MVP-2
-2. Operator accepts or rejects an incoming order; rejection auto-triggers a refund via Stripe
-3. Operator transitions an accepted order through `accepted → preparing → ready → completed`
-4. Operator cancels an order with a reason; if the order was paid, auto-refund is triggered; operator can filter orders by status, date, and channel; operator sees full order details (items, modifiers, customer info, delivery address, total breakdown)
-5. Graceful shutdown closes all active SSE connections with a `retry:` event so clients auto-reconnect; public `GET /v1/orders/:id/status` endpoint returns current order state for guest-facing confirmation page polling
+1. New orders appear in the admin Orders page without a page refresh (5-second polling), are visually flagged, and raise an audible alert plus a tab-title counter so a backgrounded tab still signals; an unaccepted order escalates visually after a threshold but nothing automatic ever touches the guest's money; pickup orders work end to end
+2. Operator accepts or rejects an incoming order and sets the ready time on accept; rejection auto-triggers a full Stripe refund — and reject/cancel is available to everyone who works with orders, not only the owner (discretionary arbitrary-amount refund stays owner-only `billing:update`)
+3. Operator transitions an accepted order through `accepted → preparing → ready → completed`, with each transition timestamped separately
+4. Operator cancels an order with a reason at any stage up to `completed`, always with a full auto-refund; a failed Stripe refund still cancels the order and surfaces a retryable red flag rather than blocking the kitchen; operator can filter by status, date, and channel and see full order details
+5. The guest sees live status on their phone (`accepted → preparing → ready`) with the operator-set ready time, via the existing public `GET /v1/orders/:id/status`; the checkout captures marketing consent
+6. One migration lands every new order field before the first real orders exist — short daily order number, channel, per-state timestamps, cancel reason + actor, ready time, consent — and every status transition is asserted by reading the row back from the database, not from a mocked repository
+   **Plans**: 13 plans (10 waves)
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer _(run 2026-08-11 — see `.planning/phases/10-admin-order-intake/10-PERSONA-REVIEWS.md`)_
+
+**Scope decisions from `/gsd:discuss-phase 10` (2026-08-11) — planner MUST read `10-CONTEXT.md`:**
+
+- **Real-time SSE + graceful SSE shutdown (ORDINT-02, ORDINT-09) moved to Phase 18.** Browser `EventSource` cannot send the `x-tenant-id` / `x-brand-slug` / `x-location-id` headers `TenantContextMiddleware` resolves tenancy from, and a long-lived stream converts per-request authorization into an unbounded connect-time check — both would rework the access-control core built across Phases 08.2–08.5. This phase ships 5-second polling. The shared 60-req/min per-IP rate limit must be fixed for polling to work from several devices behind one restaurant NAT.
+- **Pause ordering / opening hours moved to Phase 10.1** (persona-product BLOCK-3).
+- **ORDINT-06 narrowed**: "partial refund of specific items" ships as an arbitrary-amount refund (the API that already exists); item-level accounting is deferred.
+- **ORDINT-10 is ~90% already shipped** — the endpoint and the website poller exist; the delta is that the poller treats `paid` as terminal.
+- **HARD PRE-REQUISITE:** a verified live bug — `CancelOrderService`/`RefundOrderService` call the INSERT-only `save()`, so `orders.status` never flips and `ordering.order_canceled.v1` / `ordering.order_refunded.v1` are dropped. Fixed as a separate quick task before this phase is planned.
+
+Plans:
+
+**Wave 1**
+
+- [x] 10-01-PLAN.md — Order schema migration: new order columns, per-location daily-counter table, feed index, GDPR erase (wave 1)
+- [x] 10-02-PLAN.md — RBAC: `order:cancel` verb, preset re-sync for existing tenants, D-07 third re-defer (wave 1)
+
+**Wave 2** _(blocked on Wave 1 completion)_
+
+- [x] 10-03-PLAN.md — Ordering domain: event payloads, widened state machine, new-column persistence (wave 2)
+
+**Wave 3** _(blocked on Wave 2 completion)_
+
+- [x] 10-04-PLAN.md — Order creation: short daily number, channel, marketing consent, `short_number` NOT NULL (wave 3)
+- [x] 10-06-PLAN.md — Guest status contract freeze + guest-email ETA, white-label fallback, tracker link (wave 3)
+
+**Wave 4** _(blocked on Wave 3 completion)_
+
+- [x] 10-05-PLAN.md — Cancel/refund money-safety restructure: payment-derived refundability, Stripe outside the tx, retry (wave 4)
+
+**Wave 5** _(blocked on Wave 4 completion)_
+
+- [x] 10-07-PLAN.md — Forward transition services + order feed read model (wave 5)
+- [x] 10-09-PLAN.md — Website guest tracker rewrite + marketing-consent checkbox (wave 5)
+
+**Wave 6** _(blocked on Wave 5 completion)_
+
+- [x] 10-08-PLAN.md — Operator order HTTP surface, route-by-route guard audit, poll-safe rate limiting (wave 6)
+
+**Wave 7** _(blocked on Wave 6 completion)_
+
+- [x] 10-10-PLAN.md — Admin Orders page: route, 5s-polled grouped feed, cards, filters, sidebar counter (wave 7)
+
+**Wave 8** _(blocked on Wave 7 completion)_
+
+- [x] 10-11-PLAN.md — Admin order actions: accept/reject popovers, status advance, sound + tab-title alerting (wave 8)
+
+**Wave 9** _(blocked on Wave 8 completion)_
+
+- [x] 10-12-PLAN.md — Order detail Sheet, cancel dialog, owner-only refund, refund-failure surface (wave 9)
+
+**Wave 10** _(blocked on Wave 9 completion)_
+
+- [ ] 10-13-PLAN.md — Phase verification: Playwright operator smoke, two-screen guest loop, evidence matrices (wave 10)
+
+### Phase 10.1: Location schedule and pause ordering (INSERTED)
+
+**Goal**: Give a location a way to stop taking orders — one-tap pause from the order feed and a weekly opening schedule — so a restaurant cannot accept paid orders while closed or overwhelmed
+**Depends on**: Phase 8, Phase 10 _(origin: `persona-product-strategist` BLOCK-3 at `/gsd:discuss-phase 10`, 2026-08-11 — `locations` has no hours and no accepting-orders flag, and `CreateOrderService` never checks, so MVP-1 would otherwise close with tenants taking paid orders 24/7. Founder deferred it out of Phase 10 with the risk stated. Spec: `.planning/phases/10-admin-order-intake/10-PERSONA-PRODUCT.md` BLOCK-3.)_
+**Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
+**Success Criteria** (what must be TRUE):
+
+1. Operator pauses order intake for a location in one tap from the order-feed header (20 min / 40 min / rest of day), sees the remaining time, and can resume early
+2. While a location is paused, a guest on the site cannot reach checkout for that location and is shown a human-readable reason with the resume time; an in-flight payment already authorized is unaffected
+3. Operator sets a weekly opening schedule per location (per-day open/close, closed days), and orders attempted outside those hours are rejected at checkout with the next opening time
+4. Pause and schedule state is location-scoped (`ScopedTx` + RLS, consistent with the 08.4 location model) and an owner in `?location=all` mode can see and set it per location
+5. Guest-facing rejection happens server-side at order creation, not only in the UI — a forged or stale client cannot create an order at a paused or closed location
    **Plans**: TBD
    **UI hint**: yes
-   **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer
+   **Persona reviewers**: persona-product-strategist, persona-skeptic
 
 ### Phase 17: Operator Self-service Polish (post-MVP-1)
 
@@ -626,6 +752,161 @@ Plans:
    **Plans**: TBD
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist
+
+### Phase 10.2: Organization-per-restaurant and account onboarding (INSERTED)
+
+**Goal**: Collapse tenant and brand into a single entity — the Better Auth organization — so one restaurant is one organization, an owner may belong to several, and the active organization chosen at sign-in is the entire context of a session; and give a new owner a working path from "create account" to "first restaurant"
+
+**Depends on**: Phase 10 _(origin: founder, 2026-08-19. Completes a direction the codebase already drifted toward: 08.5 (D-14) closed non-owner brand switching outright, and Phase 10 made the order feed strictly single-location. The brand switcher is the last surface still assuming a session can span brands.)_
+
+**Scope sketch (to be settled at discuss):**
+
+- Sign-in pins exactly one brand. An owner with more than one brand chooses at sign-in — mirror the existing staff pick-location interstitial rather than inventing a second pattern.
+- ~~Switching brands means signing in again. Whether that is a full re-authentication or a lighter re-pick is an open question with a real UX cost either way.~~ **Settled 2026-08-19:** switching **revokes the current session and issues a new one**, without re-prompting for the password (CONTEXT.md D-08/D-09). One session = one brand, for the life of that session.
+- Remove the brand switcher; the location switcher stays and remains the only in-app context control.
+
+**Scope grew 2026-08-19 (founder) — signup and onboarding fold in here.** The
+brand picker this phase builds at sign-in is the same screen the new-account
+flow needs, so both live in one phase rather than two fighting over it:
+
+- **Registration asks for name, email and password only.** It creates the user
+  AND the tenant. Today the admin form calls Better Auth directly, producing a
+  user with **zero memberships** — a stranded account that cannot create a brand
+  (verified live 2026-08-19). The correct endpoint `/v1/signup` already
+  provisions tenant + owner atomically; the form must call it.
+- **No placeholder tenant name.** `tenants.display_name` and `slug` are NOT NULL,
+  but the person's own name is a real value, not a stub — use it, derive the slug
+  from it plus a short random suffix, and let onboarding replace it with the
+  restaurant name. Currency is derived from the country the owner picks, so it is
+  never asked; `default_currency` already defaults to `USD` in the schema, which
+  covers the moment between account creation and the derivation landing.
+- **The signup form's currency field is dead today** — collected and never sent.
+  Its "Restaurant name" label is wrong too: the value goes to Better Auth as the
+  person's name.
+- **Registration asks for country** ("Your country") from a list of supported
+  countries, and **currency is derived from it** — never asked. No `country`
+  column exists anywhere today and no country list exists in the codebase; the
+  Stripe adapter already accepts `country` and `default_currency` as optional
+  inputs (`stripe-provider.adapter.ts`) but nothing supplies them, so this
+  finally feeds a wire that is already in place.
+- **Which countries are "supported" is a product decision, not a lookup.** Stripe
+  Connect Express availability differs by country, and this project deliberately
+  defers per-market fiscal compliance (see Constraints in CLAUDE.md — no EU-wide
+  fiscalization adapter in MVP). Start from a deliberately short list the founder
+  names at discuss, not from every country Stripe lists.
+- **The country list is a config, and it is the seam every per-market setting
+  lands on.** One entry per supported country carrying, at minimum, its currency
+  and default interface locale, with room for what follows (timezone defaults,
+  address shape, and eventually the fiscal rules deliberately deferred today).
+  Natural home is `packages/domain` alongside the other shared registries
+  (`money.ts`, `rbac/`, `reserved-slugs.ts`) — no infrastructure imports, usable
+  from api and both web apps.
+- **The locale half already has real surface.** `tenants.locale` exists (NOT NULL,
+  default `en`); the admin ships `ru`/`en` and the website `ru`/`uk`/`en`. A
+  country whose default locale has no message catalogue must fall back
+  deliberately rather than render raw keys — the failure mode already seen this
+  phase when a component read a key from the wrong namespace.
+- **Multi-step onboarding** when the owner has no brand: restaurant name, then
+  the first brand. Currency no longer appears here either — country at signup
+  already determined it.
+- **After sign-in:** one brand → straight to its dashboard; several → the picker.
+- **Close direct Better Auth signup** (`POST /api/auth/sign-up/email` is publicly
+  open and is how stranded accounts appear). Check invitation acceptance first —
+  it may share the same signup path, and blindly disabling it would break the
+  invitations repaired on 2026-08-19.
+- **Model confirmed (founder, 2026-08-19):** `owner` is a role on the TENANT, not
+  on a brand. A user creates their company, owns it, and creates brands inside.
+  Staff never self-register — they arrive by invitation.
+
+**Already in place (do not rebuild):** the session row already carries a server-side `active_brand_id`, and `onInitialBrandPin` (auth.config.ts) pins a brand at login when none is set. `SetActiveBrandService` is the owner-only switch; non-owners are refused outright since 08.5 D-14. What is missing is only: a picker when an owner has more than one brand, removal of the in-app switcher, and the authority question below.
+
+**Rejected before — a dedicated brand cookie.** Phase 02-03 shipped a signed `resto.active_brand` cookie (HMAC-SHA256, dedicated `ACTIVE_BRAND_COOKIE_SECRET`, four cookie I/O sites); it was replaced by brand-in-URL as D-03. Re-introducing one would duplicate a server-side field that cannot be forged and would bring back the signing secret and its I/O sites. The session cookie already identifies the session; the brand belongs on the session row, not in its own cookie.
+
+**RESOLVED at discuss 2026-08-19 — brand authority.** The question below was settled: **the session is the single source of truth and the `/{brandSlug}` URL segment is removed entirely** (CONTEXT.md D-05). No compatibility shim for old URLs (D-06). Measured cost: 18 route files under `$brandSlug`, 58 admin files referencing `brandSlug`.
+
+_Original question, kept for the record:_ brand currently comes from the URL segment (`/{brandSlug}`, decision D-03), and the whole admin route tree is built on it. Pinning at sign-in introduces a second source of truth. Either keep the segment and reconcile a mismatch against the pin (deep links survive, every route needs the check), or drop it (simpler model, whole route tree and existing links change). This choice drives most of the phase's cost.
+
+**MODEL REVERSED late on 2026-08-19 — read `.planning/phases/10.2-brand-pinned-sessions/10.2-CONTEXT.md`, not the sketch above.** CONTEXT.md was rewritten from scratch; everything in the scope sketch that speaks of a tenant containing brands is superseded. `10.2-DISCUSSION-LOG.md` keeps the full path, including the model that was tried and dropped.
+
+- **Tenant and brand merge into one entity — the Better Auth organization.** One restaurant = one organization = one legal entity with its own Stripe account, country, currency, theme and domains. An owner may belong to several; BA supports this natively (`setActiveOrganization` is already called in `signup.service.ts:229`).
+- **This reverses the group model chosen the same morning.** The founder was shown the consequence — no shared staff, guest base, loyalty or group analytics across an owner's restaurants — and chose the merge anyway. Recorded in CONTEXT.md D-03 so it is not rediscovered as a surprise.
+- **Physical merge, all inside 10.2.** The cheaper 1:1-satellite option was offered and declined; splitting the merge into a preceding phase was offered and declined. **Measured: 137 files** reference `brandId`/`brandSlug` (70 api, 58 admin, 7 db, 2 other); 9 `brand_id` columns across 6 schema files plus `session.active_brand_id`; 3 tables dropped (`brands`, `brand_domains`, `member_brand_scope`); the `app_bind_brand` GUC and brand RLS lineage removed. This is larger than the rest of the phase combined.
+- **Real upside found while measuring:** menu tables carry both `tenant_id` and `brand_id` today — the merge removes that redundant dimension and its composite FKs permanently.
+- **No data migration.** No production, no paying customer (Q1 2027 target), database reset the same day — ships as a schema rewrite with a dev reset (CONTEXT.md D-12, assumption stated). Seeds rewritten in-phase.
+- **Brand pinning is no longer needed at all.** `activeOrganizationId` is the pin and BA owns it. `set-active-brand`, `active_brand_id`, `BrandScopeGuard`, `onInitialBrandPin`, `member_brand_scope` and the brand switcher are all deleted. The location switcher survives as the only in-app context control.
+- **Organization lives in the host:** admin at `<orgSlug>.admin.resto.app`; the `/{brandSlug}` path segment goes. Bare `<orgSlug>.resto.app` reserved for the future public website, `.menu.` stays with guests. Needs wildcard DNS/TLS and wildcard `trustedOrigins` — match on parsed hostname, never a suffix check.
+- **Switching organizations revokes the session and issues a new one**, without re-prompting for the password. Picker at every sign-in when the owner has more than one.
+- **Signup:** name, email, password, country → user + first organization, via `/v1/signup`. **Onboarding:** the restaurant's name only; legal details left to Stripe. **Countries:** UA, GB, ES as a config in `packages/domain`; currency derived; Spanish catalogue added for admin and website; interface language per user with a `langSwitcher`.
+- **The tenant-naming problem is moot** — the organization's name is the restaurant's name.
+- **GAP created by this phase:** deleting the switcher removes the only add-organization entry point; no creation route exists outside `onboarding/brand.tsx`. An owner would be unable to create a second restaurant. See CONTEXT.md `<deferred>`.
+- **Plan-based limit on organization count is explicitly NOT built here** — billing does not exist; leave the creation path a natural place for it.
+
+**Known cost:** `set-active-brand.e2e` and `brand-isolation.e2e` were just brought onto the current contract (2026-08-19) and encode brand-switching semantics; both are rewritten by this phase. `adm-00` scenarios 3, 6, 7a and 7b test the brand switcher, cross-tab brand sync and add-brand-from-switcher — deliberately left unrepaired pending this phase.
+
+**Plans:** 22/22 plans complete
+
+Plans:
+**Wave 1**
+
+- [x] 10.2-01-PLAN.md — Shared domain registries: country/currency/locale config, TenantSlugValue, brand RBAC resource dropped
+- [x] 10.2-02-PLAN.md — i18n foundation: Spanish catalogue for admin + website, three-locale switcher, deliberate fallback
+- [x] 10.2-03-PLAN.md — Schema merge A: tenants absorbs brands, locations relocated, one domain table, session.active_brand_id dropped
+
+**Wave 2**
+
+- [x] 10.2-04-PLAN.md — Schema merge B: nine brand_id columns dropped, index collapse, ScopedTx/TenantContext brand removal
+
+**Wave 3**
+
+- [x] 10.2-05-PLAN.md — [BLOCKING] Migration 0079 + RLS teardown + boot-preflight deletion + dev reset/migrate/FK audit
+
+**Wave 4**
+
+- [x] 10.2-06-PLAN.md — Tenancy domain merge: Brand folded into Tenant, one provisioning path, tenancy event contracts
+
+**Wave 5**
+
+- [x] 10.2-07-PLAN.md — Tenancy host resolution, Stripe onboarding dedup, x-brand-slug removal, tenancy controllers
+- [x] 10.2-08-PLAN.md — Identity brand machinery deleted; GET /v1/me/tenants and the renamed slug-availability check
+- [x] 10.2-09-PLAN.md — Catalog context sweep (21 files)
+- [x] 10.2-10-PLAN.md — Ordering + payments + notifications sweep and the ordering event contract
+
+**Wave 6**
+
+- [x] 10.2-11-PLAN.md — Guard chain and decorator sweep, preserving the location-bypass semantics @BrandNeutral carried
+
+**Wave 7**
+
+- [x] 10.2-12-PLAN.md — Better Auth revoke-and-reissue endpoint, brand-pin hook removal, wildcard trustedOrigins + cookie scope
+
+**Wave 8**
+
+- [x] 10.2-13-PLAN.md — Signup (name/email/password/country), onboarding finalize, closing public Better Auth signup
+
+**Wave 9**
+
+- [x] 10.2-14-PLAN.md — Admin data layer: apiFetch, seven query modules, payments/slug helpers
+
+**Wave 10**
+
+- [x] 10.2-16-PLAN.md — Admin feature components sweep (menu, orders, roles) + auto-save model deletion
+
+**Wave 11**
+
+- [x] 10.2-15-PLAN.md — Admin route-tree collapse (18 files), static organization label replacing the brand switcher
+
+**Wave 12**
+
+- [x] 10.2-17-PLAN.md — Admin auth surfaces: signup form, sign-in picker, onboarding, host reconciliation, wildcard dev hosts
+- [x] 10.2-18-PLAN.md — Seeds and erasure tooling on the merged model; payment-ready demo restaurant
+
+**Wave 13**
+
+- [x] 10.2-19-PLAN.md — Test net rebuild: 12 e2e + 12 unit + db integration specs, adm-00 scenarios repaired
+
+**Wave 14**
+
+- [x] 10.2-20-PLAN.md — Final gate: dead code, repo-wide rename proof, OpenAPI regeneration, 40-decision coverage audit
 
 ### Phase 11: Promo & Discounts
 
@@ -718,6 +999,25 @@ Plans:
    **UI hint**: yes
    **Persona reviewers**: persona-cto, persona-skeptic, persona-product-strategist, persona-growth-marketer, persona-investor
 
+### Phase 18: Real-time Order Feed (SSE)
+
+**Goal**: Replace the Phase 10 polling feed with a Server-Sent Events stream fed from `ordering.>` events, including a re-authorization model for long-lived connections and graceful drain on deploy
+**Depends on**: Phase 10 _(split out of Phase 10 on 2026-08-11 at `/gsd:discuss-phase 10`. Phase 10 ships the feed on 5-second polling; this phase is a transport upgrade on top of a working product, not a prerequisite for it. Activation trigger: a paying tenant reports the polling delay as a problem, OR a kitchen-display surface is scheduled — whichever comes first.)_
+**Requirements**: ORDINT-02, ORDINT-09 _(moved here from Phase 10)_
+**Success Criteria** (what must be TRUE):
+
+1. New orders appear in the admin feed without a page refresh, pushed from the server, with no polling fallback needed during normal operation
+2. The stream resolves tenant, brand, and location without relying on request headers a browser `EventSource` cannot send — and the chosen mechanism is not a forgeable client-supplied identifier
+3. Authorization is re-evaluated during the connection's life, not only at connect time: a revoked location scope, a brand re-pin, a session revocation, and a tenant archival each terminate or re-scope the stream within a bounded window, proven by e2e
+4. Graceful shutdown drains every active connection with a `retry:` event before the HTTP adapter closes, so a rolling deploy does not hang on an open socket and clients auto-reconnect
+5. The stream survives the real production edge (Cloudflare buffering / idle timeouts) and a NATS outage degrades to polling rather than to a silently dead feed with a green readiness probe
+
+   **Plans**: TBD
+   **UI hint**: yes
+   **Persona reviewers**: persona-cto, persona-skeptic
+
+**Design brief already written:** `.planning/phases/10-admin-order-intake/10-PERSONA-CTO.md` BLOCK-2, BLOCK-3, HIGH-1..HIGH-6 (transport shape, in-process fan-out vs NATS-per-connection, `LISTEN/NOTIFY` rejection, shutdown-hook ordering, rate limiting, Cloudflare) and `10-PERSONA-SKEPTIC.md` BLOCK-3, HIGH-1, HIGH-2 (subscriber soft-fail, durable-consumer/queue-group collision at 2 instances). Do not re-derive these.
+
 ### Track B — AI Agent Platform + 3 Surfaces
 
 - [ ] **MVP-2 Phase A: AI agent platform foundation** — LLM gateway (Anthropic primary, fallback TBD), per-tenant RAG knowledge base, per-customer profile/memory, conversation/thread storage, tool registry honoring `ScopedTx` + RBAC, NATS event subscriptions, eval harness
@@ -738,7 +1038,7 @@ Open architectural questions to resolve before MVP-2 activation: vector store ch
 ## Progress
 
 **Execution Order:**
-MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 8.1 → 10. Phase 8.1 (Payments provider layer + onboarding UX) was pulled into MVP-1 on 2026-06-28; it extends Phase 8 and does not block Phase 10, so it may also run in parallel with Phase 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
+MVP-1 (revenue spine) phases execute in order: 1 → 2 → 3 → 4a → 4b → 5 → 6 → 7 → 7.5 → 8 → 8.1 → 10 → 10.1. Phase 8.1 (Payments provider layer + onboarding UX) was pulled into MVP-1 on 2026-06-28; it extends Phase 8 and does not block Phase 10, so it may also run in parallel with Phase 10. Phase 17 is post-MVP-1 polish — activates only on its documented trigger (first multi-member tenant). MVP-2 "Operational Completeness" (Phases 9, 11–16) + the AI track, and MVP-3, are sequenced at their respective `/gsd-new-milestone` activations _(2026-06-12 scope rebalance)_.
 
 Notes:
 
@@ -761,7 +1061,7 @@ Notes:
 | 7.5. Production Deploy                        | 6/11           | In Progress   |            |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
-| 10. Admin Order Intake                        | 0/?            | Not started   | -          |
+| 10. Admin Order Intake                        | 12/13          | In Progress   |            |
 | 17. Operator Self-service Polish (post-MVP-1) | 0/?            | Trigger-gated | -          |
 
 _Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance): 9. Delivery Zones · 11. Promo & Discounts · 12. CRM · 13. Analytics · 14. Finance · 15. Content & SEO · 16. Self-serve Onboarding._

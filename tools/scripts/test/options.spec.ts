@@ -55,7 +55,7 @@ describe('resolveRuntimeOptions', () => {
 
   it('reads required env and applies sensible defaults', () => {
     const opts = resolveRuntimeOptions([], baseEnv);
-    expect(opts.apiUrl).toBe('http://localhost:3000');
+    expect(opts.apiUrl).toBe('http://localhost:5001');
     expect(opts.internalToken).toBe(baseEnv.INTERNAL_API_TOKEN);
     expect(opts.dryRun).toBe(false);
   });

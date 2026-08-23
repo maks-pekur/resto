@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto';
 import { OrderId, type Currency, type TenantId } from '@resto/domain';
 import type { OrderDomainEvent } from './events';
-import { InvalidOrderTransitionError, RefundExceedsCapturedError } from './errors';
+import {
+  InvalidOrderTransitionError,
+  InvalidCancelReasonError,
+  RefundExceedsCapturedError,
+} from './errors';
 import { toMinorUnits, fromMinorUnits } from './money-utils';
 import { applyDiscount, type DiscountSpec } from './discount';
 
@@ -16,6 +20,29 @@ export type OrderStatus =
   | 'canceled'
   | 'refunded'
   | 'failed';
+
+const CANCEL_REASON_CODES = [
+  'guest_no_show',
+  'kitchen_out_of_stock',
+  'kitchen_too_busy',
+  'guest_requested',
+  'payment_issue',
+  'duplicate_order',
+  'other',
+] as const;
+type CancelReasonCode = (typeof CANCEL_REASON_CODES)[number];
+
+function isCancelReasonCode(value: string): value is CancelReasonCode {
+  return (CANCEL_REASON_CODES as readonly string[]).includes(value);
+}
+
+const CANCELABLE_STATUSES: readonly OrderStatus[] = [
+  'created',
+  'paid',
+  'accepted',
+  'preparing',
+  'ready',
+];
 
 export interface OrderModifierSnapshot {
   readonly optionId: string;
@@ -40,7 +67,7 @@ export interface OrderItemSnapshot {
 export interface OrderSnapshot {
   readonly id: OrderId;
   readonly tenantId: TenantId;
-  readonly brandId: string;
+  readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
@@ -57,13 +84,28 @@ export interface OrderSnapshot {
   readonly total: string;
   readonly currency: Currency;
   readonly scheduledFor: Date | null;
+  readonly shortNumber: number;
+  readonly channel: 'site' | 'qr-menu';
+  readonly acceptedAt: Date | null;
+  readonly preparingAt: Date | null;
+  readonly readyAt: Date | null;
+  readonly completedAt: Date | null;
+  readonly canceledAt: Date | null;
+  readonly acceptedByUserId: string | null;
+  readonly canceledByUserId: string | null;
+  readonly cancelReason: string | null;
+  readonly cancelNote: string | null;
+  readonly canceledFromStatus: OrderStatus | null;
+  readonly etaAt: Date | null;
+  readonly marketingConsent: boolean;
+  readonly marketingConsentAt: Date | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
 
 export interface CreateOrderInput {
   readonly tenantId: TenantId;
-  readonly brandId: string;
+  readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
@@ -90,6 +132,9 @@ export interface CreateOrderInput {
   readonly currency: Currency;
   readonly discountSpec?: DiscountSpec | null;
   readonly scheduledFor?: Date | null;
+  readonly shortNumber: number;
+  readonly channel?: 'site' | 'qr-menu';
+  readonly marketingConsent?: boolean;
 }
 
 function computeTotals(
@@ -162,10 +207,12 @@ export class Order {
       input.discountSpec,
     );
 
+    const marketingConsent = input.marketingConsent ?? false;
+
     const snapshot: OrderSnapshot = {
       id,
       tenantId: input.tenantId,
-      brandId: input.brandId,
+      locationId: input.locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
       status: 'created',
@@ -182,6 +229,21 @@ export class Order {
       total: fromMinorUnits(totalMinor),
       currency: input.currency,
       scheduledFor: input.scheduledFor ?? null,
+      shortNumber: input.shortNumber,
+      channel: input.channel ?? 'site',
+      acceptedAt: null,
+      preparingAt: null,
+      readyAt: null,
+      completedAt: null,
+      canceledAt: null,
+      acceptedByUserId: null,
+      canceledByUserId: null,
+      cancelReason: null,
+      cancelNote: null,
+      canceledFromStatus: null,
+      etaAt: null,
+      marketingConsent,
+      marketingConsentAt: marketingConsent ? now : null,
       createdAt: now,
       updatedAt: now,
     };
@@ -191,7 +253,7 @@ export class Order {
       kind: 'OrderCreated',
       orderId: id,
       tenantId: input.tenantId,
-      brandId: input.brandId,
+      locationId: input.locationId,
       orderNumber: input.orderNumber,
       fulfillmentMode: input.fulfillmentMode,
       totalMinorUnits: totalMinor,
@@ -211,7 +273,10 @@ export class Order {
       kind: 'OrderPaid',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       paymentId,
+      total: this.snapshot.total,
+      currency: this.snapshot.currency,
       occurredAt: now,
     });
   }
@@ -230,95 +295,131 @@ export class Order {
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: 'requires_action',
+      actorUserId: null,
       occurredAt: now,
     });
     void paymentIntentId;
   }
 
-  accept(now: Date = new Date()): void {
+  accept(etaAt: Date | null, actorUserId: string | null, now: Date = new Date()): void {
     if (this.snapshot.status !== 'paid') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'accepted');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'accepted', updatedAt: now };
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'accepted',
+      acceptedAt: now,
+      acceptedByUserId: actorUserId,
+      etaAt,
+      updatedAt: now,
+    };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: 'accepted',
+      actorUserId,
       occurredAt: now,
     });
   }
 
-  startPreparing(now: Date = new Date()): void {
+  startPreparing(actorUserId: string | null, now: Date = new Date()): void {
     if (this.snapshot.status !== 'accepted') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'preparing');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'preparing', updatedAt: now };
+    this.snapshot = { ...this.snapshot, status: 'preparing', preparingAt: now, updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: 'preparing',
+      actorUserId,
       occurredAt: now,
     });
   }
 
-  markReady(now: Date = new Date()): void {
+  markReady(actorUserId: string | null, now: Date = new Date()): void {
     if (this.snapshot.status !== 'preparing') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'ready');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'ready', updatedAt: now };
+    this.snapshot = { ...this.snapshot, status: 'ready', readyAt: now, updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: 'ready',
+      actorUserId,
       occurredAt: now,
     });
   }
 
-  complete(now: Date = new Date()): void {
+  complete(actorUserId: string | null, now: Date = new Date()): void {
     if (this.snapshot.status !== 'ready') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'completed');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'completed', updatedAt: now };
+    this.snapshot = { ...this.snapshot, status: 'completed', completedAt: now, updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: 'completed',
+      actorUserId,
       occurredAt: now,
     });
   }
 
-  cancel(reason: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'paid') {
+  cancel(
+    reasonCode: string,
+    cancelNote: string | null,
+    actorUserId: string | null,
+    now: Date = new Date(),
+  ): void {
+    if (!CANCELABLE_STATUSES.includes(this.snapshot.status)) {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'canceled');
     }
-    this.snapshot = { ...this.snapshot, status: 'canceled', updatedAt: now };
+    if (!isCancelReasonCode(reasonCode)) {
+      throw new InvalidCancelReasonError(reasonCode);
+    }
+    const previousStatus = this.snapshot.status;
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'canceled',
+      canceledAt: now,
+      canceledByUserId: actorUserId,
+      cancelReason: reasonCode,
+      cancelNote,
+      canceledFromStatus: previousStatus,
+      updatedAt: now,
+    };
     this.#events.push({
       kind: 'OrderCanceled',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
-      reason,
+      locationId: this.snapshot.locationId,
+      reason: cancelNote ?? reasonCode,
+      reasonCode,
+      canceledFromStatus: previousStatus,
+      actorUserId,
       occurredAt: now,
     });
   }
 
   refund(amountMinor: number, alreadyRefundedMinor: number, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'paid') {
-      throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'refunded');
-    }
     const capturedMinor = toMinorUnits(this.snapshot.total);
     if (amountMinor <= 0 || amountMinor + alreadyRefundedMinor > capturedMinor) {
       throw new RefundExceedsCapturedError(
@@ -328,14 +429,14 @@ export class Order {
         capturedMinor,
       );
     }
-    const isFullRefund = amountMinor + alreadyRefundedMinor === capturedMinor;
-    const newStatus: OrderStatus = isFullRefund ? 'refunded' : 'paid';
-    this.snapshot = { ...this.snapshot, status: newStatus, updatedAt: now };
+    this.snapshot = { ...this.snapshot, updatedAt: now };
     this.#events.push({
       kind: 'OrderRefunded',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       amount: amountMinor,
+      currency: this.snapshot.currency,
       occurredAt: now,
     });
   }
@@ -350,8 +451,10 @@ export class Order {
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
       tenantId: this.snapshot.tenantId,
+      locationId: this.snapshot.locationId,
       previousStatus,
       newStatus: `failed:${reason}`,
+      actorUserId: null,
       occurredAt: now,
     });
   }

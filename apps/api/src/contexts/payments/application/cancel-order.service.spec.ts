@@ -27,7 +27,7 @@ const makeOrder = (status: string, total = '20.00') =>
   Order.fromSnapshot({
     id: ORDER_ID,
     tenantId: TENANT_ID,
-    brandId: '00000000-0000-0000-0000-000000000003',
+    locationId: '00000000-0000-0000-0000-000000000004',
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status: status as Parameters<typeof Order.fromSnapshot>[0]['status'],
@@ -44,6 +44,21 @@ const makeOrder = (status: string, total = '20.00') =>
     total,
     currency: Currency.parse('EUR'),
     scheduledFor: null,
+    shortNumber: 1,
+    channel: 'site' as const,
+    acceptedAt: null,
+    preparingAt: null,
+    readyAt: null,
+    completedAt: null,
+    canceledAt: null,
+    acceptedByUserId: null,
+    canceledByUserId: null,
+    cancelReason: null,
+    cancelNote: null,
+    canceledFromStatus: null,
+    etaAt: null,
+    marketingConsent: false,
+    marketingConsentAt: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -86,8 +101,11 @@ describe('CancelOrderService', () => {
       findByOrderId: vi.fn(),
       upsertByPaymentIntentId: vi.fn().mockResolvedValue(makePaymentRow()),
       findRefundByStripeId: vi.fn().mockResolvedValue(null),
+      findRefundByRequestId: vi.fn().mockResolvedValue(null),
       upsertRefund: vi.fn().mockResolvedValue({ id: 'refund-row-1' }),
-      updateRefundStatus: vi.fn().mockResolvedValue(undefined),
+      updateRefundOutcome: vi.fn().mockResolvedValue(undefined),
+      updateRefundStatusByStripeId: vi.fn().mockResolvedValue(undefined),
+      findFailedRefundsForOrders: vi.fn().mockResolvedValue([]),
     };
 
     provider = {
@@ -124,16 +142,32 @@ describe('CancelOrderService', () => {
   it('throws if order not found', async () => {
     orderRepo.findById.mockResolvedValue(null);
     await expect(
-      service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'not needed' }),
+      service.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        reasonCode: 'other',
+        actorUserId: null,
+      }),
     ).rejects.toBeInstanceOf(OrderNotFoundError);
   });
 
   it('cancel of unpaid (created) order — no refund call', async () => {
     orderRepo.findById.mockResolvedValue(makeOrder('created'));
-    await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'changed mind' });
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'guest_requested',
+      cancelNote: 'changed mind',
+      actorUserId: null,
+    });
     expect(provider.createRefund).not.toHaveBeenCalled();
-    const savedOrder = orderRepo.save.mock.calls[0]?.[0] as Order;
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
     expect(savedOrder.toSnapshot().status).toBe('canceled');
+    expect(orderRepo.save).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      canceled: true,
+      refund: { attempted: false, outcome: 'none', amountMinor: null },
+    });
   });
 
   it('cancel of paid order — auto-refunds full remaining captured amount once', async () => {
@@ -141,7 +175,13 @@ describe('CancelOrderService', () => {
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
 
-    await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'order canceled' });
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'other',
+      cancelNote: 'order canceled',
+      actorUserId: null,
+    });
 
     expect(provider.createRefund).toHaveBeenCalledTimes(1);
     expect(provider.createRefund).toHaveBeenCalledWith(
@@ -156,6 +196,11 @@ describe('CancelOrderService', () => {
       refundedAmount: string;
     };
     expect(refundInput).toBeDefined();
+    expect(orderRepo.save).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      canceled: true,
+      refund: { attempted: true, outcome: 'succeeded', amountMinor: 2000 },
+    });
   });
 
   it('cancel of paid order with partial prior refund — refunds remaining only', async () => {
@@ -163,10 +208,86 @@ describe('CancelOrderService', () => {
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('5.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
 
-    await service.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, reason: 'order canceled' });
+    await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'other',
+      cancelNote: 'order canceled',
+      actorUserId: null,
+    });
 
     expect(provider.createRefund).toHaveBeenCalledWith(
       expect.objectContaining({ amountMinor: 1500 }),
+    );
+    expect(orderRepo.save).not.toHaveBeenCalled();
+  });
+
+  it.each(['accepted', 'preparing', 'ready'] as const)(
+    'cancel of a %s order still issues the auto-refund (CTO HIGH-7)',
+    async (status) => {
+      orderRepo.findById.mockResolvedValue(makeOrder(status, '20.00'));
+      paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+      paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
+
+      const result = await service.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        reasonCode: 'kitchen_too_busy',
+        actorUserId: null,
+      });
+
+      expect(provider.createRefund).toHaveBeenCalledTimes(1);
+      expect(result.refund).toEqual({
+        attempted: true,
+        outcome: 'succeeded',
+        amountMinor: 2000,
+      });
+      const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+      expect(savedOrder.toSnapshot().status).toBe('canceled');
+    },
+  );
+
+  it('cancel of an already fully refunded order reports success, not a 409 (CR-04)', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('20.00'));
+
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'guest_requested',
+      actorUserId: null,
+    });
+
+    expect(provider.createRefund).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      canceled: true,
+      refund: { attempted: false, outcome: 'none', amountMinor: null },
+    });
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+    expect(savedOrder.toSnapshot().status).toBe('canceled');
+  });
+
+  it('cancel still commits when the refund provider call fails (D-11)', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
+    provider.createRefund.mockRejectedValue(new Error('stripe unavailable'));
+
+    const result = await service.execute({
+      orderId: ORDER_ID,
+      tenantId: TENANT_ID,
+      reasonCode: 'other',
+      actorUserId: null,
+    });
+
+    const savedOrder = orderRepo.update.mock.calls[0]?.[0] as Order;
+    expect(savedOrder.toSnapshot().status).toBe('canceled');
+    expect(result.refund.outcome).toBe('failed');
+    expect(result.refund.amountMinor).toBe(2000);
+    expect(paymentRepo.updateRefundOutcome).toHaveBeenCalledWith(
+      TENANT_ID,
+      expect.stringContaining('refund:'),
+      expect.objectContaining({ status: 'failed' }),
+      expect.anything(),
     );
   });
 });

@@ -1,1 +1,0 @@
-ALTER TABLE "user" ADD COLUMN "requires_password_change" boolean DEFAULT false NOT NULL;

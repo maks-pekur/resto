@@ -2,7 +2,9 @@
 import { ZodError } from 'zod';
 import { runBootstrapOwner } from './commands/bootstrap-owner';
 import { runProvisionTenant } from './commands/provision-tenant';
+import { runSeedDemo } from './commands/seed-demo';
 import { runSeedMenu } from './commands/seed-menu';
+import { runSyncPresetRoles } from './commands/sync-preset-roles';
 import { logError } from './lib/logger';
 import { resolveRuntimeOptions } from './lib/options';
 import { PasswordFlagDisallowedError, PasswordStdinTtyError } from './lib/password';
@@ -11,14 +13,28 @@ const HELP = `
 resto-seed — operator CLI for onboarding tenants
 
 Commands:
-  provision-tenant   --slug <slug> --name <displayName>
-                     [--currency USD] [--locations 1]
+  provision-tenant   --slug <slug> --name <displayName> --country <UA|GB|ES>
+                     [--locations 1]
                      [--owner-email <email>] [--owner-name "Owner Name"]
                      [--password-stdin] [--owner-password ... (dev only)]
   seed-menu          --tenant <slug> --file <menu.yaml>
   bootstrap-owner    --tenant <slug> --email <email>
                      [--name "Owner Name"] [--password-stdin]
                      [--owner-password ... (dev only)]
+  seed-demo          Idempotently seeds 3 tenants (one per supported
+                     country: UA, GB, ES), 5 locations, 2 staff roles,
+                     2 categories + 2 items per tenant.
+                     Dev only (NODE_ENV=development).
+                     [--payments-ready]  Makes the "pizza" tenant able
+                     to take a real Stripe test-mode payment (stamps
+                     stripe_account_id/charges_enabled/payouts_enabled/
+                     onboarding_status). Refused outside development/test.
+                     Requires SEED_STRIPE_TEST_ACCOUNT_ID — see below.
+  sync-preset-roles  Re-syncs PRESET_ROLES permission JSON onto existing
+                     tenants' tenant_role rows (a preset edit does
+                     not otherwise reach an already-provisioned tenant).
+                     --tenant <tenantId> | --all
+                     Idempotent; skips roles the owner archived.
 
 Global flags:
   --dry-run          Print intended changes without writing.
@@ -28,7 +44,16 @@ Required env vars:
   INTERNAL_API_TOKEN  Shared secret for /internal/v1/* (matches api).
 
 Optional env vars:
-  RESTO_API_URL       Default http://localhost:3000
+  RESTO_API_URL       Default http://localhost:5001
+
+seed-demo additionally requires:
+  NODE_ENV=development
+  BETTER_AUTH_DATABASE_URL  Direct resto_auth connection (staff member rows).
+
+seed-demo --payments-ready additionally requires:
+  SEED_STRIPE_TEST_ACCOUNT_ID  Real Stripe TEST-mode connected account id
+                                (acct_...). The seed cannot fabricate one —
+                                see tools/scripts/seed/README.md.
 `;
 
 const main = async (): Promise<void> => {
@@ -50,6 +75,12 @@ const main = async (): Promise<void> => {
       return;
     case 'bootstrap-owner':
       await runBootstrapOwner(rest, options);
+      return;
+    case 'seed-demo':
+      await runSeedDemo(rest, options);
+      return;
+    case 'sync-preset-roles':
+      await runSyncPresetRoles(rest, options);
       return;
     default:
       throw new Error(`Unknown command "${command ?? ''}". Run with --help for usage.`);

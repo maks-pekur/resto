@@ -17,7 +17,7 @@
     "plan_check": true,
     "verifier": true,
     "nyquist_validation": false,
-    "auto_advance": true,
+    "auto_advance": false,
     "node_repair": true,
     "node_repair_budget": 2,
     "ui_phase": true,
@@ -64,7 +64,13 @@
   "project_code": null,
   "phase_naming": "sequential",
   "agent_skills": {},
-  "features": {},
+  "features": {
+    "global_learnings": true
+  },
   "mode": "yolo",
-  "granularity": "fine"
+  "granularity": "fine",
+  "model_overrides": {
+    "gsd-plan-checker": "opus",
+    "gsd-verifier": "opus"
+  }
 }

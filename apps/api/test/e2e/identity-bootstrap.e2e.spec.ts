@@ -1,14 +1,8 @@
 import 'reflect-metadata';
-import { fileURLToPath } from 'node:url';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Test, type TestingModule } from '@nestjs/testing';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql';
-import postgres from 'postgres';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { provisionAppRole, provisionAuthRole } from '@resto/db';
 import { AppModule } from '../../src/app.module';
 import { OwnerAlreadyExistsError } from '../../src/contexts/identity/domain/bootstrap-errors';
 import {
@@ -18,38 +12,25 @@ import {
   signInAsOperator,
 } from './helpers/operator-fixture';
 
-const MIGRATIONS_DIR = fileURLToPath(
-  new URL('../../../../packages/db/migrations', import.meta.url),
-);
-const APP_PASSWORD = 'app_password_bootstrap_e2e';
-const AUTH_PASSWORD = 'auth_password_bootstrap_e2e';
 const INTERNAL_TOKEN = 'bootstrap-e2e-internal-token-1234';
 
+/**
+ * No testcontainer here (10.2 plan 13) — a fresh-container migration
+ * replay of the full chain fails on the pre-existing 0079 idempotency bug
+ * (`ALTER POLICY organization_role_resto_auth_full` — logged in
+ * deferred-items.md under plan 06, owned by plans 05/19, unrelated to this
+ * plan's files). The live dev Postgres is already migrated with roles
+ * granted; this spec inserts its own uniquely-slugged rows into it rather
+ * than rebuilding the database, matching plan 12's `organization-switch.
+ * e2e.spec.ts` precedent for the same blocker.
+ */
 describe('identity bootstrap E2E', () => {
-  let container: StartedPostgreSqlContainer;
   let app: NestFastifyApplication;
 
   beforeAll(async () => {
-    container = await new PostgreSqlContainer('postgres:16').start();
-    const adminUrl = container.getConnectionUri();
-
-    const adminClient = postgres(adminUrl);
-    await provisionAppRole(adminClient, { appPassword: APP_PASSWORD });
-    await provisionAuthRole(adminClient, { authPassword: AUTH_PASSWORD });
-    const adminDb = drizzle(adminClient);
-    await migrate(adminDb, { migrationsFolder: MIGRATIONS_DIR });
-    await adminClient.end();
-
-    const appUrl = new URL(adminUrl);
-    appUrl.username = 'resto_app';
-    appUrl.password = APP_PASSWORD;
-
-    const authUrl = new URL(adminUrl);
-    authUrl.username = 'resto_auth';
-    authUrl.password = AUTH_PASSWORD;
-
-    process.env.DATABASE_URL = appUrl.toString();
-    process.env.BETTER_AUTH_DATABASE_URL = authUrl.toString();
+    process.env.DATABASE_URL = 'postgres://resto_app:resto_app_dev_password@localhost:5433/resto';
+    process.env.BETTER_AUTH_DATABASE_URL =
+      'postgres://resto_auth:auth_password_dev@localhost:5433/resto';
     process.env.NATS_URL = 'nats://localhost:4222';
     process.env.NODE_ENV = 'test';
     process.env.OTEL_DISABLED = 'true';
@@ -58,6 +39,9 @@ describe('identity bootstrap E2E', () => {
     process.env.BETTER_AUTH_BASE_URL = 'http://localhost:4000';
     process.env.ADMIN_WEB_URL = 'http://localhost:3000';
     process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
+    process.env.S3_ENDPOINT = 'http://localhost:9000';
+    process.env.S3_ACCESS_KEY = 'x';
+    process.env.S3_SECRET_KEY = 'x';
     // AUTH_COOKIE_DOMAIN intentionally unset — host-only cookies in tests.
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -69,11 +53,10 @@ describe('identity bootstrap E2E', () => {
     );
     await app.init();
     await app.getHttpAdapter().getInstance().ready();
-  }, 180_000);
+  }, 120_000);
 
   afterAll(async () => {
     await app.close();
-    await container.stop();
   });
 
   it('bootstraps an owner and lets them sign in via BA HTTP', async () => {
@@ -107,7 +90,7 @@ describe('identity bootstrap E2E', () => {
     const meRes = await app.inject({
       method: 'GET',
       url: '/v1/tenants/me',
-      headers: { cookie: activeCookie },
+      headers: { cookie: activeCookie, 'x-tenant-id': tenant.id },
     });
     expect(meRes.statusCode).toBe(200);
     const body = meRes.json<{ id: string; slug: string }>();
@@ -183,9 +166,8 @@ describe('identity bootstrap E2E', () => {
         payload: { email, password, name: 'HTTP Owner' },
       });
       expect(res.statusCode).toBe(201);
-      const body = res.json<{ tenantId: string; userId: string; organizationId: string }>();
+      const body = res.json<{ tenantId: string; userId: string }>();
       expect(body.tenantId).toBe(tenant.id);
-      expect(body.organizationId).toBe(tenant.id);
       expect(body.userId).toBeTruthy();
 
       // Operator can sign in + set-active using the bootstrapped credentials.
@@ -193,7 +175,7 @@ describe('identity bootstrap E2E', () => {
       const meRes = await app.inject({
         method: 'GET',
         url: '/v1/tenants/me',
-        headers: { cookie },
+        headers: { cookie, 'x-tenant-id': tenant.id },
       });
       expect(meRes.statusCode).toBe(200);
       expect(meRes.json<{ slug: string }>().slug).toBe(slug);

@@ -1,15 +1,21 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CurrencyValue, TenantSlug } from '@resto/domain';
+import { CountryCodeValue, TenantSlug } from '@resto/domain';
 
 export const ProvisionTenantInputSchema = z.object({
   slug: TenantSlug,
   displayName: z.string().min(1).max(120),
+  country: CountryCodeValue,
   locale: z
     .string()
     .regex(/^[a-z]{2}(?:-[A-Z]{2})?$/)
-    .default('en'),
-  defaultCurrency: CurrencyValue,
+    .optional(),
+  /**
+   * D-25/D-30 (10.2 plan 13): omitted by every caller except the signup
+   * flow, which provisions `'pending_setup'` so onboarding has something
+   * to finalize. Defaults to `'active'` inside `Tenant.provision`.
+   */
+  status: z.enum(['pending_setup', 'active']).optional(),
 });
 export type ProvisionTenantInput = z.infer<typeof ProvisionTenantInputSchema>;
 export class ProvisionTenantInputDto extends createZodDto(ProvisionTenantInputSchema) {}

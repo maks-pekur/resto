@@ -3,12 +3,13 @@ import { Check, Globe } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
-const LOCALES = ['ru', 'en'] as const;
+const LOCALES = ['ru', 'en', 'es'] as const;
 type Locale = (typeof LOCALES)[number];
 
-const LABEL_KEY: Record<Locale, 'localeRu' | 'localeEn'> = {
+const LABEL_KEY: Record<Locale, 'localeRu' | 'localeEn' | 'localeEs'> = {
   ru: 'localeRu',
   en: 'localeEn',
+  es: 'localeEs',
 };
 
 export function LocaleSwitcherItems(): React.ReactElement {

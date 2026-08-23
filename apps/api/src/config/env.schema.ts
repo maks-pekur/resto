@@ -1,6 +1,29 @@
 import { z } from 'zod';
 
 /**
+ * D-21/D-24: the wildcard's `*` must occupy the ENTIRE leftmost hostname
+ * label, with at least two literal labels after it. Rejects a wildcard
+ * that can swallow a label boundary (`https://*resto.app` matches any
+ * `*resto.app`-suffixed host; `https://*.app` has nothing anchoring it to
+ * `resto.app` at all) — the origin-spoofing hazard this field exists to
+ * prevent.
+ */
+const isValidAdminOriginWildcard = (value: string): boolean => {
+  let hostname: string;
+  try {
+    hostname = new URL(value).hostname;
+  } catch {
+    return false;
+  }
+  const [first, ...rest] = hostname.split('.');
+  return (
+    first === '*' &&
+    rest.length >= 2 &&
+    rest.every((label) => label.length > 0 && !label.includes('*'))
+  );
+};
+
+/**
  * Environment schema for `apps/api`.
  *
  * Every value the app reads at boot lives here. Anything the app needs
@@ -17,7 +40,7 @@ export const envSchema = z
     NODE_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
     DEPLOYMENT_ENVIRONMENT: z.string().default('development'),
     LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace']).default('info'),
-    API_PORT: z.coerce.number().int().positive().default(3000),
+    API_PORT: z.coerce.number().int().positive().default(5001),
 
     /** Runtime-role URL — non-superuser, NOBYPASSRLS (RES-83). */
     DATABASE_URL: z.string().url(),
@@ -87,14 +110,35 @@ export const envSchema = z
 
     /**
      * Public URL of the admin web app — used as link target in invitation
-     * and password-reset emails. Required outside dev.
+     * and password-reset emails. Required outside dev. This is the apex
+     * host (pre-tenant sign-in/signup); per-tenant traffic is
+     * ADMIN_WEB_ORIGIN_WILDCARD below (D-21).
      */
     ADMIN_WEB_URL: z.string().url().optional(),
 
     /**
-     * Cookie domain for BA sessions. Set to `.resto.app` in production for
-     * cross-subdomain session sharing (admin.resto.app ↔ api.resto.app).
-     * Leave unset in dev/test so cookies bind to host-only.
+     * Wildcard trusted origin for per-tenant admin hosts (D-21,
+     * D-24). Optional — absent means only the apex ADMIN_WEB_URL is
+     * trusted. e.g. `https://*.admin.resto.app`; local dev
+     * `http://*.admin.localhost:4000`.
+     */
+    ADMIN_WEB_ORIGIN_WILDCARD: z
+      .string()
+      .url()
+      .optional()
+      .refine((value) => value === undefined || isValidAdminOriginWildcard(value), {
+        message:
+          'ADMIN_WEB_ORIGIN_WILDCARD must have "*" as the entire leftmost hostname label, followed by at least two literal labels (e.g. https://*.admin.resto.app)',
+      }),
+
+    WEBSITE_PUBLIC_URL: z.string().url().optional(),
+
+    /**
+     * Cookie domain for BA sessions. Set to `.admin.resto.app` in
+     * production (D-21/D-24) — scoping to the bare `.resto.app` apex would
+     * deliver the operator session cookie to the guest menu
+     * (`<slug>.menu.resto.app`) and the public site (`<slug>.resto.app`)
+     * too. Leave unset in dev/test so cookies bind to host-only.
      */
     AUTH_COOKIE_DOMAIN: z.string().optional(),
 
@@ -154,7 +198,7 @@ export const envSchema = z
      */
     CORS_ALLOWED_ORIGINS: z
       .string()
-      .default('http://localhost:3001,http://localhost:3003')
+      .default('http://localhost:4000,http://localhost:3001,http://localhost:3002')
       .transform((raw) =>
         raw
           .split(',')
@@ -184,8 +228,8 @@ export const envSchema = z
     RATE_LIMIT_INTERNAL_PER_MIN: z.coerce.number().int().positive().default(10),
     /** Per-IP rate limit (req/min) for `POST /api/auth/sign-up/email` (brute-force resistance, RES-137). */
     RATE_LIMIT_AUTH_SIGNUP_PER_MIN: z.coerce.number().int().positive().default(5),
-    /** Per-user rate limit (req/min) for `GET /v1/me/brands/slug-availability`. */
-    RATE_LIMIT_BRAND_SLUG_CHECK_PER_MIN: z.coerce.number().int().positive().default(30),
+    /** Per-user rate limit (req/min) for `GET /v1/me/tenants/slug-availability`. */
+    RATE_LIMIT_TENANT_SLUG_CHECK_PER_MIN: z.coerce.number().int().positive().default(30),
     REQUIRE_EMAIL_VERIFICATION: z
       .enum(['true', 'false'])
       .default('false')
@@ -261,6 +305,7 @@ export const envSchema = z
         'BETTER_AUTH_BASE_URL',
         'BETTER_AUTH_DATABASE_URL',
         'ADMIN_WEB_URL',
+        'WEBSITE_PUBLIC_URL',
         'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
@@ -285,12 +330,16 @@ export const envSchema = z
       }
     }
 
+    // D-21/D-24: this only enforces the SHAPE (leading dot). Satisfying it
+    // does not mean the SCOPE is right — `.resto.app` is a valid dotted
+    // value but the wrong one; the operator cookie belongs on
+    // `.admin.resto.app` only (see the field comment above).
     if (env.AUTH_COOKIE_DOMAIN && !env.AUTH_COOKIE_DOMAIN.startsWith('.')) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ['AUTH_COOKIE_DOMAIN'],
         message:
-          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".resto.app").',
+          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".admin.resto.app").',
       });
     }
   });

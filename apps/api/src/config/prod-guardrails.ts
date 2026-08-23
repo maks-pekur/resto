@@ -17,6 +17,8 @@ const DEV_DEFAULTS = {
   S3_ACCESS_KEY: 'minio',
   S3_ENDPOINT: 'http://localhost:9000',
   INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
+  STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
+  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;

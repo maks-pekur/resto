@@ -1,14 +1,18 @@
-import { Logger } from '@nestjs/common';
+import { ForbiddenException, Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
-import { createAuthMiddleware } from 'better-auth/api';
+import { APIError, createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
+import { eq, and, gt, isNull } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
+import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
+import { invitation as invitationTable, tenantRole as tenantRoleTable } from '@resto/db/schema';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
 import { buildBetterAuthDrizzleAdapter } from './drizzle-adapter';
+import { organizationSwitch } from './organization-switch.plugin';
 
 export type SendInvitationEmail = NonNullable<OrganizationOptions['sendInvitationEmail']>;
 export type SendResetPassword = NonNullable<
@@ -29,6 +33,12 @@ export type AfterUpdateMemberRoleHook = NonNullable<
   NonNullable<OrganizationOptions['organizationHooks']>['afterUpdateMemberRole']
 >;
 export type AfterUpdateMemberRoleData = Parameters<AfterUpdateMemberRoleHook>[0];
+
+// D-16 (08.3): beforeUpdateMemberRole types mirror the after hook pattern above
+export type BeforeUpdateMemberRoleHook = NonNullable<
+  NonNullable<OrganizationOptions['organizationHooks']>['beforeUpdateMemberRole']
+>;
+export type BeforeUpdateMemberRoleData = Parameters<BeforeUpdateMemberRoleHook>[0];
 
 interface BuildOpts {
   authDb: AuthDrizzle;
@@ -78,15 +88,16 @@ interface BuildOpts {
   minPasswordLength?: number;
   /** From env — see config/env.schema.ts. Default 128. */
   maxPasswordLength?: number;
+  onInitialLocationPin?: (userId: string, tenantId: string) => Promise<string | null>;
   /**
-   * Invoked when an operator sets the active organization on their session
+   * Invoked when an operator sets the active tenant on their session
    * (i.e. after `POST /api/auth/organization/set-active` completes). This is
    * the canonical "operator signed in" moment. The callback runs in a
    * separate transaction from BA's session update; failures are logged at
    * error level and swallowed — audit pipeline is eventually-consistent
    * observability; we never block sign-in on an audit-write failure.
    */
-  onActiveOrganizationSet?: (
+  onActiveTenantSet?: (
     session: { userId: string; activeOrganizationId?: string | null },
     ctx: { headers?: Record<string, string | string[] | undefined> | Headers },
   ) => Promise<void>;
@@ -124,6 +135,11 @@ interface BuildOpts {
 // WeakMap prevents property pollution on BA internals and allows GC to drop
 // entries when the context is dropped. Replaces the prior `as { __resto* }`
 // cast pattern that mutated enumerable properties on an internal BA object.
+interface LocationPinDoneStash {
+  readonly done: true;
+}
+
+const locationPinDone = new WeakMap<object, LocationPinDoneStash>();
 interface SignOutStash {
   readonly userId: string;
   readonly tenantId: string;
@@ -135,8 +151,13 @@ interface PasswordResetStash {
   readonly sessionCount: number;
 }
 
+interface MemberRoleUpdateStash {
+  readonly actorUserId: string;
+}
+
 const signOutStash = new WeakMap<object, SignOutStash>();
 const passwordResetStash = new WeakMap<object, PasswordResetStash>();
+const memberRoleUpdateStash = new WeakMap<object, MemberRoleUpdateStash>();
 
 const resolvePrimaryTenantId = async (
   adapter: {
@@ -202,8 +223,22 @@ export const buildAuth = (opts: BuildOpts) =>
       organization({
         ac,
         roles: { owner: ownerRole, admin: adminRole, staff: staffRole },
-        // Off until tenant role-creation enforces a creator-subset permission check.
-        dynamicAccessControl: { enabled: false },
+        // D-41: points BA at the tenant-named physical schema (migration 0079).
+        // The value on each side must be the property key that exists on our
+        // `@resto/db/schema` Drizzle table object, NOT the raw SQL column name —
+        // BA's generic drizzle adapter resolves a field by doing
+        // `schemaModel[resolvedFieldName]` (verified against
+        // `better-auth/dist/adapters/drizzle-adapter/drizzle-adapter.mjs`), so
+        // the override must match our camelCase Drizzle property (`tenantId`,
+        // `activeTenantId`), not the physical column (`tenant_id`).
+        schema: {
+          session: { fields: { activeOrganizationId: 'activeTenantId' } },
+          organizationRole: { modelName: 'tenantRole', fields: { organizationId: 'tenantId' } },
+          member: { fields: { organizationId: 'tenantId' } },
+          invitation: { fields: { organizationId: 'tenantId' } },
+        },
+        // D-13/D-17 (08.3): flag on; cap prevents unbounded per-request findMany cost
+        dynamicAccessControl: { enabled: true, maximumRolesPerOrganization: 25 },
         // Pitfall 8 (RESEARCH.md): a malicious actor cannot invite a
         // mailbox they do not own and accept the invitation from a fresh
         // unverified account. Defends spoofing pre-AUTH-06 land.
@@ -223,8 +258,63 @@ export const buildAuth = (opts: BuildOpts) =>
         // consistent observability; we never block the BA role-change
         // response on an audit-write failure.
         organizationHooks: {
+          // T-083-17 (08.3): defense-in-depth backstop — fires even when a caller
+          // bypasses assign-role.service and hits BA's endpoint directly.
+          beforeUpdateMemberRole: async (data: BeforeUpdateMemberRoleData) => {
+            const newRole = data.newRole;
+            const orgId = data.organization.id;
+            let targetPermission: Record<string, string[]> | null = null;
+            const systemRole = (SYSTEM_ROLES as Record<string, Record<string, readonly string[]>>)[
+              newRole
+            ];
+            if (systemRole) {
+              targetPermission = Object.fromEntries(
+                Object.entries(systemRole).map(([r, a]) => [r, [...a]]),
+              );
+            } else {
+              try {
+                const rows = await opts.authDb.db
+                  .select({ permission: tenantRoleTable.permission })
+                  .from(tenantRoleTable)
+                  .where(
+                    and(
+                      eq(tenantRoleTable.tenantId, orgId),
+                      eq(tenantRoleTable.role, newRole),
+                      isNull(tenantRoleTable.archivedAt),
+                    ),
+                  )
+                  .limit(1);
+                const raw = rows[0]?.permission;
+                if (typeof raw === 'string') {
+                  targetPermission = JSON.parse(raw) as Record<string, string[]>;
+                }
+              } catch {
+                throw new ForbiddenException({
+                  code: 'role.insufficient_permissions',
+                  message: 'Cannot verify target role permissions.',
+                });
+              }
+              // T-083-17 (08.3): unknown/archived slug → deny by default (fail closed)
+              if (targetPermission === null) {
+                throw new ForbiddenException({
+                  code: 'role.insufficient_permissions',
+                  message: 'Unknown or archived target role.',
+                });
+              }
+            }
+            if (containsNonDelegatable(targetPermission)) {
+              throw new ForbiddenException({
+                code: 'role.insufficient_permissions',
+                message: 'You cannot assign a role bearing non-delegatable permissions.',
+              });
+            }
+          },
           afterUpdateMemberRole: async (data: AfterUpdateMemberRoleData) => {
             if (!opts.emitter) return;
+            // D-16 (08.3): capture actorUserId stashed in hooks.before
+            const stash = memberRoleUpdateStash.get(
+              (data as unknown as { ctx?: { context?: object } }).ctx?.context ?? {},
+            );
             try {
               const tenantId = TenantId.parse(data.member.organizationId);
               await opts.emitter.emit(
@@ -235,6 +325,7 @@ export const buildAuth = (opts: BuildOpts) =>
                     tenantId,
                     previousRole: data.previousRole,
                     newRole: data.member.role,
+                    ...(stash ? { actorUserId: stash.actorUserId } : {}),
                   },
                   { tenantId },
                 ),
@@ -253,6 +344,7 @@ export const buildAuth = (opts: BuildOpts) =>
           },
         },
       }) as unknown as BetterAuthPlugin,
+      organizationSwitch(),
       twoFactor(),
       bearer(),
     ],
@@ -269,41 +361,94 @@ export const buildAuth = (opts: BuildOpts) =>
     session: {
       expiresIn: 60 * 60 * 24 * 7, // 7d, spec §3.5
       updateAge: 60 * 60 * 24, // 1d rolling
+      additionalFields: {
+        activeLocationId: {
+          type: 'string',
+          defaultValue: null,
+          input: false,
+          returned: true,
+        },
+      },
     },
     databaseHooks: {
       session: {
         update: {
           after: async (session, ctx) => {
-            if (!opts.onActiveOrganizationSet) return;
             if (typeof session.activeOrganizationId !== 'string' || !session.activeOrganizationId)
               return;
             const rawRequest = (ctx as { request?: Request } | undefined)?.request;
             const path = rawRequest?.url ? new URL(rawRequest.url, 'http://x').pathname : '';
-            // WR-07: exact-equality on the BA-mounted path. `endsWith` would
-            // match a nested route like `/proxy/foo/api/auth/organization/set-active`
-            // if a future deployment mounts BA under a path prefix.
             if (path !== '/api/auth/organization/set-active') return;
-            try {
-              const reqHeaders = rawRequest?.headers;
-              await opts.onActiveOrganizationSet(
-                {
-                  userId: session.userId,
-                  activeOrganizationId: session.activeOrganizationId,
-                },
-                {
-                  ...(reqHeaders ? { headers: reqHeaders } : {}),
-                },
-              );
-            } catch (err) {
-              new Logger('IdentityEventHook').error(
-                {
-                  err,
-                  type: 'identity.signed_in.v1',
-                  userId: session.userId,
-                  tenantId: session.activeOrganizationId,
-                },
-                'Failed to emit identity event — audit row may be missing',
-              );
+
+            const ctxContext = (ctx as { context?: object } | null)?.context;
+
+            const internalAdapter = (
+              ctx as {
+                context?: {
+                  internalAdapter?: {
+                    updateSession?: (
+                      token: string,
+                      data: Record<string, unknown>,
+                    ) => Promise<unknown>;
+                  };
+                };
+              } | null
+            )?.context?.internalAdapter;
+
+            // D-19/D-40/D-41: the initial-pin hook this replaced gated location-pin
+            // on a value produced by a sibling pin step that no longer exists (the
+            // merged entity's id doubles as that successor value). Single-fire per
+            // request context, and skipped once a location is already bound so a
+            // later, unrelated session update on this same path cannot clobber an
+            // explicit user pick.
+            if (
+              !(session as { activeLocationId?: string | null }).activeLocationId &&
+              !(ctxContext && locationPinDone.has(ctxContext)) &&
+              internalAdapter?.updateSession &&
+              opts.onInitialLocationPin
+            ) {
+              if (ctxContext) locationPinDone.set(ctxContext, { done: true });
+              try {
+                const initialLocationId = await opts.onInitialLocationPin(
+                  session.userId,
+                  session.activeOrganizationId,
+                );
+                if (initialLocationId !== null) {
+                  await internalAdapter.updateSession(session.token, {
+                    activeLocationId: initialLocationId,
+                  });
+                }
+              } catch (err) {
+                new Logger('IdentityEventHook').error(
+                  { err, userId: session.userId, tenantId: session.activeOrganizationId },
+                  'Failed to set initial activeLocationId on org-switch',
+                );
+              }
+            }
+
+            if (opts.onActiveTenantSet) {
+              try {
+                const reqHeaders = rawRequest?.headers;
+                await opts.onActiveTenantSet(
+                  {
+                    userId: session.userId,
+                    activeOrganizationId: session.activeOrganizationId,
+                  },
+                  {
+                    ...(reqHeaders ? { headers: reqHeaders } : {}),
+                  },
+                );
+              } catch (err) {
+                new Logger('IdentityEventHook').error(
+                  {
+                    err,
+                    type: 'identity.signed_in.v1',
+                    userId: session.userId,
+                    tenantId: session.activeOrganizationId,
+                  },
+                  'Failed to emit identity event — audit row may be missing',
+                );
+              }
             }
           },
         },
@@ -312,6 +457,40 @@ export const buildAuth = (opts: BuildOpts) =>
     hooks: {
       before: createAuthMiddleware(async (ctx) => {
         const path = ctx.path;
+        if (path.endsWith('/sign-up/email')) {
+          // D-29: close the public route while keeping `auth.api.signUpEmail`
+          // working for server-side callers (bootstrap-owner.service.ts).
+          // `ctx.request` is only populated when BA's own web-standard
+          // handler routes a real HTTP request (better-call router.mjs);
+          // direct `auth.api.*` calls never pass one — confirmed against BA's
+          // own crud-invites.mjs, which uses the identical truthy check to
+          // distinguish client vs. server calls.
+          if (!ctx.request) return;
+          const body = (ctx.body ?? {}) as { email?: unknown };
+          const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+          const hasValidInvitation =
+            email.length > 0 &&
+            (
+              await opts.authDb.db
+                .select({ id: invitationTable.id })
+                .from(invitationTable)
+                .where(
+                  and(
+                    eq(invitationTable.email, email),
+                    eq(invitationTable.status, 'pending'),
+                    gt(invitationTable.expiresAt, new Date()),
+                  ),
+                )
+                .limit(1)
+            ).length > 0;
+          if (!hasValidInvitation) {
+            throw new APIError('FORBIDDEN', {
+              code: 'signup.direct_disabled',
+              message: 'Direct signup is disabled. Create an account via POST /v1/signup.',
+            });
+          }
+          return;
+        }
         if (path.endsWith('/sign-out')) {
           if (!opts.onSignedOut) return;
           const token = await ctx.getSignedCookie(
@@ -353,6 +532,16 @@ export const buildAuth = (opts: BuildOpts) =>
             userId,
             sessionCount,
           });
+        }
+        // D-16 (08.3): stash actor for afterUpdateMemberRole actorUserId capture
+        if (path.endsWith('/update-member-role')) {
+          const token = await ctx
+            .getSignedCookie(ctx.context.authCookies.sessionToken.name, ctx.context.secret)
+            .catch(() => null);
+          if (!token) return;
+          const found = await ctx.context.internalAdapter.findSession(token).catch(() => null);
+          if (!found) return;
+          memberRoleUpdateStash.set(ctx.context, { actorUserId: found.user.id });
         }
       }),
       after: createAuthMiddleware(async (ctx) => {

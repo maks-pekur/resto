@@ -18,10 +18,6 @@
  * eslint.config.mjs override block, re-run the parity test.
  */
 export const WITHOUT_TENANT_ALLOWLIST = [
-  // Host-based brand resolution: runs before ALS tenant binding because
-  // the host IS what resolves the tenant.
-  'apps/api/src/contexts/tenancy/infrastructure/brand-drizzle.repository.ts',
-
   // Tenant lifecycle (findBySlug / findByDomainHost / save / erase / etc.):
   // lookups happen before ALS binding; platform-level ops cross-tenant by design.
   'apps/api/src/contexts/tenancy/infrastructure/tenant-drizzle.repository.ts',

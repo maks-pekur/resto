@@ -115,6 +115,20 @@ export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
 }
 
+export interface AggregateStopListItemApi {
+  readonly itemId: string;
+  readonly itemName: Record<string, string> | null;
+  readonly categoryName: Record<string, string> | null;
+  readonly stoppedLocationCount: number;
+  readonly lastStoppedAt: string;
+}
+
+export interface AggregateStopListResponse {
+  readonly items: readonly AggregateStopListItemApi[];
+  readonly totalActiveLocations: number;
+  readonly totalStoppedItems: number;
+}
+
 export interface DraftDiffEntryApi {
   readonly entityType: 'item' | 'category' | 'modifier-group';
   readonly id: string;
@@ -155,172 +169,162 @@ const buildItemsQueryString = (filters: ItemFilters): string => {
   return qs ? `/v1/catalog/items?${qs}` : '/v1/catalog/items';
 };
 
-export const categoriesQuery = (brandSlug: string) => ({
-  queryKey: ['catalog', 'categories', brandSlug] as const,
-  queryFn: () => apiFetch<CategoryListResponse>('/v1/catalog/categories', { brandSlug }),
+export const categoriesQuery = () => ({
+  queryKey: ['catalog', 'categories'] as const,
+  queryFn: () => apiFetch<CategoryListResponse>('/v1/catalog/categories'),
   staleTime: STALE_STABLE,
 });
 
-export const itemsQuery = (brandSlug: string, filters: ItemFilters = {}) => ({
-  queryKey: ['catalog', 'items', brandSlug, filters] as const,
-  queryFn: () => apiFetch<ItemListResponse>(buildItemsQueryString(filters), { brandSlug }),
+export const itemsQuery = (filters: ItemFilters = {}) => ({
+  queryKey: ['catalog', 'items', filters] as const,
+  queryFn: () => apiFetch<ItemListResponse>(buildItemsQueryString(filters)),
   staleTime: STALE_STABLE,
 });
 
-export const itemQuery = (brandSlug: string, id: string) => ({
-  queryKey: ['catalog', 'item', brandSlug, id] as const,
-  queryFn: () => apiFetch<ItemDetailApi>(`/v1/catalog/items/${id}`, { brandSlug }),
+export const itemQuery = (id: string) => ({
+  queryKey: ['catalog', 'item', id] as const,
+  queryFn: () => apiFetch<ItemDetailApi>(`/v1/catalog/items/${id}`),
   staleTime: STALE_STABLE,
 });
 
-export const modifierGroupsQuery = (brandSlug: string) => ({
-  queryKey: ['catalog', 'modifier-groups', brandSlug] as const,
-  queryFn: () => apiFetch<ModifierGroupListResponse>('/v1/catalog/modifier-groups', { brandSlug }),
+export const modifierGroupsQuery = () => ({
+  queryKey: ['catalog', 'modifier-groups'] as const,
+  queryFn: () => apiFetch<ModifierGroupListResponse>('/v1/catalog/modifier-groups'),
   staleTime: STALE_STABLE,
 });
 
-export const modifierGroupQuery = (brandSlug: string, id: string) => ({
-  queryKey: ['catalog', 'modifier-group', brandSlug, id] as const,
+export const modifierGroupQuery = (id: string) => ({
+  queryKey: ['catalog', 'modifier-group', id] as const,
+  queryFn: () => apiFetch<ModifierGroupDetailApi>(`/v1/catalog/modifier-groups/${id}`),
+  staleTime: STALE_STABLE,
+});
+
+export const stopListQuery = (locationId: string) => ({
+  queryKey: ['catalog', 'stop-list', locationId] as const,
+  queryFn: () => apiFetch<StopListResponse>('/v1/catalog/stop-list', { locationId }),
+  staleTime: STALE_STABLE,
+});
+
+export const stopListAggregateQuery = () => ({
+  queryKey: ['catalog', 'stop-list-aggregate'] as const,
   queryFn: () =>
-    apiFetch<ModifierGroupDetailApi>(`/v1/catalog/modifier-groups/${id}`, { brandSlug }),
+    apiFetch<AggregateStopListResponse>('/v1/catalog/stop-list/aggregate', {
+      locationId: 'all',
+    }),
   staleTime: STALE_STABLE,
 });
 
-export const stopListQuery = (brandSlug: string) => ({
-  queryKey: ['catalog', 'stop-list', brandSlug] as const,
-  queryFn: () => apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug }),
-  staleTime: STALE_STABLE,
-});
-
-export const draftDiffQuery = (brandSlug: string) => ({
-  queryKey: ['catalog', 'draft-diff', brandSlug] as const,
-  queryFn: () => apiFetch<DraftDiffResponse>('/v1/catalog/draft-diff', { brandSlug }),
+export const draftDiffQuery = () => ({
+  queryKey: ['catalog', 'draft-diff'] as const,
+  queryFn: () => apiFetch<DraftDiffResponse>('/v1/catalog/draft-diff'),
   staleTime: STALE_DRAFT_DIFF,
 });
 
-export const upsertCategory = (brandSlug: string, id: string | null, data: CategoryForm) =>
+export const upsertCategory = (id: string | null, data: CategoryForm) =>
   apiFetch<CategoryListItemApi>('/v1/catalog/categories', {
     method: 'POST',
     body: { ...data, id: id ?? undefined },
-    brandSlug,
   });
 
 export const reorderCategories = (
-  brandSlug: string,
   moves: { id: string; parentId: string | null; sortOrder: number }[],
 ) =>
   apiFetch<{ readonly updated: number }>('/v1/catalog/categories/reorder', {
     method: 'POST',
     body: { moves },
-    brandSlug,
   });
 
-export const archiveCategory = (brandSlug: string, id: string) =>
+export const archiveCategory = (id: string) =>
   apiFetch(`/v1/catalog/categories/${id}/archive`, {
     method: 'PATCH',
-    brandSlug,
   });
 
 export const upsertItem = (
-  brandSlug: string,
   id: string | null,
   data: ItemEditorForm & { readonly photoS3Key?: string | null },
 ) =>
   apiFetch<{ readonly id: string }>('/v1/catalog/items', {
     method: 'POST',
     body: { ...data, id: id ?? undefined },
-    brandSlug,
   });
 
-export const archiveItem = (brandSlug: string, id: string) =>
+export const archiveItem = (id: string) =>
   apiFetch(`/v1/catalog/items/${id}/archive`, {
     method: 'PATCH',
-    brandSlug,
   });
 
-export const upsertItemSize = (
-  brandSlug: string,
-  itemId: string,
-  data: SizeForm & { readonly id?: string },
-) =>
+export const upsertItemSize = (itemId: string, data: SizeForm & { readonly id?: string }) =>
   apiFetch<ItemSizeApi>('/v1/catalog/item-sizes', {
     method: 'POST',
     body: { ...data, itemId },
-    brandSlug,
   });
 
-export const upsertItemModifierGroups = (
-  brandSlug: string,
-  itemId: string,
-  modifierGroupIds: readonly string[],
-) =>
+export const upsertItemModifierGroups = (itemId: string, modifierGroupIds: readonly string[]) =>
   apiFetch(`/v1/catalog/items/${itemId}/modifier-groups`, {
     method: 'PUT',
     body: { modifierGroupIds },
-    brandSlug,
   });
 
-export const toggleStopList = (brandSlug: string, itemId: string, next: 'paused' | 'published') => {
+// D-05: stop/unstop write endpoints stay location-scoped — locationId is
+// required (never 'all') and is the operator's currently selected location.
+export const toggleStopList = (
+  itemId: string,
+  next: 'paused' | 'published',
+  locationId: string,
+) => {
   if (next === 'paused') {
     return apiFetch('/v1/catalog/stop-list', {
       method: 'POST',
       body: { itemId },
-      brandSlug,
+      locationId,
     });
   }
   return apiFetch(`/v1/catalog/stop-list/${itemId}`, {
     method: 'DELETE',
-    brandSlug,
+    locationId,
   });
 };
 
-export const resetStopList = async (brandSlug: string): Promise<{ ok: boolean }> => {
-  const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { brandSlug });
+export const resetStopList = async (locationId: string): Promise<{ ok: boolean }> => {
+  const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { locationId });
   if (!res.ok) return { ok: false };
   for (const item of res.data?.items ?? []) {
-    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, { method: 'DELETE', brandSlug });
+    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, {
+      method: 'DELETE',
+      locationId,
+    });
     if (!del.ok) return { ok: false };
   }
   return { ok: true };
 };
 
-export const upsertModifierGroup = (
-  brandSlug: string,
-  id: string | null,
-  data: ModifierGroupForm,
-) =>
+export const upsertModifierGroup = (id: string | null, data: ModifierGroupForm) =>
   apiFetch<ModifierGroupApi>('/v1/catalog/modifier-groups', {
     method: 'POST',
     body: { ...data, id: id ?? undefined },
-    brandSlug,
   });
 
 export const upsertModifierOption = (
-  brandSlug: string,
   groupId: string,
   data: ModifierOptionForm & { readonly id?: string },
 ) =>
   apiFetch<ModifierOptionApi>('/v1/catalog/modifier-options', {
     method: 'POST',
     body: { ...data, groupId },
-    brandSlug,
   });
 
-export const getPhotoUploadUrl = (brandSlug: string, itemId: string) =>
+export const getPhotoUploadUrl = (itemId: string) =>
   apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {
     method: 'POST',
     body: { itemId },
-    brandSlug,
   });
 
-export const schedulePublish = (brandSlug: string) =>
+export const schedulePublish = () =>
   apiFetch<{ readonly scheduled: boolean; readonly cancelAfterMs: number }>('/v1/catalog/publish', {
     method: 'POST',
-    brandSlug,
   });
 
-export const cancelPublish = (brandSlug: string) =>
+export const cancelPublish = () =>
   apiFetch<{ readonly cancelled: boolean }>('/v1/catalog/publish', {
     method: 'DELETE',
-    brandSlug,
   });

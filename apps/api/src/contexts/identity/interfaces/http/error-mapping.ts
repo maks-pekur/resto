@@ -12,11 +12,21 @@ import {
   WeakPasswordError,
 } from '../../domain/bootstrap-errors';
 import {
+  AssignmentExceedsAuthorityError,
+  InsufficientPermissionsToMintError,
   NoActiveTenantError,
   PrincipalKindMismatchError,
+  RoleNameReservedError,
+  RoleNotFoundError,
+  RoleOccupiedError,
+  SelfRoleAssignmentError,
   TenantMismatchError,
 } from '../../domain/errors';
-import { SignupBetterAuthFailureError, SlugUnavailableError } from '../../domain/signup-errors';
+import {
+  SignupBetterAuthFailureError,
+  SlugUnavailableError,
+  TenantSetupNotPendingError,
+} from '../../domain/signup-errors';
 
 const SIGNUP_FAILURE_CODE: Record<SignupBetterAuthFailureError['stage'], string> = {
   signUpEmail: 'signup.signup_failed',
@@ -52,6 +62,9 @@ export const mapIdentityError = (err: unknown): unknown => {
       message: 'Sign-up could not be completed; please try again or sign in.',
     });
   }
+  if (err instanceof TenantSetupNotPendingError) {
+    return new ConflictException({ code: 'tenant.setup_not_pending', message: err.message });
+  }
 
   if (err instanceof TenantMismatchError) {
     return new ForbiddenException({ code: err.code, message: err.message });
@@ -60,6 +73,25 @@ export const mapIdentityError = (err: unknown): unknown => {
     return new ForbiddenException({ code: err.code, message: err.message });
   }
   if (err instanceof NoActiveTenantError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+
+  if (err instanceof RoleOccupiedError) {
+    return new BadRequestException({ code: err.code, message: err.message });
+  }
+  if (err instanceof RoleNotFoundError) {
+    return new NotFoundException({ code: err.code, message: err.message });
+  }
+  if (err instanceof RoleNameReservedError) {
+    return new BadRequestException({ code: err.code, message: err.message });
+  }
+  if (err instanceof InsufficientPermissionsToMintError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+  if (err instanceof SelfRoleAssignmentError) {
+    return new ForbiddenException({ code: err.code, message: err.message });
+  }
+  if (err instanceof AssignmentExceedsAuthorityError) {
     return new ForbiddenException({ code: err.code, message: err.message });
   }
 

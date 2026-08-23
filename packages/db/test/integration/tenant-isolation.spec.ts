@@ -22,8 +22,6 @@ suite('Row-Level Security — tenant isolation', () => {
   let pg: TestPg;
   let tenantA: string;
   let tenantB: string;
-  let brandA: string;
-  let brandB: string;
 
   beforeAll(async () => {
     pg = await startPostgres();
@@ -31,31 +29,19 @@ suite('Row-Level Security — tenant isolation', () => {
     await pg.db.withoutTenant('seed two tenants', async (tx) => {
       const [a] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'cafe-a', displayName: 'Cafe A' })
+        .values({ slug: 'cafe-a', displayName: 'Cafe A', country: 'GB' })
         .returning({ id: schema.tenants.id });
       const [b] = await tx
         .insert(schema.tenants)
-        .values({ slug: 'cafe-b', displayName: 'Cafe B' })
+        .values({ slug: 'cafe-b', displayName: 'Cafe B', country: 'GB' })
         .returning({ id: schema.tenants.id });
       if (!a || !b) throw new Error('Failed to seed tenants.');
       tenantA = a.id;
       tenantB = b.id;
 
-      const [ba] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantA, slug: 'cafe-a-brand', displayName: 'Cafe A Brand' })
-        .returning({ id: schema.brands.id });
-      const [bb] = await tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantB, slug: 'cafe-b-brand', displayName: 'Cafe B Brand' })
-        .returning({ id: schema.brands.id });
-      if (!ba || !bb) throw new Error('Failed to seed brands.');
-      brandA = ba.id;
-      brandB = bb.id;
-
       await tx.insert(schema.menuCategories).values([
-        { tenantId: tenantA, brandId: brandA, slug: 'pizza', name: { en: 'Pizza' } },
-        { tenantId: tenantB, brandId: brandB, slug: 'pizza', name: { en: 'Pizza' } },
+        { tenantId: tenantA, slug: 'pizza', name: { en: 'Pizza' } },
+        { tenantId: tenantB, slug: 'pizza', name: { en: 'Pizza' } },
       ]);
     });
   }, 90_000);
@@ -91,6 +77,37 @@ suite('Row-Level Security — tenant isolation', () => {
     expect(offenders).toEqual([]);
   });
 
+  it('10.2 (D-09): the brand GUC functions and brand-grain RESTRICTIVE policies are gone', async () => {
+    const rows = await pg.db.withoutTenant('audit brand db surface teardown', async (tx) =>
+      tx.execute(sql`
+        SELECT
+          to_regprocedure('current_brand_id()') AS current_brand_id_fn,
+          to_regprocedure('app_bind_brand(text)') AS app_bind_brand_fn,
+          (SELECT count(*) FROM pg_policies WHERE policyname LIKE '%_brand_iso') AS brand_iso_policy_count
+      `),
+    );
+    const row = (
+      rows as unknown as readonly {
+        current_brand_id_fn: string | null;
+        app_bind_brand_fn: string | null;
+        brand_iso_policy_count: string | number;
+      }[]
+    )[0];
+    expect(row?.current_brand_id_fn).toBeNull();
+    expect(row?.app_bind_brand_fn).toBeNull();
+    expect(Number(row?.brand_iso_policy_count)).toBe(0);
+  });
+
+  it('10.2 (D-09): orders_location_iso — the surviving location-grain policy — is still installed', async () => {
+    const rows = await pg.db.withoutTenant('confirm orders_location_iso survives', async (tx) =>
+      tx.execute(sql`
+        SELECT policyname FROM pg_policies
+        WHERE schemaname = 'public' AND tablename = 'orders' AND policyname = 'orders_location_iso'
+      `),
+    );
+    expect((rows as unknown as readonly { policyname: string }[]).length).toBe(1);
+  });
+
   it('a tenant context sees only its own tenant row', async () => {
     const visible = await runInTenantContext({ tenantId: tenantA }, () =>
       pg.db.withTenant(async (tx) => tx.select().from(schema.tenants)),
@@ -117,7 +134,7 @@ suite('Row-Level Security — tenant isolation', () => {
       pg.db.withTenant(async (tx) =>
         tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantB, brandId: brandB, slug: 'sneaky', name: { en: 'Sneaky' } })
+          .values({ tenantId: tenantB, slug: 'sneaky', name: { en: 'Sneaky' } })
           .returning(),
       ),
     ).then(
@@ -247,7 +264,7 @@ suite('Row-Level Security — tenant isolation', () => {
       // Seed enough rows that the planner prefers index over seq scan.
       const cat = await tx
         .insert(schema.menuCategories)
-        .values({ tenantId: tenantA, brandId: brandA, slug: 'drinks', name: { en: 'Drinks' } })
+        .values({ tenantId: tenantA, slug: 'drinks', name: { en: 'Drinks' } })
         .returning({ id: schema.menuCategories.id });
       const created = cat[0];
       if (!created) throw new Error('Failed to seed drinks category.');
@@ -255,7 +272,6 @@ suite('Row-Level Security — tenant isolation', () => {
 
       const items = Array.from({ length: 200 }, (_, i) => ({
         tenantId: tenantA,
-        brandId: brandA,
         categoryId: catId,
         slug: `item-${i.toString().padStart(3, '0')}`,
         name: { en: `Item ${i.toString()}` },
@@ -348,16 +364,30 @@ suite('Row-Level Security — tenant isolation', () => {
   describe('Plan 04a-07: cross-tenant matrix for renamed + new tables', () => {
     let aItemId: string;
     let aModifierGroupId: string;
+    let aLocationId: string;
+    let bLocationId: string;
 
     beforeAll(async () => {
       await pg.db.withoutTenant('seed items for plan 04a-07 cross-tenant matrix', async (tx) => {
+        const [aLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, name: 'Plan 04a-07 A Location' })
+          .returning({ id: schema.locations.id });
+        const [bLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantB, name: 'Plan 04a-07 B Location' })
+          .returning({ id: schema.locations.id });
+        if (!aLoc || !bLoc) throw new Error('Cross-tenant seed: location create failed.');
+        aLocationId = aLoc.id;
+        bLocationId = bLoc.id;
+
         const [aCat] = await tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantA, brandId: brandA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
+          .values({ tenantId: tenantA, slug: 'iso-a-cat', name: { en: 'IsoA' } })
           .returning({ id: schema.menuCategories.id });
         const [bCat] = await tx
           .insert(schema.menuCategories)
-          .values({ tenantId: tenantB, brandId: brandB, slug: 'iso-b-cat', name: { en: 'IsoB' } })
+          .values({ tenantId: tenantB, slug: 'iso-b-cat', name: { en: 'IsoB' } })
           .returning({ id: schema.menuCategories.id });
         if (!aCat || !bCat) throw new Error('Cross-tenant seed: category create failed.');
 
@@ -365,7 +395,6 @@ suite('Row-Level Security — tenant isolation', () => {
           .insert(schema.menuItems)
           .values({
             tenantId: tenantA,
-            brandId: brandA,
             categoryId: aCat.id,
             slug: 'iso-a-item',
             name: { en: 'IsoAItem' },
@@ -378,7 +407,6 @@ suite('Row-Level Security — tenant isolation', () => {
         // sides — even though the assertions only inspect tenant A's row.
         await tx.insert(schema.menuItems).values({
           tenantId: tenantB,
-          brandId: brandB,
           categoryId: bCat.id,
           slug: 'iso-b-item',
           name: { en: 'IsoBItem' },
@@ -392,7 +420,6 @@ suite('Row-Level Security — tenant isolation', () => {
           .insert(schema.menuModifierGroups)
           .values({
             tenantId: tenantA,
-            brandId: brandA,
             name: { en: 'IsoAGroup' },
             minSelectable: 0,
             maxSelectable: 1,
@@ -410,7 +437,7 @@ suite('Row-Level Security — tenant isolation', () => {
           await tx.insert(schema.menuStopList).values({
             tenantId: tenantA,
             itemId: aItemId,
-            brandId: brandA,
+            locationId: aLocationId,
             reason: 'iso fixture',
             stoppedByUserId: null,
           });
@@ -421,7 +448,6 @@ suite('Row-Level Security — tenant isolation', () => {
           });
           await tx.insert(schema.menuItemSizes).values({
             tenantId: tenantA,
-            brandId: brandA,
             menuItemId: aItemId,
             name: { en: 'Large' },
             price: '2.00',
@@ -430,7 +456,6 @@ suite('Row-Level Security — tenant isolation', () => {
           });
           await tx.insert(schema.menuItemModifierGroups).values({
             tenantId: tenantA,
-            brandId: brandA,
             menuItemId: aItemId,
             modifierGroupId: aModifierGroupId,
             sortOrder: 0,
@@ -452,9 +477,62 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.menuStopList).values({
             tenantId: tenantB,
             itemId: aItemId,
-            brandId: brandB,
+            locationId: bLocationId,
             reason: null,
             stoppedByUserId: null,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_stop_list: location-grain binding to A returns A row only, hidden when bound to B', async () => {
+      const boundToA = await runInTenantContext(
+        { tenantId: tenantA, locationId: aLocationId },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuStopList)),
+      );
+      expect(boundToA.map((r) => r.itemId)).toContain(aItemId);
+
+      const [otherLocation] = await pg.db.withoutTenant(
+        'seed sibling location for menu_stop_list location-grain check',
+        async (tx) =>
+          tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, name: 'Sibling Location' })
+            .returning({ id: schema.locations.id }),
+      );
+      if (!otherLocation) throw new Error('sibling location seed failed');
+
+      const boundToSibling = await runInTenantContext(
+        { tenantId: tenantA, locationId: otherLocation.id },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuStopList)),
+      );
+      expect(boundToSibling.map((r) => r.itemId)).not.toContain(aItemId);
+    });
+
+    it('catalog_location_stop_version: tenant B sees zero of tenant A rows', async () => {
+      await pg.db.withoutTenant('bump A location stop version for isolation check', async (tx) => {
+        await tx
+          .insert(schema.catalogLocationStopVersion)
+          .values({ locationId: aLocationId, tenantId: tenantA })
+          .onConflictDoNothing();
+      });
+
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.catalogLocationStopVersion)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('catalog_location_stop_version: tenant B INSERT with tenant A location_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.catalogLocationStopVersion).values({
+            locationId: aLocationId,
+            tenantId: tenantB,
           }),
         ),
       ).then(
@@ -499,7 +577,6 @@ suite('Row-Level Security — tenant isolation', () => {
         pg.db.withTenant(async (tx) =>
           tx.insert(schema.menuItemSizes).values({
             tenantId: tenantB,
-            brandId: brandB,
             menuItemId: aItemId,
             name: { en: 'sneaky' },
             price: '1.00',
@@ -532,7 +609,6 @@ suite('Row-Level Security — tenant isolation', () => {
           tx.insert(schema.menuModifierGroups).values({
             id: aModifierGroupId,
             tenantId: tenantB,
-            brandId: brandB,
             name: { en: 'sneaky' },
             minSelectable: 0,
             maxSelectable: 1,
@@ -558,7 +634,6 @@ suite('Row-Level Security — tenant isolation', () => {
         pg.db.withTenant(async (tx) =>
           tx.insert(schema.menuItemModifierGroups).values({
             tenantId: tenantB,
-            brandId: brandB,
             menuItemId: aItemId,
             modifierGroupId: aModifierGroupId,
             sortOrder: 0,
@@ -572,54 +647,93 @@ suite('Row-Level Security — tenant isolation', () => {
     });
   });
 
-  it('requires an explicit brand_id on menu_categories (NOT NULL column)', async () => {
-    const [brand] = await pg.db.withoutTenant('seed brand for column smoke', async (tx) =>
-      tx
-        .insert(schema.brands)
-        .values({ tenantId: tenantA, slug: 'col-smoke', displayName: 'ColSmoke' })
-        .returning({ id: schema.brands.id }),
-    );
-    if (!brand) throw new Error('seed failed');
+  // NOTE (phase 10.2, D-04/D-08): the "requires an explicit brand_id on
+  // menu_categories (NOT NULL column)" smoke test that used to live here
+  // is removed — `menu_categories.brand_id` no longer exists post-merge.
 
-    await runInTenantContext({ tenantId: tenantA }, () =>
-      pg.db.withTenant(async (tx) => {
-        await tx.insert(schema.menuCategories).values({
-          tenantId: tenantA,
-          slug: 'col-smoke-cat',
-          name: { en: 'ColSmoke' },
-          brandId: brand.id,
-        });
-      }),
-    );
+  describe('10.2 plan 19: menu_items cross-tenant matrix', () => {
+    let aCategoryId: string;
+    let aMenuItemId: string;
 
-    const error = await runInTenantContext({ tenantId: tenantA }, () =>
-      pg.db.withTenant(async (tx) => {
-        await tx.insert(schema.menuCategories).values({
-          tenantId: tenantA,
-          slug: 'col-smoke-cat-2',
-          name: { en: 'ColSmoke2' },
-          brandId: null as never,
-        });
-      }),
-    ).then(
-      () => null,
-      (e: unknown) => e,
-    );
-    expect(error).toBeInstanceOf(Error);
-    const cause = (error as Error).cause as { code?: string } | undefined;
-    expect(cause?.code).toBe('23502');
+    beforeAll(async () => {
+      await pg.db.withoutTenant('seed menu_items cross-tenant fixture', async (tx) => {
+        const [aCat] = await tx
+          .insert(schema.menuCategories)
+          .values({ tenantId: tenantA, slug: 'plan19-a-cat', name: { en: 'Plan19A' } })
+          .returning({ id: schema.menuCategories.id });
+        if (!aCat) throw new Error('Plan 19 seed: category create failed.');
+        aCategoryId = aCat.id;
+
+        const [aItem] = await tx
+          .insert(schema.menuItems)
+          .values({
+            tenantId: tenantA,
+            categoryId: aCategoryId,
+            slug: 'plan19-a-item',
+            name: { en: 'Plan19AItem' },
+            basePrice: '1.00',
+            currency: 'USD',
+          })
+          .returning({ id: schema.menuItems.id });
+        if (!aItem) throw new Error('Plan 19 seed: item create failed.');
+        aMenuItemId = aItem.id;
+      });
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A menu_items rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.menuItems)
+            .where(sql`${schema.menuItems.id} = ${aMenuItemId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('tenant B INSERT with tenant A category_id is rejected (composite FK)', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuItems).values({
+            tenantId: tenantB,
+            categoryId: aCategoryId,
+            slug: 'plan19-b-tries-a',
+            name: { en: 'sneaky' },
+            basePrice: '1.00',
+            currency: 'USD',
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
   });
 
   describe('ORD-06: cross-tenant matrix for orders / order_items', () => {
     let aOrderId: string;
+    let aOrderLocationId: string;
 
     beforeAll(async () => {
       await pg.db.withoutTenant('seed order for ORD-06 cross-tenant matrix', async (tx) => {
+        const [aLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, name: 'ORD-06 A Location' })
+          .returning({ id: schema.locations.id });
+        const [bLoc] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantB, name: 'ORD-06 B Location' })
+          .returning({ id: schema.locations.id });
+        if (!aLoc || !bLoc) throw new Error('ORD-06 seed: location insert failed.');
+        aOrderLocationId = aLoc.id;
+
         const [order] = await tx
           .insert(schema.orders)
           .values({
             tenantId: tenantA,
-            brandId: brandA,
+            locationId: aOrderLocationId,
             idempotencyKey: 'ord06-idem-key-a',
             orderNumber: '20260614-ORD06',
             status: 'created',
@@ -632,6 +746,7 @@ suite('Row-Level Security — tenant isolation', () => {
             discount: '0.00',
             total: '10.00',
             currency: 'USD',
+            shortNumber: 1,
           })
           .returning({ id: schema.orders.id });
         if (!order) throw new Error('ORD-06 seed: order insert failed.');
@@ -663,24 +778,31 @@ suite('Row-Level Security — tenant isolation', () => {
       expect(fromB).toHaveLength(0);
     });
 
-    it('orders: tenant B INSERT with tenant A brand_id is rejected (composite FK)', async () => {
+    // NOTE (phase 10.2, D-04/D-08): the "orders: tenant B INSERT with
+    // tenant A brand_id is rejected" case that used to live here is
+    // removed — `orders.brand_id` no longer exists post-merge. The
+    // location_id composite-FK case below keeps proving the surviving
+    // tenant-dimension guarantee.
+
+    it('orders: tenant B INSERT with tenant A location_id is rejected (composite FK)', async () => {
       const error = await runInTenantContext({ tenantId: tenantB }, () =>
         pg.db.withTenant(async (tx) =>
           tx.insert(schema.orders).values({
             tenantId: tenantB,
-            brandId: brandA,
-            idempotencyKey: 'ord06-idem-cross',
-            orderNumber: '20260614-CROSS',
+            locationId: aOrderLocationId,
+            idempotencyKey: 'ord06-idem-cross-location',
+            orderNumber: '20260614-CROSS-LOC',
             status: 'created',
             fulfillmentMode: 'pickup',
-            customerName: 'Cross Tester',
-            customerPhone: '+10000000001',
+            customerName: 'Cross Location Tester',
+            customerPhone: '+10000000002',
             subtotal: '5.00',
             deliveryFee: '0.00',
             serviceFee: '0.00',
             discount: '0.00',
             total: '5.00',
             currency: 'USD',
+            shortNumber: 1,
           }),
         ),
       ).then(
@@ -688,6 +810,30 @@ suite('Row-Level Security — tenant isolation', () => {
         (e: unknown) => e,
       );
       expect(error).toBeInstanceOf(Error);
+    });
+
+    it('orders: location-grain binding to A returns A row only, hidden when bound to sibling location', async () => {
+      const boundToA = await runInTenantContext(
+        { tenantId: tenantA, locationId: aOrderLocationId },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.orders)),
+      );
+      expect(boundToA.map((r) => r.id)).toContain(aOrderId);
+
+      const [siblingLocation] = await pg.db.withoutTenant(
+        'seed sibling location for orders location-grain check',
+        async (tx) =>
+          tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, name: 'ORD-06 Sibling Location' })
+            .returning({ id: schema.locations.id }),
+      );
+      if (!siblingLocation) throw new Error('ORD-06 seed: sibling location insert failed.');
+
+      const boundToSibling = await runInTenantContext(
+        { tenantId: tenantA, locationId: siblingLocation.id },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.orders)),
+      );
+      expect(boundToSibling.map((r) => r.id)).not.toContain(aOrderId);
     });
 
     it('order_items: tenant B sees zero of tenant A order_items rows', async () => {
@@ -722,6 +868,130 @@ suite('Row-Level Security — tenant isolation', () => {
         (e: unknown) => e,
       );
       expect(error).toBeInstanceOf(Error);
+    });
+  });
+
+  /*
+   * ── 08.4-01: cross-tenant matrix for locations + member_location_scope ──
+   *
+   * Phase 10.2 (D-04/D-08) drops `locations.brand_id` and its composite FK
+   * to `brands` — `locations` is tenant-grain isolated only now, same as
+   * every other table. The former "cross-tenant INSERT with tenant A's
+   * brand_id is rejected" composite-FK case is removed; there is no second
+   * dimension left to probe on this table.
+   *
+   * `member_location_scope` is tenant-grain ONLY (Tier 3 — mirrors the
+   * absence of any scoped policy for the deleted `member_brand_scope`):
+   * tenant B's SELECT returns zero rows of tenant A's scope.
+   */
+  describe('08.4 locations: tenant-grain isolation', () => {
+    let aLocationId: string;
+
+    beforeAll(async () => {
+      await pg.db.withoutTenant('seed location for 08.4 cross-tenant matrix', async (tx) => {
+        const [location] = await tx
+          .insert(schema.locations)
+          .values({ tenantId: tenantA, name: 'Iso A Location' })
+          .returning({ id: schema.locations.id });
+        if (!location) throw new Error('08.4 seed: location insert failed.');
+        aLocationId = location.id;
+      });
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A locations', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.locations)
+            .where(sql`${schema.locations.id} = ${aLocationId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+  });
+
+  describe('08.4 member_location_scope: tenant-grain isolation', () => {
+    beforeAll(async () => {
+      await pg.db.withoutTenant(
+        'seed member_location_scope for 08.4 cross-tenant matrix',
+        async (tx) => {
+          const [location] = await tx
+            .insert(schema.locations)
+            .values({ tenantId: tenantA, name: 'Iso A Scope Location' })
+            .returning({ id: schema.locations.id });
+          if (!location) throw new Error('08.4 seed: scope location insert failed.');
+
+          const userId = 'user-08-4-01-mls';
+          await tx.insert(schema.user).values({
+            id: userId,
+            email: 'mls-08-4-01@test',
+            emailVerified: true,
+            name: '08.4-01 MLS test',
+          });
+
+          const memberId = 'member-08-4-01-mls';
+          await tx.insert(schema.member).values({
+            id: memberId,
+            userId,
+            tenantId: tenantA,
+            role: 'staff',
+            createdAt: new Date(),
+          });
+
+          await tx.insert(schema.memberLocationScope).values({
+            tenantId: tenantA,
+            locationId: location.id,
+            memberId,
+            role: 'staff',
+          });
+        },
+      );
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A member_location_scope rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.memberLocationScope)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+  });
+
+  describe('10.2 plan 19: customer_profiles tenant-grain isolation', () => {
+    let aProfileId: string;
+
+    beforeAll(async () => {
+      await pg.db.withoutTenant(
+        'seed customer_profiles for plan 19 cross-tenant matrix',
+        async (tx) => {
+          const userId = 'user-plan19-cp';
+          await tx.insert(schema.user).values({
+            id: userId,
+            email: 'cp-plan19@test',
+            emailVerified: true,
+            name: 'Plan 19 CP test',
+          });
+
+          const [profile] = await tx
+            .insert(schema.customerProfiles)
+            .values({ tenantId: tenantA, userId, displayName: 'Iso A Customer' })
+            .returning({ id: schema.customerProfiles.id });
+          if (!profile) throw new Error('Plan 19 seed: customer_profiles insert failed.');
+          aProfileId = profile.id;
+        },
+      );
+    }, 60_000);
+
+    it('tenant B sees zero of tenant A customer_profiles rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx
+            .select()
+            .from(schema.customerProfiles)
+            .where(sql`${schema.customerProfiles.id} = ${aProfileId}`),
+        ),
+      );
+      expect(fromB).toHaveLength(0);
     });
   });
 

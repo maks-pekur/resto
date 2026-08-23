@@ -1,39 +1,30 @@
-const apiOrigin = (): string => process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:3000';
+const apiOrigin = (): string => process.env.ADMIN_E2E_API_ORIGIN ?? 'http://localhost:5001';
 const internalToken = (): string =>
   process.env.INTERNAL_API_TOKEN ?? 'dev-internal-token-min-16-chars';
 
 export const FIXTURES = {
-  zeroBrands: {
-    email: 'zero@e2e.test',
+  soloOwner: {
+    email: 'solo@e2e.test',
     password: 'e2e-passwd-1234',
-    name: 'Zero Brand Owner',
-    tenantSlug: 'e2e-zero-brands',
-    tenantDisplayName: 'E2E Zero-Brand Co',
+    name: 'Solo Owner',
+    tenantSlug: 'e2e-solo-owner',
+    tenantDisplayName: 'E2E Solo Co',
   },
-  oneBrandOwner: {
-    email: 'one@e2e.test',
+  pendingOwner: {
+    email: 'pending@e2e.test',
     password: 'e2e-passwd-1234',
-    name: 'One Brand Owner',
-    tenantSlug: 'e2e-one-brand',
-    tenantDisplayName: 'E2E One-Brand Co',
-    brand: { slug: 'e2e-one-brand-main', displayName: 'Main Brand' },
+    name: 'Pending Owner',
+    tenantSlug: 'e2e-pending-owner',
+    tenantDisplayName: 'E2E Pending Co',
   },
-  oneBrandStaff: {
-    email: 'staff@e2e.test',
+  twoOrgOwner: {
+    email: 'twoorg@e2e.test',
     password: 'e2e-passwd-1234',
-    name: 'One Brand Staff',
-  },
-  threeBrands: {
-    email: 'three@e2e.test',
-    password: 'e2e-passwd-1234',
-    name: 'Three Brand Owner',
-    tenantSlug: 'e2e-three-brands',
-    tenantDisplayName: 'E2E Three-Brand Co',
-    brands: [
-      { slug: 'e2e-three-brand-a', displayName: 'Brand Alpha' },
-      { slug: 'e2e-three-brand-b', displayName: 'Brand Bravo' },
-      { slug: 'e2e-three-brand-c', displayName: 'Brand Charlie' },
-    ],
+    name: 'Two Org Owner',
+    tenantASlug: 'e2e-two-org-a',
+    tenantADisplayName: 'E2E Org Alpha',
+    tenantBSlug: 'e2e-two-org-b',
+    tenantBDisplayName: 'E2E Org Bravo',
   },
 } as const;
 
@@ -42,16 +33,11 @@ interface TenantSummary {
   readonly slug: string;
 }
 
-interface BrandSummary {
-  readonly id: string;
-  readonly slug: string;
-}
-
 interface ProvisionTenantInput {
   readonly slug: string;
   readonly displayName: string;
-  readonly defaultCurrency?: string;
-  readonly locale?: string;
+  readonly country?: string;
+  readonly status?: 'pending_setup' | 'active';
 }
 
 const internalHeaders = (): Record<string, string> => ({
@@ -66,8 +52,8 @@ const provisionTenant = async (input: ProvisionTenantInput): Promise<TenantSumma
     body: JSON.stringify({
       slug: input.slug,
       displayName: input.displayName,
-      defaultCurrency: input.defaultCurrency ?? 'USD',
-      locale: input.locale ?? 'en',
+      country: input.country ?? 'GB',
+      status: input.status,
     }),
   });
   if (res.status === 201) {
@@ -79,6 +65,10 @@ const provisionTenant = async (input: ProvisionTenantInput): Promise<TenantSumma
   throw new Error(`provisionTenant ${input.slug} → ${String(res.status)} ${await res.text()}`);
 };
 
+// `BootstrapOwnerService.execute` reuses an existing Better Auth user by
+// email and adds them as owner of the NEW tenant too — this is what lets
+// `twoOrgOwner` hold two separate memberships without any direct DB write
+// (10.2 plan 19; see apps/api/.../bootstrap-owner.service.ts).
 const bootstrapOwner = async (
   tenantId: string,
   input: { email: string; password: string; name: string },
@@ -94,107 +84,63 @@ const bootstrapOwner = async (
   throw new Error(`bootstrapOwner ${input.email} → ${String(res.status)} ${await res.text()}`);
 };
 
-const signInAndGetCookie = async (email: string, password: string): Promise<string> => {
-  const res = await fetch(`${apiOrigin()}/api/auth/sign-in/email`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ email, password }),
-  });
-  if (res.status !== 200) {
-    throw new Error(`signIn ${email} → ${String(res.status)} ${await res.text()}`);
-  }
-  const setCookie = res.headers.get('set-cookie') ?? '';
-  return setCookie
-    .split(',')
-    .map((c) => c.split(';')[0]?.trim() ?? '')
-    .filter(Boolean)
-    .join('; ');
-};
-
-const setActiveOrg = async (cookie: string, tenantId: string): Promise<string> => {
-  const res = await fetch(`${apiOrigin()}/api/auth/organization/set-active`, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', cookie },
-    body: JSON.stringify({ organizationId: tenantId }),
-  });
-  if (res.status !== 200) {
-    throw new Error(`setActiveOrg ${tenantId} → ${String(res.status)} ${await res.text()}`);
-  }
-  const setCookie = res.headers.get('set-cookie');
-  if (setCookie === null || setCookie === '') return cookie;
-  return setCookie
-    .split(',')
-    .map((c) => c.split(';')[0]?.trim() ?? '')
-    .filter(Boolean)
-    .join('; ');
-};
-
-const createBrand = async (
-  cookie: string,
-  tenantId: string,
-  brand: { slug: string; displayName: string },
-): Promise<BrandSummary | null> => {
-  const res = await fetch(`${apiOrigin()}/v1/me/brands`, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      cookie,
-      'x-tenant-id': tenantId,
-    },
-    body: JSON.stringify({ slug: brand.slug, displayName: brand.displayName }),
-  });
-  if (res.status === 201) {
-    return (await res.json()) as BrandSummary;
-  }
-  if (res.status === 409) {
-    return null;
-  }
-  throw new Error(`createBrand ${brand.slug} → ${String(res.status)} ${await res.text()}`);
-};
-
-const seedTenantWithBrands = async (
-  fx: {
-    email: string;
-    password: string;
-    name: string;
-    tenantSlug: string;
-    tenantDisplayName: string;
-  },
-  brands: readonly { slug: string; displayName: string }[],
-): Promise<void> => {
-  const tenant = await provisionTenant({
-    slug: fx.tenantSlug,
-    displayName: fx.tenantDisplayName,
-  });
-  if (tenant === null) {
-    return;
-  }
-  await bootstrapOwner(tenant.id, { email: fx.email, password: fx.password, name: fx.name });
-  if (brands.length === 0) return;
-  const cookieBase = await signInAndGetCookie(fx.email, fx.password);
-  const cookieWithOrg = await setActiveOrg(cookieBase, tenant.id);
-  for (const brand of brands) {
-    await createBrand(cookieWithOrg, tenant.id, brand);
-  }
-};
-
 /**
- * Idempotent seed for the four ADM-00 fixture scenarios. Re-running on a
- * primed DB is a no-op (409s from tenant + brand create endpoints).
+ * Idempotent seed for the ADM-00 fixture scenarios (10.2 plan 19). Re-running
+ * on a primed DB is a no-op (409s from the tenant-create endpoint short the
+ * matching bootstrap call).
  *
- * The `oneBrandStaff` operator is NOT seeded here: `apps/api` exposes no
- * internal endpoint to add a non-owner member to a tenant, and direct DB
- * insertion would need to mirror Better Auth's password-credential format
- * which is Phase 03 territory (RBAC seed). Scenario 4 in
- * `adm-00-smoke-walk.spec.ts` runs against the owner instead and is
- * downgraded to `test.fixme` per CONTEXT Out-of-scope until Phase 03
- * lands the staff-role bootstrap path.
+ * `oneBrandStaff`-style non-owner seeding is still not possible: `apps/api`
+ * exposes no internal endpoint to add a non-owner member to a tenant. The
+ * scenario that needed it (a filtered `GET /v1/me/brands`) is deleted, not
+ * downgraded to `.fixme` — see `adm-00-smoke-walk.spec.ts`'s own comment.
  */
 export const seedScenarioTenants = async (): Promise<void> => {
-  await seedTenantWithBrands(FIXTURES.zeroBrands, []);
-  await seedTenantWithBrands(FIXTURES.oneBrandOwner, [FIXTURES.oneBrandOwner.brand]);
-  await seedTenantWithBrands(
-    FIXTURES.threeBrands,
-    FIXTURES.threeBrands.brands.map((b) => ({ slug: b.slug, displayName: b.displayName })),
-  );
+  const solo = await provisionTenant({
+    slug: FIXTURES.soloOwner.tenantSlug,
+    displayName: FIXTURES.soloOwner.tenantDisplayName,
+  });
+  if (solo) {
+    await bootstrapOwner(solo.id, {
+      email: FIXTURES.soloOwner.email,
+      password: FIXTURES.soloOwner.password,
+      name: FIXTURES.soloOwner.name,
+    });
+  }
+
+  const pending = await provisionTenant({
+    slug: FIXTURES.pendingOwner.tenantSlug,
+    displayName: FIXTURES.pendingOwner.tenantDisplayName,
+    status: 'pending_setup',
+  });
+  if (pending) {
+    await bootstrapOwner(pending.id, {
+      email: FIXTURES.pendingOwner.email,
+      password: FIXTURES.pendingOwner.password,
+      name: FIXTURES.pendingOwner.name,
+    });
+  }
+
+  const orgA = await provisionTenant({
+    slug: FIXTURES.twoOrgOwner.tenantASlug,
+    displayName: FIXTURES.twoOrgOwner.tenantADisplayName,
+  });
+  if (orgA) {
+    await bootstrapOwner(orgA.id, {
+      email: FIXTURES.twoOrgOwner.email,
+      password: FIXTURES.twoOrgOwner.password,
+      name: FIXTURES.twoOrgOwner.name,
+    });
+  }
+
+  const orgB = await provisionTenant({
+    slug: FIXTURES.twoOrgOwner.tenantBSlug,
+    displayName: FIXTURES.twoOrgOwner.tenantBDisplayName,
+  });
+  if (orgB) {
+    await bootstrapOwner(orgB.id, {
+      email: FIXTURES.twoOrgOwner.email,
+      password: FIXTURES.twoOrgOwner.password,
+      name: FIXTURES.twoOrgOwner.name,
+    });
+  }
 };

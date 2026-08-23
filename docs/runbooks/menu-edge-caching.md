@@ -36,3 +36,16 @@ A stop/unstop changes only the `/availability` ETag — the menu-document ETag i
 
 - The public menu reads MUST stay **`Set-Cookie`-free** and MUST NOT gain `Cache-Control: private`/`no-store`. The e2e `public menu reads carry no Set-Cookie so an edge cache can store them` is the regression net — keep it green.
 - Instant publish (CDN purge-on-publish) and edge composition (Workers) are out of scope for v1 — see the spec's "Out of scope / future".
+
+## Known limitation: no location dimension in the cache key (Phase 08.4)
+
+`/v1/menu/availability` is now backed by **per-location** stop-lists (Phase 08.4, D-02) — each kitchen/point-of-sale 86's its own items, resolved to a guest's **default location** (the brand's earliest active location by `createdAt`) since guests have no location pin yet. The edge cache key is still **host + path** (unchanged, see above) — there is **no location dimension anywhere in the cache key**.
+
+This is safe today only because Phase 08.4 defers guest-facing location selection (D-03): every brand a guest can reach still resolves to a single default location, so `host + path` and `host + path + location` are equivalent in practice. The moment a brand goes live with **2+ active locations**, this equivalence breaks — a cached `/v1/menu/availability` response computed for one location's stop-list can be served to a guest who should see a different location's availability, until the entry expires (`s-maxage=5`, so the blast radius per brand is small, but non-zero and silently wrong).
+
+**Not fixed in Phase 08.4** — the guest "pick a branch" UX is a later concern (D-03), and adding a location dimension to the cache key without a way for the guest to choose a location would be premature. Future fix options, once guest-facing location selection ships:
+
+- A location URL segment or query param becomes part of the cache key (e.g. `/v1/menu/availability?location=<id>`), or
+- `Vary` on a location-identifying header (CDN cache-by-header support varies; a Cloudflare Cache Rule change would be required).
+
+Symptom to watch for post-launch: a customer-support report of "wrong items shown as available/unavailable" for a brand with 2+ locations is very likely this gap, not a data bug.

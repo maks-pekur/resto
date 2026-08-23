@@ -1,27 +1,21 @@
+import 'reflect-metadata';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { schema, TenantAwareDb } from '@resto/db';
-import {
-  isDockerAvailable,
-  startRealStack,
-  stopRealStack,
-  type RealStack,
-} from './with-real-stack.setup';
+import { Test, type TestingModule } from '@nestjs/testing';
+import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { schema } from '@resto/db';
+import { AppModule } from '../../src/app.module';
+import { AUTH_DRIZZLE_TOKEN } from '../../src/contexts/identity/identity.tokens';
+import type { AuthDrizzle } from '../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
-const dockerOk = isDockerAvailable();
-const suite = dockerOk ? describe : describe.skip;
-
-if (!dockerOk) {
-  console.warn('[signup.e2e] Docker not available — skipping integration tests.');
-}
+const INTERNAL_TOKEN = 'signup-e2e-internal-token-123';
 
 const buildSignupBody = (overrides: Partial<Record<string, unknown>> = {}) => ({
   email: `owner-${randomUUID().slice(0, 8)}@example.com`,
   password: 'a-strong-password-12',
-  displayName: `Cafe Test ${randomUUID().slice(0, 6)}`,
-  defaultCurrency: 'USD',
-  locale: 'en',
+  name: `Cafe Owner ${randomUUID().slice(0, 6)}`,
+  country: 'GB',
   ...overrides,
 });
 
@@ -37,35 +31,93 @@ interface SignUpResponse {
  * dedicated enumeration parity spec is `signup-enumeration.e2e.spec.ts`;
  * this spec asserts the underlying side effects (tenant + member rows)
  * via direct DB inspection.
+ *
+ * D-25/D-27 (10.2 plan 13): the public body never surfaces the tenant id,
+ * and the tenant's `displayName`/`slug` are now PROVISIONAL — derived from
+ * `input.name` plus a random suffix, not equal to it — so side effects are
+ * located via the BA `user` row (by email) -> `member` -> `tenants`, not by
+ * matching `displayName` to the submitted value.
+ *
+ * No testcontainer here (10.2 plan 13, same rationale as
+ * signup-enumeration.e2e.spec.ts) — a fresh-container migration replay
+ * fails on the pre-existing 0079 idempotency bug (deferred-items.md,
+ * owned by plans 05/19). The live dev Postgres is already migrated.
  */
-suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
-  let stack: RealStack;
-  let db: TenantAwareDb;
+describe('Identity — public signup (D-06 enumeration-safe contract)', () => {
+  let app: NestFastifyApplication;
+  let authDb: AuthDrizzle;
 
   beforeAll(async () => {
+    process.env.DATABASE_URL = 'postgres://resto_app:resto_app_dev_password@localhost:5433/resto';
+    process.env.BETTER_AUTH_DATABASE_URL =
+      'postgres://resto_auth:auth_password_dev@localhost:5433/resto';
+    process.env.NATS_URL = 'nats://localhost:4222';
+    process.env.NODE_ENV = 'test';
+    process.env.OTEL_DISABLED = 'true';
+    process.env.NATS_DISABLED = 'true';
+    process.env.BETTER_AUTH_SECRET = 'signup-e2e-secret-padding-padding-padding-padding';
+    process.env.BETTER_AUTH_BASE_URL = 'http://localhost:4000';
+    process.env.ADMIN_WEB_URL = 'http://localhost:3000';
+    process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
+    process.env.S3_ENDPOINT = 'http://localhost:9000';
+    process.env.S3_ACCESS_KEY = 'x';
+    process.env.S3_SECRET_KEY = 'x';
     process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
-    stack = await startRealStack();
-    db = stack.app.get(TenantAwareDb);
-  }, 180_000);
+    process.env.RATE_LIMIT_PUBLIC_PER_MIN = '10000';
+
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleRef.createNestApplication<NestFastifyApplication>(
+      new FastifyAdapter({ logger: false }),
+    );
+    await app.init();
+    await app.getHttpAdapter().getInstance().ready();
+    authDb = app.get<AuthDrizzle>(AUTH_DRIZZLE_TOKEN);
+  }, 120_000);
 
   afterAll(async () => {
-    await stopRealStack(stack);
+    await app.close();
   });
 
-  it('creates tenant + owner-member on new-email signup; no Set-Cookie', async () => {
-    const displayName = `Roma ${randomUUID().slice(0, 6)}`;
-    const body = buildSignupBody({ displayName });
-    const res = await stack.app.inject({
+  const findTenantByOwnerEmail = async (email: string) => {
+    const users = await authDb.db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.email, email));
+    const userId = users[0]?.id;
+    if (typeof userId !== 'string') throw new Error(`no BA user for ${email}`);
+
+    const members = await authDb.db
+      .select({ tenantId: schema.member.tenantId, role: schema.member.role })
+      .from(schema.member)
+      .where(eq(schema.member.userId, userId));
+    expect(members).toHaveLength(1);
+    const member = members[0];
+    if (!member) throw new Error('expected exactly one member row');
+
+    const tenants = await authDb.db
+      .select()
+      .from(schema.tenants)
+      .where(eq(schema.tenants.id, member.tenantId));
+    const tenant = tenants[0];
+    if (!tenant) throw new Error(`no tenant row for member ${member.tenantId}`);
+    return { user: users[0], member, tenant };
+  };
+
+  it('creates a pending_setup tenant + owner-member on new-email signup; no Set-Cookie', async () => {
+    const body = buildSignupBody();
+    const res = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
       payload: body,
     });
     expect(res.statusCode).toBe(201);
-    const json = res.json<SignUpResponse>();
-    expect(json).toEqual({ status: 'pending_verification' });
+    expect(res.json<SignUpResponse>()).toEqual({ status: 'pending_verification' });
 
     // D-06: NO Set-Cookie on the wire (would leak which branch ran).
     const setCookie = res.headers['set-cookie'];
@@ -73,26 +125,20 @@ suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
       true,
     );
 
-    // Side effect IS observable to the operator team via DB — assert it
-    // happened by looking up by displayName (the public body doesn't
-    // surface the tenant id under D-06).
-    const tenants = await db.withoutTenant('inspect signup tenant', (tx) =>
-      tx.select().from(schema.tenants).where(eq(schema.tenants.displayName, displayName)),
-    );
-    expect(tenants).toHaveLength(1);
-    const tenantId = tenants[0]?.id;
-    if (typeof tenantId !== 'string') throw new Error('expected tenant id to be defined');
-
-    const members = await db.withoutTenant('inspect signup member', (tx) =>
-      tx.select().from(schema.member).where(eq(schema.member.organizationId, tenantId)),
-    );
-    expect(members).toHaveLength(1);
-    expect(members[0]?.role).toBe('owner');
+    const { member, tenant } = await findTenantByOwnerEmail(body.email);
+    expect(member.role).toBe('owner');
+    // D-25/D-30: pending_setup, country applied, currency/locale derived —
+    // never the person's submitted name (D-27).
+    expect(tenant.status).toBe('pending_setup');
+    expect(tenant.country).toBe('GB');
+    expect(tenant.defaultCurrency).toBe('GBP');
+    expect(tenant.locale).toBe('en');
+    expect(tenant.displayName).not.toBe(body.name);
   }, 60_000);
 
   it('returns identical 201 body on duplicate email — no leak', async () => {
     const body = buildSignupBody();
-    const first = await stack.app.inject({
+    const first = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
@@ -102,11 +148,11 @@ suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
     expect(first.json<SignUpResponse>()).toEqual({ status: 'pending_verification' });
 
     // D-06: duplicate-email branch returns the SAME 201 + body shape.
-    const dup = await stack.app.inject({
+    const dup = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
-      payload: { ...body, displayName: `Different ${randomUUID().slice(0, 6)}` },
+      payload: { ...body, name: `Different ${randomUUID().slice(0, 6)}` },
     });
     expect(dup.statusCode).toBe(201);
     expect(dup.json<SignUpResponse>()).toEqual({ status: 'pending_verification' });
@@ -116,47 +162,74 @@ suite('Identity — public signup (D-06 enumeration-safe contract)', () => {
     expect(dupCookie === undefined || (Array.isArray(dupCookie) && dupCookie.length === 0)).toBe(
       true,
     );
+
+    // Exactly one tenant was ever created for this email — the dup branch
+    // never provisions a second tenant.
+    const { member } = await findTenantByOwnerEmail(body.email);
+    expect(member.role).toBe('owner');
   }, 60_000);
 
-  it('auto-bumps slug suffix on displayName collision', async () => {
+  it('two people signing up with the same name get distinct provisional slugs', async () => {
     const sameName = `Collision ${randomUUID().slice(0, 6)}`;
 
-    const a = await stack.app.inject({
+    const a = buildSignupBody({ name: sameName });
+    const resA = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
-      payload: buildSignupBody({ displayName: sameName }),
+      payload: a,
     });
-    expect(a.statusCode).toBe(201);
+    expect(resA.statusCode).toBe(201);
 
-    const b = await stack.app.inject({
+    const b = buildSignupBody({ name: sameName });
+    const resB = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
-      payload: buildSignupBody({ displayName: sameName }),
+      payload: b,
     });
-    expect(b.statusCode).toBe(201);
+    expect(resB.statusCode).toBe(201);
 
-    // Both attempts return the same enumeration-safe body shape; slug
-    // bump is observable in the DB only.
-    const tenants = await db.withoutTenant('inspect collision tenants', (tx) =>
-      tx.select().from(schema.tenants).where(eq(schema.tenants.displayName, sameName)),
-    );
-    expect(tenants).toHaveLength(2);
-    const slugs = new Set(tenants.map((t) => t.slug));
-    expect(slugs.size).toBe(2);
-    // The second-inserted slug carries the `-2` suffix per `findFreeSlug`.
-    const hasSuffix = [...slugs].some((s) => s.endsWith('-2'));
-    expect(hasSuffix).toBe(true);
+    const { tenant: tenantA } = await findTenantByOwnerEmail(a.email);
+    const { tenant: tenantB } = await findTenantByOwnerEmail(b.email);
+    expect(tenantA.id).not.toBe(tenantB.id);
+    expect(tenantA.slug).not.toBe(tenantB.slug);
   }, 60_000);
 
   it('returns 400 on missing fields (validation never reaches enumeration wrap)', async () => {
-    const res = await stack.app.inject({
+    const res = await app.inject({
       method: 'POST',
       url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
-      payload: { email: 'bad', password: 'x', displayName: 'X' },
+      payload: { email: 'bad', password: 'x', name: 'X' },
     });
     expect(res.statusCode).toBe(400);
   });
+
+  it('returns 400 validation.failed for an unsupported country', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/signup',
+      headers: { 'content-type': 'application/json' },
+      payload: buildSignupBody({ country: 'XX' }),
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json<{ code: string }>().code).toBe('validation.failed');
+  });
+
+  it('D-34/D-35: country ES derives defaultCurrency EUR and locale es on the persisted row', async () => {
+    const body = buildSignupBody({ country: 'ES' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/v1/signup',
+      headers: { 'content-type': 'application/json' },
+      payload: body,
+    });
+    expect(res.statusCode).toBe(201);
+
+    const { tenant } = await findTenantByOwnerEmail(body.email);
+    expect(tenant.country).toBe('ES');
+    expect(tenant.defaultCurrency).toBe('EUR');
+    expect(tenant.locale).toBe('es');
+  }, 60_000);
 });

@@ -1,9 +1,13 @@
-import { sql } from 'drizzle-orm';
+import { desc, sql } from 'drizzle-orm';
 import {
+  boolean,
   check,
+  date,
   foreignKey,
+  index,
   integer,
   pgTable,
+  primaryKey,
   smallint,
   text,
   timestamp,
@@ -13,14 +17,14 @@ import {
 import { money } from './_types';
 import { compositeTenantFk, pkUuid, tenantIdColumn, tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
-import { brands } from './brands';
+import { locations } from './locations';
 
 export const orders = pgTable(
   'orders',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    brandId: uuid('brand_id').notNull(),
+    locationId: uuid('location_id').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     orderNumber: text('order_number').notNull(),
     // status acts as soft-delete: 'canceled'/'refunded' replace archived_at (no hard deletes)
@@ -37,6 +41,21 @@ export const orders = pgTable(
     total: money('total').notNull(),
     currency: text('currency').notNull(),
     scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
+    shortNumber: integer('short_number').notNull(),
+    channel: text('channel').notNull().default('site'),
+    acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'date' }),
+    preparingAt: timestamp('preparing_at', { withTimezone: true, mode: 'date' }),
+    readyAt: timestamp('ready_at', { withTimezone: true, mode: 'date' }),
+    completedAt: timestamp('completed_at', { withTimezone: true, mode: 'date' }),
+    canceledAt: timestamp('canceled_at', { withTimezone: true, mode: 'date' }),
+    acceptedByUserId: text('accepted_by_user_id'),
+    canceledByUserId: text('canceled_by_user_id'),
+    cancelReason: text('cancel_reason'),
+    cancelNote: text('cancel_note'),
+    canceledFromStatus: text('canceled_from_status'),
+    etaAt: timestamp('eta_at', { withTimezone: true, mode: 'date' }),
+    marketingConsent: boolean('marketing_consent').notNull().default(false),
+    marketingConsentAt: timestamp('marketing_consent_at', { withTimezone: true, mode: 'date' }),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
       .notNull()
       .default(sql`now()`),
@@ -51,9 +70,9 @@ export const orders = pgTable(
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     compositeTenantFk({
-      name: 'orders_brand_fk',
-      child: { id: table.brandId, tenantId: table.tenantId },
-      parent: { id: brands.id, tenantId: brands.tenantId },
+      name: 'orders_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('orders_idempotency_key_uq').on(table.tenantId, table.idempotencyKey),
     tenantParentUniqueIndex('orders', { id: table.id, tenantId: table.tenantId }),
@@ -65,6 +84,47 @@ export const orders = pgTable(
       'orders_fulfillment_mode_chk',
       sql`${table.fulfillmentMode} IN ('dine_in','pickup','delivery')`,
     ),
+    check('orders_channel_chk', sql`${table.channel} IN ('site','qr-menu')`),
+    check(
+      'orders_cancel_reason_chk',
+      sql`${table.cancelReason} IS NULL OR ${table.cancelReason} IN ('guest_no_show','kitchen_out_of_stock','kitchen_too_busy','guest_requested','payment_issue','duplicate_order','other')`,
+    ),
+    check(
+      'orders_canceled_from_status_chk',
+      sql`${table.canceledFromStatus} IS NULL OR ${table.canceledFromStatus} IN ('created','requires_action','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
+    ),
+    index('orders_feed_idx').on(
+      table.tenantId,
+      table.locationId,
+      table.status,
+      desc(table.createdAt),
+    ),
+  ],
+);
+
+export const orderDailySequences = pgTable(
+  'order_daily_sequences',
+  {
+    tenantId: tenantIdColumn(),
+    locationId: uuid('location_id').notNull(),
+    businessDate: date('business_date').notNull(),
+    counter: integer('counter').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({
+      name: 'order_daily_sequences_pk',
+      columns: [table.tenantId, table.locationId, table.businessDate],
+    }),
+    foreignKey({
+      name: 'order_daily_sequences_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'order_daily_sequences_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
   ],
 );
 
@@ -177,11 +237,16 @@ export const paymentRefunds = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     paymentId: uuid('payment_id').notNull(),
-    stripeRefundId: text('stripe_refund_id').notNull(),
+    stripeRefundId: text('stripe_refund_id'),
+    refundRequestId: text('refund_request_id').notNull(),
     amount: money('amount').notNull(),
     reason: text('reason').notNull(),
     status: text('status').notNull().default('pending'),
+    failureReason: text('failure_reason'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' })
       .notNull()
       .default(sql`now()`),
   },
@@ -198,5 +263,6 @@ export const paymentRefunds = pgTable(
     }).onDelete('restrict'),
     check('payment_refunds_status_chk', sql`${table.status} IN ('pending','succeeded','failed')`),
     uniqueIndex('payment_refunds_stripe_refund_id_uq').on(table.tenantId, table.stripeRefundId),
+    uniqueIndex('payment_refunds_request_id_uq').on(table.tenantId, table.refundRequestId),
   ],
 );

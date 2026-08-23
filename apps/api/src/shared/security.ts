@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import rateLimit from '@fastify/rate-limit';
@@ -34,6 +35,43 @@ export const buildOriginMatcher = (patterns: readonly string[]): ((origin: strin
 const isInternalRoute = (url: string): boolean => url.startsWith('/internal/v1/');
 
 const STRIPE_WEBHOOK_PATH = '/webhook/stripe';
+
+const SESSION_COOKIE_NAME = 'better-auth.session_token';
+
+const readSessionCookieValue = (rawCookieHeader: string | undefined): string | undefined => {
+  if (!rawCookieHeader) return undefined;
+  for (const pair of rawCookieHeader.split(';')) {
+    const eq = pair.indexOf('=');
+    if (eq === -1) continue;
+    const name = pair.slice(0, eq).trim();
+    if (name !== SESSION_COOKIE_NAME) continue;
+    const value = pair.slice(eq + 1).trim();
+    return value.length > 0 ? value : undefined;
+  }
+  return undefined;
+};
+
+const CREDENTIAL_ROUTE_PREFIXES = [
+  '/api/auth/sign-in',
+  '/api/auth/sign-up',
+  '/api/auth/request-password-reset',
+  '/api/auth/reset-password',
+  '/api/auth/forget-password',
+  '/v1/signup',
+];
+
+const isCredentialRoute = (url: string): boolean =>
+  CREDENTIAL_ROUTE_PREFIXES.some((prefix) => url.startsWith(prefix));
+
+const rateLimitKeyGenerator = (req: FastifyRequest): string => {
+  if (req.principal && 'userId' in req.principal) return req.principal.userId;
+  if (isCredentialRoute(req.url)) return `ip:${req.ip}`;
+  const sessionToken = readSessionCookieValue(req.headers.cookie);
+  if (sessionToken) {
+    return `session:${createHash('sha256').update(sessionToken).digest('hex')}`;
+  }
+  return `ip:${req.ip}`;
+};
 
 /**
  * Best-effort email extraction from a parsed BA request body. BA's
@@ -150,11 +188,7 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
     // pipeline so the standard `ProblemDetailsFilter` formats the 429.
     global: false,
     timeWindow: '1 minute',
-    // Single per-IP store across all routes — same IP hitting different
-    // route groups shares the counter. Per-endpoint max overrides at
-    // request time but the counter is shared. Acceptable for MVP-1; a
-    // future ticket can per-bucket via `keyGenerator` if cross-traffic
-    // pollution becomes visible.
+    keyGenerator: rateLimitKeyGenerator,
     max: (req: FastifyRequest): number => {
       if (isInternalRoute(req.url)) return env.RATE_LIMIT_INTERNAL_PER_MIN;
       if (req.url.startsWith('/api/auth/sign-up') || req.url.startsWith('/v1/signup'))

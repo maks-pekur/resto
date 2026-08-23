@@ -23,3 +23,21 @@ export const RefundInputSchema = z.object({
 
 export type RefundInput = z.infer<typeof RefundInputSchema>;
 export class RefundInputDto extends createZodDto(RefundInputSchema) {}
+
+const CANCEL_REASON_CODES = [
+  'guest_no_show',
+  'kitchen_out_of_stock',
+  'kitchen_too_busy',
+  'guest_requested',
+  'payment_issue',
+  'duplicate_order',
+  'other',
+] as const;
+
+export const CancelOrderInputSchema = z.object({
+  reasonCode: z.enum(CANCEL_REASON_CODES),
+  cancelNote: z.string().max(500).optional(),
+});
+
+export type CancelOrderInput = z.infer<typeof CancelOrderInputSchema>;
+export class CancelOrderInputDto extends createZodDto(CancelOrderInputSchema) {}

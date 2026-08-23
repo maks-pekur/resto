@@ -21,6 +21,7 @@ import {
 } from '../domain/order.aggregate';
 import type { OrderDomainEvent } from '../domain/events';
 import type { OrderRepository } from '../domain/ports';
+import { toMinorUnits } from '../domain/money-utils';
 
 const ALLOWED_STATUSES = new Set<string>([
   'created',
@@ -54,7 +55,7 @@ export class OrderDrizzleRepository implements OrderRepository {
         .values({
           id: snapshot.id,
           tenantId: snapshot.tenantId,
-          brandId: snapshot.brandId,
+          locationId: snapshot.locationId,
           idempotencyKey: snapshot.idempotencyKey,
           orderNumber: snapshot.orderNumber,
           status: snapshot.status,
@@ -70,6 +71,21 @@ export class OrderDrizzleRepository implements OrderRepository {
           total: snapshot.total,
           currency: snapshot.currency,
           scheduledFor: snapshot.scheduledFor,
+          shortNumber: snapshot.shortNumber,
+          channel: snapshot.channel,
+          acceptedAt: snapshot.acceptedAt,
+          preparingAt: snapshot.preparingAt,
+          readyAt: snapshot.readyAt,
+          completedAt: snapshot.completedAt,
+          canceledAt: snapshot.canceledAt,
+          acceptedByUserId: snapshot.acceptedByUserId,
+          canceledByUserId: snapshot.canceledByUserId,
+          cancelReason: snapshot.cancelReason,
+          cancelNote: snapshot.cancelNote,
+          canceledFromStatus: snapshot.canceledFromStatus,
+          etaAt: snapshot.etaAt,
+          marketingConsent: snapshot.marketingConsent,
+          marketingConsentAt: snapshot.marketingConsentAt,
           createdAt: snapshot.createdAt,
           updatedAt: snapshot.updatedAt,
         })
@@ -133,6 +149,21 @@ export class OrderDrizzleRepository implements OrderRepository {
         status: snapshot.status,
         updatedAt: snapshot.updatedAt,
         scheduledFor: snapshot.scheduledFor,
+        shortNumber: snapshot.shortNumber,
+        channel: snapshot.channel,
+        acceptedAt: snapshot.acceptedAt,
+        preparingAt: snapshot.preparingAt,
+        readyAt: snapshot.readyAt,
+        completedAt: snapshot.completedAt,
+        canceledAt: snapshot.canceledAt,
+        acceptedByUserId: snapshot.acceptedByUserId,
+        canceledByUserId: snapshot.canceledByUserId,
+        cancelReason: snapshot.cancelReason,
+        cancelNote: snapshot.cancelNote,
+        canceledFromStatus: snapshot.canceledFromStatus,
+        etaAt: snapshot.etaAt,
+        marketingConsent: snapshot.marketingConsent,
+        marketingConsentAt: snapshot.marketingConsentAt,
       })
       .where(and(eq(schema.orders.id, snapshot.id), eq(schema.orders.tenantId, snapshot.tenantId)))
       .returning({ id: schema.orders.id });
@@ -223,7 +254,7 @@ export class OrderDrizzleRepository implements OrderRepository {
     const snap: OrderSnapshot = {
       id: OrderId.parse(row.id),
       tenantId: TenantId.parse(row.tenantId),
-      brandId: row.brandId,
+      locationId: row.locationId,
       idempotencyKey: row.idempotencyKey,
       orderNumber: row.orderNumber,
       status: parseStatus(row.status),
@@ -240,6 +271,21 @@ export class OrderDrizzleRepository implements OrderRepository {
       total: row.total,
       currency: Currency.parse(row.currency),
       scheduledFor: row.scheduledFor ?? null,
+      shortNumber: row.shortNumber,
+      channel: row.channel as OrderSnapshot['channel'],
+      acceptedAt: row.acceptedAt ?? null,
+      preparingAt: row.preparingAt ?? null,
+      readyAt: row.readyAt ?? null,
+      completedAt: row.completedAt ?? null,
+      canceledAt: row.canceledAt ?? null,
+      acceptedByUserId: row.acceptedByUserId ?? null,
+      canceledByUserId: row.canceledByUserId ?? null,
+      cancelReason: row.cancelReason ?? null,
+      cancelNote: row.cancelNote ?? null,
+      canceledFromStatus: row.canceledFromStatus ? parseStatus(row.canceledFromStatus) : null,
+      etaAt: row.etaAt ?? null,
+      marketingConsent: row.marketingConsent,
+      marketingConsentAt: row.marketingConsentAt ?? null,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     };
@@ -255,7 +301,7 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
         {
           orderId: event.orderId,
           tenantId: event.tenantId,
-          brandId: event.brandId,
+          locationId: event.locationId,
           orderNumber: event.orderNumber,
           fulfillmentMode: event.fulfillmentMode,
           total: event.totalMinorUnits,
@@ -270,16 +316,25 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
         {
           orderId: event.orderId,
           tenantId: event.tenantId,
+          locationId: event.locationId,
           paymentId: event.paymentId,
-          total: 0,
-          currency: 'USD',
+          total: toMinorUnits(event.total),
+          currency: event.currency,
         },
         { tenantId: event.tenantId, occurredAt: event.occurredAt },
       );
     case 'OrderCanceled':
       return buildEnvelope(
         OrderCanceledV1,
-        { orderId: event.orderId, tenantId: event.tenantId, reason: event.reason },
+        {
+          orderId: event.orderId,
+          tenantId: event.tenantId,
+          locationId: event.locationId,
+          reason: event.reason,
+          reasonCode: event.reasonCode,
+          canceledFromStatus: event.canceledFromStatus,
+          actorUserId: event.actorUserId,
+        },
         { tenantId: event.tenantId, occurredAt: event.occurredAt },
       );
     case 'OrderRefunded':
@@ -288,8 +343,9 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
         {
           orderId: event.orderId,
           tenantId: event.tenantId,
+          locationId: event.locationId,
           amount: event.amount,
-          currency: 'USD',
+          currency: event.currency,
         },
         { tenantId: event.tenantId, occurredAt: event.occurredAt },
       );
@@ -299,8 +355,10 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
         {
           orderId: event.orderId,
           tenantId: event.tenantId,
+          locationId: event.locationId,
           previousStatus: event.previousStatus,
           newStatus: event.newStatus,
+          actorUserId: event.actorUserId,
         },
         { tenantId: event.tenantId, occurredAt: event.occurredAt },
       );

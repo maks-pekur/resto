@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TenantId } from '@resto/domain';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
-import { type TenantSnapshot } from '../domain/tenant.aggregate';
+import { Tenant, type TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantNotFoundError } from '../domain/errors';
 
@@ -17,10 +17,11 @@ export class OffboardTenantService {
 
   async schedule(input: { tenantId: string; requestedBy: string }): Promise<TenantSnapshot> {
     const id = TenantId.parse(input.tenantId);
-    const tenant = await this.repo.findById(id);
-    if (!tenant) {
+    const snapshot = await this.repo.findById(id);
+    if (!snapshot) {
       throw new TenantNotFoundError(input.tenantId);
     }
+    const tenant = Tenant.fromSnapshot(snapshot);
     tenant.scheduleOffboarding(input.requestedBy);
     await this.repo.save(tenant);
     this.logger.log(
@@ -32,10 +33,11 @@ export class OffboardTenantService {
 
   async cancel(input: { tenantId: string }): Promise<TenantSnapshot> {
     const id = TenantId.parse(input.tenantId);
-    const tenant = await this.repo.findById(id);
-    if (!tenant) {
+    const snapshot = await this.repo.findById(id);
+    if (!snapshot) {
       throw new TenantNotFoundError(input.tenantId);
     }
+    const tenant = Tenant.fromSnapshot(snapshot);
     tenant.cancelOffboarding();
     await this.repo.save(tenant);
     this.logger.log({ tenantId: id }, 'Tenant offboarding cancelled');

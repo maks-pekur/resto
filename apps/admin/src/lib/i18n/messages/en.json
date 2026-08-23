@@ -27,7 +27,22 @@
     "sessionExpired": "Your session expired. Please sign in again.",
     "passwordUpdated": "Password updated. Sign in with your new password.",
     "noAccess": "No access",
-    "noAccessDescription": "You don't have permission to manage the menu. Contact the account owner."
+    "noAccessDescription": "You don't have permission to manage the menu. Contact the account owner.",
+    "signup": {
+      "title": "Create account",
+      "nameLabel": "Your name",
+      "countryLabel": "Country",
+      "countryPlaceholder": "Select your country",
+      "countryOption": {
+        "ua": "Ukraine · UAH",
+        "gb": "United Kingdom · GBP",
+        "es": "Spain · EUR"
+      },
+      "submitIdle": "Create account",
+      "submitPending": "Creating account…",
+      "errorGeneric": "Could not create account. Please try again.",
+      "signInPrompt": "Already have an account?"
+    }
   },
   "nav": {
     "platform": "Platform",
@@ -40,6 +55,7 @@
     "team": "Team",
     "settings": "Settings",
     "payments": "Payments",
+    "orders": "Orders",
     "user": {
       "accountItem": "Account",
       "themeLabel": "Theme",
@@ -49,8 +65,28 @@
       "logout": "Log out",
       "languageLabel": "Language",
       "localeRu": "Русский",
-      "localeEn": "English"
+      "localeEn": "English",
+      "switchTenantItem": "Switch restaurant",
+      "localeEs": "Español"
     }
+  },
+  "pickTenant": {
+    "title": "Choose your restaurant",
+    "description": "You have access to more than one restaurant. Pick one to continue.",
+    "loading": "Loading…",
+    "empty": "No restaurants available.",
+    "emptyDescription": "Contact support — every account should have at least one restaurant.",
+    "enteringState": "Entering {{name}}…",
+    "error": "Could not switch to this restaurant. Please try again."
+  },
+  "onboarding": {
+    "title": "Name your restaurant",
+    "nameLabel": "Restaurant name",
+    "hostPreview": "You'll be reachable at {{host}}",
+    "submitIdle": "Continue",
+    "submitPending": "Creating your restaurant…",
+    "errorGeneric": "Could not create your restaurant. Please try again.",
+    "createdToast": "\"{{name}}\" is ready."
   },
   "menu": {
     "items": {
@@ -205,7 +241,14 @@
       "tableParentHeader": "Parent",
       "tableActionsHeader": "Actions",
       "editAriaLabel": "Edit {{name}}",
-      "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first."
+      "nestWithChildrenError": "Can't nest a category with subcategories — move the subcategories first.",
+      "saveFailed": "Couldn't save the category.",
+      "archiveAction": "Archive",
+      "archiveAriaLabel": "Archive \"{{name}}\"",
+      "archiveDialogTitle": "Archive this category?",
+      "archiveDialogDescription": "Category \"{{name}}\" will be hidden from the menu. This is reversible — turn on \"Show archived\".",
+      "archiveFailed": "Couldn't archive the category.",
+      "showArchived": "Show archived"
     },
     "modifierGroups": {
       "createGroup": "+ Create group",
@@ -261,7 +304,13 @@
       "resetSuccess": "Stop list cleared",
       "resetPartial": "{{ok}} resumed, {{failed}} failed",
       "resetFailed": "Couldn't reset the stop list.",
-      "resetFetchFailed": "Couldn't load the stop list."
+      "resetFetchFailed": "Couldn't load the stop list.",
+      "pageTitle": "Stop list",
+      "tableLocationsHeader": "Locations",
+      "aggregateReadOnlyHint": "Showing all locations. Select a location to stop or resume items.",
+      "aggregateBadge": "{{count}}/{{total}} locations",
+      "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations",
+      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items"
     },
     "status": {
       "draft": "Draft",
@@ -286,28 +335,177 @@
       "cancelledToast": "Publication cancelled",
       "alreadyPublishedToast": "Already published — cancel window expired",
       "unpublishedChanges_one": "{{count}} unpublished change",
+      "unpublishedChanges_few": "{{count}} unpublished changes",
+      "unpublishedChanges_many": "{{count}} unpublished changes",
       "unpublishedChanges_other": "{{count}} unpublished changes",
       "countdownLabel": "Publishing in {{sec}}s",
       "cancelBtn": "Cancel"
     }
   },
+  "orders": {
+    "feed": {
+      "groupWaiting": "Waiting",
+      "groupInProgress": "In progress",
+      "groupDone": "Done",
+      "live": "Live",
+      "reconnecting": "Reconnecting…",
+      "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
+      "staleRetry": "Refresh",
+      "refundBanner_one": "{{count}} refund failed — action required",
+      "refundBanner_few": "{{count}} refunds failed — action required",
+      "refundBanner_many": "{{count}} refunds failed — action required",
+      "refundBanner_other": "{{count}} refunds failed — action required",
+      "refundBannerAction": "Show"
+    },
+    "filters": {
+      "statusLabel": "Status",
+      "statusActive": "Active",
+      "statusAllToday": "All today",
+      "statusCompleted": "Completed",
+      "statusCanceled": "Canceled",
+      "statusRefundFailed": "Refund failed",
+      "dateLabel": "Date",
+      "dateToday": "Today",
+      "dateYesterday": "Yesterday",
+      "dateWeek": "7 days",
+      "channelLabel": "Channel",
+      "channelSiteOnly": "Website",
+      "channelHint": "More channels appear once QR ordering is connected"
+    },
+    "card": {
+      "newBadge": "New",
+      "escalatedBadge": "Waiting {{duration}}",
+      "acceptedBadge": "Accepted",
+      "preparingBadge": "Preparing",
+      "readyBadge": "Ready",
+      "completedBadge": "Completed",
+      "canceledBadge": "Canceled",
+      "refundFailedBadge": "Refund failed",
+      "acceptBtn": "Accept",
+      "rejectBtn": "Reject",
+      "startPreparingBtn": "Preparing",
+      "markReadyBtn": "Ready",
+      "completeBtn": "Handed over",
+      "locationBadgeAria": "Location: {{name}}",
+      "dailyNumber": "No. {{n}}",
+      "sidebarBadgeAria": "Unaccepted orders: {{count}}",
+      "itemCount_one": "{{count}} item",
+      "itemCount_few": "{{count}} items",
+      "itemCount_many": "{{count}} items",
+      "itemCount_other": "{{count}} items",
+      "fulfillmentDineIn": "Dine-in",
+      "fulfillmentPickup": "Pickup",
+      "fulfillmentDelivery": "Delivery",
+      "statusUpdateFailed": "Couldn't update the order status."
+    },
+    "accept": {
+      "title": "How soon will it be ready?",
+      "chip15": "15 min",
+      "chip20": "20 min",
+      "chip30": "30 min",
+      "chip45": "45 min",
+      "customChip": "Other",
+      "customPlaceholder": "Minutes",
+      "customConfirm": "Accept",
+      "acceptedToast": "Order No. {{n}} accepted — ready by {{time}}",
+      "failedToast": "Couldn't accept the order."
+    },
+    "reject": {
+      "title": "Why are we declining it?",
+      "otherPlaceholder": "Describe the reason",
+      "otherConfirm": "Decline",
+      "rejectedToast": "Order No. {{n}} declined — refund of {{amount}} issued",
+      "failedToast": "Couldn't decline the order."
+    },
+    "reasons": {
+      "outOfStock": "Out of stock",
+      "kitchenBusy": "Kitchen is overloaded",
+      "guestRequested": "Guest canceled",
+      "guestNoShow": "Couldn't reach the guest",
+      "paymentIssue": "Payment issue",
+      "duplicate": "Duplicate order",
+      "other": "Other reason"
+    },
+    "cancel": {
+      "triggerBtn": "Cancel order",
+      "dialogTitle": "Cancel order No. {{n}}?",
+      "dialogDescription": "A refund of {{amount}} will be issued. This cannot be undone.",
+      "reasonLabel": "Reason",
+      "reasonRequired": "Choose a reason.",
+      "dismissBtn": "Close",
+      "confirmBtn": "Cancel and refund {{amount}}",
+      "canceledToast": "Order No. {{n}} canceled — refund of {{amount}} issued",
+      "failedToast": "Couldn't cancel the order."
+    },
+    "detail": {
+      "internalNumberLabel": "Internal number",
+      "tableIdentifierLabel": "Table/number",
+      "scheduledForLabel": "Scheduled for",
+      "customerTitle": "Guest",
+      "itemsTitle": "Order items",
+      "timelineTitle": "Order history",
+      "timelineCreated": "Paid",
+      "timelineAccepted": "Accepted",
+      "timelinePreparing": "Preparing",
+      "timelineReady": "Ready",
+      "timelineCompleted": "Handed over",
+      "timelineCanceled": "Canceled",
+      "totalsSubtotal": "Subtotal",
+      "totalsService": "Service fee",
+      "totalsDiscount": "Discount",
+      "totalsTotal": "Total"
+    },
+    "refund": {
+      "title": "Refund",
+      "amountLabel": "Refund amount",
+      "reasonLabel": "Reason",
+      "reasonPlaceholder": "E.g. guest complained about a dish",
+      "submitBtn": "Issue refund",
+      "remainingHint": "Available to refund: {{amount}}",
+      "successToast": "Refund of {{amount}} issued",
+      "failedToast": "Couldn't issue the refund.",
+      "retryBtn": "Retry refund",
+      "failedBanner": "Refund of {{amount}} failed"
+    },
+    "alerts": {
+      "enableSoundTitle": "Turn on order notifications",
+      "enableSoundBody": "Allow sound in this tab so you don't miss a new order.",
+      "enableSoundBtn": "Turn on sound",
+      "soundBlockedHint": "Sound may not work in this browser.",
+      "muteToggleLabel": "Sound",
+      "muteOnAria": "Sound on",
+      "muteOffAria": "Sound off"
+    },
+    "empty": {
+      "activationTitle": "Your first orders will show up here",
+      "activationBody": "Share the ordering link and everything guests pay for will appear here.",
+      "checklistPayments": "Payments connected",
+      "checklistMenu": "Menu published",
+      "checklistLocation": "Location open",
+      "copyLinkBtn": "Copy link",
+      "linkCopiedToast": "Link copied",
+      "noDomainHint": "No guest ordering domain configured yet.",
+      "filteredTitle": "Nothing found",
+      "filteredBody": "Change the filters or check a different date.",
+      "pickLocationTitle": "Choose a location",
+      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above."
+    },
+    "error": {
+      "initialLoadTitle": "Couldn't load orders",
+      "initialLoadBody": "Check your connection and try again."
+    }
+  },
   "dashboard": {
-    "addBrand": "Add brand",
-    "brand": "Brand",
     "addAccount": "Add account",
-    "noBrands": "You don't have any brands yet",
-    "noBrandsDescription": "Create your first brand to begin.",
     "title": "Dashboard",
+    "noLocationsTitle": "You don't have any locations yet",
+    "noLocationsDescription": "Create your first location to start tracking today's stop list.",
+    "createLocationCta": "Create a location",
     "settingsTitle": "Settings",
     "teamTitle": "Team",
     "teamInviteBtn": "Invite",
     "teamInviteTitle": "Invite a teammate",
     "teamInviteDescription": "Send an email invitation. Recipient gets a link valid for 48 hours.",
-    "brandDomainsTitle": "Domains",
-    "brandDomainsDescription": "Per-brand custom domains ship in a follow-up ticket.",
-    "brandPayoutsTitle": "Payouts",
-    "brandPayoutsDescription": "Stripe Connect onboarding ships in a follow-up ticket.",
-    "brandThemeTitle": "Brand theme",
     "editItemTitle": "Edit item",
     "newItemTitle": "New item",
     "editGroupTitle": "Edit modifier group",

@@ -26,8 +26,13 @@ const PASSWORD = 'Sup3r-Secret-Pw!';
 interface AuthedTenant {
   id: string;
   slug: string;
-  brandSlug: string;
-  authed: { cookie: string; 'x-tenant-id': string; 'x-brand-slug': string };
+  menuHost: string;
+  locationId: string;
+  authed: {
+    cookie: string;
+    'x-tenant-id': string;
+    'x-location-id': string;
+  };
 }
 
 const setupAuthedTenant = async (
@@ -39,19 +44,26 @@ const setupAuthedTenant = async (
   const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
   await runBootstrap({ tenantSlug: slug, email, password: PASSWORD, name: 'Catalog Owner' });
   const ownerCookie = await signInAsOperator(app, email, PASSWORD, tenant.id);
-  const brandSlug = `brand-${randomUUID().slice(0, 8)}`;
-  const brandRes = await app.inject({
+
+  const locationRes = await app.inject({
     method: 'POST',
-    url: '/v1/me/brands',
+    url: '/v1/tenancy/locations',
     headers: { cookie: ownerCookie, 'x-tenant-id': tenant.id },
-    payload: { slug: brandSlug, displayName: `Brand ${label}` },
+    payload: { name: `${label} location` },
   });
-  expect(brandRes.statusCode).toBe(201);
+  expect(locationRes.statusCode).toBe(200);
+  const locationId = locationRes.json<{ id: string }>().id;
+
   return {
     id: tenant.id,
     slug,
-    brandSlug,
-    authed: { cookie: ownerCookie, 'x-tenant-id': tenant.id, 'x-brand-slug': brandSlug },
+    menuHost: `${slug}.menu.resto.app`,
+    locationId,
+    authed: {
+      cookie: ownerCookie,
+      'x-tenant-id': tenant.id,
+      'x-location-id': locationId,
+    },
   };
 };
 
@@ -124,7 +136,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -224,7 +236,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const ownerView = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(ownerView.statusCode).toBe(200);
     expect(ownerView.json<{ id: string; slug: string }>().slug).toBe('cola');
@@ -232,7 +244,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const sniff = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${tenantAItemId}`,
-      headers: { 'x-tenant-slug': cafeB.slug, 'x-brand-slug': cafeB.brandSlug },
+      headers: { host: cafeB.menuHost },
     });
     expect(sniff.statusCode).toBe(404);
   }, 60_000);
@@ -243,7 +255,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu/items/not-a-uuid',
-      headers: { 'x-tenant-slug': cafeMalformed.slug, 'x-brand-slug': cafeMalformed.brandSlug },
+      headers: { host: cafeMalformed.menuHost },
     });
     expect(res.statusCode).toBe(404);
     const body = res.json<{ type: string; status: number }>();
@@ -320,7 +332,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -373,7 +385,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -432,7 +444,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -502,7 +514,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -550,7 +562,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const beforeRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     const beforeBody = beforeRes.json<{ items: Record<string, unknown>[] }>();
     const beforeItem = beforeBody.items.find((i) => i.id === itemId);
@@ -568,7 +580,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const stoppedRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     const stoppedBody = stoppedRes.json<{ items: Record<string, unknown>[] }>();
     const stoppedItem = stoppedBody.items.find((i) => i.id === itemId);
@@ -578,7 +590,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const detailRes = await stack.app.inject({
       method: 'GET',
       url: `/v1/menu/items/${itemId}`,
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(detailRes.statusCode).toBe(200);
     const detailBody = detailRes.json<Record<string, unknown>>();
@@ -767,7 +779,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       const rows = await db.withoutTenant('read stop version sum', async (tx) =>
         tx.execute<{ s: string | null }>(
           sql`SELECT COALESCE(SUM(stop_version), 0) AS s
-              FROM catalog_brand_stop_version WHERE tenant_id = ${cafe.id}::uuid`,
+              FROM catalog_location_stop_version WHERE tenant_id = ${cafe.id}::uuid`,
         ),
       );
       return rows[0]?.s == null ? 0 : Number(rows[0].s);
@@ -789,18 +801,18 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(await readStopVersionSum()).toBe(beforeStopSum);
   }, 30_000);
 
-  it('POST /stop-list bumps only the targeted brand stop_version; menu_version unchanged', async () => {
+  it('POST /stop-list bumps only the targeted location stop_version; menu_version unchanged', async () => {
     const cafe = await setupAuthedTenant(stack.app, 'cafe-sv');
     const db = stack.app.get(TenantAwareDb);
 
-    const brandBSlug = `brand-${randomUUID().slice(0, 8)}`;
-    const brandBRes = await stack.app.inject({
+    const locationBRes = await stack.app.inject({
       method: 'POST',
-      url: '/v1/me/brands',
-      headers: { cookie: cafe.authed.cookie, 'x-tenant-id': cafe.id },
-      payload: { slug: brandBSlug, displayName: 'Brand B' },
+      url: '/v1/tenancy/locations',
+      headers: cafe.authed,
+      payload: { name: 'Second Location' },
     });
-    expect(brandBRes.statusCode).toBe(201);
+    expect(locationBRes.statusCode).toBe(200);
+    const locationBId = locationBRes.json<{ id: string }>().id;
 
     const categoryRes = await stack.app.inject({
       method: 'POST',
@@ -824,13 +836,11 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     const itemId = itemRes.json<{ id: string }>().id;
 
-    const stopVersionOf = async (brandSlug: string): Promise<number> => {
-      const rows = await db.withoutTenant('read brand stop version', async (tx) =>
+    const stopVersionOf = async (locationId: string): Promise<number> => {
+      const rows = await db.withoutTenant('read location stop version', async (tx) =>
         tx.execute<{ s: string | null }>(
-          sql`SELECT sv.stop_version AS s
-              FROM catalog_brand_stop_version sv
-              JOIN brands b ON b.id = sv.brand_id AND b.tenant_id = sv.tenant_id
-              WHERE sv.tenant_id = ${cafe.id}::uuid AND b.slug = ${brandSlug}`,
+          sql`SELECT stop_version AS s FROM catalog_location_stop_version
+              WHERE tenant_id = ${cafe.id}::uuid AND location_id = ${locationId}::uuid`,
         ),
       );
       return rows[0]?.s == null ? 1 : Number(rows[0].s);
@@ -844,8 +854,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       return rows[0]?.v == null ? 1 : Number(rows[0].v);
     };
 
-    const beforeA = await stopVersionOf(cafe.brandSlug);
-    const beforeB = await stopVersionOf(brandBSlug);
+    const beforeA = await stopVersionOf(cafe.locationId);
+    const beforeB = await stopVersionOf(locationBId);
     const beforeMenu = await menuVersion();
 
     const stopRes = await stack.app.inject({
@@ -856,8 +866,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     expect(stopRes.statusCode).toBe(200);
 
-    expect(await stopVersionOf(cafe.brandSlug)).toBe(beforeA + 1);
-    expect(await stopVersionOf(brandBSlug)).toBe(beforeB);
+    expect(await stopVersionOf(cafe.locationId)).toBe(beforeA + 1);
+    expect(await stopVersionOf(locationBId)).toBe(beforeB);
     expect(await menuVersion()).toBe(beforeMenu);
   }, 60_000);
 
@@ -904,7 +914,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -956,7 +966,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     const menuRes = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
-      headers: { 'x-tenant-slug': cafeA.slug, 'x-brand-slug': cafeA.brandSlug },
+      headers: { host: cafeA.menuHost },
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
@@ -1050,7 +1060,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(res.statusCode).toBe(400);
   }, 60_000);
 
-  it('rejects duplicate brand code for category (partial unique index)', async () => {
+  it('rejects duplicate tenant-scoped code for category (partial unique index)', async () => {
     const r1 = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/categories',
@@ -1068,7 +1078,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(r2.statusCode).toBe(409);
   }, 60_000);
 
-  it('PUT items/:id/modifier-groups: set, subset-remove, empty-clear, cross-brand reject', async () => {
+  it('PUT items/:id/modifier-groups: set, subset-remove, empty-clear, cross-tenant reject', async () => {
     const catRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/categories',
@@ -1164,7 +1174,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       url: '/v1/catalog/modifier-groups',
       headers: cafeB.authed,
       payload: {
-        name: { en: 'Cross-brand' },
+        name: { en: 'Cross-tenant' },
         minSelectable: 0,
         maxSelectable: 1,
         isRequired: false,
@@ -1189,181 +1199,17 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(get4.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
   }, 60_000);
 
-  it('draft-diff / modifier-groups / stop-list return only the requesting brand rows', async () => {
-    const tenant = await setupAuthedTenant(stack.app, 'cafe-xbrand');
-
-    const brandBSlug = `brand-${randomUUID().slice(0, 8)}`;
-    const brandBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/me/brands',
-      headers: { cookie: tenant.authed.cookie, 'x-tenant-id': tenant.id },
-      payload: { slug: brandBSlug, displayName: 'Brand B' },
-    });
-    expect(brandBRes.statusCode).toBe(201);
-
-    const headersB = { ...tenant.authed, 'x-brand-slug': brandBSlug };
-
-    const catARes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/categories',
-      headers: tenant.authed,
-      payload: { slug: 'xb-cat-a', name: { en: 'Cat A' }, sortOrder: 0 },
-    });
-    expect(catARes.statusCode).toBe(200);
-    const catAId = catARes.json<{ id: string }>().id;
-
-    const draftARes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/items',
-      headers: tenant.authed,
-      payload: {
-        categoryId: catAId,
-        slug: 'xb-a-draft',
-        name: { en: 'A Draft' },
-        basePrice: '5.00',
-        currency: 'USD',
-        status: 'draft',
-      },
-    });
-    expect(draftARes.statusCode).toBe(200);
-    const draftAId = draftARes.json<{ id: string }>().id;
-
-    const groupARes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/modifier-groups',
-      headers: tenant.authed,
-      payload: {
-        name: { en: 'A-only group' },
-        minSelectable: 0,
-        maxSelectable: 1,
-        isRequired: false,
-      },
-    });
-    expect(groupARes.statusCode).toBe(200);
-    const groupAId = groupARes.json<{ id: string }>().id;
-
-    const stopItemARes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/items',
-      headers: tenant.authed,
-      payload: {
-        categoryId: catAId,
-        slug: 'xb-a-stop',
-        name: { en: 'A Stop' },
-        basePrice: '6.00',
-        currency: 'USD',
-        status: 'published',
-      },
-    });
-    expect(stopItemARes.statusCode).toBe(200);
-    const stopItemAId = stopItemARes.json<{ id: string }>().id;
-
-    const stopARes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/stop-list',
-      headers: tenant.authed,
-      payload: { itemId: stopItemAId },
-    });
-    expect(stopARes.statusCode).toBe(200);
-
-    const catBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/categories',
-      headers: headersB,
-      payload: { slug: 'xb-cat-b', name: { en: 'Cat B' }, sortOrder: 0 },
-    });
-    expect(catBRes.statusCode).toBe(200);
-    const catBId = catBRes.json<{ id: string }>().id;
-
-    const draftBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/items',
-      headers: headersB,
-      payload: {
-        categoryId: catBId,
-        slug: 'xb-b-draft',
-        name: { en: 'B Draft' },
-        basePrice: '7.00',
-        currency: 'USD',
-        status: 'draft',
-      },
-    });
-    expect(draftBRes.statusCode).toBe(200);
-    const draftBId = draftBRes.json<{ id: string }>().id;
-
-    const groupBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/modifier-groups',
-      headers: headersB,
-      payload: {
-        name: { en: 'B-only group' },
-        minSelectable: 0,
-        maxSelectable: 1,
-        isRequired: false,
-      },
-    });
-    expect(groupBRes.statusCode).toBe(200);
-    const groupBId = groupBRes.json<{ id: string }>().id;
-
-    const stopItemBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/items',
-      headers: headersB,
-      payload: {
-        categoryId: catBId,
-        slug: 'xb-b-stop',
-        name: { en: 'B Stop' },
-        basePrice: '8.00',
-        currency: 'USD',
-        status: 'published',
-      },
-    });
-    expect(stopItemBRes.statusCode).toBe(200);
-    const stopItemBId = stopItemBRes.json<{ id: string }>().id;
-
-    const stopBRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/stop-list',
-      headers: headersB,
-      payload: { itemId: stopItemBId },
-    });
-    expect(stopBRes.statusCode).toBe(200);
-
-    const diffRes = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/catalog/draft-diff',
-      headers: tenant.authed,
-    });
-    expect(diffRes.statusCode).toBe(200);
-    const diffIds = diffRes.json<{ items: { id: string }[] }>().items.map((i) => i.id);
-    expect(diffIds).toContain(draftAId);
-    expect(diffIds).not.toContain(draftBId);
-
-    const mgRes = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/catalog/modifier-groups',
-      headers: tenant.authed,
-    });
-    expect(mgRes.statusCode).toBe(200);
-    const mgIds = mgRes.json<{ items: { id: string }[] }>().items.map((i) => i.id);
-    expect(mgIds).toContain(groupAId);
-    expect(mgIds).not.toContain(groupBId);
-
-    const slRes = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/catalog/stop-list',
-      headers: tenant.authed,
-    });
-    expect(slRes.statusCode).toBe(200);
-    const slItemIds = slRes.json<{ items: { itemId: string }[] }>().items.map((i) => i.itemId);
-    expect(slItemIds).toContain(stopItemAId);
-    expect(slItemIds).not.toContain(stopItemBId);
-
-    const noBrandRes = await stack.app.inject({
-      method: 'GET',
-      url: '/v1/catalog/draft-diff',
-      headers: { cookie: tenant.authed.cookie, 'x-tenant-id': tenant.id },
-    });
-    expect(noBrandRes.statusCode).toBe(403);
-  }, 60_000);
+  // A pre-merge test asserted draft-diff / modifier-groups / stop-list
+  // each returned only the requesting sub-label's rows, seeding two labels
+  // inside one tenant to prove it. Deleted, not ported: `GET
+  // /v1/catalog/draft-diff` and `GET /v1/catalog/modifier-groups` are both
+  // `@LocationNeutral()` today — tenant-wide by design, with no per-request
+  // scope left to isolate on (D-03 removed the second dimension these
+  // reads used to filter by). `GET /v1/catalog/stop-list` is still
+  // location-scoped, and that property is already proven by
+  // location-isolation.e2e.spec.ts and stop-list-aggregate.e2e.spec.ts —
+  // not duplicated here. The "no scope context -> 403" case (draft-diff
+  // called with no location/label header) is also gone: draft-diff needs
+  // no such header to begin with now, so it 200s instead of 403 — a real
+  // simplification, not a regression this file needs to keep proving.
 });

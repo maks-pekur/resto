@@ -3,7 +3,7 @@ import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swa
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { Public, RequireActiveTenant } from '../../../../shared/auth';
+import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   CreateOrderInputDto,
@@ -20,16 +20,21 @@ class OrderResponseDto extends createZodDto(OrderResponseSchema) {}
 
 const OrderStatusResponseSchema = z.object({
   status: z.string(),
+  shortNumber: z.number().int().nullable(),
+  orderNumber: z.string(),
   total: z.string(),
   currency: z.string(),
-  orderNumber: z.string(),
-  eta: z.string().datetime({ offset: true }).nullable().optional(),
+  etaAt: z.string().datetime({ offset: true }).nullable(),
+  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  cancelReason: z.string().nullable(),
+  canceledFromStatus: z.string().nullable(),
 });
 type OrderStatusResponse = z.infer<typeof OrderStatusResponseSchema>;
 class OrderStatusResponseDto extends createZodDto(OrderStatusResponseSchema) {}
 
 @ApiTags('ordering')
 @Public()
+@LocationNeutral()
 @Controller('v1/orders')
 export class OrdersController {
   constructor(
@@ -57,10 +62,14 @@ export class OrdersController {
       const snap = await this.getOrder.execute({ orderId: id });
       return {
         status: snap.status,
+        shortNumber: snap.shortNumber,
+        orderNumber: snap.orderNumber,
         total: snap.total,
         currency: snap.currency,
-        orderNumber: snap.orderNumber,
-        eta: snap.scheduledFor ? snap.scheduledFor.toISOString() : null,
+        etaAt: snap.etaAt ? snap.etaAt.toISOString() : null,
+        fulfillmentMode: snap.fulfillmentMode,
+        cancelReason: snap.cancelReason,
+        canceledFromStatus: snap.canceledFromStatus,
       };
     });
   }

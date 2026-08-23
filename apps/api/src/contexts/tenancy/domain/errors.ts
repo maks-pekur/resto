@@ -40,6 +40,13 @@ export class TenantSlugArchivedError extends Error {
   }
 }
 
+export class TenantSetupNotPendingError extends Error {
+  constructor(public readonly tenantId: string) {
+    super(`Tenant "${tenantId}" is not pending setup; onboarding cannot be finalized again.`);
+    this.name = 'TenantSetupNotPendingError';
+  }
+}
+
 export class TenantOffboardingNotAllowedError extends Error {
   constructor(
     public readonly tenantId: string,
@@ -97,6 +104,20 @@ export class TenantSuspensionNotAllowedError extends Error {
   ) {
     super(`Tenant "${tenantId}" cannot be suspended from status "${currentStatus}".`);
     this.name = 'TenantSuspensionNotAllowedError';
+  }
+}
+
+export class LocationNotFoundError extends Error {
+  constructor(public readonly identifier: string) {
+    super(`Location "${identifier}" was not found.`);
+    this.name = 'LocationNotFoundError';
+  }
+}
+
+export class LocationAlreadyArchivedError extends Error {
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" is already archived.`);
+    this.name = 'LocationAlreadyArchivedError';
   }
 }
 

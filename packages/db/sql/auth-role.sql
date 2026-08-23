@@ -19,7 +19,7 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON
   two_factor,
   member,
   invitation,
-  organization_role
+  tenant_role
 TO resto_auth;
 
 -- tenants is BA's "organization" mapping (ADR-0013). SELECT+UPDATE only;
@@ -61,13 +61,13 @@ $$;
 
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'organization_role')
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'tenant_role')
      AND NOT EXISTS (
        SELECT 1 FROM pg_policies
-       WHERE schemaname = 'public' AND tablename = 'organization_role' AND policyname = 'organization_role_resto_auth_full'
+       WHERE schemaname = 'public' AND tablename = 'tenant_role' AND policyname = 'tenant_role_resto_auth_full'
      )
   THEN
-    EXECUTE 'CREATE POLICY organization_role_resto_auth_full ON organization_role FOR ALL TO resto_auth USING (true) WITH CHECK (true)';
+    EXECUTE 'CREATE POLICY tenant_role_resto_auth_full ON tenant_role FOR ALL TO resto_auth USING (true) WITH CHECK (true)';
   END IF;
 END
 $$;

@@ -1,22 +1,21 @@
 import { randomUUID } from 'node:crypto';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FastifyRequest } from 'fastify';
-import { BrandId, Currency, TenantId, TenantSlug } from '@resto/domain';
+import { CountryCodeValue, TenantId, TenantSlug } from '@resto/domain';
 import { getTenantContext } from '@resto/db';
 import type { Env } from '../../../src/config/env.schema';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
-import { TenantAndBrandResolverService } from '../../../src/contexts/tenancy/application/tenant-and-brand-resolver.service';
 import { TenantResolverService } from '../../../src/contexts/tenancy/application/tenant-resolver.service';
 import { TenantContextMiddleware } from '../../../src/shared/tenant-context.middleware';
-import type { BrandRepository, TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
+import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 
 const tenantFor = (slug: string) =>
   Tenant.provision({
     slug: TenantSlug.parse(slug),
     displayName: slug,
-    defaultCurrency: Currency.parse('USD'),
+    country: CountryCodeValue.parse('GB'),
     primaryDomainHostname: `${slug}.menu.resto.app`,
-  });
+  }).toSnapshot();
 
 const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   NODE_ENV: 'production',
@@ -37,7 +36,7 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   RATE_LIMIT_PUBLIC_PER_MIN: 60,
   RATE_LIMIT_INTERNAL_PER_MIN: 10,
   RATE_LIMIT_AUTH_SIGNUP_PER_MIN: 5,
-  RATE_LIMIT_BRAND_SLUG_CHECK_PER_MIN: 30,
+  RATE_LIMIT_TENANT_SLUG_CHECK_PER_MIN: 30,
   RATE_LIMIT_AUTH_RESET_PER_MIN: 5,
   RATE_LIMIT_AUTH_SIGNIN_PER_MIN: 10,
   RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN: 10,
@@ -62,6 +61,7 @@ const buildRepo = (): TenantRepository => ({
   findById: vi.fn(),
   findBySlug: vi.fn().mockResolvedValue(null),
   findByDomainHost: vi.fn().mockResolvedValue(null),
+  findByStripeAccountId: vi.fn().mockResolvedValue(null),
   save: vi.fn(),
   listDomains: vi.fn(),
   eraseTenant: vi.fn(),
@@ -70,25 +70,12 @@ const buildRepo = (): TenantRepository => ({
   listCurrentTenantDomains: vi.fn().mockResolvedValue([]),
 });
 
-const buildBrandRepo = (): BrandRepository => ({
-  findByDomainHost: vi.fn().mockResolvedValue(null),
-  findBySlug: vi.fn().mockResolvedValue(null),
-  findByTenantAndSlug: vi.fn().mockResolvedValue(null),
-  findById: vi.fn().mockResolvedValue(null),
-  listForTenant: vi.fn().mockResolvedValue([]),
-  save: vi.fn(),
-  findActiveSlugsByPrefix: vi.fn().mockResolvedValue([]),
-  findByStripeAccountId: vi.fn().mockResolvedValue(null),
-  updatePaymentConnection: vi.fn().mockResolvedValue(undefined),
-});
-
 const setup = (env: Env, repoOverride?: TenantRepository) => {
   const repo = repoOverride ?? buildRepo();
   const resolver = new TenantResolverService(repo);
-  const brandResolver = new TenantAndBrandResolverService(buildBrandRepo());
   const resolveBySlug = vi.spyOn(resolver, 'resolveBySlug');
   const resolveByHost = vi.spyOn(resolver, 'resolveByHost');
-  const middleware = new TenantContextMiddleware(env, resolver, brandResolver);
+  const middleware = new TenantContextMiddleware(env, resolver);
   return { middleware, resolver, resolveBySlug, resolveByHost };
 };
 
@@ -154,15 +141,15 @@ describe('TenantContextMiddleware — x-tenant-slug header gating', () => {
     expect(resolveByHost).toHaveBeenCalledWith('cafe-b.menu.resto.app');
   });
 
-  it('still resolves via host when no header is present', async () => {
+  it('still resolves via host when no header is present (operator/admin host, not the guest .menu. path)', async () => {
     const repo = buildRepo();
     const cafe = tenantFor('cafe-a');
-    repo.findByDomainHost = vi.fn().mockResolvedValue(cafe);
+    repo.findBySlug = vi.fn().mockResolvedValue(cafe);
     const { middleware, resolveByHost } = setup(baseEnv({ NODE_ENV: 'production' }), repo);
 
-    await middleware.use(reqWith({ host: 'cafe-a.menu.resto.app' }), {} as never, next);
+    await middleware.use(reqWith({ host: 'cafe-a.admin.resto.app' }), {} as never, next);
 
-    expect(resolveByHost).toHaveBeenCalledWith('cafe-a.menu.resto.app');
+    expect(resolveByHost).toHaveBeenCalledWith('cafe-a.admin.resto.app');
     expect(next).toHaveBeenCalledTimes(1);
   });
 
@@ -219,7 +206,7 @@ describe('TenantContextMiddleware — x-tenant-id header (operator routes)', () 
     );
 
     expect(resolveById).toHaveBeenCalledWith(tid);
-    expect(boundTenantId).toBe(cafe.toSnapshot().id);
+    expect(boundTenantId).toBe(cafe.id);
     expect(next).toHaveBeenCalledTimes(1);
   });
 
@@ -243,31 +230,16 @@ describe('TenantContextMiddleware — x-tenant-id header (operator routes)', () 
   });
 
   it('(c) customer-host resolution takes precedence over x-tenant-id', async () => {
-    const customerTenantId = TenantId.parse(randomUUID());
-    const customerBrandId = BrandId.parse(randomUUID());
+    const customerTenant = tenantFor('cafe-a');
     const otherTid = TenantId.parse(randomUUID());
 
-    const brandRepo = buildBrandRepo();
-    brandRepo.findByDomainHost = vi.fn().mockResolvedValue({
-      id: customerBrandId,
-      tenantId: customerTenantId,
-      slug: 'cafe-a',
-      displayName: 'Cafe A',
-      status: 'active',
-      theme: null,
-    });
-
     const repo = buildRepo();
+    repo.findByDomainHost = vi.fn().mockResolvedValue(customerTenant);
     repo.findById = vi.fn().mockResolvedValue(null);
 
     const resolver = new TenantResolverService(repo);
-    const brandResolver = new TenantAndBrandResolverService(brandRepo);
     const resolveById = vi.spyOn(resolver, 'resolveById');
-    const middleware = new TenantContextMiddleware(
-      baseEnv({ NODE_ENV: 'production' }),
-      resolver,
-      brandResolver,
-    );
+    const middleware = new TenantContextMiddleware(baseEnv({ NODE_ENV: 'production' }), resolver);
 
     let boundCtx: ReturnType<typeof getTenantContext>;
     next = vi.fn(() => {
@@ -284,7 +256,7 @@ describe('TenantContextMiddleware — x-tenant-id header (operator routes)', () 
     );
 
     expect(resolveById).not.toHaveBeenCalled();
-    expect(boundCtx?.tenantId).toBe(customerTenantId);
-    expect(boundCtx?.brandId).toBe(customerBrandId);
+    expect(boundCtx?.tenantId).toBe(customerTenant.id);
+    expect(boundCtx?.tenantId).not.toBe(otherTid);
   });
 });

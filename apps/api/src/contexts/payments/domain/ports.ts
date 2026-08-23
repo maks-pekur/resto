@@ -8,7 +8,7 @@ export interface WebhookEvent {
 }
 
 export interface CreateOnboardingAccountInput {
-  readonly brandId: string;
+  readonly tenantId: string;
   readonly displayName: string;
   readonly country?: string;
   readonly defaultCurrency?: string;
@@ -115,11 +115,14 @@ export interface PaymentRefundRow {
   readonly id: string;
   readonly tenantId: TenantId;
   readonly paymentId: string;
-  readonly stripeRefundId: string;
+  readonly stripeRefundId: string | null;
+  readonly refundRequestId: string;
   readonly amount: string;
   readonly reason: string;
   readonly status: string;
+  readonly failureReason: string | null;
   readonly createdAt: Date;
+  readonly updatedAt: Date;
 }
 
 export interface UpsertPaymentInput {
@@ -139,10 +142,18 @@ export interface UpsertPaymentInput {
 export interface UpsertPaymentRefundInput {
   readonly tenantId: TenantId;
   readonly paymentId: string;
-  readonly stripeRefundId: string;
+  readonly stripeRefundId: string | null;
+  readonly refundRequestId: string;
   readonly amount: string;
   readonly reason: string;
   readonly status: string;
+  readonly failureReason?: string | null;
+}
+
+export interface UpdateRefundOutcomeInput {
+  readonly status: 'succeeded' | 'failed';
+  readonly stripeRefundId?: string | null;
+  readonly failureReason?: string | null;
 }
 
 export interface PaymentRepository {
@@ -158,13 +169,29 @@ export interface PaymentRepository {
     stripeRefundId: string,
     tx: RestoTx,
   ): Promise<PaymentRefundRow | null>;
+  findRefundByRequestId(
+    tenantId: TenantId,
+    refundRequestId: string,
+    tx: RestoTx,
+  ): Promise<PaymentRefundRow | null>;
   upsertRefund(input: UpsertPaymentRefundInput, tx: RestoTx): Promise<PaymentRefundRow>;
-  updateRefundStatus(
+  updateRefundOutcome(
+    tenantId: TenantId,
+    refundRequestId: string,
+    outcome: UpdateRefundOutcomeInput,
+    tx: RestoTx,
+  ): Promise<void>;
+  updateRefundStatusByStripeId(
     tenantId: TenantId,
     stripeRefundId: string,
     status: string,
     tx: RestoTx,
   ): Promise<void>;
+  findFailedRefundsForOrders(
+    tenantId: TenantId,
+    orderIds: readonly string[],
+    tx?: RestoTx,
+  ): Promise<readonly (PaymentRefundRow & { orderId: string })[]>;
 }
 
 export const PAYMENT_REPOSITORY = Symbol('PAYMENT_REPOSITORY');

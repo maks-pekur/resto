@@ -1,20 +1,32 @@
-import { Controller, Get, Headers, Inject, NotFoundException, Param, Res } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Headers,
+  Inject,
+  NotFoundException,
+  Param,
+  Req,
+  Res,
+} from '@nestjs/common';
 import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
-import type { FastifyReply } from 'fastify';
+import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { getBrandId, requireTenantContext } from '@resto/db';
 import { MenuItemId, TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
-import { GetMenuAvailabilityService } from '../../application/get-menu-availability.service';
-import { GetMenuItemService } from '../../application/get-menu-item.service';
-import { GetPublishedMenuService } from '../../application/get-published-menu.service';
+import { GetMenuAvailabilityService } from '../../application/availability/get-menu-availability.service';
+import { GetMenuItemService } from '../../application/items/get-menu-item.service';
+import { GetPublishedMenuService } from '../../application/publishing/get-published-menu.service';
 import { MENU_VERSION_PORT, type MenuVersionPort } from '../../domain/ports';
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import { mapCatalogError } from './error-mapping';
-import { Public, RequireActiveTenant } from '../../../../shared/auth';
+import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
+import { ENV_TOKEN } from '../../../../config/config.module';
+import type { Env } from '../../../../config/env.schema';
+import { effectiveHost } from '../../../../shared/effective-host';
+import { TenantResolverService } from '../../../tenancy/application/tenant-resolver.service';
 
 const LocalizedTextSchema = z.record(z.string(), z.string());
 
@@ -89,19 +101,6 @@ const PublishedMenuModifierGroupSchema = z.object({
   options: z.array(PublishedMenuModifierOptionSchema),
 });
 
-const PublishedMenuBrandSchema = z.object({
-  id: z.string().uuid(),
-  slug: z.string(),
-  displayName: z.string(),
-  theme: z
-    .object({
-      logoUrl: z.string().url().nullable(),
-      primaryColor: z.string().nullable(),
-      font: z.string().nullable(),
-    })
-    .nullable(),
-});
-
 const MenuAvailabilitySchema = z.object({
   stoppedItemIds: z.array(z.string().uuid()),
 });
@@ -110,7 +109,6 @@ const PublishedMenuSchema = z.object({
   tenantId: z.string().uuid(),
   version: z.number().int().nonnegative(),
   currency: z.string().regex(/^[A-Z]{3}$/),
-  brand: PublishedMenuBrandSchema.nullable(),
   categories: z.array(PublishedMenuCategorySchema),
   items: z.array(PublishedMenuItemSchema),
   modifierGroups: z.array(PublishedMenuModifierGroupSchema),
@@ -124,12 +122,19 @@ const wrap = wrapWith(mapCatalogError);
 
 /**
  * Customer-facing read path. Tenant is resolved by the global
- * `TenantContextMiddleware` from the request host; absence of a
- * resolved tenant collapses these endpoints to 404 (the qr-menu only
- * makes sense at a tenant subdomain).
+ * `TenantContextMiddleware` from the request host, but that middleware's
+ * fallback chain also resolves plain `<slug>.<domain>` hosts (reserved for
+ * the future public website, D-22) via `resolveByHost`'s generic subdomain
+ * match — a shape distinct from the guest-menu-specific `.menu.` host
+ * `resolveByCustomerHost` requires. Trusting ALS alone would let the guest
+ * menu leak onto that reserved host. Each handler here re-verifies the
+ * REQUEST's own host against `resolveByCustomerHost` directly, independent
+ * of whatever the middleware happened to bind — the only way to guarantee
+ * this controller serves exclusively on the host D-22 assigns it.
  */
 @ApiTags('catalog')
 @Public()
+@LocationNeutral()
 @Controller('v1/menu')
 export class PublicMenuController {
   constructor(
@@ -138,6 +143,8 @@ export class PublicMenuController {
     @Inject(GetMenuAvailabilityService)
     private readonly getAvailability: GetMenuAvailabilityService,
     @Inject(MENU_VERSION_PORT) private readonly menuVersions: MenuVersionPort,
+    @Inject(TenantResolverService) private readonly tenants: TenantResolverService,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   @Get('availability')
@@ -145,11 +152,11 @@ export class PublicMenuController {
   @ApiOkResponse({ type: MenuAvailabilityDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
   async availability(
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<{ stoppedItemIds: string[] } | undefined> {
-    requireTenantOr404();
-    requireBrandOr404();
+    await this.requireGuestTenantOr404(req);
     const { stoppedItemIds, stopVersion } = await wrap(() => this.getAvailability.execute());
     const etag = '"' + stopVersion.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -166,11 +173,11 @@ export class PublicMenuController {
   @ApiOkResponse({ type: PublishedMenuDto })
   @ApiNotFoundResponse({ type: ProblemDetailsDto, description: 'no tenant resolved for host' })
   async menu(
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<PublishedMenu | undefined> {
-    const ctx = requireTenantOr404();
-    requireBrandOr404();
+    const ctx = await this.requireGuestTenantOr404(req);
     const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -188,11 +195,11 @@ export class PublicMenuController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async item(
     @Param('id') id: string,
+    @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<PublishedMenuItem | undefined> {
-    const ctx = requireTenantOr404();
-    requireBrandOr404();
+    const ctx = await this.requireGuestTenantOr404(req);
     const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
@@ -207,18 +214,14 @@ export class PublicMenuController {
       return this.getItem.execute(parsed.data);
     });
   }
+
+  private async requireGuestTenantOr404(
+    req: FastifyRequest,
+  ): Promise<{ readonly tenantId: string }> {
+    const trustProxy = this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0;
+    const host = effectiveHost(req.headers, trustProxy);
+    const resolved = await this.tenants.resolveByCustomerHost(host);
+    if (!resolved) throw new NotFoundException('No tenant resolved for this host.');
+    return { tenantId: resolved.id };
+  }
 }
-
-const requireTenantOr404 = (): { readonly tenantId: string } => {
-  try {
-    return requireTenantContext();
-  } catch {
-    throw new NotFoundException('No tenant resolved for this host.');
-  }
-};
-
-const requireBrandOr404 = (): void => {
-  if (getBrandId() === undefined) {
-    throw new NotFoundException('No brand resolved for this host.');
-  }
-};

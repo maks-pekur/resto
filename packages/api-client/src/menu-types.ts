@@ -65,24 +65,24 @@ export interface MenuCategoryDto {
   sortOrder: number;
 }
 
-export interface MenuBrandThemeDto {
+export interface MenuTenantThemeDto {
   readonly logoUrl: string | null;
   readonly primaryColor: string | null;
   readonly font: string | null;
 }
 
-export interface MenuBrandDto {
+export interface MenuTenantDto {
   readonly id: string;
   readonly slug: string;
   readonly displayName: string;
-  readonly theme: MenuBrandThemeDto | null;
+  readonly theme: MenuTenantThemeDto | null;
 }
 
 export interface MenuDto {
   tenantId: string;
   version: number;
   currency: string;
-  brand: MenuBrandDto | null;
+  tenant: MenuTenantDto | null;
   categories: readonly MenuCategoryDto[];
   items: readonly MenuItemDto[];
   modifierGroups: readonly MenuModifierGroupDto[];

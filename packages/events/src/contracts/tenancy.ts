@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { BrandId, Currency, TenantId, TenantSlug } from '@resto/domain';
+import { Currency, TenantId, TenantSlug } from '@resto/domain';
 import { defineEventContract } from '../envelope';
 
 /**
  * Emitted when a new tenant has been provisioned: the tenant row exists,
- * its Keycloak organization is created, the owner user has a one-time
- * password, and the subdomain is registered. This is the canonical
- * "first event in the system" — the pattern other contexts follow.
+ * the owner user has a one-time password, and the subdomain is
+ * registered. This is the canonical "first event in the system" — the
+ * pattern other contexts follow.
  */
 export const TenantProvisionedV1Payload = z.object({
   tenantId: TenantId,
@@ -92,31 +92,31 @@ export const TenantResumedV1 = defineEventContract({
   payload: TenantResumedV1Payload,
 });
 
-export const BrandPaymentAccountLinkedV1Payload = z.object({
-  brandId: BrandId,
+export const TenantPaymentAccountLinkedV1Payload = z.object({
   tenantId: TenantId,
   stripeAccountId: z.string().min(1).max(255),
   accountType: z.enum(['express', 'standard']),
 });
-export type BrandPaymentAccountLinkedV1Payload = z.infer<typeof BrandPaymentAccountLinkedV1Payload>;
+export type TenantPaymentAccountLinkedV1Payload = z.infer<
+  typeof TenantPaymentAccountLinkedV1Payload
+>;
 
-export const BrandPaymentAccountLinkedV1 = defineEventContract({
-  type: 'tenancy.brand_payment_account_linked.v1',
-  payload: BrandPaymentAccountLinkedV1Payload,
+export const TenantPaymentAccountLinkedV1 = defineEventContract({
+  type: 'tenancy.tenant_payment_account_linked.v1',
+  payload: TenantPaymentAccountLinkedV1Payload,
 });
 
-export const BrandPaymentCapabilitiesAppliedV1Payload = z.object({
-  brandId: BrandId,
+export const TenantPaymentCapabilitiesAppliedV1Payload = z.object({
   tenantId: TenantId,
   chargesEnabled: z.boolean(),
   payoutsEnabled: z.boolean(),
   onboardingStatus: z.enum(['not_started', 'pending', 'complete', 'restricted']),
 });
-export type BrandPaymentCapabilitiesAppliedV1Payload = z.infer<
-  typeof BrandPaymentCapabilitiesAppliedV1Payload
+export type TenantPaymentCapabilitiesAppliedV1Payload = z.infer<
+  typeof TenantPaymentCapabilitiesAppliedV1Payload
 >;
 
-export const BrandPaymentCapabilitiesAppliedV1 = defineEventContract({
-  type: 'tenancy.brand_payment_capabilities_applied.v1',
-  payload: BrandPaymentCapabilitiesAppliedV1Payload,
+export const TenantPaymentCapabilitiesAppliedV1 = defineEventContract({
+  type: 'tenancy.tenant_payment_capabilities_applied.v1',
+  payload: TenantPaymentCapabilitiesAppliedV1Payload,
 });

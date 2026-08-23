@@ -181,7 +181,7 @@ describe('AuthGuard', () => {
     });
     const lookup = buildLookupStub();
     const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
-    const ctx = buildContext({ headers: {}, url: '/v1/me/brands' });
+    const ctx = buildContext({ headers: {}, url: '/v1/me/tenants' });
     await expect(guard.canActivate(ctx)).rejects.toMatchObject({
       response: { code: 'auth.tenant_context_missing' },
     });
@@ -225,5 +225,61 @@ describe('AuthGuard', () => {
     const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
     const ctx = buildContext({ headers: {}, url: '/v1/menu' });
     await expect(guard.canActivate(ctx)).rejects.toBeInstanceOf(NotFoundException);
+  });
+});
+
+describe('AuthGuard.lookupBaseRole (D-15 CSV parsing)', () => {
+  const buildGuardWithRole = (roleValue: string | undefined) => {
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const limitMock = vi.fn().mockResolvedValue(roleValue ? [{ role: roleValue }] : []);
+    const db = {
+      db: {
+        select: vi.fn().mockReturnValue({
+          from: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({ limit: limitMock }),
+          }),
+        }),
+      },
+    };
+    const auth = {
+      api: {
+        getSession: vi.fn().mockResolvedValue({
+          user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
+          session: { activeOrganizationId: 't-1', token: 'tok' },
+        }),
+      },
+    };
+    const lookup: TenantLookupPort = {
+      findBySlug: vi.fn().mockResolvedValue(null),
+      findById: vi
+        .fn()
+        .mockResolvedValue({ id: 't-1', slug: 'demo', displayName: 'D', archivedAt: null }),
+    };
+    return { guard: new AuthGuard(reflector, auth as never, lookup, db as never) };
+  };
+
+  it("resolves 'staff' from CSV 'staff,gm'", async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
+    const { guard } = buildGuardWithRole('staff,gm');
+    const req = { headers: {}, url: '/v1/roles' } as Record<string, unknown>;
+    await guard.canActivate(buildContext(req));
+    expect((req.principal as { baseRole?: string }).baseRole).toBe('staff');
+  });
+
+  it("resolves 'admin' from plain 'admin'", async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
+    const { guard } = buildGuardWithRole('admin');
+    const req = { headers: {}, url: '/v1/roles' } as Record<string, unknown>;
+    await guard.canActivate(buildContext(req));
+    expect((req.principal as { baseRole?: string }).baseRole).toBe('admin');
+  });
+
+  it('returns undefined baseRole for a custom-only slug', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
+    const { guard } = buildGuardWithRole('custom-manager');
+    const req = { headers: {}, url: '/v1/roles' } as Record<string, unknown>;
+    await guard.canActivate(buildContext(req));
+    expect((req.principal as { baseRole?: string }).baseRole).toBeUndefined();
   });
 });

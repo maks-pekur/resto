@@ -11,7 +11,7 @@ import { randomUUID } from 'node:crypto';
 const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot => ({
   id: OrderId.parse(randomUUID()),
   tenantId: TenantId.parse(randomUUID()),
-  brandId: randomUUID(),
+  locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: '20260627-ABCDE',
   status: 'created',
@@ -28,6 +28,21 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   total: '25.00',
   currency: Currency.parse('EUR'),
   scheduledFor: null,
+  shortNumber: 1,
+  channel: 'site',
+  acceptedAt: null,
+  preparingAt: null,
+  readyAt: null,
+  completedAt: null,
+  canceledAt: null,
+  acceptedByUserId: null,
+  canceledByUserId: null,
+  cancelReason: null,
+  cancelNote: null,
+  canceledFromStatus: null,
+  etaAt: null,
+  marketingConsent: false,
+  marketingConsentAt: null,
   createdAt: new Date(),
   updatedAt: new Date(),
   ...overrides,
@@ -47,20 +62,37 @@ const buildController = () => {
   return { controller, getOrderService, createOrderService };
 };
 
+const FROZEN_STATUS_RESPONSE_KEYS = [
+  'status',
+  'shortNumber',
+  'orderNumber',
+  'total',
+  'currency',
+  'etaAt',
+  'fulfillmentMode',
+  'cancelReason',
+  'canceledFromStatus',
+].sort();
+
 describe('OrdersController GET /:id/status', () => {
-  it('returns status, total, currency, and orderNumber for a found order', async () => {
+  it('returns exactly the frozen nine-field contract for a found order', async () => {
     const { controller, getOrderService } = buildController();
     const snap = makeOrderSnap({ status: 'requires_action' });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
+    expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
     expect(result).toEqual({
       status: 'requires_action',
+      shortNumber: 1,
+      orderNumber: '20260627-ABCDE',
       total: '25.00',
       currency: 'EUR',
-      orderNumber: '20260627-ABCDE',
-      eta: null,
+      etaAt: null,
+      fulfillmentMode: 'dine_in',
+      cancelReason: null,
+      canceledFromStatus: null,
     });
   });
 
@@ -94,14 +126,57 @@ describe('OrdersController GET /:id/status', () => {
     await expect(controller.getStatus('missing-order-id')).rejects.toThrow(NotFoundException);
   });
 
-  it('includes eta when scheduledFor is set', async () => {
+  it('returns etaAt sourced from snap.etaAt, never from scheduledFor', async () => {
     const { controller, getOrderService } = buildController();
-    const scheduledFor = new Date('2026-06-28T18:00:00Z');
-    const snap = makeOrderSnap({ scheduledFor });
+    const etaAt = new Date('2026-06-28T18:00:00Z');
+    const snap = makeOrderSnap({ etaAt });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
-    expect(result.eta).toEqual(scheduledFor.toISOString());
+    expect(result.etaAt).toEqual(etaAt.toISOString());
+  });
+
+  it('D-15: returns etaAt null when scheduledFor is set but etaAt is not -- proves the two are not conflated', async () => {
+    const { controller, getOrderService } = buildController();
+    const scheduledFor = new Date('2026-06-28T18:00:00Z');
+    const snap = makeOrderSnap({ scheduledFor, etaAt: null });
+    vi.mocked(getOrderService.execute).mockResolvedValue(snap);
+
+    const result = await controller.getStatus(snap.id);
+
+    expect(result.etaAt).toBeNull();
+  });
+
+  it('returns cancelReason and canceledFromStatus for a canceled order', async () => {
+    const { controller, getOrderService } = buildController();
+    const snap = makeOrderSnap({
+      status: 'canceled',
+      cancelReason: 'kitchen_out_of_stock',
+      canceledFromStatus: 'paid',
+    });
+    vi.mocked(getOrderService.execute).mockResolvedValue(snap);
+
+    const result = await controller.getStatus(snap.id);
+
+    expect(result.cancelReason).toBe('kitchen_out_of_stock');
+    expect(result.canceledFromStatus).toBe('paid');
+  });
+
+  it('never leaks guest PII or internal operator identities', async () => {
+    const { controller, getOrderService } = buildController();
+    const snap = makeOrderSnap({
+      customerName: 'Guest Name',
+      customerPhone: '+15555550100',
+      customerEmail: 'guest@example.com',
+      cancelNote: 'internal operator note',
+      acceptedByUserId: 'user-1',
+      canceledByUserId: 'user-2',
+    });
+    vi.mocked(getOrderService.execute).mockResolvedValue(snap);
+
+    const result = await controller.getStatus(snap.id);
+
+    expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
   });
 });

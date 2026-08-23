@@ -1,5 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Inject } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { and, eq } from 'drizzle-orm';
+import { member as memberTable } from '@resto/db/schema';
+import { LocationNeutral } from '../../../../shared/auth';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { computeEffectivePermissions } from '@resto/domain';
+import { listActiveCustomRoles } from '../../application/roles/list-active-custom-roles';
 import { CurrentPrincipal } from './decorators/current-principal.decorator';
 import type { Principal } from '../../domain/principal';
 
@@ -9,32 +16,22 @@ interface MeResponse {
   email?: string;
   tenantId?: string;
   baseRole?: 'owner' | 'admin' | 'staff';
-  /**
-   * AUTH-07 (Phase 03 / Plan 04): present only for `kind: 'operator'`.
-   * The admin /dashboard/settings page reads this to render the 2FA
-   * enable-CTA vs already-enabled affordance.
-   */
   twoFactorEnabled?: boolean;
+  permissions: Record<string, string[]>;
 }
 
-/**
- * Minimal "who am I" endpoint. Behind default-deny AuthGuard but with no
- * @Permissions metadata — any authenticated principal can hit it.
- *
- * Returns a tiny projection of the principal for smoke testing AND for
- * the admin web client to verify session validity on first paint.
- *
- * Response shape is a discriminated union (operator/customer/anonymous);
- * not modeled as a `createZodDto` because nestjs-zod's bridge requires
- * an object schema. The endpoint is documented as a plain JSON return
- * and the admin client narrows by `kind`.
- */
 @ApiTags('identity')
+@LocationNeutral()
 @Controller('/v1/me')
 export class MeController {
+  constructor(@Inject(AUTH_DRIZZLE_TOKEN) private readonly authDb: AuthDrizzle) {}
+
   @Get()
-  me(@CurrentPrincipal() actor: Principal): MeResponse {
+  async me(@CurrentPrincipal() actor: Principal): Promise<MeResponse> {
     if (actor.kind === 'operator') {
+      const permissions = actor.tenantId
+        ? await this.resolvePermissions(actor.userId, actor.tenantId)
+        : {};
       return {
         kind: actor.kind,
         userId: actor.userId,
@@ -44,6 +41,7 @@ export class MeController {
         ...(typeof actor.twoFactorEnabled === 'boolean'
           ? { twoFactorEnabled: actor.twoFactorEnabled }
           : {}),
+        permissions,
       };
     }
     if (actor.kind === 'customer') {
@@ -51,8 +49,33 @@ export class MeController {
         kind: actor.kind,
         userId: actor.userId,
         tenantId: actor.tenantId,
+        permissions: {},
       };
     }
-    return { kind: 'anonymous' };
+    return { kind: 'anonymous', permissions: {} };
+  }
+
+  private async resolvePermissions(
+    userId: string,
+    tenantId: string,
+  ): Promise<Record<string, string[]>> {
+    const rows = await this.authDb.db
+      .select({ role: memberTable.role })
+      .from(memberTable)
+      .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
+      .limit(1);
+    const memberRoleCsv = rows[0]?.role;
+    if (!memberRoleCsv) return {};
+
+    const activeRoles = await listActiveCustomRoles(this.authDb, tenantId);
+    const customRoleLookup = (slug: string): Record<string, string[]> | null =>
+      activeRoles.find((r) => r.role === slug)?.permission ?? null;
+
+    const effective = computeEffectivePermissions(memberRoleCsv, customRoleLookup);
+    const result: Record<string, string[]> = {};
+    for (const [resource, actions] of Object.entries(effective)) {
+      result[resource] = [...actions];
+    }
+    return result;
   }
 }

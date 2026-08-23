@@ -47,15 +47,15 @@ export const MenuView = ({
   return (
     <main className="menu">
       <header className="menu__header">
-        <div className="menu__brand">
-          {menu.brand?.theme?.logoUrl ? (
+        <div className="menu__tenant">
+          {menu.tenant?.theme?.logoUrl ? (
             <img
               className="menu__logo"
-              src={menu.brand.theme.logoUrl}
-              alt={menu.brand.displayName}
+              src={menu.tenant.theme.logoUrl}
+              alt={menu.tenant.displayName}
             />
           ) : null}
-          <h1 className="menu__title">{menu.brand ? menu.brand.displayName : t('menu.title')}</h1>
+          <h1 className="menu__title">{menu.tenant ? menu.tenant.displayName : t('menu.title')}</h1>
         </div>
         <div className="menu__actions">
           <LocaleSwitcher />

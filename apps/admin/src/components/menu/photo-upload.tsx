@@ -12,7 +12,6 @@ const MAX_SIZE_BYTES = 5 * 1024 * 1024;
 const PUT_TIMEOUT_MS = 60_000;
 
 export interface PhotoUploadProps {
-  readonly brandSlug: string;
   readonly itemId: string;
   readonly currentS3Key: string | null;
   readonly currentPhotoUrl?: string | null;
@@ -26,7 +25,6 @@ type UploadState =
   | { readonly kind: 'error'; readonly message: string };
 
 export function PhotoUpload({
-  brandSlug,
   itemId: _itemId,
   currentS3Key,
   currentPhotoUrl,
@@ -49,7 +47,7 @@ export function PhotoUpload({
   }, [previewUrl]);
 
   const urlMutation = useMutation({
-    mutationFn: () => getPhotoUploadUrl(brandSlug, _itemId),
+    mutationFn: () => getPhotoUploadUrl(_itemId),
   });
 
   const handleFile = async (file: File): Promise<void> => {
@@ -60,7 +58,7 @@ export function PhotoUpload({
     setState({ kind: 'requesting' });
     const urlRes = await urlMutation.mutateAsync();
     if (!urlRes.ok || !urlRes.data) {
-      setState({ kind: 'error', message: String(urlRes.status) });
+      setState({ kind: 'error', message: t('photoUploadFailed') });
       return;
     }
     setState({ kind: 'uploading' });

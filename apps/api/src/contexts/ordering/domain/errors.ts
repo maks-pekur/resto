@@ -61,6 +61,22 @@ export class OrderModifierSelectionInvalidError extends Error {
   }
 }
 
+export class InvalidCancelReasonError extends Error {
+  readonly kind = 'InvalidCancelReasonError' as const;
+  constructor(public readonly reasonCode: string) {
+    super(`Cancel reason code "${reasonCode}" is not one of the canonical reason codes.`);
+    this.name = 'InvalidCancelReasonError';
+  }
+}
+
+export class InvalidPrepMinutesError extends Error {
+  readonly kind = 'InvalidPrepMinutesError' as const;
+  constructor(public readonly prepMinutes: number) {
+    super(`Prep time "${prepMinutes}" must be an integer between 5 and 180 minutes.`);
+    this.name = 'InvalidPrepMinutesError';
+  }
+}
+
 export class RefundExceedsCapturedError extends Error {
   readonly kind = 'RefundExceedsCapturedError' as const;
   constructor(
@@ -85,4 +101,6 @@ export type OrderDomainError =
   | OrderItemNotOrderableError
   | OrderModifierNotAvailableError
   | OrderModifierSelectionInvalidError
+  | InvalidCancelReasonError
+  | InvalidPrepMinutesError
   | RefundExceedsCapturedError;

@@ -21,13 +21,13 @@ import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
-import { BootstrapOwnerService } from '../../application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../application/signup/bootstrap-owner.service';
 import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
 } from '../../application/ports/tenant-lookup.port';
 import { TenantNotFoundForBootstrapError } from '../../domain/bootstrap-errors';
-import { Public } from '../../../../shared/auth';
+import { LocationNeutral, Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { mapIdentityError } from './error-mapping';
 
@@ -42,7 +42,6 @@ class BootstrapOwnerInputDto extends createZodDto(BootstrapOwnerInputSchema) {}
 const BootstrapOwnerResponseSchema = z.object({
   tenantId: z.string().uuid(),
   userId: z.string(),
-  organizationId: z.string().uuid(),
   email: z.string().email(),
   requiresPasswordChange: z.boolean(),
 });
@@ -67,6 +66,7 @@ const wrap = wrapWith(mapIdentityError);
  */
 @ApiTags('identity')
 @Public()
+@LocationNeutral()
 @UseGuards(InternalTokenGuard)
 @Controller('internal/v1/tenants')
 export class InternalBootstrapController {

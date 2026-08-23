@@ -1,5 +1,14 @@
 import { sql } from 'drizzle-orm';
-import { boolean, check, index, pgTable, text, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  boolean,
+  check,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { citext } from './_types';
 import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
 
@@ -9,6 +18,14 @@ import { pkUuid, tenantIdColumn, timestampsColumns } from './_columns';
  * `tenants` is *not* tenant-scoped data per se: each row IS a tenant. RLS
  * policy on this table restricts a tenant context to seeing only its own
  * row; system context sees all.
+ *
+ * D-01/D-04 (phase 10.2): `brands` has been merged into this table — a
+ * restaurant is one organization, not a tenant with a separate brand
+ * dimension underneath it. Every column below tagged "from brands" was
+ * moved here verbatim; the five columns that existed on both tables
+ * (`slug`, `displayName`, `status`, `locale`, `defaultCurrency`) kept the
+ * stricter `tenants` definition (NOT NULL + defaults) since every writer
+ * already supplied them.
  */
 export const tenants = pgTable(
   'tenants',
@@ -19,6 +36,28 @@ export const tenants = pgTable(
     status: text('status').notNull().default('active'),
     locale: text('locale').notNull().default('en'),
     defaultCurrency: text('default_currency').notNull().default('USD'),
+    /**
+     * D-34: collected at signup, applied to the tenant at
+     * onboarding. NOT NULL — D-12 gives a database reset, so there are no
+     * legacy rows to backfill, and a nullable column would let a
+     * provisioning path silently create a market-less tenant whose
+     * currency/locale cannot be derived.
+     */
+    country: text('country').notNull(),
+    // --- from brands (D-04) ---
+    theme: jsonb('theme').$type<Record<string, unknown> | null>(),
+    legalName: text('legal_name'),
+    legalForm: text('legal_form'),
+    taxId: text('tax_id'),
+    stripeAccountId: text('stripe_account_id'),
+    paymentProvider: text('payment_provider').notNull().default('stripe'),
+    accountType: text('account_type'),
+    stripeChargesEnabled: boolean('stripe_charges_enabled').notNull().default(false),
+    stripePayoutsEnabled: boolean('stripe_payouts_enabled').notNull().default(false),
+    stripeOnboardingStatus: text('stripe_onboarding_status').notNull().default('not_started'),
+    stripeRequirementsDue: jsonb('stripe_requirements_due').$type<string[] | null>(),
+    fiscalizationConfig: jsonb('fiscalization_config').$type<Record<string, unknown>>(),
+    // --- unchanged ---
     offboardingScheduledAt: timestamp('offboarding_scheduled_at', {
       withTimezone: true,
       mode: 'date',
@@ -43,11 +82,33 @@ export const tenants = pgTable(
     uniqueIndex('tenants_slug_uq').on(table.slug),
     check(
       'tenants_status_chk',
-      sql`${table.status} IN ('active', 'suspended', 'archived', 'pending_offboarding', 'erased')`,
+      sql`${table.status} IN ('pending_setup', 'active', 'suspended', 'archived', 'pending_offboarding', 'erased')`,
     ),
     check('tenants_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$'`),
     check('tenants_currency_format_chk', sql`${table.defaultCurrency} ~ '^[A-Z]{3}$'`),
     check('tenants_locale_format_chk', sql`${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`),
+    check('tenants_country_chk', sql`${table.country} IN ('UA', 'GB', 'ES')`),
+    // --- from brands (D-04) ---
+    check(
+      'tenants_legal_form_chk',
+      sql`${table.legalForm} IS NULL OR ${table.legalForm} IN ('IP','OOO','LLC','SOLE_PROP','OTHER')`,
+    ),
+    check('tenants_payment_provider_chk', sql`${table.paymentProvider} IN ('stripe')`),
+    check(
+      'tenants_account_type_chk',
+      sql`${table.accountType} IS NULL OR ${table.accountType} IN ('express', 'standard')`,
+    ),
+    check(
+      'tenants_stripe_onboarding_status_chk',
+      sql`${table.stripeOnboardingStatus} IN ('not_started', 'pending', 'complete', 'restricted')`,
+    ),
+    // NOTE (D-04): the brands table's former per-tenant case-insensitive
+    // unique-display-name index is deliberately NOT ported. Post-merge
+    // there is no parent entity for a tenant to be scoped
+    // within — the only faithful translation would be a GLOBAL unique
+    // display name, which would forbid two unrelated restaurants both
+    // being called "Pizzeria". `tenants_slug_uq` remains the global
+    // uniqueness guarantee.
   ],
 );
 

@@ -1,27 +1,34 @@
 import { Inject, Injectable, type NestMiddleware } from '@nestjs/common';
 import { runInTenantContext, type TenantContext } from '@resto/db';
-import { TenantId } from '@resto/domain';
+import { LocationId } from '@resto/domain';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { ENV_TOKEN } from '../config/config.module';
 import type { Env } from '../config/env.schema';
 import { constantTimeStringEqual } from './api/constant-time-equal';
 import { effectiveHost } from './effective-host';
-import { TenantAndBrandResolverService } from '../contexts/tenancy/application/tenant-and-brand-resolver.service';
 import { TenantResolverService } from '../contexts/tenancy/application/tenant-resolver.service';
 
 const HEADER_TENANT = 'x-tenant-slug';
 const HEADER_TENANT_ID = 'x-tenant-id';
-const HEADER_BRAND = 'x-brand-slug';
+const HEADER_LOCATION = 'x-location-id';
+const BETTER_AUTH_PATH_PREFIX = '/api/auth';
+
+// `req.url` is rewritten to `/` by the Fastify middleware-compat layer
+// `@fastify/middie` rewrites `req.url` to `/` before user middleware runs.
+const isBetterAuthRoute = (req: FastifyRequest['raw']): boolean => {
+  const path = (req as unknown as { originalUrl?: string }).originalUrl ?? req.url ?? '';
+  return path.startsWith(BETTER_AUTH_PATH_PREFIX);
+};
 
 /**
- * Resolve the tenant (and brand, when available) for an inbound request
- * and bind to AsyncLocalStorage so the tenant-aware DB client picks it
- * up without any per-call wiring.
+ * Resolve the tenant for an inbound request and bind to AsyncLocalStorage
+ * so the tenant-aware DB client picks it up without any per-call wiring.
  *
- * Resolution is delegated to `TenantResolverService` (tenant-only path)
- * and `TenantAndBrandResolverService` (customer-facing brand path,
- * operator-side X-Brand-Slug header). Override / dev fallback handling
- * stays here because it is a transport concern.
+ * Resolution is delegated to `TenantResolverService` — its
+ * `resolveByCustomerHost` covers the guest-menu host (D-22's `.menu.`
+ * branch) and its other methods cover the operator-side header/host
+ * paths. Override / dev fallback handling stays here because it is a
+ * transport concern.
  *
  * Health endpoints are intentionally tenant-less and run before this
  * middleware (route exclusion in `app.module.ts`). When no tenant
@@ -33,8 +40,6 @@ export class TenantContextMiddleware implements NestMiddleware {
   constructor(
     @Inject(ENV_TOKEN) private readonly env: Env,
     @Inject(TenantResolverService) private readonly tenants: TenantResolverService,
-    @Inject(TenantAndBrandResolverService)
-    private readonly brands: TenantAndBrandResolverService,
   ) {}
 
   async use(
@@ -42,6 +47,10 @@ export class TenantContextMiddleware implements NestMiddleware {
     _res: FastifyReply['raw'],
     next: () => void,
   ): Promise<void> {
+    if (isBetterAuthRoute(req)) {
+      next();
+      return;
+    }
     const context = await this.resolveContext(req);
     if (!context) {
       next();
@@ -56,22 +65,25 @@ export class TenantContextMiddleware implements NestMiddleware {
   private async resolveContext(req: FastifyRequest['raw']): Promise<TenantContext | null> {
     const trustProxy = this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0;
     const host = effectiveHost(req.headers, trustProxy);
+    const locationId = this.resolveLocationHeader(req);
 
-    const customer = await this.brands.resolveByCustomerHost(host);
+    const customer = await this.tenants.resolveByCustomerHost(host);
     if (customer) {
-      return { tenantId: customer.tenantId, brandId: customer.brandId };
+      return { tenantId: customer.id, ...(locationId ? { locationId } : {}) };
     }
 
     const tenantId = await this.resolveTenantOnly(req);
     if (!tenantId) return null;
 
-    const brandHeader = req.headers[HEADER_BRAND];
-    if (typeof brandHeader === 'string' && brandHeader.length > 0) {
-      const brand = await this.brands.resolveBrandBySlug(TenantId.parse(tenantId), brandHeader);
-      if (brand) return { tenantId, brandId: brand.id };
-    }
+    return { tenantId, ...(locationId ? { locationId } : {}) };
+  }
 
-    return { tenantId };
+  // T-084-09: header is a client-echoed hint, not a trust boundary — the
+  // per-request LocationScopeGuard cross-check (plan 05) is the real gate.
+  private resolveLocationHeader(req: FastifyRequest['raw']): string | undefined {
+    const header = req.headers[HEADER_LOCATION];
+    if (typeof header !== 'string' || header.length === 0) return undefined;
+    return LocationId.safeParse(header).success ? header : undefined;
   }
 
   private async resolveTenantOnly(req: FastifyRequest['raw']): Promise<string | undefined> {

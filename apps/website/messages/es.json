@@ -1,0 +1,88 @@
+{
+  "cart": {
+    "empty": "Tu carrito está vacío",
+    "emptyBody": "Explora el menú y añade platos para empezar.",
+    "triggerEmpty": "Tu carrito está vacío",
+    "triggerItems": "{n} artículo",
+    "triggerItemsPlural": "{n} artículos",
+    "addToCart": "Añadir al carrito",
+    "goToCheckout": "Ir al pago",
+    "removeItem": "Eliminar artículo",
+    "clearCart": "Vaciar carrito",
+    "clearCartHeading": "¿Vaciar tu carrito?",
+    "clearCartBody": "Se eliminarán todos los artículos.",
+    "clearCartConfirm": "Vaciar carrito",
+    "clearCartCancel": "Mantener artículos",
+    "removedFromCart": "Eliminado del carrito",
+    "undo": "Deshacer",
+    "addedToCart": "Añadido al carrito"
+  },
+  "menu": {
+    "emptyHeading": "Menú no disponible",
+    "emptyBody": "Este restaurante todavía no ha publicado su menú. Vuelve a comprobarlo pronto.",
+    "unavailableToday": "No disponible hoy"
+  },
+  "checkout": {
+    "placeOrder": "Realizar pedido",
+    "addressPlaceholder": "Introduce tu dirección de entrega",
+    "zoneValid": "Repartimos en esta zona",
+    "zoneInvalid": "Todavía no repartimos en esta dirección. Prueba con la recogida en local.",
+    "promoPlaceholder": "Código promocional",
+    "promoApply": "Aplicar",
+    "promoHelper": "Los códigos promocionales estarán disponibles próximamente.",
+    "orderTimeAsap": "Lo antes posible",
+    "orderTimeScheduled": "Programar para más tarde",
+    "contactNamePlaceholder": "Tu nombre",
+    "contactPhonePlaceholder": "Número de teléfono",
+    "paymentComingSoon": "El procesamiento de pagos estará disponible próximamente",
+    "deliveryMode": "Entrega a domicilio",
+    "pickupMode": "Recogida",
+    "modePrompt": "¿Cómo quieres recibir tu pedido?",
+    "consent": {
+      "label": "Enviarme novedades y promociones del restaurante",
+      "hint": "Opcional. Te enviaremos actualizaciones del estado del pedido en cualquier caso."
+    },
+    "status": {
+      "stepPaid": "Pagado",
+      "stepAccepted": "Aceptado",
+      "stepPreparing": "Preparando",
+      "stepReadyPickup": "Listo para recoger",
+      "stepReadyDineIn": "Listo — lo llevaremos a tu mesa",
+      "waitingAccept": "El restaurante aceptará tu pedido en breve",
+      "etaLabel": "Estará listo a las {time}",
+      "updating": "Actualizando estado…",
+      "updateFailed": "No se pudo actualizar el estado.",
+      "retry": "Reintentar",
+      "declinedTitle": "El restaurante no pudo aceptar tu pedido",
+      "canceledTitle": "El pedido fue cancelado por el restaurante",
+      "refundLine": "Se ha emitido un reembolso de {amount} — llegará a tu tarjeta en 5–10 días hábiles",
+      "backToMenu": "Volver al menú",
+      "orderNumberLabel": "Pedido n.º {n}",
+      "awaitingPayment": "Confirmando el pago…",
+      "paymentFailedTitle": "El pago ha fallado",
+      "paymentFailedRetry": "Inténtalo de nuevo",
+      "reasons": {
+        "kitchenOutOfStock": "este plato está agotado en este momento",
+        "kitchenTooBusy": "la cocina no puede asumir el volumen de pedidos ahora mismo",
+        "guestRequested": "a petición tuya",
+        "guestNoShow": "no pudimos contactar contigo",
+        "paymentIssue": "hubo un problema con el pago",
+        "duplicateOrder": "este es un pedido duplicado",
+        "other": "por motivos técnicos"
+      }
+    }
+  },
+  "content": {
+    "aboutHeading": "Sobre {restaurantName}",
+    "deliveryHeading": "Información de entrega",
+    "contactHeading": "Contacto",
+    "faqHeading": "Preguntas frecuentes"
+  },
+  "errors": {
+    "tenantNotFound": "Restaurante no encontrado",
+    "tenantNotFoundBody": "Este restaurante todavía no está en RestOS. Si seguiste un enlace, puede que haya cambiado.",
+    "tenantSuspended": "Este restaurante no está disponible temporalmente.",
+    "errorBoundaryHeading": "Algo salió mal",
+    "errorBoundaryBody": "Estamos teniendo problemas para cargar el menú. Intenta actualizar la página."
+  }
+}

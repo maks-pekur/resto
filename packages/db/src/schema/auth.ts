@@ -1,4 +1,5 @@
 import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
 
 export const user = pgTable('user', {
@@ -29,7 +30,8 @@ export const session = pgTable('session', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
-  activeOrganizationId: text('active_organization_id'),
+  activeTenantId: text('active_tenant_id'),
+  activeLocationId: text('active_location_id'),
 });
 
 export const account = pgTable('account', {
@@ -64,15 +66,16 @@ export const verification = pgTable('verification', {
     .notNull(),
 });
 
-export const organizationRole = pgTable('organization_role', {
+export const tenantRole = pgTable('tenant_role', {
   id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
+  tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   role: text('role').notNull(),
   permission: text('permission').notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').$onUpdate(() => /* @__PURE__ */ new Date()),
+  archivedAt: timestamp('archived_at', { withTimezone: true }),
 });
 
 /**
@@ -84,21 +87,25 @@ export const organizationRole = pgTable('organization_role', {
  */
 export const organization = tenants;
 
-export const member = pgTable('member', {
-  id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
-    .notNull()
-    .references(() => tenants.id, { onDelete: 'cascade' }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id, { onDelete: 'cascade' }),
-  role: text('role').default('member').notNull(),
-  createdAt: timestamp('created_at').notNull(),
-});
+export const member = pgTable(
+  'member',
+  {
+    id: text('id').primaryKey(),
+    tenantId: uuid('tenant_id')
+      .notNull()
+      .references(() => tenants.id, { onDelete: 'cascade' }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    role: text('role').default('member').notNull(),
+    createdAt: timestamp('created_at').notNull(),
+  },
+  (table) => [tenantParentUniqueIndex('member', { id: table.id, tenantId: table.tenantId })],
+);
 
 export const invitation = pgTable('invitation', {
   id: text('id').primaryKey(),
-  organizationId: uuid('organization_id')
+  tenantId: uuid('tenant_id')
     .notNull()
     .references(() => tenants.id, { onDelete: 'cascade' }),
   email: text('email').notNull(),
@@ -108,6 +115,7 @@ export const invitation = pgTable('invitation', {
   inviterId: text('inviter_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
 export const twoFactor = pgTable('two_factor', {

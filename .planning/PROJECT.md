@@ -55,6 +55,13 @@ If everything else fails (no loyalty, no marketing automation, no advanced analy
 - ✓ `withoutTenant` bypass allowlist with audit logging
 - ✓ Hard-delete forbidden (no DELETE privilege on `resto_app`); soft-delete via `archived_at` / `status = 'archived'`
 
+**Brand-scoped access control (Phase 08.2 — 2026-07-04):**
+
+- ✓ Brand-first admin routing — every page under `/{brand}/...` (no `/dashboard`), `/` redirects to the session-pinned active brand (deterministic-first fallback, no picker), legacy `/dashboard/*` redirect shim with protocol-relative open-redirect guard
+- ✓ Default-DENY member brand-scope — an empty `member_brand_scope` now grants nothing to non-owners; `BrandScopeGuard` runs default-on (`@BrandNeutral` opt-out, 17-controller audit doc) with D-10 session-pin reconciliation (existence-hiding 404)
+- ✓ Server-session active brand — `session.activeBrandId` (`input:false`, anti-tamper), `POST /v1/me/set-active-brand` (owner free-switch / non-owner scoped re-pin), deterministic non-null initial pin for multi-brand non-owners
+- ✓ Brand-level Postgres RLS — `app_bind_brand` GUC + RESTRICTIVE `*_brand_iso` policies on 9 menu tables + `orders` (migrations 0058/0060/0061) + boot preflight; payments/refunds brand-isolation is app-layer-only (BrandScopeGuard) — documented accepted debt
+
 **Catalog:**
 
 - ✓ Menu items, categories, modifier groups, item sizes in Drizzle schema — iiko-aligned nomenclature (renamed from `menu_modifiers`/`menu_variants` in Phase 4a)
@@ -233,4 +240,4 @@ This document evolves at phase transitions and milestone boundaries.
 
 ---
 
-_Last updated: 2026-05-31 — Phase 04a (Catalog Schema + API redesign) shipped; verification 19/19 must_haves; iiko nomenclature aligned (sizes, modifier_groups), photos/БЖУ/source/stop-list/slug-aliases/delayed-publish/Redis-fallback all wired; OpenAPI drift-check on CI_
+_Last updated: 2026-08-10 — Phase 08.5 (Owner location filter UX — URL-param + all-aggregate) shipped; verification 19/19 decisions (D-01..D-19), both persona BLOCKs satisfied (backend owner-only gate + guard-untouched), verified by executing the suites live incl. a real-browser all-mode smoke. Owner location selection is now a client-side `?location=all|<id>` URL filter with owner-only backend aggregate endpoints (closes the 08.4 owner-brand-global stop-list gap); staff stay server-pinned per 08.4. Code review clean on the BFLA/BOLA core; 6 advisory Warning-level findings tracked in 08.5-REVIEW.md. Next: Phase 10 (admin order intake)._

@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Route as authLayoutRoute } from './_layout';
-import { VITE_API_ORIGIN } from '@/env';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,7 +34,7 @@ function ForgotPasswordPage() {
   const onSubmit = async (data: ForgotPasswordForm) => {
     setError(null);
     try {
-      const res = await fetch(`${VITE_API_ORIGIN}/api/auth/request-password-reset`, {
+      const res = await fetch('/api/auth/request-password-reset', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         credentials: 'include',

@@ -18,7 +18,7 @@ describe('fetchMenuPublic', () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () => Promise.resolve({ brand: { slug: 'cafe-demo' }, items: [] }),
+      json: () => Promise.resolve({ tenant: { slug: 'cafe-demo' }, items: [] }),
     });
     vi.stubGlobal('fetch', fetchMock);
 

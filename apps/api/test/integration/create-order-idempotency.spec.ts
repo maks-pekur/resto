@@ -10,7 +10,9 @@ import {
   type DbStack,
 } from '../e2e/helpers/with-db-stack';
 import { OrderDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-drizzle.repository';
+import { OrderSequenceDrizzleRepository } from '../../src/contexts/ordering/infrastructure/order-sequence-drizzle.repository';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
+import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
 import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
 
@@ -74,6 +76,8 @@ const makeCartInput = (
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),
+  channel: 'site',
+  marketingConsent: false,
   ...overrides,
 });
 
@@ -84,19 +88,19 @@ suite('CreateOrderService — idempotency', () => {
 
   const tenantIdA = randomUUID();
   const tenantIdB = randomUUID();
-  const brandA = randomUUID();
-  const brandB = randomUUID();
 
   const inTenantA = <T>(op: () => Promise<T>): Promise<T> =>
-    runInTenantContext({ tenantId: tenantIdA, brandId: brandA }, op);
+    runInTenantContext({ tenantId: tenantIdA }, op);
 
   const inTenantB = <T>(op: () => Promise<T>): Promise<T> =>
-    runInTenantContext({ tenantId: tenantIdB, brandId: brandB }, op);
+    runInTenantContext({ tenantId: tenantIdB }, op);
 
   beforeAll(async () => {
     stack = await startDbStack();
     repo = new OrderDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo, pricing);
+    const defaultLocation = new DefaultLocationResolverService(stack.db);
+    const orderSequence = new OrderSequenceDrizzleRepository(stack.db);
+    service = new CreateOrderService(repo, pricing, orderSequence, defaultLocation, stack.db);
 
     await stack.db.withoutTenant('seed idempotency spec fixtures', async (tx) => {
       await tx.insert(schema.tenants).values([
@@ -105,6 +109,7 @@ suite('CreateOrderService — idempotency', () => {
           slug: 'idem-tenant-a',
           displayName: 'Idem Tenant A',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
         {
@@ -112,12 +117,13 @@ suite('CreateOrderService — idempotency', () => {
           slug: 'idem-tenant-b',
           displayName: 'Idem Tenant B',
           locale: 'en',
+          country: 'GB',
           defaultCurrency: 'USD',
         },
       ]);
-      await tx.insert(schema.brands).values([
-        { id: brandA, tenantId: tenantIdA, slug: 'brand-a', displayName: 'Brand A' },
-        { id: brandB, tenantId: tenantIdB, slug: 'brand-b', displayName: 'Brand B' },
+      await tx.insert(schema.locations).values([
+        { tenantId: tenantIdA, name: 'Idem Location A' },
+        { tenantId: tenantIdB, name: 'Idem Location B' },
       ]);
     });
   }, 180_000);
@@ -126,15 +132,30 @@ suite('CreateOrderService — idempotency', () => {
     if (stack) await stopDbStack(stack);
   });
 
+  const sumTenantACounters = async (): Promise<number> => {
+    const rows = await stack.db.withoutTenant(
+      'sum order_daily_sequences counters for tenant A',
+      async (tx) =>
+        tx
+          .select({ counter: schema.orderDailySequences.counter })
+          .from(schema.orderDailySequences)
+          .where(eq(schema.orderDailySequences.tenantId, tenantIdA)),
+    );
+    return rows.reduce((sum, row) => sum + row.counter, 0);
+  };
+
   it('ORD-10: duplicate idempotency key returns the same orderId and produces only one orders row', async () => {
     const input = makeCartInput();
     const key = input.idempotencyKey;
 
+    const countersBefore = await sumTenantACounters();
     const first = await inTenantA(() => service.execute(input));
     const second = await inTenantA(() => service.execute({ ...input, idempotencyKey: key }));
+    const countersAfter = await sumTenantACounters();
 
     expect(second.orderId).toBe(first.orderId);
     expect(second.orderNumber).toBe(first.orderNumber);
+    expect(countersAfter - countersBefore).toBe(1);
 
     const rowCount = await stack.db.withoutTenant('count orders', async (tx) => {
       const rows = await tx
