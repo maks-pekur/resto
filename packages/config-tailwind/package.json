@@ -21,6 +21,6 @@
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "typescript": "^6.0.3",
-    "vitest": "^2.1.8"
+    "vitest": "^3.2.6"
   }
 }
