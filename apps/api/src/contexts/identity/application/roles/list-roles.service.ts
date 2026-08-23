@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 
 export interface ListRolesInput {

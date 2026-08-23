@@ -17,8 +17,8 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { AssignRoleInputDto, type AssignRoleInput } from '../../application/dto';
-import { AssignRoleService } from '../../application/assign-role.service';
-import { ListMembersService } from '../../application/list-members.service';
+import { AssignRoleService } from '../../application/roles/assign-role.service';
+import { ListMembersService } from '../../application/roles/list-members.service';
 import { mapIdentityError } from './error-mapping';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import type { OperatorPrincipal } from '../../domain/principal';

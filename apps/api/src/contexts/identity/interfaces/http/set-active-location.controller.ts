@@ -17,7 +17,7 @@ import type { FastifyRequest } from 'fastify';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
-import { SetActiveLocationService } from '../../application/set-active-location.service';
+import { SetActiveLocationService } from '../../application/location-scope/set-active-location.service';
 import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,

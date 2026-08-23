@@ -2,8 +2,8 @@ import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { eq } from 'drizzle-orm';
 import { tenantRole as tenantRoleTable } from '@resto/db/schema';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 import { PRESET_ROLES } from '@resto/domain';
 
 export interface SeedPresetRolesInput {

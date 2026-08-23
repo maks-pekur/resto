@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { eq, inArray } from 'drizzle-orm';
 import { member as memberTable, user as userTable } from '@resto/db/schema';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 
 export interface MemberView {
   readonly id: string;

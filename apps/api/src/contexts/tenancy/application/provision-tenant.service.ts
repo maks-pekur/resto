@@ -4,7 +4,7 @@ import { Tenant, type TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantSlugArchivedError } from '../domain/errors';
 import type { ProvisionTenantInput } from './dto';
-import { SeedPresetRolesService } from '../../identity/application/seed-preset-roles.service';
+import { SeedPresetRolesService } from '../../identity/application/roles/seed-preset-roles.service';
 
 const PRIMARY_DOMAIN_SUFFIX = 'menu.resto.app';
 

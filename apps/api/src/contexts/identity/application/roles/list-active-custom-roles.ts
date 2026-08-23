@@ -1,6 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { tenantRole } from '@resto/db/schema';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 
 export interface ActiveCustomRole {
   readonly id: string;

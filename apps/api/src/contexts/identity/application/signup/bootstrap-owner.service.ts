@@ -1,14 +1,14 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { z } from 'zod';
-import { AUTH_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
-import { TENANT_LOOKUP_PORT, type TenantLookupPort } from './ports/tenant-lookup.port';
+import { AUTH_TOKEN } from '../../identity.tokens';
+import type { Auth } from '../../infrastructure/better-auth/auth.config';
+import { BA_USER_READER, type BaUserReader } from '../ports/ba-user-reader.port';
+import { TENANT_LOOKUP_PORT, type TenantLookupPort } from '../ports/tenant-lookup.port';
 import {
   BetterAuthBootstrapFailureError,
   OwnerAlreadyExistsError,
   TenantNotFoundForBootstrapError,
-} from '../domain/bootstrap-errors';
+} from '../../domain/bootstrap-errors';
 
 export interface BootstrapOwnerInput {
   readonly tenantSlug: string;

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../../src/contexts/identity/application/signup/bootstrap-owner.service';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
 import type { BaUserReader } from '../../../src/contexts/identity/application/ports/ba-user-reader.port';
 

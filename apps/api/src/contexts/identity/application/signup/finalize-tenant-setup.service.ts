@@ -1,12 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { TenantId, TenantSlug } from '@resto/domain';
-import { TENANT_LOOKUP_PORT, type TenantLookupPort } from './ports/tenant-lookup.port';
+import { TENANT_LOOKUP_PORT, type TenantLookupPort } from '../ports/tenant-lookup.port';
 import {
   TENANT_PROVISIONING_PORT,
   type TenantProvisioningPort,
-} from './ports/tenant-provisioning.port';
+} from '../ports/tenant-provisioning.port';
 import { findFreeSlug, slugify } from './signup.service';
-import { TenantSetupNotPendingError } from '../domain/signup-errors';
+import { TenantSetupNotPendingError } from '../../domain/signup-errors';
 
 export interface FinalizeTenantSetupInput {
   readonly tenantId: string;

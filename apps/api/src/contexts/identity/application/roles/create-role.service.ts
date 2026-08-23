@@ -2,14 +2,14 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { buildEnvelope, IdentityRoleCreatedV1 } from '@resto/events';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable } from '@resto/domain';
-import { AUTH_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import { roleApi } from '../infrastructure/better-auth/role-api.bridge';
-import { InsufficientPermissionsToMintError, RoleNameReservedError } from '../domain/errors';
+import { AUTH_TOKEN } from '../../identity.tokens';
+import type { Auth } from '../../infrastructure/better-auth/auth.config';
+import { roleApi } from '../../infrastructure/better-auth/role-api.bridge';
+import { InsufficientPermissionsToMintError, RoleNameReservedError } from '../../domain/errors';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
-} from './ports/identity-event-emitter.port';
+} from '../ports/identity-event-emitter.port';
 
 const RESERVED_SYSTEM_SLUGS = new Set(['owner', 'admin', 'staff']);
 

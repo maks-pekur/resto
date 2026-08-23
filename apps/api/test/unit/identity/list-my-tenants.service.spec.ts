@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { ListMyTenantsService } from '../../../src/contexts/identity/application/list-my-tenants.service';
+import { ListMyTenantsService } from '../../../src/contexts/identity/application/signup/list-my-tenants.service';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
 const buildAuthDb = (

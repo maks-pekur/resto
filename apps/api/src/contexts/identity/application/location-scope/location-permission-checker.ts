@@ -1,15 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { Permission } from '@resto/domain';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import type { OperatorPrincipal } from '../domain/principal';
-import type { PermissionChecker } from './ports/permission-checker.port';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import type { OperatorPrincipal } from '../../domain/principal';
+import type { PermissionChecker } from '../ports/permission-checker.port';
 import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
-} from './ports/member-location-scope-reader.port';
+} from '../ports/member-location-scope-reader.port';
 import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
-import { listActiveCustomRoles } from './list-active-custom-roles';
+import { listActiveCustomRoles } from '../roles/list-active-custom-roles';
 
 // D-08 / Pitfall 2 (RESEARCH): a non-owner's effective permissions come
 // from member_location_scope.role at activeLocationId, never BA's

@@ -2,16 +2,16 @@ import { Inject, Injectable } from '@nestjs/common';
 import { eq, and } from 'drizzle-orm';
 import { containsNonDelegatable } from '@resto/domain';
 import { member as memberTable } from '@resto/db/schema';
-import { AUTH_TOKEN, AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { roleApi } from '../infrastructure/better-auth/role-api.bridge';
+import { AUTH_TOKEN, AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { Auth } from '../../infrastructure/better-auth/auth.config';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { roleApi } from '../../infrastructure/better-auth/role-api.bridge';
 import {
   InsufficientPermissionsToMintError,
   RoleNotFoundError,
   SelfRoleAssignmentError,
   AssignmentExceedsAuthorityError,
-} from '../domain/errors';
+} from '../../domain/errors';
 import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 

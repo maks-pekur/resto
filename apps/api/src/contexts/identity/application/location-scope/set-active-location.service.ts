@@ -1,14 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TenantId } from '@resto/domain';
-import { LocationAlreadyPinnedError, LocationOutOfScopeError } from '../domain/errors';
+import { LocationAlreadyPinnedError, LocationOutOfScopeError } from '../../domain/errors';
 import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
-} from './ports/member-location-scope-reader.port';
+} from '../ports/member-location-scope-reader.port';
 import {
   SESSION_ACTIVE_LOCATION_WRITER,
   type SessionActiveLocationWriter,
-} from './ports/session-active-location-writer.port';
+} from '../ports/session-active-location-writer.port';
 
 export interface SetActiveLocationInput {
   readonly userId: string;

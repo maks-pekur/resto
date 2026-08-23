@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { and, eq, like, ne, or } from 'drizzle-orm';
 import { tenants as tenantsTable } from '@resto/db/schema';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 
 export interface SlugAvailabilityResult {
   readonly available: boolean;

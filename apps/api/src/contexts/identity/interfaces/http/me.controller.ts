@@ -6,7 +6,7 @@ import { LocationNeutral } from '../../../../shared/auth';
 import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
 import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
 import { computeEffectivePermissions } from '@resto/domain';
-import { listActiveCustomRoles } from '../../application/list-active-custom-roles';
+import { listActiveCustomRoles } from '../../application/roles/list-active-custom-roles';
 import { CurrentPrincipal } from './decorators/current-principal.decorator';
 import type { Principal } from '../../domain/principal';
 

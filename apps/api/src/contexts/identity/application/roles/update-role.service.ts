@@ -2,16 +2,16 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { buildEnvelope, IdentityRolePermissionsChangedV1 } from '@resto/events';
 import { TenantId } from '@resto/domain';
 import { containsNonDelegatable } from '@resto/domain';
-import { AUTH_TOKEN, AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { roleApi } from '../infrastructure/better-auth/role-api.bridge';
-import { InsufficientPermissionsToMintError, RoleNotFoundError } from '../domain/errors';
+import { AUTH_TOKEN, AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { Auth } from '../../infrastructure/better-auth/auth.config';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { roleApi } from '../../infrastructure/better-auth/role-api.bridge';
+import { InsufficientPermissionsToMintError, RoleNotFoundError } from '../../domain/errors';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
-} from './ports/identity-event-emitter.port';
+} from '../ports/identity-event-emitter.port';
 
 export interface UpdateRoleServiceInput {
   readonly roleSlug: string;

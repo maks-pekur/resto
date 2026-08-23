@@ -21,7 +21,7 @@ import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { InternalTokenGuard } from '../../../../shared/api/internal-token.guard';
-import { BootstrapOwnerService } from '../../application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../application/signup/bootstrap-owner.service';
 import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,

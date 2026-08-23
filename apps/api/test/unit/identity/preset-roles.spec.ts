@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { containsNonDelegatable } from '@resto/domain';
 import { PRESET_ROLES } from '@resto/domain';
-import { SeedPresetRolesService } from '../../../src/contexts/identity/application/seed-preset-roles.service';
+import { SeedPresetRolesService } from '../../../src/contexts/identity/application/roles/seed-preset-roles.service';
 
 describe('PRESET_ROLES', () => {
   it('exports exactly 3 presets', () => {

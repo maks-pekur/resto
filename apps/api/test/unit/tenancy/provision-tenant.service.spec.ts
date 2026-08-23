@@ -4,7 +4,7 @@ import { ProvisionTenantService } from '../../../src/contexts/tenancy/applicatio
 import { TenantSlugArchivedError } from '../../../src/contexts/tenancy/domain/errors';
 import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
-import type { SeedPresetRolesService } from '../../../src/contexts/identity/application/seed-preset-roles.service';
+import type { SeedPresetRolesService } from '../../../src/contexts/identity/application/roles/seed-preset-roles.service';
 
 const makeSeedPresets = (): SeedPresetRolesService =>
   ({ execute: vi.fn().mockResolvedValue(undefined) }) as unknown as SeedPresetRolesService;

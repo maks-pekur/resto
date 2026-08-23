@@ -6,7 +6,7 @@ import {
   RoleNotFoundError,
   SelfRoleAssignmentError,
 } from '../../../src/contexts/identity/domain/errors';
-import { AssignRoleService } from '../../../src/contexts/identity/application/assign-role.service';
+import { AssignRoleService } from '../../../src/contexts/identity/application/roles/assign-role.service';
 import { computeEffectivePermissions, isSubsetOf } from '@resto/domain';
 import type { Auth } from '../../../src/contexts/identity/infrastructure/better-auth/auth.config';
 

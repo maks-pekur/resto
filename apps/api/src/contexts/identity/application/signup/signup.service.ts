@@ -1,30 +1,30 @@
 import { randomUUID } from 'node:crypto';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { defaultLocaleForCountry, TenantSlug } from '@resto/domain';
-import { AUTH_TOKEN } from '../identity.tokens';
-import type { Auth } from '../infrastructure/better-auth/auth.config';
-import { BA_USER_READER, type BaUserReader } from './ports/ba-user-reader.port';
+import { AUTH_TOKEN } from '../../identity.tokens';
+import type { Auth } from '../../infrastructure/better-auth/auth.config';
+import { BA_USER_READER, type BaUserReader } from '../ports/ba-user-reader.port';
 import {
   SESSION_ACTIVE_TENANT_ACTIVATOR,
   type SessionActiveTenantActivator,
-} from './ports/session-active-tenant-activator.port';
+} from '../ports/session-active-tenant-activator.port';
 import { BootstrapOwnerService } from './bootstrap-owner.service';
 import {
   OwnerAlreadyExistsError,
   BetterAuthBootstrapFailureError,
-} from '../domain/bootstrap-errors';
+} from '../../domain/bootstrap-errors';
 import {
   SlugUnavailableError,
   SignupEmailAlreadyExistsError,
   SignupBetterAuthFailureError,
-} from '../domain/signup-errors';
-import type { SignUpInput } from './dto';
-import { TENANT_LOOKUP_PORT, type TenantLookupPort } from './ports/tenant-lookup.port';
+} from '../../domain/signup-errors';
+import type { SignUpInput } from '../dto';
+import { TENANT_LOOKUP_PORT, type TenantLookupPort } from '../ports/tenant-lookup.port';
 import {
   TENANT_PROVISIONING_PORT,
   type IdentityTenantView,
   type TenantProvisioningPort,
-} from './ports/tenant-provisioning.port';
+} from '../ports/tenant-provisioning.port';
 
 // WR-06: total candidates is MAX_SLUG_CANDIDATES (base + base-2 .. base-100).
 // There is no `base-1` — base IS the first candidate. Renamed from the

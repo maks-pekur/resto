@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { TenantId } from '@resto/domain';
-import { ListMemberLocationRolesService } from '../../../src/contexts/identity/application/list-member-location-roles.service';
+import { ListMemberLocationRolesService } from '../../../src/contexts/identity/application/location-scope/list-member-location-roles.service';
 import type { MemberLocationScopeReader } from '../../../src/contexts/identity/application/ports/member-location-scope-reader.port';
 
 const TENANT_ID = TenantId.parse('00000000-0000-0000-0000-000000000001');

@@ -24,10 +24,10 @@ import {
   UpdateRoleInputDto,
   type UpdateRoleInput,
 } from '../../application/dto';
-import { CreateRoleService } from '../../application/create-role.service';
-import { UpdateRoleService } from '../../application/update-role.service';
-import { ArchiveRoleService } from '../../application/archive-role.service';
-import { ListRolesService } from '../../application/list-roles.service';
+import { CreateRoleService } from '../../application/roles/create-role.service';
+import { UpdateRoleService } from '../../application/roles/update-role.service';
+import { ArchiveRoleService } from '../../application/roles/archive-role.service';
+import { ListRolesService } from '../../application/roles/list-roles.service';
 import { RoleNotFoundError } from '../../domain/errors';
 import { mapIdentityError } from './error-mapping';
 import { CurrentOperator } from './decorators/current-principal.decorator';

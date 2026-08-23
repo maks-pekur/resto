@@ -1,10 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import { containsNonDelegatable } from '@resto/domain';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { InsufficientPermissionsToMintError, RoleNotFoundError } from '../domain/errors';
-import { listActiveCustomRoles } from './list-active-custom-roles';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { InsufficientPermissionsToMintError, RoleNotFoundError } from '../../domain/errors';
+import { listActiveCustomRoles } from '../roles/list-active-custom-roles';
 
 const SYSTEM_ROLE_SLUGS = new Set(['owner', 'admin', 'staff']);
 

@@ -4,7 +4,7 @@ import { DatabaseModule } from '../../infrastructure/database.module';
 import { TenancyModule } from '../tenancy/tenancy.module';
 import { IdentityCoreModule } from './identity-core.module';
 import { IdentitySessionsModule } from './identity-sessions.module';
-import { BootstrapOwnerService } from './application/bootstrap-owner.service';
+import { BootstrapOwnerService } from './application/signup/bootstrap-owner.service';
 import { BA_USER_READER } from './application/ports/ba-user-reader.port';
 import { TENANT_LOOKUP_PORT } from './application/ports/tenant-lookup.port';
 import { BaUserDrizzleReader } from './infrastructure/ba-user-drizzle.reader';

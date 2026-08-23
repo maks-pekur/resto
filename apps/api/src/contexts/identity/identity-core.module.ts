@@ -15,8 +15,8 @@ import {
 } from './application/ports/identity-event-emitter.port';
 import { PERMISSION_CHECKER } from './application/ports/permission-checker.port';
 import { MEMBER_LOCATION_SCOPE_READER } from './application/ports/member-location-scope-reader.port';
-import { LocationPermissionChecker } from './application/location-permission-checker';
-import { SyncPresetRolesService } from './application/sync-preset-roles.service';
+import { LocationPermissionChecker } from './application/location-scope/location-permission-checker';
+import { SyncPresetRolesService } from './application/roles/sync-preset-roles.service';
 import { EMAIL_ADAPTER_PORT, type EmailAdapterPort } from './domain/ports';
 import { buildAuthDrizzle, type AuthDrizzle } from './infrastructure/better-auth/auth-db';
 import {

@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { LocationPermissionChecker } from '../../../src/contexts/identity/application/location-permission-checker';
+import { LocationPermissionChecker } from '../../../src/contexts/identity/application/location-scope/location-permission-checker';
 import type { MemberLocationScopeReader } from '../../../src/contexts/identity/application/ports/member-location-scope-reader.port';
 import type { OperatorPrincipal } from '../../../src/contexts/identity/domain/principal';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';

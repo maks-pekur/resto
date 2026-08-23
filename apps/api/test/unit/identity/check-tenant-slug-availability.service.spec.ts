@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
-import { CheckTenantSlugAvailabilityService } from '../../../src/contexts/identity/application/check-tenant-slug-availability.service';
+import { CheckTenantSlugAvailabilityService } from '../../../src/contexts/identity/application/signup/check-tenant-slug-availability.service';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
 const buildAuthDb = (slugs: readonly string[]): AuthDrizzle =>

@@ -3,14 +3,14 @@ import { eq, and } from 'drizzle-orm';
 import { buildEnvelope, IdentityRoleDeletedV1 } from '@resto/events';
 import { TenantId } from '@resto/domain';
 import { member as memberTable, tenantRole } from '@resto/db/schema';
-import { AUTH_DRIZZLE_TOKEN } from '../identity.tokens';
-import type { AuthDrizzle } from '../infrastructure/better-auth/auth-db';
-import { RoleNotFoundError, RoleOccupiedError } from '../domain/errors';
+import { AUTH_DRIZZLE_TOKEN } from '../../identity.tokens';
+import type { AuthDrizzle } from '../../infrastructure/better-auth/auth-db';
+import { RoleNotFoundError, RoleOccupiedError } from '../../domain/errors';
 import { listActiveCustomRoles } from './list-active-custom-roles';
 import {
   IDENTITY_EVENT_EMITTER,
   type IdentityEventEmitterPort,
-} from './ports/identity-event-emitter.port';
+} from '../ports/identity-event-emitter.port';
 
 export interface ArchiveRoleServiceInput {
   readonly roleSlug: string;

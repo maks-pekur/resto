@@ -3,7 +3,7 @@ import type { TenantId } from '@resto/domain';
 import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
-} from './ports/member-location-scope-reader.port';
+} from '../ports/member-location-scope-reader.port';
 
 export interface ListMemberLocationRolesInput {
   readonly tenantId: TenantId;

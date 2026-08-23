@@ -6,7 +6,7 @@ import {
   InsufficientPermissionsToMintError,
   RoleNotFoundError,
 } from '../../../src/contexts/identity/domain/errors';
-import { AssignLocationRoleService } from '../../../src/contexts/identity/application/assign-location-role.service';
+import { AssignLocationRoleService } from '../../../src/contexts/identity/application/location-scope/assign-location-role.service';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';

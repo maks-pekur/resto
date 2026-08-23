@@ -5,7 +5,7 @@ import {
   LocationAlreadyPinnedError,
   LocationOutOfScopeError,
 } from '../../../src/contexts/identity/domain/errors';
-import { SetActiveLocationService } from '../../../src/contexts/identity/application/set-active-location.service';
+import { SetActiveLocationService } from '../../../src/contexts/identity/application/location-scope/set-active-location.service';
 import type { MemberLocationScopeReader } from '../../../src/contexts/identity/application/ports/member-location-scope-reader.port';
 import type { SessionActiveLocationWriter } from '../../../src/contexts/identity/application/ports/session-active-location-writer.port';
 

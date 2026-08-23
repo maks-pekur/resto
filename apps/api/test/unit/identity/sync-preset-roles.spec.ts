@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { PRESET_ROLES } from '@resto/domain';
-import { SyncPresetRolesService } from '../../../src/contexts/identity/application/sync-preset-roles.service';
+import { SyncPresetRolesService } from '../../../src/contexts/identity/application/roles/sync-preset-roles.service';
 
 const TENANT_ID = '00000000-0000-0000-0000-000000000001';
 

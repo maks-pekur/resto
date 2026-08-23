@@ -6,10 +6,10 @@ import {
   RoleNotFoundError,
   RoleOccupiedError,
 } from '../../../src/contexts/identity/domain/errors';
-import { CreateRoleService } from '../../../src/contexts/identity/application/create-role.service';
-import { UpdateRoleService } from '../../../src/contexts/identity/application/update-role.service';
-import { ArchiveRoleService } from '../../../src/contexts/identity/application/archive-role.service';
-import { ListRolesService } from '../../../src/contexts/identity/application/list-roles.service';
+import { CreateRoleService } from '../../../src/contexts/identity/application/roles/create-role.service';
+import { UpdateRoleService } from '../../../src/contexts/identity/application/roles/update-role.service';
+import { ArchiveRoleService } from '../../../src/contexts/identity/application/roles/archive-role.service';
+import { ListRolesService } from '../../../src/contexts/identity/application/roles/list-roles.service';
 import type { Auth } from '../../../src/contexts/identity/infrastructure/better-auth/auth.config';
 
 const makeEmitter = () => ({ emit: vi.fn().mockResolvedValue(undefined) });

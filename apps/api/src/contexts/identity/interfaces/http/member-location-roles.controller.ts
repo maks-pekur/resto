@@ -17,8 +17,8 @@ import { TenantId } from '@resto/domain';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
-import { AssignLocationRoleService } from '../../application/assign-location-role.service';
-import { ListMemberLocationRolesService } from '../../application/list-member-location-roles.service';
+import { AssignLocationRoleService } from '../../application/location-scope/assign-location-role.service';
+import { ListMemberLocationRolesService } from '../../application/location-scope/list-member-location-roles.service';
 import { mapIdentityError } from './error-mapping';
 
 const wrap = wrapWith(mapIdentityError);

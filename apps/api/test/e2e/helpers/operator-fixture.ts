@@ -12,7 +12,7 @@ import { expect } from 'vitest';
 import { schema } from '@resto/db';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import { BootstrapModule } from '../../../src/contexts/identity/bootstrap.module';
-import { BootstrapOwnerService } from '../../../src/contexts/identity/application/bootstrap-owner.service';
+import { BootstrapOwnerService } from '../../../src/contexts/identity/application/signup/bootstrap-owner.service';
 import { AUTH_DRIZZLE_TOKEN } from '../../../src/contexts/identity/identity.tokens';
 import type { AuthDrizzle } from '../../../src/contexts/identity/infrastructure/better-auth/auth-db';
 

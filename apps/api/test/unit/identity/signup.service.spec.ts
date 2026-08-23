@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import type * as NodeCrypto from 'node:crypto';
-import { SignUpService } from '../../../src/contexts/identity/application/signup.service';
+import { SignUpService } from '../../../src/contexts/identity/application/signup/signup.service';
 import {
   SignupBetterAuthFailureError,
   SignupEmailAlreadyExistsError,

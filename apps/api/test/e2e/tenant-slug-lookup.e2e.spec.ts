@@ -4,7 +4,7 @@ import { schema, TenantAwareDb } from '@resto/db';
 import {
   CheckTenantSlugAvailabilityService,
   SLUG_LOOKUP_LIMIT,
-} from '../../src/contexts/identity/application/check-tenant-slug-availability.service';
+} from '../../src/contexts/identity/application/signup/check-tenant-slug-availability.service';
 import {
   isDockerAvailable,
   startRealStack,
