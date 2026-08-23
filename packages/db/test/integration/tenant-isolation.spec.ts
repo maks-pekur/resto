@@ -371,11 +371,19 @@ suite('Row-Level Security — tenant isolation', () => {
       await pg.db.withoutTenant('seed items for plan 04a-07 cross-tenant matrix', async (tx) => {
         const [aLoc] = await tx
           .insert(schema.locations)
-          .values({ tenantId: tenantA, name: 'Plan 04a-07 A Location' })
+          .values({
+            tenantId: tenantA,
+            name: 'Plan 04a-07 A Location',
+            slug: 'plan-04a-07-a-location',
+          })
           .returning({ id: schema.locations.id });
         const [bLoc] = await tx
           .insert(schema.locations)
-          .values({ tenantId: tenantB, name: 'Plan 04a-07 B Location' })
+          .values({
+            tenantId: tenantB,
+            name: 'Plan 04a-07 B Location',
+            slug: 'plan-04a-07-b-location',
+          })
           .returning({ id: schema.locations.id });
         if (!aLoc || !bLoc) throw new Error('Cross-tenant seed: location create failed.');
         aLocationId = aLoc.id;
@@ -501,7 +509,7 @@ suite('Row-Level Security — tenant isolation', () => {
         async (tx) =>
           tx
             .insert(schema.locations)
-            .values({ tenantId: tenantA, name: 'Sibling Location' })
+            .values({ tenantId: tenantA, name: 'Sibling Location', slug: 'sibling-location' })
             .returning({ id: schema.locations.id }),
       );
       if (!otherLocation) throw new Error('sibling location seed failed');
@@ -720,11 +728,11 @@ suite('Row-Level Security — tenant isolation', () => {
       await pg.db.withoutTenant('seed order for ORD-06 cross-tenant matrix', async (tx) => {
         const [aLoc] = await tx
           .insert(schema.locations)
-          .values({ tenantId: tenantA, name: 'ORD-06 A Location' })
+          .values({ tenantId: tenantA, name: 'ORD-06 A Location', slug: 'ord-06-a-location' })
           .returning({ id: schema.locations.id });
         const [bLoc] = await tx
           .insert(schema.locations)
-          .values({ tenantId: tenantB, name: 'ORD-06 B Location' })
+          .values({ tenantId: tenantB, name: 'ORD-06 B Location', slug: 'ord-06-b-location' })
           .returning({ id: schema.locations.id });
         if (!aLoc || !bLoc) throw new Error('ORD-06 seed: location insert failed.');
         aOrderLocationId = aLoc.id;
@@ -824,7 +832,11 @@ suite('Row-Level Security — tenant isolation', () => {
         async (tx) =>
           tx
             .insert(schema.locations)
-            .values({ tenantId: tenantA, name: 'ORD-06 Sibling Location' })
+            .values({
+              tenantId: tenantA,
+              name: 'ORD-06 Sibling Location',
+              slug: 'ord-06-sibling-location',
+            })
             .returning({ id: schema.locations.id }),
       );
       if (!siblingLocation) throw new Error('ORD-06 seed: sibling location insert failed.');
@@ -891,7 +903,7 @@ suite('Row-Level Security — tenant isolation', () => {
       await pg.db.withoutTenant('seed location for 08.4 cross-tenant matrix', async (tx) => {
         const [location] = await tx
           .insert(schema.locations)
-          .values({ tenantId: tenantA, name: 'Iso A Location' })
+          .values({ tenantId: tenantA, name: 'Iso A Location', slug: 'iso-a-location' })
           .returning({ id: schema.locations.id });
         if (!location) throw new Error('08.4 seed: location insert failed.');
         aLocationId = location.id;
@@ -918,7 +930,11 @@ suite('Row-Level Security — tenant isolation', () => {
         async (tx) => {
           const [location] = await tx
             .insert(schema.locations)
-            .values({ tenantId: tenantA, name: 'Iso A Scope Location' })
+            .values({
+              tenantId: tenantA,
+              name: 'Iso A Scope Location',
+              slug: 'iso-a-scope-location',
+            })
             .returning({ id: schema.locations.id });
           if (!location) throw new Error('08.4 seed: scope location insert failed.');
 

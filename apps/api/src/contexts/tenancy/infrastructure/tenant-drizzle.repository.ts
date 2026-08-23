@@ -347,6 +347,7 @@ export class TenantDrizzleRepository implements TenantRepository {
       id: TenantId.parse(row.id),
       slug: TenantSlug.parse(row.slug),
       displayName: row.displayName,
+      timezone: row.timezone,
       status,
       locale: row.locale,
       country: row.country as CountryCodeValue,

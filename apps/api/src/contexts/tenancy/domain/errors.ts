@@ -131,3 +131,13 @@ export class StripeOnboardingFailedError extends Error {
     if (cause !== undefined) this.cause = cause;
   }
 }
+
+export class LocationNameNotSluggableError extends Error {
+  constructor(public readonly locationName: string) {
+    super(
+      `Location name "${locationName}" produces no usable slug. Names written entirely in punctuation or ` +
+        'symbols cannot become a URL — use letters or digits in at least one word.',
+    );
+    this.name = 'LocationNameNotSluggableError';
+  }
+}

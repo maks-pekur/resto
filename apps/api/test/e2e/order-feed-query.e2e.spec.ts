@@ -43,11 +43,11 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
       const [locA] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'Location A' })
+        .values({ tenantId, name: 'Location A', slug: 'location-a' })
         .returning({ id: schema.locations.id });
       const [locB] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'Location B' })
+        .values({ tenantId, name: 'Location B', slug: 'location-b' })
         .returning({ id: schema.locations.id });
       if (!locA || !locB) throw new Error('seed order-feed-query e2e: location insert failed.');
       locationAId = locA.id;
@@ -63,7 +63,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
       });
       const [otherLoc] = await tx
         .insert(schema.locations)
-        .values({ tenantId: otherTenantId, name: 'Other Location' })
+        .values({ tenantId: otherTenantId, name: 'Other Location', slug: 'other-location' })
         .returning({ id: schema.locations.id });
       if (!otherLoc) throw new Error('seed order-feed-query e2e: other-tenant location failed.');
       otherLocationId = otherLoc.id;

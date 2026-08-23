@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import {
   currencyForCountry,
   defaultLocaleForCountry,
+  defaultTimezoneForCountry,
   TenantId,
   TenantSlug,
   type TenantTheme,
@@ -58,6 +59,8 @@ export interface TenantSnapshot {
   readonly displayName: string;
   readonly status: TenantStatus;
   readonly locale: string;
+  /** Default inherited by every new location; a location may override it. */
+  readonly timezone: string;
   readonly country: CountryCodeValue;
   readonly defaultCurrency: Currency;
   readonly theme: TenantTheme | null;
@@ -93,6 +96,8 @@ export interface ProvisionInput {
   readonly slug: TenantSlug;
   readonly displayName: string;
   readonly country: CountryCodeValue;
+  /** Defaults to `defaultTimezoneForCountry(country)` when omitted; locations inherit it. */
+  readonly timezone?: string;
   /** Defaults to `defaultLocaleForCountry(country)` (D-35) when omitted. */
   readonly locale?: string;
   /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
@@ -150,6 +155,7 @@ export class Tenant {
       displayName: input.displayName,
       status: input.status ?? 'active',
       locale: input.locale ?? defaultLocaleForCountry(input.country),
+      timezone: input.timezone ?? defaultTimezoneForCountry(input.country),
       country: input.country,
       defaultCurrency,
       theme: null,

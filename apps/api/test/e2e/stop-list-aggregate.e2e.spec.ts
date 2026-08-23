@@ -142,7 +142,11 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     const [foreignLocation] = await db.withoutTenant('seed foreign-tenant location', (tx) =>
       tx
         .insert(schema.locations)
-        .values({ tenantId: foreignTenant.id, name: 'Foreign Tenant Location' })
+        .values({
+          tenantId: foreignTenant.id,
+          name: 'Foreign Tenant Location',
+          slug: 'foreign-tenant-location',
+        })
         .returning({ id: schema.locations.id }),
     );
     if (!foreignLocation) throw new Error('seed foreign-tenant location failed');

@@ -41,8 +41,8 @@ suite('PostgresMenuVersionAdapter', () => {
         defaultCurrency: 'USD',
       });
       await tx.insert(schema.locations).values([
-        { id: locationA, tenantId, name: 'Location A' },
-        { id: locationB, tenantId, name: 'Location B' },
+        { id: locationA, tenantId, name: 'Location A', slug: 'location-a' },
+        { id: locationB, tenantId, name: 'Location B', slug: 'location-b' },
       ]);
       await tx.insert(schema.catalogMenuVersion).values({ tenantId });
       await tx.insert(schema.catalogLocationStopVersion).values([

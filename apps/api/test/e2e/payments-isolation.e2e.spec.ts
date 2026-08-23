@@ -52,11 +52,11 @@ const seedFixture = async (stack: RealStack): Promise<PaymentsIsolationFixture> 
   const seeded = await db.withoutTenant('seed payments-isolation fixture', async (tx) => {
     const [locationA] = await tx
       .insert(schema.locations)
-      .values({ tenantId: tenantA.id, name: 'Isolation Location A' })
+      .values({ tenantId: tenantA.id, name: 'Isolation Location A', slug: 'isolation-location-a' })
       .returning({ id: schema.locations.id });
     const [locationB] = await tx
       .insert(schema.locations)
-      .values({ tenantId: tenantB.id, name: 'Isolation Location B' })
+      .values({ tenantId: tenantB.id, name: 'Isolation Location B', slug: 'isolation-location-b' })
       .returning({ id: schema.locations.id });
     if (!locationA || !locationB) throw new Error('location insert failed');
 

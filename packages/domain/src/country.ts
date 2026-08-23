@@ -16,6 +16,13 @@ export const SUPPORTED_COUNTRIES: readonly CountryCodeValue[] = ['UA', 'GB', 'ES
 export interface CountryConfig {
   readonly currency: CurrencyValue;
   readonly defaultLocale: string;
+  /**
+   * The zone a tenant in this country starts on, and therefore the one its locations inherit.
+   * A default, never a ceiling — Spain spans two zones (the Canaries are on WET) and any chain
+   * crossing a border needs per-location overrides. Picked as the zone of the largest population
+   * centre, which is where a first location almost always is.
+   */
+  readonly defaultTimezone: string;
 }
 
 /**
@@ -29,9 +36,9 @@ export const COUNTRY_REGISTRY: Readonly<Record<CountryCodeValue, CountryConfig>>
   // but never uk, so mapping UA to uk would render a langSwitcher showing Ukrainian
   // selected while every string falls back to Russian. Keep every default locale
   // inside the {ru, en, es} intersection of what both apps ship — do not add uk here.
-  UA: { currency: 'UAH', defaultLocale: 'ru' },
-  GB: { currency: 'GBP', defaultLocale: 'en' },
-  ES: { currency: 'EUR', defaultLocale: 'es' },
+  UA: { currency: 'UAH', defaultLocale: 'ru', defaultTimezone: 'Europe/Kyiv' },
+  GB: { currency: 'GBP', defaultLocale: 'en', defaultTimezone: 'Europe/London' },
+  ES: { currency: 'EUR', defaultLocale: 'es', defaultTimezone: 'Europe/Madrid' },
 };
 
 export const currencyForCountry = (country: CountryCodeValue): CurrencyValue =>
@@ -39,3 +46,6 @@ export const currencyForCountry = (country: CountryCodeValue): CurrencyValue =>
 
 export const defaultLocaleForCountry = (country: CountryCodeValue): string =>
   COUNTRY_REGISTRY[country].defaultLocale;
+
+export const defaultTimezoneForCountry = (country: CountryCodeValue): string =>
+  COUNTRY_REGISTRY[country].defaultTimezone;

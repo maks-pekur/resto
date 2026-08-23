@@ -4,9 +4,11 @@ import {
   foreignKey,
   index,
   jsonb,
+  numeric,
   pgTable,
   primaryKey,
   text,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import {
@@ -32,7 +34,13 @@ export const locations = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     name: text('name').notNull(),
+    slug: text('slug').notNull(),
     address: text('address'),
+    // Exact point, not a geocoded guess: delivery zones and "how far is this order" both need a
+    // coordinate, and a free-text address cannot answer either.
+    latitude: numeric('latitude', { precision: 9, scale: 6 }),
+    longitude: numeric('longitude', { precision: 9, scale: 6 }),
+    // Defaults from tenants.timezone at creation, overridable — a chain can cross zones.
     timezone: text('timezone'),
     contacts: jsonb('contacts').$type<Record<string, unknown> | null>(),
     status: text('status').notNull().default('active'),
@@ -45,6 +53,13 @@ export const locations = pgTable(
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     check('locations_status_chk', sql`${table.status} IN ('active','archived')`),
+    check('locations_slug_format_chk', sql`${table.slug} ~ '^[a-z0-9][a-z0-9-]*$'`),
+    check(
+      'locations_coords_range_chk',
+      sql`(${table.latitude} IS NULL OR ${table.latitude} BETWEEN -90 AND 90)
+          AND (${table.longitude} IS NULL OR ${table.longitude} BETWEEN -180 AND 180)`,
+    ),
+    uniqueIndex('locations_tenant_slug_uq').on(table.tenantId, table.slug),
     tenantParentUniqueIndex('locations', { id: table.id, tenantId: table.tenantId }),
   ],
 );

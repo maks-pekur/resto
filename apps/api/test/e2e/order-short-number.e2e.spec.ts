@@ -53,15 +53,19 @@ suite(
 
         const [locA] = await tx
           .insert(schema.locations)
-          .values({ tenantId, name: 'Short Number Location A' })
+          .values({ tenantId, name: 'Short Number Location A', slug: 'short-number-location-a' })
           .returning({ id: schema.locations.id });
         const [locB] = await tx
           .insert(schema.locations)
-          .values({ tenantId, name: 'Short Number Location B' })
+          .values({ tenantId, name: 'Short Number Location B', slug: 'short-number-location-b' })
           .returning({ id: schema.locations.id });
         const [locOther] = await tx
           .insert(schema.locations)
-          .values({ tenantId: otherTenantId, name: 'Other Tenant Location' })
+          .values({
+            tenantId: otherTenantId,
+            name: 'Other Tenant Location',
+            slug: 'other-tenant-location',
+          })
           .returning({ id: schema.locations.id });
         if (!locA || !locB || !locOther) {
           throw new Error('seed order-short-number e2e: location insert failed.');

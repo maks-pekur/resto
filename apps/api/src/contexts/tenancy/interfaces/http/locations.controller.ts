@@ -25,9 +25,12 @@ import { wrapWith } from '../../../../shared/api/wrap';
 import { LocationNeutral, Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { ProvisionLocationService } from '../../application/provision-location.service';
 import { ListLocationsService } from '../../application/list-locations.service';
+import { UpdateLocationService } from '../../application/update-location.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
 import {
   LocationAddress,
+  LocationLatitude,
+  LocationLongitude,
   LocationContactsSchema,
   LocationName,
   LocationTimezone,
@@ -39,16 +42,34 @@ const wrap = wrapWith(mapDomainError);
 
 const CreateLocationInputSchema = z.object({
   name: LocationName,
-  address: LocationAddress.nullable().default(null),
-  timezone: LocationTimezone.nullable().default(null),
+  address: LocationAddress,
+  // Required on create: a location without a point cannot answer a delivery question later, and
+  // backfilling coordinates for rows nobody remembers is worse than asking once.
+  latitude: LocationLatitude,
+  longitude: LocationLongitude,
+  // Omitted inherits the tenant's zone.
+  timezone: LocationTimezone.nullable().optional(),
   contacts: LocationContactsSchema.nullable().default(null),
 });
 class CreateLocationInputDto extends createZodDto(CreateLocationInputSchema) {}
 
+const UpdateLocationInputSchema = z.object({
+  name: LocationName.optional(),
+  address: LocationAddress.optional(),
+  latitude: LocationLatitude.optional(),
+  longitude: LocationLongitude.optional(),
+  timezone: LocationTimezone.nullable().optional(),
+  contacts: LocationContactsSchema.nullable().optional(),
+});
+class UpdateLocationInputDto extends createZodDto(UpdateLocationInputSchema) {}
+
 const LocationResponseSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  slug: z.string(),
   address: z.string().nullable(),
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
   timezone: z.string().nullable(),
   contacts: LocationContactsSchema.nullable(),
   status: z.enum(['active', 'archived']),
@@ -66,7 +87,10 @@ class ArchiveLocationResponseDto extends createZodDto(ArchiveLocationResponseSch
 const toResponse = (s: LocationSnapshot) => ({
   id: s.id,
   name: s.name,
+  slug: s.slug,
   address: s.address,
+  latitude: s.latitude,
+  longitude: s.longitude,
   timezone: s.timezone,
   contacts: s.contacts,
   status: s.status,
@@ -84,6 +108,7 @@ export class LocationsController {
     private readonly provisionLocation: ProvisionLocationService,
     @Inject(ListLocationsService) private readonly listLocations: ListLocationsService,
     @Inject(ArchiveLocationService) private readonly archiveLocation: ArchiveLocationService,
+    @Inject(UpdateLocationService) private readonly updateLocation: UpdateLocationService,
   ) {}
 
   @Post()
@@ -106,6 +131,21 @@ export class LocationsController {
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   list(): Promise<LocationResponseDto[]> {
     return wrap(async () => (await this.listLocations.execute()).map(toResponse));
+  }
+
+  @Patch(':id')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ location: ['update'] })
+  @RequireActiveTenant()
+  @ApiBody({ type: UpdateLocationInputDto })
+  @ApiOkResponse({ type: LocationResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new RestoZodValidationPipe(UpdateLocationInputDto)) input: UpdateLocationInputDto,
+  ): Promise<LocationResponseDto> {
+    return wrap(async () => toResponse(await this.updateLocation.execute(id, input)));
   }
 
   @Patch(':id/archive')

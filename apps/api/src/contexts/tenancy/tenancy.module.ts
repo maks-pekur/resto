@@ -15,6 +15,7 @@ import { StartTenantOnboardingService } from './application/start-tenant-onboard
 import { ProvisionLocationService } from './application/provision-location.service';
 import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
+import { UpdateLocationService } from './application/update-location.service';
 import { LOCATION_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
 import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
 import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
@@ -62,6 +63,7 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    UpdateLocationService,
     SeedPresetRolesService,
   ],
   exports: [
@@ -76,6 +78,7 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    UpdateLocationService,
   ],
 })
 export class TenancyModule {}
