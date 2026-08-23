@@ -1,10 +1,16 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { TenantId, TenantSlug } from '@resto/domain';
+import { RESERVED_SLUG_SET, TenantId, TenantSlug } from '@resto/domain';
+import { ENV_TOKEN } from '../../../config/config.module';
+import type { Env } from '../../../config/env.schema';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { isPubliclyServable, type TenantSnapshot } from '../domain/tenant.aggregate';
 
 const RESERVED_HOSTS = new Set(['api', 'www']);
 const GUEST_HOST_LABEL = 'menu';
+
+// Labels that mark an operator or infrastructure host. `<slug>.admin.<domain>` is the operator
+// dashboard and must never resolve on the guest path, whatever the first label says.
+const NON_GUEST_SECOND_LABELS = new Set(['admin', 'api', 'www']);
 
 /**
  * Maps an inbound HTTP request to a tenant id.
@@ -19,7 +25,10 @@ const GUEST_HOST_LABEL = 'menu';
  */
 @Injectable()
 export class TenantResolverService {
-  constructor(@Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository) {}
+  constructor(
+    @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
+    @Inject(ENV_TOKEN) private readonly env: Env,
+  ) {}
 
   async resolveByHost(host: string | undefined): Promise<TenantSnapshot | null> {
     if (!host) return null;
@@ -58,10 +67,10 @@ export class TenantResolverService {
   }
 
   /**
-   * Guest-menu host resolution (D-22): only the `.menu.` label reaches a
-   * tenant here. The bare `<slug>.resto.app` is reserved for the future
-   * public website — `resolveByHost`'s generic subdomain match would
-   * accept it too, which is exactly the host this method must NOT serve.
+   * Guest host resolution. Two shapes reach a tenant: `<slug>.menu.<domain>` (the QR menu, D-22)
+   * and `<slug>.<apex>` (the restaurant's own public site). The website host was reserved-but-
+   * unreachable until PUBLIC_APEX_DOMAIN existed to gate it; `resolveByHost`'s generic subdomain
+   * match still accepts more than this does, which is why the guest controllers call this one.
    */
   async resolveByCustomerHost(host: string | undefined): Promise<TenantSnapshot | null> {
     if (!host) return null;
@@ -71,9 +80,7 @@ export class TenantResolverService {
     const byDomain = await this.repo.findByDomainHost(hostname);
     if (byDomain && isPubliclyServable(byDomain.status)) return byDomain;
 
-    const labels = hostname.split('.');
-    if (labels.length < 3 || labels[1] !== GUEST_HOST_LABEL) return null;
-    const candidate = labels[0];
+    const candidate = this.guestSlugLabel(hostname.split('.'));
     if (!candidate) return null;
 
     const slug = TenantSlug.safeParse(candidate);
@@ -82,5 +89,24 @@ export class TenantResolverService {
     const bySlug = await this.repo.findBySlug(slug.data);
     if (!bySlug || !isPubliclyServable(bySlug.status)) return null;
     return bySlug;
+  }
+
+  /**
+   * The slug label of a guest host, or null when the host is not one. Two shapes qualify:
+   * `<slug>.menu.<rest>` (QR menu) and `<slug>.<apex>` (the restaurant's own site). The second is
+   * gated on PUBLIC_APEX_DOMAIN so an unregistered custom domain whose first label happens to match
+   * a tenant slug cannot resolve — `findByDomainHost` above is the only way a custom domain serves.
+   */
+  private guestSlugLabel(labels: readonly string[]): string | null {
+    const first = labels[0];
+    if (!first || RESERVED_SLUG_SET.has(first)) return null;
+
+    const second = labels[1];
+    if (second === GUEST_HOST_LABEL) return labels.length >= 3 ? first : null;
+    if (!second || NON_GUEST_SECOND_LABELS.has(second)) return null;
+
+    const apex = this.env.PUBLIC_APEX_DOMAIN;
+    if (!apex) return null;
+    return labels.slice(1).join('.') === apex ? first : null;
   }
 }

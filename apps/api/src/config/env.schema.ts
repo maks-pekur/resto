@@ -134,13 +134,31 @@ export const envSchema = z
     WEBSITE_PUBLIC_URL: z.string().url().optional(),
 
     /**
-     * Cookie domain for BA sessions. Set to `.admin.resto.app` in
-     * production (D-21/D-24) — scoping to the bare `.resto.app` apex would
+     * Cookie domain for BA sessions. `.admin.resto.app` in production,
+     * `.admin.localhost` in dev (D-21/D-24) — scoping to the bare apex would
      * deliver the operator session cookie to the guest menu
-     * (`<slug>.menu.resto.app`) and the public site (`<slug>.resto.app`)
-     * too. Leave unset in dev/test so cookies bind to host-only.
+     * (`<slug>.menu.resto.app`) and the public site (`<slug>.resto.app`) too.
+     * Dev needs the leading-dot value for the same reason production does:
+     * every sign-in hops from `admin.<domain>` to `<slug>.admin.<domain>`, and
+     * a host-only cookie does not survive that hop.
      */
     AUTH_COOKIE_DOMAIN: z.string().optional(),
+
+    /**
+     * The platform's own apex, without scheme or port — `resto.app` in
+     * production, `localhost` in dev. Gates the `<slug>.<apex>` guest host
+     * (the restaurant's public site) so an unregistered custom domain whose
+     * first label happens to match a tenant slug cannot resolve. Unset means
+     * only `<slug>.menu.<domain>` resolves on the guest path.
+     */
+    PUBLIC_APEX_DOMAIN: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .optional()
+      .refine((v) => v === undefined || /^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(v), {
+        message: 'PUBLIC_APEX_DOMAIN must be a bare hostname (no scheme, no port, no path)',
+      }),
 
     /**
      * Salt used by the audit_log PII anonymisation step on tenant erasure
