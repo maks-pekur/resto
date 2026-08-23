@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { LocalizedText } from '@resto/domain';
-import { UpsertModifierGroupService } from '../../../src/contexts/catalog/application/upsert-modifier-group.service';
+import { UpsertModifierGroupService } from '../../../src/contexts/catalog/application/modifiers/upsert-modifier-group.service';
 import { UpsertModifierGroupInputSchema } from '../../../src/contexts/catalog/application/dto';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 

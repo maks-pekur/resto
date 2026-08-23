@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { AggregateStopListResponse } from './dto';
+import { LOCATION_REPOSITORY, type LocationRepository } from '../../../tenancy/domain/ports';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import type { AggregateStopListResponse } from '../dto';
 
 @Injectable()
 export class GetStopListAggregateService {

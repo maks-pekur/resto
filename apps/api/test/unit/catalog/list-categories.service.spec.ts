@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
-import { ListCategoriesService } from '../../../src/contexts/catalog/application/list-categories.service';
+import { ListCategoriesService } from '../../../src/contexts/catalog/application/categories/list-categories.service';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';

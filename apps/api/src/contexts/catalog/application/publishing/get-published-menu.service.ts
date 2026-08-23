@@ -5,8 +5,8 @@ import {
   MENU_VERSION_PORT,
   type CatalogRepository,
   type MenuVersionPort,
-} from '../domain/ports';
-import type { PublishedMenu } from '../domain/published-menu';
+} from '../../domain/ports';
+import type { PublishedMenu } from '../../domain/published-menu';
 
 @Injectable()
 export class GetPublishedMenuService {

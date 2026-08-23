@@ -1,9 +1,9 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, type MenuItemPhoto } from '@resto/db';
 import { Currency, MoneyAmount } from '@resto/domain';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import { deriveSlugFromName } from './slug-util';
-import type { UpsertItemInput } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import { deriveSlugFromName } from '../slug-util';
+import type { UpsertItemInput } from '../dto';
 
 @Injectable()
 export class UpsertItemService {

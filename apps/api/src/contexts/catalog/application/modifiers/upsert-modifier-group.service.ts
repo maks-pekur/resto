@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { UpsertModifierGroupInput } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import type { UpsertModifierGroupInput } from '../dto';
 
 @Injectable()
 export class UpsertModifierGroupService {

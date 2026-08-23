@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { Currency, LocalizedText, MoneyAmount, Slug } from '@resto/domain';
-import { UpsertItemService } from '../../../src/contexts/catalog/application/upsert-item.service';
+import { UpsertItemService } from '../../../src/contexts/catalog/application/items/upsert-item.service';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 
 const TENANT_ID = '11111111-1111-4111-8111-111111111111';

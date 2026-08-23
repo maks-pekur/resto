@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { Currency, TenantId } from '@resto/domain';
-import { GetPublishedMenuService } from '../../../src/contexts/catalog/application/get-published-menu.service';
+import { GetPublishedMenuService } from '../../../src/contexts/catalog/application/publishing/get-published-menu.service';
 import type {
   CatalogRepository,
   MenuVersionPort,

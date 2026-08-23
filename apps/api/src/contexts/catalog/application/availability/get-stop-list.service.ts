@@ -1,9 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { requireLocationContext, requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { StopListResponse } from './dto';
+import { LOCATION_REPOSITORY, type LocationRepository } from '../../../tenancy/domain/ports';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import type { StopListResponse } from '../dto';
 
 @Injectable()
 export class GetStopListService {

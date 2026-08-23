@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import { MenuItemNotFoundError } from '../domain/errors';
-import type { ItemDetailResponse } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import { MenuItemNotFoundError } from '../../domain/errors';
+import type { ItemDetailResponse } from '../dto';
 
 @Injectable()
 export class GetItemService {

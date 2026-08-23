@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { runInTenantContext } from '@resto/db';
 import { Currency, MenuCategoryId, MenuItemId } from '@resto/domain';
-import { GetMenuItemService } from '../../../src/contexts/catalog/application/get-menu-item.service';
+import { GetMenuItemService } from '../../../src/contexts/catalog/application/items/get-menu-item.service';
 import { MenuItemNotFoundError } from '../../../src/contexts/catalog/domain/errors';
 import type { CatalogRepository } from '../../../src/contexts/catalog/domain/ports';
 import type { PublishedMenuItem } from '../../../src/contexts/catalog/domain/published-menu';

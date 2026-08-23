@@ -2,9 +2,9 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { requireLocationContext, requireTenantContext, TenantAwareDb } from '@resto/db';
 import { TenantId } from '@resto/domain';
 import { appendToOutbox, buildEnvelope, ItemStoppedV1, ItemUnstoppedV1 } from '@resto/events';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import { StopListItemNotFoundError } from '../domain/errors';
-import type { StopItemInput } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import { StopListItemNotFoundError } from '../../domain/errors';
+import type { StopItemInput } from '../dto';
 
 @Injectable()
 export class StopListService {

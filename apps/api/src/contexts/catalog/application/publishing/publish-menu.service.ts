@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
 
 @Injectable()
 export class PublishMenuService {

@@ -1,13 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, withLocation } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { DefaultLocationResolverService } from './default-location-resolver.service';
+import { DefaultLocationResolverService } from '../default-location-resolver.service';
 import {
   CATALOG_REPOSITORY,
   STOP_VERSION_PORT,
   type CatalogRepository,
   type StopVersionPort,
-} from '../domain/ports';
+} from '../../domain/ports';
 
 export interface MenuAvailabilityResult {
   readonly stoppedItemIds: string[];

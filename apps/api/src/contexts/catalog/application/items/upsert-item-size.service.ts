@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { MoneyAmount } from '@resto/domain';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { UpsertItemSizeInput } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import type { UpsertItemSizeInput } from '../dto';
 
 @Injectable()
 export class UpsertItemSizeService {

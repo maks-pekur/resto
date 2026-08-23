@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { CATALOG_REPOSITORY, type CatalogRepository } from '../domain/ports';
-import type { DraftDiffResponse } from './dto';
+import { CATALOG_REPOSITORY, type CatalogRepository } from '../../domain/ports';
+import type { DraftDiffResponse } from '../dto';
 
 @Injectable()
 export class GetDraftDiffService {
