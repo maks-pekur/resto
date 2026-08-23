@@ -10,6 +10,15 @@
 
 ALTER TABLE public.tenants ADD COLUMN IF NOT EXISTS timezone text NOT NULL DEFAULT 'UTC';
 --> statement-breakpoint
+-- Existing tenants already declare a country, so leaving them on UTC would be a worse guess than
+-- the one the registry makes for a new tenant in the same place. Mirrors COUNTRY_REGISTRY.
+UPDATE public.tenants SET timezone = CASE country
+  WHEN 'UA' THEN 'Europe/Kyiv'
+  WHEN 'GB' THEN 'Europe/London'
+  WHEN 'ES' THEN 'Europe/Madrid'
+  ELSE timezone
+END WHERE timezone = 'UTC';
+--> statement-breakpoint
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS slug text;
 --> statement-breakpoint
 ALTER TABLE public.locations ADD COLUMN IF NOT EXISTS latitude numeric(9, 6);
