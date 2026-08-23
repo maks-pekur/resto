@@ -68,5 +68,7 @@ describe('D-06 admin route tree — every static root segment is reserved', () =
         `route first-segment "${segment}" (from assembled router fullPath) must be in RESERVED_SLUG_SET`,
       ).toBe(true);
     }
-  });
+    // Deliberately imports the real entry point, so this pulls the whole route tree and every
+    // component behind it. Slow by design, and the 5s default is not enough on a cold CI cache.
+  }, 30_000);
 });
