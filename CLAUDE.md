@@ -386,6 +386,9 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
   leaving work unpushed loses it.
 - **Never merge without asking.** Opening a PR is fine; merging it into the default branch is the
   founder's call every time, no matter how green CI is. Say what is red and why, then wait.
+- **Delete the branch as soon as it is merged**, local and remote both. A merged branch that lingers
+  is one more thing to mistake for live work; if `git branch -d` refuses, confirm the branch really
+  is an ancestor of `main` and then use `-D`.
 - A task is not finished while a check that was green before your change is red after it.
 
 <!-- GSD:profile-start -->
