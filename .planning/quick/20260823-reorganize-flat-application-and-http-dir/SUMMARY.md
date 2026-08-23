@@ -75,3 +75,17 @@ committing, and the specs were repointed as part of the same change rather than 
 - `500bf593` move effective-permissions into the rbac policy module
 - `ff24327f` group catalog application services by subject
 - `445fd78a` group identity application services by capability
+
+## Follow-up queued, not done here
+
+The founder's next question — "why so many files?" — has a different answer from "they are in the wrong
+folders": there are 66 service classes because `CLAUDE.md` mandates one `execute(input)` per service.
+Measured: 19 of them are under 30 lines, and `archive-category.service.ts` is 15 lines of which three do
+work.
+
+Decision taken 2026-08-23: drop that convention and merge services by subject, roughly 66 → 25. Deferred
+until **Phase 10 closes**, because Phase 10's remaining work is a human walkthrough against running code and
+rewriting the service layer first would move the ground under it.
+
+The target grouping is already designed and recorded in
+`.planning/todos/pending/service-granularity-refactor.md` so the analysis does not get redone.
