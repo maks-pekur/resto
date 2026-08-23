@@ -70,11 +70,9 @@ registered path-scoped, or if any authorization moves out of a guard and into mi
 
 ## The three other majors, for scheduling
 
-- **`better-auth` 1.4.22 → 1.6.22+** — one critical (OAuth refresh-token replay via the
-  `oidc-provider` and `mcp` plugins, neither of which we load), plus high and moderate. Pinned with
-  `=` in `apps/api` and exactly in `apps/admin`; they must move together. This owns sessions, the
-  organization plugin and `dynamicAccessControl`, all of which phase 10.2 reshaped — so it needs its
-  own pass with the org-switch and location-scope flows re-verified live, not just compiled.
+- **`better-auth` 1.4.22 → 1.6.22+ — examined 2026-08-23 and deliberately NOT taken. None of its ten
+  advisories apply to this deployment.** Details below; re-read them before anyone reacts to the
+  audit count again.
 - **`vitest` 2.1.8 → 3.2.6+** — the critical is _arbitrary file read and execute when the Vitest UI
   server is listening_. We never start the UI, so exposure is nil; it is still a major worth taking
   with `vite` 5 → 6, which the same upgrade forces.
@@ -99,3 +97,45 @@ email through MailHog, not by compiling).
 Two overrides pin two majors of the same package side by side (`brace-expansion@2` / `@5`,
 `fast-uri@2` / `@3`) because both lines are present in the tree and each has its own patched floor.
 Do not collapse them to a single range.
+
+## Better Auth: why the ten advisories are all inapplicable (checked 2026-08-23)
+
+`pnpm audit` reports ten against `better-auth@1.4.22`, one of them critical. Every one was read
+against what this codebase actually loads. **Zero apply.** Written down because the count is
+alarming and the reasoning is not obvious from the outside.
+
+We load exactly three plugins — `organization()`, `twoFactor()`, `bearer()` — with email+password
+and no OAuth provider configured.
+
+**Eight are about code paths we do not have:**
+
+| advisory                                                                        | why it cannot fire here   |
+| ------------------------------------------------------------------------------- | ------------------------- |
+| CRITICAL — OAuth refresh-token replay, missing client auth on oidc-provider/mcp | neither plugin is loaded  |
+| HIGH — insecure crypto defaults in `oidcProvider` (`alg=none`, plain PKCE)      | not loaded                |
+| HIGH — stored XSS via `javascript:` `redirect_uri` in oidc-provider and mcp     | not loaded                |
+| HIGH — `@better-auth/oauth-provider` authorization-code race                    | not loaded                |
+| HIGH — OAuth refresh-token rotation forks the token family                      | no OAuth provider         |
+| HIGH — account takeover via OAuth auto-link to unverified pre-registered email  | no OAuth provider         |
+| HIGH — account takeover on magic-link and email-OTP sign-in                     | neither method is enabled |
+| MODERATE — OAuth callback accepts mismatched `state` without PKCE               | no OAuth                  |
+
+**The one that would apply is already mitigated in config.** _Unauthorized invitation acceptance via
+unverified email match in the organization plugin_ (`<1.6.11`) targets exactly the flow we use — but
+`auth.config.ts` already sets `requireEmailVerificationOnInvitation: true`, and the comment beside it
+names this precise attack. That option predates the advisory; it was added from Phase 3 research.
+
+**The last one is handled by the schema.** _Stale sessions persist after user deletion_ (LOW) — in
+this database `session`, `account`, `member`, `two_factor` and `customer_profiles` all carry
+`ON DELETE CASCADE` from `"user"`, verified against the live catalog. `tenancy_erase_tenant` deletes
+the user row, so the sessions and credential rows go with it.
+
+**Decision: stay on 1.4.22.** TEN-18 pins it exactly so that upgrades are deliberate rather than
+resolved by a package manager, and there is no security pressure forcing this one. Better Auth owns
+sessions, the organization plugin and `dynamicAccessControl` — all reshaped by phase 10.2 — so the
+upgrade is worth doing as its own phase with the org-switch and location-scope flows re-verified
+live, not squeezed in beside unrelated work.
+
+**What would change this:** enabling any OAuth provider, the `oidcProvider` or `mcp` plugin, magic
+link, or email OTP. Any of those makes several of the eight live immediately. So would turning
+`requireEmailVerificationOnInvitation` off.
