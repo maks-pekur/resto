@@ -53,15 +53,31 @@ The application-side guard is defeated; the provider is the only thing protectin
 Note `handleRefund` already logs `refund-row gap logged — PAY-BUG6`, so the handler was known to be
 imperfect; the type confusion underneath it was not.
 
-## F-50 — a refunded order never leaves `paid`
+## F-50 — WITHDRAWN: a bare refund leaving the order `paid` is the intended design
 
-**Severity: blocker.** `order.aggregate.ts:422-442` — `refund()` sets `updatedAt` and pushes an
-`OrderRefunded` event but **never assigns `status`**. Compare `markFailed()` twenty lines below,
-which does set it. `'refunded'` is a declared member of `OrderStatusSchema` and is unreachable
-through this path.
+**Originally filed as a blocker. It is not a defect.** `order.aggregate.spec.ts` states the contract
+in plain English — "full refund on a paid order never rewrites order status", "refund() on a
+preparing order leaves status preparing", "full refund() on a completed order leaves status
+completed", "has no order-status gate — refundability is RefundOrderService/PaymentNotRefundableError,
+not the aggregate". The reasoning holds: a goodwill refund on an order that was cooked, collected and
+eaten must not rewrite that order to `refunded` the next day. A refund is a payment fact, not an
+order-lifecycle fact.
 
-Observed: order `#12` fully refunded in Stripe, still `paid` in `orders` and on the guest status
-endpoint 20 s later. The guest is told they have a paid order; the operator sees a paid order.
+The order-lifecycle transition lives on the path that owns it. `POST /v1/orders/:id/cancel` →
+`CancelOrderService` sets `canceled` via `order.cancel(...)`, **then** calls
+`refundService.executeWithOrder(...)`. That is the reject-a-paid-order flow, and it is the one the
+walkthrough's step 8 describes.
+
+The finding was mine and it was wrong: the walkthrough called the bare
+`POST /v1/orders/:id/refund` endpoint and then judged the resulting `paid` status a bug. Verified
+after the fixes — rejecting a paid order yields `orders.status = canceled`,
+`canceledFromStatus = paid`, `cancelReason = kitchen_out_of_stock`, and a real Stripe refund.
+
+**What the mistake did surface**, and this part was real: the cancel path sends
+`reason: "cancel:<reasonCode>"`, which F-51 rejected. So before the F-51 fix, **rejecting a paid
+order cancelled it and left the guest's money with the restaurant** — the order flipped to
+`canceled` (saved before the refund is attempted) and the refund died in the provider branch as
+`outcome: 'failed'`. That is a worse consequence than F-51 as originally written.
 
 ## F-51 — every refund from the admin UI fails with 502
 
@@ -120,12 +136,37 @@ account is `custom` — cosmetic today because nothing branches on it.
 GB while the `pizza` fixture prices in UAH. That mismatch is what makes F-52 easy to hit: the GBP
 floor applies to converted UAH amounts.
 
+## F-54 — the squashed baseline references a role it does not create
+
+**Severity: blocker for the test suite, found while verifying this work; not caused by it.** All 21
+`packages/db` integration suites fail at `migrate()` with
+
+```
+PostgresError: role "resto_auth" does not exist
+CREATE POLICY invitation_resto_auth_full ON public.invitation TO resto_auth ...
+```
+
+`0000_baseline.sql` has 40 unguarded `CREATE POLICY` statements, several granting to `resto_auth`,
+but nothing in the migration creates that role. The suites use Testcontainers — a **fresh** Postgres
+per file — and `test/setup.ts` calls only `provisionAppRole`, and calls it _after_ `migrate()`.
+`provisionAuthRole` exists in `packages/db/src/auth-role.ts` and is never called from the harness.
+
+This has been red since the phase 10.2 migration squash and went unnoticed because the dev database
+already has `resto_auth`, so `db:migrate` succeeds there — the squash was verified dump-to-dump
+against a database that already carried the role. Same shape as the rename-completeness lesson: the
+probe passed for the wrong reason.
+
+Likely fix: provision both roles before `migrate()` in `test/setup.ts`, matching the production
+ordering where roles exist before the migration Job runs. Not attempted here — outside this task.
+
 ## Suggested order of work
 
-F-51 first — it is a one-line mapping and it is the only one a user hits on the very first attempt.
-Then F-49 (split the two event types; a Refund is not a Charge), then F-50 (one assignment in the
-aggregate). F-52 needs a small design decision about where the minimum lives. F-53 is documentation
-plus, optionally, teaching the seed to create the account itself so the step disappears for good.
+F-51 and F-49 are **fixed and verified against live Stripe test money** — see
+`.planning/quick/260823-d5n-fix-refund-money-path-blockers/`. F-50 was withdrawn as not a defect.
+
+Still open, in order: **F-54** (the db integration suite is red for everyone), then **F-52** (needs a
+small design decision about where an order minimum lives), then **F-53** (documentation, plus
+optionally teaching the seed to create the connected account so the manual step disappears).
 
 Each fix needs a regression test that would fail against the real provider — a stub-only test is what
-allowed all four.
+allowed all of these.
