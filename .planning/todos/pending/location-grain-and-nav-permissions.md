@@ -45,7 +45,7 @@ segment — fifteen today (`orders`, `menu`, `team`, `roles`, `settings`, `tenan
 its route-derivation spec already exist to keep that list honest. The cost is that a location cannot
 be named "Menu" or "Team"; district names — Воскресенка, Podil, High Street — do not collide.
 
-## Blocking bug, introduced 2026-08-23 by the RBAC wiring
+## Blocking bug, introduced 2026-08-23 by the RBAC wiring — FIXED 2026-08-23 (75df3e5f)
 
 `/v1/me` computes permissions from the **tenant-level member role only**, while the request-time
 checker now unions that with the role held at the active location. Verified live:
@@ -58,6 +58,9 @@ checker now unions that with the role held at the active location. Verified live
 So the server permits what it tells the client is forbidden. Any navigation built on this response
 would hide sections that work. **Fix `/v1/me` before filtering anything** — it must use the same
 union the checker does, or the two drift again the moment either changes.
+
+Closed by `resolve-effective-permissions.ts`: `/v1/me` and `PermissionsGuard` now call one resolver,
+so there is no second definition left to drift.
 
 ## Navigation filtering
 
@@ -97,7 +100,10 @@ the immutable pin in reserve as a future "kiosk mode" if a real customer asks fo
 
 ## Order of work
 
-1. `/v1/me` union — everything else is built on this response.
-2. Navigation filtering plus route-level refusal.
-3. Location in the path, per the three grains above.
+1. ~~`/v1/me` union — everything else is built on this response.~~ **Done 2026-08-23** (75df3e5f).
+2. ~~Navigation filtering plus route-level refusal.~~ **Done** — sidebar filtering 75df3e5f,
+   route-level refusal 753fdb01. `lib/auth/permissions.ts` is the single reading of the response;
+   `test/route-permission-guards.spec.ts` fails if a new protected route ships without a decision.
+3. Location in the path, per the three grains above. **Next.** Subsumes task 4 of the
+   `260823-loc-slug-address` quick plan (`?location=<slug>`), which was deferred into this.
 4. Lift the staff re-pin restriction, with a log line.
