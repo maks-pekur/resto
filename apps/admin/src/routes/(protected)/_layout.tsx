@@ -1,7 +1,6 @@
 import type { CSSProperties } from 'react';
 import { createRoute, Outlet, redirect, useNavigate, useRouterState } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { z } from 'zod';
 import { Route as rootRoute } from '../__root';
 import { authClient } from '@/lib/auth-client';
 import { safeNext } from '@/lib/auth/safe-next';
@@ -16,23 +15,12 @@ const sidebarStyle: CSSProperties = {
   '--header-height': 'calc(var(--spacing) * 14)',
 } as CSSProperties;
 
-// D-01: owner location filter. Any value outside this union is dropped by
-// zod at the edge, leaving `location` undefined -> use-effective-location
-// resolves the D-03 default.
-export const locationSearchSchema = z.object({
-  location: z
-    .union([z.literal('all'), z.string().uuid()])
-    .optional()
-    .catch(undefined),
-});
-
 const ONBOARDING_ROUTE = '/onboarding';
 const ONBOARDING_PATH_PREFIX = '/onboarding';
 
 export const Route = createRoute({
   getParentRoute: () => rootRoute,
   id: '/(protected)',
-  validateSearch: locationSearchSchema,
   beforeLoad: async ({ location }) => {
     const session = await authClient.getSession();
     if (!session.data?.session) {

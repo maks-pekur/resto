@@ -3,10 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, ImageIcon } from 'lucide-react';
-import { showError, showSuccess } from '@/lib/ui/toast-helpers';
+import { showError } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/empty-state';
-import { Switch } from '@/components/ui/switch';
 import {
   Table,
   TableBody,
@@ -27,7 +26,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { StatusBadge } from '@/components/menu/status-badge';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import { toggleStopList, archiveItem } from '@/lib/queries/catalog';
+import { archiveItem } from '@/lib/queries/catalog';
 import type { ItemListItemApi } from '@/lib/queries/catalog';
 import type { Status } from '@/lib/menu/types';
 
@@ -41,13 +40,7 @@ export interface ItemsTableProps {
     readonly pageSize: number;
   };
   readonly onPageChange: (page: number) => void;
-  // D-05: the inline stop/resume toggle is a write action — it requires a
-  // concrete location the same way the dedicated stop-list page does.
-  // undefined (owner in `all`/zero-location mode) disables the toggle.
-  readonly stopListLocationId?: string;
 }
-
-type OptimisticState = Record<string, 'paused' | 'published' | undefined>;
 
 const trimPrice = (basePrice: string): string => {
   if (basePrice.endsWith('.00')) return basePrice.slice(0, -3);
@@ -67,21 +60,17 @@ export function ItemsTable({
   totalCount,
   pagination,
   onPageChange,
-  stopListLocationId,
 }: ItemsTableProps): React.ReactElement {
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
-  const canToggleStopList = stopListLocationId !== undefined;
 
   const formatPrice = (basePrice: string, hasSizes: boolean): string => {
     const trimmed = trimPrice(basePrice);
     return hasSizes ? t('fromPrice', { price: trimmed }) : t('withCurrency', { price: trimmed });
   };
 
-  const [optimistic, setOptimistic] = React.useState<OptimisticState>({});
-  const [pendingIds, setPendingIds] = React.useState<ReadonlySet<string>>(new Set());
   const [archiveTarget, setArchiveTarget] = React.useState<ItemListItemApi | null>(null);
   const [openMenuId, setOpenMenuId] = React.useState<string | null>(null);
 
@@ -105,33 +94,6 @@ export function ItemsTable({
     };
   }, [openMenuId]);
 
-  const toggleMutation = useMutation({
-    mutationFn: ({ itemId, next }: { itemId: string; next: 'paused' | 'published' }) =>
-      toggleStopList(itemId, next, stopListLocationId ?? ''),
-    onSettled: (_data, _err, { itemId }) => {
-      setPendingIds((prev) => {
-        const copy = new Set(prev);
-        copy.delete(itemId);
-        return copy;
-      });
-    },
-    onSuccess: (res, { itemId, next }) => {
-      if (res.ok) {
-        showSuccess(next === 'paused' ? t('addedToStopList') : t('removedFromStopList'), {
-          duration: 1500,
-        });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
-      } else {
-        setOptimistic((prev) => ({ ...prev, [itemId]: undefined }));
-        showError(null, t('stopListFailed'));
-      }
-    },
-    onError: (_err, { itemId }) => {
-      setOptimistic((prev) => ({ ...prev, [itemId]: undefined }));
-      showError(null, t('stopListFailed'));
-    },
-  });
-
   const archiveMutation = useMutation({
     mutationFn: (id: string) => archiveItem(id),
     onSuccess: (res) => {
@@ -153,20 +115,6 @@ export function ItemsTable({
     const id = archiveTarget.id;
     setArchiveTarget(null);
     archiveMutation.mutate(id);
-  };
-
-  const handleToggleStop = (item: ItemListItemApi): void => {
-    if (pendingIds.has(item.id) || !canToggleStopList) return;
-    const currentEffective = optimistic[item.id] ?? item.status;
-    const isCurrentlyPaused = currentEffective === 'paused';
-    const next: 'paused' | 'published' = isCurrentlyPaused ? 'published' : 'paused';
-    setOptimistic((prev) => ({ ...prev, [item.id]: next }));
-    setPendingIds((prev) => {
-      const copy = new Set(prev);
-      copy.add(item.id);
-      return copy;
-    });
-    toggleMutation.mutate({ itemId: item.id, next });
   };
 
   if (items.length === 0) {
@@ -200,7 +148,6 @@ export function ItemsTable({
             <TableHead>{t('tableNameHeader')}</TableHead>
             <TableHead className="w-[100px]">{t('tablePriceHeader')}</TableHead>
             <TableHead className="w-[120px]">{t('tableStatusHeader')}</TableHead>
-            <TableHead className="w-[80px]">{t('tableStopHeader')}</TableHead>
             <TableHead className="w-[60px] text-right" />
           </TableRow>
         </TableHeader>
@@ -208,10 +155,7 @@ export function ItemsTable({
           {items.map((item) => {
             const name = fromLocalizedText(item.name);
             const categoryPath = buildCategoryPath(item);
-            const effectiveStatus: Status = optimistic[item.id] ?? item.status;
-            const isOnStopList = effectiveStatus === 'paused';
-            const isPending = pendingIds.has(item.id);
-            const switchLabel = isOnStopList ? t('stopSwitchOff') : t('stopSwitchOn');
+            const status: Status = item.status;
 
             const openItem = (): void => {
               void navigate({
@@ -257,20 +201,7 @@ export function ItemsTable({
                 </TableCell>
                 <TableCell>{formatPrice(item.basePrice, item.hasSizes)}</TableCell>
                 <TableCell>
-                  <StatusBadge status={effectiveStatus} />
-                </TableCell>
-                <TableCell onClick={stopPropagation}>
-                  <div className={isPending ? 'pointer-events-none opacity-50' : ''}>
-                    <Switch
-                      className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
-                      checked={isOnStopList}
-                      onCheckedChange={() => {
-                        handleToggleStop(item);
-                      }}
-                      aria-label={switchLabel}
-                      disabled={isPending || !canToggleStopList}
-                    />
-                  </div>
+                  <StatusBadge status={status} />
                 </TableCell>
                 <TableCell className="text-right" onClick={stopPropagation}>
                   <div
