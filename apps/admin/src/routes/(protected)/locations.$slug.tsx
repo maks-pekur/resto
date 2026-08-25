@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { slugifyName } from '@resto/domain';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import {
   createLocationMutation,
   tenantLocationsQuery,
@@ -33,6 +34,7 @@ type FormValues = z.infer<typeof FormSchema>;
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/locations/$slug',
+  beforeLoad: requirePermission('location', 'create'),
   component: LocationFormPage,
 });
 

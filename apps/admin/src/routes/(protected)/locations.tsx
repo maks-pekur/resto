@@ -4,6 +4,7 @@ import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tansta
 import { toast } from 'sonner';
 import { Archive, Plus } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import {
   tenantLocationsQuery,
@@ -28,6 +29,7 @@ import {
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/locations',
+  beforeLoad: requirePermission('location', 'create'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),

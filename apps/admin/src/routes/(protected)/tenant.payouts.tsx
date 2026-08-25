@@ -5,6 +5,7 @@ import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/co
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { PageHeading } from '@/components/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +20,7 @@ import { VITE_STRIPE_PUBLISHABLE_KEY } from '@/env';
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/tenant/payouts',
+  beforeLoad: requirePermission('billing', 'read'),
   component: TenantPayoutsPage,
 });
 

@@ -19,7 +19,10 @@
     "comma": "Comma-separated",
     "tryAgain": "Please refresh the page. If the issue persists, check your connection.",
     "errorGeneric": "Something went wrong. Please try again.",
-    "notFound": "Not found."
+    "notFound": "Not found.",
+    "forbiddenTitle": "You do not have access to this page.",
+    "forbiddenBody": "Your role does not include the permission this page needs. Ask an owner to grant it.",
+    "backToDashboard": "Back to dashboard"
   },
   "auth": {
     "signInTitle": "Sign in to Resto",

@@ -19,6 +19,7 @@ import type { OperatorSummary } from '@/lib/queries/identity';
 import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
 import {
   Sidebar,
@@ -42,12 +43,11 @@ export function AppSidebar({
   const { t: tOrders } = useTranslation('translation', { keyPrefix: 'orders' });
   const isOwner = operator.baseRole === 'owner';
 
-  // Hiding is convenience, not security — every route still refuses a direct link. This only stops
-  // an operator being offered a door that will not open for them.
+  // Hiding is convenience, not security — every route refuses a direct link with the same
+  // `hasPermission` call (see lib/auth/permissions). This only stops an operator being offered a
+  // door that will not open for them.
   const { data: meResult } = useQuery(meQuery());
-  const permissions = meResult?.data?.permissions ?? {};
-  const can = (resource: string, action: string): boolean =>
-    isOwner || (permissions[resource]?.includes(action) ?? false);
+  const me = meResult?.data ?? null;
   const { data: locationsResult } = useQuery({
     ...meLocationsQuery(),
     enabled: isOwner,
@@ -67,7 +67,7 @@ export function AppSidebar({
 
   const navOperations: NavMainItem[] = [
     { title: t('dashboard'), url: '/', icon: LayoutDashboard },
-    ...(can('order', 'read')
+    ...(hasPermission(me, 'order', 'read')
       ? [
           {
             title: t('orders'),
@@ -78,7 +78,7 @@ export function AppSidebar({
           },
         ]
       : []),
-    ...(can('menu', 'read')
+    ...(hasPermission(me, 'menu', 'read')
       ? [
           {
             title: t('menu'),
@@ -99,13 +99,17 @@ export function AppSidebar({
   // Brand grain: these configure the restaurant company, not a point. Grouping them apart is the
   // same distinction the URL makes — no location slug in their addresses.
   const navAdministration: NavMainItem[] = [
-    ...(can('location', 'create') ? [{ title: 'Locations', url: '/locations', icon: MapPin }] : []),
-    ...(can('billing', 'read')
+    ...(hasPermission(me, 'location', 'create')
+      ? [{ title: 'Locations', url: '/locations', icon: MapPin }]
+      : []),
+    ...(hasPermission(me, 'billing', 'read')
       ? [{ title: t('payments'), url: '/tenant/payouts', icon: CreditCard }]
       : []),
-    ...(can('staff', 'invite') ? [{ title: t('team'), url: '/team', icon: Users }] : []),
-    ...(can('ac', 'read') ? [{ title: 'Roles', url: '/roles', icon: KeyRound }] : []),
-    ...(can('settings', 'update')
+    ...(hasPermission(me, 'staff', 'invite')
+      ? [{ title: t('team'), url: '/team', icon: Users }]
+      : []),
+    ...(hasPermission(me, 'ac', 'read') ? [{ title: 'Roles', url: '/roles', icon: KeyRound }] : []),
+    ...(hasPermission(me, 'settings', 'update')
       ? [{ title: t('settings'), url: '/settings', icon: Settings2 }]
       : []),
   ];

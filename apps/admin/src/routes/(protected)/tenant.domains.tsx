@@ -1,12 +1,14 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { tenantDomainsQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/tenant/domains',
+  beforeLoad: requirePermission('settings', 'update'),
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(tenantDomainsQuery()),
   component: TenantDomainsPage,
 });
