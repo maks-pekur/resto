@@ -1210,6 +1210,7 @@ export interface components {
                 /** Format: uuid */
                 id: string;
                 name: string;
+                slug: string;
             }[];
         };
         BootstrapOwnerInputDto: {

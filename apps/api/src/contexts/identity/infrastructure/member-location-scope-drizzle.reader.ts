@@ -82,6 +82,7 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
           .select({
             id: schema.locations.id,
             name: schema.locations.name,
+            slug: schema.locations.slug,
           })
           .from(schema.locations)
           .where(
@@ -98,6 +99,7 @@ export class MemberLocationScopeDrizzleReader implements MemberLocationScopeRead
         .select({
           id: schema.locations.id,
           name: schema.locations.name,
+          slug: schema.locations.slug,
         })
         .from(schema.memberLocationScope)
         .innerJoin(schema.member, eq(schema.memberLocationScope.memberId, schema.member.id))

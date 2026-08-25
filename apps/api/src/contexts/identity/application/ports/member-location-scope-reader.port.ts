@@ -5,6 +5,8 @@ export const MEMBER_LOCATION_SCOPE_READER = Symbol('MEMBER_LOCATION_SCOPE_READER
 export interface PinnableLocation {
   readonly id: string;
   readonly name: string;
+  /** The location's address in the admin URL — every caller needs it to build or read a link. */
+  readonly slug: string;
 }
 
 export interface MemberLocationScopeReader {

@@ -1938,9 +1938,12 @@ components:
                 format: uuid
               name:
                 type: string
+              slug:
+                type: string
             required:
               - id
               - name
+              - slug
       required:
         - locations
     BootstrapOwnerInputDto:
