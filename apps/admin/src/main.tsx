@@ -30,7 +30,6 @@ import { Route as locationFormRoute } from './routes/(protected)/locations.$slug
 import { Route as rolesRoute } from './routes/(protected)/roles';
 import { Route as roleDetailRoute } from './routes/(protected)/roles.$roleId';
 import { Route as onboardingIndexRoute } from './routes/(protected)/onboarding/index';
-import { Route as dashboardRedirectRoute } from './routes/(protected)/dashboard-redirect.$';
 import { Route as menuLayoutRoute } from './routes/(protected)/menu/_layout';
 import { Route as locationLayoutRoute } from './routes/(protected)/location/_layout';
 import { Route as locationDashboardRoute } from './routes/(protected)/location/dashboard';
@@ -106,7 +105,6 @@ const protectedRouteTree = protectedLayoutRoute.addChildren([
   tenantThemeRoute,
   tenantPayoutsRoute,
   onboardingIndexRoute,
-  dashboardRedirectRoute,
   locationRouteTree,
 ]);
 
