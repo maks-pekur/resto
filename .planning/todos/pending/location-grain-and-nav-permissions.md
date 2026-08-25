@@ -104,6 +104,9 @@ the immutable pin in reserve as a future "kiosk mode" if a real customer asks fo
 2. ~~Navigation filtering plus route-level refusal.~~ **Done** — sidebar filtering 75df3e5f,
    route-level refusal 753fdb01. `lib/auth/permissions.ts` is the single reading of the response;
    `test/route-permission-guards.spec.ts` fails if a new protected route ships without a decision.
-3. Location in the path, per the three grains above. **Next.** Subsumes task 4 of the
-   `260823-loc-slug-address` quick plan (`?location=<slug>`), which was deferred into this.
-4. Lift the staff re-pin restriction, with a log line.
+3. ~~Location in the path, per the three grains above.~~ **Done 2026-08-26** (558404ed) — see
+   `.planning/quick/260826-location-in-the-path/`. Subsumed task 4 of the `260823-loc-slug-address`
+   quick plan. Two founder calls landed with it: the catalogue lost its per-location stop toggle
+   rather than being given a slug to read it with, and the stop list is one per point with no
+   aggregate — the every-location view is the slugless `/dashboard`.
+4. Lift the staff re-pin restriction, with a log line. **Next, and the last step.**
