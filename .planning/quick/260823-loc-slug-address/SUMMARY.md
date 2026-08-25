@@ -49,10 +49,20 @@ decision.
 
 ## Verification
 
-`admin:typecheck`, `admin:lint`, `admin:test` (121 tests, 19 files) and `pnpm openapi:check` all
-green. `test/route-permission-guards.spec.ts` walks the assembled router and fails if any route
-under the protected layout has neither a guard nor a guarded ancestor nor a place on the ungated
-list — proved by deleting the `/team` guard and watching it turn red before restoring it.
+`admin:typecheck`, `admin:lint`, `admin:test` (123 tests, 20 files) and `pnpm openapi:check` all
+green; CI reports `OpenAPI drift check: pass` on the branch.
+
+`test/route-permission-guards.spec.ts` walks the assembled router and fails if any route under the
+protected layout has neither a guard nor a guarded ancestor nor a place on the ungated list — proved
+by deleting the `/team` guard and watching it turn red before restoring it.
+
+`test/forbidden-route-render.spec.tsx` checks the assumption behind throwing rather than
+redirecting: the router must catch the refusal at the refused route and leave every ancestor
+mounted. It renders a real route tree through the real guard and asserts the shell survives, the
+Forbidden screen appears in the outlet, and the gated component never mounts.
+
+Not smoke-tested in a browser — the dev stack was down and the change is client-side routing covered
+by the two specs above. Worth a click through as `manager@demo.local` next time the stack is up.
 
 ## Deferred, with a reason
 
