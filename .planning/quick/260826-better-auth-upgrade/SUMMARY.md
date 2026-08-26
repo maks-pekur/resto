@@ -8,6 +8,9 @@ branch: better-auth-security-upgrade
 
 # better-auth 1.4.22 → 1.6.30
 
+> The todo that scoped this (`better-auth-security-upgrade.md`) lives on the unmerged
+> `location-slug-and-address` branch, so it is not closed here. Close it when PR #261 merges.
+
 Ten advisories landed against `better-auth` on 2026-08-23 and turned CI's `Dependency audit` red on
 every branch. `pnpm audit --prod` now reports **no known vulnerabilities**.
 
