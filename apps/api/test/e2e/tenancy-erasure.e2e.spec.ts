@@ -30,7 +30,7 @@ const provisionTenant = async (
     method: 'POST',
     url: '/internal/v1/tenants',
     headers: TENANT_HEADERS,
-    payload: { slug, displayName: `Cafe ${slug}`, defaultCurrency: 'USD', locale: 'en' },
+    payload: { slug, displayName: `Cafe ${slug}`, country: 'GB', locale: 'en' },
   });
   expect(res.statusCode).toBe(201);
   return res.json<{ id: string; slug: string }>();
@@ -83,6 +83,11 @@ suite('Tenancy — GDPR erasure end-to-end', () => {
   let db: TenantAwareDb;
 
   beforeAll(async () => {
+    // The erasure path requires AUDIT_ERASURE_SALT (offboard-tenant.service.ts:49).
+    // It is documented in .env.example but optional in the schema, so a developer
+    // .env without it makes this suite fail as if erasure were broken. Pin it here
+    // so the spec does not depend on which env happens to be loaded.
+    process.env.AUDIT_ERASURE_SALT ??= 'e2e-erasure-salt-deterministic-32-chars-min';
     stack = await startRealStack();
     service = stack.app.get(OffboardTenantService);
     db = stack.app.get(TenantAwareDb);
