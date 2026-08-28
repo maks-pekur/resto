@@ -53,6 +53,28 @@ describe('MenuScreen on qr-menu', () => {
     expect(within(screen.getByRole('contentinfo')).getByText('Cafe Demo')).toBeInTheDocument();
   });
 
+  it('renders the tenant logo beside the name in the header and the footer', () => {
+    renderMenu(
+      buildMenu({
+        tenant: {
+          id: 'tenant-1',
+          slug: 'demo',
+          displayName: 'Cafe Demo',
+          theme: {
+            logoUrl: 'https://cdn.example.test/logo.png',
+            primaryColor: null,
+            font: null,
+          },
+        },
+      }),
+    );
+    const logos = screen.getAllByAltText('Cafe Demo');
+    expect(logos).toHaveLength(2);
+    for (const logo of logos) {
+      expect(logo).toHaveAttribute('src', 'https://cdn.example.test/logo.png');
+    }
+  });
+
   it('renders a category heading, its item and the item price', () => {
     renderMenu(buildMenu());
     expect(screen.getByRole('heading', { level: 2, name: 'Pizza' })).toBeInTheDocument();
