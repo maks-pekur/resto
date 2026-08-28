@@ -123,7 +123,9 @@
       "archiveDialogTitle": "Архивировать блюдо?",
       "archiveDialogDescription": "Блюдо «{{name}}» будет скрыто из меню. Действие обратимо — снимите архивацию в фильтре статусов.",
       "totalLabel": "Всего: {{total}}",
-      "pageLabel": "Стр. {{page}}"
+      "pageLabel": "Стр. {{page}}",
+      "pageTitle": "Блюда",
+      "archiveFailed": "Не удалось архивировать блюдо"
     },
     "editor": {
       "name": "Название",
@@ -179,7 +181,8 @@
       "statusSectionTitle": "Статус",
       "statusReadonlyHint": "Управляется из списка блюд.",
       "techInfoSectionTitle": "Тех. информация",
-      "slugLabel": "Slug"
+      "slugLabel": "Slug",
+      "newItemTitle": "Новое блюдо"
     },
     "sizes": {
       "title": "Размеры",
@@ -250,7 +253,10 @@
       "archiveDialogTitle": "Архивировать категорию?",
       "archiveDialogDescription": "Категория «{{name}}» будет скрыта из меню. Действие обратимо — включите «Показать архив».",
       "archiveFailed": "Не удалось архивировать категорию.",
-      "showArchived": "Показать архив"
+      "showArchived": "Показать архив",
+      "pageTitle": "Категории",
+      "nameRequired": "Введите название",
+      "reorderFailed": "Не удалось изменить порядок"
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",
@@ -285,7 +291,11 @@
       "createGroupBtn": "Создать группу",
       "groupCreated": "Группа создана",
       "groupSaveFailed": "Не удалось сохранить группу.",
-      "optionSaveFailed": "Не удалось сохранить вариант."
+      "optionSaveFailed": "Не удалось сохранить вариант.",
+      "pageTitle": "Группы модификаторов",
+      "addGroup": "+ Создать группу",
+      "newGroupTitle": "Новая группа",
+      "tableStatus": "Статус"
     },
     "stopList": {
       "title": "Стоп-лист пуст",

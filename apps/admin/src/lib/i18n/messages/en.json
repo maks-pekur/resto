@@ -123,7 +123,9 @@
       "archiveDialogTitle": "Archive this item?",
       "archiveDialogDescription": "Item «{{name}}» will be hidden from the menu. Reversible — clear the archive filter to restore it.",
       "totalLabel": "Total: {{total}}",
-      "pageLabel": "Page {{page}}"
+      "pageLabel": "Page {{page}}",
+      "pageTitle": "Items",
+      "archiveFailed": "Could not archive the item"
     },
     "editor": {
       "name": "Name",
@@ -179,7 +181,8 @@
       "statusSectionTitle": "Status",
       "statusReadonlyHint": "Managed from the items list.",
       "techInfoSectionTitle": "Tech info",
-      "slugLabel": "Slug"
+      "slugLabel": "Slug",
+      "newItemTitle": "New item"
     },
     "sizes": {
       "title": "Sizes",
@@ -250,7 +253,10 @@
       "archiveDialogTitle": "Archive this category?",
       "archiveDialogDescription": "Category \"{{name}}\" will be hidden from the menu. This is reversible — turn on \"Show archived\".",
       "archiveFailed": "Couldn't archive the category.",
-      "showArchived": "Show archived"
+      "showArchived": "Show archived",
+      "pageTitle": "Categories",
+      "nameRequired": "Enter a name",
+      "reorderFailed": "Could not reorder"
     },
     "modifierGroups": {
       "createGroup": "+ Create group",
@@ -285,7 +291,11 @@
       "createGroupBtn": "Create group",
       "groupCreated": "Group created",
       "groupSaveFailed": "Couldn't save the group.",
-      "optionSaveFailed": "Couldn't save the option."
+      "optionSaveFailed": "Couldn't save the option.",
+      "pageTitle": "Modifier groups",
+      "addGroup": "+ Create group",
+      "newGroupTitle": "New group",
+      "tableStatus": "Status"
     },
     "stopList": {
       "title": "Stop list is empty",
