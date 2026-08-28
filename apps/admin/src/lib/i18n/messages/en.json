@@ -253,7 +253,6 @@
       "archiveDialogTitle": "Archive this category?",
       "archiveDialogDescription": "Category \"{{name}}\" will be hidden from the menu. This is reversible — turn on \"Show archived\".",
       "archiveFailed": "Couldn't archive the category.",
-      "showArchived": "Show archived",
       "pageTitle": "Categories",
       "nameRequired": "Enter a name",
       "reorderFailed": "Could not reorder"

@@ -253,7 +253,6 @@
       "archiveDialogTitle": "¿Archivar esta categoría?",
       "archiveDialogDescription": "La categoría «{{name}}» se ocultará del menú. Es reversible — activa «Mostrar archivados».",
       "archiveFailed": "No se pudo archivar la categoría.",
-      "showArchived": "Mostrar archivados",
       "pageTitle": "Categorías",
       "nameRequired": "Introduce un nombre",
       "reorderFailed": "No se pudo reordenar"
