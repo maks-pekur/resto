@@ -2,7 +2,7 @@
  * Import AFTER `@import 'tailwindcss'` and AFTER tokens.css in a Tailwind app.
  * Maps the shared CSS variables into Tailwind's color/radius/font namespaces. */
 @theme inline {
-  --font-sans: var(--font-inter, var(--font-sans));
+  --font-sans: var(--font-brand, var(--font-inter, var(--font-sans)));
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -11,6 +11,8 @@
   --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
+  --color-primary-strong: var(--primary-strong);
+  --color-primary-tint: var(--primary-tint);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);

@@ -10,12 +10,14 @@
   "exports": {
     ".": "./src/index.ts",
     "./tokens.css": "./tokens.css",
-    "./preset.css": "./preset.css"
+    "./preset.css": "./preset.css",
+    "./guest.css": "./guest.css"
   },
   "files": [
     "src",
     "tokens.css",
-    "preset.css"
+    "preset.css",
+    "guest.css"
   ],
   "devDependencies": {
     "@resto/config-eslint": "workspace:*",

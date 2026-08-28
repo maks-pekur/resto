@@ -120,3 +120,33 @@ not depend on each other.
   availability ETag, never the menu ETag. The `menu-response.e2e`
   no-`Set-Cookie` test is the regression net; CDN setup lives in
   `docs/runbooks/menu-edge-caching.md`.
+
+### Guest surfaces — one visual system (HARD)
+
+`website/` and `qr-menu/` are one brand to the guest holding the phone. They
+ship a single visual system; `admin/` is an operator surface and is exempt.
+
+- **Tokens live in `@resto/config-tailwind`, components in `@resto/ui`.** A
+  colour, radius, font or spacing written into an app's own stylesheet or as a
+  Tailwind arbitrary value (`bg-[oklch(0.97_0_0)]`, `text-[20px]`) cannot be
+  changed for both surfaces at once and silently opts that element out of
+  tenant theming (`buildTenantThemeVars` overrides custom properties at
+  runtime). Use the token classes.
+- **Anything both surfaces render lives in `@resto/ui`** — header, footer,
+  locale switcher, category rail, item card, item detail, cart sheet, cart bar.
+  Copying instead of sharing is how the two cart drawers, two money parsers and
+  one half-translated string set happened.
+- **shadcn/ui (`new-york`, `neutral`) is the only component base.** No parallel
+  hand-rolled dialog/sheet/tabs. `packages/ui/components.json` targets the
+  shared package, so `npx shadcn add …` stays a clean upgrade path.
+- **`@resto/ui` must not import `next/*`.** The two framework-specific concerns
+  — image component and translation function — arrive through
+  `GuestUiProvider`; a shared component that needs a `typeof window` check or
+  an `isNext` prop is a design failure.
+- **Every guest page is a complete document: header, content, footer.** The QR
+  menu is a page, not a widget.
+- Design decisions go through the `ui-ux-pro-max` skill, React/Next
+  implementation through `vercel-react-best-practices`. Visual reference for
+  the guest look is Dodo Pizza (`shift.dodobrands.io`).
+
+Full rule: `~/work/llm-wiki/personal/rules/guest-surface-visual-parity.md`.
