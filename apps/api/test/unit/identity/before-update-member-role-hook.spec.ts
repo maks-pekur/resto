@@ -76,15 +76,20 @@ describe('assertRoleAssignable (beforeUpdateMemberRole backstop)', () => {
     await expect(run('unknown-slug', makeAuthDb(null))).rejects.toBeInstanceOf(APIError);
   });
 
-  it('uses the REAL SYSTEM_ROLES — admin is currently unassignable', async () => {
-    // The drift the old replica hid. SYSTEM_ROLES.admin carries staff:['remove'],
-    // which NON_DELEGATABLE forbids, so the built-in admin role cannot be granted.
-    // This is a live product defect awaiting a founder decision
-    // (.planning/todos/pending/admin-role-cannot-be-assigned.md) — this assertion
-    // documents the real behaviour so the next change to SYSTEM_ROLES.admin is
-    // deliberate. When the decision lands, update this expectation with it.
+  it('allows the built-in admin role even though it carries staff:remove', async () => {
+    // Founder decision 2026-08-28. admin carries staff:['remove'], which
+    // NON_DELEGATABLE forbids; built-in roles are trusted, so the guard no longer
+    // refuses it. This was broken for everyone from 2026-07-04 until now.
     expect(SYSTEM_ROLES.admin).toMatchObject({ staff: expect.arrayContaining(['remove']) });
-    await expect(run('admin', makeAuthDb(null))).rejects.toBeInstanceOf(APIError);
+    await expect(run('admin', makeAuthDb(null))).resolves.toBeUndefined();
+  });
+
+  it('still refuses owner — the exemption stops short of minting a new owner', async () => {
+    // owner carries tenant:['delete','transfer'], billing:['update'] and all of
+    // ac:*. This hook is the backstop for a caller that bypasses
+    // assign-role.service and hits Better Auth directly, so owner keeps it.
+    // Consequence: a second co-owner cannot be promoted. Deliberate, not an oversight.
+    await expect(run('owner', makeAuthDb(null))).rejects.toBeInstanceOf(APIError);
   });
 
   it('allows the built-in staff role', async () => {
