@@ -67,7 +67,7 @@ export const CategoryRail = ({ categories }: CategoryRailProps) => {
     >
       <div
         ref={railRef}
-        className="mx-auto flex h-(--category-rail-height) max-w-7xl items-center gap-2 overflow-x-auto px-4 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden"
+        className="mx-auto flex h-(--category-rail-height) max-w-7xl items-center gap-2 overflow-x-auto overscroll-x-contain px-4 [scrollbar-width:none] sm:px-6 [&::-webkit-scrollbar]:hidden"
       >
         {categories.map((category) => {
           const isActive = activeId === category.id;
@@ -81,7 +81,7 @@ export const CategoryRail = ({ categories }: CategoryRailProps) => {
                 goToCategory(category.id);
               }}
               className={cn(
-                'focus-visible:ring-ring h-9 shrink-0 cursor-pointer rounded-full px-4 text-sm font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                'focus-visible:ring-ring h-11 shrink-0 cursor-pointer rounded-full px-4 text-sm font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:h-9',
                 isActive
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:bg-muted hover:text-foreground',

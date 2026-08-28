@@ -36,13 +36,4 @@ export { LocaleSwitcher, type LocaleSwitcherProps } from './guest/locale-switche
 export { CategoryRail, sectionElementId, type CategoryRailProps } from './guest/category-rail';
 export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
-export { ItemDetail, type ItemDetailProps } from './guest/item-detail';
-export { ItemDialog, type ItemDialogProps } from './guest/item-dialog';
-export { CartSheet, type CartSheetProps } from './guest/cart-sheet';
-export { CartLineRow, type CartLineRowProps } from './guest/cart-line-row';
 export { CartBar, type CartBarProps } from './guest/cart-bar';
-export {
-  isSingleChoiceGroup,
-  useItemSelection,
-  type ItemSelection,
-} from './guest/use-item-selection';

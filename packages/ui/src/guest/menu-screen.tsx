@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { MenuDto, MenuItemDto } from '@resto/api-client/public';
 import { selectItemCount, selectSubtotal, useCartStore, type CartLineItem } from '@resto/cart';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
 import { CartBar } from './cart-bar';
-import { CartSheet } from './cart-sheet';
 import { CategoryRail, sectionElementId } from './category-rail';
 import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
-import { ItemDialog } from './item-dialog';
 import { MenuItemCard } from './menu-item-card';
 import { useGuestUi } from './guest-ui-provider';
+
+// Radix dialog + sheet are the two heaviest chunks and neither is needed for the
+// first paint of a menu opened over mobile data.
+const ItemDialog = lazy(async () => ({ default: (await import('./item-dialog')).ItemDialog }));
+const CartSheet = lazy(async () => ({ default: (await import('./cart-sheet')).CartSheet }));
 
 const PRIORITY_IMAGE_COUNT = 4;
 
@@ -47,6 +50,7 @@ export const MenuScreen = ({
   const { locale, t } = useGuestUi();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(initialItemId);
   const [cartOpen, setCartOpen] = useState(false);
+  const [cartMounted, setCartMounted] = useState(false);
 
   useEffect(() => {
     setSelectedItemId(initialItemId);
@@ -77,13 +81,23 @@ export const MenuScreen = ({
     ? (menu.items.find((item) => item.id === selectedItemId) ?? null)
     : null;
 
-  const selectedGroups = selectedItem
-    ? menu.modifierGroups.filter((group) => selectedItem.modifierGroupIds.includes(group.id))
+  // Keep the last item mounted while the dialog plays its close animation.
+  const lastItemRef = useRef<MenuItemDto | null>(null);
+  if (selectedItem) lastItemRef.current = selectedItem;
+  const dialogItem = selectedItem ?? lastItemRef.current;
+
+  const dialogGroups = dialogItem
+    ? menu.modifierGroups.filter((group) => dialogItem.modifierGroupIds.includes(group.id))
     : [];
 
   const tenantName = menu.tenant?.displayName ?? t('menu.title');
   const logoUrl = menu.tenant?.theme?.logoUrl ?? null;
   const total = formatPrice(subtotal, menu.currency, locale);
+
+  const openCart = (): void => {
+    setCartMounted(true);
+    setCartOpen(true);
+  };
 
   const openItem = (id: string): void => {
     setSelectedItemId(id);
@@ -105,9 +119,7 @@ export const MenuScreen = ({
           logoUrl={logoUrl}
           cartItemCount={itemCount}
           cartTotal={itemCount > 0 ? total : null}
-          onOpenCart={() => {
-            setCartOpen(true);
-          }}
+          onOpenCart={openCart}
           actions={headerActions}
         />
       }
@@ -121,15 +133,7 @@ export const MenuScreen = ({
           actions={footerActions}
         />
       }
-      bar={
-        <CartBar
-          itemCount={itemCount}
-          total={total}
-          onOpen={() => {
-            setCartOpen(true);
-          }}
-        />
-      }
+      bar={<CartBar itemCount={itemCount} total={total} onOpen={openCart} />}
     >
       {sections.length === 0 ? (
         <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-24 text-center">
@@ -143,15 +147,15 @@ export const MenuScreen = ({
               key={category.id}
               id={sectionElementId(category.id)}
               aria-labelledby={`menu-heading-${category.id}`}
-              className="mb-12 scroll-mt-[calc(var(--header-height)+var(--category-rail-height)+1rem)]"
+              className="mb-10 scroll-mt-[calc(var(--header-height)+var(--category-rail-height)+1rem)] [contain-intrinsic-size:auto_38rem] [content-visibility:auto] sm:mb-12"
             >
               <h2
                 id={`menu-heading-${category.id}`}
-                className="mb-5 text-2xl font-extrabold sm:text-3xl"
+                className="mb-4 text-xl font-extrabold sm:mb-5 sm:text-3xl"
               >
                 {localized(category.name, locale)}
               </h2>
-              <div className="grid grid-cols-1 gap-x-5 gap-y-8 min-[420px]:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {
                   const priority = imageIndex < PRIORITY_IMAGE_COUNT;
                   imageIndex += 1;
@@ -171,26 +175,34 @@ export const MenuScreen = ({
         </div>
       )}
 
-      <ItemDialog
-        item={selectedItem}
-        modifierGroups={selectedGroups}
-        currency={menu.currency}
-        open={selectedItem != null}
-        onOpenChange={(open) => {
-          if (!open) closeItem();
-        }}
-        onAddToCart={(line) => {
-          addItem(line);
-          onAddedToCart?.(line);
-        }}
-      />
+      {dialogItem ? (
+        <Suspense fallback={null}>
+          <ItemDialog
+            item={dialogItem}
+            modifierGroups={dialogGroups}
+            currency={menu.currency}
+            open={selectedItem != null}
+            onOpenChange={(open) => {
+              if (!open) closeItem();
+            }}
+            onAddToCart={(line) => {
+              addItem(line);
+              onAddedToCart?.(line);
+            }}
+          />
+        </Suspense>
+      ) : null}
 
-      <CartSheet
-        open={cartOpen}
-        onOpenChange={setCartOpen}
-        currency={menu.currency}
-        primaryAction={cartPrimaryAction}
-      />
+      {cartMounted ? (
+        <Suspense fallback={null}>
+          <CartSheet
+            open={cartOpen}
+            onOpenChange={setCartOpen}
+            currency={menu.currency}
+            primaryAction={cartPrimaryAction}
+          />
+        </Suspense>
+      ) : null}
     </GuestShell>
   );
 };

@@ -41,11 +41,12 @@
     sans-serif;
 
   --header-height: 3.5rem;
-  --category-rail-height: 3.25rem;
+  --category-rail-height: 3.5rem;
 }
 
 @media (min-width: 640px) {
   :root {
     --header-height: 4rem;
+    --category-rail-height: 3.25rem;
   }
 }

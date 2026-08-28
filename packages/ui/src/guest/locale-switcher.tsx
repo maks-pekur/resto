@@ -37,7 +37,7 @@ export const LocaleSwitcher = ({
               onSelect(locale);
             }}
             className={cn(
-              'focus-visible:ring-ring cursor-pointer rounded-full px-3 py-1.5 text-xs font-bold uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none',
+              'focus-visible:ring-ring min-h-11 cursor-pointer rounded-full px-4 text-xs font-bold uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8 sm:px-3',
               isActive
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',

@@ -43,7 +43,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
             updateQuantity(item.itemId, item.sizeId, -1);
           }}
           aria-label={t('item.qtyDecrease', { name: item.name })}
-          className="hover:bg-background focus-visible:ring-ring flex size-9 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          className="hover:bg-background focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
         >
           <Minus className="size-4" aria-hidden="true" />
         </button>
@@ -54,7 +54,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
             updateQuantity(item.itemId, item.sizeId, 1);
           }}
           aria-label={t('item.qtyIncrease', { name: item.name })}
-          className="hover:bg-background focus-visible:ring-ring flex size-9 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+          className="hover:bg-background focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
         >
           <Plus className="size-4" aria-hidden="true" />
         </button>
@@ -66,7 +66,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
           removeItem(item.itemId, item.sizeId);
         }}
         aria-label={t('item.remove', { name: item.name })}
-        className="text-muted-foreground hover:text-destructive focus-visible:ring-ring flex size-9 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="text-muted-foreground hover:text-destructive focus-visible:ring-ring flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
       >
         <X className="size-4" aria-hidden="true" />
       </button>
