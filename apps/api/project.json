@@ -29,7 +29,14 @@
     "e2e": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vitest run test/e2e test/integration",
+        "command": "vitest run test/e2e test/integration --poolOptions.forks.singleFork=false --fileParallelism=false",
+        "cwd": "apps/api"
+      }
+    },
+    "e2e-ci": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "vitest run test/e2e test/integration --poolOptions.forks.singleFork=false --fileParallelism=false --exclude '**/identity-role-changed*'",
         "cwd": "apps/api"
       }
     },

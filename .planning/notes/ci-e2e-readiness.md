@@ -46,23 +46,37 @@ ships a Docker daemon. `RESTO_REQUIRE_DOCKER=1` should be set so the suite hard-
 instead of silently degrading to `describe.skip` (the AUDIT #5 pattern already used by
 the `affected` job).
 
-### 3. Process isolation — MEASURED, not assumed
+### 3. Process isolation is REQUIRED — measured, with a mechanism
 
 `apps/api/vitest.config.ts` sets `pool: 'forks'` with `poolOptions.forks.singleFork:
-true`, so every spec shares ONE forked process, and the `e2e` target
-(`vitest run test/e2e test/integration`) inherits that. The checkpoint's anti-pattern
-table says batching two or more e2e specs produces failures that vanish when run alone
-("hit twice").
+true`, so every spec shares ONE forked process, and the `e2e` target inherited that.
 
-Checked rather than trusted: `tenancy` + `tenancy-offboarding` + `tenancy-erasure` in
-one batched process came back **24 passed (24)** — the anti-pattern did not reproduce
-on that trio. A full batched `nx run api:e2e` was then run to compare against the
-one-per-process sweep; see the result recorded below before choosing a pool setting.
+Measured both ways on the integration branch, same pinned env:
 
-If batched matches 64/1, the existing target can go into CI unchanged and the
-anti-pattern note is stale. If it does not, the target needs
-`--poolOptions.forks.singleFork=false --fileParallelism=false` so each spec gets a
-fresh process, at the cost of wall-clock.
+    one process per spec   64 passed, 1 failed
+    batched (nx api:e2e)   62 passed, 3 failed        <- 2 false failures
+
+The two extra failures were `security.e2e` (rotating-cookie rate limit) and
+`cross-tenant-als-leak.e2e` (100 concurrent request pairs).
+
+The mechanism is not a mystery and is worth stating exactly, because it defeats the
+obvious workaround: **26 e2e specs assign `process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN`
+in their own `beforeAll`** — mostly to `'1000'`, one to `'3'`, one to `'10000'`. With
+`singleFork: true` they all share a process, so whichever spec ran last decides the
+limit `security.e2e` then measures. Pinning the variable at the CI job level does NOT
+help: the contamination happens inside the process, after the job env is read.
+
+An earlier check of three specs (`tenancy` + `tenancy-offboarding` + `tenancy-erasure`)
+came back 24/24 and looked like evidence the anti-pattern was stale. It was not — that
+trio simply does not touch the leaked variable. Do not generalise from a passing batch.
+
+Fix applied: the `e2e` target now runs
+`--poolOptions.forks.singleFork=false --fileParallelism=false`, giving each spec a
+fresh process, sequentially. The shared `vitest.config.ts` is left alone so the `test`
+(unit) target keeps its current behaviour.
+
+Longer term the specs should not be mutating shared `process.env` at all, but that is
+26 files and a separate task.
 
 ### 4. The last red has to be handled deliberately
 
@@ -74,3 +88,37 @@ trade-off, not a formality: an excluded spec is an untested path.
 ## Sequencing
 
 The CI job must merge AFTER #270, #271 and #272, or main goes red the moment it lands.
+
+## The job, as built and verified (2026-08-28)
+
+`api-e2e` in `.github/workflows/ci.yml`. Every choice in it was measured:
+
+isolation flags batched 62/3 vs isolated 64/1, mechanism identified
+pinned rate limits 26 specs mutate the var in-process; job-level env alone
+cannot fix it, but the pin still guards the read
+no `services:` block each spec starts its own Postgres + NATS (testcontainers)
+placeholder env set 4 representative specs (health, tenancy,
+catalog-photo-upload, security) run green on a clean
+environment with NO .env sourced
+
+End-to-end simulation of the CI step — the exact command, `.env` deliberately not
+sourced: **64 passed (64), rc=0, 400s.**
+
+### Two things that would have shipped broken
+
+1. Three specs batched (`tenancy` + `tenancy-offboarding` + `tenancy-erasure`) came
+   back 24/24, which looked like evidence the batching anti-pattern was stale. It is
+   not — that trio simply does not touch the leaked variable. Generalising from it
+   would have put a contaminated job into CI.
+2. The "known-blocked spec" step was first written as
+   `nx run api:e2e -- --fileParallelism=false <file>`. nx appends forwarded args to
+   the target's own command, duplicating `--fileParallelism` and making vitest's arg
+   parser throw. Under `continue-on-error` that reads as "the spec is red" when in
+   fact the step never ran. Now calls vitest directly.
+
+### The excluded spec
+
+`e2e-ci` = `e2e` minus `identity-role-changed`, which cannot pass until the admin-role
+decision lands. A second step runs it with `continue-on-error: true` so the exclusion
+stays visible on every run rather than being quietly forgotten. When the decision
+ships, delete both the step and the `e2e-ci` target.

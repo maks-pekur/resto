@@ -170,6 +170,69 @@ jobs:
         # the same single command to reproduce a CI drift failure.
         run: pnpm openapi:check
 
+  api-e2e:
+    name: API e2e (testcontainers)
+    runs-on: ubuntu-latest
+    needs: install
+    timeout-minutes: 30
+    # Absent from CI until 2026-08-28. Three separate rots traced to that gap —
+    # see .planning/notes/e2e-audit-2026-08-28-findings.md. Each spec starts its
+    # own Postgres + NATS via testcontainers, so no `services:` block is needed;
+    # ubuntu-latest ships a Docker daemon.
+    env:
+      # AUDIT #5: fail closed if Docker ever goes missing, rather than silently
+      # degrading every testcontainer spec to describe.skip.
+      RESTO_REQUIRE_DOCKER: "1"
+      # PINNED ON PURPOSE — do not remove and do not source a developer .env.
+      # The audit found `security.e2e` reading as a security regression solely
+      # because the local .env raises this to 1000 against a schema default of
+      # 10, so its rotating-cookie test could never observe the 429 it asserts.
+      RATE_LIMIT_AUTH_SIGNIN_PER_MIN: "10"
+      RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN: "10"
+      # Non-functional placeholders. with-real-stack.setup.ts supplies
+      # DATABASE_URL / BETTER_AUTH_DATABASE_URL / NATS_URL / INTERNAL_API_TOKEN
+      # from the containers it starts; these cover what it does not, and the S3
+      # adapter throws on missing values regardless of NODE_ENV.
+      S3_ENDPOINT: http://localhost:9000
+      S3_ACCESS_KEY: x
+      S3_SECRET_KEY: x
+      BETTER_AUTH_SECRET: ci-e2e-better-auth-secret-placeholder-32ch
+      AUDIT_ERASURE_SALT: ci-e2e-erasure-salt-placeholder-32-chars
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v6
+        with:
+          version: ${{ env.PNPM_VERSION }}
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: api e2e (one process per spec)
+        # `e2e-ci` differs from `e2e` only by excluding identity-role-changed,
+        # which cannot pass until the admin-role product decision lands
+        # (.planning/todos/pending/admin-role-cannot-be-assigned.md).
+        #
+        # The isolation flags are load-bearing, not tuning: 26 e2e specs assign
+        # process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN in their own beforeAll, and
+        # the shared vitest config runs every spec in ONE forked process
+        # (singleFork: true). Batched, whichever spec ran last decides the limit
+        # security.e2e then measures. Measured on 2026-08-28: batched 62/3,
+        # isolated 64/1. Pinning env at the job level does NOT fix this — the
+        # contamination happens inside the process.
+        run: pnpm exec nx run api:e2e-ci
+      - name: known-blocked spec (reported, does not fail the build)
+        # Kept visible so the exclusion above cannot be quietly forgotten. Delete
+        # this step and the e2e-ci target when the admin-role decision lands.
+        continue-on-error: true
+        working-directory: apps/api
+        # Called directly rather than through the nx target: nx appends forwarded
+        # args to the target's own command, which duplicates --fileParallelism and
+        # makes vitest's arg parser throw. Verified 2026-08-28.
+        run: pnpm exec vitest run test/e2e/identity-role-changed.e2e.spec.ts --poolOptions.forks.singleFork=false
+
   docker-api:
     name: Docker API boot smoke
     runs-on: ubuntu-latest
