@@ -29,6 +29,18 @@ export const assertRoleAssignable = async (input: {
   const systemRole = (SYSTEM_ROLES as Record<string, Record<string, readonly string[]>>)[newRole];
 
   if (systemRole) {
+    // Founder decision 2026-08-28: the built-in roles are defined and reviewed in
+    // this repo, so they are trusted. The non-delegatable guard exists to stop a
+    // CUSTOM role smuggling in privileges, and it had been refusing our own
+    // `admin` — which carries staff:['remove'] — to everyone since 2026-07-04.
+    //
+    // `owner` is deliberately NOT exempt. It carries tenant:['delete','transfer'],
+    // billing:['update'] and the whole ac:* set, and this hook is the backstop
+    // that fires when a caller bypasses assign-role.service and hits BA directly.
+    // Exempting it would silently remove the only guard against a direct call
+    // minting a new owner, which the admin decision did not ask for.
+    // (Known, accepted consequence: a second co-owner still cannot be promoted.)
+    if (newRole !== 'owner') return;
     targetPermission = Object.fromEntries(Object.entries(systemRole).map(([r, a]) => [r, [...a]]));
   } else {
     try {
