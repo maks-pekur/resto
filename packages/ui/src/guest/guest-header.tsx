@@ -29,12 +29,15 @@ export const GuestHeader = ({
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
         <a href="/" className="flex min-w-0 items-center gap-2.5 focus-visible:outline-none">
           {logoUrl ? (
-            <Image
-              src={logoUrl}
-              alt={tenantName}
-              className="size-9 shrink-0 rounded-xl object-cover"
-              priority
-            />
+            <span className="relative size-9 shrink-0 overflow-hidden rounded-xl">
+              <Image
+                src={logoUrl}
+                alt={tenantName}
+                sizes="36px"
+                priority
+                className="size-full object-cover"
+              />
+            </span>
           ) : null}
           <span className="truncate text-lg leading-tight font-extrabold sm:text-xl">
             {tenantName}

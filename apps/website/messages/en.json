@@ -1,26 +1,26 @@
 {
   "cart": {
+    "addedToCart": "Added to cart",
+    "checkout": "Go to checkout",
+    "clear": "Clear cart",
+    "clearBody": "All items will be removed.",
+    "clearCancel": "Keep items",
+    "clearConfirm": "Clear cart",
+    "clearHeading": "Clear your cart?",
+    "close": "Close",
     "empty": "Your cart is empty",
     "emptyBody": "Browse the menu and add items to get started.",
-    "triggerEmpty": "Your cart is empty",
-    "triggerItems": "{n} item",
-    "triggerItemsPlural": "{n} items",
-    "addToCart": "Add to cart",
-    "goToCheckout": "Go to checkout",
-    "removeItem": "Remove item",
-    "clearCart": "Clear cart",
-    "clearCartHeading": "Clear your cart?",
-    "clearCartBody": "All items will be removed.",
-    "clearCartConfirm": "Clear cart",
-    "clearCartCancel": "Keep items",
-    "removedFromCart": "Removed from cart",
-    "undo": "Undo",
-    "addedToCart": "Added to cart"
+    "itemCount": "Cart · {n}",
+    "open": "Cart",
+    "subtotal": "Subtotal",
+    "table": "Table {table}",
+    "title": "Your cart"
   },
   "menu": {
-    "emptyHeading": "Menu unavailable",
+    "categories": "Menu categories",
     "emptyBody": "This restaurant hasn't published their menu yet. Check back soon.",
-    "unavailableToday": "Unavailable today"
+    "emptyHeading": "Menu unavailable",
+    "title": "Menu"
   },
   "checkout": {
     "placeOrder": "Place order",
@@ -84,5 +84,26 @@
     "tenantSuspended": "This restaurant is temporarily unavailable.",
     "errorBoundaryHeading": "Something went wrong",
     "errorBoundaryBody": "We're having trouble loading the menu. Try refreshing the page."
+  },
+  "item": {
+    "addToCart": "Add to cart",
+    "allergens": "Allergens",
+    "back": "Back to menu",
+    "priceFrom": "from {price}",
+    "qtyDecrease": "Decrease quantity of {name}",
+    "qtyIncrease": "Increase quantity of {name}",
+    "remove": "Remove {name} from cart",
+    "size": "Size",
+    "unavailable": "Unavailable today"
+  },
+  "locale": {
+    "label": "Language"
+  },
+  "footer": {
+    "about": "About",
+    "contact": "Contact",
+    "delivery": "Delivery",
+    "faq": "FAQ",
+    "poweredBy": "Powered by RestOS"
   }
 }

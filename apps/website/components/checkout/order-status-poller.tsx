@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { CheckIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@resto/ui';
+import { cn } from '@resto/ui';
 import { getOrderStatus, type OrderStatusResponse } from '@/lib/checkout-api';
 
 type TrackerStatus = 'paid' | 'accepted' | 'preparing' | 'ready';

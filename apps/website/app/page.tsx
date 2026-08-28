@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
 import {
   fetchMenuPublic,
@@ -7,13 +8,13 @@ import {
   TenantSuspendedError,
 } from '@/lib/api-client';
 import { MenuPageClient } from '@/components/menu/menu-page-client';
+import { siteFooterLinks } from '@/components/layout/site-chrome';
 
-function SuspendedState() {
+async function SuspendedState() {
+  const t = await getTranslations('errors');
   return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <p className="text-[16px] leading-[1.5] text-[oklch(0.45_0_0)]">
-        This restaurant is temporarily unavailable.
-      </p>
+    <main className="flex min-h-dvh items-center justify-center px-4">
+      <p className="text-muted-foreground text-base">{t('tenantSuspended')}</p>
     </main>
   );
 }
@@ -41,11 +42,18 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function MenuPage() {
   try {
-    const [menu, availability] = await Promise.all([
+    const [menu, availability, footerLinks] = await Promise.all([
       fetchMenuPublic(),
       fetchAvailabilityPublic().catch(() => ({ stoppedItemIds: [] })),
+      siteFooterLinks(),
     ]);
-    return <MenuPageClient menu={menu} stoppedItemIds={availability.stoppedItemIds} />;
+    return (
+      <MenuPageClient
+        menu={menu}
+        stoppedItemIds={availability.stoppedItemIds}
+        footerLinks={footerLinks}
+      />
+    );
   } catch (err) {
     if (err instanceof TenantNotFoundError) notFound();
     if (err instanceof TenantSuspendedError) return <SuspendedState />;

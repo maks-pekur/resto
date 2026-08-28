@@ -1,19 +1,27 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import '@resto/config-tailwind/tokens.css';
+@import '@resto/config-tailwind/guest.css';
 @import '@resto/config-tailwind/preset.css';
+
+@source '../../../packages/ui/src';
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  body {
-    @apply bg-background text-foreground;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-}
 
-html {
-  scroll-behavior: smooth;
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
 }

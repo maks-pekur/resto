@@ -11,17 +11,10 @@ import {
   type CheckoutFormInput,
   type CheckoutForm as CheckoutFormValues,
 } from '@/lib/checkout-schema';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Button } from '@/components/ui/button';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@resto/ui';
+import { Input } from '@resto/ui';
+import { Checkbox } from '@resto/ui';
+import { Button } from '@resto/ui';
 import { AddressInput } from '@/components/checkout/address-input';
 import { OrderTimeSelector } from '@/components/checkout/order-time-selector';
 import { OrderSummary } from '@/components/checkout/order-summary';

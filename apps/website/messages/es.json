@@ -1,26 +1,26 @@
 {
   "cart": {
+    "addedToCart": "Añadido al carrito",
+    "checkout": "Ir al pago",
+    "clear": "Vaciar carrito",
+    "clearBody": "Se eliminarán todos los artículos.",
+    "clearCancel": "Mantener artículos",
+    "clearConfirm": "Vaciar carrito",
+    "clearHeading": "¿Vaciar tu carrito?",
+    "close": "Cerrar",
     "empty": "Tu carrito está vacío",
     "emptyBody": "Explora el menú y añade platos para empezar.",
-    "triggerEmpty": "Tu carrito está vacío",
-    "triggerItems": "{n} artículo",
-    "triggerItemsPlural": "{n} artículos",
-    "addToCart": "Añadir al carrito",
-    "goToCheckout": "Ir al pago",
-    "removeItem": "Eliminar artículo",
-    "clearCart": "Vaciar carrito",
-    "clearCartHeading": "¿Vaciar tu carrito?",
-    "clearCartBody": "Se eliminarán todos los artículos.",
-    "clearCartConfirm": "Vaciar carrito",
-    "clearCartCancel": "Mantener artículos",
-    "removedFromCart": "Eliminado del carrito",
-    "undo": "Deshacer",
-    "addedToCart": "Añadido al carrito"
+    "itemCount": "Carrito · {n}",
+    "open": "Carrito",
+    "subtotal": "Subtotal",
+    "table": "Mesa {table}",
+    "title": "Tu carrito"
   },
   "menu": {
-    "emptyHeading": "Menú no disponible",
+    "categories": "Categorías del menú",
     "emptyBody": "Este restaurante todavía no ha publicado su menú. Vuelve a comprobarlo pronto.",
-    "unavailableToday": "No disponible hoy"
+    "emptyHeading": "Menú no disponible",
+    "title": "Menú"
   },
   "checkout": {
     "placeOrder": "Realizar pedido",
@@ -84,5 +84,26 @@
     "tenantSuspended": "Este restaurante no está disponible temporalmente.",
     "errorBoundaryHeading": "Algo salió mal",
     "errorBoundaryBody": "Estamos teniendo problemas para cargar el menú. Intenta actualizar la página."
+  },
+  "item": {
+    "addToCart": "Añadir al carrito",
+    "allergens": "Alérgenos",
+    "back": "Volver al menú",
+    "priceFrom": "desde {price}",
+    "qtyDecrease": "Reducir la cantidad de {name}",
+    "qtyIncrease": "Aumentar la cantidad de {name}",
+    "remove": "Eliminar {name} del carrito",
+    "size": "Tamaño",
+    "unavailable": "No disponible hoy"
+  },
+  "locale": {
+    "label": "Idioma"
+  },
+  "footer": {
+    "about": "Sobre nosotros",
+    "contact": "Contacto",
+    "delivery": "Envío",
+    "faq": "Preguntas",
+    "poweredBy": "Funciona con RestOS"
   }
 }

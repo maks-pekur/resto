@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Check, TriangleAlert } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@resto/ui';
+import { Badge } from '@resto/ui';
 
 type ZoneState = 'idle' | 'valid' | 'out-of-zone';
 

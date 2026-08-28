@@ -1,3 +1,5 @@
+'use client';
+
 import { useMemo, useState } from 'react';
 import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
 import { formatMinorUnits, parseMinorUnits, type CartModifier } from '@resto/cart';

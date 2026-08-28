@@ -1,6 +1,6 @@
 'use client';
 
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@resto/ui';
 import { useCartStore } from '@/hooks/use-cart-store';
 
 export function DeliveryPickupBanner() {

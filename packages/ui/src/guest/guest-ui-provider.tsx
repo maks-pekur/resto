@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
+import { cn } from '../lib/utils';
 import type { GuestUiKey } from './messages';
 
 export interface GuestImageProps {
@@ -21,11 +22,13 @@ export interface GuestUiContextValue {
   readonly Image: GuestImageComponent;
 }
 
+/** Every guest image sits in a `relative` container and fills it, so the Next
+ * host can swap in <Image fill> without the shared markup changing. */
 const FallbackImage: GuestImageComponent = ({ src, alt, className, priority }) => (
   <img
     src={src}
     alt={alt}
-    className={className}
+    className={cn('absolute inset-0', className)}
     loading={priority ? 'eager' : 'lazy'}
     fetchPriority={priority ? 'high' : 'auto'}
     decoding="async"

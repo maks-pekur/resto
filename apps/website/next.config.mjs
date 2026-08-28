@@ -10,7 +10,7 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   typedRoutes: true,
-  transpilePackages: ['@resto/cart'],
+  transpilePackages: ['@resto/cart', '@resto/ui'],
   turbopack: {
     root: resolve(__dirname, '../..'),
   },

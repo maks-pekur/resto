@@ -14,6 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@fontsource-variable/nunito": "^5.2.5",
     "@hookform/resolvers": "^5.4.0",
     "@resto/api-client": "workspace:*",
     "@resto/cart": "workspace:^",

@@ -24,11 +24,14 @@ export const GuestFooter = ({ tenantName, logoUrl, links = [], actions }: GuestF
         <div className="flex flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-3">
             {logoUrl ? (
-              <Image
-                src={logoUrl}
-                alt={tenantName}
-                className="size-11 shrink-0 rounded-xl object-cover"
-              />
+              <span className="relative size-11 shrink-0 overflow-hidden rounded-xl">
+                <Image
+                  src={logoUrl}
+                  alt={tenantName}
+                  sizes="44px"
+                  className="size-full object-cover"
+                />
+              </span>
             ) : null}
             <span className="text-lg font-extrabold">{tenantName}</span>
           </div>
