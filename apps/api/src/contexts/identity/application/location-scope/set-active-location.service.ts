@@ -1,6 +1,6 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import type { TenantId } from '@resto/domain';
-import { LocationAlreadyPinnedError, LocationOutOfScopeError } from '../../domain/errors';
+import { LocationOutOfScopeError } from '../../domain/errors';
 import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
@@ -24,6 +24,8 @@ export interface SetActiveLocationResult {
 
 @Injectable()
 export class SetActiveLocationService {
+  private readonly logger = new Logger(SetActiveLocationService.name);
+
   constructor(
     @Inject(MEMBER_LOCATION_SCOPE_READER) private readonly scopeReader: MemberLocationScopeReader,
     @Inject(SESSION_ACTIVE_LOCATION_WRITER) private readonly writer: SessionActiveLocationWriter,
@@ -31,15 +33,19 @@ export class SetActiveLocationService {
 
   async execute(input: SetActiveLocationInput): Promise<SetActiveLocationResult> {
     if (input.baseRole === 'owner') {
-      // D-13: owner location authority is the `?location` URL param (08.5) —
-      // the server-side pin is retired; no write, no scope lookup.
+      // D-13: owner location authority is the path segment (`/{locationSlug}/orders`) — the
+      // server-side pin is retired for them; no write, no scope lookup.
       return { locationId: null };
     }
 
-    const current = await this.writer.readActiveLocationId(input.sessionToken);
-    if (current !== null) {
-      throw new LocationAlreadyPinnedError();
-    }
+    // The pin used to be immutable for a session: a second call threw and the member had to sign
+    // out to cover another point. It protected nothing — every request is authorised against
+    // `member_location_scope` regardless of where the session started, so a pin that never moved
+    // proved nothing the check does not already enforce, while costing a re-login to a manager
+    // working two points. A terminal bolted to one location is expressed by giving that member a
+    // role at one location, which the scope below already enforces.
+    const previous = await this.writer.readActiveLocationId(input.sessionToken);
+
     const scope = await this.scopeReader.findLocationScopeForMember({
       userId: input.userId,
       tenantId: input.tenantId,
@@ -51,6 +57,19 @@ export class SetActiveLocationService {
       sessionToken: input.sessionToken,
       activeLocationId: input.locationId,
     });
+
+    if (previous !== null && previous !== input.locationId) {
+      this.logger.log(
+        {
+          userId: input.userId,
+          tenantId: input.tenantId,
+          fromLocationId: previous,
+          toLocationId: input.locationId,
+        },
+        'Staff switched active location.',
+      );
+    }
+
     return { locationId: input.locationId };
   }
 }

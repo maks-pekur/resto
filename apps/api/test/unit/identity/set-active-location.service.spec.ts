@@ -1,10 +1,7 @@
 import 'reflect-metadata';
 import { describe, expect, it, vi } from 'vitest';
 import { TenantId } from '@resto/domain';
-import {
-  LocationAlreadyPinnedError,
-  LocationOutOfScopeError,
-} from '../../../src/contexts/identity/domain/errors';
+import { LocationOutOfScopeError } from '../../../src/contexts/identity/domain/errors';
 import { SetActiveLocationService } from '../../../src/contexts/identity/application/location-scope/set-active-location.service';
 import type { MemberLocationScopeReader } from '../../../src/contexts/identity/application/ports/member-location-scope-reader.port';
 import type { SessionActiveLocationWriter } from '../../../src/contexts/identity/application/ports/session-active-location-writer.port';
@@ -71,7 +68,34 @@ describe('SetActiveLocationService', () => {
     expect(reader.findPinnableLocations).not.toHaveBeenCalled();
   });
 
-  it('non-owner: throws LocationAlreadyPinnedError when session already has a non-null activeLocationId', async () => {
+  it('non-owner: switches to another location already in scope, without a re-login', async () => {
+    // The pin used to be immutable for the session's lifetime, so a manager covering two points had
+    // to sign out to move. It guarded nothing `member_location_scope` does not guard on every
+    // request; the scope check below is still the authority.
+    const reader = makeReader({
+      findLocationScopeForMember: vi.fn().mockResolvedValue([LOCATION_A, LOCATION_B]),
+    });
+    const writer = makeWriter({
+      readActiveLocationId: vi.fn().mockResolvedValue(LOCATION_A),
+    });
+    const svc = new SetActiveLocationService(reader, writer);
+
+    const result = await svc.execute({
+      userId: USER_ID,
+      tenantId: TENANT_ID,
+      baseRole: 'staff',
+      locationId: LOCATION_B,
+      sessionToken: SESSION_TOKEN,
+    });
+
+    expect(result).toEqual({ locationId: LOCATION_B });
+    expect(writer.writeActiveLocation).toHaveBeenCalledWith({
+      sessionToken: SESSION_TOKEN,
+      activeLocationId: LOCATION_B,
+    });
+  });
+
+  it('non-owner: refuses to switch to a location outside scope even when already pinned', async () => {
     const reader = makeReader({
       findLocationScopeForMember: vi.fn().mockResolvedValue([LOCATION_A]),
     });
@@ -85,10 +109,10 @@ describe('SetActiveLocationService', () => {
         userId: USER_ID,
         tenantId: TENANT_ID,
         baseRole: 'staff',
-        locationId: LOCATION_A,
+        locationId: LOCATION_B,
         sessionToken: SESSION_TOKEN,
       }),
-    ).rejects.toBeInstanceOf(LocationAlreadyPinnedError);
+    ).rejects.toBeInstanceOf(LocationOutOfScopeError);
     expect(writer.writeActiveLocation).not.toHaveBeenCalled();
   });
 

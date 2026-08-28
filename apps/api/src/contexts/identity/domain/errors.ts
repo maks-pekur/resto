@@ -39,15 +39,6 @@ export class LocationOutOfScopeError extends IdentityDomainError {
   }
 }
 
-export class LocationAlreadyPinnedError extends IdentityDomainError {
-  constructor() {
-    super(
-      'location.already_pinned',
-      'Active location is already pinned for this session; re-login to switch.',
-    );
-  }
-}
-
 export class RoleOccupiedError extends IdentityDomainError {
   constructor(roleSlug: string, memberCount: number) {
     super(
