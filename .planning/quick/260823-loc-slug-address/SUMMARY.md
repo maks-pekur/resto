@@ -64,6 +64,19 @@ Forbidden screen appears in the outlet, and the gated component never mounts.
 Not smoke-tested in a browser — the dev stack was down and the change is client-side routing covered
 by the two specs above. Worth a click through as `manager@demo.local` next time the stack is up.
 
+## A gap in this PR's own verification, closed 2026-08-28
+
+Making `address`, `latitude` and `longitude` required on create broke **eight api e2e suites** — 11
+call sites still posted `{ name }` alone. None of it showed up, because `api:e2e` is not in CI and
+this task's verification stopped at the static gates plus a browser walk.
+
+Every fixture now sends a real address and coordinates, and all eight suites pass individually:
+`location-isolation`, `stop-list-aggregate`, `catalog-reads`, `menu-availability`, `menu-response`,
+`catalog-tenant-read-isolation`, `order-routes-authz`, `catalog`.
+
+Two of them fail when run together in one process and pass alone — the known false-failure the
+project already documents for `apps/api` vitest. Batch size, not a defect.
+
 ## Deferred, with a reason
 
 **Task 4 — `?location=<slug>` — superseded.** The founder's model that evening (see

@@ -119,7 +119,12 @@ suite('GET /v1/menu — response shape and caching', () => {
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers: preLocationAuthed,
-      payload: { name: 'RES-154 Location' },
+      payload: {
+        name: 'RES-154 Location',
+        address: '1 Test Street, London',
+        latitude: 51.5074,
+        longitude: -0.1278,
+      },
     });
     if (locationRes.statusCode !== 200) {
       throw new Error(

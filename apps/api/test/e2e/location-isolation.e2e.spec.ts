@@ -48,7 +48,12 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-      payload: { name },
+      payload: {
+        name,
+        address: '1 Test Street, London',
+        latitude: 51.5074,
+        longitude: -0.1278,
+      },
     });
     expect(res.statusCode).toBe(200);
     return res.json<{ id: string }>().id;

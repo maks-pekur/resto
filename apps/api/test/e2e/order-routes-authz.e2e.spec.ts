@@ -57,7 +57,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         method: 'POST',
         url: '/v1/tenancy/locations',
         headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-        payload: { name },
+        payload: {
+          name,
+          address: '1 Test Street, London',
+          latitude: 51.5074,
+          longitude: -0.1278,
+        },
       });
       expect(res.statusCode).toBe(200);
       return res.json<{ id: string }>().id;
@@ -178,7 +183,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
           cookie: otherTenantOwnerCookie,
           'x-tenant-id': otherTenantId,
         },
-        payload: { name: 'Other Tenant Location' },
+        payload: {
+          name: 'Other Tenant Location',
+          address: '1 Test Street, London',
+          latitude: 51.5074,
+          longitude: -0.1278,
+        },
       });
       expect(otherLocRes.statusCode).toBe(200);
       otherTenantLocationId = otherLocRes.json<{ id: string }>().id;
@@ -346,7 +356,12 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
         method: 'POST',
         url: '/v1/tenancy/locations',
         headers,
-        payload: { name: 'Rate limit location' },
+        payload: {
+          name: 'Rate limit location',
+          address: '1 Test Street, London',
+          latitude: 51.5074,
+          longitude: -0.1278,
+        },
       });
       expect(created.statusCode).toBe(200);
       return created.json<{ id: string }>().id;
