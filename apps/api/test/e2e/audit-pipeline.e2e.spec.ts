@@ -37,7 +37,7 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
       payload: {
         slug,
         displayName: `Audit ${slug}`,
-        defaultCurrency: 'USD',
+        country: 'GB',
         locale: 'en',
       },
     });
@@ -74,7 +74,7 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
       payload: {
         slug,
         displayName: `Audit Archive ${slug}`,
-        defaultCurrency: 'USD',
+        country: 'GB',
         locale: 'en',
       },
     });
@@ -116,7 +116,7 @@ suite('Audit pipeline — provision → NATS → audit_log (RES-130)', () => {
       payload: {
         slug,
         displayName: `Audit Dedup ${slug}`,
-        defaultCurrency: 'USD',
+        country: 'GB',
         locale: 'en',
       },
     });
