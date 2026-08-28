@@ -25,7 +25,11 @@ import {
   TENANT_LOOKUP_PORT,
   type TenantLookupPort,
 } from '../../../application/ports/tenant-lookup.port';
-import { IS_PUBLIC_KEY, REQUIRES_TENANT_CONTEXT_KEY } from '../../../../../shared/auth';
+import {
+  ALLOW_ARCHIVED_TENANT_KEY,
+  IS_PUBLIC_KEY,
+  REQUIRES_TENANT_CONTEXT_KEY,
+} from '../../../../../shared/auth';
 
 declare module 'fastify' {
   interface FastifyRequest {
@@ -59,8 +63,17 @@ export class AuthGuard implements CanActivate {
       ctx.getClass(),
     ]);
 
+    // A route may opt out of the archived refusal — see AllowArchivedTenant.
+    // Public routes never can: existence-hiding for guests is not negotiable.
+    const allowArchived =
+      !isPublic &&
+      this.reflector.getAllAndOverride<boolean | undefined>(ALLOW_ARCHIVED_TENANT_KEY, [
+        ctx.getHandler(),
+        ctx.getClass(),
+      ]) === true;
+
     const alsTenantId = getTenantContext()?.tenantId;
-    if (alsTenantId) {
+    if (alsTenantId && !allowArchived) {
       const tenant = await this.tenantLookup.findById(alsTenantId);
       if (tenant?.archivedAt) {
         if (isPublic) {
