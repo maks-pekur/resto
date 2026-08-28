@@ -117,7 +117,7 @@ export const MenuScreen = ({
         <GuestFooter
           tenantName={tenantName}
           logoUrl={logoUrl}
-          links={footerLinks}
+          links={footerLinks ?? []}
           actions={footerActions}
         />
       }

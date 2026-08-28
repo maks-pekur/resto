@@ -1,5 +1,6 @@
 'use client';
 
+import type { ElementType } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
@@ -15,7 +16,9 @@ export interface ItemDetailProps {
   readonly currency: string;
   readonly onAddToCart: (line: Omit<CartLineItem, 'quantity'>) => void;
   readonly onBack?: () => void;
-  readonly headingId?: string;
+  /** The dialog variant passes shadcn's DialogTitle so the visible heading IS the
+   * dialog's accessible name — a second sr-only title would announce twice. */
+  readonly Heading?: ElementType;
   readonly className?: string;
 }
 
@@ -25,7 +28,7 @@ export const ItemDetail = ({
   currency,
   onAddToCart,
   onBack,
-  headingId,
+  Heading = 'h1',
   className,
 }: ItemDetailProps) => {
   const { locale, t, Image } = useGuestUi();
@@ -74,9 +77,9 @@ export const ItemDetail = ({
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <h1 id={headingId} className="text-2xl leading-tight font-extrabold text-balance">
+              <Heading className="text-2xl leading-tight font-extrabold text-balance">
                 {name}
-              </h1>
+              </Heading>
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
               ) : null}

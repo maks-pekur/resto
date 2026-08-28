@@ -1,7 +1,7 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import '@resto/config-tailwind/tokens.css';
+import '@fontsource-variable/nunito';
 import './styles.css';
 
 const container = document.getElementById('root');

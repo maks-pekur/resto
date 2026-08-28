@@ -3,9 +3,7 @@
 import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
-import { localized } from '../lib/localized';
 import { ItemDetail } from './item-detail';
-import { useGuestUi } from './guest-ui-provider';
 
 export interface ItemDialogProps {
   readonly item: MenuItemDto | null;
@@ -24,8 +22,6 @@ export const ItemDialog = ({
   onOpenChange,
   onAddToCart,
 }: ItemDialogProps) => {
-  const { locale } = useGuestUi();
-
   if (!item) return null;
 
   return (
@@ -34,9 +30,9 @@ export const ItemDialog = ({
         showCloseButton
         className="max-h-[92dvh] gap-0 overflow-y-auto p-0 sm:max-w-3xl"
       >
-        <DialogTitle className="sr-only">{localized(item.name, locale)}</DialogTitle>
         <ItemDetail
           key={item.id}
+          Heading={DialogTitle}
           item={item}
           modifierGroups={modifierGroups}
           currency={currency}
