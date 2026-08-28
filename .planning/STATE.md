@@ -341,6 +341,7 @@ None yet.
 | 260823-loc | Locations get a slug, coordinates and an edit form (`PATCH /v1/tenancy/locations/:id`); closed the two red CI gates on PR #261 — regenerated the OpenAPI artefact, and made the eleven permission-gated admin routes actually refuse a direct link instead of only hiding their nav item                                              | 2026-08-26 | 753fdb01 | Verified | [260823-loc-slug-address](./quick/260823-loc-slug-address/)                                                         |
 | 260826-loc | The location moved out of `?location=` and into the path — `/voskresenka/orders` where it decides what is shown, no slug where it does not; every admin root segment reserved against location slugs; caught and fixed an infinite redirect on the landing page                                                                       | 2026-08-26 | 73c5f458 | Verified | [260826-location-in-the-path](./quick/260826-location-in-the-path/)                                                 |
 | 260828-sls | Staff move between the locations they hold instead of signing out; the immutable session pin is gone, scope still refuses the rest. Found and fixed 11 e2e fixtures that PR #261's required coordinates had broken across eight suites                                                                                                | 2026-08-28 | 4bf4a72d | Verified | [260828-staff-location-switching](./quick/260828-staff-location-switching/)                                         |
+| 260828-qii | Repair the 6 rotted api e2e specs found by the 2026-08-28 audit (country payload, erasure salt, signup route, currency fixture)                                                                                                                                                                                                       | 2026-08-28 | 3d9f6c59 | complete | [260828-qii-fix-rotted-api-e2e-specs](./quick/260828-qii-fix-rotted-api-e2e-specs/)                                 |
 | 260828-r9z | Role-change refusals return 403 not 500; replaced the inline-replica hook test with one against the real guard                                                                                                                                                                                                                        | 2026-08-28 | cb3f9888 | complete | [260828-r9z-role-refusal-returns-403-not-500](./quick/260828-r9z-role-refusal-returns-403-not-500/)                 |
 
 ## Deferred Items
@@ -367,6 +368,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-19T19:54:29.676Z
-Stopped at: Phase 10.2 UI-SPEC approved
-Resume file: .planning/phases/10.2-brand-pinned-sessions/10.2-UI-SPEC.md
+Last session: 2026-08-28T18:45:00.000Z
+Stopped at: Session resumed on main (clean, HEAD 81bb3160); running the full api e2e audit — all 65 specs (62 e2e + 3 integration), one vitest process each, to catalogue red vs green before putting api:e2e into CI.
+Resume file: .planning/.continue-here.md

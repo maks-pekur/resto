@@ -476,6 +476,42 @@ describe('TenantsController E2E', () => {
       expect(body.id).toBe(tenant.id);
       expect(body.offboardingScheduledAt).toBeNull();
     });
+
+    // The cancel route carries @AllowArchivedTenant. This proves the exemption is
+    // scoped to that one route and did not open the archived gate generally: a
+    // pending_offboarding tenant must still be dark everywhere else.
+    it('leaves every other tenant route dark while offboarding is pending', async () => {
+      const slug = `still-dark-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-dark-3';
+
+      const tenant = await provisionTenant(app, slug, INTERNAL_TOKEN);
+      const { userId } = await runBootstrap({
+        tenantSlug: slug,
+        email,
+        password,
+        name: 'Dark Owner',
+      });
+      const cookie = await signInAsOperator(app, email, password, tenant.id);
+
+      const scheduleRes = await app.inject({
+        method: 'POST',
+        url: '/v1/tenants/me/offboard',
+        headers: { 'content-type': 'application/json', cookie, 'x-tenant-slug': slug },
+        payload: { requestedBy: userId },
+      });
+      expect(scheduleRes.statusCode).toBe(202);
+
+      for (const url of ['/v1/tenants/me', '/v1/tenants/me/domains']) {
+        const res = await app.inject({
+          method: 'GET',
+          url,
+          headers: { cookie, 'x-tenant-slug': slug },
+        });
+        expect(res.statusCode).toBe(403);
+        expect(res.json<{ code: string }>().code).toBe('tenant.archived');
+      }
+    });
   });
 
   // ---------------------------------------------------------------------------

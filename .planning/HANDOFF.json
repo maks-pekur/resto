@@ -1,64 +1,74 @@
 {
   "version": "1.0",
-  "timestamp": "2026-08-28T16:40:00.000Z",
+  "timestamp": "2026-08-28T19:05:00.000Z",
   "phase": null,
-  "phase_name": "quick-task chain (locations \u2192 better-auth), no active phase",
+  "phase_name": "quick-task chain (locations → better-auth), no active phase",
   "phase_dir": ".planning/quick/",
   "status": "paused",
   "completed_tasks": [
     {
       "id": 1,
-      "name": "PR #261 \u2014 location slug, coordinates, edit form; OpenAPI drift + route-level permission refusal",
+      "name": "PR #261 — location slug, coordinates, edit form; OpenAPI drift + route-level permission refusal",
       "status": "done",
       "commit": "121a5a74"
     },
     {
       "id": 2,
-      "name": "PR #265 (was #262) \u2014 location moves from ?location= into the path",
+      "name": "PR #265 (was #262) — location moves from ?location= into the path",
       "status": "done",
       "commit": "ea48e126"
     },
     {
       "id": 3,
-      "name": "PR #263 \u2014 better-auth 1.4.22 \u2192 1.6.30, ten advisories cleared",
+      "name": "PR #263 — better-auth 1.4.22 → 1.6.30, ten advisories cleared",
       "status": "done",
       "commit": "cb164b40"
     },
     {
       "id": 4,
-      "name": "PR #266 (was #264) \u2014 staff switch between the locations they hold",
+      "name": "PR #266 (was #264) — staff switch between the locations they hold",
       "status": "done",
       "commit": "6129617a"
     },
     {
       "id": 5,
       "name": "Full api e2e audit, one spec per process",
-      "status": "not_started",
-      "progress": "9 of 65 run in an earlier session and discarded; start clean"
+      "status": "done",
+      "progress": "65 specs, one process each: 56 green, 9 red. 1 false positive (harness .env), 6 rot, 1 known product decision, 1 unresolved candidate defect. Results in .planning/notes/e2e-audit-2026-08-28*."
     }
   ],
   "remaining_tasks": [
     {
-      "id": 5,
-      "name": "Finish the api e2e audit \u2014 all 65 specs, one process each, catalogue red vs green",
-      "status": "not_started"
-    },
-    {
       "id": 6,
-      "name": "Put api:e2e (and admin:e2e) into CI once the audit says what is red and why",
+      "name": "Fix the 6 rotted e2e specs — 5 share one cause (country required, defaultCurrency dropped); payment-lifecycle has 3 disagreeing currencies. Mechanical, /gsd-quick.",
       "status": "not_started"
     },
     {
       "id": 7,
-      "name": "Phase 10.1 \u2014 location schedule + pause ordering; context/research/UI-SPEC exist, no plans yet",
+      "name": "/gsd-debug the offboard-cancel 403 — owner refused on DELETE /v1/tenants/me/offboard after a 202 schedule. Reproducible in isolation. Candidate real defect on the GDPR cool-off rescue path.",
+      "status": "not_started"
+    },
+    {
+      "id": 8,
+      "name": "Fix beforeUpdateMemberRole returning 500 instead of 403 — 3 sites throw NestJS ForbiddenException inside a Better Auth hook; swap to APIError. Independent of the admin-role product decision.",
+      "status": "not_started"
+    },
+    {
+      "id": 9,
+      "name": "Put api:e2e into CI with PINNED rate-limit env (not an inherited .env), once the above are closed. Then admin:e2e.",
+      "status": "not_started"
+    },
+    {
+      "id": 10,
+      "name": "Phase 10.1 — location schedule + pause ordering; context/research/UI-SPEC exist, no plans yet.",
       "status": "not_started"
     }
   ],
   "blockers": [
     {
-      "description": "api:e2e is not in .github/workflows/ci.yml \u2014 three separate rots traced to this one gap",
+      "description": "api:e2e still not in .github/workflows/ci.yml. The audit found the fix is not one line: some specs pass/fail purely on which env is loaded, so the job must pin rate-limit env rather than inherit a developer .env.",
       "type": "technical",
-      "workaround": "none; the audit is the prerequisite for closing it"
+      "workaround": "none; fix the rot and the offboard-cancel defect first"
     }
   ],
   "human_actions_pending": [
@@ -76,7 +86,7 @@
   "decisions": [
     {
       "decision": "The slug goes in the first path segment only where it decides what is shown",
-      "rationale": "/{slug}/team would be a lie \u2014 the team is brand-wide",
+      "rationale": "/{slug}/team would be a lie — the team is brand-wide",
       "phase": "262"
     },
     {
@@ -96,6 +106,6 @@
     }
   ],
   "uncommitted_files": [],
-  "next_action": "Run the api e2e audit (command in .continue-here.md) on main, then decide whether api:e2e can go into CI.",
-  "context_notes": "All four PRs are merged; main is green (typecheck, lint, openapi:check, admin 122, domain 165, db integration 134, api unit 540). No open PRs, no local branches beyond main."
+  "next_action": "Fix the 6 rotted specs (/gsd-quick), then /gsd-debug the offboard-cancel 403, then CI with pinned env. See .planning/.continue-here.md.",
+  "context_notes": "e2e audit complete 2026-08-28 on main @81bb3160: 56 green / 9 red of 65. Dev stack is UP. Per-spec results and per-red diagnosis in .planning/notes/e2e-audit-2026-08-28.txt and -findings.md. Two findings are new and were invisible to the previous audit script, which hid any line containing \"passed (\" and so missed all 6 partially-red suites."
 }

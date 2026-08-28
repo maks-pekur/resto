@@ -15,7 +15,12 @@ import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pi
 import { TenantQueriesService } from '../../application/tenant-queries.service';
 import { OffboardTenantService } from '../../application/offboard-tenant.service';
 import { ScheduleOffboardingInputDto } from '../../application/dto';
-import { LocationNeutral, Permissions, RequiresTenantContext } from '../../../../shared/auth';
+import {
+  AllowArchivedTenant,
+  LocationNeutral,
+  Permissions,
+  RequiresTenantContext,
+} from '../../../../shared/auth';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 
@@ -99,6 +104,10 @@ export class TenantsController {
   @HttpCode(HttpStatus.OK)
   @Permissions({ tenant: ['delete'] })
   @RequiresTenantContext()
+  // scheduleOffboarding stamps archivedAt, which otherwise makes this route
+  // unreachable exactly when it is needed — the owner could request deletion
+  // but never undo it. Auth and tenant:delete still apply.
+  @AllowArchivedTenant()
   @ApiOkResponse({ type: TenantResponseDto })
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   async cancelOffboarding(): Promise<TenantResponseDto> {

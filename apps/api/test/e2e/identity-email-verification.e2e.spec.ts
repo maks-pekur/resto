@@ -37,7 +37,15 @@ const INTERNAL_TOKEN = 'integration-test-token-1234567890';
  * `identity-core.module.ts:254` by Plan 02. This spec is the regression
  * gate that proves the wiring is load-bearing.
  */
-suite('Identity — email verification + REQUIRE_EMAIL_VERIFICATION gate (AUTH-06)', () => {
+// The two halves of AUTH-06 need DIFFERENT env, and REQUIRE_EMAIL_VERIFICATION is
+// read when the Nest app builds BA — so it cannot be toggled between `it` blocks.
+// They therefore get one stack each.
+//
+// Part 1 runs WITHOUT the gate: with it on, /v1/signup provisions the tenant and
+// the user and is then refused its own closing auto-sign-in, so the request 400s.
+// Whether that should instead be a 201-without-session is a product question, not
+// something this spec should freeze into an assertion.
+suite('Identity — sign-up sends a verification email (AUTH-06 part 1)', () => {
   let stack: RealStack;
   let captured: CapturedEmailAdapter;
 
@@ -45,7 +53,7 @@ suite('Identity — email verification + REQUIRE_EMAIL_VERIFICATION gate (AUTH-0
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
-    process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+    delete process.env.REQUIRE_EMAIL_VERIFICATION;
     stack = await startRealStack();
     captured = stack.app.get<CapturedEmailAdapter>(EMAIL_ADAPTER_PORT);
     expect(captured.adapterName).toBe('captured');
@@ -53,31 +61,51 @@ suite('Identity — email verification + REQUIRE_EMAIL_VERIFICATION gate (AUTH-0
 
   afterAll(async () => {
     await stopRealStack(stack);
-    delete process.env.REQUIRE_EMAIL_VERIFICATION;
   });
 
-  it('triggers sendVerification on BA sign-up email path', async () => {
+  it('triggers sendVerification on the sign-up email path', async () => {
     captured.clear();
     const email = `verify-${randomUUID().slice(0, 8)}@example.com`;
+    // D-29 closed the public /api/auth/sign-up/email route (403
+    // signup.direct_disabled); POST /v1/signup is the sanctioned path and
+    // reaches the same auth.api.signUpEmail, so sendOnSignUp still fires.
     const res = await stack.app.inject({
       method: 'POST',
-      url: '/api/auth/sign-up/email',
+      url: '/v1/signup',
       headers: { 'content-type': 'application/json' },
       payload: {
         email,
         password: 'correct-horse-battery-staple-12',
         name: 'Verify User',
+        country: 'GB',
       },
     });
-    // BA returns 200 even when verification is required; the surface that
-    // matters is the verification email landing in the adapter.
-    expect([200, 201]).toContain(res.statusCode);
+    // The surface that matters is the verification email landing in the adapter.
+    expect(res.statusCode).toBe(201);
 
     const all = captured.getCaptured();
     const v = all.find((e) => e.kind === 'verification' && 'to' in e && e.to === email);
     expect(v).toBeDefined();
     expect(v && 'url' in v ? v.url : undefined).toBeTruthy();
   }, 60_000);
+});
+
+// Part 2 runs WITH the gate on — that is the whole point of it.
+suite('Identity — REQUIRE_EMAIL_VERIFICATION gate (AUTH-06 part 2)', () => {
+  let stack: RealStack;
+
+  beforeAll(async () => {
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
+    process.env.RATE_LIMIT_AUTH_SIGNUP_PER_MIN = '1000';
+    process.env.REQUIRE_EMAIL_VERIFICATION = 'true';
+    stack = await startRealStack();
+  }, 180_000);
+
+  afterAll(async () => {
+    await stopRealStack(stack);
+    delete process.env.REQUIRE_EMAIL_VERIFICATION;
+  });
 
   it('refuses sign-in for an unverified credential when REQUIRE_EMAIL_VERIFICATION=true', async () => {
     const slug = `verify-block-${randomUUID().slice(0, 8)}`;
