@@ -1,13 +1,13 @@
-import { ForbiddenException, Logger } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 import { betterAuth, type BetterAuthOptions, type BetterAuthPlugin, type Where } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
 import type { OrganizationOptions } from 'better-auth/plugins';
 import { bearer, organization, twoFactor } from 'better-auth/plugins';
-import { eq, and, gt, isNull } from 'drizzle-orm';
+import { eq, and, gt } from 'drizzle-orm';
 import { TenantId } from '@resto/domain';
-import { containsNonDelegatable, SYSTEM_ROLES } from '@resto/domain';
 import { buildEnvelope, IdentityRoleChangedV1 } from '@resto/events';
-import { invitation as invitationTable, tenantRole as tenantRoleTable } from '@resto/db/schema';
+import { invitation as invitationTable } from '@resto/db/schema';
+import { assertRoleAssignable } from './role-assignability';
 import type { IdentityEventEmitterPort } from '../../application/ports/identity-event-emitter.port';
 import { ac, adminRole, ownerRole, staffRole } from './access-control';
 import type { AuthDrizzle } from './auth-db';
@@ -261,53 +261,11 @@ export const buildAuth = (opts: BuildOpts) =>
           // T-083-17 (08.3): defense-in-depth backstop — fires even when a caller
           // bypasses assign-role.service and hits BA's endpoint directly.
           beforeUpdateMemberRole: async (data: BeforeUpdateMemberRoleData) => {
-            const newRole = data.newRole;
-            const orgId = data.organization.id;
-            let targetPermission: Record<string, string[]> | null = null;
-            const systemRole = (SYSTEM_ROLES as Record<string, Record<string, readonly string[]>>)[
-              newRole
-            ];
-            if (systemRole) {
-              targetPermission = Object.fromEntries(
-                Object.entries(systemRole).map(([r, a]) => [r, [...a]]),
-              );
-            } else {
-              try {
-                const rows = await opts.authDb.db
-                  .select({ permission: tenantRoleTable.permission })
-                  .from(tenantRoleTable)
-                  .where(
-                    and(
-                      eq(tenantRoleTable.tenantId, orgId),
-                      eq(tenantRoleTable.role, newRole),
-                      isNull(tenantRoleTable.archivedAt),
-                    ),
-                  )
-                  .limit(1);
-                const raw = rows[0]?.permission;
-                if (typeof raw === 'string') {
-                  targetPermission = JSON.parse(raw) as Record<string, string[]>;
-                }
-              } catch {
-                throw new ForbiddenException({
-                  code: 'role.insufficient_permissions',
-                  message: 'Cannot verify target role permissions.',
-                });
-              }
-              // T-083-17 (08.3): unknown/archived slug → deny by default (fail closed)
-              if (targetPermission === null) {
-                throw new ForbiddenException({
-                  code: 'role.insufficient_permissions',
-                  message: 'Unknown or archived target role.',
-                });
-              }
-            }
-            if (containsNonDelegatable(targetPermission)) {
-              throw new ForbiddenException({
-                code: 'role.insufficient_permissions',
-                message: 'You cannot assign a role bearing non-delegatable permissions.',
-              });
-            }
+            await assertRoleAssignable({
+              newRole: data.newRole,
+              orgId: data.organization.id,
+              authDb: opts.authDb,
+            });
           },
           afterUpdateMemberRole: async (data: AfterUpdateMemberRoleData) => {
             if (!opts.emitter) return;
