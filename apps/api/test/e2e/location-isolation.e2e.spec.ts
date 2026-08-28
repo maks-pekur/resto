@@ -41,6 +41,7 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
   let locationCId: string;
   let ownerCookie: string;
   let staffCookie: string;
+  let twoPointStaffCookie: string;
 
   const createLocation = async (name: string): Promise<string> => {
     const res = await stack.app.inject({
@@ -58,7 +59,10 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     return res.json<{ id: string }>().id;
   };
 
-  const seedScopedStaff = async (email: string, locationId: string): Promise<string> => {
+  const seedScopedStaff = async (
+    email: string,
+    locationIds: readonly string[],
+  ): Promise<string> => {
     const throwawaySlug = `loc-iso-member-${randomUUID().slice(0, 8)}`;
     await provisionTenant(stack.app, throwawaySlug, INTERNAL_TOKEN);
     const user = await runBootstrap({
@@ -78,7 +82,9 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     });
     const db = stack.app.get(TenantAwareDb);
     await db.withoutTenant('seed member location scope', (tx) =>
-      tx.insert(schema.memberLocationScope).values({ memberId, locationId, tenantId }),
+      tx
+        .insert(schema.memberLocationScope)
+        .values(locationIds.map((locationId) => ({ memberId, locationId, tenantId }))),
     );
     return signInAsOperator(stack.app, email, PASSWORD, tenantId);
   };
@@ -136,7 +142,9 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
     // Sign-in's built-in onInitialLocationPin hook (auth.config.ts) auto-pins
     // the single reachable location from member_location_scope.
     const staffEmail = `staff-${randomUUID().slice(0, 8)}@example.com`;
-    staffCookie = await seedScopedStaff(staffEmail, locationAId);
+    staffCookie = await seedScopedStaff(staffEmail, [locationAId]);
+    const twoPointEmail = `staff2-${randomUUID().slice(0, 8)}@example.com`;
+    twoPointStaffCookie = await seedScopedStaff(twoPointEmail, [locationAId, locationBId]);
   }, 240_000);
 
   afterAll(async () => {
@@ -197,11 +205,28 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
   });
 
   describe('Task 2 — staff no-self-switch + archive access-loss', () => {
-    describe('D-11 non-owner cannot self-switch active location without re-login', () => {
-      it('staff already pinned to A re-pinning to B returns 403 location.already_pinned', async () => {
+    describe('non-owner switches between the locations they hold, and only those', () => {
+      it('staff scoped to A alone still cannot reach B', async () => {
         const result = await setActiveLocation(staffCookie, locationBId);
         expect(result.status).toBe(403);
-        expect(result.body.code).toBe('location.already_pinned');
+        // Was `location.already_pinned` until 2026-08-28. The pin is mutable now; scope is what
+        // refuses, and it is the same check every authorised request already runs.
+        expect(result.body.code).toBe('location.out_of_scope');
+      });
+
+      it('staff scoped to A and B moves between them without signing out', async () => {
+        const toA = await setActiveLocation(twoPointStaffCookie, locationAId);
+        expect(toA.status).toBe(200);
+        expect(toA.body.locationId).toBe(locationAId);
+
+        const toB = await setActiveLocation(twoPointStaffCookie, locationBId);
+        expect(toB.status).toBe(200);
+        expect(toB.body.locationId).toBe(locationBId);
+
+        // Back again — the point is that the pin is mutable, not that it may move once.
+        const backToA = await setActiveLocation(twoPointStaffCookie, locationAId);
+        expect(backToA.status).toBe(200);
+        expect(backToA.body.locationId).toBe(locationAId);
       });
     });
 
@@ -227,7 +252,9 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
           headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
         });
         expect(archiveRes.statusCode).toBe(200);
-        expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(1);
+        // Both seeded staff hold location A — the one scoped there alone, and the one who also
+        // holds B. Archiving reports every member it cuts off, not just the single-location ones.
+        expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(2);
 
         const res = await getStopList(staffCookie, locationAId);
         expect(res.statusCode).toBe(403);

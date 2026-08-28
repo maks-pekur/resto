@@ -22,7 +22,7 @@ import {
   MEMBER_LOCATION_SCOPE_READER,
   type MemberLocationScopeReader,
 } from '../../application/ports/member-location-scope-reader.port';
-import { LocationAlreadyPinnedError, LocationOutOfScopeError } from '../../domain/errors';
+import { LocationOutOfScopeError } from '../../domain/errors';
 import type { OperatorPrincipal } from '../../domain/principal';
 import { CurrentOperator } from './decorators/current-principal.decorator';
 import { mapIdentityError } from './error-mapping';
@@ -53,9 +53,6 @@ const ListPinnableLocationsResponseSchema = z.object({
 class ListPinnableLocationsResponseDto extends createZodDto(ListPinnableLocationsResponseSchema) {}
 
 const mapError = (err: unknown): unknown => {
-  if (err instanceof LocationAlreadyPinnedError) {
-    return new ForbiddenException({ code: err.code, message: err.message });
-  }
   if (err instanceof LocationOutOfScopeError) {
     return new ForbiddenException({ code: err.code, message: err.message });
   }

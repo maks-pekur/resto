@@ -2,7 +2,7 @@
 title: Location grain in the URL, permission-filtered navigation, staff location switching
 date: 2026-08-23
 priority: high
-status: pending
+status: done
 ---
 
 # Three grains, and what follows from them
@@ -109,4 +109,9 @@ the immutable pin in reserve as a future "kiosk mode" if a real customer asks fo
    quick plan. Two founder calls landed with it: the catalogue lost its per-location stop toggle
    rather than being given a slug to read it with, and the stop list is one per point with no
    aggregate — the every-location view is the slugless `/dashboard`.
-4. Lift the staff re-pin restriction, with a log line. **Next, and the last step.**
+4. ~~Lift the staff re-pin restriction, with a log line.~~ **Done 2026-08-28** (4bf4a72d) — see
+   `.planning/quick/260828-staff-location-switching/`. `LocationAlreadyPinnedError` is deleted; the
+   scope check still refuses a location the member does not hold, and a staff switch moves the pin
+   before it navigates.
+
+**All four steps are done.** Moving this out of `pending/`.
