@@ -1245,6 +1245,18 @@ export interface components {
         PublishedMenuDto: {
             /** Format: uuid */
             tenantId: string;
+            tenant: {
+                /** Format: uuid */
+                id: string;
+                slug: string;
+                displayName: string;
+                theme: {
+                    /** Format: uri */
+                    logoUrl: string | null;
+                    primaryColor: string | null;
+                    font: string | null;
+                } | null;
+            } | null;
             version: number;
             currency: string;
             categories: {

@@ -2032,6 +2032,40 @@ components:
         tenantId:
           type: string
           format: uuid
+        tenant:
+          type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            slug:
+              type: string
+            displayName:
+              type: string
+            theme:
+              type: object
+              properties:
+                logoUrl:
+                  type: string
+                  format: uri
+                  nullable: true
+                primaryColor:
+                  type: string
+                  nullable: true
+                font:
+                  type: string
+                  nullable: true
+              required:
+                - logoUrl
+                - primaryColor
+                - font
+              nullable: true
+          required:
+            - id
+            - slug
+            - displayName
+            - theme
+          nullable: true
         version:
           type: integer
           minimum: 0
@@ -2298,6 +2332,7 @@ components:
               - options
       required:
         - tenantId
+        - tenant
         - version
         - currency
         - categories
