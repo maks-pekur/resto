@@ -1,0 +1,111 @@
+{
+  "version": "1.0",
+  "timestamp": "2026-08-28T16:04:35.963Z",
+  "phase": null,
+  "phase_name": "quick-task chain (locations → better-auth), no active phase",
+  "phase_dir": ".planning/quick/",
+  "status": "paused",
+  "completed_tasks": [
+    {
+      "id": 1,
+      "name": "PR #261 — location slug, coordinates, edit form; OpenAPI drift + route-level permission refusal",
+      "status": "done",
+      "commit": "96905fe6"
+    },
+    {
+      "id": 2,
+      "name": "PR #262 — location moves from ?location= into the path",
+      "status": "done",
+      "commit": "2f060da3"
+    },
+    {
+      "id": 3,
+      "name": "PR #263 — better-auth 1.4.22 → 1.6.30, ten advisories cleared",
+      "status": "done",
+      "commit": "24616246"
+    },
+    {
+      "id": 4,
+      "name": "PR #264 — staff switch between the locations they hold (last step of the location-grain todo)",
+      "status": "done",
+      "commit": "8ddaf2b1"
+    },
+    {
+      "id": 5,
+      "name": "Full api e2e audit, one spec per process",
+      "status": "in_progress",
+      "progress": "9 of 65 specs run before the session ended; 1 failure found (audit-pipeline 3/3)"
+    }
+  ],
+  "remaining_tasks": [
+    {
+      "id": 5,
+      "name": "Finish the api e2e audit — run all 65 specs one process each, catalogue red vs green",
+      "status": "in_progress"
+    },
+    {
+      "id": 6,
+      "name": "Put api:e2e (and admin:e2e) into CI once the audit says what is red and why",
+      "status": "not_started"
+    },
+    {
+      "id": 7,
+      "name": "Phase 10.1 — location schedule + pause ordering; context/research/UI-SPEC exist, no plans yet",
+      "status": "not_started"
+    }
+  ],
+  "blockers": [
+    {
+      "description": "Four PRs stacked and unmerged; #262 and #264 get no CI at all until their base becomes main",
+      "type": "human_action",
+      "workaround": "merge in order 261 → 262 → 264; #263 is independent"
+    },
+    {
+      "description": "api:e2e is not in .github/workflows/ci.yml — three separate rots traced to this one gap",
+      "type": "technical",
+      "workaround": "none; the audit in task 5 is the prerequisite for closing it"
+    }
+  ],
+  "human_actions_pending": [
+    {
+      "action": "Decide the merge order and merge",
+      "context": "Claude does not merge in this repo; the stack only grows while it waits",
+      "blocking": true
+    },
+    {
+      "action": "Choose how the unassignable `admin` role is fixed",
+      "context": "SYSTEM_ROLES.admin carries staff:['remove'], NON_DELEGATABLE forbids it, the guard rejects the role. Three options in the todo on the better-auth branch",
+      "blocking": true
+    },
+    {
+      "action": "Supply a Stripe test connected account",
+      "context": "Phase 10 plan 13 has been parked on this since before this session",
+      "blocking": true
+    }
+  ],
+  "decisions": [
+    {
+      "decision": "The slug goes in the first path segment only where it decides what is shown",
+      "rationale": "/{slug}/team would be a lie — the team is brand-wide",
+      "phase": "262"
+    },
+    {
+      "decision": "The catalogue stops knowing about locations; the stop list is one per point with no aggregate",
+      "rationale": "founder call, 2026-08-26",
+      "phase": "262"
+    },
+    {
+      "decision": "better-auth 1.6.30, not 1.7",
+      "rationale": "every advisory is fixed at or below 1.6.22; a security upgrade is the wrong moment to cross another minor",
+      "phase": "263"
+    },
+    {
+      "decision": "LocationAlreadyPinnedError deleted rather than left dormant",
+      "rationale": "the immutable pin protected nothing member_location_scope does not already enforce; kiosk mode is a one-location role",
+      "phase": "264"
+    }
+  ],
+  "uncommitted_files": [],
+  "next_action": "Finish the api e2e audit (command in .continue-here.md), then decide whether api:e2e can go into CI or whether there is a backlog to clear first.",
+  "context_notes": "Every branch is committed and pushed. Nothing is half-written. The single highest-value unblocked task is the e2e audit, because three separate findings this week all trace to that job being absent from CI."
+}
