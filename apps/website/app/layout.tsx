@@ -40,7 +40,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <NextIntlClientProvider locale={locale} messages={messages}>
           <GuestUi>
             {children}
-            <Toaster position="bottom-center" />
+            <Toaster position="bottom-center" theme="light" />
           </GuestUi>
         </NextIntlClientProvider>
       </body>

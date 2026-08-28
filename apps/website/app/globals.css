@@ -6,6 +6,8 @@
 
 @source '../../../packages/ui/src';
 
+@custom-variant dark (&:where(html[data-theme='dark'], html[data-theme='dark'] *));
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

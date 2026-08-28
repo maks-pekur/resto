@@ -105,5 +105,11 @@
     "delivery": "Envío",
     "faq": "Preguntas",
     "poweredBy": "Funciona con RestOS"
+  },
+  "theme": {
+    "dark": "Oscuro",
+    "label": "Tema de color",
+    "light": "Claro",
+    "system": "Sistema"
   }
 }

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { GuestUiProvider, MenuScreen, Toaster } from '@resto/ui';
+import { GuestUiProvider, MenuScreen, ThemeSwitcher, Toaster, useGuestTheme } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import { fetchAvailability, fetchMenu, MenuNotFoundError } from './api/client';
 import { LocaleControl } from './components/LocaleControl';
@@ -23,6 +23,7 @@ type State =
 const AVAILABILITY_POLL_MS = 20_000;
 
 export const App = () => {
+  const { theme, resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
@@ -136,12 +137,22 @@ export const App = () => {
           onAddedToCart={() => {
             toast(t('cart.added'));
           }}
-          headerActions={<LocaleControl className="hidden sm:inline-flex" />}
-          footerActions={<LocaleControl />}
+          headerActions={
+            <>
+              <ThemeSwitcher theme={theme} onSelect={setTheme} className="hidden sm:inline-flex" />
+              <LocaleControl className="hidden sm:inline-flex" />
+            </>
+          }
+          footerActions={
+            <div className="flex flex-wrap items-center gap-2">
+              <LocaleControl />
+              <ThemeSwitcher theme={theme} onSelect={setTheme} />
+            </div>
+          }
           banner={<TableBanner />}
         />
       )}
-      <Toaster position="bottom-center" />
+      <Toaster position="bottom-center" theme={resolvedTheme} />
     </GuestUiProvider>
   );
 };

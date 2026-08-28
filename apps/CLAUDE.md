@@ -146,6 +146,15 @@ ship a single visual system; `admin/` is an operator surface and is exempt.
   — image component and translation function — arrive through
   `GuestUiProvider`; a shared component that needs a `typeof window` check or
   an `isNext` prop is a design failure.
+- **Theme is a token swap, never a component branch.** `system` / `light` /
+  `dark` ride one `data-theme` attribute on `<html>`; `system` resolves in CSS so
+  the first paint is right without an inline script. A component participates by
+  using tokens only — `text-white`, `bg-[oklch(…)]` or a hex literal silently
+  opts it out, and nobody notices until the page is opened at night. A surface
+  without a theme control must not set the attribute, and so stays light.
+- **Menu photography sits on its own `--photo-surface` token**, which stays light
+  in both themes: vendor JPEGs have an opaque white ground and would otherwise
+  render as a white rectangle on a dark page.
 - **Every guest page is a complete document: header, content, footer.** The QR
   menu is a page, not a widget.
 - Design decisions go through the `ui-ux-pro-max` skill, React/Next

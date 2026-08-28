@@ -34,7 +34,7 @@ export function AddressInput({ value, onChange, onBlur }: AddressInputProps) {
         aria-label="Delivery address"
       />
       {zone === 'valid' ? (
-        <Badge className="w-fit gap-1 bg-[var(--primary,#16a34a)]/10 text-[var(--primary,#16a34a)]">
+        <Badge className="w-fit gap-1 bg-primary-tint text-primary-strong">
           <Check className="h-3 w-3" /> We deliver to this area
         </Badge>
       ) : null}

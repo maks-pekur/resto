@@ -36,7 +36,7 @@ export function OrderSummary() {
         {items.map((item) => (
           <li
             key={`${item.itemId}:${item.sizeId ?? 'base'}`}
-            className="flex items-center justify-between text-[14px] leading-[1.4]"
+            className="flex items-center justify-between text-sm"
           >
             <span className="min-w-0 truncate">
               {item.quantity} × {item.name}
@@ -48,7 +48,7 @@ export function OrderSummary() {
         ))}
       </ul>
 
-      <div className="mt-4 flex items-center justify-between border-t pt-3 text-[16px] font-semibold">
+      <div className="mt-4 flex items-center justify-between border-t pt-3 text-base font-semibold">
         <span>Subtotal</span>
         <span className="tabular-nums">
           {subtotal} {currency}
@@ -56,7 +56,7 @@ export function OrderSummary() {
       </div>
 
       {mode === 'delivery' ? (
-        <div className="mt-1 flex items-center justify-between text-[14px] text-[oklch(0.45_0_0)]">
+        <div className="mt-1 flex items-center justify-between text-sm text-muted-foreground">
           <span>Delivery fee</span>
           <span className="tabular-nums">Calculated at delivery</span>
         </div>

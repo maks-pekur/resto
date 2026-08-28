@@ -37,5 +37,9 @@
   "table.prompt": "Введите номер стола",
   "table.confirm": "Подтвердить",
   "locale.label": "Язык",
-  "footer.poweredBy": "Работает на RestOS"
+  "footer.poweredBy": "Работает на RestOS",
+  "theme.label": "Оформление",
+  "theme.system": "Как в системе",
+  "theme.light": "Светлое",
+  "theme.dark": "Тёмное"
 }

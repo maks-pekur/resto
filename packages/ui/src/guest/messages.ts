@@ -27,4 +27,8 @@ export type GuestUiKey =
   | 'cart.table'
   | 'cart.itemCount'
   | 'locale.label'
+  | 'theme.label'
+  | 'theme.system'
+  | 'theme.light'
+  | 'theme.dark'
   | 'footer.poweredBy';

@@ -6,6 +6,17 @@
 
 @source '../../../packages/ui/src';
 
+@custom-variant dark {
+  &:where(html[data-theme='dark'], html[data-theme='dark'] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(html[data-theme='system'], html[data-theme='system'] *) {
+      @slot;
+    }
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

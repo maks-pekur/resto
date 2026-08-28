@@ -105,5 +105,11 @@
     "delivery": "Delivery",
     "faq": "FAQ",
     "poweredBy": "Powered by RestOS"
+  },
+  "theme": {
+    "dark": "Dark",
+    "label": "Colour theme",
+    "light": "Light",
+    "system": "System"
   }
 }

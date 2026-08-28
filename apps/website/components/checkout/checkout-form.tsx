@@ -63,7 +63,7 @@ export function CheckoutForm() {
   if (items.length === 0) {
     return (
       <main className="mx-auto max-w-[640px] px-4 py-16 text-center sm:px-6">
-        <p className="text-[16px] leading-[1.5]">Your cart is empty</p>
+        <p className="text-base">Your cart is empty</p>
         <Button asChild className="mt-4">
           <Link href="/">Back to menu</Link>
         </Button>
@@ -142,14 +142,14 @@ export function CheckoutForm() {
   if (payment.stage === 'error') {
     return (
       <main className="mx-auto max-w-[640px] px-4 py-8 sm:px-6 flex flex-col gap-4">
-        <p className="text-[16px] leading-[1.5] text-red-600">{payment.message}</p>
+        <p className="text-base text-red-600">{payment.message}</p>
         {payment.orderId ? (
           <Button
             onClick={() => {
               const id = payment.orderId;
               if (id) void handleRetry(id);
             }}
-            className="w-full bg-(--primary,#16a34a) text-white"
+            className="w-full bg-primary text-primary-foreground"
           >
             Try again
           </Button>
@@ -158,7 +158,7 @@ export function CheckoutForm() {
             onClick={() => {
               setPayment({ stage: 'idle' });
             }}
-            className="w-full bg-(--primary,#16a34a) text-white"
+            className="w-full bg-primary text-primary-foreground"
           >
             Try again
           </Button>
@@ -247,9 +247,7 @@ export function CheckoutForm() {
                   </FormControl>
                   <FormLabel className="font-normal">{t('consent.label')}</FormLabel>
                 </div>
-                <p className="text-[12px] leading-[1.4] text-[oklch(0.45_0_0)]">
-                  {t('consent.hint')}
-                </p>
+                <p className="text-xs text-muted-foreground">{t('consent.hint')}</p>
                 <FormMessage />
               </FormItem>
             )}
@@ -274,7 +272,7 @@ export function CheckoutForm() {
           <Button
             type="submit"
             disabled={payment.stage === 'creating'}
-            className="w-full bg-(--primary,#16a34a) text-white"
+            className="w-full bg-primary text-primary-foreground"
           >
             {payment.stage === 'creating' ? 'Creating order…' : 'Place order'}
           </Button>
