@@ -10,10 +10,14 @@ title = "RestOS gitleaks config"
 useDefault = true
 
 [allowlist]
-description = "Known-fake payment fixtures (test mocks, stub adapter, planning placeholders) — never real credentials"
+description = "Known-fake fixtures — payment stubs and the e2e sign-in password. Never real credentials"
 regexTarget = "line"
 regexes = [
   '''sk_live_DEPRECATED''',
   '''sk_test_placeholder''',
   '''pi_stub_123_secret''',
+  # The house fixture password for e2e sign-ins. Fake by construction — it is the XKCD example
+  # string — and it appears in a dozen suites; without it here, every PR that touches one of them
+  # trips `generic-api-key` on a `const password = ...` line.
+  '''correct-horse-battery-staple''',
 ]
