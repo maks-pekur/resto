@@ -89,10 +89,12 @@ describe('MenuScreen on qr-menu', () => {
     expect(screen.getByRole('heading', { name: t('menu.emptyHeading') })).toBeInTheDocument();
   });
 
-  it('shows the cart trigger in the header', () => {
+  it('pins the cart trigger to the category rail, not the header', () => {
     renderMenu(buildMenu());
+    const rail = screen.getByRole('navigation', { name: t('menu.categories') });
+    expect(within(rail).getByRole('button', { name: t('cart.empty') })).toBeInTheDocument();
     expect(
-      within(screen.getByRole('banner')).getByRole('button', { name: t('cart.empty') }),
-    ).toBeInTheDocument();
+      within(screen.getByRole('banner')).queryByRole('button', { name: t('cart.empty') }),
+    ).not.toBeInTheDocument();
   });
 });

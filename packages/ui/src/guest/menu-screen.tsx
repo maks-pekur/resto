@@ -6,6 +6,7 @@ import { selectItemCount, selectSubtotal, useCartStore, type CartLineItem } from
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
 import { CartBar } from './cart-bar';
+import { CartButton } from './cart-button';
 import { CategoryRail, sectionElementId } from './category-rail';
 import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
@@ -113,17 +114,13 @@ export const MenuScreen = ({
 
   return (
     <GuestShell
-      header={
-        <GuestHeader
-          tenantName={tenantName}
-          logoUrl={logoUrl}
-          cartItemCount={itemCount}
-          cartTotal={itemCount > 0 ? total : null}
-          onOpenCart={openCart}
-          actions={headerActions}
+      header={<GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={headerActions} />}
+      rail={
+        <CategoryRail
+          categories={sections.map((section) => section.category)}
+          action={<CartButton itemCount={itemCount} onOpen={openCart} />}
         />
       }
-      rail={<CategoryRail categories={sections.map((section) => section.category)} />}
       banner={banner}
       footer={
         <GuestFooter
