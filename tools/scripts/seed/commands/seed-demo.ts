@@ -118,6 +118,12 @@ interface CategoryDef {
 const PIZZA_PHOTO = (id: string): string =>
   `https://cdn.dodostatic.net/static/Img/Products/Pizza/ru-RU/${id}.jpg`;
 
+/** Dodo's current CDN, which serves the product shot already cut out (WebP with
+ * alpha). Preferred over PIZZA_PHOTO: nothing has to be removed, so the edge is
+ * theirs rather than our flood fill's. */
+const PIZZA_PHOTO_CUTOUT = (id: string): string =>
+  `https://media.dodostatic.net/image/r:1875x1875/${id}.webp`;
+
 const PIZZA_SIZES = (small: string, medium: string, large: string): readonly SizeDef[] => [
   { name: { en: '25 cm', uk: '25 см', ru: '25 см' }, price: small, isDefault: true },
   { name: { en: '30 cm', uk: '30 см', ru: '30 см' }, price: medium },
@@ -246,6 +252,18 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
           price: '269.00',
           photoUrl: PIZZA_PHOTO('ec29465e-606b-4a04-a03e-da3940d37e0e'),
           sizes: PIZZA_SIZES('269.00', '339.00', '409.00'),
+        },
+        {
+          slug: 'ham-and-cheese',
+          name: { en: 'Ham and Cheese', uk: 'Шинка та сир', ru: 'Ветчина и сыр' },
+          description: {
+            en: 'Ham, mozzarella, Italian herbs, cream sauce',
+            uk: 'Шинка, моцарела, італійські трави, вершковий соус',
+            ru: 'Ветчина, моцарелла, итальянские травы, сливочный соус',
+          },
+          price: '229.00',
+          photoUrl: PIZZA_PHOTO_CUTOUT('019a777f32cc764b976b3e4a7dd599ea'),
+          sizes: PIZZA_SIZES('229.00', '299.00', '369.00'),
         },
         {
           slug: 'veggie-and-mushrooms',
@@ -435,6 +453,7 @@ const ensureCatalog = async (
   op: OperatorHttpClient,
   tenantSlug: string,
   currency: CurrencyValue,
+  refreshPhotos: boolean,
 ): Promise<void> => {
   const existingCategories = await op.get<CategoryListResponse>('/v1/catalog/categories');
   const categoryBySlug = new Map(existingCategories.items.map((c) => [c.slug, c.id]));
@@ -467,9 +486,13 @@ const ensureCatalog = async (
 
     for (const [itemIndex, item] of category.items.entries()) {
       const existing = itemBySlug.get(item.slug);
+      const existingKey = existing?.photo?.s3Key ?? null;
       const s3Key =
-        existing?.photo?.s3Key ??
-        (item.photoUrl ? await uploadPhotoFromUrl(op, item.photoUrl) : null);
+        existingKey !== null && !refreshPhotos
+          ? existingKey
+          : item.photoUrl
+            ? await uploadPhotoFromUrl(op, item.photoUrl)
+            : existingKey;
 
       const payload = {
         ...(existing ? { id: existing.id } : {}),
@@ -603,6 +626,9 @@ export const runSeedDemo = async (
   // markTenantPaymentsReady is ever called from a path with a looser
   // outer guard (mirrors how assertProdGuardrails mirrors env.schema.ts).
   const paymentsReadyRequested = argv.includes('--payments-ready');
+  // Photos are reused across runs; this re-pulls and re-cuts them after a change
+  // to the source list or to the image pipeline.
+  const refreshPhotos = argv.includes('--refresh-photos');
   if (paymentsReadyRequested) {
     assertPaymentsReadyAllowed(process.env.NODE_ENV);
   }
@@ -663,7 +689,7 @@ export const runSeedDemo = async (
       });
 
       const locationsByName = await ensureLocations(op, tenantDef);
-      await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country));
+      await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country), refreshPhotos);
 
       for (const staff of staffForTenant) {
         const memberId = memberIdByEmail.get(staff.email);

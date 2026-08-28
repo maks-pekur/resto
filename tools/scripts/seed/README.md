@@ -45,6 +45,16 @@ each scoped to a single tenant. The first tenant also gets a
 handful of demo orders across the order lifecycle. Credentials are printed
 to stdout at the end — not persisted anywhere.
 
+#### `--refresh-photos`
+
+Menu photos are uploaded once and reused on every later run, so a re-seed does
+not re-download a dozen images. Pass `--refresh-photos` after changing a source
+URL or the image pipeline to pull and re-cut them all.
+
+Photos are normalised on the way in: the studio background is made transparent
+(a white ground renders as a white rectangle on a dark menu), the longest side is
+capped at 900px, and the result is stored as WebP.
+
 #### `--payments-ready`
 
 ```bash

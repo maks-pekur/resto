@@ -1,5 +1,6 @@
 import { log } from './logger';
 import type { OperatorHttpClient } from './operator-http';
+import { prepareMenuPhoto } from './prepare-menu-photo';
 
 const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_PHOTO_BYTES = 5_242_880;
@@ -34,21 +35,36 @@ export const uploadPhotoFromUrl = async (
       return null;
     }
 
-    const bytes = new Uint8Array(await source.arrayBuffer());
-    if (bytes.byteLength === 0 || bytes.byteLength > MAX_PHOTO_BYTES) {
-      log('seed-demo.photo.skipped', { sourceUrl, sizeBytes: bytes.byteLength });
+    const original = Buffer.from(await source.arrayBuffer());
+    if (original.byteLength === 0) {
+      log('seed-demo.photo.skipped', { sourceUrl, sizeBytes: original.byteLength });
+      return null;
+    }
+
+    // Menu photography is shot on opaque white, which renders as a white
+    // rectangle on a dark page. Alpha is the only thing that fixes it — no CSS
+    // blend can tell a white background from white cheese.
+    const prepared = await prepareMenuPhoto(original).catch((err: unknown) => {
+      log('seed-demo.photo.unprocessed', { sourceUrl, err: String(err) });
+      return original;
+    });
+    const body = prepared;
+    const uploadContentType = prepared === original ? contentType : 'image/webp';
+
+    if (body.byteLength > MAX_PHOTO_BYTES) {
+      log('seed-demo.photo.skipped', { sourceUrl, sizeBytes: body.byteLength });
       return null;
     }
 
     const { uploadUrl, s3Key } = await op.post<PhotoUploadUrlResponse>(
       '/v1/catalog/photo-upload-url',
-      { contentType, sizeBytes: bytes.byteLength },
+      { contentType: uploadContentType, sizeBytes: body.byteLength },
     );
 
     const upload = await fetch(uploadUrl, {
       method: 'PUT',
-      body: bytes,
-      headers: { 'content-type': contentType },
+      body: new Uint8Array(body),
+      headers: { 'content-type': uploadContentType },
       signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
     });
     if (!upload.ok) {
@@ -56,7 +72,7 @@ export const uploadPhotoFromUrl = async (
       return null;
     }
 
-    log('seed-demo.photo.uploaded', { sourceUrl, s3Key, sizeBytes: bytes.byteLength });
+    log('seed-demo.photo.uploaded', { sourceUrl, s3Key, sizeBytes: body.byteLength });
     return s3Key;
   } catch (err) {
     log('seed-demo.photo.failed', { sourceUrl, err: String(err) });

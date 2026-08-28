@@ -41,7 +41,7 @@ export const MenuItemCard = ({
         unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
       )}
     >
-      <div className="bg-photo-surface relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl dark:brightness-[0.92] sm:w-full">
+      <div className="bg-muted relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl sm:w-full">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}

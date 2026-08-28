@@ -42,9 +42,6 @@
   --border: #ececec;
   --input: #d6d6d6;
   --ring: var(--primary);
-  /* Menu photography ships on an opaque white ground; the tile stays light in
-   * both themes so the photo never reads as a white rectangle on a dark page. */
-  --photo-surface: #ffffff;
 
   --radius: 1rem;
 

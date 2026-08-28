@@ -152,9 +152,12 @@ ship a single visual system; `admin/` is an operator surface and is exempt.
   using tokens only — `text-white`, `bg-[oklch(…)]` or a hex literal silently
   opts it out, and nobody notices until the page is opened at night. A surface
   without a theme control must not set the attribute, and so stays light.
-- **Menu photography sits on its own `--photo-surface` token**, which stays light
-  in both themes: vendor JPEGs have an opaque white ground and would otherwise
-  render as a white rectangle on a dark page.
+- **Menu photos must carry alpha.** Studio product shots arrive as JPEG on an
+  opaque white ground, which renders as a white rectangle on a dark page, and no
+  CSS blend can fix it — `multiply`/`darken` cannot tell a white background from
+  white cheese. `seed-demo` cuts the background out before upload
+  (`removeWhiteBackground`); a tenant uploading an opaque photo gets a photo with
+  its own background, which is what they uploaded.
 - **Every guest page is a complete document: header, content, footer.** The QR
   menu is a page, not a widget.
 - Design decisions go through the `ui-ux-pro-max` skill, React/Next
