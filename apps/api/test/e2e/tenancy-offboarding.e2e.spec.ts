@@ -26,7 +26,7 @@ const provisionTenant = async (
     method: 'POST',
     url: '/internal/v1/tenants',
     headers: TOKEN_HEADER,
-    payload: { slug, displayName: `Cafe ${slug}`, defaultCurrency: 'USD', locale: 'en' },
+    payload: { slug, displayName: `Cafe ${slug}`, country: 'GB', locale: 'en' },
   });
   expect(res.statusCode).toBe(201);
   return res.json<{ id: string; slug: string }>();

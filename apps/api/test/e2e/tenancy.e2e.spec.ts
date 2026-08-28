@@ -31,7 +31,7 @@ if (!dockerOk) {
 const buildBody = (slug: string) => ({
   slug,
   displayName: `Cafe ${slug}`,
-  defaultCurrency: 'USD' as const,
+  country: 'GB' as const,
   locale: 'en' as const,
 });
 
@@ -156,7 +156,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
       method: 'POST',
       url: '/internal/v1/tenants',
       headers,
-      payload: { slug, displayName: 'Archived Replay', defaultCurrency: 'USD', locale: 'en' },
+      payload: { slug, displayName: 'Archived Replay', country: 'GB', locale: 'en' },
     });
     expect(provRes.statusCode).toBe(201);
     const { id } = provRes.json<{ id: string }>();
@@ -172,7 +172,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
       method: 'POST',
       url: '/internal/v1/tenants',
       headers,
-      payload: { slug, displayName: 'Archived Replay', defaultCurrency: 'USD', locale: 'en' },
+      payload: { slug, displayName: 'Archived Replay', country: 'GB', locale: 'en' },
     });
     expect(replayRes.statusCode).toBe(409);
     expect(replayRes.json<{ detail: string }>().detail).toMatch(/archived/i);
@@ -197,7 +197,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
         payload: {
           slug: 'archive-target',
           displayName: 'Archive Target',
-          defaultCurrency: 'USD',
+          country: 'GB',
           locale: 'en',
         },
       });
@@ -251,7 +251,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
         method: 'POST',
         url: '/internal/v1/tenants',
         headers,
-        payload: { slug, displayName: 'First', defaultCurrency: 'USD', locale: 'en' },
+        payload: { slug, displayName: 'First', country: 'GB', locale: 'en' },
       });
       expect(first.statusCode).toBe(201);
 
@@ -259,7 +259,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
         method: 'POST',
         url: '/internal/v1/tenants',
         headers,
-        payload: { slug, displayName: 'Second', defaultCurrency: 'USD', locale: 'en' },
+        payload: { slug, displayName: 'Second', country: 'GB', locale: 'en' },
       });
       // Currently provision is idempotent on (slug) — returns the existing
       // tenant unchanged, so 201 with the original id. The displayName
