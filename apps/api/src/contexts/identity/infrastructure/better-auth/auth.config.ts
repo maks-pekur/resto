@@ -572,7 +572,11 @@ export const buildAuth = (opts: BuildOpts) =>
           if (ctx.context.returned instanceof Error) return;
           if (!opts.onPasswordResetCompleted) return;
           try {
-            await ctx.context.internalAdapter.deleteSessions(stash.userId);
+            // BA 1.6 split the old `deleteSessions(userIdOrSessionTokens)` in two: `deleteSessions`
+            // now takes session TOKENS, and deleting every session a user holds is
+            // `deleteUserSessions`. Passing a userId to the former would revoke nothing and say
+            // nothing — the reset would appear to succeed with the old sessions still live.
+            await ctx.context.internalAdapter.deleteUserSessions(stash.userId);
             const tenantId = await resolvePrimaryTenantId(ctx.context.adapter, stash.userId);
             await opts.onPasswordResetCompleted({
               userId: stash.userId,
