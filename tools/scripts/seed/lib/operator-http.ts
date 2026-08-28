@@ -1,4 +1,9 @@
-const ADMIN_ORIGIN = 'http://localhost:4000';
+// Must match a trusted origin on the api, which is built from ADMIN_WEB_URL
+// (identity-core.module.ts). Both .env and .env.example ship
+// http://admin.localhost:4000, so the previous hardcoded
+// http://localhost:4000 was rejected with 403 INVALID_ORIGIN and seed-demo
+// could not sign in at all.
+const ADMIN_ORIGIN = process.env.ADMIN_WEB_URL ?? 'http://admin.localhost:4000';
 
 export class OperatorHttpError extends Error {
   constructor(

@@ -2,6 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
+// Dev-only api target. admin hardcoded :5001 while qr-menu hardcoded :3000, so the
+// two dev servers could not run against one api and the seed CLI (which defaults to
+// :3000) worked for neither. Both now read the same override.
+const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+
 export default defineConfig({
   plugins: [tailwindcss(), react()],
   build: {
@@ -26,8 +31,8 @@ export default defineConfig({
     host: true,
     allowedHosts: ['.admin.localhost'],
     proxy: {
-      '/api': { target: 'http://localhost:5001', changeOrigin: false },
-      '/v1': { target: 'http://localhost:5001', changeOrigin: false },
+      '/api': { target: API_TARGET, changeOrigin: false },
+      '/v1': { target: API_TARGET, changeOrigin: false },
     },
   },
   resolve: {
