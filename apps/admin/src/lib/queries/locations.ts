@@ -61,6 +61,16 @@ export const meLocationsQuery = () => ({
   staleTime: 30_000,
 });
 
+/**
+ * A staff member's location authority is this server-side pin, not the URL (D-12). It became
+ * mutable on 2026-08-28 — a manager covering two points used to have to sign out to move.
+ */
+export const setActiveLocationMutation = (locationId: string) =>
+  apiFetch<{ locationId: string | null }>('/v1/me/set-active-location', {
+    method: 'POST',
+    body: { locationId },
+  });
+
 export const activeLocationIdQuery = () => ({
   queryKey: ['identity', 'active-location'] as const,
   queryFn: async (): Promise<string | null> => {
