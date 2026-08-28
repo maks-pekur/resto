@@ -252,7 +252,9 @@ suite('Location isolation e2e (Plan 08.4-11, success criterion #2)', () => {
           headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
         });
         expect(archiveRes.statusCode).toBe(200);
-        expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(1);
+        // Both seeded staff hold location A — the one scoped there alone, and the one who also
+        // holds B. Archiving reports every member it cuts off, not just the single-location ones.
+        expect(archiveRes.json<{ scopedMemberCount: number }>().scopedMemberCount).toBe(2);
 
         const res = await getStopList(staffCookie, locationAId);
         expect(res.statusCode).toBe(403);
