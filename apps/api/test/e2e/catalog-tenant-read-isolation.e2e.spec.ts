@@ -45,7 +45,12 @@ suite('Catalog — cross-tenant read-path isolation (AUDIT #7/#8/#9)', () => {
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers,
-      payload: { name: `${label} location` },
+      payload: {
+        name: `${label} location`,
+        address: '1 Test Street, London',
+        latitude: 51.5074,
+        longitude: -0.1278,
+      },
     });
     expect(res.statusCode).toBe(200);
     return res.json<{ id: string }>().id;
