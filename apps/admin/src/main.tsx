@@ -2,7 +2,8 @@ import * as Sentry from '@sentry/react';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { createRouter, RouterProvider } from '@tanstack/react-router';
-import { RouteError, RoutePending } from '@/components/route-error';
+import { Forbidden, RouteError, RoutePending } from '@/components/route-error';
+import { isForbiddenRouteError } from '@/lib/auth/permissions';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
 import { ThemeProvider } from './components/theme-provider';
@@ -24,6 +25,7 @@ import { Route as dashboardIndexRoute } from './routes/(protected)/index';
 import { Route as settingsRoute } from './routes/(protected)/settings';
 import { Route as teamRoute } from './routes/(protected)/team';
 import { Route as locationsRoute } from './routes/(protected)/locations';
+import { Route as locationFormRoute } from './routes/(protected)/locations.$slug';
 import { Route as ordersRoute } from './routes/(protected)/orders';
 import { Route as rolesRoute } from './routes/(protected)/roles';
 import { Route as roleDetailRoute } from './routes/(protected)/roles.$roleId';
@@ -81,6 +83,7 @@ const protectedRouteTree = protectedLayoutRoute.addChildren([
   rolesRoute,
   roleDetailRoute,
   locationsRoute,
+  locationFormRoute,
   ordersRoute,
   menuRouteTree,
   tenantDomainsRoute,
@@ -96,7 +99,8 @@ export const router = createRouter({
   routeTree,
   context: { queryClient },
   defaultPreload: 'intent',
-  defaultErrorComponent: ({ reset }) => <RouteError reset={reset} />,
+  defaultErrorComponent: ({ error, reset }) =>
+    isForbiddenRouteError(error) ? <Forbidden /> : <RouteError reset={reset} />,
   defaultPendingComponent: RoutePending,
 });
 

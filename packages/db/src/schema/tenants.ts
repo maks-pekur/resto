@@ -35,6 +35,9 @@ export const tenants = pgTable(
     displayName: text('display_name').notNull(),
     status: text('status').notNull().default('active'),
     locale: text('locale').notNull().default('en'),
+    // Inherited as the default by every new location; a location may override it, because a chain
+    // can cross zones (Spain has two) while most tenants never leave one.
+    timezone: text('timezone').notNull().default('UTC'),
     defaultCurrency: text('default_currency').notNull().default('USD'),
     /**
      * D-34: collected at signup, applied to the tenant at

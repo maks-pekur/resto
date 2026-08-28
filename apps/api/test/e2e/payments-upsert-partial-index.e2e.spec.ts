@@ -37,7 +37,11 @@ suite(
 
         const [location] = await tx
           .insert(schema.locations)
-          .values({ tenantId, name: 'Payments Upsert Test Location' })
+          .values({
+            tenantId,
+            name: 'Payments Upsert Test Location',
+            slug: 'payments-upsert-test-location',
+          })
           .returning({ id: schema.locations.id });
         if (!location) throw new Error('seed for payments partial-index e2e: location failed.');
 

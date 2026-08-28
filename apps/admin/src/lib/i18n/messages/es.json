@@ -19,7 +19,10 @@
     "comma": "Separado por comas",
     "tryAgain": "Actualiza la página. Si el problema persiste, revisa tu conexión.",
     "errorGeneric": "Algo salió mal. Inténtalo de nuevo.",
-    "notFound": "No encontrado."
+    "notFound": "No encontrado.",
+    "forbiddenTitle": "No tienes acceso a esta página.",
+    "forbiddenBody": "Tu rol no incluye el permiso que esta página necesita. Pide a un propietario que te lo conceda.",
+    "backToDashboard": "Volver al panel"
   },
   "auth": {
     "signInTitle": "Iniciar sesión en Resto",
@@ -68,7 +71,9 @@
       "localeEn": "English",
       "switchTenantItem": "Cambiar de restaurante",
       "localeEs": "Español"
-    }
+    },
+    "groupOperations": "Operación",
+    "groupAdministration": "Administración"
   },
   "pickTenant": {
     "title": "Elige tu restaurante",

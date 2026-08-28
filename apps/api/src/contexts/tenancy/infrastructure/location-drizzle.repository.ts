@@ -9,7 +9,12 @@ const ROW_TO_SNAPSHOT = (row: {
   id: string;
   tenantId: string;
   name: string;
+  slug: string;
   address: string | null;
+  // numeric(9,6) comes back as a string from postgres.js — parsing at the boundary keeps the
+  // domain in numbers and the precision decision in one place.
+  latitude: string | null;
+  longitude: string | null;
   timezone: string | null;
   contacts: Record<string, unknown> | null;
   status: string;
@@ -20,7 +25,10 @@ const ROW_TO_SNAPSHOT = (row: {
   id: LocationId.parse(row.id),
   tenantId: TenantId.parse(row.tenantId),
   name: row.name,
+  slug: row.slug,
   address: row.address,
+  latitude: row.latitude === null ? null : Number(row.latitude),
+  longitude: row.longitude === null ? null : Number(row.longitude),
   timezone: row.timezone,
   contacts: row.contacts === null ? null : LocationContactsSchema.parse(row.contacts),
   status: row.status as LocationSnapshot['status'],
@@ -61,7 +69,10 @@ export class LocationDrizzleRepository
         .insertInto(schema.locations, {
           id: snapshot.id,
           name: snapshot.name,
+          slug: snapshot.slug,
           address: snapshot.address,
+          latitude: snapshot.latitude === null ? null : String(snapshot.latitude),
+          longitude: snapshot.longitude === null ? null : String(snapshot.longitude),
           timezone: snapshot.timezone,
           contacts: snapshot.contacts,
           status: snapshot.status,
@@ -74,6 +85,8 @@ export class LocationDrizzleRepository
           set: {
             name: snapshot.name,
             address: snapshot.address,
+            latitude: snapshot.latitude === null ? null : String(snapshot.latitude),
+            longitude: snapshot.longitude === null ? null : String(snapshot.longitude),
             timezone: snapshot.timezone,
             contacts: snapshot.contacts,
             status: snapshot.status,

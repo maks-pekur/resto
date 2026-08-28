@@ -46,7 +46,12 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers: { cookie: ownerCookie, 'x-tenant-id': tenantId },
-      payload: { name },
+      payload: {
+        name,
+        address: '1 Test Street, London',
+        latitude: 51.5074,
+        longitude: -0.1278,
+      },
     });
     expect(res.statusCode).toBe(200);
     return res.json<{ id: string }>().id;
@@ -142,7 +147,11 @@ suite('Stop-list aggregate e2e (Plan 08.5-03: BLOCK-1 D-09, D-06, D-10, D-16)', 
     const [foreignLocation] = await db.withoutTenant('seed foreign-tenant location', (tx) =>
       tx
         .insert(schema.locations)
-        .values({ tenantId: foreignTenant.id, name: 'Foreign Tenant Location' })
+        .values({
+          tenantId: foreignTenant.id,
+          name: 'Foreign Tenant Location',
+          slug: 'foreign-tenant-location',
+        })
         .returning({ id: schema.locations.id }),
     );
     if (!foreignLocation) throw new Error('seed foreign-tenant location failed');

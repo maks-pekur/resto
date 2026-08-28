@@ -48,7 +48,12 @@ const setupAuthedTenant = async (
     method: 'POST',
     url: '/v1/tenancy/locations',
     headers: authed,
-    payload: { name: `Location ${label}` },
+    payload: {
+      name: `Location ${label}`,
+      address: '1 Test Street, London',
+      latitude: 51.5074,
+      longitude: -0.1278,
+    },
   });
   expect(locationRes.statusCode).toBe(200);
   const locationId = locationRes.json<{ id: string }>().id;

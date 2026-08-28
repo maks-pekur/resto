@@ -35,11 +35,11 @@ suite('catalog version tables', () => {
 
       const [la] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantA, name: 'Ver A Location' })
+        .values({ tenantId: tenantA, name: 'Ver A Location', slug: 'ver-a-location' })
         .returning({ id: schema.locations.id });
       const [lb] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantB, name: 'Ver B Location' })
+        .values({ tenantId: tenantB, name: 'Ver B Location', slug: 'ver-b-location' })
         .returning({ id: schema.locations.id });
       if (!la || !lb) throw new Error('Failed to seed locations.');
       locationA = la.id;

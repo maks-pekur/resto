@@ -50,7 +50,11 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
 
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'Cancel/Refund Test Location' })
+        .values({
+          tenantId,
+          name: 'Cancel/Refund Test Location',
+          slug: 'cancel-refund-test-location',
+        })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed order-cancel-refund e2e: location insert failed.');
       locationId = location.id;

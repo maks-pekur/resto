@@ -50,11 +50,11 @@ suite('RES-252: TenantScopedRepository auto-filters by ALS-bound tenant', () => 
 
       const [la] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantA, name: 'LocationA' })
+        .values({ tenantId: tenantA, name: 'LocationA', slug: 'locationa' })
         .returning({ id: schema.locations.id });
       const [lb] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantB, name: 'LocationB' })
+        .values({ tenantId: tenantB, name: 'LocationB', slug: 'locationb' })
         .returning({ id: schema.locations.id });
       if (!la || !lb) throw new Error('seed locations');
       locationIdA = la.id;

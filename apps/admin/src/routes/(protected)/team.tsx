@@ -2,6 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { invitationListQuery } from '@/lib/queries/team';
 import { roleMembersQuery, rolesQuery } from '@/lib/queries/roles';
@@ -15,6 +16,7 @@ import { MemberLocationRoleMatrix } from '@/components/team/member-location-role
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/team',
+  beforeLoad: requirePermission('staff', 'invite'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),

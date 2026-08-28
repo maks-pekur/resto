@@ -24,6 +24,7 @@ const makeFakeTenant = (tenantId: string): Tenant =>
     displayName: 'Inbox Dedup Test Tenant',
     status: 'active',
     locale: 'en',
+    timezone: 'Europe/London',
     country: 'ES',
     defaultCurrency: Currency.parse('EUR'),
     theme: null,

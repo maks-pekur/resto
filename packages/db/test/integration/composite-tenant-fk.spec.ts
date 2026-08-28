@@ -184,7 +184,7 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
 
       const [locationA] = await tx
         .insert(schema.locations)
-        .values({ tenantId: tenantA.id, name: 'I-2 Location A' })
+        .values({ tenantId: tenantA.id, name: 'I-2 Location A', slug: 'i-2-location-a' })
         .returning({ id: schema.locations.id });
       if (!locationA) throw new Error('seed location A failed');
 

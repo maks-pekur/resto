@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { RefreshCw, WifiOff } from 'lucide-react';
+import { Link } from '@tanstack/react-router';
+import { RefreshCw, ShieldOff, WifiOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -31,6 +32,29 @@ export function RouteError({ reset }: RouteErrorProps): React.ReactElement {
       >
         <RefreshCw className="size-4" />
         {t('retry')}
+      </Button>
+    </div>
+  );
+}
+
+export function Forbidden(): React.ReactElement {
+  const { t } = useTranslation('translation', { keyPrefix: 'common' });
+
+  return (
+    <div
+      role="alert"
+      data-testid="route-forbidden"
+      className="flex flex-col items-center justify-center gap-4 px-6 py-16 text-center"
+    >
+      <div className="bg-muted text-muted-foreground flex size-12 items-center justify-center rounded-full">
+        <ShieldOff className="size-6" />
+      </div>
+      <div className="max-w-md space-y-1.5">
+        <h2 className="text-lg font-medium">{t('forbiddenTitle')}</h2>
+        <p className="text-muted-foreground text-sm">{t('forbiddenBody')}</p>
+      </div>
+      <Button asChild variant="outline">
+        <Link to="/">{t('backToDashboard')}</Link>
       </Button>
     </div>
   );

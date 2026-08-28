@@ -409,6 +409,37 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenancy/locations/{id}:
+    patch:
+      operationId: LocationsController_update
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLocationInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tenancy/locations/{id}/archive:
     patch:
       operationId: LocationsController_archive
@@ -1682,14 +1713,23 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-          nullable: true
-          default: null
+        latitude:
+          type: number
+          minimum: -90
+          exclusiveMinimum: false
+          maximum: 90
+          exclusiveMaximum: false
+        longitude:
+          type: number
+          minimum: -180
+          exclusiveMinimum: false
+          maximum: 180
+          exclusiveMaximum: false
         timezone:
           type: string
           maxLength: 64
           pattern: ^[A-Za-z_]+\/[A-Za-z_]+$
           nullable: true
-          default: null
         contacts:
           type: object
           properties:
@@ -1704,6 +1744,9 @@ components:
           default: null
       required:
         - name
+        - address
+        - latitude
+        - longitude
     LocationResponseDto:
       type: object
       properties:
@@ -1712,8 +1755,16 @@ components:
           format: uuid
         name:
           type: string
+        slug:
+          type: string
         address:
           type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
           nullable: true
         timezone:
           type: string
@@ -1744,13 +1795,55 @@ components:
       required:
         - id
         - name
+        - slug
         - address
+        - latitude
+        - longitude
         - timezone
         - contacts
         - status
         - createdAt
         - updatedAt
         - archivedAt
+    UpdateLocationInputDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        address:
+          type: string
+          minLength: 1
+          maxLength: 500
+        latitude:
+          type: number
+          minimum: -90
+          exclusiveMinimum: false
+          maximum: 90
+          exclusiveMaximum: false
+        longitude:
+          type: number
+          minimum: -180
+          exclusiveMinimum: false
+          maximum: 180
+          exclusiveMaximum: false
+        timezone:
+          type: string
+          maxLength: 64
+          pattern: ^[A-Za-z_]+\/[A-Za-z_]+$
+          nullable: true
+        contacts:
+          type: object
+          properties:
+            phone:
+              type: string
+              maxLength: 32
+            email:
+              type: string
+              format: email
+              maxLength: 255
+          nullable: true
     ArchiveLocationResponseDto:
       type: object
       properties:

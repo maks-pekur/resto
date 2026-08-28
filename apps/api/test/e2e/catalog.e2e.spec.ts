@@ -49,7 +49,12 @@ const setupAuthedTenant = async (
     method: 'POST',
     url: '/v1/tenancy/locations',
     headers: { cookie: ownerCookie, 'x-tenant-id': tenant.id },
-    payload: { name: `${label} location` },
+    payload: {
+      name: `${label} location`,
+      address: '1 Test Street, London',
+      latitude: 51.5074,
+      longitude: -0.1278,
+    },
   });
   expect(locationRes.statusCode).toBe(200);
   const locationId = locationRes.json<{ id: string }>().id;
@@ -809,7 +814,12 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       method: 'POST',
       url: '/v1/tenancy/locations',
       headers: cafe.authed,
-      payload: { name: 'Second Location' },
+      payload: {
+        name: 'Second Location',
+        address: '1 Test Street, London',
+        latitude: 51.5074,
+        longitude: -0.1278,
+      },
     });
     expect(locationBRes.statusCode).toBe(200);
     const locationBId = locationBRes.json<{ id: string }>().id;

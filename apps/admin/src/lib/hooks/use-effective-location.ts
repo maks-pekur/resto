@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { isLocationScopedPath } from '@/lib/location-scoped-paths';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from '@/routes/(protected)/_layout';
 import { meQuery, toOperatorSummary } from '@/lib/queries/identity';
@@ -54,8 +55,12 @@ export function useEffectiveLocation(): EffectiveLocation {
   // D-18: an absent/invalid/archived/foreign `?location` resets client-side to
   // the D-03 default. This is defense-in-depth only — the server (D-10) still
   // 404s an out-of-scope location regardless of what the client ever sends.
+  // Only write `?location=` onto pages that read it. The switcher renders in the sidebar on every
+  // page, so without this the param landed on `/locations`, `/team` and everything else, implying
+  // a filter that does not exist there.
   const needsFallback =
     isOwner &&
+    isLocationScopedPath(pathname) &&
     requested !== 'all' &&
     matchedLocation === undefined &&
     defaultLocation !== undefined;

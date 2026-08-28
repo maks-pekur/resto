@@ -98,6 +98,7 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
       await tx.insert(schema.locations).values({
         tenantId,
         name: 'Decoupling Test Location',
+        slug: 'decoupling-test-location',
       });
     });
   }, 120_000);

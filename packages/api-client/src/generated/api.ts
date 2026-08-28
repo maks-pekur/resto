@@ -276,6 +276,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenancy/locations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["LocationsController_update"];
+        trace?: never;
+    };
     "/v1/tenancy/locations/{id}/archive": {
         parameters: {
             query?: never;
@@ -1115,10 +1131,10 @@ export interface components {
         };
         CreateLocationInputDto: {
             name: string;
-            /** @default null */
-            address: string | null;
-            /** @default null */
-            timezone: string | null;
+            address: string;
+            latitude: number;
+            longitude: number;
+            timezone?: string | null;
             /** @default null */
             contacts: {
                 phone?: string;
@@ -1130,7 +1146,10 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
+            slug: string;
             address: string | null;
+            latitude: number | null;
+            longitude: number | null;
             timezone: string | null;
             contacts: {
                 phone?: string;
@@ -1142,6 +1161,18 @@ export interface components {
             createdAt: string;
             updatedAt: string;
             archivedAt: string | null;
+        };
+        UpdateLocationInputDto: {
+            name?: string;
+            address?: string;
+            latitude?: number;
+            longitude?: number;
+            timezone?: string | null;
+            contacts?: {
+                phone?: string;
+                /** Format: email */
+                email?: string;
+            } | null;
         };
         ArchiveLocationResponseDto: {
             scopedMemberCount: number;
@@ -2529,6 +2560,45 @@ export interface operations {
                 };
             };
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLocationInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

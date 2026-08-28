@@ -31,6 +31,7 @@ const makeFakeTenantSnap = (tid: string, slug: string): TenantSnapshot => ({
   displayName: 'Test Tenant',
   status: 'active',
   locale: 'en',
+  timezone: 'Europe/London',
   country: 'GB',
   defaultCurrency: Currency.parse('GBP'),
   theme: null,
@@ -104,7 +105,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'Lifecycle Test Location' })
+        .values({ tenantId, name: 'Lifecycle Test Location', slug: 'lifecycle-test-location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed lifecycle e2e: location insert failed.');
       locationId = location.id;

@@ -9,7 +9,10 @@ export interface LocationContactsView {
 export interface LocationView {
   readonly id: string;
   readonly name: string;
+  readonly slug: string;
   readonly address: string | null;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
   readonly timezone: string | null;
   readonly contacts: LocationContactsView | null;
   readonly status: 'active' | 'archived';
@@ -25,10 +28,18 @@ export interface PinnableLocation {
 
 export interface CreateLocationInput {
   readonly name: string;
-  readonly address: string | null;
-  readonly timezone: string | null;
+  readonly address: string;
+  readonly latitude: number;
+  readonly longitude: number;
+  /** Omitted inherits the tenant's zone — the server decides. */
+  readonly timezone?: string | null;
   readonly contacts: LocationContactsView | null;
 }
+
+export type UpdateLocationInput = Partial<CreateLocationInput>;
+
+export const updateLocationMutation = (id: string, input: UpdateLocationInput) =>
+  apiFetch<LocationView>(`/v1/tenancy/locations/${id}`, { method: 'PATCH', body: input });
 
 interface ProblemDetails {
   readonly code?: string;

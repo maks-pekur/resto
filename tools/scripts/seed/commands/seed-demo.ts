@@ -179,6 +179,24 @@ const requireEnv = (name: string): string => {
   return value;
 };
 
+/**
+ * Real coordinates, because the API now requires a point and inventing one puts a demo restaurant
+ * in the sea. Each is the actual district the name refers to.
+ */
+const LOCATION_POINTS: Readonly<
+  Record<string, { latitude: number; longitude: number; address: string }>
+> = {
+  'Kyiv Center': { latitude: 50.4501, longitude: 30.5234, address: 'Хрещатик 1, Київ' },
+  'Kyiv Left Bank': {
+    latitude: 50.4547,
+    longitude: 30.6014,
+    address: 'Броварський проспект 15, Київ',
+  },
+  Central: { latitude: 51.5074, longitude: -0.1278, address: '1 High Street, London' },
+  Mall: { latitude: 51.5155, longitude: -0.1418, address: '10 Oxford Street, London' },
+  'Madrid Centro': { latitude: 40.4168, longitude: -3.7038, address: 'Puerta del Sol 1, Madrid' },
+};
+
 const ensureLocations = async (
   op: OperatorHttpClient,
   tenantDef: TenantDef,
@@ -191,10 +209,13 @@ const ensureLocations = async (
       log('seed-demo.location.exists', { tenant: tenantDef.slug, name });
       continue;
     }
+    const point = LOCATION_POINTS[name];
+    if (!point) throw new Error(`seed-demo: no coordinates defined for location "${name}"`);
     const created = await op.post<LocationResponse>('/v1/tenancy/locations', {
       name,
-      address: null,
-      timezone: null,
+      address: point.address,
+      latitude: point.latitude,
+      longitude: point.longitude,
       contacts: null,
     });
     byName.set(name, created.id);

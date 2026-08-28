@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/page-heading';
@@ -10,6 +11,7 @@ import { TwoFactorSection } from '@/components/settings/two-factor-section';
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/settings',
+  beforeLoad: requirePermission('settings', 'update'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),

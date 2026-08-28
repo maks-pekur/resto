@@ -122,8 +122,8 @@ suite('CreateOrderService — idempotency', () => {
         },
       ]);
       await tx.insert(schema.locations).values([
-        { tenantId: tenantIdA, name: 'Idem Location A' },
-        { tenantId: tenantIdB, name: 'Idem Location B' },
+        { tenantId: tenantIdA, name: 'Idem Location A', slug: 'idem-location-a' },
+        { tenantId: tenantIdB, name: 'Idem Location B', slug: 'idem-location-b' },
       ]);
     });
   }, 180_000);

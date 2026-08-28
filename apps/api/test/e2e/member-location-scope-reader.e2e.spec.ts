@@ -53,9 +53,9 @@ suite('MemberLocationScopeDrizzleReader', () => {
         { id: TENANT_B_ID, slug: 'loc-scope-b', displayName: 'Scope B', country: 'GB' },
       ]);
       await tx.insert(schema.locations).values([
-        { id: LOCATION_A1_ID, tenantId: TENANT_A_ID, name: 'A1' },
-        { id: LOCATION_A2_ID, tenantId: TENANT_A_ID, name: 'A2' },
-        { id: LOCATION_B1_ID, tenantId: TENANT_B_ID, name: 'B1' },
+        { id: LOCATION_A1_ID, tenantId: TENANT_A_ID, name: 'A1', slug: 'a1' },
+        { id: LOCATION_A2_ID, tenantId: TENANT_A_ID, name: 'A2', slug: 'a2' },
+        { id: LOCATION_B1_ID, tenantId: TENANT_B_ID, name: 'B1', slug: 'b1' },
       ]);
       await tx.insert(schema.user).values([
         { id: USER_UNSCOPED, email: 'unscoped@test', emailVerified: true, name: 'Unscoped' },

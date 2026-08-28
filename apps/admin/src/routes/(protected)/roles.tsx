@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { rolesQuery, archiveRole, friendlyRoleError, type RoleView } from '@/lib/queries/roles';
 import { PageHeading } from '@/components/page-heading';
@@ -23,6 +24,7 @@ import {
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/roles',
+  beforeLoad: requirePermission('ac', 'read'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
       queryClient.ensureQueryData(meQuery()),

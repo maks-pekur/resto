@@ -30,7 +30,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
 
       const [loc] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'EraseOrd Location' })
+        .values({ tenantId, name: 'EraseOrd Location', slug: 'eraseord-location' })
         .returning({ id: schema.locations.id });
       if (!loc) throw new Error('seed location failed');
       locationId = loc.id;

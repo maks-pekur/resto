@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import {
   ordersFeedQuery,
   DEFAULT_ORDER_FEED_FILTERS,
@@ -28,6 +29,7 @@ import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/orders',
+  beforeLoad: requirePermission('order', 'read'),
   loaderDeps: ({ search }) => ({ location: search.location }),
   loader: ({ context: { queryClient }, deps }) => {
     if (deps.location === undefined) return undefined;

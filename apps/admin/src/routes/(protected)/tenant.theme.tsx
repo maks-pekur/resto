@@ -1,10 +1,12 @@
 import { createRoute } from '@tanstack/react-router';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { PageHeading } from '@/components/page-heading';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/tenant/theme',
+  beforeLoad: requirePermission('settings', 'update'),
   component: TenantThemePage,
 });
 

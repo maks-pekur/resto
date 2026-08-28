@@ -43,7 +43,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
       });
       const [location] = await tx
         .insert(schema.locations)
-        .values({ tenantId, name: 'Lifecycle Test Location' })
+        .values({ tenantId, name: 'Lifecycle Test Location', slug: 'lifecycle-test-location' })
         .returning({ id: schema.locations.id });
       if (!location) throw new Error('seed order-lifecycle e2e: location insert failed.');
       locationId = location.id;

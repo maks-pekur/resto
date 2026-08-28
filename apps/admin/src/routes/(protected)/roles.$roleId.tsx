@@ -1,6 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from './_layout';
+import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { rolesQuery, roleQuery, roleMembersQuery } from '@/lib/queries/roles';
 import { PageHeading } from '@/components/page-heading';
@@ -10,6 +11,7 @@ import { RoleForm } from '@/components/roles/role-form';
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/roles/$roleId',
+  beforeLoad: requirePermission('ac', 'read'),
   loader: ({ context: { queryClient }, params: { roleId } }) => {
     const loaders: Promise<unknown>[] = [
       queryClient.ensureQueryData(meQuery()),

@@ -43,3 +43,7 @@ if (typeof Element.prototype.releasePointerCapture === 'undefined') {
 if (typeof Element.prototype.scrollIntoView === 'undefined') {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// JSDOM 25 has no window.scrollTo; TanStack Router's scroll restoration calls it on every
+// navigation and jsdom answers with a stack trace on stderr for each one.
+window.scrollTo = () => {};

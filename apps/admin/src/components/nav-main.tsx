@@ -28,10 +28,11 @@ export interface NavMainItem {
   badgeAriaLabel?: string;
 }
 
-export function NavMain({ items }: { items: NavMainItem[] }) {
+export function NavMain({ items, label }: { items: NavMainItem[]; label: string }) {
+  if (items.length === 0) return null;
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Platform</SidebarGroupLabel>
+      <SidebarGroupLabel>{label}</SidebarGroupLabel>
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;
