@@ -1,6 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+// Dev-only api target. admin hardcoded :5001 while qr-menu hardcoded :3000, so the
+// two dev servers could not run against one api and the seed CLI (which defaults to
+// :3000) worked for neither. Both now read the same override.
+const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+
 export default defineConfig({
   plugins: [react()],
   build: {
@@ -29,8 +34,8 @@ export default defineConfig({
     // `cafe-demo.menu.lvh.me`) so the api resolves the tenant from it,
     // mirroring same-origin production.
     proxy: {
-      '/v1': { target: 'http://localhost:3000', changeOrigin: false },
-      '/internal': { target: 'http://localhost:3000', changeOrigin: false },
+      '/v1': { target: API_TARGET, changeOrigin: false },
+      '/internal': { target: API_TARGET, changeOrigin: false },
     },
   },
 });
