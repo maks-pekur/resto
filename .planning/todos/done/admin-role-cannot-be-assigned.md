@@ -2,7 +2,7 @@
 title: The built-in `admin` role has been impossible to assign since 4 July
 date: 2026-08-26
 priority: high
-status: pending
+status: done
 ---
 
 # A guard that rejects our own system role
@@ -45,3 +45,26 @@ the cost of a second code path.
 
 I would take (a) unless you actually want admins removing staff, in which case (c). Not doing it
 myself: which powers `admin` holds is a product call, not a cleanup.
+
+## Resolved 2026-08-28 — option (c), narrowed
+
+Founder call: the manager may remove staff, so the built-in roles are trusted and
+exempt from the non-delegatable guard.
+
+**Narrowed during implementation, deliberately.** Option (c) as written above says
+"exempt system roles". Taken literally that also exempts `owner`, which carries
+`tenant:['delete','transfer']`, `billing:['update']` and all of `ac:*` — meaning the
+guard currently blocks promotion to owner too, and a literal (c) would have silently
+removed the only backstop against a direct Better Auth call minting a new owner. The
+decision asked for "a manager can remove staff", not "anyone can be made an owner", so
+`owner` keeps the guard.
+
+Known consequence, accepted rather than overlooked: **a second co-owner still cannot be
+promoted.** A restaurant cannot have two owners. Same family of bug, left open on
+purpose — raise it as its own todo if co-ownership is wanted.
+
+Fix: `role-assignability.ts` returns early for a built-in role that is not `owner`.
+Unit spec updated — `admin` now allowed, `owner` still refused, both asserted against
+the real `SYSTEM_ROLES`. `identity-role-changed.e2e` green for the first time since
+2026-07-04; `roles-privilege-escalation` 7/7, `roles-cross-tenant-isolation` 5/5,
+`role-grants` 2/2 unchanged.
