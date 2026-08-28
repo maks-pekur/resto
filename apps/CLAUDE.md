@@ -19,10 +19,13 @@ not depend on each other.
   rules so `npx shadcn add …` stays a clean upgrade path. Strict TS is
   on except `exactOptionalPropertyTypes` (incompatible with Radix
   prop spreads).
-- `website/` — Next.js tenant marketing sites (multi-tenant SSR; one Next
-  app serves all tenants via host-based routing).
-- `qr-menu/` — Vite + React; customer-facing menu accessed by QR code at the
-  table. Optimized for cold-start speed on mobile networks.
+- `website/` — Next.js tenant storefront (multi-tenant SSR; one Next app
+  serves all tenants via host-based routing). Guest chrome, menu, item dialog
+  and cart come from `@resto/ui`; only checkout is website-specific.
+- `qr-menu/` — Vite + React + Tailwind 4; customer-facing menu accessed by QR
+  code at the table. Mobile-first and optimized for cold-start speed on mobile
+  networks — the item dialog and cart sheet are lazy chunks. Renders the same
+  `@resto/ui` guest components as `website/`.
 
 ## Rules
 
