@@ -6,7 +6,6 @@ import { useNavigate } from '@tanstack/react-router';
 import { z } from 'zod';
 import { Route as menuLayoutRoute } from './_layout';
 import { itemsQuery, categoriesQuery } from '@/lib/queries/catalog';
-import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { coerceStatusFilter } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { PageHeading } from '@/components/page-heading';
@@ -56,10 +55,6 @@ function ItemsPage() {
     }),
   );
   const { data: catResult } = useSuspenseQuery(categoriesQuery());
-  const { locationId } = useEffectiveLocation();
-  const stopListLocationId =
-    locationId !== undefined && locationId !== 'all' ? locationId : undefined;
-
   const items = itemsResult.data?.items ?? [];
   const total = itemsResult.data?.total ?? 0;
   const categories = catResult.data?.items ?? [];
@@ -124,7 +119,6 @@ function ItemsPage() {
           onPageChange={(p) => {
             setSearch({ page: p });
           }}
-          stopListLocationId={stopListLocationId}
         />
       </div>
     </>

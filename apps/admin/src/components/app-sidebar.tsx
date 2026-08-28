@@ -10,6 +10,7 @@ import {
   Settings2,
   Users,
   UtensilsCrossed,
+  Ban,
 } from 'lucide-react';
 import { TenantIdentity } from '@/components/tenant-identity';
 import { LocationSwitcher } from '@/components/location-switcher';
@@ -18,6 +19,7 @@ import { NavUser } from '@/components/nav-user';
 import type { OperatorSummary } from '@/lib/queries/identity';
 import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
+import { sortLocations } from '@/lib/default-location';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
@@ -48,16 +50,20 @@ export function AppSidebar({
   // door that will not open for them.
   const { data: meResult } = useQuery(meQuery());
   const me = meResult?.data ?? null;
-  const { data: locationsResult } = useQuery({
-    ...meLocationsQuery(),
-    enabled: isOwner,
-  });
-  const locations = locationsResult?.data?.locations ?? [];
+  const { data: locationsResult } = useQuery(meLocationsQuery());
+  const locations = sortLocations(locationsResult?.data?.locations ?? []);
 
-  const { locationId: effectiveLocationId } = useEffectiveLocation();
+  const { mode, locationId: effectiveLocationId, locationSlug } = useEffectiveLocation();
+
+  // Location-grain pages need a slug in their address. On the every-location dashboard there is no
+  // current one, so the links point at the default — the same place a slugless URL would land.
+  const navLocationSlug = locationSlug ?? locations[0]?.slug;
+
+  // The feed is single-location, so an every-location badge would be counting nothing. Better no
+  // number than one whose scope does not match the page the operator is looking at.
   const { data: unacceptedFeedResult } = useQuery({
     ...ordersFeedQuery(effectiveLocationId ?? 'all', DEFAULT_ORDER_FEED_FILTERS),
-    enabled: effectiveLocationId !== undefined,
+    enabled: mode === 'single' && effectiveLocationId !== undefined,
     refetchInterval: 5_000,
     refetchIntervalInBackground: true,
   });
@@ -66,15 +72,24 @@ export function AppSidebar({
   ).length;
 
   const navOperations: NavMainItem[] = [
-    { title: t('dashboard'), url: '/', icon: LayoutDashboard },
-    ...(hasPermission(me, 'order', 'read')
+    { title: t('dashboard'), url: '/dashboard', icon: LayoutDashboard },
+    ...(hasPermission(me, 'order', 'read') && navLocationSlug !== undefined
       ? [
           {
             title: t('orders'),
-            url: '/orders',
+            url: `/${navLocationSlug}/orders`,
             icon: ClipboardList,
             badge: unacceptedCount,
             badgeAriaLabel: tOrders('card.sidebarBadgeAria', { count: unacceptedCount }),
+          },
+        ]
+      : []),
+    ...(hasPermission(me, 'menu', 'read') && navLocationSlug !== undefined
+      ? [
+          {
+            title: t('menuStopList'),
+            url: `/${navLocationSlug}/stop-list`,
+            icon: Ban,
           },
         ]
       : []),
@@ -89,7 +104,6 @@ export function AppSidebar({
               { title: t('menuCategories'), url: '/menu/categories' },
               { title: t('menuItems'), url: '/menu/items' },
               { title: t('menuModifiers'), url: '/menu/modifier-groups' },
-              { title: t('menuStopList'), url: '/menu/stop-list' },
             ],
           },
         ]

@@ -9,9 +9,13 @@
  * /billing) and wires it into main.tsx WITHOUT adding "billing" to
  * RESERVED_SLUGS — this spec turns RED even though the domain constant was
  * never touched.
+ *
+ * Since the location slug moved back into the first path segment (`/voskresenka/orders`), the
+ * second assertion below is the load-bearing one: an unreserved root segment is a page a location
+ * named after it would shadow.
  */
 import { beforeAll, describe, expect, it, vi } from 'vitest';
-import { RESERVED_SLUG_SET } from '@resto/domain';
+import { LOCATION_RESERVED_SLUG_SET, RESERVED_SLUG_SET } from '@resto/domain';
 
 vi.mock('react-dom/client', () => ({
   createRoot: () => ({ render: vi.fn() }),
@@ -66,6 +70,12 @@ describe('D-06 admin route tree — every static root segment is reserved', () =
       expect(
         RESERVED_SLUG_SET.has(segment),
         `route first-segment "${segment}" (from assembled router fullPath) must be in RESERVED_SLUG_SET`,
+      ).toBe(true);
+
+      expect(
+        LOCATION_RESERVED_SLUG_SET.has(segment),
+        `route first-segment "${segment}" must also be in LOCATION_RESERVED_SLUG_SET — the location ` +
+          `slug occupies the first path segment, so a location named "${segment}" would shadow this page`,
       ).toBe(true);
     }
     // Deliberately imports the real entry point, so this pulls the whole route tree and every

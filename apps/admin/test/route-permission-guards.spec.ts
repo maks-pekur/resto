@@ -33,9 +33,13 @@ const PROTECTED_LAYOUT_ID = '/(protected)';
 
 /** Reachable by every signed-in operator, by decision — no permission gates them. */
 const UNGATED_FULL_PATHS = new Set([
-  '/', // dashboard
+  '/', // redirects to /dashboard
+  '/dashboard', // every-location dashboard
+  '/$locationSlug', // resolves the slug and hands it to its children; refusal is theirs
+  '/$locationSlug/dashboard', // one location's dashboard
   '/onboarding', // pre-tenant setup; the layout redirects here before any gate matters
   '/dashboard/$', // legacy-path redirect, resolves before it renders
+  '/orders', // legacy address; redirects to /$locationSlug/orders, which is guarded
 ]);
 
 interface RouteNode {
@@ -96,7 +100,8 @@ describe('admin route tree — every protected route decides who may open it', (
     );
 
     expect(Object.fromEntries(guardedByPath)).toEqual({
-      '/orders': { resource: 'order', action: 'read' },
+      '/$locationSlug/orders': { resource: 'order', action: 'read' },
+      '/$locationSlug/stop-list': { resource: 'menu', action: 'read' },
       '/menu': { resource: 'menu', action: 'read' },
       '/locations': { resource: 'location', action: 'create' },
       '/locations/$slug': { resource: 'location', action: 'create' },

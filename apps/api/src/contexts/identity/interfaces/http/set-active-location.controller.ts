@@ -43,6 +43,7 @@ class SetActiveLocationResponseDto extends createZodDto(SetActiveLocationRespons
 const PinnableLocationSchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
+  slug: z.string(),
 });
 
 const ListPinnableLocationsResponseSchema = z.object({

@@ -1,8 +1,8 @@
-import { useNavigate, useRouterState } from '@tanstack/react-router';
-import { isLocationScopedPath } from '@/lib/location-scoped-paths';
+import { useNavigate, useParams, useRouterState } from '@tanstack/react-router';
 import { ChevronsUpDown, MapPin } from 'lucide-react';
-import { Route as protectedLayoutRoute } from '@/routes/(protected)/_layout';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { ALL_LOCATIONS_SUB_PATH, locationHref, locationSubPath } from '@/lib/location-path';
+import type { PinnableLocation } from '@/lib/queries/locations';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,44 +12,37 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 
-export interface LocationSwitcherOption {
-  readonly id: string;
-  readonly name: string;
-}
-
 export interface LocationSwitcherProps {
   readonly isOwner: boolean;
-  readonly locations: readonly LocationSwitcherOption[];
+  readonly locations: readonly PinnableLocation[];
 }
 
 export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) {
-  // `from` is for the search-updater's type narrowing only — the switcher is
-  // a cross-cutting sidebar component that renders under many different leaf
-  // routes, so navigation must target the CURRENT pathname (an explicit
-  // absolute `to`), not `from` re-interpolated (which would always land on
-  // the protected layout's own index route regardless of the page the
-  // operator was actually on).
-  const navigate = useNavigate({ from: protectedLayoutRoute.fullPath });
+  const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { mode, locationId } = useEffectiveLocation();
+  const params = useParams({ strict: false });
+  const { locationSlug } = useEffectiveLocation();
 
-  // Nothing to scope on a tenant-grain page — the locations list shows every location, the team
-  // page every member. Showing a per-location control there invites the operator to believe the
-  // page is filtered.
-  if (!isOwner || locations.length === 0 || !isLocationScopedPath(pathname)) return null;
+  // On a brand-grain page the control is not rendered at all — the team page shows every member
+  // whatever this said, and a filter that filters nothing misleads.
+  const subPath = locationSubPath(pathname, params.locationSlug);
+  const onLocationPage = params.locationSlug !== undefined;
+  const offersAllLocations = subPath === ALL_LOCATIONS_SUB_PATH;
 
-  const activeLocation =
-    mode === 'single' && locationId !== undefined
-      ? locations.find((l) => l.id === locationId)
-      : undefined;
-  const triggerLabel = mode === 'all' ? 'All locations' : (activeLocation?.name ?? 'All locations');
+  if (
+    !isOwner ||
+    locations.length === 0 ||
+    (!onLocationPage && pathname !== ALL_LOCATIONS_SUB_PATH)
+  ) {
+    return null;
+  }
 
-  // D-01/D-04: pure client-side URL filter — no apiFetch, no server
-  // round-trip, no full-page reload. Preserve other search params via the
-  // updater form (D-01/RESEARCH.md Pattern 3).
-  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents -- 'all' documents the ?location sentinel (D-01)
-  const switchTo = (value: 'all' | string): void => {
-    void navigate({ to: pathname, search: (prev) => ({ ...prev, location: value }) });
+  const activeLocation = locations.find((candidate) => candidate.slug === locationSlug);
+  const triggerLabel = activeLocation?.name ?? 'All locations';
+
+  // Pure client-side navigation — no apiFetch, no server round-trip, no full-page reload.
+  const switchTo = (slug: string | null): void => {
+    void navigate({ href: locationHref(slug, subPath) });
   };
 
   return (
@@ -64,21 +57,25 @@ export function LocationSwitcher({ isOwner, locations }: LocationSwitcherProps) 
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-(--radix-dropdown-menu-trigger-width)">
-            <DropdownMenuItem
-              data-testid="location-switcher-all"
-              onSelect={() => {
-                switchTo('all');
-              }}
-            >
-              <span className="truncate">All locations</span>
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
+            {offersAllLocations ? (
+              <>
+                <DropdownMenuItem
+                  data-testid="location-switcher-all"
+                  onSelect={() => {
+                    switchTo(null);
+                  }}
+                >
+                  <span className="truncate">All locations</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+              </>
+            ) : null}
             {locations.map((location) => (
               <DropdownMenuItem
                 key={location.id}
-                data-testid={`location-switcher-option-${location.id}`}
+                data-testid={`location-switcher-option-${location.slug}`}
                 onSelect={() => {
-                  switchTo(location.id);
+                  switchTo(location.slug);
                 }}
               >
                 <span className="truncate">{location.name}</span>

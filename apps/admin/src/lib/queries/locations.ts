@@ -24,6 +24,8 @@ export interface LocationView {
 export interface PinnableLocation {
   readonly id: string;
   readonly name: string;
+  /** The location's address in the admin URL. */
+  readonly slug: string;
 }
 
 export interface CreateLocationInput {

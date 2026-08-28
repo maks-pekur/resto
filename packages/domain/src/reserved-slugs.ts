@@ -24,6 +24,11 @@ export const ADMIN_ROOT_ROUTE_SEGMENTS: readonly string[] = [
   'settings',
   'team',
   'tenant',
+  // The location slug moved back into the first path segment, so these two joined it there:
+  // the dashboard got its own address (`/dashboard` = every location) and the stop list left
+  // the menu subtree (its grain is the location, the menu's is the brand).
+  'dashboard',
+  'stop-list',
 ];
 
 /**
@@ -74,6 +79,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   'orders',
   'roles',
   'settings',
+  'stop-list',
   'team',
   'tenant',
 ];
