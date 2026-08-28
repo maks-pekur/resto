@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, uuid } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, integer, uuid } from 'drizzle-orm/pg-core';
 import { tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
 
@@ -125,4 +125,11 @@ export const twoFactor = pgTable('two_factor', {
   userId: text('user_id')
     .notNull()
     .references(() => user.id, { onDelete: 'cascade' }),
+  // Better Auth 1.6 added these three to its `twoFactor` model. Without them every 2FA endpoint
+  // 500s ("The field \"verified\" does not exist in the \"twoFactor\" Drizzle schema").
+  // `verified` marks a confirmed TOTP secret; the other two are BA's own brute-force lockout on
+  // code entry, which we get for free by carrying the columns.
+  verified: boolean('verified').default(true),
+  failedVerificationCount: integer('failed_verification_count').default(0),
+  lockedUntil: timestamp('locked_until', { withTimezone: true }),
 });

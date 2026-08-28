@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { Test, type TestingModule } from '@nestjs/testing';
@@ -9,11 +10,13 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { provisionAppRole, provisionAuthRole } from '@resto/db';
 import { AppModule } from '../../src/app.module';
+import { provisionTenant, runBootstrap, signIn } from './helpers/operator-fixture';
 
 const MIGRATIONS_DIR = fileURLToPath(
   new URL('../../../../packages/db/migrations', import.meta.url),
 );
 const APP_PASSWORD = 'app_password_test';
+const INTERNAL_TOKEN = 'integration-test-token-1234567890';
 const AUTH_PASSWORD = 'auth_password_test';
 
 describe('Better Auth /api/auth/* smoke', () => {
@@ -49,6 +52,7 @@ describe('Better Auth /api/auth/* smoke', () => {
     process.env.BETTER_AUTH_SECRET = 'test-secret-padding-padding-padding-padding-padding';
     process.env.BETTER_AUTH_BASE_URL = 'http://localhost:4000';
     process.env.ADMIN_WEB_URL = 'http://localhost:3000';
+    process.env.INTERNAL_API_TOKEN = INTERNAL_TOKEN;
     // AUTH_COOKIE_DOMAIN intentionally unset — host-only cookies in tests.
 
     const moduleRef: TestingModule = await Test.createTestingModule({
@@ -74,7 +78,10 @@ describe('Better Auth /api/auth/* smoke', () => {
     expect(res.json()).toBeNull();
   });
 
-  it('POST /api/auth/sign-up/email creates a user and returns a session', async () => {
+  it('POST /api/auth/sign-up/email is refused — direct Better Auth signup is closed', async () => {
+    // 10.2-13 closed the public BA signup endpoint; an account is created through POST /v1/signup,
+    // which owns tenant provisioning. Pinned here because the guard lives in a BA `before` hook,
+    // the kind of thing a dependency upgrade can quietly stop invoking.
     const res = await app.inject({
       method: 'POST',
       url: '/api/auth/sign-up/email',
@@ -85,25 +92,18 @@ describe('Better Auth /api/auth/* smoke', () => {
         name: 'Smoke Test',
       },
     });
-    expect(res.statusCode).toBe(200);
-    const body = res.json();
-    expect(body.user?.email).toBe('smoke@example.com');
-    expect(body.token).toBeTruthy();
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe('signup.direct_disabled');
   });
 
-  it('GET /api/auth/get-session with returned cookie returns the user', async () => {
-    const signUp = await app.inject({
-      method: 'POST',
-      url: '/api/auth/sign-up/email',
-      headers: { 'content-type': 'application/json' },
-      payload: {
-        email: 'smoke2@example.com',
-        password: 'correct-horse-battery-staple-2',
-        name: 'Smoke Two',
-      },
-    });
-    const setCookie = signUp.headers['set-cookie'];
-    const cookieHeader = Array.isArray(setCookie) ? setCookie.join('; ') : (setCookie ?? '');
+  it('GET /api/auth/get-session with a signed-in cookie returns the user', async () => {
+    const slug = `smoke-${randomUUID().slice(0, 8)}`;
+    const email = `owner-${slug}@example.com`;
+    const password = 'correct-horse-battery-staple-2';
+
+    await provisionTenant(app, slug, INTERNAL_TOKEN);
+    await runBootstrap({ tenantSlug: slug, email, password, name: 'Smoke Two' });
+    const cookieHeader = await signIn(app, email, password);
 
     const session = await app.inject({
       method: 'GET',
@@ -111,7 +111,7 @@ describe('Better Auth /api/auth/* smoke', () => {
       headers: { cookie: cookieHeader },
     });
     expect(session.statusCode).toBe(200);
-    expect(session.json().user?.email).toBe('smoke2@example.com');
+    expect(session.json().user?.email).toBe(email);
   });
 
   describe('GET /v1/me', () => {
@@ -127,18 +127,13 @@ describe('Better Auth /api/auth/* smoke', () => {
     });
 
     it('returns 200 with operator principal when session is valid', async () => {
-      const signUp = await app.inject({
-        method: 'POST',
-        url: '/api/auth/sign-up/email',
-        headers: { 'content-type': 'application/json' },
-        payload: {
-          email: 'me@example.com',
-          password: 'correct-horse-battery-staple-3',
-          name: 'Me Test',
-        },
-      });
-      const setCookie = signUp.headers['set-cookie'];
-      const cookieHeader = Array.isArray(setCookie) ? setCookie.join('; ') : (setCookie ?? '');
+      const slug = `smoke-${randomUUID().slice(0, 8)}`;
+      const email = `owner-${slug}@example.com`;
+      const password = 'correct-horse-battery-staple-3';
+
+      await provisionTenant(app, slug, INTERNAL_TOKEN);
+      await runBootstrap({ tenantSlug: slug, email, password, name: 'Me Test' });
+      const cookieHeader = await signIn(app, email, password);
 
       const res = await app.inject({
         method: 'GET',
@@ -146,8 +141,7 @@ describe('Better Auth /api/auth/* smoke', () => {
         headers: { cookie: cookieHeader },
       });
       expect(res.statusCode).toBe(200);
-      const body = res.json();
-      expect(body).toMatchObject({ kind: 'operator', email: 'me@example.com' });
+      expect(res.json()).toMatchObject({ kind: 'operator', email });
     });
 
     // Cross-tenant rejection (operator session bound to tenant A hitting a
