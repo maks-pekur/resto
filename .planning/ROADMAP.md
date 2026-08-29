@@ -760,7 +760,7 @@ Plans:
 
 **Wave 7** _(blocked on Wave 6)_
 
-- [ ] 10.3-12-PLAN.md — Availability answers for the scanned table's location, with the two-location e2e proving TBL-13
+- [x] 10.3-12-PLAN.md — Availability answers for the scanned table's location, with the two-location e2e proving TBL-13
 - [ ] 10.3-13-PLAN.md — Operator feed and detail show the stored zone and number
 
 **Wave 8** _(blocked on Wave 7)_
