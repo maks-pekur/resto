@@ -1997,6 +1997,8 @@ export interface components {
                 /** @enum {string} */
                 fulfillmentMode: "dine_in" | "pickup" | "delivery";
                 tableIdentifier: string | null;
+                tableZoneName: string | null;
+                tableNumber: string | null;
                 total: string;
                 currency: string;
                 itemCount: number;
@@ -2027,6 +2029,8 @@ export interface components {
             /** @enum {string} */
             fulfillmentMode: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
+            tableZoneName: string | null;
+            tableNumber: string | null;
             customerName: string | null;
             customerPhone: string | null;
             customerEmail: string | null;
@@ -2090,6 +2094,8 @@ export interface components {
             /** @enum {string} */
             fulfillmentMode: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
+            tableZoneName: string | null;
+            tableNumber: string | null;
             customerName: string | null;
             customerPhone: string | null;
             customerEmail: string | null;
