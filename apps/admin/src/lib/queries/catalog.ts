@@ -79,8 +79,11 @@ export interface ItemDetailApi {
   readonly basePrice: string;
   readonly currency: string;
   readonly status: Status;
-  readonly allergens: string[];
-  readonly ingredients: string[];
+  // The api declares both nullable (`catalog/application/dto.ts` ItemDetailResponseSchema)
+  // and really does return null for an item that never had them. Typing them as plain
+  // arrays is what let `[...item.allergens]` past typecheck and crash the editor.
+  readonly allergens: readonly string[] | null;
+  readonly ingredients: readonly string[] | null;
   readonly metaTitle: Record<string, string> | null;
   readonly metaDescription: Record<string, string> | null;
   readonly proteins: number | null;
