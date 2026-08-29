@@ -5,6 +5,7 @@ import {
   Inject,
   NotFoundException,
   Param,
+  Query,
   Req,
   Res,
 } from '@nestjs/common';
@@ -22,6 +23,7 @@ import { MENU_AVAILABILITY_CACHE_CONTROL, MENU_CACHE_CONTROL } from '../../domai
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import type { TenantSnapshot } from '../../../tenancy/domain/tenant.aggregate';
+import { TABLE_ZONE_REPOSITORY, type TableZoneRepository } from '../../../tenancy/domain/ports';
 import { mapCatalogError } from './error-mapping';
 import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
@@ -177,6 +179,7 @@ export class PublicMenuController {
     private readonly getAvailability: GetMenuAvailabilityService,
     @Inject(MENU_VERSION_PORT) private readonly menuVersions: MenuVersionPort,
     @Inject(TenantResolverService) private readonly tenants: TenantResolverService,
+    @Inject(TABLE_ZONE_REPOSITORY) private readonly tableZones: TableZoneRepository,
     @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
@@ -187,11 +190,19 @@ export class PublicMenuController {
   async availability(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
+    @Query('t') t?: string,
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<{ stoppedItemIds: string[] } | undefined> {
     await this.requireGuestTenantOr404(req);
-    const { stoppedItemIds, stopVersion } = await wrap(() => this.getAvailability.execute());
-    const etag = '"' + stopVersion.toString() + '"';
+    const locationId = await this.resolveTableLocationId(t);
+    const {
+      stoppedItemIds,
+      stopVersion,
+      locationId: answeringLocationId,
+    } = await wrap(() => this.getAvailability.execute(locationId));
+    // T-10.3-53: the ETag folds in the answering location, not just the stop version — a CDN
+    // must never be able to serve one location's stop list to another location's guest.
+    const etag = '"' + stopVersion.toString() + ':' + answeringLocationId + '"';
     if (ifNoneMatch === etag) {
       reply.status(304);
       return undefined;
@@ -199,6 +210,19 @@ export class PublicMenuController {
     reply.header('ETag', etag);
     reply.header('Cache-Control', MENU_AVAILABILITY_CACHE_CONTROL);
     return { stoppedItemIds };
+  }
+
+  /**
+   * An unresolvable, malformed, archived or absent `?t=` all fall back to `undefined` (the
+   * tenant default) rather than 4xx-ing — the guest app polls this every twenty seconds and a
+   * dead sticker must not break the menu (TBL-07/T-10.3-54).
+   */
+  private async resolveTableLocationId(t: string | undefined): Promise<string | undefined> {
+    if (t === undefined) return undefined;
+    const parsed = z.string().uuid().safeParse(t);
+    if (!parsed.success) return undefined;
+    const resolution = await this.tableZones.findActiveTableForResolution(parsed.data);
+    return resolution?.locationId;
   }
 
   @Get()

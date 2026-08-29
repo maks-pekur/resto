@@ -12,6 +12,7 @@ import {
 export interface MenuAvailabilityResult {
   readonly stoppedItemIds: string[];
   readonly stopVersion: number;
+  readonly locationId: string;
 }
 
 @Injectable()
@@ -23,18 +24,19 @@ export class GetMenuAvailabilityService {
     private readonly defaultLocation: DefaultLocationResolverService,
   ) {}
 
-  async execute(): Promise<MenuAvailabilityResult> {
+  async execute(locationId?: string): Promise<MenuAvailabilityResult> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const locationId = await this.defaultLocation.resolveForTenant(tenantId);
+    const answeringLocationId =
+      locationId ?? (await this.defaultLocation.resolveForTenant(tenantId));
 
-    return withLocation(locationId, async () => {
+    return withLocation(answeringLocationId, async () => {
       const [stoppedItemIds, stopVersion] = await Promise.all([
-        this.repo.listStoppedItemIds(locationId),
-        this.stopVersions.currentStop(locationId),
+        this.repo.listStoppedItemIds(answeringLocationId),
+        this.stopVersions.currentStop(answeringLocationId),
       ]);
 
-      return { stoppedItemIds, stopVersion };
+      return { stoppedItemIds, stopVersion, locationId: answeringLocationId };
     });
   }
 }
