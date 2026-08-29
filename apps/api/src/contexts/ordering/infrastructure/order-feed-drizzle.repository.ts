@@ -148,6 +148,8 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     locationName,
     fulfillmentMode: row.fulfillmentMode as OrderFeedRow['fulfillmentMode'],
     tableIdentifier: row.tableIdentifier ?? null,
+    tableZoneName: row.tableZoneName ?? null,
+    tableNumber: row.tableNumber ?? null,
     total: row.total,
     currency: row.currency,
     itemCount,

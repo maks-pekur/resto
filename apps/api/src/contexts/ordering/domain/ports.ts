@@ -127,6 +127,8 @@ export const OrderFeedRowSchema = z.object({
   locationName: z.string(),
   fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
   tableIdentifier: z.string().nullable(),
+  tableZoneName: z.string().nullable(),
+  tableNumber: z.string().nullable(),
   total: z.string(),
   currency: z.string(),
   itemCount: z.number().int(),

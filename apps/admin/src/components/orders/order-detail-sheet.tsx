@@ -263,7 +263,12 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
 
         <div className="flex flex-col gap-1 text-sm">
           <span>{t(FULFILLMENT_LABEL_KEY[detail.fulfillmentMode])}</span>
-          {detail.tableIdentifier !== null ? (
+          {detail.tableZoneName !== null && detail.tableNumber !== null ? (
+            <span className="text-muted-foreground">
+              {t('detail.tableIdentifierLabel')}:{' '}
+              {t('card.tableLabel', { zone: detail.tableZoneName, number: detail.tableNumber })}
+            </span>
+          ) : detail.tableIdentifier !== null ? (
             <span className="text-muted-foreground">
               {t('detail.tableIdentifierLabel')}: {detail.tableIdentifier}
             </span>

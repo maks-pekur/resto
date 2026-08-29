@@ -4059,6 +4059,12 @@ components:
               tableIdentifier:
                 type: string
                 nullable: true
+              tableZoneName:
+                type: string
+                nullable: true
+              tableNumber:
+                type: string
+                nullable: true
               total:
                 type: string
               currency:
@@ -4106,6 +4112,8 @@ components:
               - locationName
               - fulfillmentMode
               - tableIdentifier
+              - tableZoneName
+              - tableNumber
               - total
               - currency
               - itemCount
@@ -4168,6 +4176,12 @@ components:
             - pickup
             - delivery
         tableIdentifier:
+          type: string
+          nullable: true
+        tableZoneName:
+          type: string
+          nullable: true
+        tableNumber:
           type: string
           nullable: true
         customerName:
@@ -4323,6 +4337,8 @@ components:
         - status
         - fulfillmentMode
         - tableIdentifier
+        - tableZoneName
+        - tableNumber
         - customerName
         - customerPhone
         - customerEmail
@@ -4396,6 +4412,12 @@ components:
             - pickup
             - delivery
         tableIdentifier:
+          type: string
+          nullable: true
+        tableZoneName:
+          type: string
+          nullable: true
+        tableNumber:
           type: string
           nullable: true
         customerName:
@@ -4543,6 +4565,8 @@ components:
         - status
         - fulfillmentMode
         - tableIdentifier
+        - tableZoneName
+        - tableNumber
         - customerName
         - customerPhone
         - customerEmail
