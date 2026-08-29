@@ -2,10 +2,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
-// Dev-only api target. admin hardcoded :5001 while qr-menu hardcoded :3000, so the
-// two dev servers could not run against one api and the seed CLI (which defaults to
-// :3000) worked for neither. Both now read the same override.
-const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:3000';
+// Dev-only api target. admin and qr-menu once hardcoded different ports, so the two
+// dev servers could not run against one api. Both now read the same override, and the
+// fallback is :5001 — the `API_PORT` default in `env.schema.ts`, what the seed CLI
+// (`tools/scripts/seed/lib/options.ts`) targets, and what `.env.example` ships.
+const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:5001';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
