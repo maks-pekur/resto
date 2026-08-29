@@ -4,6 +4,9 @@ import type { PublishedMenu, PublishedMenuItem } from './published-menu';
 
 export interface CatalogRepository {
   loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu>;
+  /** Every photo key reachable from a published item, for the publish-time copy
+   * into the public prefix. */
+  listPublishedPhotoKeys(): Promise<string[]>;
   findPublishedItem(itemId: string): Promise<PublishedMenuItem | null>;
   upsertCategory(input: UpsertCategoryRow): Promise<{ id: string }>;
   upsertItem(input: UpsertItemRow): Promise<{ id: string; slugChanged?: { oldSlug: string } }>;
@@ -73,6 +76,12 @@ export const STOP_VERSION_PORT = Symbol('STOP_VERSION_PORT');
 
 // Bucket is private — public read path must never leak the raw S3 key; this port turns a key into a short-lived presigned URL.
 export interface ImageUrlPort {
+  /** Copy an uploaded photo into the world-readable prefix and stamp it immutable.
+   * Idempotent: publishing an unchanged menu re-copies the same bytes. */
+  publishPublicCopy(s3Key: string): Promise<void>;
+  /** Stable public address of an already-published photo. Pure — no S3 call, so
+   * an S3 outage cannot blank the menu. */
+  publicUrl(s3Key: string): string;
   presignGet(s3Key: string, ttlSeconds: number): Promise<string>;
   // SigV4 binds Content-Type and Content-Length: browser must send the same headers or S3 returns 403. ttlSeconds ≤ 300 (OWASP V12).
   presignPut(

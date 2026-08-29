@@ -54,7 +54,6 @@ import type {
   PublishedMenuModifierGroup,
   PublishedMenuModifierOption,
 } from '../domain/published-menu';
-import { MENU_IMAGE_URL_TTL_SECONDS } from '../domain/menu-cache';
 
 const AGGREGATE_STOP_LIST_PAGE_SIZE = 50;
 
@@ -65,26 +64,32 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     @Inject(IMAGE_URL_PORT) private readonly imageUrl: ImageUrlPort,
   ) {}
 
-  private async signPhotos(photos: readonly MenuItemPhoto[]): Promise<PublishedMenuItemPhoto[]> {
-    const signed = await Promise.all(
-      photos.map(async (p) => {
-        // presignGet returns '' on S3 failure (degraded mode); drop the photo
-        // rather than emit a broken `<img src="">` to the client.
-        const url = await this.imageUrl.presignGet(p.s3Key, MENU_IMAGE_URL_TTL_SECONDS);
-        if (!url) return null;
-        const photo: PublishedMenuItemPhoto = {
-          s3Key: p.s3Key,
-          sortOrder: p.sortOrder,
-          ...(p.alt !== undefined ? { alt: p.alt } : {}),
-          ...(p.width !== undefined ? { width: p.width } : {}),
-          ...(p.height !== undefined ? { height: p.height } : {}),
-          ...(p.isPrimary !== undefined ? { isPrimary: p.isPrimary } : {}),
-          url,
-        };
-        return photo;
-      }),
-    );
-    return signed.filter((p): p is PublishedMenuItemPhoto => p !== null);
+  /** Published photos are addressed, not signed: the URL is computed from the key,
+   * so reading a menu makes no S3 call and an S3 outage cannot blank it. */
+  private publicPhotos(photos: readonly MenuItemPhoto[]): PublishedMenuItemPhoto[] {
+    return photos.map((p) => ({
+      s3Key: p.s3Key,
+      sortOrder: p.sortOrder,
+      ...(p.alt !== undefined ? { alt: p.alt } : {}),
+      ...(p.width !== undefined ? { width: p.width } : {}),
+      ...(p.height !== undefined ? { height: p.height } : {}),
+      ...(p.isPrimary !== undefined ? { isPrimary: p.isPrimary } : {}),
+      url: this.imageUrl.publicUrl(p.s3Key),
+    }));
+  }
+
+  async listPublishedPhotoKeys(): Promise<string[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped.selectFrom(
+        schema.menuItems,
+        eq(schema.menuItems.status, 'published'),
+      );
+      const keys = new Set<string>();
+      for (const row of rows) {
+        for (const photo of row.photos) keys.add(photo.s3Key);
+      }
+      return [...keys];
+    });
   }
 
   async loadPublishedMenu(tenantId: TenantId, version: number): Promise<PublishedMenu> {
@@ -115,42 +120,40 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const modifierGroupsByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
       const optionsByModifierGroup = groupBy(optionsRows, (r) => r.modifierGroupId);
 
-      const items = await Promise.all(
-        allItemsRows.map<Promise<PublishedMenuItem>>(async (r) => {
-          const photos = await this.signPhotos(r.photos);
-          return {
-            id: MenuItemId.parse(r.id),
-            slug: r.slug,
-            categoryId: MenuCategoryId.parse(r.categoryId),
-            name: r.name,
-            description: r.description ?? null,
-            basePrice: MoneyAmount.parse(r.basePrice),
-            currency: Currency.parse(r.currency),
-            code: r.code ?? null,
-            weight: r.weight ?? null,
-            measureUnit: (r.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
-            imageUrl: photos[0]?.url ?? null,
-            photos,
-            allergens: r.allergens ?? [],
-            sortOrder: r.sortOrder,
-            proteins: r.proteins ?? null,
-            fats: r.fats ?? null,
-            carbs: r.carbs ?? null,
-            kcal: r.kcal ?? null,
-            nutritionEstimated: r.nutritionEstimated,
-            sizes: (sizesByItem.get(r.id) ?? []).map<PublishedMenuItemSize>((v) => ({
-              id: MenuVariantId.parse(v.id),
-              name: v.name,
-              price: MoneyAmount.parse(v.price),
-              isDefault: v.isDefault,
-              sortOrder: v.sortOrder,
-            })),
-            modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
-              MenuModifierId.parse(m.modifierGroupId),
-            ),
-          };
-        }),
-      );
+      const items = allItemsRows.map<PublishedMenuItem>((r) => {
+        const photos = this.publicPhotos(r.photos);
+        return {
+          id: MenuItemId.parse(r.id),
+          slug: r.slug,
+          categoryId: MenuCategoryId.parse(r.categoryId),
+          name: r.name,
+          description: r.description ?? null,
+          basePrice: MoneyAmount.parse(r.basePrice),
+          currency: Currency.parse(r.currency),
+          code: r.code ?? null,
+          weight: r.weight ?? null,
+          measureUnit: (r.measureUnit ?? null) as 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null,
+          imageUrl: photos[0]?.url ?? null,
+          photos,
+          allergens: r.allergens ?? [],
+          sortOrder: r.sortOrder,
+          proteins: r.proteins ?? null,
+          fats: r.fats ?? null,
+          carbs: r.carbs ?? null,
+          kcal: r.kcal ?? null,
+          nutritionEstimated: r.nutritionEstimated,
+          sizes: (sizesByItem.get(r.id) ?? []).map<PublishedMenuItemSize>((v) => ({
+            id: MenuVariantId.parse(v.id),
+            name: v.name,
+            price: MoneyAmount.parse(v.price),
+            isDefault: v.isDefault,
+            sortOrder: v.sortOrder,
+          })),
+          modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
+            MenuModifierId.parse(m.modifierGroupId),
+          ),
+        };
+      });
 
       const categories = categoriesRows.map<PublishedMenuCategory>((r) => ({
         id: MenuCategoryId.parse(r.id),
@@ -206,7 +209,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           eq(schema.menuItemModifierGroups.menuItemId, row.id),
         ),
       ]);
-      const photos = await this.signPhotos(row.photos);
+      const photos = this.publicPhotos(row.photos);
       return {
         id: MenuItemId.parse(row.id),
         slug: row.slug,

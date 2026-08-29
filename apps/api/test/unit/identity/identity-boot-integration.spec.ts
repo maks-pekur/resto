@@ -25,6 +25,7 @@ const buildProdEnv = (overrides: Partial<Env> = {}): Env =>
   ({
     NODE_ENV: 'production',
     S3_ENDPOINT: 'https://s3.amazonaws.com',
+    MEDIA_PUBLIC_BASE_URL: 'https://cdn.resto.app',
     S3_ACCESS_KEY: 'prod-access',
     S3_SECRET_KEY: 'prod-secret-value-32-chars-padding-aaa',
     AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',

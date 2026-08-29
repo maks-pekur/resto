@@ -8,6 +8,7 @@ import {
 
 const okProdValues = {
   S3_ENDPOINT: 'https://s3.amazonaws.com',
+  MEDIA_PUBLIC_BASE_URL: 'https://cdn.resto.app',
   S3_ACCESS_KEY: 'prod-access',
   S3_SECRET_KEY: 'prod-secret-value-32-chars-padding-aaa',
   AUDIT_ERASURE_SALT: 'production-erasure-salt-32-chars-padding',
@@ -63,6 +64,12 @@ describe('assertProdGuardrails', () => {
     expect(() => assertProdGuardrails(buildEnv({ S3_ACCESS_KEY: 'minio' }))).toThrow(
       /S3_ACCESS_KEY/,
     );
+  });
+
+  it('throws when MEDIA_PUBLIC_BASE_URL is the dev default', () => {
+    expect(() =>
+      assertProdGuardrails(buildEnv({ MEDIA_PUBLIC_BASE_URL: 'http://localhost:9000/resto-dev' })),
+    ).toThrow(/MEDIA_PUBLIC_BASE_URL/);
   });
 
   it('throws when S3_ENDPOINT is the dev default', () => {

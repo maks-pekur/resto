@@ -1,15 +1,22 @@
-import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import {
+  CopyObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
 import type { ImageUrlPort } from '../domain/ports';
+import { photoContentType, publicPhotoKey } from '../domain/public-photo-key';
 
 @Injectable()
 export class S3SignedImageUrlAdapter implements ImageUrlPort {
   private readonly logger = new Logger(S3SignedImageUrlAdapter.name);
   private readonly client: S3Client;
   private readonly bucket: string;
+  private readonly publicBaseUrl: string;
 
   constructor(@Inject(ENV_TOKEN) env: Env) {
     if (!env.S3_ENDPOINT || !env.S3_ACCESS_KEY || !env.S3_SECRET_KEY) {
@@ -18,6 +25,7 @@ export class S3SignedImageUrlAdapter implements ImageUrlPort {
     }
 
     this.bucket = env.S3_BUCKET;
+    this.publicBaseUrl = env.MEDIA_PUBLIC_BASE_URL.replace(/\/+$/, '');
     this.client = new S3Client({
       region: env.S3_REGION,
       endpoint: env.S3_ENDPOINT,
@@ -28,6 +36,25 @@ export class S3SignedImageUrlAdapter implements ImageUrlPort {
         secretAccessKey: env.S3_SECRET_KEY,
       },
     });
+  }
+
+  async publishPublicCopy(s3Key: string): Promise<void> {
+    await this.client.send(
+      new CopyObjectCommand({
+        Bucket: this.bucket,
+        CopySource: `${this.bucket}/${s3Key}`,
+        Key: publicPhotoKey(s3Key),
+        MetadataDirective: 'REPLACE',
+        ContentType: photoContentType(s3Key),
+        // The key never changes for given bytes — a replaced photo is a new
+        // upload with a new uuid — so the object can be cached forever.
+        CacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
+  }
+
+  publicUrl(s3Key: string): string {
+    return `${this.publicBaseUrl}/${publicPhotoKey(s3Key)}`;
   }
 
   async presignGet(s3Key: string, ttlSeconds: number): Promise<string> {

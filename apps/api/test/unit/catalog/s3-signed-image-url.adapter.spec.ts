@@ -8,8 +8,18 @@ vi.mock('@aws-sdk/s3-request-presigner', () => ({
   getSignedUrl: (...args: unknown[]) => getSignedUrlMock(...args),
 }));
 
+const copyObjectCommandSpy = vi.fn<(input: Record<string, unknown>) => Record<string, unknown>>();
+const sendMock = vi.fn<(...args: unknown[]) => Promise<unknown>>();
+
 vi.mock('@aws-sdk/client-s3', () => ({
-  S3Client: vi.fn().mockImplementation(() => ({ tag: 's3-client-stub' })),
+  S3Client: vi.fn().mockImplementation(() => ({
+    tag: 's3-client-stub',
+    send: (...args: unknown[]) => sendMock(...args),
+  })),
+  CopyObjectCommand: vi.fn().mockImplementation((input: Record<string, unknown>) => {
+    copyObjectCommandSpy(input);
+    return { kind: 'CopyObjectCommand', ...input };
+  }),
   PutObjectCommand: vi.fn().mockImplementation((input: Record<string, unknown>) => {
     putObjectCommandSpy(input);
     return { kind: 'PutObjectCommand', ...input };
@@ -27,6 +37,7 @@ const buildEnv = (overrides: Partial<Env> = {}): Env =>
   ({
     NODE_ENV: 'test',
     S3_ENDPOINT: 'http://localhost:9000',
+    MEDIA_PUBLIC_BASE_URL: 'http://localhost:9000/resto-dev',
     S3_REGION: 'us-east-1',
     S3_BUCKET: 'resto-test',
     S3_ACCESS_KEY: 'minio',
@@ -83,5 +94,44 @@ describe('S3SignedImageUrlAdapter.presignPut', () => {
       Bucket: 'resto-test',
       Key: 'tenant/abc/menu-items/123',
     });
+  });
+});
+
+describe('S3SignedImageUrlAdapter — published media', () => {
+  const KEY = 'tenant/11111111-1111-4111-8111-111111111111/menu-items/abc.webp';
+
+  beforeEach(() => {
+    sendMock.mockReset();
+    sendMock.mockResolvedValue(undefined);
+    copyObjectCommandSpy.mockReset();
+    getSignedUrlMock.mockReset();
+  });
+
+  it('addresses a published photo without signing it', () => {
+    const url = new S3SignedImageUrlAdapter(buildEnv()).publicUrl(KEY);
+    expect(url).toBe(`http://localhost:9000/resto-dev/public/${KEY}`);
+    expect(url).not.toContain('X-Amz-Signature');
+    expect(getSignedUrlMock).not.toHaveBeenCalled();
+  });
+
+  it('tolerates a base url with a trailing slash', () => {
+    const env = buildEnv({ MEDIA_PUBLIC_BASE_URL: 'https://cdn.example.test/' });
+    expect(new S3SignedImageUrlAdapter(env).publicUrl(KEY)).toBe(
+      `https://cdn.example.test/public/${KEY}`,
+    );
+  });
+
+  it('copies into the public prefix and stamps the object immutable', async () => {
+    await new S3SignedImageUrlAdapter(buildEnv()).publishPublicCopy(KEY);
+
+    expect(copyObjectCommandSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        Bucket: 'resto-test',
+        CopySource: `resto-test/${KEY}`,
+        Key: `public/${KEY}`,
+        CacheControl: 'public, max-age=31536000, immutable',
+        ContentType: 'image/webp',
+      }),
+    );
   });
 });
