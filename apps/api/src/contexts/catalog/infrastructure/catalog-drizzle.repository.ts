@@ -54,9 +54,7 @@ import type {
   PublishedMenuModifierGroup,
   PublishedMenuModifierOption,
 } from '../domain/published-menu';
-
-// Signed image URLs must match the catalog cache TTL (GetPublishedMenuService).
-const IMAGE_URL_TTL_SECONDS = 300;
+import { MENU_IMAGE_URL_TTL_SECONDS } from '../domain/menu-cache';
 
 const AGGREGATE_STOP_LIST_PAGE_SIZE = 50;
 
@@ -72,7 +70,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       photos.map(async (p) => {
         // presignGet returns '' on S3 failure (degraded mode); drop the photo
         // rather than emit a broken `<img src="">` to the client.
-        const url = await this.imageUrl.presignGet(p.s3Key, IMAGE_URL_TTL_SECONDS);
+        const url = await this.imageUrl.presignGet(p.s3Key, MENU_IMAGE_URL_TTL_SECONDS);
         if (!url) return null;
         const photo: PublishedMenuItemPhoto = {
           s3Key: p.s3Key,

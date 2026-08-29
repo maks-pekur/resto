@@ -18,6 +18,7 @@ import { GetMenuAvailabilityService } from '../../application/availability/get-m
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/publishing/get-published-menu.service';
 import { MENU_VERSION_PORT, type MenuVersionPort } from '../../domain/ports';
+import { MENU_AVAILABILITY_CACHE_CONTROL, MENU_CACHE_CONTROL } from '../../domain/menu-cache';
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
 import type { TenantSnapshot } from '../../../tenancy/domain/tenant.aggregate';
@@ -196,7 +197,7 @@ export class PublicMenuController {
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=5');
+    reply.header('Cache-Control', MENU_AVAILABILITY_CACHE_CONTROL);
     return { stoppedItemIds };
   }
 
@@ -217,7 +218,7 @@ export class PublicMenuController {
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    reply.header('Cache-Control', MENU_CACHE_CONTROL);
     const menu = await wrap(() => this.getMenu.execute(ctx.id));
     // The ETag is the menu version, so a rename or a new logo is only picked up
     // after s-maxage expires. Guest chrome tolerates that; menu content does not,
@@ -243,7 +244,7 @@ export class PublicMenuController {
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    reply.header('Cache-Control', MENU_CACHE_CONTROL);
     return wrap(() => {
       const parsed = MenuItemId.safeParse(id);
       if (!parsed.success) throw new MenuItemNotFoundError(id);
