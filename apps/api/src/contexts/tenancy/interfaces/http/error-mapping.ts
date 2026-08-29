@@ -1,5 +1,6 @@
 import {
   BadGatewayException,
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   NotFoundException,
@@ -8,7 +9,14 @@ import {
 import {
   LocationAlreadyArchivedError,
   LocationNotFoundError,
+  LocationTableLimitReachedError,
+  RestaurantTableAlreadyArchivedError,
+  RestaurantTableNotFoundError,
   StripeOnboardingFailedError,
+  TableBulkLimitExceededError,
+  TableNumberTakenError,
+  TableZoneAlreadyArchivedError,
+  TableZoneNotFoundError,
   TenantAlreadyArchivedError,
   TenantAlreadySuspendedError,
   TenantErasureTooEarlyError,
@@ -21,6 +29,31 @@ import {
   TenantSuspendedError,
   TenantSuspensionNotAllowedError,
 } from '../../domain/errors';
+
+const PG_UNIQUE_VIOLATION = '23505';
+const RESTAURANT_TABLE_NUMBER_CONSTRAINT = 'restaurant_tables_zone_number_active_uq';
+
+// A race on the partial unique index reaches here as a raw driver error, not TableNumberTakenError;
+// unmapped it would be redacted to an unactionable 5xx by ProblemDetailsFilter.
+const isTableNumberUniqueViolation = (err: unknown): boolean => {
+  const seen = new Set<unknown>();
+  let cur: unknown = err;
+  while (typeof cur === 'object' && cur !== null && !seen.has(cur)) {
+    seen.add(cur);
+    const e = cur as {
+      code?: string;
+      constraint_name?: string;
+      constraint?: string;
+      cause?: unknown;
+    };
+    if (e.code === PG_UNIQUE_VIOLATION) {
+      const constraint = e.constraint_name ?? e.constraint;
+      if (constraint === RESTAURANT_TABLE_NUMBER_CONSTRAINT) return true;
+    }
+    cur = e.cause;
+  }
+  return false;
+};
 
 export const mapDomainError = (err: unknown): unknown => {
   if (err instanceof TenantNotFoundError) {
@@ -89,6 +122,54 @@ export const mapDomainError = (err: unknown): unknown => {
     return new BadGatewayException({
       code: 'tenancy.stripe_onboarding_failed',
       message: err.message,
+    });
+  }
+  if (err instanceof TableZoneNotFoundError) {
+    return new NotFoundException({
+      code: 'tenancy.table_zone_not_found',
+      message: err.message,
+    });
+  }
+  if (err instanceof RestaurantTableNotFoundError) {
+    return new NotFoundException({
+      code: 'tenancy.table_not_found',
+      message: err.message,
+    });
+  }
+  if (err instanceof TableZoneAlreadyArchivedError) {
+    return new ConflictException({
+      code: 'tenancy.table_zone_already_archived',
+      message: err.message,
+    });
+  }
+  if (err instanceof RestaurantTableAlreadyArchivedError) {
+    return new ConflictException({
+      code: 'tenancy.table_already_archived',
+      message: err.message,
+    });
+  }
+  if (err instanceof TableNumberTakenError) {
+    return new ConflictException({
+      code: 'tenancy.table_number_taken',
+      message: err.message,
+    });
+  }
+  if (err instanceof TableBulkLimitExceededError) {
+    return new BadRequestException({
+      code: 'tenancy.table_bulk_limit_exceeded',
+      message: err.message,
+    });
+  }
+  if (err instanceof LocationTableLimitReachedError) {
+    return new BadRequestException({
+      code: 'tenancy.location_table_limit_reached',
+      message: err.message,
+    });
+  }
+  if (isTableNumberUniqueViolation(err)) {
+    return new ConflictException({
+      code: 'tenancy.table_number_taken',
+      message: 'Table number is already in use in this zone.',
     });
   }
   return err;
