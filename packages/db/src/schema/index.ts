@@ -7,6 +7,7 @@
  */
 export * from './tenants';
 export * from './locations';
+export * from './table-zones';
 export * from './menu';
 // Public-surface contract — visible to schema consumers via `schema.<name>`:
 //   - menuCategories, menuItems, menuModifierOptions
