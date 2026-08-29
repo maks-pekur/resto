@@ -8,7 +8,7 @@ import {
 } from '../src/rbac';
 
 describe('RBAC permission catalogue', () => {
-  it('exposes the expected resources including ac, location and invitation', () => {
+  it('exposes the expected resources including ac, location, table and invitation', () => {
     expect(Object.keys(PERMISSIONS_STATEMENT).sort()).toEqual(
       [
         'ac',
@@ -20,6 +20,7 @@ describe('RBAC permission catalogue', () => {
         'reports',
         'settings',
         'staff',
+        'table',
         'tenant',
       ].sort(),
     );
@@ -27,6 +28,10 @@ describe('RBAC permission catalogue', () => {
 
   it('location resource has read/create/update/delete actions with no colon', () => {
     expect(PERMISSIONS_STATEMENT.location).toEqual(['read', 'create', 'update', 'delete']);
+  });
+
+  it('table resource has read/update actions, disjoint from location (D-17, 10.3)', () => {
+    expect(PERMISSIONS_STATEMENT.table).toEqual(['read', 'update']);
   });
 
   it('ac resource has create/read/update/delete actions', () => {
