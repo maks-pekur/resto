@@ -467,8 +467,8 @@ The `requireTenantContext()` helper reads the current tenant from `AsyncLocalSto
 
 ```typescript
 const ctx = requireTenantContext(); // throws if no context bound
-const brandId = getBrandId() ?? null;
-return this.repo.upsertCategory({ tenantId: ctx.tenantId, brandId, ... });
+const locationId = getLocationId() ?? null;
+return this.repo.upsertCategory({ tenantId: ctx.tenantId, locationId, ... });
 ```
 
 `db.withoutTenant(reason, fn)` bypasses RLS for system-level operations; callers must provide a non-empty `reason` string, and the caller's file path must be on the explicit allowlist (see Enforced Invariants above).

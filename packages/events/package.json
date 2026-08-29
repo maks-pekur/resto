@@ -23,6 +23,7 @@
     "@resto/config-typescript": "workspace:*",
     "@testcontainers/postgresql": "^10.16.0",
     "@types/node": "^25.8.0",
+    "@vitest/coverage-v8": "^3.2.6",
     "eslint": "^10.4.0",
     "postgres": "^3.4.5",
     "testcontainers": "^10.16.0",
