@@ -750,7 +750,7 @@ Plans:
 
 **Wave 5** _(blocked on Wave 4)_
 
-- [ ] 10.3-08-PLAN.md — Public `GET /v1/tables/:id` resolution route and the contract test that gates the phase
+- [x] 10.3-08-PLAN.md — Public `GET /v1/tables/:id` resolution route and the contract test that gates the phase
 
 **Wave 6** _(blocked on Wave 5)_
 
