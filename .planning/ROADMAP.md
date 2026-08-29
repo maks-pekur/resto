@@ -731,8 +731,8 @@ Plans:
 
 **Wave 1**
 
-- [ ] 10.3-01-PLAN.md — Schema, hand-written migration 0003, RLS policies, erase-function coverage, applied and proven against the live database
-- [ ] 10.3-02-PLAN.md — The `table` RBAC resource (D-17) and the preset re-sync for existing tenants
+- [x] 10.3-01-PLAN.md — Schema, hand-written migration 0003, RLS policies, erase-function coverage, applied and proven against the live database
+- [x] 10.3-02-PLAN.md — The `table` RBAC resource (D-17) and the preset re-sync for existing tenants
 - [ ] 10.3-03-PLAN.md — QR/PDF toolkit in admin: package legitimacy gate, sheet geometry, vector PDF + single SVG
 
 **Wave 2** _(blocked on Wave 1)_
