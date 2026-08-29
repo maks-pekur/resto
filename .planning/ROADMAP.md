@@ -702,7 +702,7 @@ Plans:
 
 **Goal**: Identify the table a dine-in guest is sitting at without asking them to type anything — table zones and tables per location, a printable QR per table, and the guest menu resolving the table from the scanned link so the kitchen knows where the order goes
 **Depends on**: Phase 10 (the order feed is what a table identity is _for_ — an operator must be able to see it), Phase 08.4 (location-scoped access — a table belongs to a location)
-**Requirements**: TBD (assigned at `/gsd-spec-phase 10.3`)
+**Requirements**: TBL-01, TBL-02, TBL-03, TBL-04, TBL-05, TBL-06, TBL-07, TBL-08, TBL-09, TBL-10, TBL-11, TBL-12, TBL-13
 
 **Decided before planning** (do not re-litigate):
 

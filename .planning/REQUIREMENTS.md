@@ -192,6 +192,24 @@
 - [ ] **SCHED-04**: Orders attempted outside opening hours are rejected at checkout with the next opening time
 - [ ] **SCHED-05**: Pause and schedule enforcement is server-side at order creation (`ScopedTx` + RLS, location-scoped per the 08.4 model) — a forged or stale client cannot create an order at a paused or closed location
 
+### Table Zones, Tables & QR Codes (`TBL`)
+
+> Added 2026-08-29 (Phase 10.3). Assigned at `/gsd-spec-phase 10.3`; amended after `/gsd-discuss-phase 10.3` and the `persona-cto` / `persona-skeptic` reviews. Full text, boundaries and acceptance criteria live in `.planning/phases/10.3-table-zones-tables-and-qr-codes/10.3-SPEC.md` — these lines are the traceable index, not a second source of truth.
+
+- [ ] **TBL-01**: A location holds named table zones, tenant-isolated by composite FK and RLS
+- [ ] **TBL-02**: A zone holds tables whose number is unique inside that zone, with an integer `ordinal` sort key and an opaque UUID `id` as the only identifier the QR carries
+- [ ] **TBL-03**: One API call creates a zone plus N tables numbered 1..N in a single capped transaction
+- [ ] **TBL-04**: Zones and tables are listed, renamed, added to and archived — never deleted; archiving a zone archives its tables in the same transaction
+- [ ] **TBL-05**: Zones and tables obey the Phase 08.4 location scope — an operator scoped to location A cannot read or mutate location B's floor
+- [ ] **TBL-06**: The guest menu resolves the scanned `?t=<id>` into a display label server-side and never trusts the URL text
+- [ ] **TBL-07**: An unknown, archived or malformed table id still opens the menu with a "not recognised" state; a dine-in order without a resolved table is rejected
+- [ ] **TBL-08**: An order stores `table_id` plus `table_zone_name` and `table_number` frozen at creation; renaming the table later never rewrites a past order
+- [ ] **TBL-09**: The order's location comes from the scanned table, not the tenant's default location
+- [ ] **TBL-10**: A zone downloads as an A4 PDF of bare QR codes in `ordinal` order, six per page; a single table's QR downloads as SVG
+- [ ] **TBL-11**: A location-scoped admin screen lists zones and their tables, with create / rename / archive / print, gated by the `table` permission resource
+- [ ] **TBL-12**: A dine-in order card in the operator feed shows the stored zone-and-number label
+- [ ] **TBL-13**: Pricing and the stop list answer for the scanned table's location, not the tenant default
+
 ### Delivery Zones — basic (`DELV`)
 
 > Polygons + minimums + in-zone check at checkout. Now Phase 9 — executes before Admin Order Intake. Per SPEC section 3.1.
@@ -516,6 +534,19 @@
 | ORDINT-08   | Phase 10      | Complete                |
 | ORDINT-09   | Phase 18      | Pending                 |
 | ORDINT-10   | Phase 10      | Complete                |
+| TBL-01      | Phase 10.3    | Pending                 |
+| TBL-02      | Phase 10.3    | Pending                 |
+| TBL-03      | Phase 10.3    | Pending                 |
+| TBL-04      | Phase 10.3    | Pending                 |
+| TBL-05      | Phase 10.3    | Pending                 |
+| TBL-06      | Phase 10.3    | Pending                 |
+| TBL-07      | Phase 10.3    | Pending                 |
+| TBL-08      | Phase 10.3    | Pending                 |
+| TBL-09      | Phase 10.3    | Pending                 |
+| TBL-10      | Phase 10.3    | Pending                 |
+| TBL-11      | Phase 10.3    | Pending                 |
+| TBL-12      | Phase 10.3    | Pending                 |
+| TBL-13      | Phase 10.3    | Pending                 |
 | SCHED-01    | Phase 10.1    | Pending                 |
 | SCHED-02    | Phase 10.1    | Pending                 |
 | SCHED-03    | Phase 10.1    | Pending                 |
@@ -563,12 +594,13 @@
 
 **Coverage:**
 
-- v1 requirements: 156 total (151 MVP-1 core + 5 TEAM Phase 17 post-MVP-1 polish)
-- Mapped to phases: 156
+- v1 requirements: 169 total (151 MVP-1 core + 13 TBL Phase 10.3 + 5 TEAM Phase 17 post-MVP-1 polish)
+- Mapped to phases: 169
 - Unmapped: 0
 
 ---
 
 _Requirements defined: 2026-05-24_
 _Last updated: 2026-05-29 — Phase 3 scope split via CTO + Skeptic persona reviews; TEAM-01..05 added for new Phase 17 (post-MVP-1 polish); AUTH-07 / AUTH-09 scope-noted in place_
+_2026-08-29 — TBL-01..TBL-13 added for Phase 10.3 (assigned at `/gsd-spec-phase 10.3`, amended after discuss + persona reviews)_
 _2026-05-24 — initial revision after persona reviews (persona-cto, persona-skeptic); 13 new requirements added, PROMO-06 reassigned to Phase 7, SITE-08 reassigned to Phase 8, Phases 9/10 swapped, GNOTIF category added_
