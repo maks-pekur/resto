@@ -408,6 +408,7 @@
       "fulfillmentDineIn": "En el local",
       "fulfillmentPickup": "Recogida",
       "fulfillmentDelivery": "Entrega a domicilio",
+      "tableLabel": "{{zone}} · Mesa {{number}}",
       "statusUpdateFailed": "No se pudo actualizar el estado del pedido."
     },
     "accept": {

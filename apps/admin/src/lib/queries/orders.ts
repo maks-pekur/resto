@@ -25,6 +25,8 @@ export interface OrderFeedRowApi {
   readonly locationName: string;
   readonly fulfillmentMode: OrderFulfillmentMode;
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -120,6 +122,8 @@ export interface OrderDetailApi {
   readonly status: OrderStatus;
   readonly fulfillmentMode: OrderFulfillmentMode;
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly customerEmail: string | null;

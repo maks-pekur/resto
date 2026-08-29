@@ -11,6 +11,8 @@ const makeRow = (id: string, createdAt: string): OrderFeedRowApi => ({
   locationName: 'Центр',
   fulfillmentMode: 'dine_in',
   tableIdentifier: null,
+  tableZoneName: null,
+  tableNumber: null,
   total: '1200.00',
   currency: 'RUB',
   itemCount: 1,

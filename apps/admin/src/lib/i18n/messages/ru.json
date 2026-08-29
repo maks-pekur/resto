@@ -408,6 +408,7 @@
       "fulfillmentDineIn": "В зале",
       "fulfillmentPickup": "Самовывоз",
       "fulfillmentDelivery": "Доставка",
+      "tableLabel": "{{zone}} · стол {{number}}",
       "statusUpdateFailed": "Не удалось обновить статус заказа."
     },
     "accept": {

@@ -408,6 +408,7 @@
       "fulfillmentDineIn": "Dine-in",
       "fulfillmentPickup": "Pickup",
       "fulfillmentDelivery": "Delivery",
+      "tableLabel": "{{zone}} · Table {{number}}",
       "statusUpdateFailed": "Couldn't update the order status."
     },
     "accept": {

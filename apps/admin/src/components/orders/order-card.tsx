@@ -141,6 +141,10 @@ export function OrderCard({
     state === 'escalated' ? formatDuration(now - new Date(row.createdAt).getTime()) : undefined;
 
   const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
+  const tableLabel =
+    row.tableZoneName !== null && row.tableNumber !== null
+      ? t('card.tableLabel', { zone: row.tableZoneName, number: row.tableNumber })
+      : row.tableIdentifier;
 
   return (
     <Card data-testid={`order-card-${row.id}`} className={cn('gap-2 p-4', cardClassName)}>
@@ -189,6 +193,9 @@ export function OrderCard({
           <FulfillmentIcon className="size-4" />
           <span>{t(`card.${FULFILLMENT_LABEL_KEY[row.fulfillmentMode]}`)}</span>
         </div>
+        {tableLabel !== null ? (
+          <span className="text-sm text-muted-foreground">{tableLabel}</span>
+        ) : null}
       </button>
 
       {state === 'new' || state === 'escalated' ? (
