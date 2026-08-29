@@ -38,6 +38,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 10.2: Organization-per-restaurant and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_ (completed 2026-08-22)
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 - [ ] **Phase 10.3: Table zones, tables and QR codes** - Table zones and tables per location, a printable QR per table carrying a stable table id, and the guest menu resolving the table from the scanned link so a dine-in order reaches the right table _(inserted 2026-08-29 — founder; "zone" is qualified as **table zones** because Phase 9 already owns delivery zones)_
+- [ ] **Phase 10.4: QR-menu ordering and dine-in checkout** - Cart screen, checkout form, Stripe payment and guest order-status screen in `apps/qr-menu`, so a dine-in guest can actually place the order 10.3 makes identifiable; sequenced immediately after 10.3 _(inserted 2026-08-29 at `/gsd-plan-phase 10.3` per 10.3-CONTEXT D-02 — 10.3 delivers the platform and this is the phase that makes it pay off)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -710,28 +711,99 @@ Plans:
 2. **Naming: `delivery zones` and `table zones`, never a bare `zone`.** Phase 9 already owns "zone" for delivery polygons (DELV-01..03); an unqualified name collides in the schema, the code and the conversation _(founder, 2026-08-29)_.
 3. **The guest side already landed.** `apps/qr-menu` takes the table from `?table=` and the manual table-number input is gone (PR #275); the read-only strip shows the table only when the link carried one. Regression net: `apps/qr-menu/test/table.spec.tsx`.
 
-**Open questions for `/gsd-spec-phase` and `/gsd-discuss-phase`:**
+**Answered at `/gsd-spec-phase` and `/gsd-discuss-phase`** (full text in `10.3-SPEC.md` and `10.3-CONTEXT.md`):
 
-1. Does an order reference the table by id (FK + label snapshot) or keep today's free-text `table` string on the cart/order? A floor map and per-table analytics need the reference; the string is what exists.
-2. Is the QR rendered client-side in admin (nothing stored, cheapest) or server-side as a printable sheet for a whole zone at once?
-3. Bulk creation shape: "zone with N tables" in one call, or zone first and tables after.
-4. Does **tenant branding** ride along? `apps/qr-menu` and `apps/website` already render `tenant.theme.logoUrl` beside the brand name (covered by a test), but nothing can set it — the api exposes `theme` read-only, with no branding endpoint and no admin screen. Same admin surface, same phase, or its own.
+1. The order references the table by id, plus **two** snapshot columns — `table_zone_name` and `table_number`, not one pre-composed label, so an order's display language is not frozen to the operator's locale (D-22). The free-text `table` input field is removed; the `table_identifier` column stays for orders that arrived without a QR.
+2. The QR is generated **client-side in admin**: an A4 PDF of bare codes per zone, six per page, plus a single-table SVG download (D-07..D-10). The server supplies each table's ready `qrUrl`, because the guest host is server-only state and a tenant may sit on a verified custom domain (D-21).
+3. Bulk creation is "zone + N tables" in one capped transaction — 200 tables per call, 500 active tables per location.
+4. **Tenant branding does not ride along** — its own phase. The printed sheet carries no text at all.
 
-**Layers touched**: `packages/db` (table zones + tables, composite FKs per ADR-0020 I-2, RLS), api tenancy context (CRUD + bulk create), `apps/admin` (floor map, QR preview/print), `apps/qr-menu` (already reads the param), ordering (carry the table).
+**Added after the persona reviews** (both graded blocking, independently): pricing and the stop list must answer for the scanned table's location, not the tenant default — tracked as **TBL-13** (D-16). Also folded in: a dedicated `table` RBAC resource superseding the `location:update` gate (D-17), a RESTRICTIVE location RLS policy on both new tables (D-20), and `tenancy_erase_tenant` coverage (D-19).
 
-**Plans**: TBD
-**UI hint**: yes
+**Layers touched**: `packages/db` (table zones + tables, composite FKs per ADR-0020 I-2, tenant + location RLS, erasure function), `packages/domain` (the `table` permission resource), api tenancy context (CRUD, bulk create, public resolution route), api ordering + catalog contexts (table→location, pricing and availability by location), `apps/admin` (list screen, QR/PDF generation, order-card label), `apps/qr-menu` + `packages/cart` (server-resolved table).
+
+**Plans**: 14 plans
+**UI hint**: yes — planned at structure-and-behaviour level only; no UI-SPEC was produced (founder, 2026-08-29), so the screen is expected to be revised once seen
 **Persona reviewers**: persona-cto, persona-skeptic
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 10.3 to break down)
+**Wave 1**
+
+- [ ] 10.3-01-PLAN.md — Schema, hand-written migration 0003, RLS policies, erase-function coverage, applied and proven against the live database
+- [ ] 10.3-02-PLAN.md — The `table` RBAC resource (D-17) and the preset re-sync for existing tenants
+- [ ] 10.3-03-PLAN.md — QR/PDF toolkit in admin: package legitimacy gate, sheet geometry, vector PDF + single SVG
+
+**Wave 2** _(blocked on Wave 1)_
+
+- [ ] 10.3-04-PLAN.md — Database proofs: GDPR erasure, tenant and RESTRICTIVE location RLS, composite FKs, partial unique index
+- [ ] 10.3-05-PLAN.md — Tenancy domain, location-filtered repository, and the server-side guest sticker URL
+
+**Wave 3** _(blocked on Wave 2)_
+
+- [ ] 10.3-06-PLAN.md — Zone and table application services, with both caps as numbers and the archive cascade
+
+**Wave 4** _(blocked on Wave 3)_
+
+- [ ] 10.3-07-PLAN.md — Admin HTTP surface, module wiring, and the permission / location-isolation e2e
+
+**Wave 5** _(blocked on Wave 4)_
+
+- [ ] 10.3-08-PLAN.md — Public `GET /v1/tables/:id` resolution route and the contract test that gates the phase
+
+**Wave 6** _(blocked on Wave 5)_
+
+- [ ] 10.3-09-PLAN.md — Order carries the table, takes its location from it, and prices against that location
+- [ ] 10.3-10-PLAN.md — Guest app resolves `?t=` server-side; the free-text path is removed; the cart carries the id
+- [ ] 10.3-11-PLAN.md — Admin tables screen: route, queries, sidebar entry, empty state, friendly failures
+
+**Wave 7** _(blocked on Wave 6)_
+
+- [ ] 10.3-12-PLAN.md — Availability answers for the scanned table's location, with the two-location e2e proving TBL-13
+- [ ] 10.3-13-PLAN.md — Operator feed and detail show the stored zone and number
+
+**Wave 8** _(blocked on Wave 7)_
+
+- [ ] 10.3-14-PLAN.md — Regenerate the published OpenAPI contract and the typed client; scan a real printed code
+
+### Phase 10.4: QR-menu ordering and dine-in checkout (INSERTED)
+
+**Goal**: A dine-in guest who scanned the QR can actually place and pay for the order — cart screen, checkout form, Stripe payment, and a guest order-status screen in `apps/qr-menu`
+**Depends on**: Phase 10.3 (the table id and its server-side resolution are what a dine-in order carries), Phase 8 / 8.1 (payments)
+**Requirements**: TBD — assign at `/gsd-spec-phase 10.4`
+
+**Why it exists** _(inserted 2026-08-29 at `/gsd-plan-phase 10.3`, per 10.3-CONTEXT D-02)_: verified during 10.3's discussion that **no client can create a dine-in order today**. `apps/qr-menu/src/api/client.ts` exposes exactly `fetchMenu` and `fetchAvailability` — no cart screen, no checkout, no `POST /v1/orders`; and `apps/website` hard-collapses the mode to `delivery` or `pickup`. 10.3 delivers the platform (schema, CRUD, QR, resolution, the order's table reference and the table→location rule) and is verified by API-level e2e tests. This is the phase that makes it pay off. A platform phase whose payoff phase is not on the roadmap is how a platform phase becomes permanent.
+
+**Decided before planning** (do not re-litigate):
+
+1. **`packages/cart` gains dine-in here, not in 10.3.** `packages/cart/src/cart.ts` types `mode` as `'delivery' | 'pickup' | null`, so the shared cart cannot express dine-in at all today. 10.3 gives it `tableId` plus the display parts and leaves the union alone.
+2. **The client submits only the opaque table id.** 10.3 removed the free-text `table` field from `CreateOrderInputSchema`; the server resolves the id, derives the location, and writes the label. Do not reintroduce a client-supplied table or location.
+3. **The dev-database-reset allowance is void once any tenant has printed a sheet.** 10.2 D-12 permits resetting the dev database while no real tenant data exists. Table ids are `gen_random_uuid()`, so a reset re-mints every id and kills every glued sticker. Printing is the trigger that closes that window _(CTO HIGH-6 at 10.3 review)_.
+
+**Open questions for `/gsd-spec-phase`:**
+
+1. Does the guest see an order-status screen, or only a confirmation? Phase 8's `SITE-08` confirmation page is the closest precedent.
+2. Multi-round dine-in: `10.3-SPEC.md` excludes occupancy and open tabs because "an order is paid up front and closed". Sit-down service is drinks → food → dessert, which under pay-up-front is three or four card transactions per table. This is a stated product bet with a revisit trigger, and this phase is where it first bites _(Skeptic MEDIUM-9 at 10.3 review)_.
+3. Guest rate limiting: anonymous callers key on `ip:${req.ip}` with `RATE_LIMIT_PUBLIC_PER_MIN` defaulting to 60, so a full restaurant behind one NAT shares one bucket. Phase 10 fixed this for operators only _(Skeptic MEDIUM-4 at 10.3 review)_.
+
+**Layers touched**: `packages/cart` (dine-in mode), `apps/qr-menu` (cart screen, checkout form, payment, status screen), `packages/ui` (guest cart primary action), api ordering/payments contexts (whatever the dine-in path needs beyond what 10.3 shipped).
+
+**Plans**: TBD
+**UI hint**: yes
+**Persona reviewers**: TBD
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.4 to break down)
 
 ### Phase 10.1: Location schedule and pause ordering (INSERTED)
 
 **Goal**: Give a location a way to stop taking orders — one-tap pause from the order feed and a weekly opening schedule — so a restaurant cannot accept paid orders while closed or overwhelmed
 **Depends on**: Phase 8, Phase 10 _(origin: `persona-product-strategist` BLOCK-3 at `/gsd:discuss-phase 10`, 2026-08-11 — `locations` has no hours and no accepting-orders flag, and `CreateOrderService` never checks, so MVP-1 would otherwise close with tenants taking paid orders 24/7. Founder deferred it out of Phase 10 with the risk stated. Spec: `.planning/phases/10-admin-order-intake/10-PERSONA-PRODUCT.md` BLOCK-3.)_
 **Requirements**: SCHED-01, SCHED-02, SCHED-03, SCHED-04, SCHED-05
+
+> **Sequencing note for whoever plans this phase** _(from 10.3-CONTEXT D-14/D-15, repeated here so it is read in place)_: **Phase 10.3 is built first**, and it rewrites the same line this phase's order-creation gate targets — the location resolution in `apps/api/src/contexts/ordering/application/create-order.service.ts`. The two compose in exactly one order: **resolve the location (from the scanned table, else the default resolver), then check that location's pause and schedule.** After 10.3 the whole tail of `execute()` runs inside `withLocation(locationId, …)`, which is where this phase's gate belongs. Writing the gate against the tenant's default location would be correct-looking and wrong for any tenant with two locations.
+
 **Success Criteria** (what must be TRUE):
 
 1. Operator pauses order intake for a location in one tap from the order-feed header (20 min / 40 min / rest of day), sees the remaining time, and can resume early
