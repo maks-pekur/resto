@@ -27,6 +27,8 @@ export interface OrderFeedResponseRow {
   readonly locationName: string;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -50,6 +52,9 @@ export interface OrderFeedListResponse {
   readonly offset: number;
 }
 
+// Table label precedence (CONTEXT D-22): tableZoneName + tableNumber when both
+// present, else legacy tableIdentifier, else nothing. table_identifier has had
+// no writer since the free-text create-order field was removed (10.3-09).
 export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow => ({
   id: row.id,
   shortNumber: row.shortNumber,
@@ -58,6 +63,8 @@ export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow 
   locationName: row.locationName,
   fulfillmentMode: row.fulfillmentMode,
   tableIdentifier: row.tableIdentifier,
+  tableZoneName: row.tableZoneName,
+  tableNumber: row.tableNumber,
   total: row.total,
   currency: row.currency,
   itemCount: row.itemCount,
