@@ -19,12 +19,20 @@ export interface CartLineItem {
   quantity: number;
 }
 
+export interface ResolvedCartTable {
+  readonly tableId: string;
+  readonly zoneName: string;
+  readonly number: string;
+}
+
 interface CartState {
   readonly mode: 'delivery' | 'pickup' | null;
   readonly items: CartLineItem[];
-  readonly table: string | null;
+  readonly tableId: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   setMode: (mode: 'delivery' | 'pickup') => void;
-  setTable: (table: string | null) => void;
+  setTable: (table: ResolvedCartTable | null) => void;
   addItem: (item: Omit<CartLineItem, 'quantity'>) => void;
   updateQuantity: (itemId: string, sizeId: string | null, delta: number) => void;
   removeItem: (itemId: string, sizeId: string | null) => void;
@@ -70,9 +78,16 @@ export const useCartStore = create<CartState>()(
     (set) => ({
       mode: null,
       items: [],
-      table: null,
+      tableId: null,
+      tableZoneName: null,
+      tableNumber: null,
       setMode: (mode) => set({ mode }),
-      setTable: (table) => set({ table }),
+      setTable: (table) =>
+        set(
+          table
+            ? { tableId: table.tableId, tableZoneName: table.zoneName, tableNumber: table.number }
+            : { tableId: null, tableZoneName: null, tableNumber: null },
+        ),
       addItem: (newItem) =>
         set((state) => {
           const existing = state.items.find(
