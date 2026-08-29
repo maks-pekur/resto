@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createRoute, useNavigate } from '@tanstack/react-router';
+import { createRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -146,6 +146,15 @@ function LocationFormPage() {
           isNew
             ? 'Name it after the district or street people use — "Воскресенка", "Podil", "High Street".'
             : 'The web address of a location never changes, even when its name does.'
+        }
+        action={
+          !isNew && existing ? (
+            <Button variant="outline" asChild>
+              <Link to="/locations/$slug/tables" params={{ slug: existing.slug }}>
+                View tables
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-8 lg:px-6">

@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   MapPin,
   Settings2,
+  Table2,
   Users,
   UtensilsCrossed,
   Ban,
@@ -108,6 +109,9 @@ export function AppSidebar({
   const navAdministration: NavMainItem[] = [
     ...(hasPermission(me, 'location', 'create')
       ? [{ title: 'Locations', url: '/locations', icon: MapPin }]
+      : []),
+    ...(hasPermission(me, 'table', 'read') && navLocationSlug !== undefined
+      ? [{ title: t('tables'), url: `/locations/${navLocationSlug}/tables`, icon: Table2 }]
       : []),
     ...(hasPermission(me, 'billing', 'read')
       ? [{ title: t('payments'), url: '/tenant/payouts', icon: CreditCard }]
