@@ -24,6 +24,7 @@ import { RenameTableService } from './application/rename-table.service';
 import { ArchiveTableZoneService } from './application/archive-table-zone.service';
 import { ArchiveTableService } from './application/archive-table.service';
 import { GuestMenuUrlService } from './application/guest-menu-url.service';
+import { ResolveTableService } from './application/resolve-table.service';
 import { LOCATION_REPOSITORY, TABLE_ZONE_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
 import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
 import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
@@ -34,6 +35,7 @@ import { InternalTenantsController } from './interfaces/http/internal-tenants.co
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { LocationsController } from './interfaces/http/locations.controller';
 import { TableZonesController } from './interfaces/http/table-zones.controller';
+import { PublicTableResolutionController } from './interfaces/http/public-tables.controller';
 import {
   TenantOnboardingController,
   TenantOAuthCallbackController,
@@ -48,6 +50,7 @@ import {
     TenantOAuthCallbackController,
     LocationsController,
     TableZonesController,
+    PublicTableResolutionController,
   ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
@@ -84,6 +87,7 @@ import {
     ArchiveTableZoneService,
     ArchiveTableService,
     GuestMenuUrlService,
+    ResolveTableService,
     SeedPresetRolesService,
   ],
   exports: [
