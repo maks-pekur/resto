@@ -389,7 +389,20 @@ Do not make direct repo edits outside a GSD workflow unless the user explicitly 
 - **Delete the branch as soon as it is merged**, local and remote both. A merged branch that lingers
   is one more thing to mistake for live work; if `git branch -d` refuses, confirm the branch really
   is an ancestor of `main` and then use `-D`.
+- **Retarget a stacked PR to `main` before merging the one under it.** Merging deletes the head
+  branch and GitHub auto-closes every PR based on it; a closed PR whose base is gone can be neither
+  retargeted nor reopened, so the only way back is a brand-new PR. Either open the upper PR against
+  `main` from the start, or `gh pr edit <n> --base main` while the lower one is still open.
+- **Prove where a red check comes from before judging it.** Check the base commit out in a throwaway
+  worktree and run the same test there. `main` in this repo has failing checks of its own, so
+  "CI is red" says nothing on its own — say which checks were already red on the base, which the
+  branch fixes, and which it leaves.
 - A task is not finished while a check that was green before your change is red after it.
+- **Confirm a merge landed** with `gh pr view <n> --json state,mergedAt` and `git ls-remote --heads
+origin`. `gh pr merge` can exit silently on success and can be refused by tooling policy without
+  touching the repository — neither looks different from the outside.
+
+Full rule: `~/work/llm-wiki/shared/merging-pull-requests.md`.
 
 <!-- GSD:profile-start -->
 
