@@ -73,6 +73,9 @@ export interface OrderSnapshot {
   readonly status: OrderStatus;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
+  readonly tableId: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly customerEmail: string | null;
@@ -110,6 +113,9 @@ export interface CreateOrderInput {
   readonly orderNumber: string;
   readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier?: string | null;
+  readonly tableId?: string | null;
+  readonly tableZoneName?: string | null;
+  readonly tableNumber?: string | null;
   readonly customerName?: string | null;
   readonly customerPhone?: string | null;
   readonly customerEmail?: string | null;
@@ -218,6 +224,9 @@ export class Order {
       status: 'created',
       fulfillmentMode: input.fulfillmentMode,
       tableIdentifier: input.tableIdentifier ?? null,
+      tableId: input.tableId ?? null,
+      tableZoneName: input.tableZoneName ?? null,
+      tableNumber: input.tableNumber ?? null,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
       customerEmail: input.customerEmail ?? null,

@@ -53,13 +53,28 @@ export interface OrderingMenuSnapshot {
 }
 
 // Server-authoritative pricing for the order path: the create-order service must
-// never trust client-supplied prices (API review 2026-06-15 BLOCK-1). The adapter
-// sources this from the published catalog, scoped by tenant via ScopedTx+RLS.
+// never trust client-supplied prices (API review 2026-06-15 BLOCK-1). The caller
+// resolves the order's location (from its table, or the tenant default) before
+// pricing and passes it in — the snapshot must answer for that location's stop
+// list, never for whichever location the adapter would pick on its own.
 export interface MenuPricingPort {
-  loadSnapshot(tenantId: TenantId): Promise<OrderingMenuSnapshot>;
+  loadSnapshot(tenantId: TenantId, locationId: string): Promise<OrderingMenuSnapshot>;
 }
 
 export const MENU_PRICING_PORT = Symbol('MENU_PRICING_PORT');
+
+export interface ResolvedOrderTable {
+  readonly tableId: string;
+  readonly zoneName: string;
+  readonly number: string;
+  readonly locationId: string;
+}
+
+export interface OrderTableLookupPort {
+  findActiveTable(tableId: string): Promise<ResolvedOrderTable | null>;
+}
+
+export const ORDER_TABLE_LOOKUP_PORT = Symbol('ORDER_TABLE_LOOKUP_PORT');
 
 export interface NextShortNumberInput {
   readonly tenantId: TenantId;

@@ -7,16 +7,20 @@ import {
   MENU_PRICING_PORT,
   ORDER_REPOSITORY,
   ORDER_SEQUENCE_PORT,
+  ORDER_TABLE_LOOKUP_PORT,
   type MenuPricingPort,
   type PricedMenuItem,
   type OrderRepository,
   type OrderSequencePort,
+  type OrderTableLookupPort,
+  type ResolvedOrderTable,
 } from '../domain/ports';
 import {
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
   OrderModifierSelectionInvalidError,
+  OrderTableNotResolvedError,
 } from '../domain/errors';
 import { Order, type CreateOrderInput as DomainCreateOrderInput } from '../domain/order.aggregate';
 import { generateOrderNumber, type CreateOrderInput, type OrderResponse } from './dto';
@@ -29,6 +33,7 @@ export class CreateOrderService {
     @Inject(ORDER_REPOSITORY) private readonly repo: OrderRepository,
     @Inject(MENU_PRICING_PORT) private readonly pricing: MenuPricingPort,
     @Inject(ORDER_SEQUENCE_PORT) private readonly orderSequence: OrderSequencePort,
+    @Inject(ORDER_TABLE_LOOKUP_PORT) private readonly tableLookup: OrderTableLookupPort,
     @Inject(DefaultLocationResolverService)
     private readonly defaultLocation: DefaultLocationResolverService,
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
@@ -37,14 +42,36 @@ export class CreateOrderService {
   async execute(input: CreateOrderInput): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
-    const locationId = await this.defaultLocation.resolveForTenant(tenantId);
 
     const existingOrder = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     if (existingOrder) {
       return toOrderResponse(existingOrder.toSnapshot());
     }
 
-    const snapshot = await this.pricing.loadSnapshot(tenantId);
+    let locationId: string;
+    let resolvedTable: ResolvedOrderTable | null = null;
+    if (input.tableId !== undefined) {
+      resolvedTable = await this.tableLookup.findActiveTable(input.tableId);
+      if (!resolvedTable) {
+        throw new OrderTableNotResolvedError(input.tableId);
+      }
+      locationId = resolvedTable.locationId;
+    } else {
+      locationId = await this.defaultLocation.resolveForTenant(tenantId);
+    }
+
+    return withLocation(locationId, () =>
+      this.#createUnderLocation(input, tenantId, locationId, resolvedTable),
+    );
+  }
+
+  async #createUnderLocation(
+    input: CreateOrderInput,
+    tenantId: TenantId,
+    locationId: string,
+    resolvedTable: ResolvedOrderTable | null,
+  ): Promise<OrderResponse> {
+    const snapshot = await this.pricing.loadSnapshot(tenantId, locationId);
     const currency = Currency.parse(snapshot.currency);
     const itemsById = new Map(snapshot.items.map((i) => [i.itemId, i]));
     const groupsById = new Map(snapshot.modifierGroups.map((g) => [g.groupId, g]));
@@ -135,7 +162,10 @@ export class CreateOrderService {
       idempotencyKey: input.idempotencyKey,
       orderNumber,
       fulfillmentMode: input.fulfillmentMode,
-      tableIdentifier: input.table ?? null,
+      tableIdentifier: null,
+      tableId: resolvedTable?.tableId ?? null,
+      tableZoneName: resolvedTable?.zoneName ?? null,
+      tableNumber: resolvedTable?.number ?? null,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
       customerEmail: input.customerEmail ?? null,
@@ -148,7 +178,7 @@ export class CreateOrderService {
       marketingConsent: input.marketingConsent,
     });
 
-    await withLocation(locationId, () => this.repo.save(order));
+    await this.repo.save(order);
 
     const existing = await this.repo.findByIdempotencyKey(tenantId, input.idempotencyKey);
     const snap = existing?.toSnapshot() ?? order.toSnapshot();

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import { runInTenantContext, type TenantAwareDb } from '@resto/db';
+import type { TenantId } from '@resto/domain';
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import type { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
@@ -9,17 +10,24 @@ import type {
   OrderingMenuSnapshot,
   OrderRepository,
   OrderSequencePort,
+  OrderTableLookupPort,
+  ResolvedOrderTable,
 } from '../../src/contexts/ordering/domain/ports';
 import {
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
   OrderModifierSelectionInvalidError,
+  OrderTableNotResolvedError,
 } from '../../src/contexts/ordering/domain/errors';
 import type { Order } from '../../src/contexts/ordering/domain/order.aggregate';
 
 const tenantId = randomUUID();
 const locationId = randomUUID();
+const tableLocationId = randomUUID();
+const resolvableTableId = randomUUID();
+const tableZoneName = 'Terrace';
+const tableNumber = 'A1';
 
 const pizzaId = randomUUID();
 const categoryId = randomUUID();
@@ -121,8 +129,6 @@ class FakeOrderRepository implements OrderRepository {
   }
 }
 
-const pricing: MenuPricingPort = { loadSnapshot: () => Promise.resolve(snapshot) };
-
 const defaultLocation = {
   resolveForTenant: () => Promise.resolve(locationId),
 } as unknown as DefaultLocationResolverService;
@@ -136,11 +142,70 @@ const fakeDb = {
     }),
 } as unknown as TenantAwareDb;
 
-const makeService = (): { service: CreateOrderService; repo: FakeOrderRepository } => {
-  const repo = new FakeOrderRepository();
+interface PricingCall {
+  readonly tenantId: string;
+  readonly locationId: string;
+}
+
+// This spec mocks MenuPricingPort/OrderTableLookupPort, so it can only prove the
+// SHAPE of the calls (which tenantId/locationId is passed) — it CANNOT catch a real
+// location-mismatch defect (pricing/stop-list answering for the wrong location).
+// The real proof is the two-location e2e in plan 10.3-12.
+const createPricing = (): { port: MenuPricingPort; calls: PricingCall[] } => {
+  const calls: PricingCall[] = [];
   return {
-    service: new CreateOrderService(repo, pricing, orderSequence, defaultLocation, fakeDb),
+    calls,
+    port: {
+      loadSnapshot: (tid: TenantId, locId: string) => {
+        calls.push({ tenantId: tid, locationId: locId });
+        return Promise.resolve(snapshot);
+      },
+    },
+  };
+};
+
+const createTableLookup = (): { port: OrderTableLookupPort; calls: string[] } => {
+  const calls: string[] = [];
+  return {
+    calls,
+    port: {
+      findActiveTable: (tableId: string): Promise<ResolvedOrderTable | null> => {
+        calls.push(tableId);
+        if (tableId === resolvableTableId) {
+          return Promise.resolve({
+            tableId: resolvableTableId,
+            zoneName: tableZoneName,
+            number: tableNumber,
+            locationId: tableLocationId,
+          });
+        }
+        return Promise.resolve(null);
+      },
+    },
+  };
+};
+
+const makeService = (): {
+  service: CreateOrderService;
+  repo: FakeOrderRepository;
+  pricingCalls: PricingCall[];
+  tableLookupCalls: string[];
+} => {
+  const repo = new FakeOrderRepository();
+  const pricing = createPricing();
+  const tableLookup = createTableLookup();
+  return {
+    service: new CreateOrderService(
+      repo,
+      pricing.port,
+      orderSequence,
+      tableLookup.port,
+      defaultLocation,
+      fakeDb,
+    ),
     repo,
+    pricingCalls: pricing.calls,
+    tableLookupCalls: tableLookup.calls,
   };
 };
 
@@ -408,5 +473,78 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
     );
     // base 8.00 + req 2.00 * 2 = 12.00
     expect(repo.saved[0]?.toSnapshot().total).toBe('12.00');
+  });
+});
+
+describe('CreateOrderService — table resolution decides the order location (TBL-07/08/09)', () => {
+  it("a dine_in order with a resolvable tableId carries the table snapshot and prices against the table's own location, not the default", async () => {
+    const { service, repo, pricingCalls, tableLookupCalls } = makeService();
+    await run(() =>
+      service.execute(
+        baseInput({
+          fulfillmentMode: 'dine_in',
+          tableId: resolvableTableId,
+          customerName: undefined,
+          customerPhone: undefined,
+        }),
+      ),
+    );
+    const snap = repo.saved[0]?.toSnapshot();
+    expect(snap?.tableId).toBe(resolvableTableId);
+    expect(snap?.tableZoneName).toBe(tableZoneName);
+    expect(snap?.tableNumber).toBe(tableNumber);
+    expect(snap?.locationId).toBe(tableLocationId);
+    expect(tableLookupCalls).toEqual([resolvableTableId]);
+    expect(pricingCalls).toEqual([{ tenantId, locationId: tableLocationId }]);
+  });
+
+  it('rejects a dine_in order whose tableId does not resolve with OrderTableNotResolvedError and persists nothing', async () => {
+    const { service, repo } = makeService();
+    await expect(
+      run(() =>
+        service.execute(
+          baseInput({
+            fulfillmentMode: 'dine_in',
+            tableId: randomUUID(),
+            customerName: undefined,
+            customerPhone: undefined,
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderTableNotResolvedError);
+    expect(repo.saved).toHaveLength(0);
+  });
+
+  it('a pickup order with no tableId stores null table columns and prices against the default location', async () => {
+    const { service, repo, pricingCalls, tableLookupCalls } = makeService();
+    await run(() => service.execute(baseInput({ fulfillmentMode: 'pickup' })));
+    const snap = repo.saved[0]?.toSnapshot();
+    expect(snap?.tableId).toBeNull();
+    expect(snap?.tableZoneName).toBeNull();
+    expect(snap?.tableNumber).toBeNull();
+    expect(snap?.locationId).toBe(locationId);
+    expect(tableLookupCalls).toHaveLength(0);
+    expect(pricingCalls).toEqual([{ tenantId, locationId }]);
+  });
+
+  it('an idempotent retry of a dine_in order returns the existing order without calling the table lookup again — proof the retry survives the table being archived mid-flight', async () => {
+    const { service, repo, tableLookupCalls } = makeService();
+    const input = baseInput({
+      fulfillmentMode: 'dine_in',
+      tableId: resolvableTableId,
+      customerName: undefined,
+      customerPhone: undefined,
+    });
+
+    await run(() => service.execute(input));
+    expect(tableLookupCalls).toHaveLength(1);
+    tableLookupCalls.length = 0;
+
+    const savedCountBefore = repo.saved.length;
+    const retryResponse = await run(() => service.execute(input));
+
+    expect(repo.saved).toHaveLength(savedCountBefore);
+    expect(tableLookupCalls).toHaveLength(0);
+    expect(retryResponse.orderId).toBe(repo.saved[0]?.toSnapshot().id);
   });
 });
