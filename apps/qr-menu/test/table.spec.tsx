@@ -1,9 +1,11 @@
 import { render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCartStore } from '@resto/cart';
 import type { MenuDto } from '@resto/api-client/public';
 import { App } from '../src/App';
 import { t } from '../src/i18n';
+import type * as ClientModule from '../src/api/client';
+import type { ResolvedTable } from '../src/api/client';
 
 const menu: MenuDto = {
   tenantId: '11111111-1111-4111-8111-111111111111',
@@ -38,27 +40,83 @@ const menu: MenuDto = {
   modifierGroups: [],
 };
 
+const TABLE_UUID = '22222222-2222-4222-8222-222222222222';
+const resolvedTable: ResolvedTable = { tableId: TABLE_UUID, zoneName: 'Terrace', number: '12' };
+
+const fetchMenuMock = vi.fn<(signal?: AbortSignal) => Promise<MenuDto>>();
+const fetchAvailabilityMock =
+  vi.fn<
+    (tableId: string | undefined, signal?: AbortSignal) => Promise<{ stoppedItemIds: string[] }>
+  >();
+const fetchTableMock =
+  vi.fn<(tableId: string, signal?: AbortSignal) => Promise<ResolvedTable | null>>();
+
 vi.mock('../src/api/client', () => ({
   MenuNotFoundError: class extends Error {},
-  fetchMenu: () => Promise.resolve(menu),
-  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
+  fetchMenu: (signal?: AbortSignal) => fetchMenuMock(signal),
+  fetchAvailability: (tableId: string | undefined, signal?: AbortSignal) =>
+    fetchAvailabilityMock(tableId, signal),
+  fetchTable: (tableId: string, signal?: AbortSignal) => fetchTableMock(tableId, signal),
 }));
+
+const bannerNode = (): Element | null => document.querySelector('.bg-muted.border-b');
 
 beforeEach(() => {
   window.localStorage.clear();
   useCartStore.getState().setTable(null);
   window.history.replaceState({}, '', '/');
+  fetchMenuMock.mockReset().mockResolvedValue(menu);
+  fetchAvailabilityMock.mockReset().mockResolvedValue({ stoppedItemIds: [] });
+  fetchTableMock.mockReset().mockResolvedValue(null);
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('qr-menu table', () => {
-  it('takes the table from the scanned link', async () => {
-    window.history.replaceState({}, '', '/?table=12');
+  it('resolves a scanned table id and renders the server-supplied label', async () => {
+    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
+    fetchTableMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(t('table.current', { table: '12' }))).toBeInTheDocument();
+      expect(screen.getByText(t('table.current', { table: 'Terrace · 12' }))).toBeInTheDocument();
     });
-    expect(useCartStore.getState().table).toBe('12');
+    expect(useCartStore.getState().tableId).toBe(TABLE_UUID);
+    expect(useCartStore.getState().tableZoneName).toBe('Terrace');
+    expect(useCartStore.getState().tableNumber).toBe('12');
+  });
+
+  it('shows the not-recognised line but still renders the menu when the table is unknown', async () => {
+    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
+    fetchTableMock.mockResolvedValue(null);
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText(t('table.notRecognized'))).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: 'Margherita' })).toBeInTheDocument();
+    expect(useCartStore.getState().tableId).toBeNull();
+  });
+
+  it('ignores the old free-text ?table= parameter entirely', async () => {
+    window.history.replaceState({}, '', '/?table=%D0%A1%D1%82%D0%BE%D0%BB%2099');
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(bannerNode()).not.toBeInTheDocument();
+    expect(useCartStore.getState().tableId).toBeNull();
+  });
+
+  it('renders no table strip and no not-recognised line with no ?t= at all', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(bannerNode()).not.toBeInTheDocument();
+    expect(screen.queryByText(t('table.notRecognized'))).not.toBeInTheDocument();
   });
 
   it('never asks the guest to type a table number', async () => {
@@ -66,14 +124,51 @@ describe('qr-menu table', () => {
     await screen.findByRole('contentinfo');
 
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
-    expect(screen.queryByText(t('table.current', { table: '12' }))).not.toBeInTheDocument();
   });
 
-  it('ignores a blank table parameter', async () => {
-    window.history.replaceState({}, '', '/?table=%20%20');
+  it('carries the scanned table on the availability request', async () => {
+    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
+    fetchTableMock.mockResolvedValue(resolvedTable);
     render(<App />);
-    await screen.findByRole('contentinfo');
 
-    expect(useCartStore.getState().table).toBeNull();
+    await waitFor(() => {
+      expect(fetchAvailabilityMock).toHaveBeenCalledWith(TABLE_UUID, expect.anything());
+    });
+
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve({
+        status: 200,
+        ok: true,
+        json: () => Promise.resolve({ stoppedItemIds: [] }),
+      }),
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+    const real = await vi.importActual<typeof ClientModule>('../src/api/client');
+    await real.fetchAvailability(TABLE_UUID);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith(`/v1/menu/availability?t=${TABLE_UUID}`, {});
+  });
+
+  it('sends no query string on availability when there is no table', async () => {
+    render(<App />);
+
+    await waitFor(() => {
+      expect(fetchAvailabilityMock).toHaveBeenCalledWith(undefined, expect.anything());
+    });
+
+    const fetchSpy = vi.fn(() =>
+      Promise.resolve({
+        status: 200,
+        ok: true,
+        json: () => Promise.resolve({ stoppedItemIds: [] }),
+      }),
+    );
+    vi.stubGlobal('fetch', fetchSpy);
+    const real = await vi.importActual<typeof ClientModule>('../src/api/client');
+    await real.fetchAvailability(undefined);
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledWith('/v1/menu/availability', {});
   });
 });

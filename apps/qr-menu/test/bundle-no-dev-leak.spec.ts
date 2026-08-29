@@ -58,4 +58,13 @@ describe('qr-menu prod bundle', () => {
       'sourceMappingURL',
     );
   }, 60_000);
+
+  it('carries no QR or PDF generation dependency', () => {
+    // QR/PDF generation lives only in apps/admin (table sticker sheets) — the guest bundle
+    // only ever reads a resolved label from GET /v1/tables/:id (T-10.3-46).
+    const bundle = readBundleJs();
+    for (const needle of ['jsPDF', 'qrcode']) {
+      expect(bundle, `bundle must not contain "${needle}"`).not.toContain(needle);
+    }
+  }, 60_000);
 });
