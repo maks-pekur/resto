@@ -4,15 +4,20 @@ import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
 import { GuestUiProvider, MenuScreen, ThemeSwitcher, Toaster, useGuestTheme } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
-import { fetchAvailability, fetchMenu, MenuNotFoundError } from './api/client';
+import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
-import { TableBanner, sanitizeTable } from './components/TableBanner';
+import { TableBanner } from './components/TableBanner';
 import { getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
 
 const parseItemId = (pathname: string): string | null => ITEM_PATH.exec(pathname)?.[1] ?? null;
+
+const parseTableId = (search: string): string | undefined => {
+  const raw = new URLSearchParams(search).get('t');
+  return raw != null && raw.trim().length > 0 ? raw : undefined;
+};
 
 type State =
   | { kind: 'loading' }
@@ -35,6 +40,10 @@ export const App = () => {
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
+  const [tableIdParam] = useState<string | undefined>(() =>
+    typeof window === 'undefined' ? undefined : parseTableId(window.location.search),
+  );
+  const [tableUnrecognized, setTableUnrecognized] = useState(false);
   const menuFetchedAt = useRef(0);
 
   useEffect(() => {
@@ -54,22 +63,41 @@ export const App = () => {
           setState({ kind: 'error' });
         }
       });
-    fetchAvailability(controller.signal)
+    fetchAvailability(tableIdParam, controller.signal)
       .then((availability) => {
         setStoppedItemIds(availability.stoppedItemIds);
       })
       .catch(() => undefined);
+    if (tableIdParam) {
+      fetchTable(tableIdParam, controller.signal)
+        .then((resolved) => {
+          if (resolved) {
+            setTableUnrecognized(false);
+            useCartStore.getState().setTable({
+              tableId: resolved.tableId,
+              zoneName: resolved.zoneName,
+              number: resolved.number,
+            });
+          } else {
+            setTableUnrecognized(true);
+          }
+        })
+        .catch((err: unknown) => {
+          if ((err as { name?: string }).name === 'AbortError') return;
+          setTableUnrecognized(true);
+        });
+    }
     return () => {
       controller.abort();
     };
-  }, [attempt]);
+  }, [attempt, tableIdParam]);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
     const controller = new AbortController();
     const refresh = (): void => {
       if (document.hidden) return;
-      fetchAvailability(controller.signal)
+      fetchAvailability(tableIdParam, controller.signal)
         .then((availability) => {
           setStoppedItemIds(availability.stoppedItemIds);
         })
@@ -92,7 +120,7 @@ export const App = () => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [state.kind]);
+  }, [state.kind, tableIdParam]);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
@@ -111,13 +139,6 @@ export const App = () => {
     return () => {
       window.removeEventListener('popstate', onPopState);
     };
-  }, []);
-
-  useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get('table');
-    if (raw == null) return;
-    const sanitized = sanitizeTable(raw);
-    if (sanitized) useCartStore.getState().setTable(sanitized);
   }, []);
 
   const openItem = useCallback((id: string) => {
@@ -164,7 +185,7 @@ export const App = () => {
               <ThemeSwitcher theme={theme} onSelect={setTheme} />
             </div>
           }
-          banner={<TableBanner />}
+          banner={<TableBanner notRecognized={tableUnrecognized} />}
         />
       )}
       <Toaster position="bottom-center" theme={resolvedTheme} />
