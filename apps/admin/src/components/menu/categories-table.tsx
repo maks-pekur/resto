@@ -21,8 +21,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -238,7 +236,6 @@ export function CategoriesTable({ categories }: CategoriesTableProps): React.Rea
   const queryClient = useQueryClient();
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [archiveTarget, setArchiveTarget] = React.useState<CategoryListItemApi | null>(null);
-  const [showArchived, setShowArchived] = React.useState(false);
   const [localCategories, setLocalCategories] = React.useState(categories);
   const [activeId, setActiveId] = React.useState<string | null>(null);
   const [pendingNestParentId, setPendingNestParentId] = React.useState<string | null>(null);
@@ -276,8 +273,8 @@ export function CategoriesTable({ categories }: CategoriesTableProps): React.Rea
   };
 
   const visible = React.useMemo(
-    () => (showArchived ? localCategories : localCategories.filter((c) => c.status !== 'archived')),
-    [localCategories, showArchived],
+    () => localCategories.filter((c) => c.status !== 'archived'),
+    [localCategories],
   );
   const rows = React.useMemo(() => buildIndentedRows(visible), [visible]);
   const editing = editingId ? (categories.find((c) => c.id === editingId) ?? null) : null;
@@ -388,17 +385,6 @@ export function CategoriesTable({ categories }: CategoriesTableProps): React.Rea
 
   return (
     <>
-      <div className="mb-3 flex items-center gap-2">
-        <Switch
-          id="categories-show-archived"
-          checked={showArchived}
-          onCheckedChange={setShowArchived}
-          className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
-        />
-        <Label htmlFor="categories-show-archived" className="text-sm font-normal">
-          {t('showArchived')}
-        </Label>
-      </div>
       {rows.length === 0 ? (
         <EmptyState variant="empty" title={t('empty')} description={t('emptyDescription')} />
       ) : (

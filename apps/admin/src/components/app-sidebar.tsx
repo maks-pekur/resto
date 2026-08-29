@@ -15,7 +15,6 @@ import {
 import { TenantIdentity } from '@/components/tenant-identity';
 import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
-import { NavUser } from '@/components/nav-user';
 import type { OperatorSummary } from '@/lib/queries/identity';
 import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
@@ -23,13 +22,7 @@ import { sortLocations } from '@/lib/default-location';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarRail,
-} from '@/components/ui/sidebar';
+import { Sidebar, SidebarContent, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
   readonly operator: OperatorSummary;
@@ -137,9 +130,6 @@ export function AppSidebar({
         <NavMain items={navOperations} label={t('groupOperations')} />
         <NavMain items={navAdministration} label={t('groupAdministration')} />
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser operator={operator} />
-      </SidebarFooter>
       <SidebarRail />
     </Sidebar>
   );

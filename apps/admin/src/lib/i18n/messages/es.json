@@ -123,7 +123,9 @@
       "archiveDialogTitle": "¿Archivar este plato?",
       "archiveDialogDescription": "El plato «{{name}}» se ocultará del menú. Reversible — borra el filtro de archivados para restaurarlo.",
       "totalLabel": "Total: {{total}}",
-      "pageLabel": "Página {{page}}"
+      "pageLabel": "Página {{page}}",
+      "pageTitle": "Platos",
+      "archiveFailed": "No se pudo archivar el plato"
     },
     "editor": {
       "name": "Nombre",
@@ -179,7 +181,8 @@
       "statusSectionTitle": "Estado",
       "statusReadonlyHint": "Se gestiona desde la lista de platos.",
       "techInfoSectionTitle": "Información técnica",
-      "slugLabel": "Slug"
+      "slugLabel": "Slug",
+      "newItemTitle": "Nuevo plato"
     },
     "sizes": {
       "title": "Tamaños",
@@ -250,7 +253,9 @@
       "archiveDialogTitle": "¿Archivar esta categoría?",
       "archiveDialogDescription": "La categoría «{{name}}» se ocultará del menú. Es reversible — activa «Mostrar archivados».",
       "archiveFailed": "No se pudo archivar la categoría.",
-      "showArchived": "Mostrar archivados"
+      "pageTitle": "Categorías",
+      "nameRequired": "Introduce un nombre",
+      "reorderFailed": "No se pudo reordenar"
     },
     "modifierGroups": {
       "createGroup": "+ Crear grupo",
@@ -285,7 +290,11 @@
       "createGroupBtn": "Crear grupo",
       "groupCreated": "Grupo creado",
       "groupSaveFailed": "No se pudo guardar el grupo.",
-      "optionSaveFailed": "No se pudo guardar la opción."
+      "optionSaveFailed": "No se pudo guardar la opción.",
+      "pageTitle": "Grupos de modificadores",
+      "addGroup": "+ Crear grupo",
+      "newGroupTitle": "Nuevo grupo",
+      "tableStatus": "Estado"
     },
     "stopList": {
       "title": "La lista de pausados está vacía",

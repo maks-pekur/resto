@@ -1,7 +1,10 @@
 // Better Auth only trusts ADMIN_WEB_URL as an origin, and that value is
 // deployment-specific — a hardcoded origin makes the seed work on exactly one
-// machine's env shape and 403 on every other.
-const ADMIN_ORIGIN = process.env.ADMIN_WEB_URL ?? 'http://localhost:4000';
+// machine's env shape and 403 on every other. The fallback must match what
+// .env and .env.example actually ship (http://admin.localhost:4000); a plain
+// http://localhost:4000 is rejected with 403 INVALID_ORIGIN and seed-demo
+// cannot sign in at all.
+const ADMIN_ORIGIN = process.env.ADMIN_WEB_URL ?? 'http://admin.localhost:4000';
 
 export class OperatorHttpError extends Error {
   constructor(

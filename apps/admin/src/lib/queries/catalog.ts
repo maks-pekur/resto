@@ -1,4 +1,5 @@
 import { apiFetch } from '@/lib/api-client';
+import { toLocalizedText } from '@/lib/menu/localized';
 import type { Status } from '@/lib/menu/types';
 import type { ItemListStatusFilter } from '@/lib/menu/zod-schemas';
 import type {
@@ -220,10 +221,19 @@ export const draftDiffQuery = () => ({
   staleTime: STALE_DRAFT_DIFF,
 });
 
+/**
+ * MoneyAmountValue is a STRING by design (packages/domain/src/money.ts — "Never
+ * `number` — IEEE-754 silently loses precision"). The forms hold numbers for the
+ * input UX, and the read direction already flattens with `Number.parseFloat`;
+ * this is the missing write half. `toFixed(2)` rather than `String(n)` because the
+ * api regex allows at most two fractional digits.
+ */
+const toMoney = (value: number): string => value.toFixed(2);
+
 export const upsertCategory = (id: string | null, data: CategoryForm) =>
   apiFetch<CategoryListItemApi>('/v1/catalog/categories', {
     method: 'POST',
-    body: { ...data, id: id ?? undefined },
+    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
   });
 
 export const reorderCategories = (
@@ -245,7 +255,13 @@ export const upsertItem = (
 ) =>
   apiFetch<{ readonly id: string }>('/v1/catalog/items', {
     method: 'POST',
-    body: { ...data, id: id ?? undefined },
+    body: {
+      ...data,
+      name: toLocalizedText(data.name),
+      description: data.description === null ? null : toLocalizedText(data.description),
+      basePrice: toMoney(data.basePrice),
+      id: id ?? undefined,
+    },
   });
 
 export const archiveItem = (id: string) =>
@@ -256,7 +272,12 @@ export const archiveItem = (id: string) =>
 export const upsertItemSize = (itemId: string, data: SizeForm & { readonly id?: string }) =>
   apiFetch<ItemSizeApi>('/v1/catalog/item-sizes', {
     method: 'POST',
-    body: { ...data, itemId },
+    body: {
+      ...data,
+      name: toLocalizedText(data.name),
+      price: toMoney(data.price),
+      menuItemId: itemId,
+    },
   });
 
 export const upsertItemModifierGroups = (itemId: string, modifierGroupIds: readonly string[]) =>
@@ -301,7 +322,7 @@ export const resetStopList = async (locationId: string): Promise<{ ok: boolean }
 export const upsertModifierGroup = (id: string | null, data: ModifierGroupForm) =>
   apiFetch<ModifierGroupApi>('/v1/catalog/modifier-groups', {
     method: 'POST',
-    body: { ...data, id: id ?? undefined },
+    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
   });
 
 export const upsertModifierOption = (
@@ -310,7 +331,12 @@ export const upsertModifierOption = (
 ) =>
   apiFetch<ModifierOptionApi>('/v1/catalog/modifier-options', {
     method: 'POST',
-    body: { ...data, groupId },
+    body: {
+      ...data,
+      name: toLocalizedText(data.name),
+      priceDelta: toMoney(data.priceDelta),
+      modifierGroupId: groupId,
+    },
   });
 
 export const getPhotoUploadUrl = (itemId: string) =>
