@@ -18,6 +18,7 @@ import { money } from './_types';
 import { compositeTenantFk, pkUuid, tenantIdColumn, tenantParentUniqueIndex } from './_columns';
 import { tenants } from './tenants';
 import { locations } from './locations';
+import { restaurantTables } from './table-zones';
 
 export const orders = pgTable(
   'orders',
@@ -30,7 +31,14 @@ export const orders = pgTable(
     // status acts as soft-delete: 'canceled'/'refunded' replace archived_at (no hard deletes)
     status: text('status').notNull(),
     fulfillmentMode: text('fulfillment_mode').notNull(),
+    // Legacy free-text table label — no writer from phase 10.3 on (CONTEXT D-03).
+    // Kept for past orders, seeds, and any future non-QR order path.
     tableIdentifier: text('table_identifier'),
+    // Resolved-table snapshot (CONTEXT D-22): render tableZoneName/tableNumber when
+    // present, fall back to tableIdentifier, render nothing when all three are null.
+    tableId: uuid('table_id'),
+    tableZoneName: text('table_zone_name'),
+    tableNumber: text('table_number'),
     customerName: text('customer_name'),
     customerPhone: text('customer_phone'),
     customerEmail: text('customer_email'),
@@ -73,6 +81,11 @@ export const orders = pgTable(
       name: 'orders_location_fk',
       child: { id: table.locationId, tenantId: table.tenantId },
       parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
+    compositeTenantFk({
+      name: 'orders_table_fk',
+      child: { id: table.tableId, tenantId: table.tenantId },
+      parent: { id: restaurantTables.id, tenantId: restaurantTables.tenantId },
     }).onDelete('restrict'),
     uniqueIndex('orders_idempotency_key_uq').on(table.tenantId, table.idempotencyKey),
     tenantParentUniqueIndex('orders', { id: table.id, tenantId: table.tenantId }),
