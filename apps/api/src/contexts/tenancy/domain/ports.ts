@@ -36,12 +36,15 @@ export interface TableZoneWithTables extends TableZoneSnapshot {
 /**
  * The one row `findActiveTableForResolution` returns — the public guest resolution route has no
  * bound location, so this is deliberately narrower than `RestaurantTableSnapshot`.
+ * `updatedAt` rides along for the public resolution route's ETag — never exposed in its response
+ * body.
  */
 export interface RestaurantTableResolution {
   readonly tableId: string;
   readonly zoneName: string;
   readonly number: string;
   readonly locationId: LocationId;
+  readonly updatedAt: Date;
 }
 
 export interface TableSeedInput {

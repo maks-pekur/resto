@@ -160,6 +160,7 @@ export class TableZoneDrizzleRepository
             number: schema.restaurantTables.number,
             locationId: schema.restaurantTables.locationId,
             zoneName: schema.tableZones.name,
+            updatedAt: schema.restaurantTables.updatedAt,
           })
           .from(schema.restaurantTables)
           .innerJoin(
@@ -185,6 +186,7 @@ export class TableZoneDrizzleRepository
           zoneName: row.zoneName,
           number: row.number,
           locationId: LocationId.parse(row.locationId),
+          updatedAt: row.updatedAt,
         };
       });
     });
