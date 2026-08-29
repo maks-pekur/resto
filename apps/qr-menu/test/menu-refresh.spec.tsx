@@ -43,8 +43,7 @@ const fetchMenu = vi.fn();
 
 vi.mock('../src/api/client', () => ({
   MenuNotFoundError: class extends Error {},
-  fetchMenu: (signal?: AbortSignal, options?: { bypassCache?: boolean }) =>
-    fetchMenu(signal, options) as Promise<MenuDto>,
+  fetchMenu: (signal?: AbortSignal) => fetchMenu(signal) as Promise<MenuDto>,
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));
 
@@ -63,8 +62,8 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('qr-menu photo signatures', () => {
-  it('re-pulls the menu once its signed photo urls are close to expiring', async () => {
+describe('qr-menu menu freshness', () => {
+  it('re-pulls a long-open menu so a republish eventually reaches the table', async () => {
     const openedAt = Date.now();
     render(<App />);
     await waitFor(() => {
@@ -77,7 +76,7 @@ describe('qr-menu photo signatures', () => {
     await waitFor(() => {
       expect(photoSrc()).toBe(SIGNED_SECOND);
     });
-    expect(fetchMenu).toHaveBeenLastCalledWith(expect.anything(), { bypassCache: true });
+    expect(fetchMenu).toHaveBeenCalledTimes(2);
   });
 
   it('leaves a fresh menu alone', async () => {

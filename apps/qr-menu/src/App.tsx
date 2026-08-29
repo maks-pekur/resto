@@ -22,9 +22,9 @@ type State =
 
 const AVAILABILITY_POLL_MS = 20_000;
 
-/** Photo URLs are signed for an hour (MENU_IMAGE_URL_TTL_SECONDS). A menu left
- * open on a table outlives that, and every photo dies at once with no way back.
- * Re-pull the menu well before the signatures do. */
+/** A menu left open on a table would otherwise never see a republish — the app
+ * fetches once and the guest reads for hours. Photo URLs are immutable, so this
+ * is a plain conditional refetch: 304 while nothing changed. */
 const MENU_MAX_AGE_MS = 45 * 60 * 1000;
 
 export const App = () => {
@@ -76,7 +76,7 @@ export const App = () => {
         .catch(() => undefined);
 
       if (Date.now() - menuFetchedAt.current < MENU_MAX_AGE_MS) return;
-      fetchMenu(controller.signal, { bypassCache: true })
+      fetchMenu(controller.signal)
         .then((menu) => {
           menuFetchedAt.current = Date.now();
           setState({ kind: 'ready', menu });
