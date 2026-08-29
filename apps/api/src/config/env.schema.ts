@@ -187,6 +187,17 @@ export const envSchema = z
       .url()
       .default('http://localhost:9000')
       .refine((s) => s.trim().length > 0, 'S3_ENDPOINT must not be whitespace-only'),
+    /**
+     * Public origin (CDN or bucket) that serves published menu photos. Those
+     * objects are copied to a world-readable prefix on publish and addressed by a
+     * stable URL — a published menu is public by definition, and signing it only
+     * bought expiring links no cache could reuse.
+     */
+    MEDIA_PUBLIC_BASE_URL: z
+      .string()
+      .url()
+      .default('http://localhost:9000/resto-dev')
+      .refine((s) => s.trim().length > 0, 'MEDIA_PUBLIC_BASE_URL must not be whitespace-only'),
     S3_REGION: z.string().default('us-east-1'),
     S3_BUCKET: z.string().default('resto-dev'),
     S3_ACCESS_KEY: z

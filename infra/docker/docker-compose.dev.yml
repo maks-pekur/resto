@@ -67,6 +67,8 @@ services:
 
   # Nothing else creates the bucket, and an absent bucket surfaces as a bare 404
   # on the presigned PUT — the upload path looks broken rather than unconfigured.
+  # The `public/` prefix is world-readable: published menu photos are addressed by
+  # a stable URL, which is what MEDIA_PUBLIC_BASE_URL points at.
   minio-bucket:
     image: minio/mc:latest
     container_name: resto-minio-bucket
@@ -79,7 +81,8 @@ services:
       - >
         mc alias set local http://minio:9000
         "${MINIO_ROOT_USER:-minio}" "${MINIO_ROOT_PASSWORD:-minio_dev_password}" &&
-        mc mb --ignore-existing "local/${S3_BUCKET:-resto-dev}"
+        mc mb --ignore-existing "local/${S3_BUCKET:-resto-dev}" &&
+        mc anonymous set download "local/${S3_BUCKET:-resto-dev}/public"
     restart: "no"
 
   mailhog:

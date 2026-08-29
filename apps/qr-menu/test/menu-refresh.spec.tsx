@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { act, render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MenuDto } from '@resto/api-client/public';
 import { App } from '../src/App';
@@ -43,15 +43,20 @@ const fetchMenu = vi.fn();
 
 vi.mock('../src/api/client', () => ({
   MenuNotFoundError: class extends Error {},
-  fetchMenu: (signal?: AbortSignal, options?: { bypassCache?: boolean }) =>
-    fetchMenu(signal, options) as Promise<MenuDto>,
+  fetchMenu: (signal?: AbortSignal) => fetchMenu(signal) as Promise<MenuDto>,
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));
 
 const photoSrc = (): string | null =>
   document.querySelector('main img')?.getAttribute('src') ?? null;
 
+const MINUTE_MS = 60 * 1000;
+
 beforeEach(() => {
+  // Fake timers rather than a stubbed Date.now: waitFor measures its own timeout
+  // with Date.now, so jumping the real clock forward makes it declare itself
+  // expired before the refetch lands — green locally, red on a slower runner.
+  vi.useFakeTimers({ shouldAdvanceTime: true });
   window.localStorage.clear();
   fetchMenu.mockReset();
   fetchMenu
@@ -60,36 +65,37 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
 });
 
-describe('qr-menu photo signatures', () => {
-  it('re-pulls the menu once its signed photo urls are close to expiring', async () => {
-    const openedAt = Date.now();
+describe('qr-menu menu freshness', () => {
+  it('re-pulls a long-open menu so a republish eventually reaches the table', async () => {
     render(<App />);
     await waitFor(() => {
       expect(photoSrc()).toBe(SIGNED_FIRST);
     });
 
-    vi.spyOn(Date, 'now').mockReturnValue(openedAt + 46 * 60 * 1000);
-    document.dispatchEvent(new Event('visibilitychange'));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(46 * MINUTE_MS);
+    });
 
     await waitFor(() => {
       expect(photoSrc()).toBe(SIGNED_SECOND);
     });
-    expect(fetchMenu).toHaveBeenLastCalledWith(expect.anything(), { bypassCache: true });
+    // Once refreshed the clock resets, so the remaining ticks stay quiet.
+    expect(fetchMenu).toHaveBeenCalledTimes(2);
   });
 
   it('leaves a fresh menu alone', async () => {
-    const openedAt = Date.now();
     render(<App />);
     await waitFor(() => {
       expect(photoSrc()).toBe(SIGNED_FIRST);
     });
 
-    vi.spyOn(Date, 'now').mockReturnValue(openedAt + 60 * 1000);
-    document.dispatchEvent(new Event('visibilitychange'));
-    await new Promise((resolve) => setTimeout(resolve, 30));
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(5 * MINUTE_MS);
+    });
 
     expect(photoSrc()).toBe(SIGNED_FIRST);
     expect(fetchMenu).toHaveBeenCalledTimes(1);

@@ -26,6 +26,7 @@ const baseEnv = (overrides: Partial<Env> = {}): Env => ({
   NATS_URL: 'nats://localhost:4222',
   NATS_STREAM: 'RESTO_EVENTS',
   S3_ENDPOINT: 'http://localhost:9000',
+  MEDIA_PUBLIC_BASE_URL: 'http://localhost:9000/resto-dev',
   S3_REGION: 'us-east-1',
   S3_BUCKET: 'resto',
   S3_ACCESS_KEY: 'minio',
