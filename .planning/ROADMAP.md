@@ -746,7 +746,7 @@ Plans:
 
 **Wave 4** _(blocked on Wave 3)_
 
-- [ ] 10.3-07-PLAN.md — Admin HTTP surface, module wiring, and the permission / location-isolation e2e
+- [x] 10.3-07-PLAN.md — Admin HTTP surface, module wiring, and the permission / location-isolation e2e
 
 **Wave 5** _(blocked on Wave 4)_
 
