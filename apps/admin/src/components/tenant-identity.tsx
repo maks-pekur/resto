@@ -28,7 +28,6 @@ export function TenantIdentity() {
   const tenants = tenantsResult.data?.tenants ?? [];
   const activeTenant = tenantId ? tenants.find((t) => t.id === tenantId) : undefined;
   const label = activeTenant?.displayName ?? '—';
-  const subLabel = activeTenant?.slug ?? '—';
 
   return (
     <SidebarMenu>
@@ -40,10 +39,7 @@ export function TenantIdentity() {
           <div className="bg-sidebar-accent text-sidebar-accent-foreground flex aspect-square size-8 shrink-0 items-center justify-center rounded-lg">
             <span className="text-xs font-semibold">{initialsOf(label)}</span>
           </div>
-          <div className="grid flex-1 text-left text-sm leading-tight">
-            <span className="truncate font-medium">{label}</span>
-            <span className="text-muted-foreground truncate text-xs">{subLabel}</span>
-          </div>
+          <span className="flex-1 truncate text-left text-sm font-medium">{label}</span>
         </div>
       </SidebarMenuItem>
     </SidebarMenu>
