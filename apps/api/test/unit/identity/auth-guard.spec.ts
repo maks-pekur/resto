@@ -9,6 +9,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '../../../src/contexts/identity/interfaces/http/guards/auth.guard';
 import type { TenantLookupPort } from '../../../src/contexts/identity/application/ports/tenant-lookup.port';
+import { REQUIRES_TENANT_CONTEXT_KEY } from '../../../src/shared/auth';
 
 // Mock @resto/db so we can control getTenantContext() per-test.
 // The guard calls getTenantContext() from ALS — no req field is used.
@@ -171,10 +172,12 @@ describe('AuthGuard', () => {
   it('rejects with auth.tenant_context_missing when @RequiresTenantContext route has no ALS tenant (RES-172)', async () => {
     mockGetTenantContext.mockReturnValue(undefined);
     const reflector = new Reflector();
-    // First lookup → IS_PUBLIC_KEY (false), second → REQUIRES_TENANT_CONTEXT_KEY (true)
-    vi.spyOn(reflector, 'getAllAndOverride')
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(true);
+    // Answer by key, not by call order: the guard reads a third decorator
+    // (ALLOW_ARCHIVED_TENANT_KEY) between these two, so a positional stub fed `true`
+    // to that one and the guard never saw @RequiresTenantContext at all.
+    vi.spyOn(reflector, 'getAllAndOverride').mockImplementation((key: unknown) =>
+      key === REQUIRES_TENANT_CONTEXT_KEY ? true : undefined,
+    );
     const auth = buildAuthStub({
       user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
       session: { activeOrganizationId: null },
