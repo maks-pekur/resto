@@ -153,16 +153,21 @@ describe('catalog query key factories', () => {
 describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
   const makeItem = (id: string, name: string): ItemListItemApi => ({
     id,
+    slug: id,
     name: { ru: name },
     categoryId: 'cat-1',
     categoryName: { ru: 'Напитки' },
     parentCategoryName: null,
-    photoUrl: null,
+    // The api returns `photo: { s3Key, sortOrder, url } | null`. This fixture said
+    // `photoUrl` for months and nothing caught it, because admin's tsconfig did not
+    // typecheck `test/` — which is how the drift that broke the item editor survived.
+    photo: null,
     basePrice: '150.00',
     currency: 'RUB',
     status: 'published',
     hasSizes: false,
     stoppedAt: null,
+    sortOrder: 0,
   });
 
   const items = [makeItem('id-1', 'Капучино'), makeItem('id-2', 'Латте')];
@@ -171,7 +176,6 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     render(
       <Wrap>
         <ItemsTable
-          brandSlug="bslug"
           items={items}
           totalCount={2}
           pagination={{ page: 1, pageSize: 50 }}
@@ -185,11 +189,32 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     expect(screen.getByText('Латте')).toBeInTheDocument();
   });
 
+  // The reported symptom was "clicking a dish does not open its card". The row is the
+  // click target — the name cell has no handler of its own — so this asserts the row
+  // actually asks the router for the detail route with that item's id.
+  it('opens the item detail route when a row is clicked', async () => {
+    navigateMock.mockClear();
+    render(
+      <Wrap>
+        <ItemsTable
+          items={items}
+          totalCount={2}
+          pagination={{ page: 1, pageSize: 50 }}
+          onPageChange={() => undefined}
+        />
+      </Wrap>,
+    );
+    await userEvent.click(screen.getByText('Капучино'));
+    expect(navigateMock).toHaveBeenCalledWith({
+      to: '/menu/items/$id',
+      params: { id: 'id-1' },
+    });
+  });
+
   it('renders the empty state when items is empty', () => {
     render(
       <Wrap>
         <ItemsTable
-          brandSlug="bslug"
           items={[]}
           totalCount={0}
           pagination={{ page: 1, pageSize: 50 }}
@@ -204,7 +229,6 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     render(
       <Wrap>
         <ItemsTable
-          brandSlug="bslug"
           items={items}
           totalCount={100}
           pagination={{ page: 1, pageSize: 50 }}
@@ -223,7 +247,6 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     render(
       <Wrap>
         <ItemsTable
-          brandSlug="bslug"
           items={items}
           totalCount={100}
           pagination={{ page: 2, pageSize: 50 }}
@@ -251,7 +274,7 @@ describe('StickyPublishBar publish-toast id (Plan 07.6-05 Task 4)', () => {
     render(
       <QueryClientProvider client={client}>
         <TooltipProvider>
-          <StickyPublishBar brandSlug="test-brand" unpublishedCount={1} diffItems={sampleDiff} />
+          <StickyPublishBar unpublishedCount={1} diffItems={sampleDiff} />
         </TooltipProvider>
       </QueryClientProvider>,
     );
@@ -265,7 +288,7 @@ describe('StickyPublishBar publish-toast id (Plan 07.6-05 Task 4)', () => {
     const { container } = render(
       <QueryClientProvider client={client}>
         <TooltipProvider>
-          <StickyPublishBar brandSlug="test-brand" unpublishedCount={0} diffItems={[]} />
+          <StickyPublishBar unpublishedCount={0} diffItems={[]} />
         </TooltipProvider>
       </QueryClientProvider>,
     );

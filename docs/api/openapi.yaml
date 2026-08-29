@@ -3393,9 +3393,12 @@ components:
                     type: integer
                     minimum: 0
                     exclusiveMinimum: false
+                  url:
+                    type: string
                 required:
                   - s3Key
                   - sortOrder
+                  - url
                 nullable: true
               basePrice:
                 type: string
@@ -3504,9 +3507,12 @@ components:
                 exclusiveMinimum: true
               isPrimary:
                 type: boolean
+              url:
+                type: string
             required:
               - s3Key
               - sortOrder
+              - url
         allergens:
           type: array
           items:
@@ -3750,6 +3756,22 @@ components:
                   type: string
                   minLength: 1
                 nullable: true
+              photo:
+                type: object
+                properties:
+                  s3Key:
+                    type: string
+                  sortOrder:
+                    type: integer
+                    minimum: 0
+                    exclusiveMinimum: false
+                  url:
+                    type: string
+                required:
+                  - s3Key
+                  - sortOrder
+                  - url
+                nullable: true
               stoppedAt:
                 type: string
                 format: date-time
@@ -3761,6 +3783,7 @@ components:
               - itemId
               - itemName
               - categoryName
+              - photo
               - stoppedAt
               - reason
       required:

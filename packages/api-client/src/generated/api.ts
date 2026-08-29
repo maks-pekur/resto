@@ -1777,6 +1777,7 @@ export interface components {
                 photo: {
                     s3Key: string;
                     sortOrder: number;
+                    url: string;
                 } | null;
                 basePrice: string;
                 currency: string;
@@ -1812,6 +1813,7 @@ export interface components {
                 width?: number;
                 height?: number;
                 isPrimary?: boolean;
+                url: string;
             }[];
             allergens: string[] | null;
             ingredients: string[] | null;
@@ -1887,6 +1889,11 @@ export interface components {
                 } | null;
                 categoryName: {
                     [key: string]: string;
+                } | null;
+                photo: {
+                    s3Key: string;
+                    sortOrder: number;
+                    url: string;
                 } | null;
                 /** Format: date-time */
                 stoppedAt: string;

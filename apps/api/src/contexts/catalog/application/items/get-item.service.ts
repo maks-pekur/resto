@@ -23,6 +23,7 @@ export class GetItemService {
       photos: row.photos.map((p) => ({
         s3Key: p.s3Key,
         sortOrder: p.sortOrder,
+        url: p.url,
         ...(p.alt !== undefined ? { alt: p.alt } : {}),
         ...(p.width !== undefined ? { width: p.width } : {}),
         ...(p.height !== undefined ? { height: p.height } : {}),

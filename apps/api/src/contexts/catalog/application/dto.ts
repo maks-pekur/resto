@@ -18,6 +18,14 @@ export const MenuItemPhotoSchema = z.object({
 });
 export type MenuItemPhoto = z.infer<typeof MenuItemPhotoSchema>;
 
+/** A photo as an operator surface reads it. The stored value is an S3 key in a private
+ * prefix, so a browser cannot render it directly — reads carry a short-lived presigned
+ * `url` alongside the key. The key stays in the payload because the editor sends it
+ * back on save; the url is never accepted as input. */
+export const MenuItemPhotoResponseSchema = MenuItemPhotoSchema.extend({
+  url: z.string(),
+});
+
 export const UpsertCategoryInputSchema = z.object({
   id: z.string().uuid().optional(),
   slug: Slug.optional(),
@@ -167,6 +175,7 @@ export const ItemListItemSchema = z.object({
     .object({
       s3Key: z.string(),
       sortOrder: z.number().int().nonnegative(),
+      url: z.string(),
     })
     .nullable(),
   basePrice: MoneyAmountValue,
@@ -202,7 +211,7 @@ export const ItemDetailResponseSchema = z.object({
   description: LocalizedText.nullable(),
   basePrice: MoneyAmountValue,
   currency: CurrencyValue,
-  photos: z.array(MenuItemPhotoSchema),
+  photos: z.array(MenuItemPhotoResponseSchema),
   allergens: z.array(z.string()).nullable(),
   ingredients: z.array(z.string()).nullable(),
   metaTitle: z.string().nullable(),
@@ -265,6 +274,15 @@ export const StopListEntrySchema = z.object({
   itemId: z.string().uuid(),
   itemName: LocalizedText.nullable(),
   categoryName: LocalizedText.nullable(),
+  // Same shape the item list uses: the stored value is a private S3 key, so a read
+  // carries a short-lived presigned url beside it.
+  photo: z
+    .object({
+      s3Key: z.string(),
+      sortOrder: z.number().int().nonnegative(),
+      url: z.string(),
+    })
+    .nullable(),
   stoppedAt: z.string().datetime(),
   reason: z.string().nullable(),
 });

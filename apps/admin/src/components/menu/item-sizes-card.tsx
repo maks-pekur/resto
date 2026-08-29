@@ -12,6 +12,7 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemSize } from '@/lib/queries/catalog';
 import type { ItemSizeApi } from '@/lib/queries/catalog';
+import { fromLocalizedText, toLocalizedText } from '@/lib/menu/localized';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 
 export interface ItemSizesCardProps {
@@ -28,16 +29,22 @@ interface RowDraft {
   isDefault: boolean;
 }
 
+// The api returns a size's `name` as localized text and its `price` as a decimal
+// string; the row draft holds what the inputs bind to — a plain string and a number.
+// Reading them straight across is what made `.trim()` and `.toFixed()` blow up on any
+// item that actually has sizes.
 const rowFromApi = (s: ItemSizeApi): RowDraft => ({
   localKey: s.id,
   sizeId: s.id,
-  name: s.name,
-  price: s.price,
+  name: fromLocalizedText(s.name),
+  price: Number.parseFloat(s.price),
   isDefault: s.isDefault,
 });
 
 const rowsEqual = (a: RowDraft, b: ItemSizeApi): boolean =>
-  a.name === b.name && a.price.toFixed(2) === b.price.toFixed(2) && a.isDefault === b.isDefault;
+  a.name === fromLocalizedText(b.name) &&
+  a.price.toFixed(2) === Number.parseFloat(b.price).toFixed(2) &&
+  a.isDefault === b.isDefault;
 
 export function ItemSizesCard({
   itemId,
@@ -128,12 +135,12 @@ export function ItemSizesCard({
       try {
         await upsertMutation.mutateAsync({
           id: size.id,
-          name: size.name,
-          price: size.price,
+          name: fromLocalizedText(size.name),
+          price: Number.parseFloat(size.price),
           isDefault: size.isDefault,
         });
       } catch {
-        failures.push(size.name);
+        failures.push(fromLocalizedText(size.name));
       }
     }
 
@@ -143,11 +150,13 @@ export function ItemSizesCard({
       return;
     }
     showSuccess(t('savedToast'), { duration: 1500 });
+    // Hand back the api's own shape, not the row draft's — the parent stores this as
+    // `ItemSizeApi` and re-reads it through rowFromApi on the next render.
     onSizesChange(
       rows.map((r) => ({
         id: r.sizeId ?? r.localKey,
-        name: r.name,
-        price: r.price,
+        name: toLocalizedText(r.name),
+        price: r.price.toFixed(2),
         isDefault: r.isDefault,
         sortOrder: 0,
       })),

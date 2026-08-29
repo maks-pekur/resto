@@ -193,7 +193,7 @@ export interface ItemListRow {
   readonly categoryId: string;
   readonly categoryName: Record<string, string> | null;
   readonly parentCategoryName: Record<string, string> | null;
-  readonly photo: { s3Key: string; sortOrder: number } | null;
+  readonly photo: { s3Key: string; sortOrder: number; url: string } | null;
   readonly basePrice: string;
   readonly currency: string;
   readonly status: 'draft' | 'published' | 'archived';
@@ -213,6 +213,7 @@ export interface ItemDetailRow {
   readonly photos: readonly {
     s3Key: string;
     sortOrder: number;
+    url: string;
     alt?: string;
     width?: number;
     height?: number;
@@ -273,6 +274,7 @@ export interface StopListEntryRow {
   readonly itemId: string;
   readonly itemName: Record<string, string> | null;
   readonly categoryName: Record<string, string> | null;
+  readonly photo: { s3Key: string; sortOrder: number; url: string } | null;
   readonly stoppedAt: string;
   readonly reason: string | null;
 }

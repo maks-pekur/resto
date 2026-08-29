@@ -2,14 +2,19 @@
   "extends": "@resto/config-typescript/vite.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": ".",
+    "rootDir": "../..",
     "types": ["vite/client", "node"],
-    "paths": { "@/*": ["./src/*"] },
+    "paths": {
+      "@/*": ["./src/*"],
+      "@resto/api-client": ["../../packages/api-client/src/index.ts"]
+    },
     "exactOptionalPropertyTypes": false
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "test/**/*.ts",
+    "test/**/*.tsx",
     "vite.config.ts",
     "vitest.config.ts",
     "eslint.config.mjs"

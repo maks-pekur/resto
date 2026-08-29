@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { fromLocalizedText } from '@/lib/menu/localized';
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -16,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { StatusBadge } from '@/components/menu/status-badge';
 
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
@@ -62,7 +62,6 @@ function ModifierGroupsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>{t('tableName')}</TableHead>
-                <TableHead className="w-[120px]">{t('tableStatus')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -79,10 +78,7 @@ function ModifierGroupsPage() {
                     if (e.key === 'Enter') goToGroup(g.id);
                   }}
                 >
-                  <TableCell className="font-medium">{g.name}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={g.status} />
-                  </TableCell>
+                  <TableCell className="font-medium">{fromLocalizedText(g.name)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

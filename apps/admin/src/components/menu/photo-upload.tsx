@@ -137,7 +137,7 @@ export function PhotoUpload({
           <img
             src={visiblePhoto}
             alt={t('photoAlt')}
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-contain"
           />
         ) : (
           <>

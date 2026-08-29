@@ -25,11 +25,11 @@ export interface StopListTableProps {
 
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
 
-const buildCategoryPath = (item: StopListItemApi): string => {
-  const child = fromLocalizedText(item.categoryName);
-  const parent = item.parentCategoryName ? fromLocalizedText(item.parentCategoryName) : '';
-  return parent.length > 0 ? `${parent} → ${child}` : child;
-};
+// The stop-list contract carries only the item's own category, not its parent — unlike
+// the item list, which carries both. Rendering a parent segment here read a field the
+// response never had.
+const buildCategoryPath = (item: StopListItemApi): string =>
+  item.categoryName ? fromLocalizedText(item.categoryName) : '';
 
 export function StopListTable({ items, locationId }: StopListTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
@@ -74,7 +74,7 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
       </TableHeader>
       <TableBody>
         {visibleItems.map((item) => {
-          const name = fromLocalizedText(item.name);
+          const name = item.itemName ? fromLocalizedText(item.itemName) : '';
           const categoryPath = buildCategoryPath(item);
           const stoppedAtMs = new Date(item.stoppedAt).getTime();
           const msSince = now - stoppedAtMs;
@@ -83,8 +83,8 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
           return (
             <TableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
               <TableCell>
-                {item.photoUrl ? (
-                  <img src={item.photoUrl} alt="" className="size-10 rounded object-cover" />
+                {item.photo ? (
+                  <img src={item.photo.url} alt="" className="size-10 rounded object-cover" />
                 ) : (
                   <div
                     className="flex size-10 items-center justify-center rounded bg-muted"

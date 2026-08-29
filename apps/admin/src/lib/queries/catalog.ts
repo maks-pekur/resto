@@ -1,6 +1,12 @@
+import type { components } from '@resto/api-client';
+
+// Catalog response shapes are DERIVED from the committed OpenAPI contract, never
+// re-declared by hand. A hand-written copy silently drifted in five fields and
+// crashed the item editor on the api's real `allergens: null`; deriving makes any
+// future drift a compile error instead.
+type Schemas = components['schemas'];
 import { apiFetch } from '@/lib/api-client';
 import { toLocalizedText } from '@/lib/menu/localized';
-import type { Status } from '@/lib/menu/types';
 import type { ItemListStatusFilter } from '@/lib/menu/zod-schemas';
 import type {
   CategoryForm,
@@ -13,31 +19,13 @@ import type {
 const STALE_STABLE = 30_000;
 const STALE_DRAFT_DIFF = 10_000;
 
-export interface CategoryListItemApi {
-  readonly id: string;
-  readonly parentId: string | null;
-  readonly name: Record<string, string>;
-  readonly sortOrder: number;
-  readonly status: Status;
-}
+export type CategoryListItemApi = Schemas['CategoryListResponseDto']['items'][number];
 
 export interface CategoryListResponse {
   readonly items: readonly CategoryListItemApi[];
 }
 
-export interface ItemListItemApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly categoryId: string;
-  readonly categoryName: Record<string, string>;
-  readonly parentCategoryName: Record<string, string> | null;
-  readonly photoUrl: string | null;
-  readonly basePrice: string;
-  readonly currency: string;
-  readonly status: Status;
-  readonly hasSizes: boolean;
-  readonly stoppedAt: string | null;
-}
+export type ItemListItemApi = Schemas['ItemListResponseDto']['items'][number];
 
 export interface ItemListResponse {
   readonly items: readonly ItemListItemApi[];
@@ -46,57 +34,12 @@ export interface ItemListResponse {
   readonly offset: number;
 }
 
-export interface ItemSizeApi {
-  readonly id: string;
-  readonly name: string;
-  readonly price: number;
-  readonly isDefault: boolean;
-  readonly sortOrder: number;
-}
+export type ItemSizeApi = Schemas['ItemDetailResponseDto']['sizes'][number];
 
-export interface ModifierOptionApi {
-  readonly id: string;
-  readonly name: string;
-  readonly priceDelta: number;
-  readonly defaultAmount: number;
-  readonly freeAmount: number;
-  readonly sortOrder: number;
-}
+export type ModifierOptionApi = Schemas['ModifierGroupDetailResponseDto']['options'][number];
+export type ModifierGroupApi = Schemas['ModifierGroupListResponseDto']['items'][number];
 
-export interface ModifierGroupApi {
-  readonly id: string;
-  readonly name: string;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
-  readonly status: Status;
-}
-
-export interface ItemDetailApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly description: Record<string, string> | null;
-  readonly categoryId: string;
-  readonly basePrice: string;
-  readonly currency: string;
-  readonly status: Status;
-  // The api declares both nullable (`catalog/application/dto.ts` ItemDetailResponseSchema)
-  // and really does return null for an item that never had them. Typing them as plain
-  // arrays is what let `[...item.allergens]` past typecheck and crash the editor.
-  readonly allergens: readonly string[] | null;
-  readonly ingredients: readonly string[] | null;
-  readonly metaTitle: Record<string, string> | null;
-  readonly metaDescription: Record<string, string> | null;
-  readonly proteins: number | null;
-  readonly fats: number | null;
-  readonly carbs: number | null;
-  readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
-  readonly photoUrl: string | null;
-  readonly photoS3Key: string | null;
-  readonly sizes: readonly ItemSizeApi[];
-  readonly modifierGroupIds: readonly string[];
-  readonly slug: string;
-}
+export type ItemDetailApi = Schemas['ItemDetailResponseDto'];
 
 export interface ModifierGroupDetailApi extends ModifierGroupApi {
   readonly options: readonly ModifierOptionApi[];
@@ -106,14 +49,7 @@ export interface ModifierGroupListResponse {
   readonly items: readonly ModifierGroupApi[];
 }
 
-export interface StopListItemApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly categoryName: Record<string, string>;
-  readonly parentCategoryName: Record<string, string> | null;
-  readonly photoUrl: string | null;
-  readonly stoppedAt: string;
-}
+export type StopListItemApi = Schemas['StopListResponseDto']['items'][number];
 
 export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
@@ -255,17 +191,24 @@ export const archiveCategory = (id: string) =>
 export const upsertItem = (
   id: string | null,
   data: ItemEditorForm & { readonly photoS3Key?: string | null },
-) =>
-  apiFetch<{ readonly id: string }>('/v1/catalog/items', {
+) => {
+  // The api's UpsertItemInputSchema declares `photos` with `.default([])` and the
+  // repository writes it unconditionally on both the insert and the update path. A body
+  // without `photos` therefore does not "leave photos alone" — it erases them. The
+  // editor tracks a single photo, so send it in the contract's own shape.
+  const { photoS3Key, ...rest } = data;
+  return apiFetch<{ readonly id: string }>('/v1/catalog/items', {
     method: 'POST',
     body: {
-      ...data,
+      ...rest,
       name: toLocalizedText(data.name),
       description: data.description === null ? null : toLocalizedText(data.description),
       basePrice: toMoney(data.basePrice),
+      photos: photoS3Key ? [{ s3Key: photoS3Key, sortOrder: 0 }] : [],
       id: id ?? undefined,
     },
   });
+};
 
 export const archiveItem = (id: string) =>
   apiFetch(`/v1/catalog/items/${id}/archive`, {

@@ -44,10 +44,26 @@ const ITEM_WITH_NULL_FIELDS = {
   carbs: null,
   kcal: null,
   nutritionEstimated: false,
-  photoUrl: null,
-  photoS3Key: null,
+  photos: [],
+  source: 'manual',
+  needsReview: false,
+  sourceExternalId: null,
+  sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+} as unknown as ItemDetailApi;
+
+// An item that really has a photo. The api returns an S3 key, never a URL — the editor
+// used to read a `photoS3Key` field that does not exist, so it started every edit with
+// "no photo" and then saved that emptiness back over the real one.
+const ITEM_WITH_PHOTO = {
+  ...ITEM_WITH_NULL_FIELDS,
+  photos: [
+    {
+      s3Key: 'tenant/f1db72ce-4869-4bcb-a34e-afa4dc54264d/menu-items/2a7510ba.webp',
+      sortOrder: 0,
+    },
+  ],
 } as unknown as ItemDetailApi;
 
 const renderShell = (item: ItemDetailApi): void => {
@@ -72,6 +88,34 @@ describe('ItemEditorShell with the api’s real null fields', () => {
       renderShell(ITEM_WITH_NULL_FIELDS);
     }).not.toThrow();
     expect(screen.getByText('Cola 0.5 l')).toBeInTheDocument();
+  });
+
+  // Real shape from `GET /v1/catalog/items/:id` for a pizza: a size's `name` is a
+  // localized object and its `price` is a decimal string, not a plain string and a
+  // number. The editor treated them as the latter, so `.trim()` and `.toFixed()` blew
+  // up on any item that actually has sizes — Cola has none, which is why the crash hid.
+  it('renders an item that has sizes', () => {
+    expect(() => {
+      renderShell({
+        ...ITEM_WITH_NULL_FIELDS,
+        sizes: [
+          {
+            id: 's-1',
+            name: { en: '30 cm', ru: '30 см' },
+            price: '249.00',
+            isDefault: true,
+            sortOrder: 0,
+          },
+          {
+            id: 's-2',
+            name: { en: '40 cm', ru: '40 см' },
+            price: '349.00',
+            isDefault: false,
+            sortOrder: 1,
+          },
+        ],
+      } as unknown as ItemDetailApi);
+    }).not.toThrow();
   });
 
   it('still renders when the arrays are present', () => {

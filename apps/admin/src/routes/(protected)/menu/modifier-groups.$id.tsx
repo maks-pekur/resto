@@ -1,4 +1,5 @@
 import { createRoute } from '@tanstack/react-router';
+import { fromLocalizedText } from '@/lib/menu/localized';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/empty-state';
@@ -28,7 +29,7 @@ function ModifierGroupDetailPage() {
 
   const group = isNew ? null : (data?.data ?? null);
   const notFound = !isNew && data !== undefined && (!data.ok || group === null);
-  const title = isNew ? t('newGroupTitle') : (group?.name ?? '');
+  const title = isNew ? t('newGroupTitle') : group ? fromLocalizedText(group.name) : '';
 
   if (notFound) {
     return (

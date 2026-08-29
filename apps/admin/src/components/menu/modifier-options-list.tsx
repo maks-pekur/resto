@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { fromLocalizedText, toLocalizedText } from '@/lib/menu/localized';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -25,18 +26,20 @@ interface RowDraft {
   freeAmount: number;
 }
 
+// Same read-side conversion the sizes card needs: the api sends localized text and a
+// decimal string, the row draft holds what the inputs bind to.
 const rowFromApi = (o: ModifierOptionApi): RowDraft => ({
   localKey: o.id,
   optionId: o.id,
-  name: o.name,
-  priceDelta: o.priceDelta,
+  name: fromLocalizedText(o.name),
+  priceDelta: Number.parseFloat(o.priceDelta),
   defaultAmount: o.defaultAmount,
   freeAmount: o.freeAmount,
 });
 
 const rowsEqual = (a: RowDraft, b: ModifierOptionApi): boolean =>
-  a.name === b.name &&
-  a.priceDelta.toFixed(2) === b.priceDelta.toFixed(2) &&
+  a.name === fromLocalizedText(b.name) &&
+  a.priceDelta.toFixed(2) === Number.parseFloat(b.priceDelta).toFixed(2) &&
   a.defaultAmount === b.defaultAmount &&
   a.freeAmount === b.freeAmount;
 
@@ -131,8 +134,8 @@ export function ModifierOptionsList({
     onOptionsChange(
       rows.map((r, idx) => ({
         id: r.optionId ?? r.localKey,
-        name: r.name,
-        priceDelta: r.priceDelta,
+        name: toLocalizedText(r.name),
+        priceDelta: r.priceDelta.toFixed(2),
         defaultAmount: r.defaultAmount,
         freeAmount: r.freeAmount,
         sortOrder: idx,

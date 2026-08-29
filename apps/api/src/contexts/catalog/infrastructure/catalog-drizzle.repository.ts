@@ -59,6 +59,13 @@ const AGGREGATE_STOP_LIST_PAGE_SIZE = 50;
 
 @Injectable()
 export class CatalogDrizzleRepository implements CatalogRepository {
+  /** Operator-surface photos live in the private upload prefix, so a browser cannot
+   * fetch them by key — reads carry a presigned url. Same 300s ceiling the upload URL
+   * uses (OWASP V12); a page view never outlives it, and presigning is local SigV4
+   * arithmetic, not an S3 round trip. `presignGet` degrades to '' rather than throwing,
+   * so an S3 outage blanks a thumbnail instead of failing the list. */
+  static readonly PHOTO_URL_TTL_SECONDS = 300;
+
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(IMAGE_URL_PORT) private readonly imageUrl: ImageUrlPort,
@@ -963,29 +970,38 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       void tx;
 
       return {
-        rows: sliced.map<ItemListRow>((r) => {
-          const cat = categoryById.get(r.categoryId);
-          const parentName = cat?.parentId ? (parentNameById.get(cat.parentId) ?? null) : null;
-          const stoppedAt = stopByItem.get(r.id) ?? null;
-          const primaryPhoto = r.photos.find((p) => p.isPrimary) ?? r.photos[0] ?? null;
-          return {
-            id: r.id,
-            slug: r.slug,
-            name: r.name,
-            categoryId: r.categoryId,
-            categoryName: cat?.name ?? null,
-            parentCategoryName: parentName,
-            photo: primaryPhoto
-              ? { s3Key: primaryPhoto.s3Key, sortOrder: primaryPhoto.sortOrder }
-              : null,
-            basePrice: r.basePrice,
-            currency: r.currency,
-            status: r.status as 'draft' | 'published' | 'archived',
-            hasSizes: sizeByItem.has(r.id),
-            stoppedAt: stoppedAt ? stoppedAt.toISOString() : null,
-            sortOrder: r.sortOrder,
-          };
-        }),
+        rows: await Promise.all(
+          sliced.map<Promise<ItemListRow>>(async (r) => {
+            const cat = categoryById.get(r.categoryId);
+            const parentName = cat?.parentId ? (parentNameById.get(cat.parentId) ?? null) : null;
+            const stoppedAt = stopByItem.get(r.id) ?? null;
+            const primaryPhoto = r.photos.find((p) => p.isPrimary) ?? r.photos[0] ?? null;
+            return {
+              id: r.id,
+              slug: r.slug,
+              name: r.name,
+              categoryId: r.categoryId,
+              categoryName: cat?.name ?? null,
+              parentCategoryName: parentName,
+              photo: primaryPhoto
+                ? {
+                    s3Key: primaryPhoto.s3Key,
+                    sortOrder: primaryPhoto.sortOrder,
+                    url: await this.imageUrl.presignGet(
+                      primaryPhoto.s3Key,
+                      CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                    ),
+                  }
+                : null,
+              basePrice: r.basePrice,
+              currency: r.currency,
+              status: r.status as 'draft' | 'published' | 'archived',
+              hasSizes: sizeByItem.has(r.id),
+              stoppedAt: stoppedAt ? stoppedAt.toISOString() : null,
+              sortOrder: r.sortOrder,
+            };
+          }),
+        ),
         total,
       };
     });
@@ -1013,7 +1029,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: r.description ?? null,
         basePrice: r.basePrice,
         currency: r.currency,
-        photos: r.photos,
+        photos: await Promise.all(
+          r.photos.map(async (ph) => ({
+            ...ph,
+            url: await this.imageUrl.presignGet(
+              ph.s3Key,
+              CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+            ),
+          })),
+        ),
         allergens: r.allergens ?? null,
         ingredients: r.ingredients ?? null,
         metaTitle: r.metaTitle ?? null,
@@ -1124,17 +1148,32 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             )
           : [];
       const catById = new Map(categories.map((c) => [c.id, c.name]));
-      return stopRows.map<StopListEntryRow>((s) => {
-        const item = itemById.get(s.itemId);
-        return {
-          id: s.id,
-          itemId: s.itemId,
-          itemName: item?.name ?? null,
-          categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
-          stoppedAt: s.stoppedAt.toISOString(),
-          reason: s.reason ?? null,
-        };
-      });
+      return Promise.all(
+        stopRows.map<Promise<StopListEntryRow>>(async (s) => {
+          const item = itemById.get(s.itemId);
+          const primaryPhoto = item
+            ? (item.photos.find((ph) => ph.isPrimary) ?? item.photos[0] ?? null)
+            : null;
+          return {
+            id: s.id,
+            itemId: s.itemId,
+            itemName: item?.name ?? null,
+            categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
+            photo: primaryPhoto
+              ? {
+                  s3Key: primaryPhoto.s3Key,
+                  sortOrder: primaryPhoto.sortOrder,
+                  url: await this.imageUrl.presignGet(
+                    primaryPhoto.s3Key,
+                    CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                  ),
+                }
+              : null,
+            stoppedAt: s.stoppedAt.toISOString(),
+            reason: s.reason ?? null,
+          };
+        }),
+      );
     });
   }
 

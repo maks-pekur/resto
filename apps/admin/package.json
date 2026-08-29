@@ -39,6 +39,7 @@
   },
   "devDependencies": {
     "@resto/config-eslint": "workspace:*",
+    "@resto/api-client": "workspace:*",
     "@resto/config-tailwind": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "@testing-library/dom": "^10.4.0",

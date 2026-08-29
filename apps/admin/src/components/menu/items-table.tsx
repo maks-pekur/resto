@@ -184,8 +184,8 @@ export function ItemsTable({
                 }}
               >
                 <TableCell>
-                  {item.photoUrl ? (
-                    <img src={item.photoUrl} alt="" className="size-10 rounded object-cover" />
+                  {item.photo ? (
+                    <img src={item.photo.url} alt="" className="size-10 rounded object-cover" />
                   ) : (
                     <div
                       className="flex size-10 items-center justify-center rounded bg-muted"
