@@ -15,7 +15,7 @@
 
 - PascalCase throughout
 - NestJS providers: `ProvisionTenantService`, `TenantDrizzleRepository`, `TenantsController`
-- Aggregates: `Tenant`, `Brand`, `Order` (no suffix)
+- Aggregates: `Tenant`, `Location`, `Order`, `TableZone`, `RestaurantTable` (no suffix). There is no `Brand` aggregate — phase 10.2 removed the brand level entirely.
 - Errors: `TenantNotFoundError`, `RefundReasonRequiredError` (always `Error` suffix)
 - Ports/interfaces: `TenantRepository`, `PaymentProviderPort` (no `I` prefix)
 - DTOs: `ProvisionTenantInputDto` (schema → `ProvisionTenantInputSchema`, type → `ProvisionTenantInput`, class → `ProvisionTenantInputDto`)
