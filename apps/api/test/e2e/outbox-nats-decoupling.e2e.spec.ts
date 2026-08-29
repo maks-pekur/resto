@@ -10,7 +10,10 @@ import { OrderSequenceDrizzleRepository } from '../../src/contexts/ordering/infr
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
-import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
+import type {
+  MenuPricingPort,
+  OrderTableLookupPort,
+} from '../../src/contexts/ordering/domain/ports';
 import {
   isDockerAvailable,
   startDbStack,
@@ -60,6 +63,10 @@ const pricing: MenuPricingPort = {
     }),
 };
 
+const tableLookup: OrderTableLookupPort = {
+  findActiveTable: () => Promise.resolve(null),
+};
+
 const makeOrderInput = (): CreateOrderInput => ({
   items: [{ itemId, sizeId: null, name: 'Test Item', modifiers: [], quantity: 1 }],
   fulfillmentMode: 'pickup',
@@ -84,7 +91,14 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
     repo = new OrderDrizzleRepository(stack.db);
     const defaultLocation = new DefaultLocationResolverService(stack.db);
     const orderSequence = new OrderSequenceDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo, pricing, orderSequence, defaultLocation, stack.db);
+    service = new CreateOrderService(
+      repo,
+      pricing,
+      orderSequence,
+      tableLookup,
+      defaultLocation,
+      stack.db,
+    );
 
     await stack.db.withoutTenant('seed tenant for outbox-nats-decoupling e2e', async (tx) => {
       await tx.insert(schema.tenants).values({

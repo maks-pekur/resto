@@ -15,6 +15,7 @@ import {
   OrderModifierNotAvailableError,
   OrderModifierSelectionInvalidError,
   OrderNotFoundError,
+  OrderTableNotResolvedError,
 } from '../../domain/errors';
 
 export const mapOrderError = (err: unknown): unknown => {
@@ -63,6 +64,12 @@ export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof InvalidCancelReasonError) {
     return new BadRequestException({
       code: 'ordering.invalid_cancel_reason',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderTableNotResolvedError) {
+    return new BadRequestException({
+      code: 'ordering.table_not_resolved',
       message: err.message,
     });
   }

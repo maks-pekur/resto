@@ -77,6 +77,14 @@ export class InvalidPrepMinutesError extends Error {
   }
 }
 
+export class OrderTableNotResolvedError extends Error {
+  readonly kind = 'OrderTableNotResolvedError' as const;
+  constructor(public readonly tableId: string) {
+    super(`Table "${tableId}" could not be resolved to an active table.`);
+    this.name = 'OrderTableNotResolvedError';
+  }
+}
+
 export class RefundExceedsCapturedError extends Error {
   readonly kind = 'RefundExceedsCapturedError' as const;
   constructor(
@@ -103,4 +111,5 @@ export type OrderDomainError =
   | OrderModifierSelectionInvalidError
   | InvalidCancelReasonError
   | InvalidPrepMinutesError
+  | OrderTableNotResolvedError
   | RefundExceedsCapturedError;

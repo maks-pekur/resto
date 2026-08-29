@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TenantId } from '@resto/domain';
-import { DefaultLocationResolverService } from '../../catalog/application/default-location-resolver.service';
 import {
   CATALOG_REPOSITORY,
   MENU_VERSION_PORT,
@@ -20,15 +19,10 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
   constructor(
     @Inject(CATALOG_REPOSITORY) private readonly catalog: CatalogRepository,
     @Inject(MENU_VERSION_PORT) private readonly versions: MenuVersionPort,
-    @Inject(DefaultLocationResolverService)
-    private readonly defaultLocation: DefaultLocationResolverService,
   ) {}
 
-  async loadSnapshot(tenantId: TenantId): Promise<OrderingMenuSnapshot> {
-    const [version, locationId] = await Promise.all([
-      this.versions.current(tenantId),
-      this.defaultLocation.resolveForTenant(tenantId),
-    ]);
+  async loadSnapshot(tenantId: TenantId, locationId: string): Promise<OrderingMenuSnapshot> {
+    const version = await this.versions.current(tenantId);
     const [menu, stoppedItemIds] = await Promise.all([
       this.catalog.loadPublishedMenu(tenantId, version),
       this.catalog.listStoppedItemIds(locationId),

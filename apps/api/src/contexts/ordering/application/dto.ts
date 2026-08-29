@@ -25,7 +25,7 @@ export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
     fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
-    table: z.string().max(20).optional(),
+    tableId: z.string().uuid().optional(),
     customerName: z.string().max(200).optional(),
     customerPhone: z.string().max(30).optional(),
     customerEmail: z.string().email().max(254).optional(),
@@ -43,10 +43,10 @@ export const CreateOrderInputSchema = z
   })
   .refine(
     (data) => {
-      if (data.fulfillmentMode === 'dine_in') return data.table !== undefined && data.table !== '';
+      if (data.fulfillmentMode === 'dine_in') return data.tableId !== undefined;
       return true;
     },
-    { message: 'table is required for dine_in orders', path: ['table'] },
+    { message: 'tableId is required for dine_in orders', path: ['tableId'] },
   )
   .refine(
     (data) => {
