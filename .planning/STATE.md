@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: planning
-stopped_at: Phase 10.2 UI-SPEC approved
-last_updated: '2026-08-22T22:34:23.249Z'
+stopped_at: 'Session resumed on main (clean, HEAD 81bb3160); running the full api e2e audit — all 65 specs (62 e2e + 3 integration), one vitest process each, to catalogue red vs green before putting api:e2e into CI.'
+last_updated: '2026-08-29T08:05:10.953Z'
 last_activity: 2026-08-22
 progress:
-  total_phases: 28
-  completed_phases: 14
-  total_plans: 141
+  total_phases: 29
+  completed_phases: 15
+  total_plans: 143
   completed_plans: 134
-  percent: 50
+  percent: 52
 ---
 
 # Project State
@@ -174,6 +174,7 @@ _Updated after each plan completion_
 - Phase 10.2 inserted after Phase 10.1: Brand-pinned sessions — one brand fixed per session, chosen at sign-in; switching brands requires signing in again; brand switcher removed, location switcher stays (founder, 2026-08-19). Completes the direction 08.5 D-14 (non-owner brand switching closed) and Phase 10 (feed strictly single-location) already took. Open question carried to discuss: whether the URL segment or the session pin is the brand authority — that choice drives most of the cost. Blocks repair of `adm-00` scenarios 3/6/7a/7b, which test the switcher this phase deletes.
 - Phase 10.2 scope grew (founder, 2026-08-19): signup + multi-step onboarding folded in, because the sign-in brand picker it already owned is the same screen the new-account flow needs. Confirmed model: `owner` is a TENANT role, not a brand role; a user creates their company, owns it, creates brands inside; staff never self-register. Live finding that motivated it — the admin signup form calls Better Auth directly and produces a user with ZERO memberships (stranded, cannot create a brand); its currency field is collected and never sent; its "Restaurant name" label actually feeds the person's name.
 - Phase 10 edited: goal, requirements (ORDINT-02/09 out), and all success criteria rewritten to match 10-CONTEXT.md; criterion 6 added (single migration + read-back-from-DB test fidelity); pre-requisite quick task noted
+- Phase 10.3 inserted after Phase 10: Table zones, tables and QR codes
 
 ### Decisions
 

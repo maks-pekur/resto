@@ -37,6 +37,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 10: Admin Order Intake** - Incoming-orders feed and operational controls in admin (no Staff app in MVP-1); delivery-zone validation deferred until Phase 9 ships in MVP-2 _(kept in MVP-1: the operator must see paid orders)_; **real-time SSE + graceful SSE shutdown split out to Phase 18 (MVP-2) on 2026-08-11 — the feed ships on 5s polling**
 - [x] **Phase 10.2: Organization-per-restaurant and account onboarding** - Registration creates the owner and their company; multi-step onboarding sets up the restaurant and first brand; one brand is fixed for the whole session, chosen at sign-in; switching brands means signing in again; the brand switcher goes away and the location switcher becomes the only in-app context control _(inserted 2026-08-19 — founder; completes the direction 08.5 D-14 and Phase 10 already took)_ (completed 2026-08-22)
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
+- [ ] **Phase 10.3: Table zones, tables and QR codes** - Table zones and tables per location, a printable QR per table carrying a stable table id, and the guest menu resolving the table from the scanned link so a dine-in order reaches the right table _(inserted 2026-08-29 — founder; "zone" is qualified as **table zones** because Phase 9 already owns delivery zones)_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -696,6 +697,35 @@ Plans:
 **Wave 10** _(blocked on Wave 9 completion)_
 
 - [ ] 10-13-PLAN.md — Phase verification: Playwright operator smoke, two-screen guest loop, evidence matrices (wave 10)
+
+### Phase 10.3: Table zones, tables and QR codes (INSERTED)
+
+**Goal**: Identify the table a dine-in guest is sitting at without asking them to type anything — table zones and tables per location, a printable QR per table, and the guest menu resolving the table from the scanned link so the kitchen knows where the order goes
+**Depends on**: Phase 10 (the order feed is what a table identity is _for_ — an operator must be able to see it), Phase 08.4 (location-scoped access — a table belongs to a location)
+**Requirements**: TBD (assigned at `/gsd-spec-phase 10.3`)
+
+**Decided before planning** (do not re-litigate):
+
+1. **The QR carries a stable opaque table id, never `zone=2&table=14`.** Printed stickers live on furniture for years; renaming a zone or renumbering tables would silently invalidate every sticker already on the floor. The id resolves location, zone and number server-side; the number is a display label only. Link shape `https://<slug>.menu.<domain>/?t=<id>`.
+2. **Naming: `delivery zones` and `table zones`, never a bare `zone`.** Phase 9 already owns "zone" for delivery polygons (DELV-01..03); an unqualified name collides in the schema, the code and the conversation _(founder, 2026-08-29)_.
+3. **The guest side already landed.** `apps/qr-menu` takes the table from `?table=` and the manual table-number input is gone (PR #275); the read-only strip shows the table only when the link carried one. Regression net: `apps/qr-menu/test/table.spec.tsx`.
+
+**Open questions for `/gsd-spec-phase` and `/gsd-discuss-phase`:**
+
+1. Does an order reference the table by id (FK + label snapshot) or keep today's free-text `table` string on the cart/order? A floor map and per-table analytics need the reference; the string is what exists.
+2. Is the QR rendered client-side in admin (nothing stored, cheapest) or server-side as a printable sheet for a whole zone at once?
+3. Bulk creation shape: "zone with N tables" in one call, or zone first and tables after.
+4. Does **tenant branding** ride along? `apps/qr-menu` and `apps/website` already render `tenant.theme.logoUrl` beside the brand name (covered by a test), but nothing can set it — the api exposes `theme` read-only, with no branding endpoint and no admin screen. Same admin surface, same phase, or its own.
+
+**Layers touched**: `packages/db` (table zones + tables, composite FKs per ADR-0020 I-2, RLS), api tenancy context (CRUD + bulk create), `apps/admin` (floor map, QR preview/print), `apps/qr-menu` (already reads the param), ordering (carry the table).
+
+**Plans**: TBD
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.3 to break down)
 
 ### Phase 10.1: Location schedule and pause ordering (INSERTED)
 
