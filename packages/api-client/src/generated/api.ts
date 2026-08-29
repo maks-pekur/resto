@@ -1942,7 +1942,8 @@ export interface components {
             }[];
             /** @enum {string} */
             fulfillmentMode: "dine_in" | "pickup" | "delivery";
-            table?: string;
+            /** Format: uuid */
+            tableId?: string;
             customerName?: string;
             customerPhone?: string;
             /** Format: email */

@@ -3913,9 +3913,9 @@ components:
             - dine_in
             - pickup
             - delivery
-        table:
+        tableId:
           type: string
-          maxLength: 20
+          format: uuid
         customerName:
           type: string
           maxLength: 200
