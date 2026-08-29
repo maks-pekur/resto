@@ -44,6 +44,27 @@ CREATE TABLE public.restaurant_tables (
 ALTER TABLE ONLY public.restaurant_tables FORCE ROW LEVEL SECURITY;
 --> statement-breakpoint
 
+-- Indexes. `_id_tenant_uq` exposes UNIQUE (id, tenant_id) so a composite FK can
+-- point at table_zones / restaurant_tables (ADR-0020 I-2) — created before the
+-- Foreign Keys section below because Postgres requires the referenced composite
+-- to already be backed by a unique index/constraint (mirrors baseline.sql's own
+-- ordering: locations_id_tenant_uq at line 879 precedes the FKs that use it).
+-- The two `_active_uq` indexes are partial — archived rows may repeat a name/number
+-- (TBL-04's "rename after archive" acceptance criterion depends on this).
+
+CREATE UNIQUE INDEX table_zones_id_tenant_uq ON public.table_zones (id, tenant_id);
+--> statement-breakpoint
+CREATE UNIQUE INDEX restaurant_tables_id_tenant_uq ON public.restaurant_tables (id, tenant_id);
+--> statement-breakpoint
+CREATE UNIQUE INDEX table_zones_location_name_active_uq ON public.table_zones (tenant_id, location_id, name) WHERE status = 'active';
+--> statement-breakpoint
+CREATE UNIQUE INDEX restaurant_tables_zone_number_active_uq ON public.restaurant_tables (tenant_id, zone_id, number) WHERE status = 'active';
+--> statement-breakpoint
+CREATE INDEX table_zones_location_idx ON public.table_zones (tenant_id, location_id, status);
+--> statement-breakpoint
+CREATE INDEX restaurant_tables_zone_ordinal_idx ON public.restaurant_tables (tenant_id, zone_id, status, ordinal);
+--> statement-breakpoint
+
 -- Foreign keys. ADR-0020 I-2: composite (child_id, tenant_id) -> parent(id, tenant_id)
 -- on every tenant-scoped parent link; a cross-tenant id is rejected by Postgres,
 -- not by application code (CONTEXT threat T-10.3-01).
@@ -62,24 +83,6 @@ ALTER TABLE ONLY public.restaurant_tables
 --> statement-breakpoint
 ALTER TABLE ONLY public.restaurant_tables
     ADD CONSTRAINT restaurant_tables_location_fk FOREIGN KEY (location_id, tenant_id) REFERENCES public.locations(id, tenant_id) ON DELETE RESTRICT;
---> statement-breakpoint
-
--- Indexes. `_id_tenant_uq` exposes UNIQUE (id, tenant_id) so a future child table
--- can point a composite FK back at table_zones / restaurant_tables (ADR-0020 I-2).
--- The two `_active_uq` indexes are partial — archived rows may repeat a name/number
--- (TBL-04's "rename after archive" acceptance criterion depends on this).
-
-CREATE UNIQUE INDEX table_zones_id_tenant_uq ON public.table_zones (id, tenant_id);
---> statement-breakpoint
-CREATE UNIQUE INDEX restaurant_tables_id_tenant_uq ON public.restaurant_tables (id, tenant_id);
---> statement-breakpoint
-CREATE UNIQUE INDEX table_zones_location_name_active_uq ON public.table_zones (tenant_id, location_id, name) WHERE status = 'active';
---> statement-breakpoint
-CREATE UNIQUE INDEX restaurant_tables_zone_number_active_uq ON public.restaurant_tables (tenant_id, zone_id, number) WHERE status = 'active';
---> statement-breakpoint
-CREATE INDEX table_zones_location_idx ON public.table_zones (tenant_id, location_id, status);
---> statement-breakpoint
-CREATE INDEX restaurant_tables_zone_ordinal_idx ON public.restaurant_tables (tenant_id, zone_id, status, ordinal);
 --> statement-breakpoint
 
 -- RLS. Pattern 1 (RESEARCH.md): tenant PERMISSIVE + location RESTRICTIVE, copied
