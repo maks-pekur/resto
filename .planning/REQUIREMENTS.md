@@ -201,14 +201,14 @@
 - [x] **TBL-03**: One API call creates a zone plus N tables numbered 1..N in a single capped transaction
 - [x] **TBL-04**: Zones and tables are listed, renamed, added to and archived — never deleted; archiving a zone archives its tables in the same transaction
 - [x] **TBL-05**: Zones and tables obey the Phase 08.4 location scope — an operator scoped to location A cannot read or mutate location B's floor
-- [ ] **TBL-06**: The guest menu resolves the scanned `?t=<id>` into a display label server-side and never trusts the URL text
-- [ ] **TBL-07**: An unknown, archived or malformed table id still opens the menu with a "not recognised" state; a dine-in order without a resolved table is rejected
+- [x] **TBL-06**: The guest menu resolves the scanned `?t=<id>` into a display label server-side and never trusts the URL text
+- [x] **TBL-07**: An unknown, archived or malformed table id still opens the menu with a "not recognised" state; a dine-in order without a resolved table is rejected
 - [x] **TBL-08**: An order stores `table_id` plus `table_zone_name` and `table_number` frozen at creation; renaming the table later never rewrites a past order
 - [ ] **TBL-09**: The order's location comes from the scanned table, not the tenant's default location
 - [ ] **TBL-10**: A zone downloads as an A4 PDF of bare QR codes in `ordinal` order, six per page; a single table's QR downloads as SVG
 - [ ] **TBL-11**: A location-scoped admin screen lists zones and their tables, with create / rename / archive / print, gated by the `table` permission resource
 - [ ] **TBL-12**: A dine-in order card in the operator feed shows the stored zone-and-number label
-- [ ] **TBL-13**: Pricing and the stop list answer for the scanned table's location, not the tenant default
+- [x] **TBL-13**: Pricing and the stop list answer for the scanned table's location, not the tenant default
 
 ### Delivery Zones — basic (`DELV`)
 
@@ -539,14 +539,14 @@
 | TBL-03      | Phase 10.3    | Complete |
 | TBL-04      | Phase 10.3    | Complete |
 | TBL-05      | Phase 10.3    | Complete |
-| TBL-06      | Phase 10.3    | Pending                 |
-| TBL-07      | Phase 10.3    | Pending                 |
+| TBL-06      | Phase 10.3    | Complete |
+| TBL-07      | Phase 10.3    | Complete |
 | TBL-08      | Phase 10.3    | Complete |
 | TBL-09      | Phase 10.3    | Pending                 |
 | TBL-10      | Phase 10.3    | Pending                 |
 | TBL-11      | Phase 10.3    | Pending                 |
 | TBL-12      | Phase 10.3    | Pending                 |
-| TBL-13      | Phase 10.3    | Pending                 |
+| TBL-13      | Phase 10.3    | Complete |
 | SCHED-01    | Phase 10.1    | Pending                 |
 | SCHED-02    | Phase 10.1    | Pending                 |
 | SCHED-03    | Phase 10.1    | Pending                 |

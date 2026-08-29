@@ -1,19 +1,29 @@
 import { useCartStore } from '@resto/cart';
 import { t } from '../i18n';
 
-const TABLE_MAX_LENGTH = 32;
+export interface TableBannerProps {
+  readonly notRecognized?: boolean;
+}
 
-export const sanitizeTable = (raw: string): string | null => {
-  const trimmed = raw.trim().slice(0, TABLE_MAX_LENGTH);
-  return trimmed.length > 0 ? trimmed : null;
-};
+/** Read-only: the table comes from the QR code on the table itself, resolved
+ * server-side — the guest never types a table number. */
+export const TableBanner = ({ notRecognized = false }: TableBannerProps) => {
+  const zoneName = useCartStore((s) => s.tableZoneName);
+  const number = useCartStore((s) => s.tableNumber);
 
-/** Read-only: the table comes from the QR code on the table itself, never from
- * the guest typing it in. */
-export const TableBanner = () => {
-  const table = useCartStore((s) => s.table);
+  if (notRecognized) {
+    return (
+      <div className="bg-muted border-b">
+        <div className="mx-auto flex max-w-7xl items-center px-4 py-2.5 sm:px-6">
+          <span className="text-muted-foreground text-sm">{t('table.notRecognized')}</span>
+        </div>
+      </div>
+    );
+  }
 
-  if (!table) return null;
+  if (!zoneName || !number) return null;
+
+  const table = `${zoneName} · ${number}`;
 
   return (
     <div className="bg-muted border-b">

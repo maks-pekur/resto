@@ -33,6 +33,7 @@
   "cart.itemCount": "Cart · {n}",
   "cart.added": "Added to cart",
   "table.current": "Table {table}",
+  "table.notRecognized": "Table not recognised — please ask a member of staff",
   "locale.label": "Language",
   "footer.poweredBy": "Powered by RestOS",
   "theme.label": "Colour theme",
