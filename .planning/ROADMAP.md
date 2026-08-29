@@ -754,8 +754,8 @@ Plans:
 
 **Wave 6** _(blocked on Wave 5)_
 
-- [ ] 10.3-09-PLAN.md — Order carries the table, takes its location from it, and prices against that location
-- [ ] 10.3-10-PLAN.md — Guest app resolves `?t=` server-side; the free-text path is removed; the cart carries the id
+- [x] 10.3-09-PLAN.md — Order carries the table, takes its location from it, and prices against that location
+- [x] 10.3-10-PLAN.md — Guest app resolves `?t=` server-side; the free-text path is removed; the cart carries the id
 - [ ] 10.3-11-PLAN.md — Admin tables screen: route, queries, sidebar entry, empty state, friendly failures
 
 **Wave 7** _(blocked on Wave 6)_
