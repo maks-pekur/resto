@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { NON_DELEGATABLE, SYSTEM_ROLES } from '../../src/rbac';
+import { NON_DELEGATABLE, PRESET_ROLES, SYSTEM_ROLES } from '../../src/rbac';
 
 describe('system-roles admin-escalation regression (D-06/D-07, 08.4)', () => {
   it('admin has no ac permission', () => {
@@ -55,5 +55,25 @@ describe('system-roles admin-escalation regression (D-06/D-07, 08.4)', () => {
         expect(role.ac, `${slug} must NOT hold ac`).toBeUndefined();
       }
     }
+  });
+
+  it('owner and admin both hold table:[read, update] (D-17, 10.3)', () => {
+    expect(SYSTEM_ROLES.owner.table).toEqual(['read', 'update']);
+    expect(SYSTEM_ROLES.admin.table).toEqual(['read', 'update']);
+  });
+
+  it('staff.table is undefined — staff is not named as a table:read grantee (D-17, 10.3)', () => {
+    const staff = SYSTEM_ROLES.staff as Record<string, readonly string[] | undefined>;
+    expect(staff.table).toBeUndefined();
+  });
+
+  it('admin.location still equals [read] — the table split did not widen location (D-17, 10.3)', () => {
+    expect(SYSTEM_ROLES.admin.location).toEqual(['read']);
+  });
+
+  it("the manager preset's table equals [read] and does not contain update (D-17, 10.3)", () => {
+    const manager = PRESET_ROLES.find((preset) => preset.slug === 'manager');
+    expect(manager?.permission.table).toEqual(['read']);
+    expect(manager?.permission.table).not.toContain('update');
   });
 });
