@@ -742,7 +742,7 @@ Plans:
 
 **Wave 3** _(blocked on Wave 2)_
 
-- [ ] 10.3-06-PLAN.md — Zone and table application services, with both caps as numbers and the archive cascade
+- [x] 10.3-06-PLAN.md — Zone and table application services, with both caps as numbers and the archive cascade
 
 **Wave 4** _(blocked on Wave 3)_
 
