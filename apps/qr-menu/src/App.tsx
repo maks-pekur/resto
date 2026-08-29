@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
@@ -22,6 +22,11 @@ type State =
 
 const AVAILABILITY_POLL_MS = 20_000;
 
+/** Photo URLs are signed for an hour (MENU_IMAGE_URL_TTL_SECONDS). A menu left
+ * open on a table outlives that, and every photo dies at once with no way back.
+ * Re-pull the menu well before the signatures do. */
+const MENU_MAX_AGE_MS = 45 * 60 * 1000;
+
 export const App = () => {
   const { theme, resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
@@ -30,12 +35,14 @@ export const App = () => {
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
+  const menuFetchedAt = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
     setState({ kind: 'loading' });
     fetchMenu(controller.signal)
       .then((menu) => {
+        menuFetchedAt.current = Date.now();
         setState({ kind: 'ready', menu });
       })
       .catch((err: unknown) => {
@@ -65,6 +72,14 @@ export const App = () => {
       fetchAvailability(controller.signal)
         .then((availability) => {
           setStoppedItemIds(availability.stoppedItemIds);
+        })
+        .catch(() => undefined);
+
+      if (Date.now() - menuFetchedAt.current < MENU_MAX_AGE_MS) return;
+      fetchMenu(controller.signal, { bypassCache: true })
+        .then((menu) => {
+          menuFetchedAt.current = Date.now();
+          setState({ kind: 'ready', menu });
         })
         .catch(() => undefined);
     };
