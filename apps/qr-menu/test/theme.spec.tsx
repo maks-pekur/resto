@@ -43,8 +43,8 @@ vi.mock('../src/api/client', () => ({
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));
 
-const themeGroup = () =>
-  within(screen.getByRole('contentinfo')).getByRole('group', { name: t('theme.label') });
+const themeToggle = () =>
+  within(screen.getByRole('contentinfo')).getByRole('button', { name: t('theme.label') });
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -62,21 +62,35 @@ describe('qr-menu colour theme', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('system');
     expect(window.localStorage.getItem('resto.theme')).toBeNull();
-    expect(
-      within(themeGroup()).getByRole('button', { name: t('theme.system'), pressed: true }),
-    ).toBeInTheDocument();
+    expect(themeToggle()).toBeInTheDocument();
   });
 
   it('applies and remembers an explicit dark choice', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    fireEvent.click(within(themeGroup()).getByRole('button', { name: t('theme.dark') }));
+    fireEvent.click(themeToggle());
 
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
     expect(window.localStorage.getItem('resto.theme')).toBe('dark');
+  });
+
+  it('toggles back to light on a second press', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    fireEvent.click(themeToggle());
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    fireEvent.click(themeToggle());
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    });
+    expect(window.localStorage.getItem('resto.theme')).toBe('light');
   });
 
   it('restores the remembered choice on the next visit', async () => {
@@ -87,9 +101,6 @@ describe('qr-menu colour theme', () => {
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     });
-    expect(
-      within(themeGroup()).getByRole('button', { name: t('theme.light'), pressed: true }),
-    ).toBeInTheDocument();
   });
 
   it('ignores a corrupted stored value rather than breaking the page', async () => {

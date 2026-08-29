@@ -60,12 +60,9 @@
     "payments": "Pagos",
     "orders": "Pedidos",
     "tables": "Mesas",
+    "themeLabel": "Tema",
     "user": {
       "accountItem": "Cuenta",
-      "themeLabel": "Tema",
-      "themeLight": "Claro",
-      "themeDark": "Oscuro",
-      "themeSystem": "Sistema",
       "logout": "Cerrar sesión",
       "languageLabel": "Idioma",
       "localeRu": "Русский",

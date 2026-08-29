@@ -60,12 +60,9 @@
     "payments": "Платежи",
     "orders": "Заказы",
     "tables": "Столы",
+    "themeLabel": "Тема",
     "user": {
       "accountItem": "Аккаунт",
-      "themeLabel": "Тема",
-      "themeLight": "Светлая",
-      "themeDark": "Тёмная",
-      "themeSystem": "Системная",
       "logout": "Выйти",
       "languageLabel": "Язык",
       "localeRu": "Русский",

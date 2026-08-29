@@ -1,9 +1,15 @@
 'use client';
 
-import { useCallback, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useLocale, useMessages } from 'next-intl';
-import { GuestUiProvider, type GuestImageComponent, type GuestTranslate } from '@resto/ui';
+import {
+  GuestUiProvider,
+  useGuestTheme,
+  type GuestImageComponent,
+  type GuestThemeState,
+  type GuestTranslate,
+} from '@resto/ui';
 
 /** `unoptimized`: menu photos are tenant-supplied URLs on arbitrary hosts, and the
  * only way to serve them through Next's optimizer is a wildcard remotePatterns —
@@ -35,18 +41,38 @@ const interpolate = (text: string, values?: Record<string, string | number>): st
     values && name in values ? String(values[name]) : `{${name}}`,
   );
 
+const SiteThemeContext = createContext<GuestThemeState | null>(null);
+
+export const useSiteTheme = (): GuestThemeState => {
+  const value = useContext(SiteThemeContext);
+  if (value === null) throw new Error('useSiteTheme must be used within GuestUi');
+  return value;
+};
+
 export function GuestUi({ children }: { children: ReactNode }) {
   const locale = useLocale();
   const messages = useMessages() as Record<string, unknown>;
+  const theme = useGuestTheme();
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const translate = useCallback<GuestTranslate>(
     (key, values) => interpolate(lookup(messages, key), values),
     [messages],
   );
 
+  // The stored preference is only readable in the browser, so the first client
+  // render has to repeat the server's light markup or React throws the tree away.
+  const themeValue: GuestThemeState = hydrated ? theme : { ...theme, resolvedTheme: 'light' };
+
   return (
-    <GuestUiProvider locale={locale} t={translate} Image={NextGuestImage}>
-      {children}
-    </GuestUiProvider>
+    <SiteThemeContext.Provider value={themeValue}>
+      <GuestUiProvider locale={locale} t={translate} Image={NextGuestImage}>
+        {children}
+      </GuestUiProvider>
+    </SiteThemeContext.Provider>
   );
 }

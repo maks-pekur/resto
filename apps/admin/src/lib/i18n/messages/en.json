@@ -60,12 +60,9 @@
     "payments": "Payments",
     "orders": "Orders",
     "tables": "Tables",
+    "themeLabel": "Theme",
     "user": {
       "accountItem": "Account",
-      "themeLabel": "Theme",
-      "themeLight": "Light",
-      "themeDark": "Dark",
-      "themeSystem": "System",
       "logout": "Log out",
       "languageLabel": "Language",
       "localeRu": "Русский",

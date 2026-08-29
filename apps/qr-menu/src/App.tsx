@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { GuestUiProvider, MenuScreen, ThemeSwitcher, Toaster, useGuestTheme } from '@resto/ui';
+import { GuestUiProvider, MenuScreen, ThemeToggle, Toaster, useGuestTheme } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
 import { LocaleControl } from './components/LocaleControl';
@@ -33,7 +33,7 @@ const AVAILABILITY_POLL_MS = 20_000;
 const MENU_MAX_AGE_MS = 45 * 60 * 1000;
 
 export const App = () => {
-  const { theme, resolvedTheme, setTheme } = useGuestTheme();
+  const { resolvedTheme, toggleTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
@@ -175,14 +175,23 @@ export const App = () => {
           }}
           headerActions={
             <>
-              <ThemeSwitcher theme={theme} onSelect={setTheme} className="hidden sm:inline-flex" />
+              <ThemeToggle
+                resolvedTheme={resolvedTheme}
+                onToggle={toggleTheme}
+                label={t('theme.label')}
+                className="hidden sm:flex"
+              />
               <LocaleControl className="hidden sm:inline-flex" />
             </>
           }
           footerActions={
             <div className="flex flex-wrap items-center gap-2">
               <LocaleControl />
-              <ThemeSwitcher theme={theme} onSelect={setTheme} />
+              <ThemeToggle
+                resolvedTheme={resolvedTheme}
+                onToggle={toggleTheme}
+                label={t('theme.label')}
+              />
             </div>
           }
           banner={<TableBanner notRecognized={tableUnrecognized} />}

@@ -38,10 +38,5 @@ export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
 export { CartBar, type CartBarProps } from './guest/cart-bar';
 export { CartButton, type CartButtonProps } from './guest/cart-button';
-export { ThemeSwitcher, type ThemeSwitcherProps } from './guest/theme-switcher';
-export {
-  GUEST_THEMES,
-  useGuestTheme,
-  type GuestTheme,
-  type GuestThemeState,
-} from './guest/use-guest-theme';
+export { ThemeToggle, type ThemeToggleProps } from './guest/theme-toggle';
+export { useGuestTheme, type GuestTheme, type GuestThemeState } from './guest/use-guest-theme';

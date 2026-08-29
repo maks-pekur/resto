@@ -4,8 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type GuestTheme = 'system' | 'light' | 'dark';
 
-export const GUEST_THEMES: readonly GuestTheme[] = ['system', 'light', 'dark'];
-
 const STORAGE_KEY = 'resto.theme';
 const DARK_QUERY = '(prefers-color-scheme: dark)';
 
@@ -26,6 +24,7 @@ export interface GuestThemeState {
   readonly theme: GuestTheme;
   readonly resolvedTheme: 'light' | 'dark';
   readonly setTheme: (theme: GuestTheme) => void;
+  readonly toggleTheme: () => void;
 }
 
 /**
@@ -77,5 +76,9 @@ export const useGuestTheme = (): GuestThemeState => {
     }
   }, []);
 
-  return { theme, resolvedTheme, setTheme };
+  const toggleTheme = useCallback(() => {
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  }, [resolvedTheme, setTheme]);
+
+  return { theme, resolvedTheme, setTheme, toggleTheme };
 };

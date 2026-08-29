@@ -1,9 +1,8 @@
-import { BadgeCheck, Building2, ChevronsUpDown, LogOut, Monitor, Moon, Sun } from 'lucide-react';
+import { BadgeCheck, Building2, ChevronsUpDown, LogOut } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
 import { useNavigate } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { useTheme } from '@/components/theme-provider';
 import { authClient } from '@/lib/auth-client';
 import { meTenantsQuery, type OperatorSummary } from '@/lib/queries/identity';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -27,7 +26,6 @@ const capitalize = (s: string): string =>
 const avatarInitial = (email: string): string => email.charAt(0).toUpperCase() || '?';
 
 export function NavUser({ operator }: { operator: OperatorSummary }) {
-  const { setTheme } = useTheme();
   const { t } = useTranslation('translation', { keyPrefix: 'nav.user' });
   const navigate = useNavigate();
   const { data: tenantsResult } = useSuspenseQuery(meTenantsQuery());
@@ -94,36 +92,6 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
               <BadgeCheck />
               {t('accountItem')}
             </Link>
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-          {t('themeLabel')}
-        </DropdownMenuLabel>
-        <DropdownMenuGroup>
-          <DropdownMenuItem
-            onClick={() => {
-              setTheme('light');
-            }}
-          >
-            <Sun />
-            {t('themeLight')}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setTheme('dark');
-            }}
-          >
-            <Moon />
-            {t('themeDark')}
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setTheme('system');
-            }}
-          >
-            <Monitor />
-            {t('themeSystem')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

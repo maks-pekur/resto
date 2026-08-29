@@ -1,6 +1,8 @@
 @import 'tailwindcss';
 @import '@resto/config-tailwind/preset.css';
 
+@source '../../../packages/ui/src';
+
 @custom-variant dark (&:is(.dark *));
 
 @layer base {

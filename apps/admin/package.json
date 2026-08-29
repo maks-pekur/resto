@@ -15,6 +15,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hookform/resolvers": "^5.4.0",
     "@resto/domain": "workspace:*",
+    "@resto/ui": "workspace:*",
     "@sentry/react": "^10.62.0",
     "@stripe/connect-js": "3.4.6",
     "@stripe/react-connect-js": "3.4.4",
