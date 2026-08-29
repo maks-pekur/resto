@@ -39,6 +39,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 10.1: Location schedule and pause ordering** - One-tap pause of order intake plus a weekly opening schedule per location, enforced server-side at order creation _(inserted 2026-08-12 — persona-product BLOCK-3 at Phase 10 discuss; kept in MVP-1 because a launched restaurant hits it in week one)_
 - [ ] **Phase 10.3: Table zones, tables and QR codes** - Table zones and tables per location, a printable QR per table carrying a stable table id, and the guest menu resolving the table from the scanned link so a dine-in order reaches the right table _(inserted 2026-08-29 — founder; "zone" is qualified as **table zones** because Phase 9 already owns delivery zones)_
 - [ ] **Phase 10.4: QR-menu ordering and dine-in checkout** - Cart screen, checkout form, Stripe payment and guest order-status screen in `apps/qr-menu`, so a dine-in guest can actually place the order 10.3 makes identifiable; sequenced immediately after 10.3 _(inserted 2026-08-29 at `/gsd-plan-phase 10.3` per 10.3-CONTEXT D-02 — 10.3 delivers the platform and this is the phase that makes it pay off)_
+- [ ] **Phase 10.5: Location as a filter, not a mode** - Retire the location switcher as a context you switch into. Operational screens (orders, dashboard, stop list) get a plain `?location=` filter that defaults to all points; configuration screens keep naming their location in the path. _(inserted 2026-08-29 — founder, during 10.3 planning: "везде будет просто фильтр")_
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -765,6 +766,34 @@ Plans:
 **Wave 8** _(blocked on Wave 7)_
 
 - [ ] 10.3-14-PLAN.md — Regenerate the published OpenAPI contract and the typed client; scan a real printed code
+
+### Phase 10.5: Location as a filter, not a mode (INSERTED)
+
+**Goal**: Stop making the operator switch into a location. Operational screens show all points by default and filter down with a `?location=` control; configuration screens keep the location in their own path, where it cannot be ambiguous
+**Depends on**: Phase 10.3 (its tables screen is already built in the target shape and needs no rework)
+
+**Decided before planning** (do not re-litigate):
+
+1. **The filter value lives in the address, `?location=<slug>`** _(founder, 2026-08-29)_. A link to "orders at the second point" must be sendable to a manager, the back button must work, and a refresh must not reset the choice.
+2. **Two kinds of screen, and the split is the whole idea.** *Operational* — orders, dashboard, stop list — carry the filter and default to every point. *Configuration* — zones and tables, the weekly schedule (Phase 10.1), address and contacts — name their location in the path. This is what makes writes safe: a configuration screen has no every-location state to guard, and an operational write takes its location from the row it acts on, not from the filter.
+3. **Staff stay pinned.** A member's location scope is an access boundary enforced server-side (`member_location_scope`, Phase 08.4), not a convenience. For a member holding one location the filter is fixed or absent — never a way to see another point.
+4. **The API contract does not change.** The location reaches the server one way, the `x-location-id` header set at `apps/admin/src/lib/api-client.ts:65`. This phase changes only where the admin gets that value: from the filter instead of from a path segment. The 66 server-side call sites keyed on the bound location are untouched.
+
+**Open questions for `/gsd-spec-phase` and `/gsd-discuss-phase`:**
+
+1. **The stop list is the hard case.** It is operational, but stopping a dish needs a location that the row cannot supply — the dish is tenant-wide. Options: require a single point before the action is offered, or let "all points" mean "stop everywhere" as a real feature.
+2. This reverses the recent move of the owner's location carrier **out of** `?location=` and **into** the path (`apps/admin/src/lib/hooks/use-effective-location.ts:23-28`). That move removed a class of redirect and reconciliation bugs — an address naming no location simply *is* the every-location view, and an unreachable slug is corrected by the layout before render. Reintroducing the query parameter reintroduces "validate the filter value"; the phase must say how, rather than rediscovering it.
+3. What happens to `apps/admin/src/routes/(protected)/location/_layout.tsx` and the three routes under it — do they move up and lose the layout, or does the layout stay for the configuration screens?
+
+**Layers touched**: `apps/admin` only — 12 files reference the current model (`use-effective-location.ts`, `location-path.ts`, `app-sidebar.tsx`, `location-switcher.tsx`, `main.tsx`, `dashboard-page.tsx`, the three `location/` routes and their layout, plus two specs). No API change.
+
+**Plans**: TBD
+**UI hint**: yes
+**Persona reviewers**: persona-cto, persona-skeptic
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.5 to break down)
 
 ### Phase 10.4: QR-menu ordering and dine-in checkout (INSERTED)
 
