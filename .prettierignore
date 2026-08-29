@@ -14,3 +14,7 @@ generated
 .env*
 docs/api/openapi.yaml
 packages/api-client/src/generated/
+
+# Planning documents carry executable shell and SQL assertions for the plan
+# executor. A markdown formatter has no business rewriting them.
+.planning/
