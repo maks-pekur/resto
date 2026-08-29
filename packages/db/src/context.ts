@@ -87,6 +87,26 @@ export const withLocation = <T>(locationId: string, op: () => Promise<T>): Promi
   return storage.run({ ...parent, locationId }, op);
 };
 
+/**
+ * Run `op` in a location-free child frame — the parent context minus `locationId`. For a lookup
+ * whose row is keyed only by its own id and whose answer must not depend on a client-echoed
+ * `x-location-id` header (`TenantContextMiddleware` binds it for every caller, including
+ * anonymous ones). Requires a parent tenant context; a location-free frame is not a tenant-free
+ * one — dropping the tenant here would be a real hole.
+ */
+export const withoutLocation = <T>(op: () => Promise<T>): Promise<T> => {
+  const parent = storage.getStore();
+  if (parent === undefined) {
+    return Promise.reject(
+      new Error(
+        'withoutLocation requires a parent tenant context. Wrap in runInTenantContext() first.',
+      ),
+    );
+  }
+  const { locationId: _locationId, ...rest } = parent;
+  return storage.run(rest, op);
+};
+
 export const requireLocationContext = (): string => {
   const locationId = storage.getStore()?.locationId;
   if (locationId === undefined) {
