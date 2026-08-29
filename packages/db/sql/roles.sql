@@ -96,3 +96,19 @@ BEGIN
   END LOOP;
 END
 $$;
+
+-- Phase 10.3: table_zones / restaurant_tables. Migration 0003 issues the same
+-- GRANT; restating it here keeps the end state convergent regardless of whether
+-- roles.sql or the migration runs first (mirrors the menu_stop_list guard above).
+-- DELETE intentionally omitted — hard deletes are forbidden, lifecycle is
+-- status = 'archived'.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'table_zones') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON table_zones TO resto_app';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'restaurant_tables') THEN
+    EXECUTE 'GRANT SELECT, INSERT, UPDATE ON restaurant_tables TO resto_app';
+  END IF;
+END
+$$;
