@@ -465,6 +465,215 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenancy/table-zones:
+    get:
+      operationId: TableZonesController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TableZoneResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+    post:
+      operationId: TableZonesController_create
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTableZoneInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableZoneResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/table-zones/{zoneId}:
+    patch:
+      operationId: TableZonesController_renameZone
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameTableZoneInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableZoneSummaryResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/table-zones/{zoneId}/archive:
+    patch:
+      operationId: TableZonesController_archiveZone
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchiveTableZoneResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/table-zones/{zoneId}/tables:
+    post:
+      operationId: TableZonesController_addTables
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddTablesInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TableResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/table-zones/{zoneId}/tables/{tableId}:
+    patch:
+      operationId: TableZonesController_renameTable
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTableInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/table-zones/{zoneId}/tables/{tableId}/archive:
+    patch:
+      operationId: TableZonesController_archiveTable
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tables/{id}:
+    get:
+      operationId: PublicTableResolutionController_resolve
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableResolutionDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/me:
     get:
       operationId: MeController_me
@@ -1853,6 +2062,170 @@ components:
           exclusiveMinimum: false
       required:
         - scopedMemberCount
+    TableZoneResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        status:
+          type: string
+          enum:
+            - active
+            - archived
+        tables:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              number:
+                type: string
+                minLength: 1
+                maxLength: 32
+              ordinal:
+                type: integer
+                minimum: 0
+                exclusiveMinimum: true
+              status:
+                type: string
+                enum:
+                  - active
+                  - archived
+              qrUrl:
+                type: string
+            required:
+              - id
+              - number
+              - ordinal
+              - status
+              - qrUrl
+      required:
+        - id
+        - name
+        - status
+        - tables
+    CreateTableZoneInputDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        tableCount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+          maximum: 200
+          exclusiveMaximum: false
+      required:
+        - name
+        - tableCount
+    RenameTableZoneInputDto:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+      required:
+        - name
+    TableZoneSummaryResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - archived
+      required:
+        - id
+        - name
+        - status
+    ArchiveTableZoneResponseDto:
+      type: object
+      properties:
+        zoneId:
+          type: string
+          format: uuid
+        archivedTableCount:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - zoneId
+        - archivedTableCount
+    AddTablesInputDto:
+      type: object
+      properties:
+        count:
+          type: integer
+          minimum: 1
+          exclusiveMinimum: false
+          maximum: 200
+          exclusiveMaximum: false
+          default: 1
+    TableResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        ordinal:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        status:
+          type: string
+          enum:
+            - active
+            - archived
+        qrUrl:
+          type: string
+      required:
+        - id
+        - number
+        - ordinal
+        - status
+        - qrUrl
+    UpdateTableInputDto:
+      type: object
+      properties:
+        number:
+          type: string
+          minLength: 1
+          maxLength: 32
+      required:
+        - number
+    TableResolutionDto:
+      type: object
+      properties:
+        tableId:
+          type: string
+          format: uuid
+        zoneName:
+          type: string
+        number:
+          type: string
+      required:
+        - tableId
+        - zoneName
+        - number
     MeTenantsResponseDto:
       type: object
       properties:
@@ -3540,9 +3913,9 @@ components:
             - dine_in
             - pickup
             - delivery
-        table:
+        tableId:
           type: string
-          maxLength: 20
+          format: uuid
         customerName:
           type: string
           maxLength: 200

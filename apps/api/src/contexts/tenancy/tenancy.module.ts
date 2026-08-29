@@ -16,14 +16,26 @@ import { ProvisionLocationService } from './application/provision-location.servi
 import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
 import { UpdateLocationService } from './application/update-location.service';
-import { LOCATION_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
+import { CreateTableZoneService } from './application/create-table-zone.service';
+import { ListTableZonesService } from './application/list-table-zones.service';
+import { AddTablesService } from './application/add-tables.service';
+import { RenameTableZoneService } from './application/rename-table-zone.service';
+import { RenameTableService } from './application/rename-table.service';
+import { ArchiveTableZoneService } from './application/archive-table-zone.service';
+import { ArchiveTableService } from './application/archive-table.service';
+import { GuestMenuUrlService } from './application/guest-menu-url.service';
+import { ResolveTableService } from './application/resolve-table.service';
+import { LOCATION_REPOSITORY, TABLE_ZONE_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
 import { PAYMENT_PROVIDER_PORT } from '../payments/domain/ports';
 import { createStripeProviderAdapter } from '../payments/infrastructure/stripe/stripe-provider.adapter';
 import { TenantDrizzleRepository } from './infrastructure/tenant-drizzle.repository';
 import { LocationDrizzleRepository } from './infrastructure/location-drizzle.repository';
+import { TableZoneDrizzleRepository } from './infrastructure/table-zone-drizzle.repository';
 import { InternalTenantsController } from './interfaces/http/internal-tenants.controller';
 import { TenantsController } from './interfaces/http/tenants.controller';
 import { LocationsController } from './interfaces/http/locations.controller';
+import { TableZonesController } from './interfaces/http/table-zones.controller';
+import { PublicTableResolutionController } from './interfaces/http/public-tables.controller';
 import {
   TenantOnboardingController,
   TenantOAuthCallbackController,
@@ -37,10 +49,13 @@ import {
     TenantOnboardingController,
     TenantOAuthCallbackController,
     LocationsController,
+    TableZonesController,
+    PublicTableResolutionController,
   ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: LOCATION_REPOSITORY, useClass: LocationDrizzleRepository },
+    { provide: TABLE_ZONE_REPOSITORY, useClass: TableZoneDrizzleRepository },
     {
       provide: PAYMENT_PROVIDER_PORT,
       inject: [ENV_TOKEN],
@@ -64,11 +79,21 @@ import {
     ListLocationsService,
     ArchiveLocationService,
     UpdateLocationService,
+    CreateTableZoneService,
+    ListTableZonesService,
+    AddTablesService,
+    RenameTableZoneService,
+    RenameTableService,
+    ArchiveTableZoneService,
+    ArchiveTableService,
+    GuestMenuUrlService,
+    ResolveTableService,
     SeedPresetRolesService,
   ],
   exports: [
     TENANT_REPOSITORY,
     LOCATION_REPOSITORY,
+    TABLE_ZONE_REPOSITORY,
     PAYMENT_PROVIDER_PORT,
     TenantResolverService,
     TenantQueriesService,
@@ -79,6 +104,7 @@ import {
     ListLocationsService,
     ArchiveLocationService,
     UpdateLocationService,
+    GuestMenuUrlService,
   ],
 })
 export class TenancyModule {}

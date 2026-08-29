@@ -141,3 +141,61 @@ export class LocationNameNotSluggableError extends Error {
     this.name = 'LocationNameNotSluggableError';
   }
 }
+
+export class TableZoneNotFoundError extends Error {
+  constructor(public readonly identifier: string) {
+    super(`Table zone "${identifier}" was not found.`);
+    this.name = 'TableZoneNotFoundError';
+  }
+}
+
+export class TableZoneAlreadyArchivedError extends Error {
+  constructor(public readonly zoneId: string) {
+    super(`Table zone "${zoneId}" is already archived.`);
+    this.name = 'TableZoneAlreadyArchivedError';
+  }
+}
+
+export class RestaurantTableNotFoundError extends Error {
+  constructor(public readonly identifier: string) {
+    super(`Table "${identifier}" was not found.`);
+    this.name = 'RestaurantTableNotFoundError';
+  }
+}
+
+export class RestaurantTableAlreadyArchivedError extends Error {
+  constructor(public readonly tableId: string) {
+    super(`Table "${tableId}" is already archived.`);
+    this.name = 'RestaurantTableAlreadyArchivedError';
+  }
+}
+
+export class TableNumberTakenError extends Error {
+  constructor(
+    public readonly zoneId: string,
+    public readonly number: string,
+  ) {
+    super(`Table number "${number}" is already in use in zone "${zoneId}".`);
+    this.name = 'TableNumberTakenError';
+  }
+}
+
+export class TableBulkLimitExceededError extends Error {
+  constructor(
+    public readonly requestedCount: number,
+    public readonly cap: number,
+  ) {
+    super(`Requested ${requestedCount} tables in one batch, which exceeds the cap of ${cap}.`);
+    this.name = 'TableBulkLimitExceededError';
+  }
+}
+
+export class LocationTableLimitReachedError extends Error {
+  constructor(
+    public readonly locationId: string,
+    public readonly cap: number,
+  ) {
+    super(`Location "${locationId}" has reached its active-table cap of ${cap}.`);
+    this.name = 'LocationTableLimitReachedError';
+  }
+}

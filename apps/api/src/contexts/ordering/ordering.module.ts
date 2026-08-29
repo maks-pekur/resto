@@ -7,12 +7,14 @@ import {
   ORDER_FEED_REPOSITORY,
   ORDER_REPOSITORY,
   ORDER_SEQUENCE_PORT,
+  ORDER_TABLE_LOOKUP_PORT,
 } from './domain/ports';
 import { PAYMENT_REPOSITORY } from '../payments/domain/ports';
 import { OrderDrizzleRepository } from './infrastructure/order-drizzle.repository';
 import { OrderSequenceDrizzleRepository } from './infrastructure/order-sequence-drizzle.repository';
 import { OrderFeedDrizzleRepository } from './infrastructure/order-feed-drizzle.repository';
 import { CatalogMenuPricingAdapter } from './infrastructure/catalog-menu-pricing.adapter';
+import { TenancyTableLookupAdapter } from './infrastructure/tenancy-table-lookup.adapter';
 import { PaymentDrizzleRepository } from '../payments/infrastructure/payment-drizzle.repository';
 import { CreateOrderService } from './application/create-order.service';
 import { GetOrderService } from './application/get-order.service';
@@ -29,6 +31,7 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
   providers: [
     { provide: ORDER_REPOSITORY, useClass: OrderDrizzleRepository },
     { provide: MENU_PRICING_PORT, useClass: CatalogMenuPricingAdapter },
+    { provide: ORDER_TABLE_LOOKUP_PORT, useClass: TenancyTableLookupAdapter },
     { provide: ORDER_SEQUENCE_PORT, useClass: OrderSequenceDrizzleRepository },
     { provide: ORDER_FEED_REPOSITORY, useClass: OrderFeedDrizzleRepository },
     { provide: PAYMENT_REPOSITORY, useClass: PaymentDrizzleRepository },

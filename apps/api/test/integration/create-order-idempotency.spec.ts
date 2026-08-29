@@ -14,7 +14,10 @@ import { OrderSequenceDrizzleRepository } from '../../src/contexts/ordering/infr
 import { CreateOrderService } from '../../src/contexts/ordering/application/create-order.service';
 import { DefaultLocationResolverService } from '../../src/contexts/catalog/application/default-location-resolver.service';
 import type { CreateOrderInput } from '../../src/contexts/ordering/application/dto';
-import type { MenuPricingPort } from '../../src/contexts/ordering/domain/ports';
+import type {
+  MenuPricingPort,
+  OrderTableLookupPort,
+} from '../../src/contexts/ordering/domain/ports';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -60,6 +63,10 @@ const pricing: MenuPricingPort = {
     }),
 };
 
+const tableLookup: OrderTableLookupPort = {
+  findActiveTable: () => Promise.resolve(null),
+};
+
 const makeCartInput = (
   overrides: Partial<CreateOrderInput> = {},
 ): CreateOrderInput & { idempotencyKey: string } => ({
@@ -100,7 +107,14 @@ suite('CreateOrderService — idempotency', () => {
     repo = new OrderDrizzleRepository(stack.db);
     const defaultLocation = new DefaultLocationResolverService(stack.db);
     const orderSequence = new OrderSequenceDrizzleRepository(stack.db);
-    service = new CreateOrderService(repo, pricing, orderSequence, defaultLocation, stack.db);
+    service = new CreateOrderService(
+      repo,
+      pricing,
+      orderSequence,
+      tableLookup,
+      defaultLocation,
+      stack.db,
+    );
 
     await stack.db.withoutTenant('seed idempotency spec fixtures', async (tx) => {
       await tx.insert(schema.tenants).values([

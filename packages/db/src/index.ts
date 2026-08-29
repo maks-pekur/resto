@@ -22,6 +22,7 @@ export {
   getLocationId,
   requireLocationContext,
   withLocation,
+  withoutLocation,
   type TenantContext,
 } from './context';
 export {

@@ -1,4 +1,4 @@
-export type { CartModifier, CartLineItem } from './cart';
+export type { CartModifier, CartLineItem, ResolvedCartTable } from './cart';
 export {
   useCartStore,
   selectSubtotal,

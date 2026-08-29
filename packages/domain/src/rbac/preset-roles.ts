@@ -17,6 +17,8 @@ export const PRESET_ROLES: readonly PresetRoleDefinition[] = [
       reports: ['read'],
       settings: ['update'],
       tenant: ['read'],
+      // D-17 (10.3): manager can view the floor and print/download a QR, not edit tables
+      table: ['read'],
     },
   },
   {
