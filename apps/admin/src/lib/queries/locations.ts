@@ -61,15 +61,12 @@ export const meLocationsQuery = () => ({
   staleTime: 30_000,
 });
 
-/**
- * A staff member's location authority is this server-side pin, not the URL (D-12). It became
- * mutable on 2026-08-28 — a manager covering two points used to have to sign out to move.
- */
-export const setActiveLocationMutation = (locationId: string) =>
-  apiFetch<{ locationId: string | null }>('/v1/me/set-active-location', {
-    method: 'POST',
-    body: { locationId },
-  });
+// NOTE: the client-side call to `POST /v1/me/set-active-location` was removed on 2026-08-30
+// along with the location switcher. The endpoint and the server-side initial pin both remain —
+// a staff member's location authority is still that pin, not the URL (D-12) — but nothing in
+// the admin can change it any more. A manager covering two points is therefore fixed to
+// whichever location the initial pin chose. Phase 10.5 ("Location as a filter, not a mode") is
+// where staff stop depending on a pinned location at all.
 
 export const activeLocationIdQuery = () => ({
   queryKey: ['identity', 'active-location'] as const,

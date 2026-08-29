@@ -33,8 +33,8 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
   const { data: tenantsResult } = useSuspenseQuery(meTenantsQuery());
   const initial = avatarInitial(operator.email);
   const roleLabel = operator.baseRole ? capitalize(operator.baseRole) : FALLBACK_ROLE_LABEL;
-  // Same conditional-render shape as location-switcher.tsx:35 — staff and
-  // single-tenant owners see no item at all, not a disabled one (D-17).
+  // Staff and single-tenant owners see no item at all, not a disabled one (D-17). The
+  // location switcher used to share this shape; it was removed on 2026-08-30.
   const canSwitchTenant =
     operator.baseRole === 'owner' && (tenantsResult.data?.tenants.length ?? 0) >= 2;
 

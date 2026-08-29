@@ -14,9 +14,7 @@ import {
   Ban,
 } from 'lucide-react';
 import { TenantIdentity } from '@/components/tenant-identity';
-import { LocationSwitcher } from '@/components/location-switcher';
 import { NavMain, type NavMainItem } from '@/components/nav-main';
-import type { OperatorSummary } from '@/lib/queries/identity';
 import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
 import { sortLocations } from '@/lib/default-location';
@@ -25,19 +23,11 @@ import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 
-interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-  readonly operator: OperatorSummary;
-}
+type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 
-export function AppSidebar({
-  operator,
-  variant = 'inset',
-  collapsible = 'icon',
-  ...props
-}: AppSidebarProps) {
+export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tOrders } = useTranslation('translation', { keyPrefix: 'orders' });
-  const isOwner = operator.baseRole === 'owner';
 
   // Hiding is convenience, not security — every route refuses a direct link with the same
   // `hasPermission` call (see lib/auth/permissions). This only stops an operator being offered a
@@ -128,7 +118,6 @@ export function AppSidebar({
     <Sidebar variant={variant} collapsible={collapsible} {...props}>
       <SidebarHeader>
         <TenantIdentity />
-        <LocationSwitcher isOwner={isOwner} locations={locations} />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navOperations} label={t('groupOperations')} />
