@@ -27,7 +27,7 @@ export default async function ConfirmationPage({ params }: Props) {
 
   return (
     <main className="mx-auto max-w-[640px] px-4 py-8 sm:px-6">
-      <h1 className="mb-6 text-[24px] font-semibold leading-[1.25]">Order confirmation</h1>
+      <h1 className="mb-6 text-2xl font-extrabold">Order confirmation</h1>
       <OrderStatusPoller orderId={orderId} initialStatus={initialStatus} />
     </main>
   );

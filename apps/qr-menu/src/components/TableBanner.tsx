@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useCartStore } from '@resto/cart';
 import { t } from '../i18n';
 
@@ -9,49 +8,18 @@ export const sanitizeTable = (raw: string): string | null => {
   return trimmed.length > 0 ? trimmed : null;
 };
 
+/** Read-only: the table comes from the QR code on the table itself, never from
+ * the guest typing it in. */
 export const TableBanner = () => {
   const table = useCartStore((s) => s.table);
-  const setTable = useCartStore((s) => s.setTable);
-  const [input, setInput] = useState('');
 
-  if (table) {
-    return (
-      <div className="table-banner">
-        <span>{t('table.current', { table })}</span>
-        <button
-          type="button"
-          onClick={() => {
-            setTable(null);
-          }}
-        >
-          {t('table.change')}
-        </button>
-      </div>
-    );
-  }
+  if (!table) return null;
 
   return (
-    <form
-      className="table-banner table-banner--entry"
-      onSubmit={(e) => {
-        e.preventDefault();
-        const sanitized = sanitizeTable(input);
-        if (sanitized) {
-          setTable(sanitized);
-          setInput('');
-        }
-      }}
-    >
-      <label htmlFor="table-input">{t('table.prompt')}</label>
-      <input
-        id="table-input"
-        value={input}
-        maxLength={TABLE_MAX_LENGTH}
-        onChange={(e) => {
-          setInput(e.target.value);
-        }}
-      />
-      <button type="submit">{t('table.confirm')}</button>
-    </form>
+    <div className="bg-muted border-b">
+      <div className="mx-auto flex max-w-7xl items-center px-4 py-2.5 sm:px-6">
+        <span className="text-sm font-bold">{t('table.current', { table })}</span>
+      </div>
+    </div>
   );
 };

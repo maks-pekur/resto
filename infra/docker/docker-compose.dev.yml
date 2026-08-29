@@ -65,6 +65,23 @@ services:
       timeout: 5s
       retries: 10
 
+  # Nothing else creates the bucket, and an absent bucket surfaces as a bare 404
+  # on the presigned PUT — the upload path looks broken rather than unconfigured.
+  minio-bucket:
+    image: minio/mc:latest
+    container_name: resto-minio-bucket
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint:
+      - sh
+      - -c
+      - >
+        mc alias set local http://minio:9000
+        "${MINIO_ROOT_USER:-minio}" "${MINIO_ROOT_PASSWORD:-minio_dev_password}" &&
+        mc mb --ignore-existing "local/${S3_BUCKET:-resto-dev}"
+    restart: "no"
+
   mailhog:
     image: mailhog/mailhog:latest
     container_name: resto-mailhog

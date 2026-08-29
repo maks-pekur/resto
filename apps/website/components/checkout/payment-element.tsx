@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { Button } from '@/components/ui/button';
+import { Button } from '@resto/ui';
 
 interface PaymentFormProps {
   returnUrl: string;
@@ -34,7 +34,7 @@ function PaymentForm({ returnUrl, onError, onSubmitting, isSubmitting }: Payment
         type="button"
         onClick={() => void handleConfirm()}
         disabled={isSubmitting || !stripe || !elements}
-        className="w-full bg-[var(--primary,#16a34a)] text-white"
+        className="w-full bg-primary text-primary-foreground"
       >
         {isSubmitting ? 'Processing…' : 'Pay now'}
       </Button>

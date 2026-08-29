@@ -8,10 +8,10 @@ export function ContentPage({ heading, body }: ContentPageProps) {
 
   return (
     <main className="mx-auto max-w-[720px] px-4 py-12 sm:px-6">
-      <h1 className="text-[28px] font-semibold leading-[1.1]">{heading}</h1>
+      <h1 className="text-3xl font-semibold">{heading}</h1>
       <div className="mt-6 flex flex-col gap-4">
         {paragraphs.map((paragraph) => (
-          <p key={paragraph} className="text-[16px] leading-[1.5]">
+          <p key={paragraph} className="text-base">
             {paragraph}
           </p>
         ))}

@@ -19,10 +19,13 @@ not depend on each other.
   rules so `npx shadcn add …` stays a clean upgrade path. Strict TS is
   on except `exactOptionalPropertyTypes` (incompatible with Radix
   prop spreads).
-- `website/` — Next.js tenant marketing sites (multi-tenant SSR; one Next
-  app serves all tenants via host-based routing).
-- `qr-menu/` — Vite + React; customer-facing menu accessed by QR code at the
-  table. Optimized for cold-start speed on mobile networks.
+- `website/` — Next.js tenant storefront (multi-tenant SSR; one Next app
+  serves all tenants via host-based routing). Guest chrome, menu, item dialog
+  and cart come from `@resto/ui`; only checkout is website-specific.
+- `qr-menu/` — Vite + React + Tailwind 4; customer-facing menu accessed by QR
+  code at the table. Mobile-first and optimized for cold-start speed on mobile
+  networks — the item dialog and cart sheet are lazy chunks. Renders the same
+  `@resto/ui` guest components as `website/`.
 
 ## Rules
 
@@ -120,3 +123,45 @@ not depend on each other.
   availability ETag, never the menu ETag. The `menu-response.e2e`
   no-`Set-Cookie` test is the regression net; CDN setup lives in
   `docs/runbooks/menu-edge-caching.md`.
+
+### Guest surfaces — one visual system (HARD)
+
+`website/` and `qr-menu/` are one brand to the guest holding the phone. They
+ship a single visual system; `admin/` is an operator surface and is exempt.
+
+- **Tokens live in `@resto/config-tailwind`, components in `@resto/ui`.** A
+  colour, radius, font or spacing written into an app's own stylesheet or as a
+  Tailwind arbitrary value (`bg-[oklch(0.97_0_0)]`, `text-[20px]`) cannot be
+  changed for both surfaces at once and silently opts that element out of
+  tenant theming (`buildTenantThemeVars` overrides custom properties at
+  runtime). Use the token classes.
+- **Anything both surfaces render lives in `@resto/ui`** — header, footer,
+  locale switcher, category rail, item card, item detail, cart sheet, cart bar.
+  Copying instead of sharing is how the two cart drawers, two money parsers and
+  one half-translated string set happened.
+- **shadcn/ui (`new-york`, `neutral`) is the only component base.** No parallel
+  hand-rolled dialog/sheet/tabs. `packages/ui/components.json` targets the
+  shared package, so `npx shadcn add …` stays a clean upgrade path.
+- **`@resto/ui` must not import `next/*`.** The two framework-specific concerns
+  — image component and translation function — arrive through
+  `GuestUiProvider`; a shared component that needs a `typeof window` check or
+  an `isNext` prop is a design failure.
+- **Theme is a token swap, never a component branch.** `system` / `light` /
+  `dark` ride one `data-theme` attribute on `<html>`; `system` resolves in CSS so
+  the first paint is right without an inline script. A component participates by
+  using tokens only — `text-white`, `bg-[oklch(…)]` or a hex literal silently
+  opts it out, and nobody notices until the page is opened at night. A surface
+  without a theme control must not set the attribute, and so stays light.
+- **Menu photos must carry alpha.** Studio product shots arrive as JPEG on an
+  opaque white ground, which renders as a white rectangle on a dark page, and no
+  CSS blend can fix it — `multiply`/`darken` cannot tell a white background from
+  white cheese. `seed-demo` cuts the background out before upload
+  (`removeWhiteBackground`); a tenant uploading an opaque photo gets a photo with
+  its own background, which is what they uploaded.
+- **Every guest page is a complete document: header, content, footer.** The QR
+  menu is a page, not a widget.
+- Design decisions go through the `ui-ux-pro-max` skill, React/Next
+  implementation through `vercel-react-best-practices`. Visual reference for
+  the guest look is Dodo Pizza (`shift.dodobrands.io`).
+
+Full rule: `~/work/llm-wiki/personal/rules/guest-surface-visual-parity.md`.

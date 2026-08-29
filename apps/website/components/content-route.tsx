@@ -1,9 +1,15 @@
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { fetchMenuPublic, TenantNotFoundError, TenantSuspendedError } from '@/lib/api-client';
-import { TenantHeader } from '@/components/layout/tenant-header';
+import { SiteFooter, SiteHeader } from '@/components/layout/site-chrome';
 import { ContentPage } from '@/components/content-page';
 import { getSeededContent, type ContentPageKey } from '@/lib/content';
+import { getTranslations } from 'next-intl/server';
+
+const suspendedMessage = async (): Promise<string> => {
+  const t = await getTranslations('errors');
+  return t('tenantSuspended');
+};
 
 export async function contentMetadata(label: string): Promise<Metadata> {
   try {
@@ -21,19 +27,20 @@ export async function ContentRouteServer({ pageKey }: { pageKey: ContentPageKey 
     const tenantName = menu.tenant?.displayName ?? 'Restaurant';
     const { heading, body } = getSeededContent(pageKey, tenantName);
     return (
-      <>
-        <TenantHeader tenant={menu.tenant} />
-        <ContentPage heading={heading} body={body} />
-      </>
+      <div className="flex min-h-dvh flex-col">
+        <SiteHeader tenant={menu.tenant} />
+        <main className="flex-1">
+          <ContentPage heading={heading} body={body} />
+        </main>
+        <SiteFooter tenant={menu.tenant} />
+      </div>
     );
   } catch (err) {
     if (err instanceof TenantNotFoundError) notFound();
     if (err instanceof TenantSuspendedError) {
       return (
-        <main className="flex min-h-screen items-center justify-center px-4">
-          <p className="text-[16px] leading-[1.5] text-[oklch(0.45_0_0)]">
-            This restaurant is temporarily unavailable.
-          </p>
+        <main className="flex min-h-dvh items-center justify-center px-4">
+          <p className="text-muted-foreground text-base">{await suspendedMessage()}</p>
         </main>
       );
     }

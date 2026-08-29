@@ -1,22 +1,18 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { fetchAvailability, fetchMenu, MenuNotFoundError } from './api/client';
-import { toStoppedSet } from './api/availability';
+import { GuestUiProvider, MenuScreen, ThemeSwitcher, Toaster, useGuestTheme } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
-import { ItemDetail } from './components/ItemDetail';
-import { MenuView } from './components/MenuView';
-import { NotFound } from './components/NotFound';
-import { sanitizeTable } from './components/TableBanner';
-import { t } from './i18n';
+import { fetchAvailability, fetchMenu, MenuNotFoundError } from './api/client';
+import { LocaleControl } from './components/LocaleControl';
+import { StatusScreen } from './components/StatusScreen';
+import { TableBanner, sanitizeTable } from './components/TableBanner';
+import { getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
 
-const parsePath = (pathname: string): { kind: 'menu' } | { kind: 'item'; id: string } => {
-  const match = ITEM_PATH.exec(pathname);
-  if (match?.[1]) return { kind: 'item', id: match[1] };
-  return { kind: 'menu' };
-};
+const parseItemId = (pathname: string): string | null => ITEM_PATH.exec(pathname)?.[1] ?? null;
 
 type State =
   | { kind: 'loading' }
@@ -26,17 +22,27 @@ type State =
 
 const AVAILABILITY_POLL_MS = 20_000;
 
+/** Photo URLs are signed for an hour (MENU_IMAGE_URL_TTL_SECONDS). A menu left
+ * open on a table outlives that, and every photo dies at once with no way back.
+ * Re-pull the menu well before the signatures do. */
+const MENU_MAX_AGE_MS = 45 * 60 * 1000;
+
 export const App = () => {
+  const { theme, resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
-  const [stoppedIds, setStoppedIds] = useState<ReadonlySet<string>>(() => new Set());
-  const [route, setRoute] = useState(() =>
-    typeof window === 'undefined' ? { kind: 'menu' as const } : parsePath(window.location.pathname),
+  const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
+  const [attempt, setAttempt] = useState(0);
+  const [openItemId, setOpenItemId] = useState<string | null>(() =>
+    typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
+  const menuFetchedAt = useRef(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    setState({ kind: 'loading' });
     fetchMenu(controller.signal)
       .then((menu) => {
+        menuFetchedAt.current = Date.now();
         setState({ kind: 'ready', menu });
       })
       .catch((err: unknown) => {
@@ -50,13 +56,13 @@ export const App = () => {
       });
     fetchAvailability(controller.signal)
       .then((availability) => {
-        setStoppedIds(toStoppedSet(availability.stoppedItemIds));
+        setStoppedItemIds(availability.stoppedItemIds);
       })
       .catch(() => undefined);
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [attempt]);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
@@ -65,7 +71,15 @@ export const App = () => {
       if (document.hidden) return;
       fetchAvailability(controller.signal)
         .then((availability) => {
-          setStoppedIds(toStoppedSet(availability.stoppedItemIds));
+          setStoppedItemIds(availability.stoppedItemIds);
+        })
+        .catch(() => undefined);
+
+      if (Date.now() - menuFetchedAt.current < MENU_MAX_AGE_MS) return;
+      fetchMenu(controller.signal, { bypassCache: true })
+        .then((menu) => {
+          menuFetchedAt.current = Date.now();
+          setState({ kind: 'ready', menu });
         })
         .catch(() => undefined);
     };
@@ -84,15 +98,14 @@ export const App = () => {
     if (state.kind !== 'ready') return;
     const theme = state.menu.tenant?.theme;
     if (!theme) return;
-    const vars = buildTenantThemeVars(theme);
-    for (const [name, value] of Object.entries(vars)) {
+    for (const [name, value] of Object.entries(buildTenantThemeVars(theme))) {
       document.documentElement.style.setProperty(name, value);
     }
   }, [state]);
 
   useEffect(() => {
     const onPopState = (): void => {
-      setRoute(parsePath(window.location.pathname));
+      setOpenItemId(parseItemId(window.location.pathname));
     };
     window.addEventListener('popstate', onPopState);
     return () => {
@@ -100,62 +113,61 @@ export const App = () => {
     };
   }, []);
 
-  const navigateToItem = (id: string): void => {
-    window.history.pushState(null, '', `/items/${id}`);
-    setRoute({ kind: 'item', id });
-  };
-
-  const navigateToMenu = (): void => {
-    window.history.pushState(null, '', '/');
-    setRoute({ kind: 'menu' });
-  };
-
-  const [cartOpen, setCartOpen] = useState(false);
-
   useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get('table');
     if (raw == null) return;
     const sanitized = sanitizeTable(raw);
-    if (sanitized) {
-      useCartStore.getState().setTable(sanitized);
-    }
+    if (sanitized) useCartStore.getState().setTable(sanitized);
   }, []);
 
-  if (state.kind === 'loading') {
-    return (
-      <main className="state state--loading" aria-live="polite">
-        <h1>{t('menu.title')}</h1>
-      </main>
-    );
-  }
-  if (state.kind === 'not-found') return <NotFound />;
-  if (state.kind === 'error') {
-    return (
-      <main className="state state--error">
-        <h1>{t('menu.error.title')}</h1>
-        <p>{t('menu.error.body')}</p>
-      </main>
-    );
-  }
+  const openItem = useCallback((id: string) => {
+    window.history.pushState(null, '', `/items/${id}`);
+    setOpenItemId(id);
+  }, []);
 
-  if (route.kind === 'item') {
-    const item = state.menu.items.find((i) => i.id === route.id);
-    if (!item) return <NotFound />;
-    const groups = state.menu.modifierGroups.filter((g) => item.modifierGroupIds.includes(g.id));
-    return <ItemDetail item={item} groups={groups} onBack={navigateToMenu} />;
-  }
+  const closeItem = useCallback(() => {
+    window.history.pushState(null, '', '/');
+    setOpenItemId(null);
+  }, []);
+
+  const retry = useCallback(() => {
+    setAttempt((n) => n + 1);
+  }, []);
+
   return (
-    <MenuView
-      menu={state.menu}
-      stoppedIds={stoppedIds}
-      onSelectItem={navigateToItem}
-      cartOpen={cartOpen}
-      onOpenCart={() => {
-        setCartOpen(true);
-      }}
-      onCloseCart={() => {
-        setCartOpen(false);
-      }}
-    />
+    <GuestUiProvider locale={getActiveLocale()} t={t}>
+      {state.kind === 'loading' ? (
+        <StatusScreen title={t('menu.title')} live />
+      ) : state.kind === 'not-found' ? (
+        <StatusScreen title={t('menu.notFound.title')} body={t('menu.notFound.body')} />
+      ) : state.kind === 'error' ? (
+        <StatusScreen title={t('menu.error.title')} body={t('menu.error.body')} onRetry={retry} />
+      ) : (
+        <MenuScreen
+          menu={state.menu}
+          stoppedItemIds={stoppedItemIds}
+          initialItemId={openItemId}
+          onItemOpen={openItem}
+          onItemClose={closeItem}
+          onAddedToCart={() => {
+            toast(t('cart.added'));
+          }}
+          headerActions={
+            <>
+              <ThemeSwitcher theme={theme} onSelect={setTheme} className="hidden sm:inline-flex" />
+              <LocaleControl className="hidden sm:inline-flex" />
+            </>
+          }
+          footerActions={
+            <div className="flex flex-wrap items-center gap-2">
+              <LocaleControl />
+              <ThemeSwitcher theme={theme} onSelect={setTheme} />
+            </div>
+          }
+          banner={<TableBanner />}
+        />
+      )}
+      <Toaster position="bottom-center" theme={resolvedTheme} />
+    </GuestUiProvider>
   );
 };

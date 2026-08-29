@@ -1,0 +1,125 @@
+/* @resto/config-tailwind — guest surface defaults (website + qr-menu).
+ * Import AFTER tokens.css. apps/admin deliberately does not import this file:
+ * the operator panel keeps the neutral base contract.
+ *
+ * Theming: a surface opts in by putting `data-theme` on <html>
+ * (`system` | `light` | `dark`). Without the attribute the surface stays light,
+ * so adding dark tokens here cannot silently repaint a surface that has no
+ * theme control. `system` is resolved by the media query below, which means the
+ * correct palette is painted before any JavaScript runs. */
+:root {
+  color-scheme: light;
+
+  --background: #ffffff;
+  --foreground: #1f1f1f;
+  --card: #ffffff;
+  --card-foreground: #1f1f1f;
+  --popover: #ffffff;
+  --popover-foreground: #1f1f1f;
+
+  --primary: #ff6900;
+  --primary-foreground: #241100;
+  /* Derived from --primary AND the surrounding page, so both a tenant override
+   * and a theme switch carry through: --primary at brand saturation fails 4.5:1
+   * as text on either ground, --primary-strong passes on both. */
+  --primary-strong: color-mix(in oklab, var(--primary) 76%, var(--foreground));
+  --primary-tint: color-mix(in oklab, var(--primary) 10%, var(--background));
+
+  --secondary: #f4f4f5;
+  --secondary-foreground: #1f1f1f;
+  --muted: #f6f6f7;
+  --muted-foreground: #5c5c5c;
+  --accent: var(--primary-tint);
+  --accent-foreground: var(--primary-strong);
+
+  --destructive: #d92d20;
+  --destructive-foreground: #ffffff;
+  --success: #12805c;
+  --success-foreground: #ffffff;
+  --warning: #b54708;
+  --warning-foreground: #ffffff;
+
+  --border: #ececec;
+  --input: #d6d6d6;
+  --ring: var(--primary);
+
+  --radius: 1rem;
+
+  --font-brand:
+    'Nunito Variable', 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, system-ui,
+    sans-serif;
+
+  --header-height: 3.5rem;
+  --category-rail-height: 3.5rem;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+html[data-theme='system'] {
+  color-scheme: light dark;
+}
+
+/* The dark palette is written twice on purpose. `light-dark()` would collapse it
+ * to one declaration but is unsupported before Safari 17.5, and a guest menu is
+ * opened on whatever phone the guest owns — an unsupported function drops the
+ * token entirely rather than degrading. Keep the two blocks in sync. */
+html[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background: #141414;
+  --foreground: #f2f2f2;
+  --card: #1c1c1c;
+  --card-foreground: #f2f2f2;
+  --popover: #1c1c1c;
+  --popover-foreground: #f2f2f2;
+
+  --secondary: #232323;
+  --secondary-foreground: #f2f2f2;
+  --muted: #1f1f1f;
+  --muted-foreground: #a1a1a1;
+
+  --destructive: #ff6b6b;
+  --destructive-foreground: #2a0505;
+  --success: #34d399;
+  --success-foreground: #052e21;
+  --warning: #fbbf24;
+  --warning-foreground: #2b1a00;
+
+  --border: #2e2e2e;
+  --input: #3a3a3a;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-theme='system'] {
+    --background: #141414;
+    --foreground: #f2f2f2;
+    --card: #1c1c1c;
+    --card-foreground: #f2f2f2;
+    --popover: #1c1c1c;
+    --popover-foreground: #f2f2f2;
+
+    --secondary: #232323;
+    --secondary-foreground: #f2f2f2;
+    --muted: #1f1f1f;
+    --muted-foreground: #a1a1a1;
+
+    --destructive: #ff6b6b;
+    --destructive-foreground: #2a0505;
+    --success: #34d399;
+    --success-foreground: #052e21;
+    --warning: #fbbf24;
+    --warning-foreground: #2b1a00;
+
+    --border: #2e2e2e;
+    --input: #3a3a3a;
+  }
+}
+
+@media (min-width: 640px) {
+  :root {
+    --header-height: 4rem;
+    --category-rail-height: 3.25rem;
+  }
+}

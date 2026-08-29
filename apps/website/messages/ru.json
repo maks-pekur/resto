@@ -1,26 +1,26 @@
 {
   "cart": {
+    "addedToCart": "Добавлено в корзину",
+    "checkout": "Оформить заказ",
+    "clear": "Очистить корзину",
+    "clearBody": "Все позиции будут удалены.",
+    "clearCancel": "Оставить",
+    "clearConfirm": "Очистить",
+    "clearHeading": "Очистить корзину?",
+    "close": "Закрыть",
     "empty": "Ваша корзина пуста",
     "emptyBody": "Откройте меню и добавьте позиции, чтобы начать.",
-    "triggerEmpty": "Ваша корзина пуста",
-    "triggerItems": "{n} позиция",
-    "triggerItemsPlural": "{n} позиций",
-    "addToCart": "В корзину",
-    "goToCheckout": "Оформить заказ",
-    "removeItem": "Удалить позицию",
-    "clearCart": "Очистить корзину",
-    "clearCartHeading": "Очистить корзину?",
-    "clearCartBody": "Все позиции будут удалены.",
-    "clearCartConfirm": "Очистить",
-    "clearCartCancel": "Оставить",
-    "removedFromCart": "Удалено из корзины",
-    "undo": "Отменить",
-    "addedToCart": "Добавлено в корзину"
+    "itemCount": "Корзина · {n}",
+    "open": "Корзина",
+    "subtotal": "Итого",
+    "table": "Стол {table}",
+    "title": "Ваша корзина"
   },
   "menu": {
-    "emptyHeading": "Меню недоступно",
+    "categories": "Категории меню",
     "emptyBody": "Этот ресторан ещё не опубликовал меню. Загляните позже.",
-    "unavailableToday": "Сегодня недоступно"
+    "emptyHeading": "Меню недоступно",
+    "title": "Меню"
   },
   "checkout": {
     "placeOrder": "Оформить заказ",
@@ -84,5 +84,32 @@
     "tenantSuspended": "Этот ресторан временно недоступен.",
     "errorBoundaryHeading": "Что-то пошло не так",
     "errorBoundaryBody": "Не удаётся загрузить меню. Попробуйте обновить страницу."
+  },
+  "item": {
+    "addToCart": "В корзину",
+    "allergens": "Аллергены",
+    "back": "Назад в меню",
+    "priceFrom": "от {price}",
+    "qtyDecrease": "Уменьшить количество {name}",
+    "qtyIncrease": "Увеличить количество {name}",
+    "remove": "Удалить {name} из корзины",
+    "size": "Размер",
+    "unavailable": "Сегодня недоступно"
+  },
+  "locale": {
+    "label": "Язык"
+  },
+  "footer": {
+    "about": "О нас",
+    "contact": "Контакты",
+    "delivery": "Доставка",
+    "faq": "Вопросы",
+    "poweredBy": "Работает на RestOS"
+  },
+  "theme": {
+    "dark": "Тёмное",
+    "label": "Оформление",
+    "light": "Светлое",
+    "system": "Как в системе"
   }
 }

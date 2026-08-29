@@ -7,6 +7,7 @@ import { log } from '../lib/logger';
 import type { RuntimeOptions } from '../lib/options';
 import { OperatorHttpClient, signInAsOperator } from '../lib/operator-http';
 import { createAppDb, seedDemoOrder, DEMO_ORDER_SPECS } from '../lib/demo-orders';
+import { uploadPhotoFromUrl } from '../lib/photo-upload';
 import {
   assertPaymentsReadyAllowed,
   markTenantPaymentsReady,
@@ -42,10 +43,16 @@ interface CategoryListResponse {
 interface ItemListItem {
   readonly id: string;
   readonly slug: string;
+  readonly photo: { readonly s3Key: string; readonly sortOrder: number } | null;
 }
 
 interface ItemListResponse {
   readonly items: readonly ItemListItem[];
+}
+
+interface ItemDetailResponse {
+  readonly id: string;
+  readonly sizes: readonly { readonly id: string; readonly name: Localized }[];
 }
 
 interface TenantDef {
@@ -78,70 +85,263 @@ const TENANTS: readonly TenantDef[] = [
   { slug: 'tapas', displayName: 'Tapas Bar', country: 'ES', locations: ['Madrid Centro'] },
 ];
 
+type Localized = Readonly<Record<string, string>>;
+
+interface SizeDef {
+  readonly name: Localized;
+  readonly price: string;
+  readonly isDefault?: boolean;
+}
+
 interface ItemDef {
   readonly slug: string;
-  readonly name: string;
+  readonly name: Localized;
+  readonly description?: Localized;
   readonly price: string;
+  /** Public photo pulled into our own S3 on first seed — see PIZZA_PHOTO. */
+  readonly photoUrl?: string;
+  readonly sizes?: readonly SizeDef[];
 }
 
 interface CategoryDef {
   readonly slug: string;
-  readonly name: string;
+  readonly name: Localized;
   readonly items: readonly ItemDef[];
 }
+
+/**
+ * Dodo Pizza's own product photography, pulled from their public CDN so the
+ * demo pizzeria looks like a real menu instead of a grid of grey boxes.
+ * Development fixture only — these images are Dodo's, not ours, and must not
+ * ship in a public demo or in production seed data.
+ */
+const PIZZA_PHOTO = (id: string): string =>
+  `https://cdn.dodostatic.net/static/Img/Products/Pizza/ru-RU/${id}.jpg`;
+
+/** Dodo's current CDN, which serves the product shot already cut out (WebP with
+ * alpha). Preferred over PIZZA_PHOTO: nothing has to be removed, so the edge is
+ * theirs rather than our flood fill's. */
+const PIZZA_PHOTO_CUTOUT = (id: string): string =>
+  `https://media.dodostatic.net/image/r:1875x1875/${id}.webp`;
+
+const PIZZA_SIZES = (small: string, medium: string, large: string): readonly SizeDef[] => [
+  { name: { en: '25 cm', uk: '25 см', ru: '25 см' }, price: small, isDefault: true },
+  { name: { en: '30 cm', uk: '30 см', ru: '30 см' }, price: medium },
+  { name: { en: '35 cm', uk: '35 см', ru: '35 см' }, price: large },
+];
 
 const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
   pizza: [
     {
       slug: 'pizzas',
-      name: 'Pizzas',
+      name: { en: 'Pizzas', uk: 'Піци', ru: 'Пиццы' },
       items: [
-        { slug: 'margherita', name: 'Margherita', price: '9.99' },
-        { slug: 'pepperoni', name: 'Pepperoni', price: '11.99' },
+        {
+          slug: 'margherita',
+          name: { en: 'Margherita', uk: 'Маргарита', ru: 'Маргарита' },
+          description: {
+            en: 'Tomatoes, mozzarella, Italian herbs, tomato sauce',
+            uk: 'Томати, моцарела, італійські трави, томатний соус',
+            ru: 'Томаты, моцарелла, итальянские травы, томатный соус',
+          },
+          price: '189.00',
+          photoUrl: PIZZA_PHOTO('d48003cd-902c-420d-9f28-92d9dc5f73b4'),
+          sizes: PIZZA_SIZES('189.00', '249.00', '309.00'),
+        },
+        {
+          slug: 'pepperoni',
+          name: { en: 'Pepperoni', uk: 'Пепероні', ru: 'Пепперони' },
+          description: {
+            en: 'Spicy pepperoni, mozzarella, tomato sauce',
+            uk: 'Пікантна пепероні, моцарела, томатний соус',
+            ru: 'Пикантная пепперони, моцарелла, томатный соус',
+          },
+          price: '239.00',
+          photoUrl: PIZZA_PHOTO('d2e337e9-e07a-4199-9cc1-501cc44cb8f8'),
+          sizes: PIZZA_SIZES('239.00', '309.00', '379.00'),
+        },
+        {
+          slug: 'four-cheese',
+          name: { en: 'Four Cheese', uk: 'Сирна', ru: 'Сырная' },
+          description: {
+            en: 'Mozzarella, cheddar, parmesan, cream sauce',
+            uk: 'Моцарела, чедер, пармезан, вершковий соус',
+            ru: 'Моцарелла, чеддер, пармезан, сливочный соус',
+          },
+          price: '219.00',
+          photoUrl: PIZZA_PHOTO('2ffc31bb-132c-4c99-b894-53f7107a1441'),
+          sizes: PIZZA_SIZES('219.00', '289.00', '349.00'),
+        },
+        {
+          slug: 'bbq-chicken',
+          name: { en: 'BBQ Chicken', uk: 'Курча барбекю', ru: 'Цыплёнок барбекю' },
+          description: {
+            en: 'Chicken, BBQ sauce, bacon, sweet pepper, pickles, red onion, mozzarella',
+            uk: 'Курка, соус барбекю, бекон, солодкий перець, огірочки, червона цибуля, моцарела',
+            ru: 'Курица, соус барбекю, бекон, сладкий перец, огурчики, красный лук, моцарелла',
+          },
+          price: '249.00',
+          photoUrl: PIZZA_PHOTO('6652fec1-04df-49d8-8744-232f1032c44b'),
+          sizes: PIZZA_SIZES('249.00', '319.00', '389.00'),
+        },
+        {
+          slug: 'sweet-and-sour-chicken',
+          name: {
+            en: 'Sweet and Sour Chicken',
+            uk: 'Кисло-солодке курча',
+            ru: 'Кисло-сладкий цыплёнок',
+          },
+          description: {
+            en: 'Chicken, pineapple, sweet pepper, sweet and sour sauce, mozzarella',
+            uk: 'Курка, ананаси, солодкий перець, кисло-солодкий соус, моцарела',
+            ru: 'Курица, ананасы, сладкий перец, кисло-сладкий соус, моцарелла',
+          },
+          price: '239.00',
+          photoUrl: PIZZA_PHOTO('af553bf5-3887-4501-b88e-8f0f55229429'),
+          sizes: PIZZA_SIZES('239.00', '309.00', '379.00'),
+        },
+        {
+          slug: 'cheeseburger-pizza',
+          name: { en: 'Cheeseburger Pizza', uk: 'Чізбургер-піца', ru: 'Чизбургер-пицца' },
+          description: {
+            en: 'Beef, pickles, tomatoes, red onion, burger sauce, mozzarella',
+            uk: 'Яловичина, огірочки, томати, червона цибуля, соус бургер, моцарела',
+            ru: 'Говядина, огурчики, томаты, красный лук, соус бургер, моцарелла',
+          },
+          price: '259.00',
+          photoUrl: PIZZA_PHOTO('b750f576-4a83-48e6-a283-5a8efb68c35d'),
+          sizes: PIZZA_SIZES('259.00', '329.00', '399.00'),
+        },
+        {
+          slug: 'crazy-pepperoni',
+          name: { en: 'Crazy Pepperoni', uk: 'Крейзі пепероні', ru: 'Крейзи пепперони' },
+          description: {
+            en: 'Double pepperoni, jalapeño, mozzarella, tomato sauce',
+            uk: 'Подвійна пепероні, халапеньо, моцарела, томатний соус',
+            ru: 'Двойная пепперони, халапеньо, моцарелла, томатный соус',
+          },
+          price: '289.00',
+          photoUrl: PIZZA_PHOTO('1e1a6e80-b3ba-4a44-b6b9-beae5b1fbf27'),
+          sizes: PIZZA_SIZES('289.00', '359.00', '429.00'),
+        },
+        {
+          slug: 'pepperoni-fresh',
+          name: {
+            en: 'Pepperoni Fresh with Pepper',
+            uk: 'Пепероні фреш з перцем',
+            ru: 'Пепперони фреш с перцем',
+          },
+          description: {
+            en: 'Spicy pepperoni, sweet pepper, mozzarella, tomato sauce',
+            uk: 'Пікантна пепероні, солодкий перець, моцарела, томатний соус',
+            ru: 'Пикантная пепперони, сладкий перец, моцарелла, томатный соус',
+          },
+          price: '259.00',
+          photoUrl:
+            'https://cdn.dodostatic.net/static/Img/Products/f035c7f46c0844069722f2bb3ee9f113_584x584.jpeg',
+          sizes: PIZZA_SIZES('259.00', '329.00', '399.00'),
+        },
+        {
+          slug: 'four-seasons',
+          name: { en: 'Four Seasons', uk: 'Чотири сезони', ru: 'Четыре сезона' },
+          description: {
+            en: 'Pepperoni, ham, mushrooms, tomatoes, mozzarella, tomato sauce',
+            uk: 'Пепероні, шинка, печериці, томати, моцарела, томатний соус',
+            ru: 'Пепперони, ветчина, шампиньоны, томаты, моцарелла, томатный соус',
+          },
+          price: '269.00',
+          photoUrl: PIZZA_PHOTO('ec29465e-606b-4a04-a03e-da3940d37e0e'),
+          sizes: PIZZA_SIZES('269.00', '339.00', '409.00'),
+        },
+        {
+          slug: 'ham-and-cheese',
+          name: { en: 'Ham and Cheese', uk: 'Шинка та сир', ru: 'Ветчина и сыр' },
+          description: {
+            en: 'Ham, mozzarella, Italian herbs, cream sauce',
+            uk: 'Шинка, моцарела, італійські трави, вершковий соус',
+            ru: 'Ветчина, моцарелла, итальянские травы, сливочный соус',
+          },
+          price: '229.00',
+          photoUrl: PIZZA_PHOTO_CUTOUT('019a777f32cc764b976b3e4a7dd599ea'),
+          sizes: PIZZA_SIZES('229.00', '299.00', '369.00'),
+        },
+        {
+          slug: 'veggie-and-mushrooms',
+          name: { en: 'Veggie and Mushrooms', uk: 'Овочі та гриби', ru: 'Овощи и грибы' },
+          description: {
+            en: 'Mushrooms, sweet pepper, tomatoes, red onion, mozzarella, tomato sauce',
+            uk: 'Печериці, солодкий перець, томати, червона цибуля, моцарела, томатний соус',
+            ru: 'Шампиньоны, сладкий перец, томаты, красный лук, моцарелла, томатный соус',
+          },
+          price: '219.00',
+          photoUrl: PIZZA_PHOTO('30367198-f3bd-44ed-9314-6f717960da07'),
+          sizes: PIZZA_SIZES('219.00', '289.00', '349.00'),
+        },
       ],
     },
     {
       slug: 'drinks',
-      name: 'Drinks',
+      name: { en: 'Drinks', uk: 'Напої', ru: 'Напитки' },
       items: [
-        { slug: 'cola', name: 'Cola', price: '2.50' },
-        { slug: 'water', name: 'Water', price: '1.50' },
+        {
+          slug: 'cola',
+          name: { en: 'Cola 0.5 l', uk: 'Кола 0,5 л', ru: 'Кола 0,5 л' },
+          price: '45.00',
+        },
+        {
+          slug: 'orange-juice',
+          name: {
+            en: 'Orange juice 0.3 l',
+            uk: 'Сік апельсиновий 0,3 л',
+            ru: 'Сок апельсиновый 0,3 л',
+          },
+          price: '55.00',
+        },
+        {
+          slug: 'water',
+          name: {
+            en: 'Still water 0.5 l',
+            uk: 'Вода негазована 0,5 л',
+            ru: 'Вода негазированная 0,5 л',
+          },
+          price: '30.00',
+        },
       ],
     },
   ],
   burger: [
     {
       slug: 'burgers',
-      name: 'Burgers',
+      name: { en: 'Burgers' },
       items: [
-        { slug: 'cheeseburger', name: 'Cheeseburger', price: '8.99' },
-        { slug: 'veggie-burger', name: 'Veggie Burger', price: '8.49' },
+        { slug: 'cheeseburger', name: { en: 'Cheeseburger' }, price: '8.99' },
+        { slug: 'veggie-burger', name: { en: 'Veggie Burger' }, price: '8.49' },
       ],
     },
     {
       slug: 'sides',
-      name: 'Sides',
+      name: { en: 'Sides' },
       items: [
-        { slug: 'fries', name: 'Fries', price: '3.99' },
-        { slug: 'onion-rings', name: 'Onion Rings', price: '4.49' },
+        { slug: 'fries', name: { en: 'Fries' }, price: '3.99' },
+        { slug: 'onion-rings', name: { en: 'Onion Rings' }, price: '4.49' },
       ],
     },
   ],
   tapas: [
     {
       slug: 'tapas',
-      name: 'Tapas',
+      name: { en: 'Tapas' },
       items: [
-        { slug: 'patatas-bravas', name: 'Patatas Bravas', price: '5.50' },
-        { slug: 'gambas-al-ajillo', name: 'Gambas al Ajillo', price: '8.50' },
+        { slug: 'patatas-bravas', name: { en: 'Patatas Bravas' }, price: '5.50' },
+        { slug: 'gambas-al-ajillo', name: { en: 'Gambas al Ajillo' }, price: '8.50' },
       ],
     },
     {
       slug: 'drinks',
-      name: 'Drinks',
+      name: { en: 'Drinks' },
       items: [
-        { slug: 'sangria', name: 'Sangria', price: '4.50' },
-        { slug: 'agua', name: 'Agua', price: '1.80' },
+        { slug: 'sangria', name: { en: 'Sangria' }, price: '4.50' },
+        { slug: 'agua', name: { en: 'Agua' }, price: '1.80' },
       ],
     },
   ],
@@ -224,25 +424,51 @@ const ensureLocations = async (
   return byName;
 };
 
+const ensureItemSizes = async (
+  op: OperatorHttpClient,
+  tenantSlug: string,
+  menuItemId: string,
+  item: ItemDef,
+): Promise<void> => {
+  if (!item.sizes || item.sizes.length === 0) return;
+
+  const detail = await op.get<ItemDetailResponse>(`/v1/catalog/items/${menuItemId}`);
+  const sizeIdByName = new Map(detail.sizes.map((size) => [size.name.en ?? '', size.id]));
+
+  for (const [index, size] of item.sizes.entries()) {
+    const existingId = sizeIdByName.get(size.name.en ?? '');
+    await op.post('/v1/catalog/item-sizes', {
+      ...(existingId ? { id: existingId } : {}),
+      menuItemId,
+      name: size.name,
+      price: size.price,
+      isDefault: size.isDefault ?? false,
+      sortOrder: index,
+    });
+  }
+  log('seed-demo.item.sizes', { tenant: tenantSlug, menuItemId, sizes: item.sizes.length });
+};
+
 const ensureCatalog = async (
   op: OperatorHttpClient,
   tenantSlug: string,
   currency: CurrencyValue,
+  refreshPhotos: boolean,
 ): Promise<void> => {
   const existingCategories = await op.get<CategoryListResponse>('/v1/catalog/categories');
   const categoryBySlug = new Map(existingCategories.items.map((c) => [c.slug, c.id]));
 
-  for (const category of CATALOG[tenantSlug] ?? []) {
+  for (const [categoryIndex, category] of (CATALOG[tenantSlug] ?? []).entries()) {
     let categoryId = categoryBySlug.get(category.slug);
     if (categoryId) {
       log('seed-demo.category.exists', { tenant: tenantSlug, slug: category.slug });
     } else {
       const created = await op.post<{ id: string }>('/v1/catalog/categories', {
         slug: category.slug,
-        name: { en: category.name },
+        name: category.name,
         parentId: null,
         description: null,
-        sortOrder: 0,
+        sortOrder: categoryIndex,
         code: null,
       });
       categoryId = created.id;
@@ -256,24 +482,37 @@ const ensureCatalog = async (
     const existingItems = await op.get<ItemListResponse>(
       `/v1/catalog/items?categoryId=${categoryId}&status=all`,
     );
-    const itemBySlug = new Map(existingItems.items.map((i) => [i.slug, i.id]));
+    const itemBySlug = new Map(existingItems.items.map((i) => [i.slug, i]));
 
-    for (const item of category.items) {
-      const existingId = itemBySlug.get(item.slug);
+    for (const [itemIndex, item] of category.items.entries()) {
+      const existing = itemBySlug.get(item.slug);
+      const existingKey = existing?.photo?.s3Key ?? null;
+      const s3Key =
+        existingKey !== null && !refreshPhotos
+          ? existingKey
+          : item.photoUrl
+            ? await uploadPhotoFromUrl(op, item.photoUrl)
+            : existingKey;
+
       const payload = {
-        ...(existingId ? { id: existingId } : {}),
+        ...(existing ? { id: existing.id } : {}),
         categoryId,
         slug: item.slug,
-        name: { en: item.name },
+        name: item.name,
+        description: item.description ?? null,
         basePrice: item.price,
         currency,
+        photos: s3Key ? [{ s3Key, sortOrder: 0, isPrimary: true }] : [],
+        sortOrder: itemIndex,
         status: 'published' as const,
       };
-      await op.post('/v1/catalog/items', payload);
-      log(existingId ? 'seed-demo.item.updated' : 'seed-demo.item.created', {
+      const saved = await op.post<{ id: string }>('/v1/catalog/items', payload);
+      log(existing ? 'seed-demo.item.updated' : 'seed-demo.item.created', {
         tenant: tenantSlug,
         slug: item.slug,
       });
+
+      await ensureItemSizes(op, tenantSlug, saved.id, item);
     }
   }
 
@@ -387,6 +626,9 @@ export const runSeedDemo = async (
   // markTenantPaymentsReady is ever called from a path with a looser
   // outer guard (mirrors how assertProdGuardrails mirrors env.schema.ts).
   const paymentsReadyRequested = argv.includes('--payments-ready');
+  // Photos are reused across runs; this re-pulls and re-cuts them after a change
+  // to the source list or to the image pipeline.
+  const refreshPhotos = argv.includes('--refresh-photos');
   if (paymentsReadyRequested) {
     assertPaymentsReadyAllowed(process.env.NODE_ENV);
   }
@@ -447,7 +689,7 @@ export const runSeedDemo = async (
       });
 
       const locationsByName = await ensureLocations(op, tenantDef);
-      await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country));
+      await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country), refreshPhotos);
 
       for (const staff of staffForTenant) {
         const memberId = memberIdByEmail.get(staff.email);

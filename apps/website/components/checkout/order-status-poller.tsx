@@ -4,8 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useTranslations, useLocale } from 'next-intl';
 import { CheckIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Button } from '@resto/ui';
+import { cn } from '@resto/ui';
 import { getOrderStatus, type OrderStatusResponse } from '@/lib/checkout-api';
 
 type TrackerStatus = 'paid' | 'accepted' | 'preparing' | 'ready';
@@ -127,23 +127,21 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
   };
 
   const reconnectBanner = pollFailed ? (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-[12px] leading-[1.4] text-destructive">
+    <div className="flex items-center justify-between gap-3 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive">
       <span>{t('status.updateFailed')}</span>
       <Button type="button" variant="outline" size="sm" onClick={handleRetry}>
         {t('status.retry')}
       </Button>
     </div>
   ) : isPolling ? (
-    <p className="text-[12px] leading-[1.4] text-muted-foreground">{t('status.updating')}</p>
+    <p className="text-xs text-muted-foreground">{t('status.updating')}</p>
   ) : null;
 
   if (status.status === 'failed') {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-[24px] font-semibold leading-[1.2]">
-          {t('status.paymentFailedTitle')}
-        </h1>
-        <Button asChild className="w-full bg-(--primary,#16a34a) text-white">
+        <h1 className="text-2xl font-semibold">{t('status.paymentFailedTitle')}</h1>
+        <Button asChild className="w-full bg-primary text-primary-foreground">
           <Link href="/checkout">{t('status.paymentFailedRetry')}</Link>
         </Button>
       </div>
@@ -156,16 +154,14 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     const reasonKey = reasonMessageKey(status.cancelReason);
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="text-[24px] font-semibold leading-[1.2]">{title}</h1>
+        <h1 className="text-2xl font-semibold">{title}</h1>
         {reasonKey ? (
-          <p className="text-[14px] leading-[1.5] text-muted-foreground">
-            {capitalize(t(reasonKey))}.
-          </p>
+          <p className="text-sm text-muted-foreground">{capitalize(t(reasonKey))}.</p>
         ) : null}
-        <p className="text-[14px] leading-[1.5]">
+        <p className="text-sm">
           {t('status.refundLine', { amount: `${status.currency} ${status.total}` })}
         </p>
-        <Button asChild className="w-full bg-(--primary,#16a34a) text-white">
+        <Button asChild className="w-full bg-primary text-primary-foreground">
           <Link href="/">{t('status.backToMenu')}</Link>
         </Button>
       </div>
@@ -175,9 +171,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
   if (status.status === 'created' || status.status === 'requires_action') {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-[16px] leading-[1.5] text-muted-foreground">
-          {t('status.awaitingPayment')}
-        </p>
+        <p className="text-base text-muted-foreground">{t('status.awaitingPayment')}</p>
         {reconnectBanner}
       </div>
     );
@@ -202,7 +196,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-[28px] font-semibold leading-[1.1]">
+      <p className="text-3xl font-semibold">
         {t('status.orderNumberLabel', { n: status.shortNumber ?? '—' })}
       </p>
 
@@ -226,14 +220,14 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
                 {state === 'complete' ? (
                   <CheckIcon className="size-4" />
                 ) : (
-                  <span className="text-[12px] font-semibold">{index + 1}</span>
+                  <span className="text-xs font-semibold">{index + 1}</span>
                 )}
               </div>
               <span
                 className={cn(
-                  'text-[12px] leading-[1.2] font-normal uppercase text-muted-foreground sm:text-center',
+                  'text-xs font-normal uppercase text-muted-foreground sm:text-center',
                   (state === 'current' || state === 'complete') &&
-                    'text-[14px] font-semibold text-foreground normal-case',
+                    'text-sm font-semibold text-foreground normal-case',
                 )}
               >
                 {step.label}
@@ -243,7 +237,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
         })}
       </div>
 
-      <p className="text-[14px] leading-[1.5]">
+      <p className="text-sm">
         {status.etaAt
           ? t('status.etaLabel', { time: formatClockTime(status.etaAt, locale) })
           : t('status.waitingAccept')}

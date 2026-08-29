@@ -18,8 +18,10 @@ import { GetMenuAvailabilityService } from '../../application/availability/get-m
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
 import { GetPublishedMenuService } from '../../application/publishing/get-published-menu.service';
 import { MENU_VERSION_PORT, type MenuVersionPort } from '../../domain/ports';
+import { MENU_AVAILABILITY_CACHE_CONTROL, MENU_CACHE_CONTROL } from '../../domain/menu-cache';
 import { MenuItemNotFoundError } from '../../domain/errors';
 import type { PublishedMenu, PublishedMenuItem } from '../../domain/published-menu';
+import type { TenantSnapshot } from '../../../tenancy/domain/tenant.aggregate';
 import { mapCatalogError } from './error-mapping';
 import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
@@ -105,8 +107,22 @@ const MenuAvailabilitySchema = z.object({
   stoppedItemIds: z.array(z.string().uuid()),
 });
 
+const MenuTenantThemeSchema = z.object({
+  logoUrl: z.string().url().nullable(),
+  primaryColor: z.string().nullable(),
+  font: z.string().nullable(),
+});
+
+const MenuTenantSchema = z.object({
+  id: z.string().uuid(),
+  slug: z.string(),
+  displayName: z.string(),
+  theme: MenuTenantThemeSchema.nullable(),
+});
+
 const PublishedMenuSchema = z.object({
   tenantId: z.string().uuid(),
+  tenant: MenuTenantSchema.nullable(),
   version: z.number().int().nonnegative(),
   currency: z.string().regex(/^[A-Z]{3}$/),
   categories: z.array(PublishedMenuCategorySchema),
@@ -114,11 +130,28 @@ const PublishedMenuSchema = z.object({
   modifierGroups: z.array(PublishedMenuModifierGroupSchema),
 });
 
+type GuestMenuTenant = z.infer<typeof MenuTenantSchema>;
+
 class PublishedMenuDto extends createZodDto(PublishedMenuSchema) {}
 class PublishedMenuItemDto extends createZodDto(PublishedMenuItemSchema) {}
 class MenuAvailabilityDto extends createZodDto(MenuAvailabilitySchema) {}
 
 const wrap = wrapWith(mapCatalogError);
+
+/** The subset of a tenant the guest surfaces render as chrome — name, logo,
+ * brand colour. Deliberately narrow: this response is edge-cached and public. */
+const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
+  id: tenant.id,
+  slug: tenant.slug,
+  displayName: tenant.displayName,
+  theme: tenant.theme
+    ? {
+        logoUrl: tenant.theme.logoUrl,
+        primaryColor: tenant.theme.primaryColor,
+        font: tenant.theme.font,
+      }
+    : null,
+});
 
 /**
  * Customer-facing read path. Tenant is resolved by the global
@@ -164,7 +197,7 @@ export class PublicMenuController {
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=5');
+    reply.header('Cache-Control', MENU_AVAILABILITY_CACHE_CONTROL);
     return { stoppedItemIds };
   }
 
@@ -176,17 +209,21 @@ export class PublicMenuController {
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) reply: FastifyReply,
     @Headers('if-none-match') ifNoneMatch?: string,
-  ): Promise<PublishedMenu | undefined> {
+  ): Promise<(PublishedMenu & { readonly tenant: GuestMenuTenant }) | undefined> {
     const ctx = await this.requireGuestTenantOr404(req);
-    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
+    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.id)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
       reply.status(304);
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
-    return wrap(() => this.getMenu.execute(ctx.tenantId));
+    reply.header('Cache-Control', MENU_CACHE_CONTROL);
+    const menu = await wrap(() => this.getMenu.execute(ctx.id));
+    // The ETag is the menu version, so a rename or a new logo is only picked up
+    // after s-maxage expires. Guest chrome tolerates that; menu content does not,
+    // which is why the tenant block is attached here and not versioned separately.
+    return { ...menu, tenant: guestTenant(ctx) };
   }
 
   @Get('items/:id')
@@ -200,14 +237,14 @@ export class PublicMenuController {
     @Headers('if-none-match') ifNoneMatch?: string,
   ): Promise<PublishedMenuItem | undefined> {
     const ctx = await this.requireGuestTenantOr404(req);
-    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.tenantId)));
+    const version = await wrap(() => this.menuVersions.current(TenantId.parse(ctx.id)));
     const etag = '"' + version.toString() + '"';
     if (ifNoneMatch === etag) {
       reply.status(304);
       return undefined;
     }
     reply.header('ETag', etag);
-    reply.header('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=60');
+    reply.header('Cache-Control', MENU_CACHE_CONTROL);
     return wrap(() => {
       const parsed = MenuItemId.safeParse(id);
       if (!parsed.success) throw new MenuItemNotFoundError(id);
@@ -215,13 +252,11 @@ export class PublicMenuController {
     });
   }
 
-  private async requireGuestTenantOr404(
-    req: FastifyRequest,
-  ): Promise<{ readonly tenantId: string }> {
+  private async requireGuestTenantOr404(req: FastifyRequest): Promise<TenantSnapshot> {
     const trustProxy = this.env.TRUST_PROXY !== undefined && this.env.TRUST_PROXY.length > 0;
     const host = effectiveHost(req.headers, trustProxy);
     const resolved = await this.tenants.resolveByCustomerHost(host);
     if (!resolved) throw new NotFoundException('No tenant resolved for this host.');
-    return { tenantId: resolved.id };
+    return resolved;
   }
 }

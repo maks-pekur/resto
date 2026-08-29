@@ -1,26 +1,26 @@
 {
   "cart": {
+    "addedToCart": "Додано до кошика",
+    "checkout": "Оформити замовлення",
+    "clear": "Очистити кошик",
+    "clearBody": "Усі позиції буде видалено.",
+    "clearCancel": "Залишити",
+    "clearConfirm": "Очистити",
+    "clearHeading": "Очистити кошик?",
+    "close": "Закрити",
     "empty": "Ваш кошик порожній",
     "emptyBody": "Перегляньте меню та додайте позиції, щоб почати.",
-    "triggerEmpty": "Ваш кошик порожній",
-    "triggerItems": "{n} позиція",
-    "triggerItemsPlural": "{n} позицій",
-    "addToCart": "До кошика",
-    "goToCheckout": "Оформити замовлення",
-    "removeItem": "Видалити позицію",
-    "clearCart": "Очистити кошик",
-    "clearCartHeading": "Очистити кошик?",
-    "clearCartBody": "Усі позиції буде видалено.",
-    "clearCartConfirm": "Очистити",
-    "clearCartCancel": "Залишити",
-    "removedFromCart": "Видалено з кошика",
-    "undo": "Скасувати",
-    "addedToCart": "Додано до кошика"
+    "itemCount": "Кошик · {n}",
+    "open": "Кошик",
+    "subtotal": "Разом",
+    "table": "Стіл {table}",
+    "title": "Ваш кошик"
   },
   "menu": {
-    "emptyHeading": "Меню недоступне",
+    "categories": "Категорії меню",
     "emptyBody": "Цей ресторан ще не опублікував меню. Завітайте пізніше.",
-    "unavailableToday": "Сьогодні недоступно"
+    "emptyHeading": "Меню недоступне",
+    "title": "Меню"
   },
   "checkout": {
     "placeOrder": "Оформити замовлення",
@@ -84,5 +84,32 @@
     "tenantSuspended": "Цей ресторан тимчасово недоступний.",
     "errorBoundaryHeading": "Щось пішло не так",
     "errorBoundaryBody": "Не вдається завантажити меню. Спробуйте оновити сторінку."
+  },
+  "item": {
+    "addToCart": "До кошика",
+    "allergens": "Алергени",
+    "back": "Назад до меню",
+    "priceFrom": "від {price}",
+    "qtyDecrease": "Зменшити кількість {name}",
+    "qtyIncrease": "Збільшити кількість {name}",
+    "remove": "Видалити {name} з кошика",
+    "size": "Розмір",
+    "unavailable": "Сьогодні недоступно"
+  },
+  "locale": {
+    "label": "Мова"
+  },
+  "footer": {
+    "about": "Про нас",
+    "contact": "Контакти",
+    "delivery": "Доставка",
+    "faq": "Питання",
+    "poweredBy": "Працює на RestOS"
+  },
+  "theme": {
+    "dark": "Темне",
+    "label": "Оформлення",
+    "light": "Світле",
+    "system": "Як у системі"
   }
 }
