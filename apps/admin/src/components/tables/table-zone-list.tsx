@@ -76,6 +76,20 @@ export function TableZoneList({ zones, locationId }: TableZoneListProps): React.
   );
 }
 
+/**
+ * The mutation's failure sentence is rendered here (in addition to the toast), inside whichever
+ * dialog is open — a page-level banner sits behind Radix's `aria-hidden` background mask while a
+ * dialog is open and would be invisible to assistive tech and to the operator's focus alike.
+ */
+function DialogError({ message }: { readonly message: string | null }): React.ReactElement | null {
+  if (!message) return null;
+  return (
+    <p role="alert" className="text-destructive text-sm">
+      {message}
+    </p>
+  );
+}
+
 interface ZoneCardProps {
   readonly zone: TableZoneView;
   readonly locationId: string;
@@ -89,9 +103,12 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
 
   const [renameOpen, setRenameOpen] = React.useState(false);
   const [renameValue, setRenameValue] = React.useState(zone.name);
+  const [renameError, setRenameError] = React.useState<string | null>(null);
   const [addTablesOpen, setAddTablesOpen] = React.useState(false);
   const [addTablesCount, setAddTablesCount] = React.useState('1');
+  const [addTablesError, setAddTablesError] = React.useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [archiveError, setArchiveError] = React.useState<string | null>(null);
   const [printing, setPrinting] = React.useState(false);
 
   const activeTableCount = zone.tables.filter((table) => table.status === 'active').length;
@@ -100,7 +117,9 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     mutationFn: () => renameTableZoneMutation(locationId, zone.id, renameValue.trim()),
     onSuccess: (res) => {
       if (!res.ok) {
-        showError(friendlyTableError(res.status, res.data as ProblemDetails | null));
+        const message = friendlyTableError(res.status, res.data as ProblemDetails | null);
+        showError(message);
+        setRenameError(message);
         return;
       }
       showSuccess(t('renameZoneSuccess'));
@@ -109,6 +128,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     },
     onError: () => {
       showError(null, t('errors.generic'));
+      setRenameError(t('errors.generic'));
     },
   });
 
@@ -122,7 +142,9 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     mutationFn: () => addTablesMutation(locationId, zone.id, addTablesCountNumber),
     onSuccess: (res) => {
       if (!res.ok) {
-        showError(friendlyTableError(res.status, res.data as ProblemDetails | null));
+        const message = friendlyTableError(res.status, res.data as ProblemDetails | null);
+        showError(message);
+        setAddTablesError(message);
         return;
       }
       showSuccess(t('addTablesSuccess'));
@@ -132,6 +154,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     },
     onError: () => {
       showError(null, t('errors.generic'));
+      setAddTablesError(t('errors.generic'));
     },
   });
 
@@ -139,7 +162,9 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     mutationFn: () => archiveTableZoneMutation(locationId, zone.id),
     onSuccess: (res) => {
       if (!res.ok) {
-        showError(friendlyTableError(res.status, res.data as ProblemDetails | null));
+        const message = friendlyTableError(res.status, res.data as ProblemDetails | null);
+        showError(message);
+        setArchiveError(message);
         return;
       }
       showSuccess(t('archiveZoneSuccess'));
@@ -148,6 +173,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
     },
     onError: () => {
       showError(null, t('errors.generic'));
+      setArchiveError(t('errors.generic'));
     },
   });
 
@@ -195,6 +221,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
                 size="sm"
                 onClick={() => {
                   setRenameValue(zone.name);
+                  setRenameError(null);
                   setRenameOpen(true);
                 }}
               >
@@ -205,6 +232,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
                 variant="outline"
                 size="sm"
                 onClick={() => {
+                  setAddTablesError(null);
                   setAddTablesOpen(true);
                 }}
               >
@@ -216,6 +244,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
                 size="sm"
                 className="text-destructive"
                 onClick={() => {
+                  setArchiveError(null);
                   setArchiveOpen(true);
                 }}
               >
@@ -266,6 +295,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
               }}
             />
           </div>
+          <DialogError message={renameError} />
           <DialogFooter>
             <Button
               variant="outline"
@@ -310,6 +340,7 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
               </p>
             ) : null}
           </div>
+          <DialogError message={addTablesError} />
           <DialogFooter>
             <Button
               variant="outline"
@@ -339,10 +370,12 @@ function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactEl
               {t('archiveZoneConfirmDescription', { count: activeTableCount })}
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <DialogError message={archiveError} />
           <AlertDialogFooter>
             <AlertDialogCancel>{t('cancelAction')}</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
+              onClick={(e) => {
+                e.preventDefault();
                 archiveMutation.mutate();
               }}
             >
@@ -374,18 +407,20 @@ function TableRowItem({
 
   const [renameOpen, setRenameOpen] = React.useState(false);
   const [renameValue, setRenameValue] = React.useState(table.number);
+  const [renameError, setRenameError] = React.useState<string | null>(null);
   const [archiveOpen, setArchiveOpen] = React.useState(false);
+  const [archiveError, setArchiveError] = React.useState<string | null>(null);
   const [downloading, setDownloading] = React.useState(false);
 
   const renameMutation = useMutation({
     mutationFn: () => renameTableMutation(locationId, zoneId, table.id, renameValue.trim()),
     onSuccess: (res) => {
       if (!res.ok) {
-        showError(
-          friendlyTableError(res.status, res.data as ProblemDetails | null, {
-            attemptedNumber: renameValue.trim(),
-          }),
-        );
+        const message = friendlyTableError(res.status, res.data as ProblemDetails | null, {
+          attemptedNumber: renameValue.trim(),
+        });
+        showError(message);
+        setRenameError(message);
         return;
       }
       showSuccess(t('renameTableSuccess'));
@@ -394,6 +429,7 @@ function TableRowItem({
     },
     onError: () => {
       showError(null, t('errors.generic'));
+      setRenameError(t('errors.generic'));
     },
   });
 
@@ -401,7 +437,9 @@ function TableRowItem({
     mutationFn: () => archiveTableMutation(locationId, zoneId, table.id),
     onSuccess: (res) => {
       if (!res.ok) {
-        showError(friendlyTableError(res.status, res.data as ProblemDetails | null));
+        const message = friendlyTableError(res.status, res.data as ProblemDetails | null);
+        showError(message);
+        setArchiveError(message);
         return;
       }
       showSuccess(t('archiveTableSuccess'));
@@ -410,6 +448,7 @@ function TableRowItem({
     },
     onError: () => {
       showError(null, t('errors.generic'));
+      setArchiveError(t('errors.generic'));
     },
   });
 
@@ -444,6 +483,7 @@ function TableRowItem({
               size="sm"
               onClick={() => {
                 setRenameValue(table.number);
+                setRenameError(null);
                 setRenameOpen(true);
               }}
             >
@@ -455,6 +495,7 @@ function TableRowItem({
               size="sm"
               className="text-destructive"
               onClick={() => {
+                setArchiveError(null);
                 setArchiveOpen(true);
               }}
             >
@@ -479,6 +520,7 @@ function TableRowItem({
                 }}
               />
             </div>
+            <DialogError message={renameError} />
             <DialogFooter>
               <Button
                 variant="outline"
@@ -506,10 +548,12 @@ function TableRowItem({
               <AlertDialogTitle>{t('archiveTableConfirmTitle')}</AlertDialogTitle>
               <AlertDialogDescription>{t('archiveTableConfirmDescription')}</AlertDialogDescription>
             </AlertDialogHeader>
+            <DialogError message={archiveError} />
             <AlertDialogFooter>
               <AlertDialogCancel>{t('cancelAction')}</AlertDialogCancel>
               <AlertDialogAction
-                onClick={() => {
+                onClick={(e) => {
+                  e.preventDefault();
                   archiveMutation.mutate();
                 }}
               >

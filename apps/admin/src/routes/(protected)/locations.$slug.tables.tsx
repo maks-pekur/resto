@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
-import { requirePermission } from '@/lib/auth/permissions';
+import { hasPermission, requirePermission } from '@/lib/auth/permissions';
+import { meQuery } from '@/lib/queries/identity';
 import { tenantLocationsQuery } from '@/lib/queries/locations';
 import { tableZonesQuery } from '@/lib/queries/table-zones';
 import { PageHeading } from '@/components/page-heading';
@@ -30,6 +31,10 @@ function TablesPage() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'tables' });
+
+  const { data: meResult } = useQuery(meQuery());
+  const me = meResult?.data ?? null;
+  const canUpdate = hasPermission(me, 'table', 'update');
 
   const { data: locationsResult, isPending: isLocationsPending } = useQuery(tenantLocationsQuery());
   const location = (locationsResult?.data ?? []).find((loc) => loc.slug === slug);
@@ -73,7 +78,7 @@ function TablesPage() {
       <PageHeading
         title={t('pageTitle')}
         description={location.name}
-        action={<CreateTableZoneDialog locationId={location.id} />}
+        action={canUpdate ? <CreateTableZoneDialog locationId={location.id} /> : undefined}
       />
       <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
         {isZonesPending ? (
