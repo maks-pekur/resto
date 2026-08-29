@@ -1,5 +1,15 @@
 # Codebase Structure
 
+> **STALE — analysed 2026-08-18, before phase 10.2.** Phase 10.2 (merged 2026-08-22)
+> deleted the Brand level from the product: `BrandScopeGuard`, `@BrandNeutral()`,
+> `@RequireBrand()`, `req.activeBrandId`, the `x-brand-slug` header, the `/$brandSlug`
+> admin route segment and the brand RLS policies all have **zero occurrences in the
+> codebase today**. Phase 10.3 (table zones, tables and QR codes) is also absent.
+> Treat every mention of a brand in this file as describing a system that no longer
+> exists, and verify against the code before acting on anything here.
+> Regenerate this directory with `/gsd-map-codebase` to clear this notice.
+
+
 **Analysis Date:** 2026-08-18
 
 ## Directory Layout
