@@ -26,7 +26,6 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.221.0",
     "@opentelemetry/resources": "^2.10.0",
     "@opentelemetry/sdk-node": "^0.221.0",
-    "@opentelemetry/semantic-conventions": "^1.43.0",
     "@resto/db": "workspace:*",
     "@resto/domain": "workspace:*",
     "@resto/events": "workspace:*",
@@ -36,7 +35,6 @@
     "fastify": "^5.12.1",
     "nestjs-zod": "^5.5.0",
     "nodemailer": "^9.0.1",
-    "pino": "^9.5.0",
     "reflect-metadata": "^0.2.2",
     "resend": "6.12.4",
     "rxjs": "^7.8.1",
@@ -46,7 +44,6 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@better-auth/cli": "=1.4.22",
     "@better-auth/utils": "=0.3.0",
     "@nestjs/testing": "^11.2.1",
     "@resto/config-eslint": "workspace:*",

@@ -14,7 +14,6 @@
     "@resto/cart": "workspace:*",
     "@resto/config-tailwind": "workspace:*",
     "@resto/ui": "workspace:*",
-    "lucide-react": "^1.16.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^2.0.7"

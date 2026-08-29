@@ -2,7 +2,7 @@
 
 ## What This Is
 
-RestOS is an **AI-driven multi-tenant SaaS for restaurants**. One subscription gives a restaurant a turnkey digital presence (public site, in-restaurant QR-menu, and — later — Telegram channel) backed by an AI layer that is present in every operator and guest interaction. One SaaS customer = one restaurant company (Tenant) with internal `Brand → Location → Menu / Zones / Staff` hierarchy. RestOS owns the customer-facing layer (orders, menu, customers, loyalty, marketing) + the AI layer. Third-party POS systems (iiko, r_keeper, Poster) are **partner integrations** that open a B2B GTM channel, never a technical prerequisite — a restaurant arriving without any POS gets full value standalone.
+RestOS is an **AI-driven multi-tenant SaaS for restaurants**. One subscription gives a restaurant a turnkey digital presence (public site, in-restaurant QR-menu, and — later — Telegram channel) backed by an AI layer that is present in every operator and guest interaction. One SaaS customer = one restaurant company (Tenant) with internal `Location → Menu / Zones / Staff` hierarchy — phase 10.2 removed the Brand level entirely; one restaurant is one tenant is one Better Auth organization. RestOS owns the customer-facing layer (orders, menu, customers, loyalty, marketing) + the AI layer. Third-party POS systems (iiko, r_keeper, Poster) are **partner integrations** that open a B2B GTM channel, never a technical prerequisite — a restaurant arriving without any POS gets full value standalone.
 
 The pivot to AI-driven positioning was decided on 2026-05-27 via `/gsd-explore`. The authoritative pivot context lives in `.planning/notes/ai-driven-pivot.md`; the rollout is staged across three milestones (see "Milestone Structure" below). The canonical product specification is `SPEC.md` (Russian, kept as source-of-truth for product surface area).
 
@@ -41,7 +41,7 @@ If everything else fails (no loyalty, no marketing automation, no advanced analy
 - ✓ Composite FK on every tenant-scoped child table (`parent_id, tenant_id`)
 - ✓ Tenant context propagation via `AsyncLocalStorage` + `TenantContextMiddleware`
 - ✓ Transactional outbox + NATS JetStream event bus + inbox dedup pattern (`runDeduped`)
-- ✓ Redis catalog cache (graceful degradation to DB on outage)
+- ✓ ~~Redis catalog cache (graceful degradation to DB on outage)~~ — **superseded:** Redis was removed; menu reads are cached at the HTTP/CDN layer instead
 - ✓ S3-compatible object storage with presigned URLs (MinIO dev, S3/R2 prod target)
 - ✓ OpenTelemetry tracing with auto-instrumentation; Pino structured logging with PII redaction
 - ✓ Zod-based validation at every boundary (env, HTTP DTOs, event envelopes, domain VOs)
@@ -72,14 +72,14 @@ If everything else fails (no loyalty, no marketing automation, no advanced analy
 - ✓ Slug auto-derive via `transliteration.slugify`; slug-history kept in `menu_item_slug_aliases` for SEO redirects (D-4a-04)
 - ✓ Delayed-publish revert (5s in-memory timer per tenant + cancel/undo) — `DelayedPublishService` (CAT-06 / D-4a-05)
 - ✓ First-publish vs republish detection via `tenants.menu_first_published_at` — emits `MenuFirstPublishedV1` / `MenuRepublishedV1` outbox events (D-4a-06)
-- ✓ Redis menu-version cache with `nextval('menu_versions_seq')` fallback on Redis outage (CAT-10 / D-4a-07)
-- ✓ Public published-menu read endpoint `/v1/menu` with Redis cache and presigned photos[]
+- ✓ Menu-version cache with `nextval('menu_versions_seq')` (CAT-10 / D-4a-07) — the Redis half was later removed; the sequence remains the version source
+- ✓ Public published-menu read endpoint `/v1/menu` with presigned photos[] — cached via `s-maxage`/`stale-while-revalidate` + ETag since Redis was removed
 - ✓ OpenAPI drift-check (`pnpm openapi:check`) wired as CI gate (D-4a-08)
 - ✓ Cross-tenant isolation matrix in `tenant-isolation.spec.ts` covers all 6 catalog tables (composite-FK audit green, RLS ENABLE+FORCE on every new table)
 
 **Apps (scaffolded):**
 
-- ✓ `apps/admin` — Next.js 15 RSC operator dashboard scaffold (shadcn/ui, App Router, server actions, `apiFetch` with BA session forwarding)
+- ✓ `apps/admin` — operator dashboard scaffold (shadcn/ui) — originally Next.js 15 RSC; migrated to a Vite + React + TanStack Router SPA, so App Router, server actions and `apiFetch` session forwarding no longer apply
 - ✓ `apps/qr-menu` — Vite+React customer-facing menu reader
 
 ### Active
@@ -178,10 +178,10 @@ If everything else fails (no loyalty, no marketing automation, no advanced analy
 
 ## Constraints
 
-- **Tech stack**: TypeScript end-to-end, NestJS modular monolith on the backend, Next.js 15 RSC for admin and (planned) website, Vite+React for qr-menu, Postgres+RLS, NATS JetStream, Redis, S3 — locked. Stack decisions inherited from the existing codebase; revisit only if a phase has a documented blocker.
+- **Tech stack**: TypeScript end-to-end, NestJS modular monolith on the backend, Vite+React SPA for admin and qr-menu, Next.js App Router for the public website, Postgres+RLS, NATS JetStream, S3 — locked. Redis was dropped: the menu cache it backed is now HTTP/CDN (`s-maxage` + `stale-while-revalidate` + ETag), and no `ioredis` dependency or Redis container remains. Stack decisions inherited from the existing codebase; revisit only if a phase has a documented blocker.
 - **Multi-tenancy**: Every tenant-scoped query MUST go through `ScopedTx` AND Postgres RLS — RLS alone is not sufficient. Composite FK on every child table. Hard deletes forbidden. Origin: CTO + skeptic lens, "what breaks tenancy if a dev forgets `tenant_id`?"
 - **Compliance**: GDPR (EU) — full erasure pipeline with 30-day cool-off, anonymization via `AUDIT_ERASURE_SALT`, audit log of all PII touches. PCI never directly touched (Stripe Connect tokenizes everything). Fiscal compliance per market is a deferred problem (skeptic lens: do not build EU-wide fiscalization adapter in MVP).
-- **Performance**: Public menu reads MUST stay fast on cold Redis (degraded mode is acceptable but must not crash). Peak load assumption: Friday-evening simultaneous order spikes across many tenants — no per-tenant noisy-neighbor patterns allowed.
+- **Performance**: Public menu reads MUST stay fast on a cold cache — a CDN miss goes straight to Postgres and must serve correctly, never crash. Cache headers are set in `apps/api/src/contexts/catalog/domain/menu-cache.ts`. Peak load assumption: Friday-evening simultaneous order spikes across many tenants — no per-tenant noisy-neighbor patterns allowed.
 - **Team**: Solo founder on the 12-month roadmap horizon. Phase sizing accommodates solo throughput (no parallel multi-developer assumptions). Persona reviews substitute for the missing co-founder/tech-lead second opinion.
 - **Timeline / monetization milestone**: First paying customer target Q1 2027 (~7–9 months from 2026-05-27). MVP-1 (all phases under the MVP-1 milestone in ROADMAP.md) is the bar for "can take a customer's money." MVP-2 (AI tier) targets Q2–Q3 2027; MVP-3 (Telegram + iiko) Q4 2027+. AI-driven marketing without AI in MVP-1 is a known positioning risk — re-tested at MVP-1 close.
 - **Budget**: Bootstrap; infra cost-sensitivity matters. Prefer managed services that scale to zero (R2 over S3 if neutral, NATS over Kafka, self-hosted Better Auth over Auth0).

@@ -45,9 +45,7 @@ export default [
       'lib/**',
       'components/**',
       'test/**',
-      'e2e/**',
       'hooks/**',
-      'playwright.config.ts',
     ],
   },
 ];
