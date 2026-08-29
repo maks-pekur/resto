@@ -194,7 +194,9 @@ export function OrderCard({
           <span>{t(`card.${FULFILLMENT_LABEL_KEY[row.fulfillmentMode]}`)}</span>
         </div>
         {tableLabel !== null ? (
-          <span className="text-sm text-muted-foreground">{tableLabel}</span>
+          <span data-testid="order-card-table-line" className="text-sm text-muted-foreground">
+            {tableLabel}
+          </span>
         ) : null}
       </button>
 
