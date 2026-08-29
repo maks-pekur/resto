@@ -737,8 +737,8 @@ Plans:
 
 **Wave 2** _(blocked on Wave 1)_
 
-- [ ] 10.3-04-PLAN.md — Database proofs: GDPR erasure, tenant and RESTRICTIVE location RLS, composite FKs, partial unique index
-- [ ] 10.3-05-PLAN.md — Tenancy domain, location-filtered repository, and the server-side guest sticker URL
+- [x] 10.3-04-PLAN.md — Database proofs: GDPR erasure, tenant and RESTRICTIVE location RLS, composite FKs, partial unique index
+- [x] 10.3-05-PLAN.md — Tenancy domain, location-filtered repository, and the server-side guest sticker URL
 
 **Wave 3** _(blocked on Wave 2)_
 
