@@ -31,7 +31,7 @@ export interface CreateTableZoneInput {
   readonly tableCount: number;
 }
 
-interface ProblemDetails {
+export interface ProblemDetails {
   readonly code?: string;
   readonly message?: string;
   readonly detail?: string;

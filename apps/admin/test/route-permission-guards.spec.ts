@@ -105,6 +105,7 @@ describe('admin route tree — every protected route decides who may open it', (
       '/menu': { resource: 'menu', action: 'read' },
       '/locations': { resource: 'location', action: 'create' },
       '/locations/$slug': { resource: 'location', action: 'create' },
+      '/locations/$slug/tables': { resource: 'table', action: 'read' },
       '/roles': { resource: 'ac', action: 'read' },
       '/roles/$roleId': { resource: 'ac', action: 'read' },
       '/team': { resource: 'staff', action: 'invite' },
