@@ -13,5 +13,6 @@ export type {
   MenuCategoryDto,
   MenuTenantThemeDto,
   MenuTenantDto,
+  MenuTenantLocalesDto,
   MenuDto,
 } from './menu-types.js';

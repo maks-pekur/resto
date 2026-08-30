@@ -141,6 +141,11 @@ export const App = () => {
     };
   }, []);
 
+  const menuLocales =
+    state.kind === 'ready'
+      ? (state.menu.tenant?.locales ?? { default: undefined, supported: [] })
+      : { default: undefined, supported: [] };
+
   const openItem = useCallback((id: string) => {
     window.history.pushState(null, '', `/items/${id}`);
     setOpenItemId(id);
@@ -156,7 +161,11 @@ export const App = () => {
   }, []);
 
   return (
-    <GuestUiProvider locale={getActiveLocale()} t={t}>
+    <GuestUiProvider
+      locale={getActiveLocale()}
+      t={t}
+      {...(menuLocales.default === undefined ? {} : { defaultContentLocale: menuLocales.default })}
+    >
       {state.kind === 'loading' ? (
         <StatusScreen title={t('menu.title')} live />
       ) : state.kind === 'not-found' ? (
@@ -181,12 +190,12 @@ export const App = () => {
                 label={t('theme.label')}
                 className="hidden sm:flex"
               />
-              <LocaleControl className="hidden sm:inline-flex" />
+              <LocaleControl locales={menuLocales.supported} className="hidden sm:inline-flex" />
             </>
           }
           footerActions={
             <div className="flex flex-wrap items-center gap-2">
-              <LocaleControl />
+              <LocaleControl locales={menuLocales.supported} />
               <ThemeToggle
                 resolvedTheme={resolvedTheme}
                 onToggle={toggleTheme}

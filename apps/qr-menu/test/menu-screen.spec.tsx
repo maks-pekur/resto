@@ -30,7 +30,13 @@ const buildMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'USD',
-  tenant: { id: 'tenant-1', slug: 'demo', displayName: 'Cafe Demo', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'demo',
+    displayName: 'Cafe Demo',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizza', name: { en: 'Pizza' }, description: null, sortOrder: 0 },
   ],
@@ -65,6 +71,7 @@ describe('MenuScreen on qr-menu', () => {
             primaryColor: null,
             font: null,
           },
+          locales: { default: 'ru', supported: ['ru', 'en'] },
         },
       }),
     );

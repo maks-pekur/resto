@@ -35,7 +35,13 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
   tenantId: 'tenant-1',
   version: 1,
   currency: 'EUR',
-  tenant: { id: 'tenant-1', slug: 'demo', displayName: 'Cafe Demo', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'demo',
+    displayName: 'Cafe Demo',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+  },
   categories: [
     { id: 'cat-1', slug: 'starters', name: { en: 'Starters' }, description: null, sortOrder: 0 },
     { id: 'cat-2', slug: 'mains', name: { en: 'Mains' }, description: null, sortOrder: 1 },

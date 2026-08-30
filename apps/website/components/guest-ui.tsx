@@ -10,6 +10,7 @@ import {
   type GuestThemeState,
   type GuestTranslate,
 } from '@resto/ui';
+import { isLocale, LOCALES, type Locale } from '@/lib/i18n/locales';
 
 /** `unoptimized`: menu photos are tenant-supplied URLs on arbitrary hosts, and the
  * only way to serve them through Next's optimizer is a wildcard remotePatterns —
@@ -43,13 +44,34 @@ const interpolate = (text: string, values?: Record<string, string | number>): st
 
 const SiteThemeContext = createContext<GuestThemeState | null>(null);
 
+export interface ContentLocales {
+  readonly default: string;
+  readonly supported: readonly string[];
+}
+
+const ContentLocalesContext = createContext<ContentLocales | null>(null);
+
+/** The restaurant declares which languages its menu exists in; the site can only
+ * render the ones it also has chrome translations for. */
+export const useContentLocales = (): readonly Locale[] => {
+  const value = useContext(ContentLocalesContext);
+  const offered = (value?.supported ?? []).filter(isLocale);
+  return offered.length > 0 ? offered : LOCALES;
+};
+
 export const useSiteTheme = (): GuestThemeState => {
   const value = useContext(SiteThemeContext);
   if (value === null) throw new Error('useSiteTheme must be used within GuestUi');
   return value;
 };
 
-export function GuestUi({ children }: { children: ReactNode }) {
+export function GuestUi({
+  contentLocales,
+  children,
+}: {
+  contentLocales?: ContentLocales;
+  children: ReactNode;
+}) {
   const locale = useLocale();
   const messages = useMessages() as Record<string, unknown>;
   const theme = useGuestTheme();
@@ -70,9 +92,18 @@ export function GuestUi({ children }: { children: ReactNode }) {
 
   return (
     <SiteThemeContext.Provider value={themeValue}>
-      <GuestUiProvider locale={locale} t={translate} Image={NextGuestImage}>
-        {children}
-      </GuestUiProvider>
+      <ContentLocalesContext.Provider value={contentLocales ?? null}>
+        <GuestUiProvider
+          locale={locale}
+          t={translate}
+          Image={NextGuestImage}
+          {...(contentLocales === undefined
+            ? {}
+            : { defaultContentLocale: contentLocales.default })}
+        >
+          {children}
+        </GuestUiProvider>
+      </ContentLocalesContext.Provider>
     </SiteThemeContext.Provider>
   );
 }

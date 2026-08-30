@@ -15,7 +15,7 @@ export interface CategoryRailProps {
 }
 
 export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
-  const { locale, t } = useGuestUi();
+  const { locale, t, defaultContentLocale } = useGuestUi();
   const [activeId, setActiveId] = useState<string>(categories[0]?.id ?? '');
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +90,7 @@ export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
                     : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                 )}
               >
-                {localized(category.name, locale)}
+                {localized(category.name, locale, defaultContentLocale)}
               </button>
             );
           })}

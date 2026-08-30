@@ -71,11 +71,17 @@ export interface MenuTenantThemeDto {
   readonly font: string | null;
 }
 
+export interface MenuTenantLocalesDto {
+  readonly default: string;
+  readonly supported: readonly string[];
+}
+
 export interface MenuTenantDto {
   readonly id: string;
   readonly slug: string;
   readonly displayName: string;
   readonly theme: MenuTenantThemeDto | null;
+  readonly locales: MenuTenantLocalesDto;
 }
 
 export interface MenuDto {

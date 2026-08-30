@@ -11,7 +11,13 @@ const menu: MenuDto = {
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'UAH',
-  tenant: { id: 'tenant-1', slug: 'pizza', displayName: 'Pizza Palace', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'pizza',
+    displayName: 'Pizza Palace',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
   ],

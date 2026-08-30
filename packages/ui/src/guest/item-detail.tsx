@@ -31,11 +31,13 @@ export const ItemDetail = ({
   Heading = 'h1',
   className,
 }: ItemDetailProps) => {
-  const { locale, t, Image } = useGuestUi();
+  const { locale, t, Image, defaultContentLocale } = useGuestUi();
   const selection = useItemSelection(item, modifierGroups, locale);
 
-  const name = localized(item.name, locale);
-  const description = item.description ? localized(item.description, locale) : null;
+  const name = localized(item.name, locale, defaultContentLocale);
+  const description = item.description
+    ? localized(item.description, locale, defaultContentLocale)
+    : null;
 
   const handleAdd = (): void => {
     onAddToCart({
@@ -109,7 +111,7 @@ export const ItemDetail = ({
                           selection.selectSize(size.id);
                         }}
                       />
-                      {localized(size.name, locale)}
+                      {localized(size.name, locale, defaultContentLocale)}
                     </label>
                   ))}
                 </div>
@@ -121,7 +123,7 @@ export const ItemDetail = ({
               return (
                 <fieldset key={group.id} className="flex flex-col gap-2">
                   <legend className="pb-1 text-sm font-extrabold">
-                    {localized(group.name, locale)}
+                    {localized(group.name, locale, defaultContentLocale)}
                   </legend>
                   <div className="flex flex-col gap-2">
                     {group.options.map((option) => (
@@ -140,7 +142,7 @@ export const ItemDetail = ({
                               selection.toggleOption(group.id, option.id, singleChoice);
                             }}
                           />
-                          {localized(option.name, locale)}
+                          {localized(option.name, locale, defaultContentLocale)}
                         </span>
                         {Number(option.priceDelta) !== 0 ? (
                           <span className="text-muted-foreground text-sm tabular-nums">

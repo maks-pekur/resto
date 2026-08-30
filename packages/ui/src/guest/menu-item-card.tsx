@@ -22,10 +22,12 @@ export const MenuItemCard = ({
   unavailable = false,
   priority = false,
 }: MenuItemCardProps) => {
-  const { locale, t, Image } = useGuestUi();
+  const { locale, t, Image, defaultContentLocale } = useGuestUi();
 
-  const name = localized(item.name, locale);
-  const description = item.description ? localized(item.description, locale) : null;
+  const name = localized(item.name, locale, defaultContentLocale);
+  const description = item.description
+    ? localized(item.description, locale, defaultContentLocale)
+    : null;
   const price = formatPrice(item.basePrice, item.currency, locale);
 
   return (

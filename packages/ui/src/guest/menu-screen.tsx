@@ -48,7 +48,7 @@ export const MenuScreen = ({
   banner,
   cartPrimaryAction,
 }: MenuScreenProps) => {
-  const { locale, t } = useGuestUi();
+  const { locale, t, defaultContentLocale } = useGuestUi();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(initialItemId);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartMounted, setCartMounted] = useState(false);
@@ -150,7 +150,7 @@ export const MenuScreen = ({
                 id={`menu-heading-${category.id}`}
                 className="mb-4 text-xl font-extrabold sm:mb-5 sm:text-3xl"
               >
-                {localized(category.name, locale)}
+                {localized(category.name, locale, defaultContentLocale)}
               </h2>
               <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {

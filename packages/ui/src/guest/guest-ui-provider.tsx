@@ -20,6 +20,8 @@ export interface GuestUiContextValue {
   readonly locale: string;
   readonly t: GuestTranslate;
   readonly Image: GuestImageComponent;
+  /** The tenant's own default content language, used when a field misses the guest's. */
+  readonly defaultContentLocale?: string;
 }
 
 /** Every guest image sits in a `relative` container and fills it, so the Next
@@ -41,6 +43,7 @@ export interface GuestUiProviderProps {
   readonly locale: string;
   readonly t: GuestTranslate;
   readonly Image?: GuestImageComponent;
+  readonly defaultContentLocale?: string;
   readonly children: ReactNode;
 }
 
@@ -48,9 +51,18 @@ export const GuestUiProvider = ({
   locale,
   t,
   Image = FallbackImage,
+  defaultContentLocale,
   children,
 }: GuestUiProviderProps) => {
-  const value = useMemo<GuestUiContextValue>(() => ({ locale, t, Image }), [locale, t, Image]);
+  const value = useMemo<GuestUiContextValue>(
+    () => ({
+      locale,
+      t,
+      Image,
+      ...(defaultContentLocale === undefined ? {} : { defaultContentLocale }),
+    }),
+    [locale, t, Image, defaultContentLocale],
+  );
   return <GuestUiContext.Provider value={value}>{children}</GuestUiContext.Provider>;
 };
 

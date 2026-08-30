@@ -24,9 +24,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages();
 
   let theme: { primaryColor?: string | null } | null = null;
+  let contentLocales: { default: string; supported: readonly string[] } | undefined;
   try {
     const menu = await fetchMenuPublic();
     theme = menu.tenant?.theme ?? null;
+    contentLocales = menu.tenant?.locales;
   } catch {
     // unresolved host / cold cache / suspended — render default theme
   }
@@ -47,7 +49,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body className="bg-background text-foreground min-h-dvh antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <GuestUi>
+          <GuestUi {...(contentLocales === undefined ? {} : { contentLocales })}>
             {children}
             <SiteToaster />
           </GuestUi>
