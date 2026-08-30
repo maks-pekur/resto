@@ -512,7 +512,11 @@
     "channel": {
       "site": "Website",
       "qrMenu": "QR menu",
-      "unknown": "Other"
+      "unknown": "Other",
+      "glovo": "Glovo",
+      "uberEats": "Uber Eats",
+      "bolt": "Bolt Food",
+      "wolt": "Wolt"
     }
   },
   "dashboard": {

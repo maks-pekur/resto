@@ -512,7 +512,11 @@
     "channel": {
       "site": "Сайт",
       "qrMenu": "QR-меню",
-      "unknown": "Другой"
+      "unknown": "Другой",
+      "glovo": "Glovo",
+      "uberEats": "Uber Eats",
+      "bolt": "Bolt Food",
+      "wolt": "Wolt"
     }
   },
   "dashboard": {

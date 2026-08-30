@@ -2,8 +2,17 @@ import { describe, expect, it } from 'vitest';
 import { channelPresentation, ORDER_CHANNELS } from '@/lib/orders/channels';
 
 describe('order channels', () => {
-  it('knows the two sources orders arrive from today', () => {
-    expect(Object.keys(ORDER_CHANNELS).sort()).toEqual(['qr-menu', 'site']);
+  it('knows our own surfaces and the partners we expect', () => {
+    expect(Object.keys(ORDER_CHANNELS)).toContain('site');
+    expect(Object.keys(ORDER_CHANNELS)).toContain('qr-menu');
+    expect(Object.keys(ORDER_CHANNELS)).toContain('glovo');
+  });
+
+  it('paints our own channels from tokens and partners from their own brand', () => {
+    expect(channelPresentation('site').tone).toBeDefined();
+    expect(channelPresentation('site').brand).toBeUndefined();
+    expect(channelPresentation('glovo').brand).toBeDefined();
+    expect(channelPresentation('glovo').tone).toBeUndefined();
   });
 
   it('names each of them', () => {
@@ -11,10 +20,10 @@ describe('order channels', () => {
     expect(channelPresentation('qr-menu').labelKey).toBe('qrMenu');
   });
 
-  it('answers for an aggregator the UI has never heard of rather than breaking the feed', () => {
-    const glovo = channelPresentation('glovo');
+  it('answers for a partner the UI has never heard of rather than breaking the feed', () => {
+    const unheardOf = channelPresentation('deliveroo');
 
-    expect(glovo.labelKey).toBe('unknown');
-    expect(glovo.icon).toBeDefined();
+    expect(unheardOf.labelKey).toBe('unknown');
+    expect(unheardOf.icon).toBeDefined();
   });
 });

@@ -197,7 +197,15 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         {/* Square by construction: the width matches the row height, so the source reads as a
             stamp on the order rather than as another column of text. */}
         <span
-          className="text-muted-foreground flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 px-1"
+          className={cn(
+            'flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 px-1',
+            channel.tone,
+          )}
+          style={
+            channel.brand === undefined
+              ? undefined
+              : { backgroundColor: channel.brand.background, color: channel.brand.foreground }
+          }
           title={t(`channel.${channel.labelKey}`)}
         >
           <ChannelIcon className="size-4" />
