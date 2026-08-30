@@ -186,7 +186,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
       <button
         type="button"
         aria-label={t('card.dailyNumber', { n: row.shortNumber })}
-        className="flex min-w-0 flex-1 items-stretch text-left"
+        className="flex min-w-0 flex-1 items-stretch divide-x text-left"
         onClick={() => {
           onOpenDetail(row);
         }}
@@ -276,7 +276,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         </span>
       </button>
 
-      <div className="flex shrink-0 items-center gap-2 px-3">
+      <div className="flex shrink-0 items-center gap-2 border-l px-3">
         {state === 'new' || state === 'escalated' ? (
           <>
             <AcceptPopover order={row} />
