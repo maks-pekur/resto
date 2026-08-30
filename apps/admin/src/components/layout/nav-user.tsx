@@ -7,7 +7,6 @@ import { authClient } from '@/lib/auth-client';
 import { meTenantsQuery, type OperatorSummary } from '@/lib/queries/identity';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LocaleSwitcherItems } from '@/components/layout/locale-switcher-items';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -93,13 +92,6 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
               {t('accountItem')}
             </Link>
           </DropdownMenuItem>
-        </DropdownMenuGroup>
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel className="text-muted-foreground text-xs font-normal">
-          {t('languageLabel')}
-        </DropdownMenuLabel>
-        <DropdownMenuGroup>
-          <LocaleSwitcherItems />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '@resto/ui';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { NavUser } from '@/components/layout/nav-user';
+import { LocaleSwitcher } from '@/components/layout/locale-switcher';
 import { useTheme } from '@/components/common/theme-provider';
 import type { OperatorSummary } from '@/lib/queries/identity';
 
@@ -14,6 +15,7 @@ export function SiteHeader({ operator }: { operator: OperatorSummary }) {
       <div className="flex w-full items-center gap-2 px-4 lg:px-6">
         <SidebarTrigger className="-ml-1" />
         <div className="ml-auto flex items-center gap-2">
+          <LocaleSwitcher />
           <ThemeToggle
             resolvedTheme={resolvedTheme}
             onToggle={toggleTheme}
