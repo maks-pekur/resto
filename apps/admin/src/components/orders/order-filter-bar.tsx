@@ -17,7 +17,6 @@ export interface OrderFilterBarProps {
   readonly status: OrderStatusPreset;
   readonly onStatusChange: (value: OrderStatusPreset) => void;
   readonly counts: OrderFeedCountsApi | null;
-  readonly refundFailedCount: number;
   readonly range: DateRange;
   readonly onRangeChange: (range: DateRange) => void;
   readonly soundMuted: boolean;
@@ -34,7 +33,6 @@ export function OrderFilterBar({
   status,
   onStatusChange,
   counts,
-  refundFailedCount,
   range,
   onRangeChange,
   soundMuted,
@@ -76,12 +74,7 @@ export function OrderFilterBar({
       </div>
 
       <div className="h-11 border-t">
-        <OrderStatusTabs
-          value={status}
-          onChange={onStatusChange}
-          counts={counts}
-          refundFailedCount={refundFailedCount}
-        />
+        <OrderStatusTabs value={status} onChange={onStatusChange} counts={counts} />
       </div>
     </div>
   );

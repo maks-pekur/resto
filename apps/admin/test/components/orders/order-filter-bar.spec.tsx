@@ -25,7 +25,6 @@ const renderBar = (soundReady: boolean) =>
       status="unaccepted"
       onStatusChange={vi.fn()}
       counts={null}
-      refundFailedCount={0}
       soundMuted={false}
       onSoundMutedChange={vi.fn()}
       soundBlocked={false}
@@ -61,7 +60,6 @@ describe('OrderFilterBar', () => {
         status="unaccepted"
         onStatusChange={vi.fn()}
         counts={null}
-        refundFailedCount={0}
         soundMuted={false}
         onSoundMutedChange={onSoundMutedChange}
         soundBlocked={false}

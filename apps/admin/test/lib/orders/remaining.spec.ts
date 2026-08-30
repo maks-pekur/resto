@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { remainingTime } from '@/lib/orders/remaining';
+import { countdown, remainingTime } from '@/lib/orders/remaining';
 
 const NOW = new Date('2026-08-30T12:00:00.000Z').getTime();
 const at = (iso: string): string => new Date(iso).toISOString();
@@ -28,5 +28,43 @@ describe('remainingTime', () => {
       label: '2:05',
       late: false,
     });
+  });
+});
+
+describe('countdown', () => {
+  const started = at('2026-08-30T11:40:00.000Z');
+
+  it('says nothing when nothing was promised', () => {
+    expect(countdown(null, started, NOW)).toBeNull();
+  });
+
+  it('drains from the moment the promise was made', () => {
+    const half = countdown(at('2026-08-30T12:20:00.000Z'), started, NOW);
+
+    expect(half?.minutes).toBe(20);
+    expect(half?.late).toBe(false);
+    expect(half?.progress).toBeCloseTo(0.5, 2);
+    expect(half?.tone).toBe('calm');
+  });
+
+  it('warns once only a quarter of the promise is left', () => {
+    const nearly = countdown(at('2026-08-30T12:05:00.000Z'), started, NOW);
+
+    expect(nearly?.tone).toBe('warning');
+  });
+
+  it('empties the ring and counts up once the promise is past', () => {
+    const late = countdown(at('2026-08-30T11:56:00.000Z'), started, NOW);
+
+    expect(late?.late).toBe(true);
+    expect(late?.minutes).toBe(4);
+    expect(late?.progress).toBe(0);
+    expect(late?.tone).toBe('late');
+  });
+
+  it('treats a promise with no span as already spent', () => {
+    const instant = countdown(at('2026-08-30T12:00:00.000Z'), at('2026-08-30T12:00:00.000Z'), NOW);
+
+    expect(instant?.progress).toBe(0);
   });
 });

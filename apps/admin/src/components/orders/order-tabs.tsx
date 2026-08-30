@@ -46,31 +46,16 @@ export interface OrderStatusTabsProps {
   readonly value: OrderStatusPreset;
   readonly onChange: (value: OrderStatusPreset) => void;
   readonly counts: OrderFeedCountsApi | null;
-  /** The failed-refund tab only exists while something is actually stuck. */
-  readonly refundFailedCount: number;
 }
 
-export function OrderStatusTabs({
-  value,
-  onChange,
-  counts,
-  refundFailedCount,
-}: OrderStatusTabsProps) {
+export function OrderStatusTabs({ value, onChange, counts }: OrderStatusTabsProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.tabs' });
 
-  const items: FilterTabItem<OrderStatusPreset>[] = ORDER_STATUS_TABS.map((tab) => ({
+  const items: readonly FilterTabItem<OrderStatusPreset>[] = ORDER_STATUS_TABS.map((tab) => ({
     value: tab,
     label: t(tab),
     ...(counts === null ? {} : { count: counts[tab] }),
   }));
-  if (refundFailedCount > 0) {
-    items.push({
-      value: 'refund_failed',
-      label: t('refundFailed'),
-      count: refundFailedCount,
-      tone: 'destructive',
-    });
-  }
 
   return <FilterTabs value={value} onChange={onChange} items={items} stretch />;
 }

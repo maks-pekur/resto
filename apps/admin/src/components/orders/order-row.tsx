@@ -5,11 +5,12 @@ import { AlertCircle, MapPin, ShoppingBag, Truck, UtensilsCrossed } from 'lucide
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatMoney } from '@/lib/utils';
-import { remainingTime } from '@/lib/orders/remaining';
+import { countdown } from '@/lib/orders/remaining';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { usePermissions } from '@/hooks/use-permissions';
 import { advanceOrderStatusMutation, retryRefundMutation } from '@/lib/queries/orders';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
+import { CountdownRing } from '@/components/common/countdown-ring';
 import { OrderRefundFailedBadge, type OrderCardState } from './order-status-badge';
 import { AcceptPopover } from './accept-popover';
 import { RejectPopover } from './reject-popover';
@@ -93,7 +94,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
   const { can } = usePermissions();
   const now = Date.now();
   const state = deriveOrderRowState(row, now);
-  const remaining = remainingTime(row.etaAt, now);
+  const remaining = countdown(row.etaAt, row.acceptedAt ?? row.createdAt, now);
   const isOpen = state !== 'completed' && state !== 'canceled';
   const late = (remaining?.late ?? false) && isOpen;
 
@@ -175,12 +176,19 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
             late ? 'bg-destructive/15 text-destructive' : STATE_TONE[state],
           )}
         >
-          <span className="flex items-baseline gap-2">
+          <span className="flex items-center gap-2">
             <span className="text-lg leading-none font-semibold tabular-nums">
               {row.shortNumber}
             </span>
             {remaining !== null && isOpen ? (
-              <span className="text-sm leading-none tabular-nums">{remaining.label}</span>
+              <CountdownRing
+                progress={remaining.progress}
+                tone={remaining.tone}
+                label={`${remaining.late ? '−' : ''}${String(remaining.minutes)}`}
+                ariaLabel={t(remaining.late ? 'card.overdueByAria' : 'card.remainingAria', {
+                  minutes: remaining.minutes,
+                })}
+              />
             ) : null}
           </span>
           <span className="truncate text-[11px] tracking-wide uppercase">

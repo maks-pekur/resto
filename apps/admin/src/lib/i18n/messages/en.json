@@ -385,7 +385,9 @@
       "fulfillmentPickup": "Pickup",
       "fulfillmentDelivery": "Delivery",
       "tableLabel": "{{zone}} · Table {{number}}",
-      "statusUpdateFailed": "Couldn't update the order status."
+      "statusUpdateFailed": "Couldn't update the order status.",
+      "remainingAria": "Minutes left: {{minutes}}",
+      "overdueByAria": "Overdue by minutes: {{minutes}}"
     },
     "accept": {
       "title": "How soon will it be ready?",

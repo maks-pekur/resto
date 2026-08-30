@@ -385,7 +385,9 @@
       "fulfillmentPickup": "Самовывоз",
       "fulfillmentDelivery": "Доставка",
       "tableLabel": "{{zone}} · стол {{number}}",
-      "statusUpdateFailed": "Не удалось обновить статус заказа."
+      "statusUpdateFailed": "Не удалось обновить статус заказа.",
+      "remainingAria": "Осталось минут: {{minutes}}",
+      "overdueByAria": "Опоздание, минут: {{minutes}}"
     },
     "accept": {
       "title": "Через сколько будет готово?",

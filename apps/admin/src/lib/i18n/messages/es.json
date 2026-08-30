@@ -385,7 +385,9 @@
       "fulfillmentPickup": "Recogida",
       "fulfillmentDelivery": "Entrega a domicilio",
       "tableLabel": "{{zone}} · Mesa {{number}}",
-      "statusUpdateFailed": "No se pudo actualizar el estado del pedido."
+      "statusUpdateFailed": "No se pudo actualizar el estado del pedido.",
+      "remainingAria": "Minutos restantes: {{minutes}}",
+      "overdueByAria": "Retraso en minutos: {{minutes}}"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",

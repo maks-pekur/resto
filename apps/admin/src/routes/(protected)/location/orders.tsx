@@ -76,16 +76,6 @@ function OrdersPage() {
     refetchInterval: POLL_MS,
   });
 
-  const refundFailedCountQuery = useQuery({
-    ...ordersFeedQuery(feedLocationId ?? 'all', {
-      ...scope,
-      statusFilter: 'refund_failed',
-      limit: 1,
-    }),
-    enabled: feedLocationId !== undefined,
-    refetchInterval: POLL_MS,
-  });
-
   // The chime follows today's unaccepted orders whatever tab is on screen — an operator reading
   // yesterday's closed orders must still hear the one that just arrived.
   const alertsQuery = useQuery({
@@ -97,7 +87,6 @@ function OrdersPage() {
 
   const rows = feedQuery.data?.data?.rows ?? [];
   const counts = countsQuery.data?.data ?? null;
-  const refundFailedCount = refundFailedCountQuery.data?.data?.total ?? 0;
   const waitingRows = alertsQuery.data?.data?.rows ?? [];
 
   const sound = useOrderSound(waitingRows);
@@ -135,7 +124,6 @@ function OrdersPage() {
         status={statusTab}
         onStatusChange={setStatusTab}
         counts={counts}
-        refundFailedCount={refundFailedCount}
       />
 
       <div className="flex flex-col gap-4 px-4 lg:px-6">
