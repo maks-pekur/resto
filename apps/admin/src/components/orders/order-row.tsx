@@ -314,7 +314,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         ) : null}
       </div>
 
-      <span className="flex w-24 shrink-0 flex-col justify-center gap-1 border-l py-2">
+      <span className="flex w-24 shrink-0 flex-col justify-center gap-1 border-l pt-2">
         <span className="px-3 text-right text-sm font-semibold tabular-nums">
           {money(row.total, row.currency)}
         </span>
@@ -323,7 +323,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         ) : (
           <span
             className={cn(
-              'w-full py-px text-center text-[9px] leading-tight font-medium tracking-wide uppercase',
+              'w-full rounded-t-sm py-px text-center text-[10px] leading-tight font-medium',
               PAYMENT_TONE[paymentKey] ?? 'bg-muted text-muted-foreground',
             )}
           >

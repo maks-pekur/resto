@@ -10,6 +10,10 @@ describe('formatMoney', () => {
     expect(formatMoney('1200.00', 'EUR', 'de-DE')).toContain('1.200,00');
   });
 
+  it('prints the symbol even when the locale has none of its own for that currency', () => {
+    expect(formatMoney('1200.00', 'UAH', 'ru-RU')).toContain('₴');
+  });
+
   it('drops the fraction for currencies that have none', () => {
     expect(formatMoney('1200', 'JPY', 'en-US')).toBe('¥1,200');
   });

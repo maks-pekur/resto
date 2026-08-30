@@ -23,6 +23,9 @@ export const formatMoney = (
     return new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
+      // Without this a locale that has no symbol of its own for the currency prints the ISO
+      // code — "1 200,00 UAH" where the operator expects "1 200,00 ₴".
+      currencyDisplay: 'narrowSymbol',
       minimumFractionDigits: fractionDigits,
       maximumFractionDigits: fractionDigits,
     }).format(value);
