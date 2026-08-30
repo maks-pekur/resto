@@ -28,7 +28,7 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
         onChange(next as OrderFulfillmentTab);
       }}
     >
-      <TabsList className={TAB_LIST_CLASS}>
+      <TabsList className={cn(TAB_LIST_CLASS, 'h-10')}>
         {ORDER_FULFILLMENT_TABS.map((tab) => (
           <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
             {t(tab)}

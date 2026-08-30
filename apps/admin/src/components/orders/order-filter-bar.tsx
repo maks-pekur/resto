@@ -52,46 +52,48 @@ export function OrderFilterBar({
 
   return (
     <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2">
+      <div className="flex flex-wrap items-stretch gap-y-2">
         <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
 
-        <DateRangeStepper value={range} onChange={onRangeChange} className="ml-auto" />
+        <div className="ml-auto flex items-center gap-2 px-3 py-1">
+          <DateRangeStepper value={range} onChange={onRangeChange} />
 
-        {soundBlocked ? (
-          <span className="text-muted-foreground text-xs">{tAlerts('soundBlockedHint')}</span>
-        ) : null}
-        {notificationsBlocked ? (
-          <span className="text-muted-foreground text-xs">{tAlerts('alertsBlockedHint')}</span>
-        ) : null}
+          {soundBlocked ? (
+            <span className="text-muted-foreground text-xs">{tAlerts('soundBlockedHint')}</span>
+          ) : null}
+          {notificationsBlocked ? (
+            <span className="text-muted-foreground text-xs">{tAlerts('alertsBlockedHint')}</span>
+          ) : null}
 
-        {/* Until the browser has been unlocked the banner above is the sound control; two of
-            them on one screen read as a duplicate. */}
-        {soundReady ? (
-          <div className="flex items-center gap-1.5">
-            {soundMuted ? (
-              <VolumeX className="text-muted-foreground size-4" />
-            ) : (
-              <Volume2 className="text-muted-foreground size-4" />
-            )}
-            <Switch
-              checked={!soundMuted}
-              onCheckedChange={(checked) => {
-                onSoundMutedChange(!checked);
-              }}
-              aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+          {/* Until the browser has been unlocked the banner above is the sound control; two of
+              them on one screen read as a duplicate. */}
+          {soundReady ? (
+            <div className="flex items-center gap-1.5">
+              {soundMuted ? (
+                <VolumeX className="text-muted-foreground size-4" />
+              ) : (
+                <Volume2 className="text-muted-foreground size-4" />
+              )}
+              <Switch
+                checked={!soundMuted}
+                onCheckedChange={(checked) => {
+                  onSoundMutedChange(!checked);
+                }}
+                aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+              />
+            </div>
+          ) : null}
+
+          <Badge variant="outline" className="gap-1.5">
+            <span
+              className={cn(
+                'size-1.5 rounded-full',
+                isLive ? 'bg-success' : 'animate-pulse bg-warning',
+              )}
             />
-          </div>
-        ) : null}
-
-        <Badge variant="outline" className="gap-1.5">
-          <span
-            className={cn(
-              'size-1.5 rounded-full',
-              isLive ? 'bg-success' : 'animate-pulse bg-warning',
-            )}
-          />
-          {isLive ? tFeed('live') : tFeed('reconnecting')}
-        </Badge>
+            {isLive ? tFeed('live') : tFeed('reconnecting')}
+          </Badge>
+        </div>
       </div>
 
       <div className="border-t">
