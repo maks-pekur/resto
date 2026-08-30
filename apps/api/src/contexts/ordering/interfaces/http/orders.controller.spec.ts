@@ -15,7 +15,7 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   idempotencyKey: randomUUID(),
   orderNumber: '20260627-ABCDE',
   status: 'created',
-  fulfillmentMode: 'dine_in',
+  orderType: 'dine_in',
   tableIdentifier: 'A1',
   tableId: null,
   tableZoneName: null,
@@ -72,7 +72,7 @@ const FROZEN_STATUS_RESPONSE_KEYS = [
   'total',
   'currency',
   'etaAt',
-  'fulfillmentMode',
+  'orderType',
   'cancelReason',
   'canceledFromStatus',
 ].sort();
@@ -93,7 +93,7 @@ describe('OrdersController GET /:id/status', () => {
       total: '25.00',
       currency: 'EUR',
       etaAt: null,
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       cancelReason: null,
       canceledFromStatus: null,
     });

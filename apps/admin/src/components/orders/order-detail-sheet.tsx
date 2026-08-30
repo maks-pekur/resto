@@ -34,10 +34,10 @@ const CANCELABLE_STATUSES: readonly string[] = [
 ];
 const REFUNDABLE_STATUSES: readonly string[] = ['completed'];
 
-const FULFILLMENT_LABEL_KEY: Record<OrderDetailApi['fulfillmentMode'], string> = {
-  dine_in: 'card.fulfillmentDineIn',
-  pickup: 'card.fulfillmentPickup',
-  delivery: 'card.fulfillmentDelivery',
+const ORDER_TYPE_LABEL_KEY: Record<OrderDetailApi['orderType'], string> = {
+  dine_in: 'card.orderTypeDineIn',
+  pickup: 'card.orderTypePickup',
+  delivery: 'card.orderTypeDelivery',
 };
 
 const ADVANCE_TRANSITIONS: Record<
@@ -262,7 +262,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         ) : null}
 
         <div className="flex flex-col gap-1 text-sm">
-          <span>{t(FULFILLMENT_LABEL_KEY[detail.fulfillmentMode])}</span>
+          <span>{t(ORDER_TYPE_LABEL_KEY[detail.orderType])}</span>
           {detail.tableZoneName !== null && detail.tableNumber !== null ? (
             <span className="text-muted-foreground">
               {t('detail.tableIdentifierLabel')}:{' '}

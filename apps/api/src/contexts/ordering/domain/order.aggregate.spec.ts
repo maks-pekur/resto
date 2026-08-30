@@ -15,7 +15,7 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
     locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
-    fulfillmentMode: 'dine_in',
+    orderType: 'dine_in',
     currency: USD,
     shortNumber: 1,
     items: [
@@ -42,7 +42,7 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
     status: 'paid',
-    fulfillmentMode: 'dine_in',
+    orderType: 'dine_in',
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,
@@ -97,7 +97,7 @@ describe('Order.create', () => {
     expect(event.tenantId).toBe('00000000-0000-0000-0000-000000000001');
     expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     expect(event.orderNumber).toBe('ORD-001');
-    expect(event.fulfillmentMode).toBe('dine_in');
+    expect(event.orderType).toBe('dine_in');
     expect(event.totalMinorUnits).toBeTypeOf('number');
     expect(event.currency).toBe('USD');
     expect(event.itemCount).toBe(1);

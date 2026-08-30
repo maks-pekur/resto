@@ -3,28 +3,28 @@ import { ListOrdered, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
 import { FilterTabs, type FilterTabItem } from '@/components/common/filter-tabs';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
 
-export type OrderFulfillmentTab = 'all' | 'dine_in' | 'delivery' | 'pickup';
+export type OrderTypeTab = 'all' | 'dine_in' | 'delivery' | 'pickup';
 
-export const ORDER_FULFILLMENT_TABS = [
+export const ORDER_TYPE_TABS = [
   { value: 'all', icon: ListOrdered },
   { value: 'dine_in', icon: UtensilsCrossed },
   { value: 'delivery', icon: Truck },
   { value: 'pickup', icon: ShoppingBag },
-] as const satisfies readonly { value: OrderFulfillmentTab; icon: unknown }[];
+] as const satisfies readonly { value: OrderTypeTab; icon: unknown }[];
 
-export interface OrderFulfillmentTabsProps {
-  readonly value: OrderFulfillmentTab;
-  readonly onChange: (value: OrderFulfillmentTab) => void;
+export interface OrderTypeTabsProps {
+  readonly value: OrderTypeTab;
+  readonly onChange: (value: OrderTypeTab) => void;
 }
 
-export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsProps) {
+export function OrderTypeTabs({ value, onChange }: OrderTypeTabsProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.tabs' });
 
   return (
     <FilterTabs
       value={value}
       onChange={onChange}
-      items={ORDER_FULFILLMENT_TABS.map((tab) => ({
+      items={ORDER_TYPE_TABS.map((tab) => ({
         value: tab.value,
         label: t(tab.value),
         icon: tab.icon,

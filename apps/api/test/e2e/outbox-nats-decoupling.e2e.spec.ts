@@ -69,7 +69,7 @@ const tableLookup: OrderTableLookupPort = {
 
 const makeOrderInput = (): CreateOrderInput => ({
   items: [{ itemId, sizeId: null, name: 'Test Item', modifiers: [], quantity: 1 }],
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),

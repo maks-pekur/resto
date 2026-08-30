@@ -33,7 +33,7 @@ const makeOrder = (status: string): Order => {
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status,
-    fulfillmentMode: 'dine_in' as const,
+    orderType: 'dine_in' as const,
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,

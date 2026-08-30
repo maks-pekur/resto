@@ -46,8 +46,8 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
             inArray(schema.orders.locationId, [...input.locationIds]),
             gte(schema.orders.createdAt, input.createdFrom),
             lt(schema.orders.createdAt, input.createdTo),
-            ...(input.fulfillmentMode !== undefined
-              ? [eq(schema.orders.fulfillmentMode, input.fulfillmentMode)]
+            ...(input.orderType !== undefined
+              ? [eq(schema.orders.orderType, input.orderType)]
               : []),
           ),
         );
@@ -184,8 +184,8 @@ function buildFilterPredicate(input: OrderFeedQuery): SQL | undefined {
   if (input.unacceptedOnly === true) {
     parts.push(isNull(schema.orders.acceptedAt));
   }
-  if (input.fulfillmentMode !== undefined) {
-    parts.push(eq(schema.orders.fulfillmentMode, input.fulfillmentMode));
+  if (input.orderType !== undefined) {
+    parts.push(eq(schema.orders.orderType, input.orderType));
   }
   if (input.since !== undefined) {
     const since = input.since;
@@ -205,7 +205,7 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     status: row.status as OrderStatus,
     locationId: row.locationId,
     locationName,
-    fulfillmentMode: row.fulfillmentMode as OrderFeedRow['fulfillmentMode'],
+    orderType: row.orderType as OrderFeedRow['orderType'],
     tableIdentifier: row.tableIdentifier ?? null,
     tableZoneName: row.tableZoneName ?? null,
     tableNumber: row.tableNumber ?? null,

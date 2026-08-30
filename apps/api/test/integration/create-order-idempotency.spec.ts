@@ -79,7 +79,7 @@ const makeCartInput = (
       quantity: 2,
     },
   ],
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),

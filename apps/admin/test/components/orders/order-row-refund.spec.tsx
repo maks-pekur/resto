@@ -56,7 +56,7 @@ const failedRefundRow: OrderFeedRowApi = {
   status: 'completed',
   locationId: 'loc-1',
   locationName: 'Центр',
-  fulfillmentMode: 'dine_in',
+  orderType: 'dine_in',
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,

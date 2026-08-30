@@ -29,7 +29,7 @@ export interface OrderFeedResponseRow {
   readonly status: string;
   readonly locationId: string;
   readonly locationName: string;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
   readonly tableZoneName: string | null;
   readonly tableNumber: string | null;
@@ -67,7 +67,7 @@ export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow 
   status: row.status,
   locationId: row.locationId,
   locationName: row.locationName,
-  fulfillmentMode: row.fulfillmentMode,
+  orderType: row.orderType,
   tableIdentifier: row.tableIdentifier,
   tableZoneName: row.tableZoneName,
   tableNumber: row.tableNumber,

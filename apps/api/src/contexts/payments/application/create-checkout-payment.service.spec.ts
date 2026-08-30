@@ -53,7 +53,7 @@ const makeOrderSnap = (
   idempotencyKey: randomUUID(),
   orderNumber: 'ORD-001',
   status: 'created',
-  fulfillmentMode: 'dine_in',
+  orderType: 'dine_in',
   tableIdentifier: 'A1',
   tableId: null,
   tableZoneName: null,

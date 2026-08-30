@@ -48,7 +48,7 @@ const MAX_LIMIT = 200;
 export interface ListOrdersInput {
   readonly statusPreset?: OrderStatusPreset;
   readonly channel?: 'site' | 'qr-menu';
-  readonly fulfillmentMode?: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType?: 'dine_in' | 'pickup' | 'delivery';
   readonly datePreset?: OrderDatePreset;
   readonly from?: string;
   readonly to?: string;
@@ -105,7 +105,7 @@ export class ListOrdersService {
       locationIds,
       statuses: [...statuses],
       ...(input.channel !== undefined ? { channel: input.channel } : {}),
-      ...(input.fulfillmentMode !== undefined ? { fulfillmentMode: input.fulfillmentMode } : {}),
+      ...(input.orderType !== undefined ? { orderType: input.orderType } : {}),
       ...(statusPreset === 'unaccepted' ? { unacceptedOnly: true } : {}),
       sort: QUEUE_PRESETS.includes(statusPreset) ? 'oldest_first' : 'newest_first',
       ...(referenceTimezone !== null ? { timezone: referenceTimezone } : {}),

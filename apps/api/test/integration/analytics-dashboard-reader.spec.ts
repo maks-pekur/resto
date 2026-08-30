@@ -50,7 +50,7 @@ suite('AnalyticsDrizzleReader', () => {
     idempotencyKey: input.id,
     orderNumber: `A-${String(input.shortNumber)}`,
     status: input.status,
-    fulfillmentMode: 'dine_in',
+    orderType: 'dine_in',
     subtotal: input.total,
     total: input.total,
     currency: 'EUR',

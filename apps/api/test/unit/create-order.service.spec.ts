@@ -213,7 +213,7 @@ const run = <T>(op: () => Promise<T>): Promise<T> => runInTenantContext({ tenant
 
 const baseInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput => ({
   items: [{ itemId: pizzaId, sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   customerName: 'Alice',
   customerPhone: '+15555550123',
   idempotencyKey: randomUUID(),
@@ -482,7 +482,7 @@ describe('CreateOrderService — table resolution decides the order location (TB
     await run(() =>
       service.execute(
         baseInput({
-          fulfillmentMode: 'dine_in',
+          orderType: 'dine_in',
           tableId: resolvableTableId,
           customerName: undefined,
           customerPhone: undefined,
@@ -504,7 +504,7 @@ describe('CreateOrderService — table resolution decides the order location (TB
       run(() =>
         service.execute(
           baseInput({
-            fulfillmentMode: 'dine_in',
+            orderType: 'dine_in',
             tableId: randomUUID(),
             customerName: undefined,
             customerPhone: undefined,
@@ -517,7 +517,7 @@ describe('CreateOrderService — table resolution decides the order location (TB
 
   it('a pickup order with no tableId stores null table columns and prices against the default location', async () => {
     const { service, repo, pricingCalls, tableLookupCalls } = makeService();
-    await run(() => service.execute(baseInput({ fulfillmentMode: 'pickup' })));
+    await run(() => service.execute(baseInput({ orderType: 'pickup' })));
     const snap = repo.saved[0]?.toSnapshot();
     expect(snap?.tableId).toBeNull();
     expect(snap?.tableZoneName).toBeNull();
@@ -530,7 +530,7 @@ describe('CreateOrderService — table resolution decides the order location (TB
   it('an idempotent retry of a dine_in order returns the existing order without calling the table lookup again — proof the retry survives the table being archived mid-flight', async () => {
     const { service, repo, tableLookupCalls } = makeService();
     const input = baseInput({
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       tableId: resolvableTableId,
       customerName: undefined,
       customerPhone: undefined,

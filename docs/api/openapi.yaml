@@ -3982,7 +3982,7 @@ components:
               - name
               - modifiers
               - quantity
-        fulfillmentMode:
+        orderType:
           type: string
           enum:
             - dine_in
@@ -4018,7 +4018,7 @@ components:
           default: false
       required:
         - items
-        - fulfillmentMode
+        - orderType
         - idempotencyKey
     OrderResponseDto:
       type: object
@@ -4072,7 +4072,7 @@ components:
           type: string
           format: date-time
           nullable: true
-        fulfillmentMode:
+        orderType:
           type: string
           enum:
             - dine_in
@@ -4091,7 +4091,7 @@ components:
         - total
         - currency
         - etaAt
-        - fulfillmentMode
+        - orderType
         - cancelReason
         - canceledFromStatus
     OrderFeedListResponseDto:
@@ -4125,7 +4125,7 @@ components:
                 format: uuid
               locationName:
                 type: string
-              fulfillmentMode:
+              orderType:
                 type: string
                 enum:
                   - dine_in
@@ -4191,7 +4191,7 @@ components:
               - status
               - locationId
               - locationName
-              - fulfillmentMode
+              - orderType
               - tableIdentifier
               - tableZoneName
               - tableNumber
@@ -4286,7 +4286,7 @@ components:
             - canceled
             - refunded
             - failed
-        fulfillmentMode:
+        orderType:
           type: string
           enum:
             - dine_in
@@ -4452,7 +4452,7 @@ components:
         - locationId
         - orderNumber
         - status
-        - fulfillmentMode
+        - orderType
         - tableIdentifier
         - tableZoneName
         - tableNumber
@@ -4522,7 +4522,7 @@ components:
             - canceled
             - refunded
             - failed
-        fulfillmentMode:
+        orderType:
           type: string
           enum:
             - dine_in
@@ -4680,7 +4680,7 @@ components:
         - locationId
         - orderNumber
         - status
-        - fulfillmentMode
+        - orderType
         - tableIdentifier
         - tableZoneName
         - tableNumber

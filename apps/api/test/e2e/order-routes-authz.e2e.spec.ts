@@ -79,7 +79,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
           idempotencyKey: randomUUID(),
           orderNumber: `ORD-AUTHZ-${orderId.slice(0, 8)}`,
           status,
-          fulfillmentMode: 'dine_in',
+          orderType: 'dine_in',
           subtotal: '10.00',
           total: '10.00',
           currency: 'EUR',

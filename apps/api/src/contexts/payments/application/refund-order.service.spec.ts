@@ -35,7 +35,7 @@ const makeOrder = (status: string, total = '20.00') =>
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status: status as Parameters<typeof Order.fromSnapshot>[0]['status'],
-    fulfillmentMode: 'dine_in' as const,
+    orderType: 'dine_in' as const,
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,

@@ -43,7 +43,7 @@ suite('tenancy_erase_tenant — wipes ordering rows (BLOCK-2)', () => {
           idempotencyKey: 'erase-ord-idem',
           orderNumber: '20260621-ERS',
           status: 'created',
-          fulfillmentMode: 'pickup',
+          orderType: 'pickup',
           tableIdentifier: 'T7',
           customerName: 'Guest PII',
           customerPhone: '+15555550199',

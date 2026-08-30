@@ -112,12 +112,12 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
   const orderPayload = (params: {
     itemId: string;
     tableId?: string;
-    fulfillmentMode?: 'dine_in' | 'pickup';
+    orderType?: 'dine_in' | 'pickup';
   }): Record<string, unknown> => ({
     items: [{ itemId: params.itemId, sizeId: null, name: 'Test item', modifiers: [], quantity: 1 }],
-    fulfillmentMode: params.fulfillmentMode ?? 'dine_in',
+    orderType: params.orderType ?? 'dine_in',
     ...(params.tableId !== undefined ? { tableId: params.tableId } : {}),
-    ...(params.fulfillmentMode === 'pickup'
+    ...(params.orderType === 'pickup'
       ? { customerName: 'Guest', customerPhone: '+1234567890' }
       : {}),
     idempotencyKey: randomUUID(),
@@ -335,7 +335,7 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
   });
 
   it('case 9 — a pickup order with no table still lands on the default location', async () => {
-    const res = await postOrder(orderPayload({ itemId: otherItemId, fulfillmentMode: 'pickup' }));
+    const res = await postOrder(orderPayload({ itemId: otherItemId, orderType: 'pickup' }));
     expect(res.statusCode).toBe(201);
     const orderId = res.json<OrderResponseBody>().orderId;
     const row = await readOrderRow(orderId);

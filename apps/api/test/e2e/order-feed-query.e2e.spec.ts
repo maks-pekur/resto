@@ -80,7 +80,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     locationId: string;
     status: string;
     channel?: 'site' | 'qr-menu';
-    fulfillmentMode?: 'dine_in' | 'pickup' | 'delivery';
+    orderType?: 'dine_in' | 'pickup' | 'delivery';
     acceptedAt?: Date;
     etaAt?: Date;
     createdAt: Date;
@@ -94,7 +94,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-FEED-${orderId.slice(0, 8)}`,
         status: opts.status,
-        fulfillmentMode: opts.fulfillmentMode ?? 'dine_in',
+        orderType: opts.orderType ?? 'dine_in',
         acceptedAt: opts.acceptedAt ?? null,
         etaAt: opts.etaAt ?? null,
         subtotal: '10.00',
@@ -202,24 +202,24 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     expect(ready.rows.map((r) => r.id)).toContain(readyId);
   });
 
-  it('the fulfillment filter separates delivery from the rest', async () => {
+  it('the order-type filter separates delivery from the rest', async () => {
     const now = new Date();
     const deliveryId = await seedOrder({
       locationId: locationBId,
       status: 'accepted',
-      fulfillmentMode: 'delivery',
+      orderType: 'delivery',
       createdAt: now,
     });
     const dineInId = await seedOrder({
       locationId: locationBId,
       status: 'accepted',
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       createdAt: now,
     });
 
     const service = makeListOrdersService();
     const result = await runInTenantContext({ tenantId, locationId: locationBId }, () =>
-      service.execute({ statusPreset: 'accepted', fulfillmentMode: 'delivery' }),
+      service.execute({ statusPreset: 'accepted', orderType: 'delivery' }),
     );
 
     const ids = result.rows.map((r) => r.id);
@@ -261,10 +261,10 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     });
   });
 
-  it('counts only the fulfillment the operator is looking at', async () => {
+  it('counts only the order type the operator is looking at', async () => {
     const now = new Date();
     const location = randomUUID();
-    await stack.db.withoutTenant('seed fulfillment counts location', (tx) =>
+    await stack.db.withoutTenant('seed order-type counts location', (tx) =>
       tx.insert(schema.locations).values({
         id: location,
         tenantId,
@@ -275,18 +275,18 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     await seedOrder({
       locationId: location,
       status: 'accepted',
-      fulfillmentMode: 'pickup',
+      orderType: 'pickup',
       createdAt: now,
     });
     await seedOrder({
       locationId: location,
       status: 'accepted',
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       createdAt: now,
     });
 
     const counts = await runInTenantContext({ tenantId, locationId: location }, () =>
-      makeCountOrdersService().execute({ fulfillmentMode: 'pickup' }),
+      makeCountOrdersService().execute({ orderType: 'pickup' }),
     );
 
     expect(counts.accepted).toBe(1);

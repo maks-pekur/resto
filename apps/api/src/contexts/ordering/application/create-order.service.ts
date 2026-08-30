@@ -161,7 +161,7 @@ export class CreateOrderService {
       locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber,
-      fulfillmentMode: input.fulfillmentMode,
+      orderType: input.orderType,
       tableIdentifier: null,
       tableId: resolvedTable?.tableId ?? null,
       tableZoneName: resolvedTable?.zoneName ?? null,

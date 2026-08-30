@@ -40,8 +40,8 @@ export const AGE_BAND_CLASS = (ageMs: number): string => {
   return 'text-destructive';
 };
 
-const FULFILLMENT_ICON: Record<
-  OrderFeedRowApi['fulfillmentMode'],
+const ORDER_TYPE_ICON: Record<
+  OrderFeedRowApi['orderType'],
   React.ComponentType<{ className?: string }>
 > = {
   dine_in: UtensilsCrossed,
@@ -49,10 +49,10 @@ const FULFILLMENT_ICON: Record<
   delivery: Truck,
 };
 
-export const FULFILLMENT_LABEL_KEY: Record<OrderFeedRowApi['fulfillmentMode'], string> = {
-  dine_in: 'fulfillmentDineIn',
-  pickup: 'fulfillmentPickup',
-  delivery: 'fulfillmentDelivery',
+export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> = {
+  dine_in: 'orderTypeDineIn',
+  pickup: 'orderTypePickup',
+  delivery: 'orderTypeDelivery',
 };
 
 const STATE_LABEL_KEY: Record<OrderCardState, string> = {
@@ -158,7 +158,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
 
   const channel = channelPresentation(row.channel);
   const ChannelIcon = channel.icon;
-  const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
+  const OrderTypeIcon = ORDER_TYPE_ICON[row.orderType];
   const promisedAt = new Date(row.etaAt ?? row.createdAt);
   const dayWord = ((): string => {
     const startOfDay = (d: Date): number => new Date(d).setHours(0, 0, 0, 0);
@@ -245,8 +245,8 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
 
         <span className="hidden w-40 shrink-0 flex-col justify-center px-3 py-2 sm:flex">
           <span className="flex items-center gap-1.5 text-sm">
-            <FulfillmentIcon className="text-muted-foreground size-4" />
-            {t(`card.${FULFILLMENT_LABEL_KEY[row.fulfillmentMode]}`)}
+            <OrderTypeIcon className="text-muted-foreground size-4" />
+            {t(`card.${ORDER_TYPE_LABEL_KEY[row.orderType]}`)}
           </span>
           {tableLabel !== null ? (
             <span

@@ -75,7 +75,7 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-CXR-${orderId.slice(0, 8)}`,
         status,
-        fulfillmentMode: 'dine_in',
+        orderType: 'dine_in',
         subtotal: total,
         total,
         currency: 'EUR',

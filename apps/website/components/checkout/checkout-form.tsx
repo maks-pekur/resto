@@ -78,7 +78,7 @@ export function CheckoutForm() {
     try {
       const orderResult = await createOrder({
         items: cartItemsToOrderItems(items),
-        fulfillmentMode: resolvedMode,
+        orderType: resolvedMode,
         customerName: values.name,
         customerPhone: values.phone,
         customerEmail: values.email,

@@ -24,7 +24,7 @@ export type OrderStatusPreset =
   | 'refund_failed';
 export type OrderDatePreset = 'today' | 'yesterday' | 'week';
 export type OrderChannel = 'site' | 'qr-menu';
-export type OrderFulfillmentMode = 'dine_in' | 'pickup' | 'delivery';
+export type OrderOrderType = 'dine_in' | 'pickup' | 'delivery';
 
 export interface OrderFeedRowApi {
   readonly id: string;
@@ -32,7 +32,7 @@ export interface OrderFeedRowApi {
   readonly status: OrderStatus;
   readonly locationId: string;
   readonly locationName: string;
-  readonly fulfillmentMode: OrderFulfillmentMode;
+  readonly orderType: OrderOrderType;
   readonly tableIdentifier: string | null;
   readonly tableZoneName: string | null;
   readonly tableNumber: string | null;
@@ -71,7 +71,7 @@ export interface OrderFeedFilters {
   readonly datePreset?: OrderDatePreset;
   readonly from?: string;
   readonly to?: string;
-  readonly fulfillmentMode?: OrderFulfillmentMode;
+  readonly orderType?: OrderOrderType;
   readonly channel?: OrderChannel;
   readonly since?: OrderFeedSinceCursor;
   readonly limit?: number;
@@ -89,7 +89,7 @@ const buildFeedQueryString = (filters: OrderFeedFilters): string => {
   if (filters.datePreset) params.set('datePreset', filters.datePreset);
   if (filters.from) params.set('from', filters.from);
   if (filters.to) params.set('to', filters.to);
-  if (filters.fulfillmentMode) params.set('fulfillmentMode', filters.fulfillmentMode);
+  if (filters.orderType) params.set('orderType', filters.orderType);
   if (filters.channel) params.set('channel', filters.channel);
   if (filters.since) {
     params.set('sinceCreatedAt', filters.since.createdAt);
@@ -123,7 +123,7 @@ export interface OrderFeedCountsApi {
 export interface OrderCountsFilters {
   readonly from?: string;
   readonly to?: string;
-  readonly fulfillmentMode?: OrderFulfillmentMode;
+  readonly orderType?: OrderOrderType;
 }
 
 export const ordersCountsQuery = (
@@ -136,7 +136,7 @@ export const ordersCountsQuery = (
     const params = new URLSearchParams();
     if (filters.from) params.set('from', filters.from);
     if (filters.to) params.set('to', filters.to);
-    if (filters.fulfillmentMode) params.set('fulfillmentMode', filters.fulfillmentMode);
+    if (filters.orderType) params.set('orderType', filters.orderType);
     const qs = params.toString();
     return apiFetch<OrderFeedCountsApi>(
       qs ? `/v1/orders/feed/counts?${qs}` : '/v1/orders/feed/counts',
@@ -171,7 +171,7 @@ export interface OrderDetailApi {
   readonly locationId: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
-  readonly fulfillmentMode: OrderFulfillmentMode;
+  readonly orderType: OrderOrderType;
   readonly tableIdentifier: string | null;
   readonly tableZoneName: string | null;
   readonly tableNumber: string | null;

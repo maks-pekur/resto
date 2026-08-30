@@ -13,7 +13,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { OrderStatusTabs, OrderFulfillmentTabs } = await import('@/components/orders/order-tabs');
+const { OrderStatusTabs, OrderTypeTabs } = await import('@/components/orders/order-tabs');
 
 const COUNTS = {
   unaccepted: 3,
@@ -43,11 +43,11 @@ describe('OrderStatusTabs', () => {
   });
 });
 
-describe('OrderFulfillmentTabs', () => {
+describe('OrderTypeTabs', () => {
   it('reports the type the operator picked', async () => {
     const user = userEvent.setup();
     const onChange = vi.fn();
-    render(<OrderFulfillmentTabs value="all" onChange={onChange} />);
+    render(<OrderTypeTabs value="all" onChange={onChange} />);
 
     await user.click(screen.getByRole('tab', { name: 'orders.tabs.delivery' }));
 
@@ -55,7 +55,7 @@ describe('OrderFulfillmentTabs', () => {
   });
 
   it('offers the in-house tab, since a QR order is neither delivery nor pickup', () => {
-    render(<OrderFulfillmentTabs value="all" onChange={vi.fn()} />);
+    render(<OrderTypeTabs value="all" onChange={vi.fn()} />);
 
     expect(screen.getByRole('tab', { name: 'orders.tabs.dine_in' })).toBeInTheDocument();
   });

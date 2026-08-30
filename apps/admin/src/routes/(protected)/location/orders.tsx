@@ -22,9 +22,9 @@ import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { FULFILLMENT_LABEL_KEY, OrderRow } from '@/components/orders/order-row';
+import { ORDER_TYPE_LABEL_KEY, OrderRow } from '@/components/orders/order-row';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
-import { type OrderFulfillmentTab } from '@/components/orders/order-tabs';
+import { type OrderTypeTab } from '@/components/orders/order-tabs';
 import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
 
@@ -51,7 +51,7 @@ function OrdersPage() {
   const { locationId } = useEffectiveLocation();
   const feedLocationId = locationId === 'all' ? undefined : locationId;
 
-  const [fulfillment, setFulfillment] = useState<OrderFulfillmentTab>('all');
+  const [orderType, setOrderType] = useState<OrderTypeTab>('all');
   const [statusTab, setStatusTab] = useState<OrderStatusPreset>('unaccepted');
   const [range, setRange] = useState<DateRange>(() => buildPresetRange('today'));
   const [openOrder, setOpenOrder] = useState<OrderFeedRowApi | null>(null);
@@ -59,7 +59,7 @@ function OrdersPage() {
   const scope = {
     from: range.from,
     to: range.to,
-    ...(fulfillment === 'all' ? {} : { fulfillmentMode: fulfillment }),
+    ...(orderType === 'all' ? {} : { orderType }),
   };
 
   const feedQuery = useQuery({
@@ -94,7 +94,7 @@ function OrdersPage() {
     title: t('alerts.newOrderTitle', { number: row.shortNumber }),
     body: t('alerts.newOrderBody', {
       total: formatMoney(row.total, row.currency),
-      mode: tCard(FULFILLMENT_LABEL_KEY[row.fulfillmentMode]),
+      mode: tCard(ORDER_TYPE_LABEL_KEY[row.orderType]),
     }),
   }));
   useTabTitle(waitingRows.length);
@@ -112,8 +112,8 @@ function OrdersPage() {
       <PageHeading title={tNav('orders')} />
       {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
       <OrderFilterBar
-        fulfillment={fulfillment}
-        onFulfillmentChange={setFulfillment}
+        orderType={orderType}
+        onOrderTypeChange={setOrderType}
         range={range}
         onRangeChange={setRange}
         soundMuted={sound.muted}

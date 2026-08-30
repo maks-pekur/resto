@@ -52,7 +52,7 @@ suite(
           idempotencyKey: randomUUID(),
           orderNumber: 'ORD-001',
           status: 'requires_action',
-          fulfillmentMode: 'dine_in',
+          orderType: 'dine_in',
           subtotal: '10.00',
           total: '10.00',
           currency: 'EUR',

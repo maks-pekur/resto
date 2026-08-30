@@ -71,7 +71,7 @@ export interface OrderSnapshot {
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
   readonly tableId: string | null;
   readonly tableZoneName: string | null;
@@ -111,7 +111,7 @@ export interface CreateOrderInput {
   readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier?: string | null;
   readonly tableId?: string | null;
   readonly tableZoneName?: string | null;
@@ -222,7 +222,7 @@ export class Order {
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
       status: 'created',
-      fulfillmentMode: input.fulfillmentMode,
+      orderType: input.orderType,
       tableIdentifier: input.tableIdentifier ?? null,
       tableId: input.tableId ?? null,
       tableZoneName: input.tableZoneName ?? null,
@@ -264,7 +264,7 @@ export class Order {
       tenantId: input.tenantId,
       locationId: input.locationId,
       orderNumber: input.orderNumber,
-      fulfillmentMode: input.fulfillmentMode,
+      orderType: input.orderType,
       totalMinorUnits: totalMinor,
       currency: input.currency,
       itemCount: itemSnapshots.length,

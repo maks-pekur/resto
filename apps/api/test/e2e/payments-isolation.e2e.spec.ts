@@ -65,7 +65,7 @@ const seedFixture = async (stack: RealStack): Promise<PaymentsIsolationFixture> 
 
     await tx.execute(sql`
       INSERT INTO orders (id, tenant_id, location_id, idempotency_key, order_number, short_number,
-        status, fulfillment_mode, subtotal, delivery_fee, service_fee, discount, total, currency)
+        status, order_type, subtotal, delivery_fee, service_fee, discount, total, currency)
       VALUES
         (${orderIdA}, ${tenantA.id}, ${locationA.id}, ${randomUUID()}, 'ORD-ISOA', 1,
          'paid', 'dine_in', '20.00', '0.00', '0.00', '0.00', '20.00', 'EUR'),

@@ -16,7 +16,7 @@ export interface CreateOrderInput {
     modifiers: { optionId: string; name: string; amount?: number }[];
     quantity: number;
   }[];
-  fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  orderType: 'dine_in' | 'pickup' | 'delivery';
   table?: string;
   customerName?: string;
   customerPhone?: string;
@@ -47,7 +47,7 @@ export interface OrderStatusResponse {
   total: string;
   currency: string;
   etaAt: string | null;
-  fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  orderType: 'dine_in' | 'pickup' | 'delivery';
   cancelReason: string | null;
   canceledFromStatus: string | null;
 }

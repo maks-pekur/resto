@@ -24,7 +24,7 @@ const OrderChannelSchema = z.enum(['site', 'qr-menu']);
 export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
-    fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+    orderType: z.enum(['dine_in', 'pickup', 'delivery']),
     tableId: z.string().uuid().optional(),
     customerName: z.string().max(200).optional(),
     customerPhone: z.string().max(30).optional(),
@@ -43,14 +43,14 @@ export const CreateOrderInputSchema = z
   })
   .refine(
     (data) => {
-      if (data.fulfillmentMode === 'dine_in') return data.tableId !== undefined;
+      if (data.orderType === 'dine_in') return data.tableId !== undefined;
       return true;
     },
     { message: 'tableId is required for dine_in orders', path: ['tableId'] },
   )
   .refine(
     (data) => {
-      if (data.fulfillmentMode === 'pickup' || data.fulfillmentMode === 'delivery') {
+      if (data.orderType === 'pickup' || data.orderType === 'delivery') {
         return (
           data.customerName !== undefined &&
           data.customerName !== '' &&

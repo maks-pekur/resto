@@ -80,9 +80,7 @@ export class OperatorOrdersController {
           ...(query.datePreset !== undefined ? { datePreset: query.datePreset } : {}),
           ...(query.from !== undefined ? { from: query.from } : {}),
           ...(query.to !== undefined ? { to: query.to } : {}),
-          ...(query.fulfillmentMode !== undefined
-            ? { fulfillmentMode: query.fulfillmentMode }
-            : {}),
+          ...(query.orderType !== undefined ? { orderType: query.orderType } : {}),
           ...(query.sinceCreatedAt !== undefined && query.sinceId !== undefined
             ? { since: { createdAt: new Date(query.sinceCreatedAt), id: query.sinceId } }
             : {}),
@@ -107,7 +105,7 @@ export class OperatorOrdersController {
         ...(query.datePreset !== undefined ? { datePreset: query.datePreset } : {}),
         ...(query.from !== undefined ? { from: query.from } : {}),
         ...(query.to !== undefined ? { to: query.to } : {}),
-        ...(query.fulfillmentMode !== undefined ? { fulfillmentMode: query.fulfillmentMode } : {}),
+        ...(query.orderType !== undefined ? { orderType: query.orderType } : {}),
       }),
     );
   }

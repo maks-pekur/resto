@@ -53,7 +53,7 @@ const baseRow: OrderFeedRowApi = {
   status: 'paid',
   locationId: 'loc-1',
   locationName: 'Центр',
-  fulfillmentMode: 'dine_in',
+  orderType: 'dine_in',
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,
@@ -118,7 +118,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
   it('a dine-in order carrying a resolved zone and number renders the composed label', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       tableZoneName: 'Зал 1',
       tableNumber: '14',
       customerName: null,
@@ -138,7 +138,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
   it('a dine-in order with no resolved table but a legacy free-text identifier renders that text', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       tableZoneName: null,
       tableNumber: null,
       customerName: null,
@@ -157,7 +157,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
   it('a pickup order with no table data at all renders no table line', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
-      fulfillmentMode: 'pickup',
+      orderType: 'pickup',
       tableZoneName: null,
       tableNumber: null,
       customerName: null,

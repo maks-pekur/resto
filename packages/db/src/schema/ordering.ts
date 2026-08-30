@@ -30,7 +30,7 @@ export const orders = pgTable(
     orderNumber: text('order_number').notNull(),
     // status acts as soft-delete: 'canceled'/'refunded' replace archived_at (no hard deletes)
     status: text('status').notNull(),
-    fulfillmentMode: text('fulfillment_mode').notNull(),
+    orderType: text('order_type').notNull(),
     // Legacy free-text table label — no writer from phase 10.3 on (CONTEXT D-03).
     // Kept for past orders, seeds, and any future non-QR order path.
     tableIdentifier: text('table_identifier'),
@@ -93,10 +93,7 @@ export const orders = pgTable(
       'orders_status_chk',
       sql`${table.status} IN ('created','requires_action','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
     ),
-    check(
-      'orders_fulfillment_mode_chk',
-      sql`${table.fulfillmentMode} IN ('dine_in','pickup','delivery')`,
-    ),
+    check('orders_order_type_chk', sql`${table.orderType} IN ('dine_in','pickup','delivery')`),
     check('orders_channel_chk', sql`${table.channel} IN ('site','qr-menu')`),
     check(
       'orders_cancel_reason_chk',

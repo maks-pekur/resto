@@ -17,7 +17,7 @@ const base: OrderStatusResponse = {
   total: '12.00',
   currency: 'USD',
   etaAt: null,
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   cancelReason: null,
   canceledFromStatus: null,
 };

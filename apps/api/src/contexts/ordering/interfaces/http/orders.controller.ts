@@ -25,7 +25,7 @@ const OrderStatusResponseSchema = z.object({
   total: z.string(),
   currency: z.string(),
   etaAt: z.string().datetime({ offset: true }).nullable(),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']),
   cancelReason: z.string().nullable(),
   canceledFromStatus: z.string().nullable(),
 });
@@ -67,7 +67,7 @@ export class OrdersController {
         total: snap.total,
         currency: snap.currency,
         etaAt: snap.etaAt ? snap.etaAt.toISOString() : null,
-        fulfillmentMode: snap.fulfillmentMode,
+        orderType: snap.orderType,
         cancelReason: snap.cancelReason,
         canceledFromStatus: snap.canceledFromStatus,
       };

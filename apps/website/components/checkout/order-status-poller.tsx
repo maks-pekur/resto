@@ -183,9 +183,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
       : TRACKER_ORDER.indexOf(status.status as TrackerStatus);
 
   const readyLabel =
-    status.fulfillmentMode === 'dine_in'
-      ? t('status.stepReadyDineIn')
-      : t('status.stepReadyPickup');
+    status.orderType === 'dine_in' ? t('status.stepReadyDineIn') : t('status.stepReadyPickup');
 
   const steps: { key: TrackerStatus; label: string }[] = [
     { key: 'paid', label: t('status.stepPaid') },

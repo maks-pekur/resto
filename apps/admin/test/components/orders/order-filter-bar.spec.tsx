@@ -18,8 +18,8 @@ const { OrderFilterBar } = await import('@/components/orders/order-filter-bar');
 const renderBar = (soundReady: boolean) =>
   render(
     <OrderFilterBar
-      fulfillment="all"
-      onFulfillmentChange={vi.fn()}
+      orderType="all"
+      onOrderTypeChange={vi.fn()}
       range={{ from: '2026-08-30', to: '2026-08-30' }}
       onRangeChange={vi.fn()}
       status="unaccepted"
@@ -53,8 +53,8 @@ describe('OrderFilterBar', () => {
     const onSoundMutedChange = vi.fn();
     render(
       <OrderFilterBar
-        fulfillment="all"
-        onFulfillmentChange={vi.fn()}
+        orderType="all"
+        onOrderTypeChange={vi.fn()}
         range={{ from: '2026-08-30', to: '2026-08-30' }}
         onRangeChange={vi.fn()}
         status="unaccepted"

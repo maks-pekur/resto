@@ -14,7 +14,7 @@ export interface CountOrdersInput {
   readonly datePreset?: OrderDatePreset;
   readonly from?: string;
   readonly to?: string;
-  readonly fulfillmentMode?: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType?: 'dine_in' | 'pickup' | 'delivery';
 }
 
 @Injectable()
@@ -47,7 +47,7 @@ export class CountOrdersService {
     return this.feedRepo.counts({
       tenantId,
       locationIds: [match.id],
-      ...(input.fulfillmentMode !== undefined ? { fulfillmentMode: input.fulfillmentMode } : {}),
+      ...(input.orderType !== undefined ? { orderType: input.orderType } : {}),
       createdFrom: from,
       createdTo: to,
     });

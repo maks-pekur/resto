@@ -12,7 +12,7 @@ import {
 } from '../../application/order-feed-dto';
 
 const ChannelSchema = z.enum(['site', 'qr-menu']);
-const FulfillmentModeSchema = z.enum(['dine_in', 'pickup', 'delivery']);
+const OrderTypeSchema = z.enum(['dine_in', 'pickup', 'delivery']);
 
 const CalendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date.');
 
@@ -21,7 +21,7 @@ export const OrderFeedQueryInputSchema = z.object({
   datePreset: OrderDatePresetSchema.optional(),
   from: CalendarDate.optional(),
   to: CalendarDate.optional(),
-  fulfillmentMode: FulfillmentModeSchema.optional(),
+  orderType: OrderTypeSchema.optional(),
   channel: ChannelSchema.optional(),
   sinceCreatedAt: z.string().datetime({ offset: true }).optional(),
   sinceId: z.string().uuid().optional(),
@@ -35,7 +35,7 @@ export const OrderFeedCountsQueryInputSchema = z.object({
   datePreset: OrderDatePresetSchema.optional(),
   from: CalendarDate.optional(),
   to: CalendarDate.optional(),
-  fulfillmentMode: FulfillmentModeSchema.optional(),
+  orderType: OrderTypeSchema.optional(),
 });
 export type OrderFeedCountsQueryInput = z.infer<typeof OrderFeedCountsQueryInputSchema>;
 export class OrderFeedCountsQueryDto extends createZodDto(OrderFeedCountsQueryInputSchema) {}
@@ -69,7 +69,7 @@ export const OrderFeedRowResponseSchema = z.object({
   status: OrderStatusSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
-  fulfillmentMode: FulfillmentModeSchema,
+  orderType: OrderTypeSchema,
   tableIdentifier: z.string().nullable(),
   tableZoneName: z.string().nullable(),
   tableNumber: z.string().nullable(),
@@ -133,7 +133,7 @@ export const OrderSnapshotResponseSchema = z.object({
   locationId: z.string(),
   orderNumber: z.string(),
   status: OrderStatusSchema,
-  fulfillmentMode: FulfillmentModeSchema,
+  orderType: OrderTypeSchema,
   tableIdentifier: z.string().nullable(),
   tableZoneName: z.string().nullable(),
   tableNumber: z.string().nullable(),
@@ -183,7 +183,7 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
   locationId: s.locationId,
   orderNumber: s.orderNumber,
   status: s.status,
-  fulfillmentMode: s.fulfillmentMode,
+  orderType: s.orderType,
   tableIdentifier: s.tableIdentifier,
   tableZoneName: s.tableZoneName,
   tableNumber: s.tableNumber,

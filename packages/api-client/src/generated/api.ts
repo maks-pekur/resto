@@ -2012,7 +2012,7 @@ export interface components {
                 quantity: number;
             }[];
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             /** Format: uuid */
             tableId?: string;
             customerName?: string;
@@ -2051,7 +2051,7 @@ export interface components {
             /** Format: date-time */
             etaAt: string | null;
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             cancelReason: string | null;
             canceledFromStatus: string | null;
         };
@@ -2066,7 +2066,7 @@ export interface components {
                 locationId: string;
                 locationName: string;
                 /** @enum {string} */
-                fulfillmentMode: "dine_in" | "pickup" | "delivery";
+                orderType: "dine_in" | "pickup" | "delivery";
                 tableIdentifier: string | null;
                 tableZoneName: string | null;
                 tableNumber: string | null;
@@ -2108,7 +2108,7 @@ export interface components {
             /** @enum {string} */
             status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
             tableZoneName: string | null;
             tableNumber: string | null;
@@ -2173,7 +2173,7 @@ export interface components {
             /** @enum {string} */
             status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
             tableZoneName: string | null;
             tableNumber: string | null;

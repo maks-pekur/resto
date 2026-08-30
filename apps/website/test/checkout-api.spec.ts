@@ -77,7 +77,7 @@ describe('createOrder', () => {
 
     const result = await createOrder({
       items: [{ itemId: 'item-1', sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],
-      fulfillmentMode: 'pickup',
+      orderType: 'pickup',
       customerName: 'Ann',
       customerPhone: '+1 555 0000',
       customerEmail: 'ann@example.com',

@@ -106,7 +106,7 @@ export const OrderFeedQuerySchema = z.object({
   locationIds: z.array(z.string().uuid()),
   statuses: z.array(OrderStatusSchema),
   channel: z.enum(['site', 'qr-menu']).optional(),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
   createdFrom: z.date(),
   createdTo: z.date(),
   since: z
@@ -129,7 +129,7 @@ export type OrderFeedQuery = z.infer<typeof OrderFeedQuerySchema>;
 export const OrderFeedCountsQuerySchema = z.object({
   tenantId: z.string().uuid(),
   locationIds: z.array(z.string().uuid()),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
   createdFrom: z.date(),
   createdTo: z.date(),
 });
@@ -150,7 +150,7 @@ export const OrderFeedRowSchema = z.object({
   status: OrderStatusSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']),
   tableIdentifier: z.string().nullable(),
   tableZoneName: z.string().nullable(),
   tableNumber: z.string().nullable(),

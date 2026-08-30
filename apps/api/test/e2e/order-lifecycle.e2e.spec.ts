@@ -64,7 +64,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-LIFECYCLE-${orderId.slice(0, 8)}`,
         status,
-        fulfillmentMode: 'dine_in',
+        orderType: 'dine_in',
         subtotal: '15.00',
         total: '15.00',
         currency: 'EUR',

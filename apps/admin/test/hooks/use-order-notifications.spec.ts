@@ -9,7 +9,7 @@ const makeRow = (id: string): OrderFeedRowApi => ({
   status: 'paid',
   locationId: 'loc-1',
   locationName: 'Central',
-  fulfillmentMode: 'dine_in',
+  orderType: 'dine_in',
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,

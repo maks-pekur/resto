@@ -3,17 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { Volume2, VolumeX } from 'lucide-react';
 import { IconToggle } from '@/components/common/icon-toggle';
 import { DateRangeStepper } from '@/components/common/date-range-stepper';
-import {
-  OrderFulfillmentTabs,
-  OrderStatusTabs,
-  type OrderFulfillmentTab,
-} from '@/components/orders/order-tabs';
+import { OrderTypeTabs, OrderStatusTabs, type OrderTypeTab } from '@/components/orders/order-tabs';
 import type { DateRange } from '@/lib/date-range';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
 
 export interface OrderFilterBarProps {
-  readonly fulfillment: OrderFulfillmentTab;
-  readonly onFulfillmentChange: (value: OrderFulfillmentTab) => void;
+  readonly orderType: OrderTypeTab;
+  readonly onOrderTypeChange: (value: OrderTypeTab) => void;
   readonly status: OrderStatusPreset;
   readonly onStatusChange: (value: OrderStatusPreset) => void;
   readonly counts: OrderFeedCountsApi | null;
@@ -28,8 +24,8 @@ export interface OrderFilterBarProps {
 
 /** Type, dates and status are one decision about what to look at, so they are one surface. */
 export function OrderFilterBar({
-  fulfillment,
-  onFulfillmentChange,
+  orderType,
+  onOrderTypeChange,
   status,
   onStatusChange,
   counts,
@@ -46,7 +42,7 @@ export function OrderFilterBar({
   return (
     <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
       <div className="flex h-14 items-stretch">
-        <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
+        <OrderTypeTabs value={orderType} onChange={onOrderTypeChange} />
 
         <div className="ml-auto flex shrink-0 items-center gap-2 px-3">
           <DateRangeStepper value={range} onChange={onRangeChange} />

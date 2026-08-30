@@ -50,7 +50,7 @@ suite('TransactionDrizzleReader', () => {
         idempotencyKey: orderId,
         orderNumber: `T-${String(shortNumber)}`,
         status: 'completed',
-        fulfillmentMode: 'dine_in',
+        orderType: 'dine_in',
         subtotal: input.amount,
         total: input.amount,
         currency: 'EUR',
