@@ -26,48 +26,50 @@ const renderSection = (contentLocales: readonly string[] = ['ru', 'en'], default
     </QueryClientProvider>,
   );
 
-const switchIn = (locale: string): HTMLElement => {
-  const row = screen.getByTestId(`content-locale-${locale}`);
-  const control = row.querySelector('button[role="switch"]');
-  if (control === null) throw new Error(`no switch for ${locale}`);
-  return control as HTMLElement;
+const openLanguages = async (user: ReturnType<typeof userEvent.setup>): Promise<void> => {
+  await user.click(screen.getByLabelText('settings.contentLocales.languagesPlaceholder'));
 };
 
 describe('ContentLocalesSection', () => {
-  it('shows every language we can publish in, with the tenant’s own switched on', () => {
+  it('shows the languages the restaurant publishes in', () => {
     renderSection();
 
-    expect(switchIn('ru')).toHaveAttribute('data-state', 'checked');
-    expect(switchIn('en')).toHaveAttribute('data-state', 'checked');
-    expect(switchIn('uk')).toHaveAttribute('data-state', 'unchecked');
+    const trigger = screen.getByLabelText('settings.contentLocales.languagesPlaceholder');
+
+    expect(trigger).toHaveTextContent('Russian');
+    expect(trigger).toHaveTextContent('English');
+    expect(trigger).not.toHaveTextContent('Ukrainian');
   });
 
-  it('refuses to switch off the language everything falls back to', async () => {
+  it('refuses to drop the language everything falls back to', async () => {
+    const user = userEvent.setup();
     renderSection();
+    await openLanguages(user);
 
-    expect(switchIn('ru')).toBeDisabled();
+    expect(await screen.findByTestId('multi-select-option-ru')).toHaveAttribute(
+      'data-disabled',
+      '',
+    );
   });
 
-  it('saves nothing until something changes', async () => {
+  it('saves nothing until something changes', () => {
     renderSection();
 
     expect(screen.getByRole('button', { name: 'settings.contentLocales.save' })).toBeDisabled();
   });
 
-  it('sends the new list and the new primary language together', async () => {
+  it('sends the language the operator added', async () => {
     const user = userEvent.setup();
     renderSection();
+    setContentLocales.mockClear();
 
-    await user.click(switchIn('uk'));
-    const [makePrimary] = screen.getAllByRole('button', {
-      name: 'settings.contentLocales.makePrimary',
-    });
-    if (makePrimary === undefined) throw new Error('no language to promote');
-    await user.click(makePrimary);
+    await openLanguages(user);
+    await user.click(await screen.findByTestId('multi-select-option-uk'));
+    await user.keyboard('{Escape}');
     await user.click(screen.getByRole('button', { name: 'settings.contentLocales.save' }));
 
     expect(setContentLocales).toHaveBeenCalledWith({
-      defaultLocale: 'en',
+      defaultLocale: 'ru',
       contentLocales: ['ru', 'en', 'uk'],
     });
   });

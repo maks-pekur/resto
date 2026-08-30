@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Star } from 'lucide-react';
-import { CONTENT_LOCALES, type ContentLocale } from '@resto/domain';
+import { CONTENT_LOCALES } from '@resto/domain';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
+import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { MultiSelect } from '@/components/common/multi-select';
 import { LocaleDisc } from '@/components/common/locale-disc';
 import { localeName } from '@/lib/i18n/content-locales';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
@@ -46,14 +52,11 @@ export function ContentLocalesSection({
     },
   });
 
-  const toggle = (locale: ContentLocale, on: boolean): void => {
-    setSelected((prev) => {
-      if (on) return prev.includes(locale) ? prev : [...prev, locale];
-      // The fallback every guest lands on cannot be switched off from under them.
-      if (locale === primary) return prev;
-      return prev.filter((value) => value !== locale);
-    });
-  };
+  const options = CONTENT_LOCALES.map((locale) => ({
+    value: locale,
+    label: localeName(locale, i18n.language),
+    icon: <LocaleDisc locale={locale} withCode={false} className="[&>span]:size-5" />,
+  }));
 
   return (
     <Card>
@@ -62,50 +65,48 @@ export function ContentLocalesSection({
         <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <ul className="divide-y rounded-md border">
-          {CONTENT_LOCALES.map((locale) => {
-            const enabled = selected.includes(locale);
-            const isPrimary = locale === primary;
-            return (
-              <li
-                key={locale}
-                data-testid={`content-locale-${locale}`}
-                className="flex items-center gap-3 px-3 py-2.5"
-              >
-                <LocaleDisc locale={locale} />
-                <span className="flex-1 truncate text-sm capitalize">
-                  {localeName(locale, i18n.language)}
-                </span>
-                {isPrimary ? (
-                  <Badge variant="secondary" className="gap-1">
-                    <Star className="size-3" />
-                    {t('primaryBadge')}
-                  </Badge>
-                ) : enabled ? (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setPrimary(locale);
-                    }}
-                  >
-                    {t('makePrimary')}
-                  </Button>
-                ) : null}
-                <Switch
-                  checked={enabled}
-                  disabled={isPrimary}
-                  aria-label={localeName(locale, i18n.language)}
-                  onCheckedChange={(next) => {
-                    toggle(locale, next);
-                  }}
-                />
-              </li>
-            );
-          })}
-        </ul>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="content-locales">{t('languagesLabel')}</FieldLabel>
+            <MultiSelect
+              id="content-locales"
+              options={options}
+              value={[...selected]}
+              placeholder={t('languagesPlaceholder')}
+              // The fallback every guest lands on cannot be switched off from under them.
+              locked={[primary]}
+              onChange={setSelected}
+            />
+            <FieldDescription>{t('fallbackHint')}</FieldDescription>
+          </Field>
 
-        <p className="text-muted-foreground text-sm">{t('fallbackHint')}</p>
+          <Field>
+            <FieldLabel htmlFor="content-default-locale">{t('primaryLabel')}</FieldLabel>
+            <Select
+              value={primary}
+              onValueChange={(next) => {
+                setPrimary(next);
+                setSelected((prev) => (prev.includes(next) ? prev : [...prev, next]));
+              }}
+            >
+              <SelectTrigger id="content-default-locale" className="w-full sm:w-64">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {options
+                  .filter((option) => selected.includes(option.value))
+                  .map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      <span className="flex items-center gap-2">
+                        {option.icon}
+                        {option.label}
+                      </span>
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </Field>
+        </FieldGroup>
 
         <div className="flex justify-end gap-2">
           {dirty ? (

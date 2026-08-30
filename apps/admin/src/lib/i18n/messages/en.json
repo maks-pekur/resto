@@ -677,14 +677,15 @@
     "contentLocales": {
       "title": "Menu languages",
       "description": "The languages guests see the menu in, on the website and in the QR menu.",
-      "primaryBadge": "Primary",
-      "makePrimary": "Make primary",
       "fallbackHint": "When a dish has no translation, guests see it in the primary language.",
       "save": "Save",
       "saving": "Saving…",
       "reset": "Reset",
       "saved": "Menu languages updated",
-      "saveFailed": "Could not save the menu languages"
+      "saveFailed": "Could not save the menu languages",
+      "languagesLabel": "Menu languages",
+      "languagesPlaceholder": "Pick the languages",
+      "primaryLabel": "Primary language"
     },
     "pageTitle": "Settings",
     "tabBrand": "Brand",
@@ -722,7 +723,10 @@
       "saving": "Saving…",
       "reset": "Reset",
       "saved": "Brand settings saved",
-      "saveFailed": "Could not save the brand settings"
+      "saveFailed": "Could not save the brand settings",
+      "socialsEmpty": "No links yet.",
+      "socialAdd": "Add a profile",
+      "socialRemove": "Remove {{name}}"
     }
   }
 }

@@ -677,14 +677,15 @@
     "contentLocales": {
       "title": "Idiomas del menú",
       "description": "Los idiomas en los que los invitados ven el menú, en la web y en el menú QR.",
-      "primaryBadge": "Principal",
-      "makePrimary": "Hacer principal",
       "fallbackHint": "Si un plato no está traducido, el invitado lo verá en el idioma principal.",
       "save": "Guardar",
       "saving": "Guardando…",
       "reset": "Descartar",
       "saved": "Idiomas del menú actualizados",
-      "saveFailed": "No se pudieron guardar los idiomas del menú"
+      "saveFailed": "No se pudieron guardar los idiomas del menú",
+      "languagesLabel": "Idiomas del menú",
+      "languagesPlaceholder": "Elige los idiomas",
+      "primaryLabel": "Idioma principal"
     },
     "pageTitle": "Ajustes",
     "tabBrand": "Marca",
@@ -722,7 +723,10 @@
       "saving": "Guardando…",
       "reset": "Descartar",
       "saved": "Ajustes de marca guardados",
-      "saveFailed": "No se pudieron guardar los ajustes de marca"
+      "saveFailed": "No se pudieron guardar los ajustes de marca",
+      "socialsEmpty": "Todavía no hay enlaces.",
+      "socialAdd": "Añadir perfil",
+      "socialRemove": "Quitar {{name}}"
     }
   }
 }

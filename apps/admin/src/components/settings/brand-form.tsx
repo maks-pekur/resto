@@ -3,10 +3,16 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus, X } from 'lucide-react';
 import { SOCIAL_PLATFORMS } from '@resto/domain';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { LocalizedField } from '@/components/common/localized-field';
@@ -33,7 +39,12 @@ const initialValues = (tenant: TenantResponse): BrandFormValues => ({
   phone: tenant.contacts.phone ?? '',
   email: tenant.contacts.email ?? '',
   website: tenant.contacts.website ?? '',
-  socials: Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, tenant.socials[p] ?? ''])),
+  // Only the profiles the restaurant actually has: the rest are offered by the add menu.
+  socials: Object.fromEntries(
+    SOCIAL_PLATFORMS.filter((platform) => (tenant.socials[platform] ?? '').length > 0).map(
+      (platform) => [platform, tenant.socials[platform] ?? ''],
+    ),
+  ),
   logoUrl: tenant.theme?.logoUrl ?? null,
   logoS3Key: null,
 });
@@ -91,6 +102,24 @@ export function BrandForm({ tenant }: BrandFormProps) {
       showError(null, t('saveFailed'));
     },
   });
+
+  const [lastAdded, setLastAdded] = React.useState<string | null>(null);
+  const socials = form.watch('socials');
+  const addedSocials = SOCIAL_PLATFORMS.filter((platform) => platform in socials);
+  const availableSocials = SOCIAL_PLATFORMS.filter((platform) => !(platform in socials));
+
+  const addSocial = (platform: (typeof SOCIAL_PLATFORMS)[number]): void => {
+    form.setValue('socials', { ...socials, [platform]: '' }, { shouldDirty: true });
+    setLastAdded(platform);
+  };
+
+  const removeSocial = (platform: string): void => {
+    form.setValue(
+      'socials',
+      Object.fromEntries(Object.entries(socials).filter(([key]) => key !== platform)),
+      { shouldDirty: true },
+    );
+  };
 
   const onSubmit = form.handleSubmit((values) => {
     mutation.mutate(values);
@@ -193,23 +222,64 @@ export function BrandForm({ tenant }: BrandFormProps) {
         </CardHeader>
         <CardContent>
           <FieldGroup>
-            {SOCIAL_PLATFORMS.map((platform) => {
-              const error = form.formState.errors.socials?.[platform];
-              return (
-                <Field key={platform} data-invalid={error ? true : undefined}>
-                  <FieldLabel htmlFor={`social-${platform}`}>
-                    {SOCIAL_LABEL[platform] ?? platform}
-                  </FieldLabel>
-                  <Input
-                    id={`social-${platform}`}
-                    inputMode="url"
-                    placeholder={t('socialPlaceholder')}
-                    {...form.register(`socials.${platform}`)}
-                  />
-                  {error ? <FieldError>{messageFor(error.message)}</FieldError> : null}
-                </Field>
-              );
-            })}
+            {addedSocials.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t('socialsEmpty')}</p>
+            ) : (
+              addedSocials.map((platform) => {
+                const error = form.formState.errors.socials?.[platform];
+                return (
+                  <Field key={platform} data-invalid={error ? true : undefined}>
+                    <FieldLabel htmlFor={`social-${platform}`}>
+                      {SOCIAL_LABEL[platform] ?? platform}
+                    </FieldLabel>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id={`social-${platform}`}
+                        inputMode="url"
+                        autoFocus={platform === lastAdded}
+                        placeholder={t('socialPlaceholder')}
+                        {...form.register(`socials.${platform}`)}
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        aria-label={t('socialRemove', { name: SOCIAL_LABEL[platform] ?? platform })}
+                        onClick={() => {
+                          removeSocial(platform);
+                        }}
+                      >
+                        <X className="size-4" />
+                      </Button>
+                    </div>
+                    {error ? <FieldError>{messageFor(error.message)}</FieldError> : null}
+                  </Field>
+                );
+              })
+            )}
+
+            {availableSocials.length > 0 ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button type="button" variant="outline" size="sm" className="w-fit gap-1">
+                    <Plus className="size-4" />
+                    {t('socialAdd')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start">
+                  {availableSocials.map((platform) => (
+                    <DropdownMenuItem
+                      key={platform}
+                      onSelect={() => {
+                        addSocial(platform);
+                      }}
+                    >
+                      {SOCIAL_LABEL[platform] ?? platform}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : null}
           </FieldGroup>
         </CardContent>
       </Card>

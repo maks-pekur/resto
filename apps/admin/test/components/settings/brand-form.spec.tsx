@@ -44,6 +44,29 @@ const renderForm = (over: Partial<TenantResponse> = {}) =>
   );
 
 describe('BrandForm', () => {
+  it('offers only the profiles the restaurant has not filled in yet', async () => {
+    const user = userEvent.setup();
+    renderForm({ socials: { instagram: 'https://instagram.com/caferoma' } });
+
+    expect(screen.getByLabelText('Instagram')).toHaveValue('https://instagram.com/caferoma');
+
+    await user.click(screen.getByRole('button', { name: 'settings.brand.socialAdd' }));
+
+    expect(screen.queryByRole('menuitem', { name: 'Instagram' })).not.toBeInTheDocument();
+    expect(await screen.findByRole('menuitem', { name: 'Facebook' })).toBeInTheDocument();
+  });
+
+  it('drops a profile the operator removed', async () => {
+    const user = userEvent.setup();
+    renderForm({ socials: { instagram: 'https://instagram.com/caferoma' } });
+    updateBrand.mockClear();
+
+    await user.click(screen.getByRole('button', { name: 'settings.brand.socialRemove' }));
+    await user.click(screen.getByRole('button', { name: 'settings.brand.save' }));
+
+    expect(updateBrand).toHaveBeenCalledWith(expect.objectContaining({ socials: {} }));
+  });
+
   it('saves nothing until something changes', () => {
     renderForm();
 
@@ -54,6 +77,8 @@ describe('BrandForm', () => {
     const user = userEvent.setup();
     renderForm();
 
+    await user.click(screen.getByRole('button', { name: 'settings.brand.socialAdd' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Instagram' }));
     await user.type(screen.getByLabelText('Instagram'), 'instagram.com/caferoma');
     await user.click(screen.getByRole('button', { name: 'settings.brand.save' }));
 
