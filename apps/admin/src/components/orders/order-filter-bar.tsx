@@ -51,7 +51,7 @@ export function OrderFilterBar({
   const { t: tAlerts } = useTranslation('translation', { keyPrefix: 'orders.alerts' });
 
   return (
-    <div className="bg-card mx-4 flex flex-col rounded-lg border lg:mx-6">
+    <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
       <div className="flex flex-wrap items-center gap-2 px-3 py-2">
         <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
 
@@ -94,7 +94,7 @@ export function OrderFilterBar({
         </Badge>
       </div>
 
-      <div className="border-t px-3 py-1.5">
+      <div className="border-t">
         <OrderStatusTabs
           value={status}
           onChange={onStatusChange}
