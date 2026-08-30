@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from '@tanstack/react-router';
-import { Pencil } from 'lucide-react';
+import { Armchair, Pencil } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { TableZoneView } from '@/lib/queries/table-zones';
@@ -24,7 +24,12 @@ export function ZoneList({ zones, locationSlug }: ZoneListProps) {
             className="hover:bg-muted/40 flex items-center gap-3 border-b px-3 py-2.5 last:border-b-0"
           >
             <span className="min-w-0 flex-1 truncate font-medium">{zone.name}</span>
-            <Badge variant="secondary" className="tabular-nums" aria-label={t('tableCountAria')}>
+            <Badge
+              variant="secondary"
+              className="gap-1 tabular-nums"
+              aria-label={t('tableCountAria')}
+            >
+              <Armchair className="size-3.5" />
               {activeTables}
             </Badge>
             {zone.status === 'archived' ? (
