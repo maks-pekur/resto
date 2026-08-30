@@ -4,7 +4,7 @@ import { CircleDollarSign, ClipboardList, CreditCard, Users } from 'lucide-react
 import { dashboardKpisQuery } from '@/lib/queries/analytics';
 import { KpiCard, KpiCardSkeleton, percentChange } from '@/components/widgets/kpi-card';
 import type { DateRange } from '@/lib/date-range';
-import { formatMoney } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 
 export interface DashboardKpisProps {
   readonly locationId: string;
@@ -13,6 +13,7 @@ export interface DashboardKpisProps {
 
 export function DashboardKpis({ locationId, range }: DashboardKpisProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
+  const money = useMoney();
   const { data, isPending } = useQuery(dashboardKpisQuery(locationId, range));
 
   const kpis = data?.data ?? null;
@@ -33,8 +34,8 @@ export function DashboardKpis({ locationId, range }: DashboardKpisProps) {
           <KpiCard
             icon={CircleDollarSign}
             title={t('kpiRevenue')}
-            value={formatMoney(kpis.revenue.value, kpis.currency)}
-            previous={formatMoney(kpis.revenue.previous, kpis.currency)}
+            value={money(kpis.revenue.value, kpis.currency)}
+            previous={money(kpis.revenue.previous, kpis.currency)}
             change={percentChange(Number(kpis.revenue.value), Number(kpis.revenue.previous))}
             higherIsBetter
             withDivider
@@ -60,8 +61,8 @@ export function DashboardKpis({ locationId, range }: DashboardKpisProps) {
           <KpiCard
             icon={CreditCard}
             title={t('kpiRefunds')}
-            value={formatMoney(kpis.refunds.value, kpis.currency)}
-            previous={formatMoney(kpis.refunds.previous, kpis.currency)}
+            value={money(kpis.refunds.value, kpis.currency)}
+            previous={money(kpis.refunds.previous, kpis.currency)}
             change={percentChange(Number(kpis.refunds.value), Number(kpis.refunds.previous))}
             higherIsBetter={false}
           />

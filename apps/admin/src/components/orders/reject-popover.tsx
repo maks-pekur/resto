@@ -5,7 +5,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { formatMoney } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import { cancelOrderMutation } from '@/lib/queries/orders';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 
@@ -41,6 +41,7 @@ export interface RejectPopoverProps {
 
 export function RejectPopover({ order }: RejectPopoverProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
   const [otherOpen, setOtherOpen] = React.useState(false);
@@ -65,7 +66,7 @@ export function RejectPopover({ order }: RejectPopoverProps): React.ReactElement
       showSuccess(
         t('reject.rejectedToast', {
           n: order.shortNumber,
-          amount: formatMoney(order.total, order.currency),
+          amount: money(order.total, order.currency),
         }),
       );
       void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });

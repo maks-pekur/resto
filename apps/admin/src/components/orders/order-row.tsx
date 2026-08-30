@@ -4,7 +4,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, MapPin, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn, formatMoney } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import { countdown } from '@/lib/orders/remaining';
 import { channelPresentation } from '@/lib/orders/channels';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
@@ -81,6 +82,7 @@ export interface OrderRowProps {
 
 export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps) {
   const { t, i18n } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
   const now = Date.now();
@@ -115,7 +117,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         return;
       }
       showSuccess(
-        t('refund.successToast', { amount: formatMoney(res.data.amountMinor / 100, row.currency) }),
+        t('refund.successToast', { amount: money(res.data.amountMinor / 100, row.currency) }),
       );
       void queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
@@ -314,7 +316,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
 
       <span className="flex w-24 shrink-0 flex-col justify-center gap-1 border-l py-2">
         <span className="px-3 text-right text-sm font-semibold tabular-nums">
-          {formatMoney(row.total, row.currency)}
+          {money(row.total, row.currency)}
         </span>
         {row.hasFailedRefund ? (
           <OrderRefundFailedBadge />

@@ -10,7 +10,7 @@ import {
   DataTableRow,
 } from '@/components/common/data-table';
 import { RowActions } from '@/components/common/row-actions';
-import { formatMoney } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { usePermissions } from '@/hooks/use-permissions';
 import { retryRefundMutation } from '@/lib/queries/orders';
@@ -27,6 +27,7 @@ export interface TransactionsTableProps {
 
 export function TransactionsTable({ rows }: TransactionsTableProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'transactions' });
+  const money = useMoney();
   const queryClient = useQueryClient();
   const { can } = usePermissions();
 
@@ -79,12 +80,10 @@ export function TransactionsTable({ rows }: TransactionsTableProps) {
                 {t('orderNumber', { n: row.orderShortNumber })}
               </DataTableCell>
               <DataTableCell className="text-right tabular-nums">
-                {formatMoney(row.amount, row.currency)}
+                {money(row.amount, row.currency)}
               </DataTableCell>
               <DataTableCell className="text-muted-foreground text-right tabular-nums">
-                {Number(row.refundedAmount) > 0
-                  ? formatMoney(row.refundedAmount, row.currency)
-                  : '—'}
+                {Number(row.refundedAmount) > 0 ? money(row.refundedAmount, row.currency) : '—'}
               </DataTableCell>
               <DataTableCell
                 className={state === 'failed' ? 'text-destructive' : 'text-muted-foreground'}

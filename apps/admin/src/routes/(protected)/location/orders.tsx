@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { Route as locationLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
-import { formatMoney } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import {
   DEFAULT_ORDER_FEED_FILTERS,
   ordersCountsQuery,
@@ -45,6 +45,7 @@ const POLL_MS = 5_000;
 
 function OrdersPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const { t: tNav } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { t: tCard } = useTranslation('translation', { keyPrefix: 'orders.card' });
@@ -93,7 +94,7 @@ function OrdersPage() {
   const notifications = useOrderNotifications(waitingRows, (row) => ({
     title: t('alerts.newOrderTitle', { number: row.shortNumber }),
     body: t('alerts.newOrderBody', {
-      total: formatMoney(row.total, row.currency),
+      total: money(row.total, row.currency),
       mode: tCard(ORDER_TYPE_LABEL_KEY[row.orderType]),
     }),
   }));

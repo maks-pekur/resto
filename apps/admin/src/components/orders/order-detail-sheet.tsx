@@ -10,7 +10,8 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { formatMoney, toMinorUnits } from '@/lib/utils';
+import { toMinorUnits } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import { usePermissions } from '@/hooks/use-permissions';
 import {
   orderDetailQuery,
@@ -73,6 +74,7 @@ interface OrderDetailBodyProps {
 
 function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const { can } = usePermissions();
@@ -122,7 +124,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         return;
       }
       showSuccess(
-        t('refund.successToast', { amount: formatMoney(refundAmount, detail?.currency ?? '') }),
+        t('refund.successToast', { amount: money(refundAmount, detail?.currency ?? '') }),
       );
       setRefundReason('');
       void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
@@ -142,7 +144,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
       }
       showSuccess(
         t('refund.successToast', {
-          amount: formatMoney(res.data.amountMinor / 100, detail?.currency ?? ''),
+          amount: money(res.data.amountMinor / 100, detail?.currency ?? ''),
         }),
       );
       void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
@@ -198,7 +200,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
             <span className="flex items-center gap-1.5 text-sm">
               <AlertTriangle className="size-4" />
               {t('refund.failedBanner', {
-                amount: formatMoney(detail.failedRefundAmount ?? detail.total, detail.currency),
+                amount: money(detail.failedRefundAmount ?? detail.total, detail.currency),
               })}
             </span>
             {canRetry ? (
@@ -305,7 +307,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
                   <span>
                     {item.nameSnapshot} × {item.quantity}
                   </span>
-                  <span>{formatMoney(item.lineTotal, item.currency)}</span>
+                  <span>{money(item.lineTotal, item.currency)}</span>
                 </div>
                 {item.modifiers.map((modifier, index) => (
                   <span
@@ -322,19 +324,19 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
           <div className="flex flex-col gap-1 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsSubtotal')}</span>
-              <span>{formatMoney(detail.subtotal, detail.currency)}</span>
+              <span>{money(detail.subtotal, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsService')}</span>
-              <span>{formatMoney(detail.serviceFee, detail.currency)}</span>
+              <span>{money(detail.serviceFee, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsDiscount')}</span>
-              <span>{formatMoney(detail.discount, detail.currency)}</span>
+              <span>{money(detail.discount, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between font-semibold">
               <span>{t('detail.totalsTotal')}</span>
-              <span>{formatMoney(detail.total, detail.currency)}</span>
+              <span>{money(detail.total, detail.currency)}</span>
             </div>
           </div>
         </div>
@@ -366,7 +368,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold">{t('refund.title')}</h3>
             <p className="text-xs text-muted-foreground">
-              {t('refund.remainingHint', { amount: formatMoney(detail.total, detail.currency) })}
+              {t('refund.remainingHint', { amount: money(detail.total, detail.currency) })}
             </p>
             <label className="text-sm" htmlFor="refund-amount">
               {t('refund.amountLabel')}
