@@ -43,7 +43,7 @@ export function DateRangeStepper({ value, onChange, className }: DateRangeSteppe
   // One control, not three: the arrows and the calendar sit in a single bordered group, and the
   // date between them is the button that opens the calendar.
   return (
-    <div className={cn('flex h-9 items-center overflow-hidden rounded-md border', className)}>
+    <div className={cn('flex h-10 items-center overflow-hidden rounded-md border', className)}>
       <Button
         variant="ghost"
         size="icon"

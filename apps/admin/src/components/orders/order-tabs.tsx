@@ -7,9 +7,12 @@ import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders
 
 // The tab groups sit inside one filter bar, so they carry no surface of their own — the active
 // tab is marked against the bar's background rather than against a pill inside it.
-const TAB_LIST_CLASS = 'h-full gap-0 rounded-none bg-transparent p-0';
+// `group-data-[orientation=horizontal]/tabs:h-full` is not decoration: the shadcn list pins its
+// own height with that same variant, and a plain `h-full` loses to it on specificity.
+const TAB_LIST_CLASS =
+  'h-full gap-0 rounded-none bg-transparent p-0 group-data-[orientation=horizontal]/tabs:h-full';
 const TAB_TRIGGER_CLASS =
-  'h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
+  'h-full min-h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
 const FULFILLMENT_TRIGGER_CLASS = 'gap-2 px-5 text-base [&_svg:not([class*=size-])]:size-5';
 
 export type OrderFulfillmentTab = 'all' | 'delivery' | 'pickup';
