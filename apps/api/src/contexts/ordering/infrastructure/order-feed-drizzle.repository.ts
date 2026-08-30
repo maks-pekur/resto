@@ -163,14 +163,13 @@ const EMPTY_COUNTS: OrderFeedCounts = {
   canceled: 0,
 };
 
-// Serve time is what a kitchen queues on. An order nobody has accepted yet has no promise to
-// serve by, so it falls back to when it arrived — which is the promise it is closest to having.
-const dueAt = sql`coalesce(${schema.orders.etaAt}, ${schema.orders.createdAt})`;
-
+// The daily number is what an operator reads a floor by, but it restarts every day — so the day
+// is the coarse key and the number the fine one, or Monday's №3 would sort inside Tuesday.
 function feedOrder(input: OrderFeedQuery): [SQL, SQL] {
+  const day = sql`date_trunc('day', ${schema.orders.createdAt} at time zone ${input.timezone ?? 'UTC'})`;
   return input.sort === 'oldest_first'
-    ? [asc(dueAt), asc(schema.orders.id)]
-    : [desc(dueAt), desc(schema.orders.id)];
+    ? [asc(day), asc(schema.orders.shortNumber)]
+    : [desc(day), desc(schema.orders.shortNumber)];
 }
 
 function buildFilterPredicate(input: OrderFeedQuery): SQL | undefined {

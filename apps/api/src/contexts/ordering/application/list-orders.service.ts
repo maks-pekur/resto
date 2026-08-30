@@ -108,6 +108,7 @@ export class ListOrdersService {
       ...(input.fulfillmentMode !== undefined ? { fulfillmentMode: input.fulfillmentMode } : {}),
       ...(statusPreset === 'unaccepted' ? { unacceptedOnly: true } : {}),
       sort: QUEUE_PRESETS.includes(statusPreset) ? 'oldest_first' : 'newest_first',
+      ...(referenceTimezone !== null ? { timezone: referenceTimezone } : {}),
       createdFrom: from,
       createdTo: to,
       ...(input.since !== undefined ? { since: input.since } : {}),
