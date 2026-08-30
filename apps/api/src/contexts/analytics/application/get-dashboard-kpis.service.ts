@@ -1,7 +1,13 @@
-import { ForbiddenException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { getLocationId, requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { addDays, zonedMidnightUtc } from '../../../shared/zoned-day';
+import { addDays, formatDateKeyInTimeZone, zonedMidnightUtc } from '../../../shared/zoned-day';
 import {
   LOCATION_REPOSITORY,
   TENANT_REPOSITORY,
@@ -14,7 +20,7 @@ import {
 } from '../../identity/application/ports/member-location-scope-reader.port';
 import { ANALYTICS_READER, type AnalyticsReader } from '../domain/ports';
 import {
-  DEFAULT_DASHBOARD_RANGE_DAYS,
+  MAX_DASHBOARD_RANGE_DAYS,
   type DashboardKpisQueryInput,
   type DashboardKpisResponse,
 } from './dashboard-dto';
@@ -40,7 +46,6 @@ export class GetDashboardKpisService {
     const tenant = await this.tenants.findById(tenantId);
     if (!tenant) throw new NotFoundException();
 
-    const days = input.days ?? DEFAULT_DASHBOARD_RANGE_DAYS;
     const active = (await this.locations.listForTenant(tenantId)).filter(
       (l) => l.status === 'active',
     );
@@ -73,9 +78,21 @@ export class GetDashboardKpisService {
     const locationIds = scoped === null ? everyLocation.map((l) => l.id) : [scoped.id];
     const timezone = scoped?.timezone ?? tenant.timezone;
 
-    const to = addDays(zonedMidnightUtc(new Date(), timezone), 1);
-    const from = addDays(to, -days);
-    const previousFrom = addDays(from, -days);
+    const today = formatDateKeyInTimeZone(new Date(), timezone);
+    const fromKey = input.from ?? today;
+    const toKey = input.to ?? today;
+    // Noon, not midnight: the instant only has to land inside the requested calendar day
+    // for any timezone, and midnight UTC does not on a negative offset.
+    const from = zonedMidnightUtc(new Date(`${fromKey}T12:00:00.000Z`), timezone);
+    const to = addDays(zonedMidnightUtc(new Date(`${toKey}T12:00:00.000Z`), timezone), 1);
+    const span = to.getTime() - from.getTime();
+    if (span > MAX_DASHBOARD_RANGE_DAYS * 86_400_000) {
+      throw new BadRequestException({
+        code: 'analytics.range_too_wide',
+        message: `A dashboard range cannot exceed ${String(MAX_DASHBOARD_RANGE_DAYS)} days.`,
+      });
+    }
+    const previousFrom = new Date(from.getTime() - span);
 
     const [current, previous] = await Promise.all([
       this.reader.readDashboardTotals({ tenantId, locationIds, from, to }),
@@ -83,7 +100,7 @@ export class GetDashboardKpisService {
     ]);
 
     return {
-      range: { from: from.toISOString(), to: to.toISOString(), days },
+      range: { from: fromKey, to: toKey },
       currency: tenant.defaultCurrency,
       revenue: { value: current.revenue, previous: previous.revenue },
       completedOrders: { value: current.completedOrders, previous: previous.completedOrders },

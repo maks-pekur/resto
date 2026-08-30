@@ -2172,11 +2172,8 @@ export interface components {
         };
         DashboardKpisResponseDto: {
             range: {
-                /** Format: date-time */
                 from: string;
-                /** Format: date-time */
                 to: string;
-                days: number;
             };
             currency: string;
             revenue: {

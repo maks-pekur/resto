@@ -2,18 +2,33 @@ import { createZodDto } from 'nestjs-zod';
 import { CurrencyValue, MoneyAmountValue } from '@resto/domain';
 import { z } from 'zod';
 
-export const DASHBOARD_RANGE_DAYS = [7, 28, 90] as const;
-export const DEFAULT_DASHBOARD_RANGE_DAYS = 28;
+export const MAX_DASHBOARD_RANGE_DAYS = 366;
 
-export const DashboardKpisQueryInputSchema = z.object({
-  days: z.coerce
-    .number()
-    .int()
-    .refine((v): v is (typeof DASHBOARD_RANGE_DAYS)[number] =>
-      DASHBOARD_RANGE_DAYS.includes(v as (typeof DASHBOARD_RANGE_DAYS)[number]),
-    )
-    .optional(),
-});
+const CalendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date.');
+
+export const DashboardKpisQueryInputSchema = z
+  .object({
+    from: CalendarDate.optional(),
+    to: CalendarDate.optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.from === undefined) !== (value.to === undefined)) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'Both "from" and "to" are required when either is given.',
+        path: [value.from === undefined ? 'from' : 'to'],
+      });
+      return;
+    }
+    if (value.from === undefined || value.to === undefined) return;
+    if (value.to < value.from) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '"to" cannot be earlier than "from".',
+        path: ['to'],
+      });
+    }
+  });
 export type DashboardKpisQueryInput = z.infer<typeof DashboardKpisQueryInputSchema>;
 export class DashboardKpisQueryDto extends createZodDto(DashboardKpisQueryInputSchema) {}
 
@@ -29,9 +44,8 @@ const CountMetricSchema = z.object({
 
 export const DashboardKpisResponseSchema = z.object({
   range: z.object({
-    from: z.string().datetime({ offset: true }),
-    to: z.string().datetime({ offset: true }),
-    days: z.number().int().positive(),
+    from: CalendarDate,
+    to: CalendarDate,
   }),
   currency: CurrencyValue,
   revenue: MoneyMetricSchema,

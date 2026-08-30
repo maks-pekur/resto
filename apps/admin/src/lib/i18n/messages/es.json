@@ -520,15 +520,25 @@
     "newItemTitle": "Nuevo plato",
     "editGroupTitle": "Editar grupo de modificadores",
     "newGroupTitle": "Nuevo grupo de modificadores",
-    "kpiRange": "Últimos {{days}} días",
     "kpiRevenue": "Ingresos",
     "kpiOrders": "Pedidos completados",
     "kpiNewGuests": "Nuevos clientes",
     "kpiRefunds": "Reembolsos",
-    "kpiPrevious": "Periodo anterior: {{value}}",
+    "kpiPrevious": "{{value}} periodo anterior",
     "kpiNoBaseline": "sin datos del periodo anterior",
     "noReportsTitle": "Informes no disponibles",
-    "noReportsDescription": "Las cifras de ingresos y pedidos las ven el propietario y los administradores."
+    "noReportsDescription": "Las cifras de ingresos y pedidos las ven el propietario y los administradores.",
+    "kpiVsPrevious": "frente al periodo anterior",
+    "filterLocationLabel": "Local",
+    "filterLocationAll": "Todos los locales",
+    "range": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "last7": "Últimos 7 días",
+      "last28": "Últimos 28 días",
+      "thisMonth": "Este mes",
+      "lastMonth": "Mes pasado"
+    }
   },
   "tables": {
     "pageTitle": "Mesas",

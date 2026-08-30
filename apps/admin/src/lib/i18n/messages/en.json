@@ -520,15 +520,25 @@
     "newItemTitle": "New item",
     "editGroupTitle": "Edit modifier group",
     "newGroupTitle": "New modifier group",
-    "kpiRange": "Last {{days}} days",
     "kpiRevenue": "Revenue",
     "kpiOrders": "Orders fulfilled",
     "kpiNewGuests": "New guests",
     "kpiRefunds": "Refunds",
-    "kpiPrevious": "Previous period: {{value}}",
+    "kpiPrevious": "{{value}} previous period",
     "kpiNoBaseline": "no data for the previous period",
     "noReportsTitle": "Reports are not available",
-    "noReportsDescription": "Revenue and order figures are visible to the owner and administrators."
+    "noReportsDescription": "Revenue and order figures are visible to the owner and administrators.",
+    "kpiVsPrevious": "vs previous period",
+    "filterLocationLabel": "Location",
+    "filterLocationAll": "All locations",
+    "range": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "last28": "Last 28 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    }
   },
   "tables": {
     "pageTitle": "Tables",

@@ -6,10 +6,6 @@ const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
 vi.mock('@/lib/api-client', () => ({ apiFetch: apiFetchMock }));
 
-vi.mock('@/hooks/use-effective-location', () => ({
-  useEffectiveLocation: () => ({ mode: 'all', locationId: undefined, locationSlug: undefined }),
-}));
-
 vi.mock('react-i18next', async () => {
   const actual = await vi.importActual<Record<string, unknown>>('react-i18next');
   return {
@@ -23,8 +19,10 @@ vi.mock('react-i18next', async () => {
 
 const { DashboardKpis } = await import('@/components/widgets/dashboard-kpis');
 
+const RANGE = { from: '2026-08-01', to: '2026-08-28' };
+
 const kpis = {
-  range: { from: '2026-08-02T00:00:00.000Z', to: '2026-08-31T00:00:00.000Z', days: 28 },
+  range: RANGE,
   currency: 'EUR',
   revenue: { value: '1500.00', previous: '1000.00' },
   completedOrders: { value: 12, previous: 12 },
@@ -32,11 +30,11 @@ const kpis = {
   refunds: { value: '50.00', previous: '25.00' },
 };
 
-const renderKpis = () => {
+const renderKpis = (locationId = 'all') => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <DashboardKpis />
+      <DashboardKpis locationId={locationId} range={RANGE} />
     </QueryClientProvider>,
   );
 };
@@ -47,13 +45,14 @@ beforeEach(() => {
 });
 
 describe('DashboardKpis', () => {
-  it('asks for the every-location window', async () => {
-    renderKpis();
+  it('asks for the window and location it was given', async () => {
+    renderKpis('loc-1');
     await screen.findByText('dashboard.kpiRevenue');
 
-    expect(apiFetchMock).toHaveBeenCalledWith('/v1/analytics/dashboard?days=28', {
-      locationId: 'all',
-    });
+    expect(apiFetchMock).toHaveBeenCalledWith(
+      '/v1/analytics/dashboard?from=2026-08-01&to=2026-08-28',
+      { locationId: 'loc-1' },
+    );
   });
 
   it('states each counter against the previous window', async () => {
@@ -80,12 +79,14 @@ describe('DashboardKpis', () => {
     expect(await screen.findByText('dashboard.kpiNoBaseline')).toBeInTheDocument();
   });
 
-  it('renders nothing but the range line when the request fails', async () => {
+  it('renders no counters at all when the request fails', async () => {
     apiFetchMock.mockResolvedValue({ status: 500, ok: false, data: null });
 
     renderKpis();
 
-    expect(await screen.findByText('dashboard.kpiRange')).toBeInTheDocument();
+    await vi.waitFor(() => {
+      expect(apiFetchMock).toHaveBeenCalled();
+    });
     expect(screen.queryByText('dashboard.kpiRevenue')).not.toBeInTheDocument();
   });
 });

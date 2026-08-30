@@ -22,8 +22,18 @@ if (!dockerOk) {
   console.warn('[analytics-dashboard.e2e] Docker not available — skipping.');
 }
 
+const dateKey = (daysAgo: number): string =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(Date.now() - daysAgo * 86_400_000));
+
+const LAST_28_DAYS = `?from=${dateKey(27)}&to=${dateKey(0)}`;
+
 interface DashboardKpis {
-  range: { from: string; to: string; days: number };
+  range: { from: string; to: string };
   currency: string;
   revenue: { value: string; previous: string };
   completedOrders: { value: number; previous: number };
@@ -40,7 +50,11 @@ suite('Analytics dashboard e2e', () => {
   let locationId: string;
   let emptyLocationId: string;
 
-  const getDashboard = (cookie: string, headers: Record<string, string> = {}, query = '') =>
+  const getDashboard = (
+    cookie: string,
+    headers: Record<string, string> = {},
+    query = LAST_28_DAYS,
+  ) =>
     stack.app.inject({
       method: 'GET',
       url: `/v1/analytics/dashboard${query}`,
@@ -182,7 +196,7 @@ suite('Analytics dashboard e2e', () => {
     expect(body.completedOrders.value).toBe(1);
     expect(body.newGuests.value).toBe(1);
     expect(body.refunds.value).toBe('0.00');
-    expect(body.range.days).toBe(28);
+    expect(body.range).toEqual({ from: dateKey(27), to: dateKey(0) });
     expect(body.currency).toBe('GBP');
   });
 
@@ -193,15 +207,29 @@ suite('Analytics dashboard e2e', () => {
     expect(res.json<DashboardKpis>().revenue.value).toBe('100.00');
   });
 
-  it('accepts the other supported windows', async () => {
-    const res = await getDashboard(ownerCookie, {}, '?days=7');
+  it('defaults to today, which the day-old order falls outside of', async () => {
+    const res = await getDashboard(ownerCookie, {}, '');
 
     expect(res.statusCode).toBe(200);
-    expect(res.json<DashboardKpis>().range.days).toBe(7);
+    const body = res.json<DashboardKpis>();
+    expect(body.range).toEqual({ from: dateKey(0), to: dateKey(0) });
+    expect(body.revenue.value).toBe('0.00');
   });
 
-  it('refuses a window it does not support', async () => {
-    const res = await getDashboard(ownerCookie, {}, '?days=5');
+  it('refuses a half-given range', async () => {
+    const res = await getDashboard(ownerCookie, {}, `?from=${dateKey(7)}`);
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('refuses a range that ends before it starts', async () => {
+    const res = await getDashboard(ownerCookie, {}, `?from=${dateKey(0)}&to=${dateKey(7)}`);
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('refuses a date that is not a date', async () => {
+    const res = await getDashboard(ownerCookie, {}, '?from=yesterday&to=today');
 
     expect(res.statusCode).toBe(400);
   });

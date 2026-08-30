@@ -520,15 +520,25 @@
     "newItemTitle": "Новое блюдо",
     "editGroupTitle": "Редактирование группы модификаторов",
     "newGroupTitle": "Новая группа модификаторов",
-    "kpiRange": "За последние {{days}} дней",
     "kpiRevenue": "Выручка",
     "kpiOrders": "Выполненные заказы",
     "kpiNewGuests": "Новые гости",
     "kpiRefunds": "Возвраты",
-    "kpiPrevious": "Предыдущий период: {{value}}",
+    "kpiPrevious": "{{value}} за предыдущий период",
     "kpiNoBaseline": "нет данных за прошлый период",
     "noReportsTitle": "Показатели недоступны",
-    "noReportsDescription": "Цифры по выручке и заказам видят владелец и администратор."
+    "noReportsDescription": "Цифры по выручке и заказам видят владелец и администратор.",
+    "kpiVsPrevious": "к предыдущему периоду",
+    "filterLocationLabel": "Точка",
+    "filterLocationAll": "Все точки",
+    "range": {
+      "today": "Сегодня",
+      "yesterday": "Вчера",
+      "last7": "Последние 7 дней",
+      "last28": "Последние 28 дней",
+      "thisMonth": "Этот месяц",
+      "lastMonth": "Прошлый месяц"
+    }
   },
   "tables": {
     "pageTitle": "Столы",

@@ -1,11 +1,16 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { hasPermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
+import { meLocationsQuery } from '@/lib/queries/locations';
+import { sortLocations } from '@/lib/default-location';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
+import { DEFAULT_DASHBOARD_RANGE, type DateRange } from '@/lib/date-range';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
+import { ALL_LOCATIONS, DashboardFilters } from '@/components/dashboard/dashboard-filters';
 import { DashboardKpis } from '@/components/widgets/dashboard-kpis';
 import { Button } from '@/components/ui/button';
 
@@ -16,11 +21,19 @@ import { Button } from '@/components/ui/button';
  */
 export function DashboardPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'dashboard' });
-  const { mode } = useEffectiveLocation();
+  const { mode, locationId } = useEffectiveLocation();
 
   // Staff hold no `reports:read`; they get a plain explanation instead of a blank screen.
   const { data: meResult } = useQuery(meQuery());
   const canSeeReports = hasPermission(meResult?.data ?? null, 'reports', 'read');
+
+  const { data: locationsResult } = useQuery(meLocationsQuery());
+  const locations = sortLocations(locationsResult?.data?.locations ?? []);
+
+  const [range, setRange] = useState<DateRange>(() => DEFAULT_DASHBOARD_RANGE());
+  const [selectedLocation, setSelectedLocation] = useState<string | null>(null);
+  const effectiveLocation = selectedLocation ?? (mode === 'single' ? locationId : null);
+  const filterValue = effectiveLocation ?? ALL_LOCATIONS;
 
   return (
     <>
@@ -40,7 +53,16 @@ export function DashboardPage() {
             }
           />
         ) : canSeeReports ? (
-          <DashboardKpis />
+          <>
+            <DashboardFilters
+              locations={locations.map((location) => ({ id: location.id, name: location.name }))}
+              locationId={filterValue}
+              onLocationChange={setSelectedLocation}
+              range={range}
+              onRangeChange={setRange}
+            />
+            <DashboardKpis locationId={filterValue} range={range} />
+          </>
         ) : (
           <EmptyState
             variant="empty"

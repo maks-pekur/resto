@@ -72,7 +72,7 @@ describe('GetDashboardKpisService', () => {
     const { service, queries } = buildService([location(locationA)]);
 
     const result = await runInTenantContext({ tenantId }, () =>
-      service.execute({ days: 28, ...OWNER }),
+      service.execute({ from: '2026-08-01', to: '2026-08-28', ...OWNER }),
     );
 
     expect(result.revenue).toEqual({ value: '150.00', previous: '100.00' });
@@ -80,22 +80,27 @@ describe('GetDashboardKpisService', () => {
     expect(result.newGuests).toEqual({ value: 2, previous: 1 });
     expect(result.refunds).toEqual({ value: '10.00', previous: '0.00' });
     expect(result.currency).toBe('EUR');
-    expect(result.range.days).toBe(28);
+    expect(result.range).toEqual({ from: '2026-08-01', to: '2026-08-28' });
 
     const [current, previous] = queries;
     const dayMs = 86_400_000;
-    expect(current?.to.getTime() ?? 0).toBeGreaterThan(current?.from.getTime() ?? 0);
     expect((current?.to.getTime() ?? 0) - (current?.from.getTime() ?? 0)).toBe(28 * dayMs);
     expect(previous?.to.getTime()).toBe(current?.from.getTime());
     expect((previous?.to.getTime() ?? 0) - (previous?.from.getTime() ?? 0)).toBe(28 * dayMs);
   });
 
-  it('defaults to a 28-day window', async () => {
+  it('defaults to today when no range is given', async () => {
     const { service } = buildService([location(locationA)]);
 
     const result = await runInTenantContext({ tenantId }, () => service.execute({ ...OWNER }));
 
-    expect(result.range.days).toBe(28);
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'UTC',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+    expect(result.range).toEqual({ from: today, to: today });
   });
 
   it('covers every active location when no location is bound', async () => {
@@ -105,7 +110,9 @@ describe('GetDashboardKpisService', () => {
       location(randomUUID(), { status: 'archived' }),
     ]);
 
-    await runInTenantContext({ tenantId }, () => service.execute({ days: 7, ...OWNER }));
+    await runInTenantContext({ tenantId }, () =>
+      service.execute({ from: '2026-08-24', to: '2026-08-30', ...OWNER }),
+    );
 
     expect(queries[0]?.locationIds).toEqual([locationA, locationB]);
   });
@@ -114,7 +121,7 @@ describe('GetDashboardKpisService', () => {
     const { service, queries } = buildService([location(locationA), location(locationB)]);
 
     await runInTenantContext({ tenantId, locationId: locationB }, () =>
-      service.execute({ days: 7, ...OWNER }),
+      service.execute({ from: '2026-08-24', to: '2026-08-30', ...OWNER }),
     );
 
     expect(queries[0]?.locationIds).toEqual([locationB]);
@@ -125,7 +132,7 @@ describe('GetDashboardKpisService', () => {
 
     await expect(
       runInTenantContext({ tenantId, locationId: locationB }, () =>
-        service.execute({ days: 7, ...OWNER }),
+        service.execute({ from: '2026-08-24', to: '2026-08-30', ...OWNER }),
       ),
     ).rejects.toBeInstanceOf(NotFoundException);
   });
@@ -137,7 +144,12 @@ describe('GetDashboardKpisService', () => {
     );
 
     await runInTenantContext({ tenantId }, () =>
-      service.execute({ days: 7, userId: 'user-admin', isOwner: false }),
+      service.execute({
+        from: '2026-08-24',
+        to: '2026-08-30',
+        userId: 'user-admin',
+        isOwner: false,
+      }),
     );
 
     expect(queries[0]?.locationIds).toEqual([locationB]);
@@ -148,7 +160,12 @@ describe('GetDashboardKpisService', () => {
 
     await expect(
       runInTenantContext({ tenantId, locationId: locationB }, () =>
-        service.execute({ days: 7, userId: 'user-admin', isOwner: false }),
+        service.execute({
+          from: '2026-08-24',
+          to: '2026-08-30',
+          userId: 'user-admin',
+          isOwner: false,
+        }),
       ),
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
@@ -157,7 +174,12 @@ describe('GetDashboardKpisService', () => {
     const { service, queries } = buildService([location(locationA)], null);
 
     await runInTenantContext({ tenantId }, () =>
-      service.execute({ days: 7, userId: 'user-admin', isOwner: false }),
+      service.execute({
+        from: '2026-08-24',
+        to: '2026-08-30',
+        userId: 'user-admin',
+        isOwner: false,
+      }),
     );
 
     expect(queries[0]?.locationIds).toEqual([]);

@@ -29,7 +29,8 @@ export class AnalyticsController {
     @Query(new RestoZodValidationPipe(DashboardKpisQueryDto)) query: DashboardKpisQueryDto,
   ): Promise<DashboardKpisResponse> {
     return this.getDashboardKpis.execute({
-      ...(query.days !== undefined ? { days: query.days } : {}),
+      ...(query.from !== undefined ? { from: query.from } : {}),
+      ...(query.to !== undefined ? { to: query.to } : {}),
       userId: operator.userId,
       isOwner: operator.baseRole === 'owner',
     });

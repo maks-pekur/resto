@@ -4650,18 +4650,13 @@ components:
           properties:
             from:
               type: string
-              format: date-time
+              pattern: ^\d{4}-\d{2}-\d{2}$
             to:
               type: string
-              format: date-time
-            days:
-              type: integer
-              minimum: 0
-              exclusiveMinimum: true
+              pattern: ^\d{4}-\d{2}-\d{2}$
           required:
             - from
             - to
-            - days
         currency:
           type: string
           pattern: ^[A-Z]{3}$

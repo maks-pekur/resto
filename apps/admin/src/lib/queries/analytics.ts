@@ -1,17 +1,18 @@
 import type { components } from '@resto/api-client';
 import { apiFetch } from '@/lib/api-client';
+import type { DateRange } from '@/lib/date-range';
 
 type Schemas = components['schemas'];
 
 export type DashboardKpis = Schemas['DashboardKpisResponseDto'];
 
-export const DEFAULT_KPI_RANGE_DAYS = 28;
-
 const STALE_KPIS = 60_000;
 
-export const dashboardKpisQuery = (locationId: string, days: number = DEFAULT_KPI_RANGE_DAYS) => ({
-  queryKey: ['analytics', 'dashboard', locationId, days] as const,
+export const dashboardKpisQuery = (locationId: string, range: DateRange) => ({
+  queryKey: ['analytics', 'dashboard', locationId, range.from, range.to] as const,
   queryFn: () =>
-    apiFetch<DashboardKpis>(`/v1/analytics/dashboard?days=${String(days)}`, { locationId }),
+    apiFetch<DashboardKpis>(`/v1/analytics/dashboard?from=${range.from}&to=${range.to}`, {
+      locationId,
+    }),
   staleTime: STALE_KPIS,
 });
