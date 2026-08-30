@@ -506,6 +506,8 @@
     },
     "payment": {
       "online": "En línea",
+      "cash": "Efectivo",
+      "card_on_delivery": "Tarjeta al repartidor",
       "refunded": "Reembolsado",
       "unpaid": "Sin pagar"
     },

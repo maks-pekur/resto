@@ -55,13 +55,22 @@ export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> 
   delivery: 'orderTypeDelivery',
 };
 
-// Every order we take is prepaid online, so that is the only payment type there is to show.
-// Cash at the door or a card to the courier would each be a new value here — and a field on the
-// order to carry it, which no client sends yet.
-const paymentKeyOf = (status: OrderFeedRowApi['status']): 'online' | 'refunded' | 'unpaid' => {
-  if (status === 'refunded') return 'refunded';
-  if (status === 'created' || status === 'requires_action' || status === 'failed') return 'unpaid';
-  return 'online';
+// The order carries how the guest pays; a refund or a failed charge overrides it, because the
+// money is what the operator needs to see there, not the intention.
+const paymentKeyOf = (row: OrderFeedRowApi): string => {
+  if (row.status === 'refunded') return 'refunded';
+  if (row.status === 'created' || row.status === 'requires_action' || row.status === 'failed') {
+    return 'unpaid';
+  }
+  return row.paymentType;
+};
+
+const PAYMENT_TONE: Record<string, string> = {
+  online: 'bg-success text-success-foreground',
+  cash: 'bg-warning text-warning-foreground',
+  card_on_delivery: 'bg-primary text-primary-foreground',
+  refunded: 'bg-muted text-muted-foreground',
+  unpaid: 'bg-destructive text-destructive-foreground',
 };
 
 export interface OrderRowProps {
@@ -155,7 +164,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     row.tableZoneName !== null && row.tableNumber !== null
       ? t('card.tableLabel', { zone: row.tableZoneName, number: row.tableNumber })
       : row.tableIdentifier;
-  const paymentKey = paymentKeyOf(row.status);
+  const paymentKey = paymentKeyOf(row);
 
   return (
     <div
@@ -249,26 +258,6 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
             </Badge>
           </span>
         ) : null}
-
-        <span className="flex w-32 shrink-0 flex-col justify-center gap-1 py-2">
-          <span className="px-3 text-right font-semibold tabular-nums">
-            {formatMoney(row.total, row.currency)}
-          </span>
-          {row.hasFailedRefund ? (
-            <OrderRefundFailedBadge />
-          ) : (
-            <span
-              className={cn(
-                'w-full py-0.5 text-center text-[11px] font-medium',
-                paymentKey === 'online'
-                  ? 'bg-success text-success-foreground'
-                  : 'bg-muted text-muted-foreground',
-              )}
-            >
-              {t(`payment.${paymentKey}`)}
-            </span>
-          )}
-        </span>
       </button>
 
       <div className="flex shrink-0 items-center gap-2 border-l px-3">
@@ -322,6 +311,24 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           </Button>
         ) : null}
       </div>
+
+      <span className="flex w-32 border-l shrink-0 flex-col justify-center gap-1 py-2">
+        <span className="px-3 text-right text-sm font-semibold tabular-nums">
+          {formatMoney(row.total, row.currency)}
+        </span>
+        {row.hasFailedRefund ? (
+          <OrderRefundFailedBadge />
+        ) : (
+          <span
+            className={cn(
+              'w-full py-px text-center text-[9px] leading-tight font-medium tracking-wide uppercase',
+              PAYMENT_TONE[paymentKey] ?? 'bg-muted text-muted-foreground',
+            )}
+          >
+            {t(`payment.${paymentKey}`)}
+          </span>
+        )}
+      </span>
     </div>
   );
 }

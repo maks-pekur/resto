@@ -506,6 +506,8 @@
     },
     "payment": {
       "online": "Онлайн",
+      "cash": "Наличные",
+      "card_on_delivery": "Картой курьеру",
       "refunded": "Возврат",
       "unpaid": "Не оплачен"
     },

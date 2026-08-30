@@ -75,6 +75,7 @@ export const OrderFeedRowResponseSchema = z.object({
   tableNumber: z.string().nullable(),
   customerName: z.string().nullable(),
   customerPhone: z.string().nullable(),
+  paymentType: z.enum(['online', 'cash', 'card_on_delivery']),
   total: z.string(),
   currency: z.string(),
   itemCount: z.number().int(),

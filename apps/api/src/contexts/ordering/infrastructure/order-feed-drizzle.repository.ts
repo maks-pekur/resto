@@ -211,6 +211,7 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     tableNumber: row.tableNumber ?? null,
     customerName: row.customerName ?? null,
     customerPhone: row.customerPhone ?? null,
+    paymentType: row.paymentType as OrderFeedRow['paymentType'],
     total: row.total,
     currency: row.currency,
     itemCount,

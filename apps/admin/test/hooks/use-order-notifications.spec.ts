@@ -15,6 +15,7 @@ const makeRow = (id: string): OrderFeedRowApi => ({
   tableNumber: null,
   customerName: null,
   customerPhone: null,
+  paymentType: 'online',
   total: '1200.00',
   currency: 'UAH',
   itemCount: 1,

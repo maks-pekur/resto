@@ -62,6 +62,7 @@ const failedRefundRow: OrderFeedRowApi = {
   tableNumber: null,
   customerName: null,
   customerPhone: null,
+  paymentType: 'online',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 1,

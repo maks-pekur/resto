@@ -38,6 +38,7 @@ export interface OrderFeedRowApi {
   readonly tableNumber: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;

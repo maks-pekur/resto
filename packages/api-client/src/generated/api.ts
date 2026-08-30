@@ -2072,6 +2072,8 @@ export interface components {
                 tableNumber: string | null;
                 customerName: string | null;
                 customerPhone: string | null;
+                /** @enum {string} */
+                paymentType: "online" | "cash" | "card_on_delivery";
                 total: string;
                 currency: string;
                 itemCount: number;

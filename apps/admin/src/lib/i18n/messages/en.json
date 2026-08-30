@@ -506,6 +506,8 @@
     },
     "payment": {
       "online": "Online",
+      "cash": "Cash",
+      "card_on_delivery": "Card on delivery",
       "refunded": "Refunded",
       "unpaid": "Unpaid"
     },

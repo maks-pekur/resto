@@ -35,6 +35,7 @@ export interface OrderFeedResponseRow {
   readonly tableNumber: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -73,6 +74,7 @@ export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow 
   tableNumber: row.tableNumber,
   customerName: row.customerName,
   customerPhone: row.customerPhone,
+  paymentType: row.paymentType,
   total: row.total,
   currency: row.currency,
   itemCount: row.itemCount,

@@ -51,6 +51,7 @@ export const orders = pgTable(
     scheduledFor: timestamp('scheduled_for', { withTimezone: true, mode: 'date' }),
     shortNumber: integer('short_number').notNull(),
     channel: text('channel').notNull().default('site'),
+    paymentType: text('payment_type').notNull().default('online'),
     acceptedAt: timestamp('accepted_at', { withTimezone: true, mode: 'date' }),
     preparingAt: timestamp('preparing_at', { withTimezone: true, mode: 'date' }),
     readyAt: timestamp('ready_at', { withTimezone: true, mode: 'date' }),
@@ -95,6 +96,10 @@ export const orders = pgTable(
     ),
     check('orders_order_type_chk', sql`${table.orderType} IN ('dine_in','pickup','delivery')`),
     check('orders_channel_chk', sql`${table.channel} IN ('site','qr-menu')`),
+    check(
+      'orders_payment_type_chk',
+      sql`${table.paymentType} IN ('online','cash','card_on_delivery')`,
+    ),
     check(
       'orders_cancel_reason_chk',
       sql`${table.cancelReason} IS NULL OR ${table.cancelReason} IN ('guest_no_show','kitchen_out_of_stock','kitchen_too_busy','guest_requested','payment_issue','duplicate_order','other')`,

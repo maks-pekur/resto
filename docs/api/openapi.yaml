@@ -4146,6 +4146,12 @@ components:
               customerPhone:
                 type: string
                 nullable: true
+              paymentType:
+                type: string
+                enum:
+                  - online
+                  - cash
+                  - card_on_delivery
               total:
                 type: string
               currency:
@@ -4197,6 +4203,7 @@ components:
               - tableNumber
               - customerName
               - customerPhone
+              - paymentType
               - total
               - currency
               - itemCount
