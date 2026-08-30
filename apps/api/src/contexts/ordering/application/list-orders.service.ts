@@ -26,6 +26,10 @@ const ALL_STATUSES: readonly OrderStatus[] = [
   'failed',
 ];
 const COMPLETED_STATUSES: readonly OrderStatus[] = ['completed'];
+const PAID_STATUSES: readonly OrderStatus[] = ['paid'];
+const ACCEPTED_STATUSES: readonly OrderStatus[] = ['accepted'];
+const PREPARING_STATUSES: readonly OrderStatus[] = ['preparing'];
+const READY_STATUSES: readonly OrderStatus[] = ['ready'];
 const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled', 'refunded'];
 
 const DEFAULT_LIMIT = 50;
@@ -34,7 +38,10 @@ const MAX_LIMIT = 200;
 export interface ListOrdersInput {
   readonly statusPreset?: OrderStatusPreset;
   readonly channel?: 'site' | 'qr-menu';
+  readonly fulfillmentMode?: 'dine_in' | 'pickup' | 'delivery';
   readonly datePreset?: OrderDatePreset;
+  readonly from?: string;
+  readonly to?: string;
   readonly since?: { readonly createdAt: Date; readonly id: string };
   readonly limit?: number;
   readonly offset?: number;
@@ -80,7 +87,7 @@ export class ListOrdersService {
     const statuses = resolveStatusPreset(statusPreset);
     const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
     const offset = Math.max(input.offset ?? 0, 0);
-    const { from, to } = resolveDateRange(input.datePreset ?? 'today', referenceTimezone);
+    const { from, to } = resolveWindow(input, referenceTimezone);
     const isRefundFailedPreset = statusPreset === 'refund_failed';
 
     const { rows, total } = await this.feedRepo.list({
@@ -88,6 +95,8 @@ export class ListOrdersService {
       locationIds,
       statuses: [...statuses],
       ...(input.channel !== undefined ? { channel: input.channel } : {}),
+      ...(input.fulfillmentMode !== undefined ? { fulfillmentMode: input.fulfillmentMode } : {}),
+      ...(statusPreset === 'unaccepted' ? { unacceptedOnly: true } : {}),
       createdFrom: from,
       createdTo: to,
       ...(input.since !== undefined ? { since: input.since } : {}),
@@ -135,7 +144,30 @@ function resolveStatusPreset(preset: OrderStatusPreset): readonly OrderStatus[] 
       return CANCELED_STATUSES;
     case 'refund_failed':
       return ALL_STATUSES;
+    case 'unaccepted':
+      return PAID_STATUSES;
+    case 'accepted':
+      return ACCEPTED_STATUSES;
+    case 'preparing':
+      return PREPARING_STATUSES;
+    case 'ready':
+      return READY_STATUSES;
   }
+}
+
+export function resolveWindow(
+  input: { readonly from?: string; readonly to?: string; readonly datePreset?: OrderDatePreset },
+  timezone: string | null,
+): { from: Date; to: Date } {
+  if (input.from !== undefined && input.to !== undefined) {
+    const tz = timezone ?? 'UTC';
+    // Noon, not midnight: the instant only has to land inside the requested calendar day for
+    // any timezone, and midnight UTC does not on a negative offset.
+    const from = zonedMidnightUtc(new Date(`${input.from}T12:00:00.000Z`), tz);
+    const to = addDays(zonedMidnightUtc(new Date(`${input.to}T12:00:00.000Z`), tz), 1);
+    return { from, to };
+  }
+  return resolveDateRange(input.datePreset ?? 'today', timezone);
 }
 
 function resolveDateRange(

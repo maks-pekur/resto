@@ -1494,6 +1494,19 @@ paths:
                 $ref: "#/components/schemas/OrderFeedListResponseDto"
       tags:
         - ordering
+  /v1/orders/feed/counts:
+    get:
+      operationId: OperatorOrdersController_feedCounts
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderFeedCountsResponseDto"
+      tags:
+        - ordering
   /v1/orders/{id}/detail:
     get:
       operationId: OperatorOrdersController_detail
@@ -4181,6 +4194,40 @@ components:
         - total
         - limit
         - offset
+    OrderFeedCountsResponseDto:
+      type: object
+      properties:
+        unaccepted:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        accepted:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        preparing:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        ready:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        completed:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        canceled:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - unaccepted
+        - accepted
+        - preparing
+        - ready
+        - completed
+        - canceled
     OrderDetailResponseDto:
       type: object
       properties:

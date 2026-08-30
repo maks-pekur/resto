@@ -14,9 +14,14 @@ import {
 const ChannelSchema = z.enum(['site', 'qr-menu']);
 const FulfillmentModeSchema = z.enum(['dine_in', 'pickup', 'delivery']);
 
+const CalendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date.');
+
 export const OrderFeedQueryInputSchema = z.object({
   statusFilter: OrderStatusPresetSchema.optional(),
   datePreset: OrderDatePresetSchema.optional(),
+  from: CalendarDate.optional(),
+  to: CalendarDate.optional(),
+  fulfillmentMode: FulfillmentModeSchema.optional(),
   channel: ChannelSchema.optional(),
   sinceCreatedAt: z.string().datetime({ offset: true }).optional(),
   sinceId: z.string().uuid().optional(),
@@ -25,6 +30,26 @@ export const OrderFeedQueryInputSchema = z.object({
 });
 export type OrderFeedQueryInput = z.infer<typeof OrderFeedQueryInputSchema>;
 export class OrderFeedQueryDto extends createZodDto(OrderFeedQueryInputSchema) {}
+
+export const OrderFeedCountsQueryInputSchema = z.object({
+  datePreset: OrderDatePresetSchema.optional(),
+  from: CalendarDate.optional(),
+  to: CalendarDate.optional(),
+  fulfillmentMode: FulfillmentModeSchema.optional(),
+});
+export type OrderFeedCountsQueryInput = z.infer<typeof OrderFeedCountsQueryInputSchema>;
+export class OrderFeedCountsQueryDto extends createZodDto(OrderFeedCountsQueryInputSchema) {}
+
+export const OrderFeedCountsResponseSchema = z.object({
+  unaccepted: z.number().int().nonnegative(),
+  accepted: z.number().int().nonnegative(),
+  preparing: z.number().int().nonnegative(),
+  ready: z.number().int().nonnegative(),
+  completed: z.number().int().nonnegative(),
+  canceled: z.number().int().nonnegative(),
+});
+export type OrderFeedCountsResponse = z.infer<typeof OrderFeedCountsResponseSchema>;
+export class OrderFeedCountsResponseDto extends createZodDto(OrderFeedCountsResponseSchema) {}
 
 export const AcceptOrderInputSchema = z.object({
   prepMinutes: z.number().int().min(5).max(180),

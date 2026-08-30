@@ -4,6 +4,10 @@ import type { OrderFeedRow } from '../domain/ports';
 export const OrderStatusPresetSchema = z.enum([
   'active',
   'all_today',
+  'unaccepted',
+  'accepted',
+  'preparing',
+  'ready',
   'completed',
   'canceled',
   'refund_failed',

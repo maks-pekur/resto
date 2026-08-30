@@ -1012,6 +1012,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/feed/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OperatorOrdersController_feedCounts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/orders/{id}/detail": {
         parameters: {
             query?: never;
@@ -2041,6 +2057,14 @@ export interface components {
             total: number;
             limit: number;
             offset: number;
+        };
+        OrderFeedCountsResponseDto: {
+            unaccepted: number;
+            accepted: number;
+            preparing: number;
+            ready: number;
+            completed: number;
+            canceled: number;
         };
         OrderDetailResponseDto: {
             id: string;
@@ -4315,6 +4339,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderFeedListResponseDto"];
+                };
+            };
+        };
+    };
+    OperatorOrdersController_feedCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderFeedCountsResponseDto"];
                 };
             };
         };

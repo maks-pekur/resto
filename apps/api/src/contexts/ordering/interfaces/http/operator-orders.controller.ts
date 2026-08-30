@@ -23,12 +23,15 @@ import type { OperatorPrincipal } from '../../../identity/domain/principal';
 import { AcceptOrderService } from '../../application/accept-order.service';
 import { AdvanceOrderStatusService } from '../../application/advance-order-status.service';
 import { ListOrdersService } from '../../application/list-orders.service';
+import { CountOrdersService } from '../../application/count-orders.service';
 import { GetOrderDetailService } from '../../application/get-order-detail.service';
 import type { OrderFeedListResponse } from '../../application/order-feed-dto';
 import {
   AcceptOrderInputDto,
   AdvanceOrderStatusInputDto,
   OrderDetailResponseDto,
+  OrderFeedCountsQueryDto,
+  OrderFeedCountsResponseDto,
   OrderFeedListResponseDto,
   OrderFeedQueryDto,
   OrderSnapshotResponseDto,
@@ -47,6 +50,7 @@ const wrap = wrapWith(mapOrderError);
 export class OperatorOrdersController {
   constructor(
     @Inject(ListOrdersService) private readonly listOrders: ListOrdersService,
+    @Inject(CountOrdersService) private readonly countOrders: CountOrdersService,
     @Inject(GetOrderDetailService) private readonly getOrderDetail: GetOrderDetailService,
     @Inject(AcceptOrderService) private readonly acceptOrder: AcceptOrderService,
     @Inject(AdvanceOrderStatusService)
@@ -74,6 +78,11 @@ export class OperatorOrdersController {
           ...(query.statusFilter !== undefined ? { statusPreset: query.statusFilter } : {}),
           ...(query.channel !== undefined ? { channel: query.channel } : {}),
           ...(query.datePreset !== undefined ? { datePreset: query.datePreset } : {}),
+          ...(query.from !== undefined ? { from: query.from } : {}),
+          ...(query.to !== undefined ? { to: query.to } : {}),
+          ...(query.fulfillmentMode !== undefined
+            ? { fulfillmentMode: query.fulfillmentMode }
+            : {}),
           ...(query.sinceCreatedAt !== undefined && query.sinceId !== undefined
             ? { since: { createdAt: new Date(query.sinceCreatedAt), id: query.sinceId } }
             : {}),
@@ -81,6 +90,25 @@ export class OperatorOrdersController {
           ...(query.offset !== undefined ? { offset: query.offset } : {}),
         }),
       ),
+    );
+  }
+
+  @Get('feed/counts')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ order: ['read'] })
+  @RequireActiveTenant()
+  @ApiOkResponse({ type: OrderFeedCountsResponseDto })
+  feedCounts(
+    @Query(new RestoZodValidationPipe(OrderFeedCountsQueryDto)) query: OrderFeedCountsQueryDto,
+  ): Promise<OrderFeedCountsResponseDto> {
+    trace.getActiveSpan()?.setAttribute('resto.traffic_kind', 'poll');
+    return wrap(() =>
+      this.countOrders.execute({
+        ...(query.datePreset !== undefined ? { datePreset: query.datePreset } : {}),
+        ...(query.from !== undefined ? { from: query.from } : {}),
+        ...(query.to !== undefined ? { to: query.to } : {}),
+        ...(query.fulfillmentMode !== undefined ? { fulfillmentMode: query.fulfillmentMode } : {}),
+      }),
     );
   }
 

@@ -106,6 +106,7 @@ export const OrderFeedQuerySchema = z.object({
   locationIds: z.array(z.string().uuid()),
   statuses: z.array(OrderStatusSchema),
   channel: z.enum(['site', 'qr-menu']).optional(),
+  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
   createdFrom: z.date(),
   createdTo: z.date(),
   since: z
@@ -114,10 +115,30 @@ export const OrderFeedQuerySchema = z.object({
       id: z.string().uuid(),
     })
     .optional(),
+  /** `paid` alone is not the whole answer: an accepted order keeps that status until it is started. */
+  unacceptedOnly: z.boolean().optional(),
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
 });
 export type OrderFeedQuery = z.infer<typeof OrderFeedQuerySchema>;
+
+export const OrderFeedCountsQuerySchema = z.object({
+  tenantId: z.string().uuid(),
+  locationIds: z.array(z.string().uuid()),
+  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
+  createdFrom: z.date(),
+  createdTo: z.date(),
+});
+export type OrderFeedCountsQuery = z.infer<typeof OrderFeedCountsQuerySchema>;
+
+export interface OrderFeedCounts {
+  readonly unaccepted: number;
+  readonly accepted: number;
+  readonly preparing: number;
+  readonly ready: number;
+  readonly completed: number;
+  readonly canceled: number;
+}
 
 export const OrderFeedRowSchema = z.object({
   id: z.string().uuid(),
@@ -148,6 +169,7 @@ export type OrderFeedRow = z.infer<typeof OrderFeedRowSchema>;
 
 export interface OrderFeedRepository {
   list(input: OrderFeedQuery): Promise<{ rows: OrderFeedRow[]; total: number }>;
+  counts(input: OrderFeedCountsQuery): Promise<OrderFeedCounts>;
 }
 
 export const ORDER_FEED_REPOSITORY = Symbol('ORDER_FEED_REPOSITORY');

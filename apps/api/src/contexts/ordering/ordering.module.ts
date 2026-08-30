@@ -21,6 +21,7 @@ import { GetOrderService } from './application/get-order.service';
 import { AcceptOrderService } from './application/accept-order.service';
 import { AdvanceOrderStatusService } from './application/advance-order-status.service';
 import { ListOrdersService } from './application/list-orders.service';
+import { CountOrdersService } from './application/count-orders.service';
 import { GetOrderDetailService } from './application/get-order-detail.service';
 import { OrdersController } from './interfaces/http/orders.controller';
 import { OperatorOrdersController } from './interfaces/http/operator-orders.controller';
@@ -40,6 +41,7 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
     AcceptOrderService,
     AdvanceOrderStatusService,
     ListOrdersService,
+    CountOrdersService,
     GetOrderDetailService,
     RequireActiveTenantGuard,
   ],
