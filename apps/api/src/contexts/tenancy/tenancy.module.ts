@@ -17,6 +17,7 @@ import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
 import { RestoreLocationService } from './application/restore-location.service';
 import { DeleteLocationService } from './application/delete-location.service';
+import { SetContentLocalesService } from './application/set-content-locales.service';
 import { UpdateLocationService } from './application/update-location.service';
 import { CreateTableZoneService } from './application/create-table-zone.service';
 import { ListTableZonesService } from './application/list-table-zones.service';
@@ -82,6 +83,7 @@ import {
     ArchiveLocationService,
     RestoreLocationService,
     DeleteLocationService,
+    SetContentLocalesService,
     UpdateLocationService,
     CreateTableZoneService,
     ListTableZonesService,
@@ -109,6 +111,7 @@ import {
     ArchiveLocationService,
     RestoreLocationService,
     DeleteLocationService,
+    SetContentLocalesService,
     UpdateLocationService,
     GuestMenuUrlService,
   ],

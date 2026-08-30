@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Inject, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import {
   ApiAcceptedResponse,
   ApiBody,
@@ -10,6 +20,7 @@ import {
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { requireTenantContext } from '@resto/db';
+import { ContentLocaleSchema } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { TenantQueriesService } from '../../application/tenant-queries.service';
@@ -23,6 +34,7 @@ import {
 } from '../../../../shared/auth';
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
+import { SetContentLocalesService } from '../../application/set-content-locales.service';
 
 const TenantDomainSchema = z.object({
   id: z.string().uuid(),
@@ -34,6 +46,12 @@ const TenantDomainSchema = z.object({
 
 class TenantDomainDto extends createZodDto(TenantDomainSchema) {}
 
+const SetContentLocalesInputSchema = z.object({
+  defaultLocale: ContentLocaleSchema,
+  contentLocales: z.array(ContentLocaleSchema).min(1),
+});
+class SetContentLocalesInputDto extends createZodDto(SetContentLocalesInputSchema) {}
+
 @ApiTags('tenancy')
 @LocationNeutral()
 @Controller('v1/tenants')
@@ -41,6 +59,8 @@ export class TenantsController {
   constructor(
     @Inject(TenantQueriesService) private readonly queries: TenantQueriesService,
     @Inject(OffboardTenantService) private readonly offboarding: OffboardTenantService,
+    @Inject(SetContentLocalesService)
+    private readonly setContentLocales: SetContentLocalesService,
   ) {}
 
   @Get('me')
@@ -52,6 +72,21 @@ export class TenantsController {
   async getMe(): Promise<TenantResponseDto> {
     try {
       return toResponse(await this.queries.getCurrentTenant());
+    } catch (err) {
+      throw mapDomainError(err);
+    }
+  }
+
+  @Patch('me/locales')
+  @Permissions({ settings: ['update'] })
+  @RequiresTenantContext()
+  @ApiOkResponse({ type: TenantResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  async setLocales(
+    @Body(new RestoZodValidationPipe(SetContentLocalesInputDto)) input: SetContentLocalesInputDto,
+  ): Promise<TenantResponseDto> {
+    try {
+      return toResponse(await this.setContentLocales.execute(input));
     } catch (err) {
       throw mapDomainError(err);
     }

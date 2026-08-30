@@ -31,6 +31,7 @@ const makeFakeTenantSnap = (tid: string, slug: string): TenantSnapshot => ({
   displayName: 'Test Tenant',
   status: 'active',
   locale: 'en',
+  contentLocales: ['en'],
   timezone: 'Europe/Madrid',
   country: 'ES',
   defaultCurrency: Currency.parse('EUR'),

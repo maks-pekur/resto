@@ -239,6 +239,25 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenants/me/locales:
+    patch:
+      operationId: TenantsController_setLocales
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tenants/me/domains:
     get:
       operationId: TenantsController_getMeDomains
@@ -1772,6 +1791,10 @@ components:
           type: string
         locale:
           type: string
+        contentLocales:
+          type: array
+          items:
+            type: string
         country:
           type: string
           enum:
@@ -1866,6 +1889,7 @@ components:
         - displayName
         - status
         - locale
+        - contentLocales
         - country
         - defaultCurrency
         - theme
@@ -2528,11 +2552,24 @@ components:
                 - primaryColor
                 - font
               nullable: true
+            locales:
+              type: object
+              properties:
+                default:
+                  type: string
+                supported:
+                  type: array
+                  items:
+                    type: string
+              required:
+                - default
+                - supported
           required:
             - id
             - slug
             - displayName
             - theme
+            - locales
           nullable: true
         version:
           type: integer

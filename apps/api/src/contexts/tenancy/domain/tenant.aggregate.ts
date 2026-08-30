@@ -59,6 +59,8 @@ export interface TenantSnapshot {
   readonly displayName: string;
   readonly status: TenantStatus;
   readonly locale: string;
+  /** Every language this tenant publishes content in; `locale` is one of them. */
+  readonly contentLocales: readonly string[];
   /** Default inherited by every new location; a location may override it. */
   readonly timezone: string;
   readonly country: CountryCodeValue;
@@ -155,6 +157,8 @@ export class Tenant {
       displayName: input.displayName,
       status: input.status ?? 'active',
       locale: input.locale ?? defaultLocaleForCountry(input.country),
+      // A new tenant publishes in one language; adding more is a settings decision, not a default.
+      contentLocales: [input.locale ?? defaultLocaleForCountry(input.country)],
       timezone: input.timezone ?? defaultTimezoneForCountry(input.country),
       country: input.country,
       defaultCurrency,

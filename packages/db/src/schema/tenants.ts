@@ -35,6 +35,7 @@ export const tenants = pgTable(
     displayName: text('display_name').notNull(),
     status: text('status').notNull().default('active'),
     locale: text('locale').notNull().default('en'),
+    contentLocales: text('content_locales').array().notNull().default(['en']),
     // Inherited as the default by every new location; a location may override it, because a chain
     // can cross zones (Spain has two) while most tenants never leave one.
     timezone: text('timezone').notNull().default('UTC'),
@@ -91,6 +92,12 @@ export const tenants = pgTable(
     check('tenants_currency_format_chk', sql`${table.defaultCurrency} ~ '^[A-Z]{3}$'`),
     check('tenants_locale_format_chk', sql`${table.locale} ~ '^[a-z]{2}(-[A-Z]{2})?$'`),
     check('tenants_country_chk', sql`${table.country} IN ('UA', 'GB', 'ES')`),
+    check(
+      'tenants_content_locales_chk',
+      sql`array_length(${table.contentLocales}, 1) >= 1
+        AND ${table.locale} = ANY (${table.contentLocales})
+        AND ${table.contentLocales} <@ ARRAY['ru', 'en', 'uk', 'es']::text[]`,
+    ),
     // --- from brands (D-04) ---
     check(
       'tenants_legal_form_chk',

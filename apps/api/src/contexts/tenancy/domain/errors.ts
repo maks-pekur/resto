@@ -215,3 +215,11 @@ export class LocationTableLimitReachedError extends Error {
     this.name = 'LocationTableLimitReachedError';
   }
 }
+
+export class DefaultLocaleNotSupportedError extends Error {
+  readonly kind = 'DefaultLocaleNotSupportedError' as const;
+  constructor(public readonly locale: string) {
+    super(`Default locale "${locale}" must be one of the tenant's content languages.`);
+    this.name = 'DefaultLocaleNotSupportedError';
+  }
+}

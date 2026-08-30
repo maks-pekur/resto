@@ -120,6 +120,11 @@ const MenuTenantSchema = z.object({
   slug: z.string(),
   displayName: z.string(),
   theme: MenuTenantThemeSchema.nullable(),
+  /** The languages this menu exists in — guest surfaces build their switcher from these. */
+  locales: z.object({
+    default: z.string(),
+    supported: z.array(z.string()),
+  }),
 });
 
 const PublishedMenuSchema = z.object({
@@ -153,6 +158,7 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
         font: tenant.theme.font,
       }
     : null,
+  locales: { default: tenant.locale, supported: [...tenant.contentLocales] },
 });
 
 /**

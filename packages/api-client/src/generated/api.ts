@@ -148,6 +148,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/me/locales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TenantsController_setLocales"];
+        trace?: never;
+    };
     "/v1/tenants/me/domains": {
         parameters: {
             query?: never;
@@ -1240,6 +1256,7 @@ export interface components {
             displayName: string;
             status: string;
             locale: string;
+            contentLocales: string[];
             /** @enum {string} */
             country: "UA" | "GB" | "ES";
             defaultCurrency: string;
@@ -1505,6 +1522,10 @@ export interface components {
                     primaryColor: string | null;
                     font: string | null;
                 } | null;
+                locales: {
+                    default: string;
+                    supported: string[];
+                };
             } | null;
             version: number;
             currency: string;
@@ -2658,6 +2679,33 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TenantsController_setLocales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

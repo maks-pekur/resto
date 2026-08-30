@@ -48,3 +48,5 @@ export {
 } from './schema';
 
 export * from './rbac';
+
+export * from './content-locales';
