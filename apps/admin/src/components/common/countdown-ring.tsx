@@ -56,7 +56,7 @@ export function CountdownRing({
           r={RADIUS}
           fill="none"
           strokeWidth={STROKE}
-          className="stroke-current opacity-20"
+          className="stroke-current opacity-25"
         />
         <circle
           cx={SIZE / 2}
@@ -64,7 +64,8 @@ export function CountdownRing({
           r={RADIUS}
           fill="none"
           strokeWidth={STROKE}
-          strokeLinecap="round"
+          // Butt caps, not round: a rounded cap bulges half a stroke past the arc and makes the
+          // ring read thicker than the track it sits on.
           className="stroke-current transition-[stroke-dashoffset] duration-500"
           strokeDasharray={CIRCUMFERENCE}
           strokeDashoffset={CIRCUMFERENCE * (1 - clamped)}
