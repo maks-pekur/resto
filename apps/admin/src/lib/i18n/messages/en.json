@@ -505,7 +505,7 @@
       "next": "Next day"
     },
     "payment": {
-      "paid": "Paid",
+      "online": "Online",
       "refunded": "Refunded",
       "unpaid": "Unpaid"
     },

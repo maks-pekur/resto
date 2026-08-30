@@ -55,10 +55,13 @@ export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> 
   delivery: 'orderTypeDelivery',
 };
 
-const paymentKeyOf = (status: OrderFeedRowApi['status']): 'paid' | 'refunded' | 'unpaid' => {
+// Every order we take is prepaid online, so that is the only payment type there is to show.
+// Cash at the door or a card to the courier would each be a new value here — and a field on the
+// order to carry it, which no client sends yet.
+const paymentKeyOf = (status: OrderFeedRowApi['status']): 'online' | 'refunded' | 'unpaid' => {
   if (status === 'refunded') return 'refunded';
   if (status === 'created' || status === 'requires_action' || status === 'failed') return 'unpaid';
-  return 'paid';
+  return 'online';
 };
 
 export interface OrderRowProps {
@@ -254,8 +257,10 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           ) : (
             <span
               className={cn(
-                'text-[11px]',
-                paymentKey === 'paid' ? 'text-success' : 'text-muted-foreground',
+                'w-full rounded-sm px-1.5 py-0.5 text-center text-[11px]',
+                paymentKey === 'online'
+                  ? 'bg-success/10 text-success'
+                  : 'bg-muted text-muted-foreground',
               )}
             >
               {t(`payment.${paymentKey}`)}
