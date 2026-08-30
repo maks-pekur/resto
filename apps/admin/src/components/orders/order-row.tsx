@@ -312,7 +312,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         ) : null}
       </div>
 
-      <span className="flex w-32 border-l shrink-0 flex-col justify-center gap-1 py-2">
+      <span className="flex w-24 shrink-0 flex-col justify-center gap-1 border-l py-2">
         <span className="px-3 text-right text-sm font-semibold tabular-nums">
           {formatMoney(row.total, row.currency)}
         </span>
