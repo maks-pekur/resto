@@ -508,6 +508,11 @@
       "paid": "Paid",
       "refunded": "Refunded",
       "unpaid": "Unpaid"
+    },
+    "channel": {
+      "site": "Website",
+      "qrMenu": "QR menu",
+      "unknown": "Other"
     }
   },
   "dashboard": {

@@ -508,6 +508,11 @@
       "paid": "Оплачено",
       "refunded": "Возврат",
       "unpaid": "Не оплачен"
+    },
+    "channel": {
+      "site": "Сайт",
+      "qrMenu": "QR-меню",
+      "unknown": "Другой"
     }
   },
   "dashboard": {

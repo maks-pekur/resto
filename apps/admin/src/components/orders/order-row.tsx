@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn, formatMoney } from '@/lib/utils';
 import { countdown } from '@/lib/orders/remaining';
+import { channelPresentation } from '@/lib/orders/channels';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { usePermissions } from '@/hooks/use-permissions';
 import { advanceOrderStatusMutation, retryRefundMutation } from '@/lib/queries/orders';
@@ -155,6 +156,8 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     return { label: `${sign}${String(remaining.minutes)}${t('card.unitMinutes')}` };
   })();
 
+  const channel = channelPresentation(row.channel);
+  const ChannelIcon = channel.icon;
   const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
   const promisedAt = new Date(row.etaAt ?? row.createdAt);
   const dayWord = ((): string => {
@@ -191,6 +194,11 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           onOpenDetail(row);
         }}
       >
+        <span className="text-muted-foreground flex w-24 shrink-0 flex-col items-center justify-center gap-1 px-2 py-2">
+          <ChannelIcon className="size-4" />
+          <span className="truncate text-[11px]">{t(`channel.${channel.labelKey}`)}</span>
+        </span>
+
         <span
           className={cn(
             'flex w-24 shrink-0 flex-col justify-center gap-0.5 px-3 py-2',
