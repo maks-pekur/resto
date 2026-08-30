@@ -36,6 +36,9 @@ const buildMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
     displayName: 'Cafe Demo',
     theme: null,
     locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
   },
   categories: [
     { id: 'cat-1', slug: 'pizza', name: { en: 'Pizza' }, description: null, sortOrder: 0 },
@@ -72,6 +75,9 @@ describe('MenuScreen on qr-menu', () => {
             font: null,
           },
           locales: { default: 'ru', supported: ['ru', 'en'] },
+          description: null,
+          socials: {},
+          contacts: { phone: null, email: null, website: null },
         },
       }),
     );

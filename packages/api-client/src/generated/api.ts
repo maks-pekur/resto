@@ -164,6 +164,38 @@ export interface paths {
         patch: operations["TenantsController_setLocales"];
         trace?: never;
     };
+    "/v1/tenants/me/brand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TenantsController_setBrand"];
+        trace?: never;
+    };
+    "/v1/tenants/me/brand/logo-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TenantsController_brandLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/me/domains": {
         parameters: {
             query?: never;
@@ -1271,6 +1303,26 @@ export interface components {
                 /** @default null */
                 font: string | null;
             } | null;
+            description: {
+                [key: string]: string;
+            } | null;
+            socials: {
+                [key: string]: string;
+            };
+            contacts: {
+                /** @default null */
+                phone: string | null;
+                /**
+                 * Format: email
+                 * @default null
+                 */
+                email: string | null;
+                /**
+                 * Format: uri
+                 * @default null
+                 */
+                website: string | null;
+            };
             legalName: string | null;
             /** @enum {string|null} */
             legalForm: "IP" | "OOO" | "LLC" | "SOLE_PROP" | "OTHER" | null;
@@ -1308,6 +1360,40 @@ export interface components {
         };
         SuspendTenantInputDto: {
             requestedBy: string;
+        };
+        UpdateBrandInputDto: {
+            displayName?: string;
+            description?: {
+                [key: string]: string;
+            } | null;
+            socials?: {
+                [key: string]: string;
+            };
+            contacts?: {
+                /** @default null */
+                phone: string | null;
+                /**
+                 * Format: email
+                 * @default null
+                 */
+                email: string | null;
+                /**
+                 * Format: uri
+                 * @default null
+                 */
+                website: string | null;
+            };
+            logoS3Key?: string | null;
+        };
+        BrandLogoUploadUrlInputDto: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp" | "image/svg+xml";
+            sizeBytes: number;
+        };
+        BrandLogoUploadUrlResponseDto: {
+            /** Format: uri */
+            uploadUrl: string;
+            s3Key: string;
         };
         TenantDomainDto: {
             /** Format: uuid */
@@ -1516,6 +1602,17 @@ export interface components {
                 id: string;
                 slug: string;
                 displayName: string;
+                description: {
+                    [key: string]: string;
+                } | null;
+                socials: {
+                    [key: string]: string;
+                };
+                contacts: {
+                    phone: string | null;
+                    email: string | null;
+                    website: string | null;
+                };
                 theme: {
                     /** Format: uri */
                     logoUrl: string | null;
@@ -2703,6 +2800,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TenantsController_setBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBrandInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TenantsController_brandLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandLogoUploadUrlInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandLogoUploadUrlResponseDto"];
                 };
             };
             403: {

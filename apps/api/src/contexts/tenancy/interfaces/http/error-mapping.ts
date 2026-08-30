@@ -7,6 +7,8 @@ import {
   type HttpException,
 } from '@nestjs/common';
 import {
+  BrandLogoNotOwnedError,
+  DefaultLocaleNotSupportedError,
   LocationAlreadyArchivedError,
   LocationHasOrdersError,
   LocationNotArchivedError,
@@ -105,6 +107,15 @@ export const mapDomainError = (err: unknown): unknown => {
   if (err instanceof TenantSuspensionNotAllowedError) {
     return new ConflictException({
       code: 'tenancy.tenant_suspension_not_allowed',
+      message: err.message,
+    });
+  }
+  if (err instanceof BrandLogoNotOwnedError) {
+    return new ForbiddenException({ code: 'tenancy.brand_logo_not_owned', message: err.message });
+  }
+  if (err instanceof DefaultLocaleNotSupportedError) {
+    return new BadRequestException({
+      code: 'tenancy.default_locale_not_supported',
       message: err.message,
     });
   }

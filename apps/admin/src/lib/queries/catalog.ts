@@ -83,7 +83,7 @@ export interface DraftDiffResponse {
 }
 
 export interface PhotoUploadUrlResponse {
-  readonly url: string;
+  readonly uploadUrl: string;
   readonly s3Key: string;
   readonly expiresAt: string;
 }
@@ -287,10 +287,10 @@ export const upsertModifierOption = (
     },
   });
 
-export const getPhotoUploadUrl = (itemId: string) =>
+export const getPhotoUploadUrl = (input: { contentType: string; sizeBytes: number }) =>
   apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {
     method: 'POST',
-    body: { itemId },
+    body: input,
   });
 
 export const schedulePublish = () =>

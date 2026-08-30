@@ -1,6 +1,13 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { requireTenantContext, schema, TenantAwareDb, type RestoTx } from '@resto/db';
-import { Currency, TenantId, TenantSlug, TenantTheme, type CountryCodeValue } from '@resto/domain';
+import {
+  Currency,
+  SocialLinksSchema,
+  TenantId,
+  TenantSlug,
+  TenantTheme,
+  type CountryCodeValue,
+} from '@resto/domain';
 import {
   appendToOutbox,
   buildEnvelope,
@@ -164,6 +171,11 @@ export class TenantDrizzleRepository implements TenantRepository {
             country: snapshot.country,
             defaultCurrency: snapshot.defaultCurrency,
             theme: snapshot.theme,
+            description: snapshot.description,
+            socials: { ...snapshot.socials },
+            contactPhone: snapshot.contacts.phone,
+            contactEmail: snapshot.contacts.email,
+            contactWebsite: snapshot.contacts.website,
             legalName: snapshot.legalName,
             legalForm: snapshot.legalForm,
             taxId: snapshot.taxId,
@@ -193,6 +205,11 @@ export class TenantDrizzleRepository implements TenantRepository {
               country: snapshot.country,
               defaultCurrency: snapshot.defaultCurrency,
               theme: snapshot.theme,
+              description: snapshot.description,
+              socials: { ...snapshot.socials },
+              contactPhone: snapshot.contacts.phone,
+              contactEmail: snapshot.contacts.email,
+              contactWebsite: snapshot.contacts.website,
               legalName: snapshot.legalName,
               legalForm: snapshot.legalForm,
               taxId: snapshot.taxId,
@@ -356,6 +373,13 @@ export class TenantDrizzleRepository implements TenantRepository {
       country: row.country as CountryCodeValue,
       defaultCurrency: Currency.parse(row.defaultCurrency),
       theme: row.theme === null ? null : TenantTheme.parse(row.theme),
+      description: row.description,
+      socials: SocialLinksSchema.parse(row.socials),
+      contacts: {
+        phone: row.contactPhone,
+        email: row.contactEmail,
+        website: row.contactWebsite,
+      },
       legalName: row.legalName,
       legalForm: row.legalForm as TenantLegalForm | null,
       taxId: row.taxId,

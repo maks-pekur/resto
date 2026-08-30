@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CountryCodeValue, CurrencyValue, TenantSlugValue, TenantTheme } from '@resto/domain';
+import {
+  BrandContactsSchema,
+  CountryCodeValue,
+  CurrencyValue,
+  LocalizedText,
+  SocialLinksSchema,
+  TenantSlugValue,
+  TenantTheme,
+} from '@resto/domain';
 import type { TenantSnapshot } from '../../domain/tenant.aggregate';
 
 const TenantResponseSchema = z.object({
@@ -13,6 +21,9 @@ const TenantResponseSchema = z.object({
   country: CountryCodeValue,
   defaultCurrency: CurrencyValue,
   theme: TenantTheme.nullable(),
+  description: LocalizedText.nullable(),
+  socials: SocialLinksSchema,
+  contacts: BrandContactsSchema,
   legalName: z.string().nullable(),
   legalForm: z.enum(['IP', 'OOO', 'LLC', 'SOLE_PROP', 'OTHER']).nullable(),
   taxId: z.string().nullable(),
@@ -44,6 +55,9 @@ export const toResponse = (s: TenantSnapshot): TenantResponse => ({
   country: s.country,
   defaultCurrency: s.defaultCurrency,
   theme: s.theme,
+  description: s.description,
+  socials: s.socials,
+  contacts: s.contacts,
   legalName: s.legalName,
   legalForm: s.legalForm,
   taxId: s.taxId,

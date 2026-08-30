@@ -119,6 +119,13 @@ const MenuTenantSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
   displayName: z.string(),
+  description: LocalizedTextSchema.nullable(),
+  socials: z.record(z.string(), z.string()),
+  contacts: z.object({
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
+    website: z.string().nullable(),
+  }),
   theme: MenuTenantThemeSchema.nullable(),
   /** The languages this menu exists in — guest surfaces build their switcher from these. */
   locales: z.object({
@@ -151,6 +158,9 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
   id: tenant.id,
   slug: tenant.slug,
   displayName: tenant.displayName,
+  description: tenant.description,
+  socials: tenant.socials,
+  contacts: tenant.contacts,
   theme: tenant.theme
     ? {
         logoUrl: tenant.theme.logoUrl,

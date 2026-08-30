@@ -76,10 +76,19 @@ export interface MenuTenantLocalesDto {
   readonly supported: readonly string[];
 }
 
+export interface MenuTenantContactsDto {
+  readonly phone: string | null;
+  readonly email: string | null;
+  readonly website: string | null;
+}
+
 export interface MenuTenantDto {
   readonly id: string;
   readonly slug: string;
   readonly displayName: string;
+  readonly description: LocalizedText | null;
+  readonly socials: Readonly<Record<string, string>>;
+  readonly contacts: MenuTenantContactsDto;
   readonly theme: MenuTenantThemeDto | null;
   readonly locales: MenuTenantLocalesDto;
 }

@@ -41,6 +41,9 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
     displayName: 'Cafe Demo',
     theme: null,
     locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
   },
   categories: [
     { id: 'cat-1', slug: 'starters', name: { en: 'Starters' }, description: null, sortOrder: 0 },

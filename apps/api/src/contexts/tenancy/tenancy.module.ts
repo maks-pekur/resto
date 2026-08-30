@@ -18,6 +18,10 @@ import { ArchiveLocationService } from './application/archive-location.service';
 import { RestoreLocationService } from './application/restore-location.service';
 import { DeleteLocationService } from './application/delete-location.service';
 import { SetContentLocalesService } from './application/set-content-locales.service';
+import { UpdateBrandService } from './application/update-brand.service';
+import { GetBrandLogoUploadUrlService } from './application/get-brand-logo-upload-url.service';
+import { S3BrandMediaAdapter } from './infrastructure/s3-brand-media.adapter';
+import { BRAND_MEDIA_PORT } from './domain/ports';
 import { UpdateLocationService } from './application/update-location.service';
 import { CreateTableZoneService } from './application/create-table-zone.service';
 import { ListTableZonesService } from './application/list-table-zones.service';
@@ -84,6 +88,9 @@ import {
     RestoreLocationService,
     DeleteLocationService,
     SetContentLocalesService,
+    UpdateBrandService,
+    GetBrandLogoUploadUrlService,
+    { provide: BRAND_MEDIA_PORT, useClass: S3BrandMediaAdapter },
     UpdateLocationService,
     CreateTableZoneService,
     ListTableZonesService,

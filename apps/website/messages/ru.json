@@ -104,7 +104,8 @@
     "contact": "Контакты",
     "delivery": "Доставка",
     "faq": "Вопросы",
-    "poweredBy": "Работает на RestOS"
+    "poweredBy": "Работает на RestOS",
+    "socialsLabel": "Мы в соцсетях"
   },
   "theme": {
     "dark": "Тёмное",

@@ -3,8 +3,12 @@ import {
   currencyForCountry,
   defaultLocaleForCountry,
   defaultTimezoneForCountry,
+  EMPTY_BRAND_CONTACTS,
   TenantId,
   TenantSlug,
+  type BrandContacts,
+  type LocalizedText,
+  type SocialLinks,
   type TenantTheme,
   type CountryCodeValue,
   type Currency,
@@ -66,6 +70,10 @@ export interface TenantSnapshot {
   readonly country: CountryCodeValue;
   readonly defaultCurrency: Currency;
   readonly theme: TenantTheme | null;
+  /** What the restaurant says about itself, in every language it publishes in. */
+  readonly description: LocalizedText | null;
+  readonly socials: SocialLinks;
+  readonly contacts: BrandContacts;
   readonly legalName: string | null;
   readonly legalForm: TenantLegalForm | null;
   readonly taxId: string | null;
@@ -163,6 +171,9 @@ export class Tenant {
       country: input.country,
       defaultCurrency,
       theme: null,
+      description: null,
+      socials: {},
+      contacts: EMPTY_BRAND_CONTACTS,
       legalName: null,
       legalForm: null,
       taxId: null,

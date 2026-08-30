@@ -57,6 +57,13 @@
       "when": 1788022800000,
       "tag": "0007_tenant_content_locales",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788109200000,
+      "tag": "0008_tenant_brand",
+      "breakpoints": true
     }
   ]
 }

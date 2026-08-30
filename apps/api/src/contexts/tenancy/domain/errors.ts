@@ -223,3 +223,11 @@ export class DefaultLocaleNotSupportedError extends Error {
     this.name = 'DefaultLocaleNotSupportedError';
   }
 }
+
+export class BrandLogoNotOwnedError extends Error {
+  readonly kind = 'BrandLogoNotOwnedError' as const;
+  constructor(public readonly tenantId: string) {
+    super(`Logo key does not belong to tenant "${tenantId}".`);
+    this.name = 'BrandLogoNotOwnedError';
+  }
+}

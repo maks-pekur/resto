@@ -35,6 +35,13 @@ import {
 import { mapDomainError } from './error-mapping';
 import { TenantResponseDto, toResponse } from './tenant-response';
 import { SetContentLocalesService } from '../../application/set-content-locales.service';
+import { UpdateBrandService } from '../../application/update-brand.service';
+import { GetBrandLogoUploadUrlService } from '../../application/get-brand-logo-upload-url.service';
+import {
+  BrandLogoUploadUrlInputDto,
+  BrandLogoUploadUrlResponseDto,
+  UpdateBrandInputDto,
+} from '../../application/dto';
 
 const TenantDomainSchema = z.object({
   id: z.string().uuid(),
@@ -61,6 +68,9 @@ export class TenantsController {
     @Inject(OffboardTenantService) private readonly offboarding: OffboardTenantService,
     @Inject(SetContentLocalesService)
     private readonly setContentLocales: SetContentLocalesService,
+    @Inject(UpdateBrandService) private readonly updateBrand: UpdateBrandService,
+    @Inject(GetBrandLogoUploadUrlService)
+    private readonly brandLogoUploadUrl: GetBrandLogoUploadUrlService,
   ) {}
 
   @Get('me')
@@ -87,6 +97,40 @@ export class TenantsController {
   ): Promise<TenantResponseDto> {
     try {
       return toResponse(await this.setContentLocales.execute(input));
+    } catch (err) {
+      throw mapDomainError(err);
+    }
+  }
+
+  @Patch('me/brand')
+  @Permissions({ settings: ['update'] })
+  @RequiresTenantContext()
+  @ApiBody({ type: UpdateBrandInputDto })
+  @ApiOkResponse({ type: TenantResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  async setBrand(
+    @Body(new RestoZodValidationPipe(UpdateBrandInputDto)) input: UpdateBrandInputDto,
+  ): Promise<TenantResponseDto> {
+    try {
+      return toResponse(await this.updateBrand.execute(input));
+    } catch (err) {
+      throw mapDomainError(err);
+    }
+  }
+
+  @Post('me/brand/logo-upload-url')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ settings: ['update'] })
+  @RequiresTenantContext()
+  @ApiBody({ type: BrandLogoUploadUrlInputDto })
+  @ApiOkResponse({ type: BrandLogoUploadUrlResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  async brandLogoUpload(
+    @Body(new RestoZodValidationPipe(BrandLogoUploadUrlInputDto))
+    input: BrandLogoUploadUrlInputDto,
+  ): Promise<BrandLogoUploadUrlResponseDto> {
+    try {
+      return await this.brandLogoUploadUrl.execute(input);
     } catch (err) {
       throw mapDomainError(err);
     }

@@ -258,6 +258,56 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenants/me/brand:
+    patch:
+      operationId: TenantsController_setBrand
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBrandInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TenantResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenants/me/brand/logo-upload-url:
+    post:
+      operationId: TenantsController_brandLogoUpload
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BrandLogoUploadUrlInputDto"
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BrandLogoUploadUrlResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tenants/me/domains:
     get:
       operationId: TenantsController_getMeDomains
@@ -1824,6 +1874,42 @@ components:
               nullable: true
               default: null
           nullable: true
+        description:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+        socials:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+            maxLength: 2048
+            format: uri
+        contacts:
+          type: object
+          properties:
+            phone:
+              type: string
+              minLength: 1
+              maxLength: 32
+              pattern: ^\+?[0-9 ()-]+$
+              nullable: true
+              default: null
+            email:
+              type: string
+              maxLength: 254
+              format: email
+              nullable: true
+              default: null
+            website:
+              type: string
+              minLength: 1
+              maxLength: 2048
+              format: uri
+              nullable: true
+              default: null
         legalName:
           type: string
           nullable: true
@@ -1893,6 +1979,9 @@ components:
         - country
         - defaultCurrency
         - theme
+        - description
+        - socials
+        - contacts
         - legalName
         - legalForm
         - taxId
@@ -1952,6 +2041,86 @@ components:
           maxLength: 120
       required:
         - requestedBy
+    UpdateBrandInputDto:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+        socials:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+            maxLength: 2048
+            format: uri
+        contacts:
+          type: object
+          properties:
+            phone:
+              type: string
+              minLength: 1
+              maxLength: 32
+              pattern: ^\+?[0-9 ()-]+$
+              nullable: true
+              default: null
+            email:
+              type: string
+              maxLength: 254
+              format: email
+              nullable: true
+              default: null
+            website:
+              type: string
+              minLength: 1
+              maxLength: 2048
+              format: uri
+              nullable: true
+              default: null
+        logoS3Key:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          nullable: true
+    BrandLogoUploadUrlInputDto:
+      type: object
+      properties:
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - image/svg+xml
+        sizeBytes:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+          maximum: 2097152
+          exclusiveMaximum: false
+      required:
+        - contentType
+        - sizeBytes
+    BrandLogoUploadUrlResponseDto:
+      type: object
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        s3Key:
+          type: string
+          minLength: 1
+          maxLength: 1024
+      required:
+        - uploadUrl
+        - s3Key
     TenantDomainDto:
       type: object
       properties:
@@ -2534,6 +2703,31 @@ components:
               type: string
             displayName:
               type: string
+            description:
+              type: object
+              additionalProperties:
+                type: string
+              nullable: true
+            socials:
+              type: object
+              additionalProperties:
+                type: string
+            contacts:
+              type: object
+              properties:
+                phone:
+                  type: string
+                  nullable: true
+                email:
+                  type: string
+                  nullable: true
+                website:
+                  type: string
+                  nullable: true
+              required:
+                - phone
+                - email
+                - website
             theme:
               type: object
               properties:
@@ -2568,6 +2762,9 @@ components:
             - id
             - slug
             - displayName
+            - description
+            - socials
+            - contacts
             - theme
             - locales
           nullable: true

@@ -104,7 +104,8 @@
     "contact": "Contact",
     "delivery": "Delivery",
     "faq": "FAQ",
-    "poweredBy": "Powered by RestOS"
+    "poweredBy": "Powered by RestOS",
+    "socialsLabel": "Find us online"
   },
   "theme": {
     "dark": "Dark",

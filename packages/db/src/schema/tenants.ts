@@ -50,6 +50,11 @@ export const tenants = pgTable(
     country: text('country').notNull(),
     // --- from brands (D-04) ---
     theme: jsonb('theme').$type<Record<string, unknown> | null>(),
+    description: jsonb('description').$type<Record<string, string> | null>(),
+    socials: jsonb('socials').$type<Record<string, string>>().notNull().default({}),
+    contactPhone: text('contact_phone'),
+    contactEmail: text('contact_email'),
+    contactWebsite: text('contact_website'),
     legalName: text('legal_name'),
     legalForm: text('legal_form'),
     taxId: text('tax_id'),

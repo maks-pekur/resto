@@ -14,6 +14,9 @@ const menu: MenuDto = {
     displayName: 'Pizza Palace',
     theme: null,
     locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
   },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },

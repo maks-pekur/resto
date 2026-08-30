@@ -93,6 +93,7 @@ export const MenuScreen = ({
 
   const tenantName = menu.tenant?.displayName ?? t('menu.title');
   const logoUrl = menu.tenant?.theme?.logoUrl ?? null;
+  const tenantDescription = localized(menu.tenant?.description, locale, defaultContentLocale);
   const total = formatPrice(subtotal, menu.currency, locale);
 
   const openCart = (): void => {
@@ -126,6 +127,9 @@ export const MenuScreen = ({
         <GuestFooter
           tenantName={tenantName}
           logoUrl={logoUrl}
+          description={tenantDescription}
+          socials={menu.tenant?.socials ?? {}}
+          contacts={menu.tenant?.contacts ?? {}}
           links={footerLinks ?? []}
           actions={footerActions}
         />

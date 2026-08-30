@@ -104,7 +104,8 @@
     "contact": "Contacto",
     "delivery": "Envío",
     "faq": "Preguntas",
-    "poweredBy": "Funciona con RestOS"
+    "poweredBy": "Funciona con RestOS",
+    "socialsLabel": "Síguenos"
   },
   "theme": {
     "dark": "Oscuro",

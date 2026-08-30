@@ -54,7 +54,7 @@ const createOrder = async (input: SeedDemoOrderInput): Promise<CreateOrderRespon
           quantity: input.spec.quantity ?? 1,
         },
       ],
-      fulfillmentMode: 'pickup',
+      orderType: 'pickup',
       idempotencyKey: randomUUID(),
       channel: 'site',
       marketingConsent: false,

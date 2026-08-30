@@ -50,3 +50,4 @@ export {
 export * from './rbac';
 
 export * from './content-locales';
+export * from './brand';

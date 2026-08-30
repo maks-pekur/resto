@@ -14,5 +14,6 @@ export type {
   MenuTenantThemeDto,
   MenuTenantDto,
   MenuTenantLocalesDto,
+  MenuTenantContactsDto,
   MenuDto,
 } from './menu-types.js';

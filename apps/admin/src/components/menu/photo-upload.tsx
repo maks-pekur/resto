@@ -46,9 +46,7 @@ export function PhotoUpload({
     };
   }, [previewUrl]);
 
-  const urlMutation = useMutation({
-    mutationFn: () => getPhotoUploadUrl(_itemId),
-  });
+  const urlMutation = useMutation({ mutationFn: getPhotoUploadUrl });
 
   const handleFile = async (file: File): Promise<void> => {
     if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_SIZE_BYTES) {
@@ -56,14 +54,17 @@ export function PhotoUpload({
       return;
     }
     setState({ kind: 'requesting' });
-    const urlRes = await urlMutation.mutateAsync();
+    const urlRes = await urlMutation.mutateAsync({
+      contentType: file.type,
+      sizeBytes: file.size,
+    });
     if (!urlRes.ok || !urlRes.data) {
       setState({ kind: 'error', message: t('photoUploadFailed') });
       return;
     }
     setState({ kind: 'uploading' });
     try {
-      const putRes = await fetch(urlRes.data.url, {
+      const putRes = await fetch(urlRes.data.uploadUrl, {
         method: 'PUT',
         body: file,
         headers: { 'content-type': file.type },

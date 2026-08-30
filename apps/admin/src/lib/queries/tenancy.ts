@@ -1,5 +1,11 @@
 import { apiFetch } from '@/lib/api-client';
 
+export interface TenantContacts {
+  readonly phone: string | null;
+  readonly email: string | null;
+  readonly website: string | null;
+}
+
 export interface TenantResponse {
   readonly id: string;
   readonly slug: string;
@@ -14,6 +20,9 @@ export interface TenantResponse {
     primaryColor: string | null;
     font: string | null;
   } | null;
+  readonly description: Record<string, string> | null;
+  readonly socials: Readonly<Record<string, string>>;
+  readonly contacts: TenantContacts;
   readonly legalName: string | null;
   readonly legalForm: 'IP' | 'OOO' | 'LLC' | 'SOLE_PROP' | 'OTHER' | null;
   readonly taxId: string | null;
@@ -65,6 +74,31 @@ export const setContentLocales = async (input: {
 }) =>
   apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/locales', {
     method: 'PATCH',
+    body: input,
+  });
+
+export interface UpdateBrandBody {
+  readonly displayName?: string;
+  readonly description?: Record<string, string> | null;
+  readonly socials?: Record<string, string>;
+  readonly contacts?: TenantContacts;
+  readonly logoS3Key?: string | null;
+}
+
+export const updateBrand = async (body: UpdateBrandBody) =>
+  apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/brand', {
+    method: 'PATCH',
+    body,
+  });
+
+export interface BrandLogoUploadUrl {
+  readonly uploadUrl: string;
+  readonly s3Key: string;
+}
+
+export const getBrandLogoUploadUrl = async (input: { contentType: string; sizeBytes: number }) =>
+  apiFetch<BrandLogoUploadUrl>('/v1/tenants/me/brand/logo-upload-url', {
+    method: 'POST',
     body: input,
   });
 

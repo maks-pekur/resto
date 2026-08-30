@@ -31,4 +31,5 @@ export type GuestUiKey =
   | 'theme.system'
   | 'theme.light'
   | 'theme.dark'
-  | 'footer.poweredBy';
+  | 'footer.poweredBy'
+  | 'footer.socialsLabel';
