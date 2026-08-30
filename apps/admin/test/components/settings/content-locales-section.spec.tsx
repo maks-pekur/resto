@@ -36,9 +36,9 @@ describe('ContentLocalesSection', () => {
 
     const trigger = screen.getByLabelText('settings.contentLocales.languagesPlaceholder');
 
-    expect(trigger).toHaveTextContent('Russian');
-    expect(trigger).toHaveTextContent('English');
-    expect(trigger).not.toHaveTextContent('Ukrainian');
+    expect(trigger).toHaveTextContent('RU');
+    expect(trigger).toHaveTextContent('EN');
+    expect(trigger).not.toHaveTextContent('UK');
   });
 
   it('refuses to drop the language everything falls back to', async () => {

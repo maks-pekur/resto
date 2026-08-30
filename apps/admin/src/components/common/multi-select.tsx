@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils';
 export interface MultiSelectOption {
   readonly value: string;
   readonly label: string;
+  /** Spelled-out name for assistive tech when the label is an abbreviation. */
+  readonly title?: string;
   readonly icon?: React.ReactNode;
 }
 
@@ -63,7 +65,12 @@ export function MultiSelect({
             <span className="text-muted-foreground">{placeholder}</span>
           ) : (
             selected.map((option) => (
-              <Badge key={option.value} variant="secondary" className="gap-1 font-normal">
+              <Badge
+                key={option.value}
+                variant="secondary"
+                title={option.title ?? option.label}
+                className="gap-1 font-normal"
+              >
                 {option.icon}
                 {option.label}
               </Badge>
@@ -87,6 +94,7 @@ export function MultiSelect({
               toggle(option.value);
             }}
             className="gap-2"
+            title={option.title ?? option.label}
           >
             {option.icon}
             {option.label}

@@ -54,7 +54,9 @@ export function ContentLocalesSection({
 
   const options = CONTENT_LOCALES.map((locale) => ({
     value: locale,
-    label: localeName(locale, i18n.language),
+    label: locale.toUpperCase(),
+    // The full name still reaches a screen reader; sighted operators read the flag faster.
+    title: localeName(locale, i18n.language),
     icon: <LocaleDisc locale={locale} withCode={false} className="[&>span]:size-5" />,
   }));
 
@@ -96,7 +98,7 @@ export function ContentLocalesSection({
                 {options
                   .filter((option) => selected.includes(option.value))
                   .map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
+                    <SelectItem key={option.value} value={option.value} title={option.title}>
                       <span className="flex items-center gap-2">
                         {option.icon}
                         {option.label}
