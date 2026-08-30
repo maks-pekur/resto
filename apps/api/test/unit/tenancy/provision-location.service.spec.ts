@@ -13,6 +13,7 @@ const buildRepo = (existingSlugs: readonly string[] = []): LocationRepository =>
   listForTenant: vi.fn().mockResolvedValue(existingSlugs.map((slug) => ({ slug }))),
   save: vi.fn().mockResolvedValue(undefined),
   countScopedMembers: vi.fn().mockResolvedValue(0),
+  deleteEmpty: vi.fn().mockResolvedValue(undefined),
 });
 
 const buildTenants = (timezone = 'Europe/Kyiv'): TenantRepository =>

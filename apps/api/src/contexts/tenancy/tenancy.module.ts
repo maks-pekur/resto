@@ -16,6 +16,7 @@ import { ProvisionLocationService } from './application/provision-location.servi
 import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
 import { RestoreLocationService } from './application/restore-location.service';
+import { DeleteLocationService } from './application/delete-location.service';
 import { UpdateLocationService } from './application/update-location.service';
 import { CreateTableZoneService } from './application/create-table-zone.service';
 import { ListTableZonesService } from './application/list-table-zones.service';
@@ -80,6 +81,7 @@ import {
     ListLocationsService,
     ArchiveLocationService,
     RestoreLocationService,
+    DeleteLocationService,
     UpdateLocationService,
     CreateTableZoneService,
     ListTableZonesService,
@@ -106,6 +108,7 @@ import {
     ListLocationsService,
     ArchiveLocationService,
     RestoreLocationService,
+    DeleteLocationService,
     UpdateLocationService,
     GuestMenuUrlService,
   ],

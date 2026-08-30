@@ -440,6 +440,24 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+    delete:
+      operationId: LocationsController_remove
+      parameters: []
+      responses:
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tenancy/locations/{id}/archive:
     patch:
       operationId: LocationsController_archive

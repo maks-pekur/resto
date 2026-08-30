@@ -1,5 +1,6 @@
 import {
   Body,
+  Delete,
   Controller,
   Get,
   HttpCode,
@@ -28,6 +29,7 @@ import { ListLocationsService } from '../../application/list-locations.service';
 import { UpdateLocationService } from '../../application/update-location.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
 import { RestoreLocationService } from '../../application/restore-location.service';
+import { DeleteLocationService } from '../../application/delete-location.service';
 import {
   LocationAddress,
   LocationLatitude,
@@ -110,6 +112,7 @@ export class LocationsController {
     @Inject(ListLocationsService) private readonly listLocations: ListLocationsService,
     @Inject(ArchiveLocationService) private readonly archiveLocation: ArchiveLocationService,
     @Inject(RestoreLocationService) private readonly restoreLocation: RestoreLocationService,
+    @Inject(DeleteLocationService) private readonly deleteLocation: DeleteLocationService,
     @Inject(UpdateLocationService) private readonly updateLocation: UpdateLocationService,
   ) {}
 
@@ -170,5 +173,15 @@ export class LocationsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   restore(@Param('id', ParseUUIDPipe) id: string): Promise<LocationResponseDto> {
     return wrap(async () => toResponse(await this.restoreLocation.execute(id)));
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Permissions({ location: ['delete'] })
+  @RequireActiveTenant()
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return wrap(() => this.deleteLocation.execute(id));
   }
 }

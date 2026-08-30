@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, TenantScopedRepository } from '@resto/db';
 import { LocationId, TenantId } from '@resto/domain';
-import { asc, eq } from 'drizzle-orm';
+import { asc, eq, sql } from 'drizzle-orm';
 import { LocationContactsSchema, type LocationSnapshot } from '../domain/location.aggregate';
 import type { LocationRepository } from '../domain/ports';
 
@@ -94,6 +94,14 @@ export class LocationDrizzleRepository
             archivedAt: snapshot.archivedAt,
           },
         });
+    });
+  }
+
+  async deleteEmpty(locationId: LocationId, tenantId: TenantId): Promise<void> {
+    await this.db.withTenant(async (tx) => {
+      // The guard lives in the function, not here: the runtime role holds no DELETE grant, so a
+      // caller cannot route around it even by writing its own SQL.
+      await tx.execute(sql`SELECT tenancy_delete_location(${locationId}::uuid, ${tenantId}::uuid)`);
     });
   }
 

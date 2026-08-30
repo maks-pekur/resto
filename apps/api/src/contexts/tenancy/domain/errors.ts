@@ -121,6 +121,14 @@ export class LocationAlreadyArchivedError extends Error {
   }
 }
 
+export class LocationHasOrdersError extends Error {
+  readonly kind = 'LocationHasOrdersError' as const;
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" has orders and cannot be deleted — archive it instead.`);
+    this.name = 'LocationHasOrdersError';
+  }
+}
+
 export class LocationNotArchivedError extends Error {
   readonly kind = 'LocationNotArchivedError' as const;
   constructor(public readonly locationId: string) {

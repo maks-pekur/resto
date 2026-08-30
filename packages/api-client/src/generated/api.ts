@@ -286,7 +286,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["LocationsController_remove"];
         options?: never;
         head?: never;
         patch: operations["LocationsController_update"];
@@ -2894,6 +2894,33 @@ export interface operations {
                 };
             };
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

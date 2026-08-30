@@ -30,6 +30,7 @@ const buildRepo = (): LocationRepository => ({
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
   countScopedMembers: vi.fn().mockResolvedValue(0),
+  deleteEmpty: vi.fn().mockResolvedValue(undefined),
 });
 
 describe('ArchiveLocationService', () => {

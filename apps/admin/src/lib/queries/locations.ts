@@ -87,6 +87,9 @@ export const createLocationMutation = (input: CreateLocationInput) =>
     body: input,
   });
 
+export const deleteLocationMutation = (id: string) =>
+  apiFetch<null>(`/v1/tenancy/locations/${id}`, { method: 'DELETE' });
+
 export const restoreLocationMutation = (id: string) =>
   apiFetch<LocationView>(`/v1/tenancy/locations/${id}/restore`, {
     method: 'PATCH',

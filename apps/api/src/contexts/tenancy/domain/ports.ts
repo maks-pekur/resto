@@ -25,6 +25,8 @@ export interface LocationRepository {
   listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
   save(snapshot: LocationSnapshot): Promise<void>;
   countScopedMembers(locationId: LocationId): Promise<number>;
+  /** Removes a location that never took an order, along with its zones and tables. */
+  deleteEmpty(locationId: LocationId, tenantId: TenantId): Promise<void>;
 }
 
 export const LOCATION_REPOSITORY = Symbol('LOCATION_REPOSITORY');

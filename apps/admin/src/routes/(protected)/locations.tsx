@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { createRoute, Link } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Archive, ArchiveRestore, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, Plus, Trash2 } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -10,6 +10,7 @@ import {
   tenantLocationsQuery,
   archiveLocationMutation,
   restoreLocationMutation,
+  deleteLocationMutation,
   friendlyLocationError,
   type LocationView,
 } from '@/lib/queries/locations';
@@ -51,6 +52,7 @@ function LocationsPage() {
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: locationsResult, isPending } = useQuery(tenantLocationsQuery());
   const [archiveTarget, setArchiveTarget] = useState<LocationView | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LocationView | null>(null);
 
   const invalidateLocations = () => {
     void qc.invalidateQueries({ queryKey: ['locations'] });
@@ -69,6 +71,23 @@ function LocationsPage() {
     },
     onError: () => {
       toast.error('Something went wrong. Please try again.');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (location: LocationView) => deleteLocationMutation(location.id),
+    onSuccess: (res, location) => {
+      if (!res.ok) {
+        toast.error(friendlyLocationError(res.status, res.data));
+      } else {
+        toast.success(`"${location.name}" deleted.`);
+        invalidateLocations();
+      }
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+      setDeleteTarget(null);
     },
   });
 
@@ -169,9 +188,17 @@ function LocationsPage() {
                                 key: 'archive',
                                 label: 'Archive',
                                 icon: Archive,
-                                tone: 'destructive' as const,
                                 onSelect: () => {
                                   setArchiveTarget(location);
+                                },
+                              },
+                              {
+                                key: 'delete',
+                                label: 'Delete',
+                                icon: Trash2,
+                                tone: 'destructive' as const,
+                                onSelect: () => {
+                                  setDeleteTarget(location);
                                 },
                               },
                             ]
@@ -185,6 +212,15 @@ function LocationsPage() {
                                   restoreMutation.mutate(location);
                                 },
                               },
+                              {
+                                key: 'delete',
+                                label: 'Delete',
+                                icon: Trash2,
+                                tone: 'destructive' as const,
+                                onSelect: () => {
+                                  setDeleteTarget(location);
+                                },
+                              },
                             ]
                       }
                     />
@@ -195,6 +231,35 @@ function LocationsPage() {
           </DataTable>
         )}
       </div>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{deleteTarget?.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the location, its zones and its tables for good. A location that has ever
+              taken an order cannot be deleted — archive it instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) deleteMutation.mutate(deleteTarget);
+              }}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete location'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={archiveTarget !== null}
