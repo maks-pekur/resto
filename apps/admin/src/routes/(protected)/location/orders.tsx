@@ -24,7 +24,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { FULFILLMENT_LABEL_KEY, OrderRow } from '@/components/orders/order-row';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
-import { OrderStatusTabs, type OrderFulfillmentTab } from '@/components/orders/order-tabs';
+import { type OrderFulfillmentTab } from '@/components/orders/order-tabs';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
 import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
@@ -147,15 +147,11 @@ function OrdersPage() {
         soundBlocked={sound.blocked}
         soundReady={sound.unlocked}
         notificationsBlocked={notifications.permission === 'denied'}
+        status={statusTab}
+        onStatusChange={setStatusTab}
+        counts={counts}
+        refundFailedCount={refundFailedCount}
       />
-      <div className="px-4 lg:px-6">
-        <OrderStatusTabs
-          value={statusTab}
-          onChange={setStatusTab}
-          counts={counts}
-          refundFailedCount={refundFailedCount}
-        />
-      </div>
 
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (

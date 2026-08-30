@@ -1,6 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
+
+// The tab groups sit inside one filter bar, so they carry no surface of their own — the active
+// tab is marked against the bar's background rather than against a pill inside it.
+const TAB_LIST_CLASS = 'h-8 gap-1 bg-transparent p-0';
+const TAB_TRIGGER_CLASS =
+  'data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted';
 
 export type OrderFulfillmentTab = 'all' | 'delivery' | 'pickup';
 
@@ -21,9 +28,9 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
         onChange(next as OrderFulfillmentTab);
       }}
     >
-      <TabsList>
+      <TabsList className={TAB_LIST_CLASS}>
         {ORDER_FULFILLMENT_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab}>
+          <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
             {t(tab)}
           </TabsTrigger>
         ))}
@@ -66,9 +73,9 @@ export function OrderStatusTabs({
         onChange(next as OrderStatusPreset);
       }}
     >
-      <TabsList className="w-full justify-start overflow-x-auto">
+      <TabsList className={cn(TAB_LIST_CLASS, 'w-full justify-start overflow-x-auto')}>
         {ORDER_STATUS_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab} className="gap-1.5">
+          <TabsTrigger key={tab} value={tab} className={cn(TAB_TRIGGER_CLASS, 'gap-1.5')}>
             {t(tab)}
             {counts !== null ? (
               <span className="text-muted-foreground tabular-nums">{counts[tab]}</span>
@@ -76,7 +83,10 @@ export function OrderStatusTabs({
           </TabsTrigger>
         ))}
         {refundFailedCount > 0 ? (
-          <TabsTrigger value="refund_failed" className="text-destructive gap-1.5">
+          <TabsTrigger
+            value="refund_failed"
+            className={cn(TAB_TRIGGER_CLASS, 'text-destructive gap-1.5')}
+          >
             {t('refundFailed')}
             <span className="tabular-nums">{refundFailedCount}</span>
           </TabsTrigger>

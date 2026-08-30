@@ -21,6 +21,10 @@ const renderBar = (soundReady: boolean) =>
       onFulfillmentChange={vi.fn()}
       range={{ from: '2026-08-30', to: '2026-08-30' }}
       onRangeChange={vi.fn()}
+      status="unaccepted"
+      onStatusChange={vi.fn()}
+      counts={null}
+      refundFailedCount={0}
       isLive
       soundMuted={false}
       onSoundMutedChange={vi.fn()}
