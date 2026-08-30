@@ -8,7 +8,7 @@ import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './a
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
 import { TableBanner } from './components/TableBanner';
-import { getActiveLocale, t } from './i18n';
+import { adoptTenantLocales, getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
 
@@ -146,6 +146,14 @@ export const App = () => {
       ? (state.menu.tenant?.locales ?? { default: undefined, supported: [] })
       : { default: undefined, supported: [] };
 
+  const [localeRevision, setLocaleRevision] = useState(0);
+  useEffect(() => {
+    if (menuLocales.default === undefined) return;
+    if (adoptTenantLocales(menuLocales.supported, menuLocales.default)) {
+      setLocaleRevision((n) => n + 1);
+    }
+  }, [menuLocales.default, menuLocales.supported]);
+
   const openItem = useCallback((id: string) => {
     window.history.pushState(null, '', `/items/${id}`);
     setOpenItemId(id);
@@ -162,6 +170,7 @@ export const App = () => {
 
   return (
     <GuestUiProvider
+      key={localeRevision}
       locale={getActiveLocale()}
       t={t}
       {...(menuLocales.default === undefined ? {} : { defaultContentLocale: menuLocales.default })}

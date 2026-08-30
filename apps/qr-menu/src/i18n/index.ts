@@ -5,28 +5,40 @@ const RESOURCES: Record<string, Record<string, string>> = { en, ru };
 
 export type Locale = keyof typeof RESOURCES;
 
-const isLocale = (value: string | undefined): value is Locale =>
-  value != null && value in RESOURCES;
-
-const detectLocale = (): Locale => {
-  if (typeof window !== 'undefined') {
-    const fromPath = /^\/(en|ru)(?:\/|$)/.exec(window.location.pathname)?.[1];
-    if (isLocale(fromPath)) return fromPath;
-    const fromCookie = /(?:^|;\s*)locale=([^;]+)/.exec(document.cookie)?.[1];
-    if (isLocale(fromCookie)) return fromCookie;
-  }
-  const candidates: string[] =
+const browserCandidates = (): string[] => {
+  const raw =
     typeof navigator !== 'undefined' ? [navigator.language, ...navigator.languages] : ['en'];
-  for (const candidate of candidates) {
-    const short = candidate.toLowerCase().split('-')[0];
-    if (short && short in RESOURCES) {
-      return short;
-    }
-  }
-  return 'en';
+  return raw.map((candidate) => candidate.toLowerCase().split('-')[0] ?? '').filter(Boolean);
 };
 
-let activeLocale: Locale = detectLocale();
+/** A language the guest picked themselves — it outranks anything the restaurant or browser says. */
+const readChoice = (): string | null => {
+  if (typeof window === 'undefined') return null;
+  const fromPath = /^\/([a-z]{2})(?:\/|$)/.exec(window.location.pathname)?.[1];
+  if (fromPath) return fromPath;
+  return /(?:^|;\s*)locale=([a-z]{2})/.exec(document.cookie)?.[1] ?? null;
+};
+
+let chosenLocale: string | null = readChoice();
+let activeLocale: string =
+  chosenLocale ?? browserCandidates().find((candidate) => candidate in RESOURCES) ?? 'en';
+
+/**
+ * The menu says which languages the restaurant actually publishes in. Until it arrives all we have
+ * is the browser, which is why a Russian-only menu could open in English: `en` is where the guess
+ * lands, and the guess was never revisited.
+ */
+export const adoptTenantLocales = (
+  supported: readonly string[],
+  defaultLocale: string,
+): boolean => {
+  if (chosenLocale !== null && supported.includes(chosenLocale)) return false;
+  const next =
+    browserCandidates().find((candidate) => supported.includes(candidate)) ?? defaultLocale;
+  if (next === activeLocale) return false;
+  activeLocale = next;
+  return true;
+};
 
 /**
  * Translate a key with optional `{name}` interpolation. Falls back to
@@ -42,11 +54,12 @@ export const t = (key: string, replacements: Record<string, string | number> = {
   );
 };
 
-export const setLocale = (locale: Locale): void => {
+export const setLocale = (locale: string): void => {
+  chosenLocale = locale;
   activeLocale = locale;
 };
 
-export const getActiveLocale = (): Locale => activeLocale;
+export const getActiveLocale = (): string => activeLocale;
 
 /**
  * Pick the best string from a `LocalizedText` map. Tries the active
