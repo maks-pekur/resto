@@ -501,13 +501,6 @@
       "paid": "Оплачено",
       "refunded": "Возврат",
       "unpaid": "Не оплачен"
-    },
-    "table": {
-      "number": "№ и статус",
-      "time": "Время",
-      "type": "Тип",
-      "customer": "Клиент",
-      "total": "Сумма"
     }
   },
   "dashboard": {

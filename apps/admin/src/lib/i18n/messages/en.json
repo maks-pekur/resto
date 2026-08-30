@@ -501,13 +501,6 @@
       "paid": "Paid",
       "refunded": "Refunded",
       "unpaid": "Unpaid"
-    },
-    "table": {
-      "number": "No. and status",
-      "time": "Time",
-      "type": "Type",
-      "customer": "Customer",
-      "total": "Total"
     }
   },
   "dashboard": {

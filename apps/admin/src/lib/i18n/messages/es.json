@@ -501,13 +501,6 @@
       "paid": "Pagado",
       "refunded": "Reembolsado",
       "unpaid": "Sin pagar"
-    },
-    "table": {
-      "number": "N.º y estado",
-      "time": "Hora",
-      "type": "Tipo",
-      "customer": "Cliente",
-      "total": "Total"
     }
   },
   "dashboard": {

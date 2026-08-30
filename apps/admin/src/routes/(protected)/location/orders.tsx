@@ -197,14 +197,9 @@ function OrdersPage() {
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
         ) : (
-          <div className="overflow-x-auto rounded-md border">
-            <div className="text-muted-foreground hidden border-b px-0 py-1.5 text-xs sm:flex">
-              <span className="w-28 shrink-0 px-3">{t('table.number')}</span>
-              <span className="w-20 shrink-0 px-3">{t('table.time')}</span>
-              <span className="w-40 shrink-0 px-3">{t('table.type')}</span>
-              <span className="hidden flex-1 px-3 md:block">{t('table.customer')}</span>
-              <span className="w-32 shrink-0 px-3 text-right">{t('table.total')}</span>
-            </div>
+          // The feed is a list of orders, not a table of fields: each row carries its own
+          // labels through icons and words, so a column header would only repeat them.
+          <div className="flex flex-col gap-2">
             {rows.map((row) => (
               <OrderRow
                 key={row.id}

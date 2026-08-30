@@ -156,7 +156,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     <div
       data-testid={`order-row-${row.id}`}
       className={cn(
-        'flex items-stretch border-b transition-colors',
+        'flex items-stretch overflow-hidden rounded-md border transition-colors',
         // A refund that failed is unfinished business: the row must not read as closed and done.
         row.hasFailedRefund ? 'bg-destructive/5' : 'hover:bg-muted/40',
       )}
