@@ -55,28 +55,6 @@ export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> 
   delivery: 'orderTypeDelivery',
 };
 
-const STATE_LABEL_KEY: Record<OrderCardState, string> = {
-  new: 'newBadge',
-  escalated: 'newBadge',
-  accepted: 'acceptedBadge',
-  preparing: 'preparingBadge',
-  ready: 'readyBadge',
-  completed: 'completedBadge',
-  canceled: 'canceledBadge',
-};
-
-// Colour carries the same message as the word beneath it, never on its own: an operator who
-// cannot tell the amber from the grey still reads "Готово" against "Готовится".
-const STATE_TEXT_TONE: Record<OrderCardState, string> = {
-  new: 'text-foreground',
-  escalated: 'text-destructive',
-  accepted: 'text-foreground',
-  preparing: 'text-muted-foreground',
-  ready: 'text-warning',
-  completed: 'text-muted-foreground',
-  canceled: 'text-muted-foreground',
-};
-
 const paymentKeyOf = (status: OrderFeedRowApi['status']): 'paid' | 'refunded' | 'unpaid' => {
   if (status === 'refunded') return 'refunded';
   if (status === 'created' || status === 'requires_action' || status === 'failed') return 'unpaid';
@@ -97,7 +75,6 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
   const state = deriveOrderRowState(row, now);
   const remaining = countdown(row.etaAt, row.acceptedAt ?? row.createdAt, now);
   const isOpen = state !== 'completed' && state !== 'canceled';
-  const late = (remaining?.late ?? false) && isOpen;
 
   const advanceMutation = useMutation({
     mutationFn: (targetStatus: 'preparing' | 'ready' | 'completed') =>
@@ -198,7 +175,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
             stamp on the order rather than as another column of text. */}
         <span
           className={cn(
-            'flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 px-1',
+            'flex w-20 shrink-0 items-center justify-center gap-1.5 px-2',
             channel.tone,
           )}
           style={
@@ -208,21 +185,11 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           }
           title={t(`channel.${channel.labelKey}`)}
         >
-          <ChannelIcon className="size-5" />
+          <ChannelIcon className="size-4" />
           <span className="sr-only">{t(`channel.${channel.labelKey}`)}</span>
-        </span>
-
-        <span
-          className={cn(
-            'flex w-24 shrink-0 flex-col justify-center gap-0.5 px-3 py-2',
-            // Colour without a fill: the status word and the ring carry the state, the row
-            // keeps one background so nothing reads as a separate block.
-            late ? 'text-destructive' : STATE_TEXT_TONE[state],
-          )}
-        >
-          <span className="text-lg leading-none font-semibold tabular-nums">{row.shortNumber}</span>
-          <span className="truncate text-[11px] tracking-wide uppercase">
-            {t(`card.${STATE_LABEL_KEY[state]}`)}
+          <span className="text-base leading-none font-semibold tabular-nums">
+            <span className="opacity-60">#</span>
+            {row.shortNumber}
           </span>
         </span>
 
