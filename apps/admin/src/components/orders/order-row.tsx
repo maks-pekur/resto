@@ -66,14 +66,6 @@ const paymentKeyOf = (row: OrderFeedRowApi): string => {
   return row.paymentType;
 };
 
-const PAYMENT_TONE: Record<string, string> = {
-  online: 'bg-success text-success-foreground',
-  cash: 'bg-warning text-warning-foreground',
-  card_on_delivery: 'bg-primary text-primary-foreground',
-  refunded: 'bg-muted text-muted-foreground',
-  unpaid: 'bg-destructive text-destructive-foreground',
-};
-
 export interface OrderRowProps {
   readonly row: OrderFeedRowApi;
   readonly showLocationBadge: boolean;
@@ -323,8 +315,10 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         ) : (
           <span
             className={cn(
-              'w-full rounded-t-sm py-px text-center text-[10px] leading-tight font-medium',
-              PAYMENT_TONE[paymentKey] ?? 'bg-muted text-muted-foreground',
+              'text-muted-foreground w-full py-px text-center text-[10px] leading-tight',
+              // Colour is spent on the countdown and the row state; how the guest pays is a fact
+              // to read, not an alarm to raise.
+              paymentKey === 'unpaid' && 'text-destructive',
             )}
           >
             {t(`payment.${paymentKey}`)}
