@@ -23,7 +23,11 @@
     "forbiddenTitle": "You do not have access to this page.",
     "forbiddenBody": "Your role does not include the permission this page needs. Ask an owner to grant it.",
     "backToDashboard": "Back to dashboard",
-    "archive": "Archive"
+    "archive": "Archive",
+    "localizedField": {
+      "translatedCount": "Translated {{done}} of {{total}}",
+      "primaryMark": "★"
+    }
   },
   "auth": {
     "signInTitle": "Sign in to Resto",
@@ -182,7 +186,8 @@
       "statusReadonlyHint": "Managed from the items list.",
       "techInfoSectionTitle": "Tech info",
       "slugLabel": "Slug",
-      "newItemTitle": "New item"
+      "newItemTitle": "New item",
+      "nameRequired": "Fill in the name in the primary language"
     },
     "sizes": {
       "title": "Sizes",
@@ -221,7 +226,7 @@
       "nameLabel": "Name",
       "minLabel": "Min",
       "maxLabel": "Max",
-      "nameRequired": "Enter the group name.",
+      "nameRequired": "Fill in the name in the primary language",
       "createFailed": "Couldn't create the group.",
       "updateFailed": "Couldn't update modifiers.",
       "validateGroup": "Please check the group fields.",
@@ -667,5 +672,19 @@
     "failedBadgeAria": "Refunds needing action: {{count}}",
     "columnActions": "Actions",
     "rowActionsAriaLabel": "Actions for order #{{n}}"
+  },
+  "settings": {
+    "contentLocales": {
+      "title": "Menu languages",
+      "description": "The languages guests see the menu in, on the website and in the QR menu.",
+      "primaryBadge": "Primary",
+      "makePrimary": "Make primary",
+      "fallbackHint": "When a dish has no translation, guests see it in the primary language.",
+      "save": "Save",
+      "saving": "Saving…",
+      "reset": "Reset",
+      "saved": "Menu languages updated",
+      "saveFailed": "Could not save the menu languages"
+    }
   }
 }

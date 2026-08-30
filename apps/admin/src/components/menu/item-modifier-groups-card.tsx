@@ -27,6 +27,8 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemModifierGroups, upsertModifierGroup } from '@/lib/queries/catalog';
+import { mergeLocalized } from '@/lib/menu/localized';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 
 export interface AvailableGroup {
@@ -70,6 +72,7 @@ export function ItemModifierGroupsCard({
   const [newMin, setNewMin] = React.useState(0);
   const [newMax, setNewMax] = React.useState(1);
 
+  const { defaultLocale } = useContentLocales();
   const isNewItem = itemId === 'new';
 
   const assignMutation = useMutation({
@@ -81,7 +84,10 @@ export function ItemModifierGroupsCard({
 
   const createMutation = useMutation({
     mutationFn: (values: { name: string; minSelectable: number; maxSelectable: number }) =>
-      upsertModifierGroup(null, values),
+      upsertModifierGroup(null, {
+        ...values,
+        name: mergeLocalized(null, defaultLocale, values.name),
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });
     },

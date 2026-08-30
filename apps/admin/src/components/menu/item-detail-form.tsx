@@ -26,8 +26,10 @@ import {
 } from '@/components/menu/item-modifier-groups-card';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItem } from '@/lib/queries/catalog';
-import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
+import { itemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
+import { LocalizedField } from '@/components/common/localized-field';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import type { CategoryListItemApi, ItemSizeApi } from '@/lib/queries/catalog';
 
 export interface ItemDetailFormState {
@@ -78,8 +80,9 @@ export function ItemDetailForm({
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [pending, setPending] = React.useState(false);
+  const { defaultLocale } = useContentLocales();
   const form = useForm<ItemEditorForm>({
-    resolver: zodResolver(ItemEditorFormSchema),
+    resolver: zodResolver(itemEditorFormSchema(defaultLocale)),
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -167,6 +170,7 @@ function ItemBasicsCard({
   readonly slug: string;
 }): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
+  const { defaultLocale, locales } = useContentLocales();
   const form = useFormContext<ItemEditorForm>();
   const categoryOptions = categories.map((c) => ({
     id: c.id,
@@ -184,39 +188,38 @@ function ItemBasicsCard({
             control={form.control}
             name="name"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>{t('name')}</FieldLabel>
-                <Input
-                  id={field.name}
-                  maxLength={255}
-                  aria-invalid={fieldState.error ? true : undefined}
-                  {...field}
-                />
-                <FieldDescription>{slug || t('slugPlaceholder')}</FieldDescription>
-                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
-              </Field>
+              <LocalizedField
+                id="item-name"
+                label={t('name')}
+                value={field.value}
+                onChange={(next) => {
+                  field.onChange(next ?? {});
+                }}
+                onBlur={field.onBlur}
+                locales={locales}
+                defaultLocale={defaultLocale}
+                maxLength={255}
+                description={slug || t('slugPlaceholder')}
+                {...(fieldState.error ? { error: t('nameRequired') } : {})}
+              />
             )}
           />
           <FormField
             control={form.control}
             name="description"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
-                <Textarea
-                  id={field.name}
-                  maxLength={4096}
-                  rows={4}
-                  aria-invalid={fieldState.error ? true : undefined}
-                  value={field.value ?? ''}
-                  onChange={(e) => {
-                    field.onChange(e.target.value.length === 0 ? null : e.target.value);
-                  }}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
-                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
-              </Field>
+            render={({ field }) => (
+              <LocalizedField
+                id="item-description"
+                label={t('description')}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                locales={locales}
+                defaultLocale={defaultLocale}
+                multiline
+                nullable
+                maxLength={4096}
+              />
             )}
           />
           <FormField

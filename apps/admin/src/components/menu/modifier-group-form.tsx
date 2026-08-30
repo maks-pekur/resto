@@ -9,7 +9,9 @@ import { FormField } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierGroup } from '@/lib/queries/catalog';
-import { ModifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
+import { modifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
+import { LocalizedField } from '@/components/common/localized-field';
+import { useContentLocales } from '@/hooks/use-content-locales';
 
 export interface ModifierGroupFormState {
   readonly isNew: boolean;
@@ -38,8 +40,9 @@ export function ModifierGroupFormComponent({
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [pending, setPending] = React.useState(false);
+  const { defaultLocale, locales } = useContentLocales();
   const form = useForm<ModifierGroupForm>({
-    resolver: zodResolver(ModifierGroupFormSchema),
+    resolver: zodResolver(modifierGroupFormSchema(defaultLocale)),
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -97,16 +100,19 @@ export function ModifierGroupFormComponent({
             control={form.control}
             name="name"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>{tMod('nameLabel')}</FieldLabel>
-                <Input
-                  id={field.name}
-                  maxLength={255}
-                  aria-invalid={fieldState.error ? true : undefined}
-                  {...field}
-                />
-                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
-              </Field>
+              <LocalizedField
+                id="group-name"
+                label={tMod('nameLabel')}
+                value={field.value}
+                onChange={(next) => {
+                  field.onChange(next ?? {});
+                }}
+                onBlur={field.onBlur}
+                locales={locales}
+                defaultLocale={defaultLocale}
+                maxLength={255}
+                {...(fieldState.error ? { error: tMod('nameRequired') } : {})}
+              />
             )}
           />
           <FormField

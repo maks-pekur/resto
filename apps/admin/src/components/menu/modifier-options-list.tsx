@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { fromLocalizedText, toLocalizedText } from '@/lib/menu/localized';
+import { fromLocalizedText, mergeLocalized, type LocalizedText } from '@/lib/menu/localized';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -49,6 +50,7 @@ export function ModifierOptionsList({
   onOptionsChange,
 }: ModifierOptionsListProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
+  const { defaultLocale } = useContentLocales();
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [rows, setRows] = React.useState<RowDraft[]>(() => options.map(rowFromApi));
@@ -72,13 +74,14 @@ export function ModifierOptionsList({
     mutationFn: (data: {
       id?: string;
       name: string;
+      nameSource: LocalizedText | null;
       priceDelta: number;
       defaultAmount: number;
       freeAmount: number;
     }) =>
       upsertModifierOption(groupId, {
         ...(data.id ? { id: data.id } : {}),
-        name: data.name,
+        name: mergeLocalized(data.nameSource, defaultLocale, data.name),
         priceDelta: data.priceDelta,
         defaultAmount: data.defaultAmount,
         freeAmount: data.freeAmount,
@@ -114,6 +117,7 @@ export function ModifierOptionsList({
         await upsertMutation.mutateAsync({
           ...(row.optionId ? { id: row.optionId } : {}),
           name: row.name,
+          nameSource: options.find((o) => o.id === row.optionId)?.name ?? null,
           priceDelta: row.priceDelta,
           defaultAmount: row.defaultAmount,
           freeAmount: row.freeAmount,
@@ -134,7 +138,11 @@ export function ModifierOptionsList({
     onOptionsChange(
       rows.map((r, idx) => ({
         id: r.optionId ?? r.localKey,
-        name: toLocalizedText(r.name),
+        name: mergeLocalized(
+          options.find((o) => o.id === r.optionId)?.name ?? null,
+          defaultLocale,
+          r.name,
+        ),
         priceDelta: r.priceDelta.toFixed(2),
         defaultAmount: r.defaultAmount,
         freeAmount: r.freeAmount,

@@ -12,7 +12,8 @@ import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/in
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertItemSize } from '@/lib/queries/catalog';
 import type { ItemSizeApi } from '@/lib/queries/catalog';
-import { fromLocalizedText, toLocalizedText } from '@/lib/menu/localized';
+import { fromLocalizedText, mergeLocalized, type LocalizedText } from '@/lib/menu/localized';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
 
 export interface ItemSizesCardProps {
@@ -53,6 +54,7 @@ export function ItemSizesCard({
 }: ItemSizesCardProps): React.ReactElement {
   const form = useFormContext<ItemEditorForm>();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.sizes' });
+  const { defaultLocale } = useContentLocales();
   const { t: tEditor } = useTranslation('translation', { keyPrefix: 'menu.editor' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
@@ -75,10 +77,16 @@ export function ItemSizesCard({
   }, [rows, sizes]);
 
   const upsertMutation = useMutation({
-    mutationFn: (data: { id?: string; name: string; price: number; isDefault: boolean }) =>
+    mutationFn: (data: {
+      id?: string;
+      name: string;
+      nameSource: LocalizedText | null;
+      price: number;
+      isDefault: boolean;
+    }) =>
       upsertItemSize(itemId, {
         ...(data.id ? { id: data.id } : {}),
-        name: data.name,
+        name: mergeLocalized(data.nameSource, defaultLocale, data.name),
         price: data.price,
         isDefault: data.isDefault,
       }),
@@ -123,6 +131,7 @@ export function ItemSizesCard({
         await upsertMutation.mutateAsync({
           ...(row.sizeId ? { id: row.sizeId } : {}),
           name: row.name,
+          nameSource: original?.name ?? null,
           price: row.price,
           isDefault: row.isDefault,
         });
@@ -136,6 +145,7 @@ export function ItemSizesCard({
         await upsertMutation.mutateAsync({
           id: size.id,
           name: fromLocalizedText(size.name),
+          nameSource: size.name,
           price: Number.parseFloat(size.price),
           isDefault: size.isDefault,
         });
@@ -155,7 +165,11 @@ export function ItemSizesCard({
     onSizesChange(
       rows.map((r) => ({
         id: r.sizeId ?? r.localKey,
-        name: toLocalizedText(r.name),
+        name: mergeLocalized(
+          sizes.find((s) => s.id === r.sizeId)?.name ?? null,
+          defaultLocale,
+          r.name,
+        ),
         price: r.price.toFixed(2),
         isDefault: r.isDefault,
         sortOrder: 0,

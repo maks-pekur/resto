@@ -6,6 +6,7 @@ export interface TenantResponse {
   readonly displayName: string;
   readonly status: string;
   readonly locale: string;
+  readonly contentLocales: readonly string[];
   readonly country: string;
   readonly defaultCurrency: string;
   readonly theme: {
@@ -57,6 +58,15 @@ export const tenantDomainsQuery = () => ({
   queryFn: () => apiFetch<TenantDomainItem[]>('/v1/tenants/me/domains'),
   staleTime: 30_000,
 });
+
+export const setContentLocales = async (input: {
+  defaultLocale: string;
+  contentLocales: readonly string[];
+}) =>
+  apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/locales', {
+    method: 'PATCH',
+    body: input,
+  });
 
 export const scheduleOffboard = async (userId: string) =>
   apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/offboard', {

@@ -2,9 +2,12 @@ export const DEFAULT_LOCALE = 'ru' as const;
 
 export type LocalizedText = Record<string, string>;
 
-export const toLocalizedText = (plain: string, locale: string = DEFAULT_LOCALE): LocalizedText => ({
-  [locale]: plain,
-});
+/** Writing one language must not erase the others already stored on the record. */
+export const mergeLocalized = (
+  base: LocalizedText | null | undefined,
+  locale: string,
+  text: string,
+): LocalizedText => ({ ...(base ?? {}), [locale]: text });
 
 export const fromLocalizedText = (
   value: LocalizedText | undefined | null,

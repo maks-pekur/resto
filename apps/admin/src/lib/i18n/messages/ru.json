@@ -23,7 +23,11 @@
     "forbiddenTitle": "У вас нет доступа к этой странице.",
     "forbiddenBody": "В вашей роли нет права, которое нужно этой странице. Попросите владельца его выдать.",
     "backToDashboard": "Вернуться на дашборд",
-    "archive": "Архивировать"
+    "archive": "Архивировать",
+    "localizedField": {
+      "translatedCount": "Переведено {{done}} из {{total}}",
+      "primaryMark": "★"
+    }
   },
   "auth": {
     "signInTitle": "Вход в Resto",
@@ -182,7 +186,8 @@
       "statusReadonlyHint": "Управляется из списка блюд.",
       "techInfoSectionTitle": "Тех. информация",
       "slugLabel": "Slug",
-      "newItemTitle": "Новое блюдо"
+      "newItemTitle": "Новое блюдо",
+      "nameRequired": "Заполните название на основном языке"
     },
     "sizes": {
       "title": "Размеры",
@@ -221,7 +226,7 @@
       "nameLabel": "Название",
       "minLabel": "Мин",
       "maxLabel": "Макс",
-      "nameRequired": "Введите название группы.",
+      "nameRequired": "Заполните название на основном языке",
       "createFailed": "Не удалось создать группу.",
       "updateFailed": "Не удалось обновить модификаторы.",
       "validateGroup": "Проверьте поля группы.",
@@ -667,5 +672,19 @@
     "failedBadgeAria": "Возвратов, требующих действия: {{count}}",
     "columnActions": "Действия",
     "rowActionsAriaLabel": "Действия по заказу №{{n}}"
+  },
+  "settings": {
+    "contentLocales": {
+      "title": "Языки меню",
+      "description": "На каких языках гости видят меню на сайте и в QR-меню.",
+      "primaryBadge": "Основной",
+      "makePrimary": "Сделать основным",
+      "fallbackHint": "Если перевод блюда не заполнен, гость увидит его на основном языке.",
+      "save": "Сохранить",
+      "saving": "Сохраняем…",
+      "reset": "Отменить",
+      "saved": "Языки меню обновлены",
+      "saveFailed": "Не удалось сохранить языки меню"
+    }
   }
 }

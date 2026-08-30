@@ -7,7 +7,6 @@ import { ItemAside } from '@/components/menu/item-aside';
 import type { AvailableGroup } from '@/components/menu/item-modifier-groups-card';
 import type { CategoryListItemApi, ItemDetailApi, ItemSizeApi } from '@/lib/queries/catalog';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
-import { fromLocalizedText } from '@/lib/menu/localized';
 
 export interface ItemEditorShellProps {
   readonly title: string;
@@ -22,7 +21,7 @@ const ITEM_FORM_ID = 'item-form';
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
 const emptyValues = (currency: string): ItemEditorForm => ({
-  name: '',
+  name: {},
   description: null,
   categoryId: NIL_UUID,
   basePrice: 0,
@@ -39,8 +38,8 @@ const emptyValues = (currency: string): ItemEditorForm => ({
 });
 
 const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
-  name: fromLocalizedText(item.name),
-  description: item.description ? fromLocalizedText(item.description) : null,
+  name: { ...item.name },
+  description: item.description ? { ...item.description } : null,
   categoryId: item.categoryId,
   basePrice: Number.parseFloat(item.basePrice),
   currency: item.currency,

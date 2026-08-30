@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { Check, Globe } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -7,43 +7,20 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { cn } from '@/lib/utils';
+import { LocaleDisc } from '@/components/common/locale-disc';
 
 interface LocaleOption {
   readonly code: string;
-  readonly flag: string | null;
   readonly labelKey: 'localeRu' | 'localeEn' | 'localeEs';
 }
 
+/** The languages the panel itself is translated into — shipped with the product, not chosen by
+ * the restaurant. The languages its menu exists in are tenant configuration. */
 const LOCALES: readonly LocaleOption[] = [
-  { code: 'ru', flag: '🇷🇺', labelKey: 'localeRu' },
-  { code: 'en', flag: '🇬🇧', labelKey: 'localeEn' },
-  { code: 'es', flag: '🇪🇸', labelKey: 'localeEs' },
+  { code: 'ru', labelKey: 'localeRu' },
+  { code: 'en', labelKey: 'localeEn' },
+  { code: 'es', labelKey: 'localeEs' },
 ];
-
-/** A flag disc with the language code on it — a locale a person recognises before they read. */
-function LocaleDisc({
-  option,
-  withCode = true,
-  className,
-}: {
-  option: LocaleOption;
-  withCode?: boolean;
-  className?: string;
-}) {
-  return (
-    <span className={cn('relative inline-flex shrink-0', className)}>
-      <span className="ring-border bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1">
-        {option.flag ?? <Globe className="text-muted-foreground size-4" />}
-      </span>
-      {withCode ? (
-        <span className="bg-primary text-primary-foreground border-background absolute -right-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold tracking-wide uppercase">
-          {option.code}
-        </span>
-      ) : null}
-    </span>
-  );
-}
 
 export function LocaleSwitcher() {
   const { t, i18n } = useTranslation('translation', { keyPrefix: 'nav.user' });
@@ -59,7 +36,7 @@ export function LocaleSwitcher() {
           className="rounded-full"
           aria-label={t('languageLabel')}
         >
-          <LocaleDisc option={active} withCode={false} />
+          <LocaleDisc locale={active.code} withCode={false} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
@@ -75,7 +52,7 @@ export function LocaleSwitcher() {
                 void i18n.changeLanguage(locale.code);
               }}
             >
-              <LocaleDisc option={locale} />
+              <LocaleDisc locale={locale.code} />
               <span className="flex-1">{t(locale.labelKey)}</span>
               {isActive ? <Check className="size-4" /> : null}
             </DropdownMenuItem>

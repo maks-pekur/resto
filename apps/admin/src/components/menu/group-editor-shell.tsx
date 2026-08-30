@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { fromLocalizedText } from '@/lib/menu/localized';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,13 +23,13 @@ export interface GroupEditorShellProps {
 const FORM_ID = 'modifier-group-form';
 
 const emptyValues = (): ModifierGroupForm => ({
-  name: '',
+  name: {},
   minSelectable: 0,
   maxSelectable: 1,
 });
 
 const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
-  name: fromLocalizedText(g.name),
+  name: { ...g.name },
   minSelectable: g.minSelectable,
   maxSelectable: g.maxSelectable,
 });

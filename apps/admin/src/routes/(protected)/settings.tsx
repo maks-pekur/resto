@@ -5,6 +5,7 @@ import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/common/page-heading';
+import { ContentLocalesSection } from '@/components/settings/content-locales-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 import { TwoFactorSection } from '@/components/settings/two-factor-section';
 
@@ -37,6 +38,10 @@ function SettingsPage() {
     <>
       <PageHeading title="Settings" />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
+        <ContentLocalesSection
+          defaultLocale={tenant.locale}
+          contentLocales={tenant.contentLocales}
+        />
         <TwoFactorSection twoFactorEnabled={me.twoFactorEnabled === true} />
         <DangerZoneCard
           tenant={{

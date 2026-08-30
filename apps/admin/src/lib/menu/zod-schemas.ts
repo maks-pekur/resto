@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+export const LocalizedTextFormSchema = z.record(z.string().max(4096));
+
 export const CategoryFormSchema = z.object({
-  name: z.string().trim().min(1).max(255),
+  name: LocalizedTextFormSchema,
   parentId: z.string().uuid().nullable(),
   sortOrder: z.number().int().nonnegative(),
 });
@@ -42,8 +44,8 @@ export const coerceStatusFilter = (raw: string | undefined): ItemListStatusFilte
 };
 
 export const ItemEditorFormSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().max(4096).nullable(),
+  name: LocalizedTextFormSchema,
+  description: LocalizedTextFormSchema.nullable(),
   categoryId: z.string().uuid(),
   basePrice: z.number().min(0),
   currency: z.string().regex(/^[A-Z]{3}$/u),
@@ -60,6 +62,15 @@ export const ItemEditorFormSchema = z.object({
 
 export type ItemEditorForm = z.infer<typeof ItemEditorFormSchema>;
 
+/** The other languages are optional; the one everything falls back to is not. */
+export const itemEditorFormSchema = (defaultLocale: string) =>
+  ItemEditorFormSchema.extend({
+    name: LocalizedTextFormSchema.refine(
+      (value) => (value[defaultLocale] ?? '').trim().length > 0,
+      'nameRequired',
+    ),
+  });
+
 export const SizeFormSchema = z.object({
   name: z.string().trim().min(1).max(100),
   price: z.number().min(0),
@@ -70,7 +81,7 @@ export type SizeForm = z.infer<typeof SizeFormSchema>;
 
 export const ModifierGroupFormSchema = z
   .object({
-    name: z.string().trim().min(1).max(255),
+    name: LocalizedTextFormSchema,
     minSelectable: z.number().int().min(0).max(99),
     maxSelectable: z.number().int().min(0).max(99),
   })
@@ -80,6 +91,12 @@ export const ModifierGroupFormSchema = z
   });
 
 export type ModifierGroupForm = z.infer<typeof ModifierGroupFormSchema>;
+
+export const modifierGroupFormSchema = (defaultLocale: string) =>
+  ModifierGroupFormSchema.refine(
+    (values) => (values.name[defaultLocale] ?? '').trim().length > 0,
+    'nameRequired',
+  );
 
 export const ModifierOptionFormSchema = z.object({
   name: z.string().trim().min(1).max(255),

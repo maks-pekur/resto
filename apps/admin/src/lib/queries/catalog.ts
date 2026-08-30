@@ -6,7 +6,7 @@ import type { components } from '@resto/api-client';
 // future drift a compile error instead.
 type Schemas = components['schemas'];
 import { apiFetch } from '@/lib/api-client';
-import { toLocalizedText } from '@/lib/menu/localized';
+import type { LocalizedText } from '@/lib/menu/localized';
 import type { ItemListStatusFilter } from '@/lib/menu/zod-schemas';
 import type {
   CategoryForm,
@@ -172,7 +172,7 @@ const toMoney = (value: number): string => value.toFixed(2);
 export const upsertCategory = (id: string | null, data: CategoryForm) =>
   apiFetch<CategoryListItemApi>('/v1/catalog/categories', {
     method: 'POST',
-    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
+    body: { ...data, id: id ?? undefined },
   });
 
 export const reorderCategories = (
@@ -201,8 +201,6 @@ export const upsertItem = (
     method: 'POST',
     body: {
       ...rest,
-      name: toLocalizedText(data.name),
-      description: data.description === null ? null : toLocalizedText(data.description),
       basePrice: toMoney(data.basePrice),
       photos: photoS3Key ? [{ s3Key: photoS3Key, sortOrder: 0 }] : [],
       id: id ?? undefined,
@@ -215,12 +213,14 @@ export const archiveItem = (id: string) =>
     method: 'PATCH',
   });
 
-export const upsertItemSize = (itemId: string, data: SizeForm & { readonly id?: string }) =>
+export const upsertItemSize = (
+  itemId: string,
+  data: Omit<SizeForm, 'name'> & { readonly name: LocalizedText; readonly id?: string },
+) =>
   apiFetch<ItemSizeApi>('/v1/catalog/item-sizes', {
     method: 'POST',
     body: {
       ...data,
-      name: toLocalizedText(data.name),
       price: toMoney(data.price),
       menuItemId: itemId,
     },
@@ -265,21 +265,23 @@ export const resetStopList = async (locationId: string): Promise<{ ok: boolean }
   return { ok: true };
 };
 
-export const upsertModifierGroup = (id: string | null, data: ModifierGroupForm) =>
+export const upsertModifierGroup = (
+  id: string | null,
+  data: Omit<ModifierGroupForm, 'name'> & { readonly name: LocalizedText },
+) =>
   apiFetch<ModifierGroupApi>('/v1/catalog/modifier-groups', {
     method: 'POST',
-    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
+    body: { ...data, id: id ?? undefined },
   });
 
 export const upsertModifierOption = (
   groupId: string,
-  data: ModifierOptionForm & { readonly id?: string },
+  data: Omit<ModifierOptionForm, 'name'> & { readonly name: LocalizedText; readonly id?: string },
 ) =>
   apiFetch<ModifierOptionApi>('/v1/catalog/modifier-options', {
     method: 'POST',
     body: {
       ...data,
-      name: toLocalizedText(data.name),
       priceDelta: toMoney(data.priceDelta),
       modifierGroupId: groupId,
     },
