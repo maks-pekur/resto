@@ -472,18 +472,9 @@
       "newOrderBody": "{{total}} · {{mode}}"
     },
     "empty": {
-      "activationTitle": "Aquí aparecerán tus primeros pedidos",
-      "activationBody": "Comparte el enlace de pedidos y todo lo que paguen los clientes aparecerá aquí.",
-      "checklistPayments": "Pagos conectados",
-      "checklistMenu": "Menú publicado",
-      "checklistLocation": "Local abierto",
-      "copyLinkBtn": "Copiar enlace",
-      "linkCopiedToast": "Enlace copiado",
-      "noDomainHint": "Todavía no se ha configurado un dominio de pedidos para clientes.",
-      "filteredTitle": "No se encontró nada",
-      "filteredBody": "Cambia los filtros o prueba con otra fecha.",
       "pickLocationTitle": "Elige un local",
-      "pickLocationBody": "La lista de pedidos muestra un local a la vez. Elige uno en el selector de arriba."
+      "pickLocationBody": "La lista de pedidos muestra un local a la vez. Elige uno en el selector de arriba.",
+      "noOrders": "Aún no hay pedidos"
     },
     "error": {
       "initialLoadTitle": "No se pudieron cargar los pedidos",

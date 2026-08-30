@@ -472,18 +472,9 @@
       "newOrderBody": "{{total}} · {{mode}}"
     },
     "empty": {
-      "activationTitle": "Your first orders will show up here",
-      "activationBody": "Share the ordering link and everything guests pay for will appear here.",
-      "checklistPayments": "Payments connected",
-      "checklistMenu": "Menu published",
-      "checklistLocation": "Location open",
-      "copyLinkBtn": "Copy link",
-      "linkCopiedToast": "Link copied",
-      "noDomainHint": "No guest ordering domain configured yet.",
-      "filteredTitle": "Nothing found",
-      "filteredBody": "Change the filters or check a different date.",
       "pickLocationTitle": "Choose a location",
-      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above."
+      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above.",
+      "noOrders": "No orders yet"
     },
     "error": {
       "initialLoadTitle": "Couldn't load orders",

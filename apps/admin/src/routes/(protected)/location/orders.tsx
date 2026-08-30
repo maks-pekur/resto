@@ -25,7 +25,6 @@ import { Button } from '@/components/ui/button';
 import { FULFILLMENT_LABEL_KEY, OrderRow } from '@/components/orders/order-row';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { type OrderFulfillmentTab } from '@/components/orders/order-tabs';
-import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
 import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
 import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
@@ -120,12 +119,6 @@ function OrdersPage() {
   };
   const alertsPending = !sound.unlocked || notifications.permission === 'default';
 
-  const noOrdersAtAll =
-    feedQuery.isSuccess &&
-    rows.length === 0 &&
-    counts !== null &&
-    Object.values(counts).every((count) => count === 0);
-
   return (
     <>
       <PageHeading title={tNav('orders')} />
@@ -208,14 +201,8 @@ function OrdersPage() {
               {tCommon('retry')}
             </Button>
           </div>
-        ) : noOrdersAtAll ? (
-          <OrdersEmptyState />
         ) : rows.length === 0 ? (
-          <EmptyState
-            variant="empty"
-            title={t('empty.filteredTitle')}
-            description={t('empty.filteredBody')}
-          />
+          <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
         ) : (
           <div className="overflow-x-auto rounded-md border">
             <div className="text-muted-foreground hidden border-b px-0 py-1.5 text-xs sm:flex">
