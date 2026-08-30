@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { cn, formatMoney } from '@/lib/utils';
 import { formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { usePermissions } from '@/lib/hooks/use-permissions';
+import { usePermissions } from '@/hooks/use-permissions';
 import { advanceOrderStatusMutation, retryRefundMutation } from '@/lib/queries/orders';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 import {

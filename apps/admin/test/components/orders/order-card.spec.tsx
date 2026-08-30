@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
-import { deriveOrderCardState, UNACCEPTED_ESCALATION_MS } from './order-card';
+import { deriveOrderCardState, UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-card';
 
 const { canMock } = vi.hoisted(() => ({
   canMock: vi.fn(),
@@ -16,7 +16,7 @@ vi.mock('sonner', () => ({
   toast: { success: vi.fn(), error: vi.fn() },
 }));
 
-vi.mock('@/lib/hooks/use-permissions', () => ({
+vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({ can: canMock }),
 }));
 
@@ -34,7 +34,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { OrderCard } = await import('./order-card');
+const { OrderCard } = await import('@/components/orders/order-card');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({

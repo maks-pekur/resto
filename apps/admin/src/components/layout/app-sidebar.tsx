@@ -13,12 +13,12 @@ import {
   UtensilsCrossed,
   Ban,
 } from 'lucide-react';
-import { TenantIdentity } from '@/components/tenant-identity';
-import { NavMain, type NavMainItem } from '@/components/nav-main';
+import { TenantIdentity } from '@/components/layout/tenant-identity';
+import { NavMain, type NavMainItem } from '@/components/layout/nav-main';
 import { meQuery } from '@/lib/queries/identity';
 import { meLocationsQuery } from '@/lib/queries/locations';
 import { sortLocations } from '@/lib/default-location';
-import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
+import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';

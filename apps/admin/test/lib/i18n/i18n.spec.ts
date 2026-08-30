@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import i18n from './index';
-import ru from './messages/ru.json';
-import en from './messages/en.json';
-import es from './messages/es.json';
+import i18n from '@/lib/i18n';
+import ru from '@/lib/i18n/messages/ru.json';
+import en from '@/lib/i18n/messages/en.json';
+import es from '@/lib/i18n/messages/es.json';
 
 function flattenKeys(obj: Record<string, unknown>, prefix = ''): string[] {
   return Object.entries(obj).flatMap(([key, value]) =>

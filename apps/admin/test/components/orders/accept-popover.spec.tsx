@@ -34,7 +34,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { AcceptPopover } = await import('./accept-popover');
+const { AcceptPopover } = await import('@/components/orders/accept-popover');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({

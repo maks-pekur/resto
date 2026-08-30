@@ -11,7 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { formatMoney, toMinorUnits } from '@/lib/utils';
-import { usePermissions } from '@/lib/hooks/use-permissions';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   orderDetailQuery,
   advanceOrderStatusMutation,

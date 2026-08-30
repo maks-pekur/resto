@@ -19,7 +19,7 @@ vi.mock('sonner', () => ({
   toast: { success: toastSuccessMock, error: toastErrorMock },
 }));
 
-vi.mock('@/lib/hooks/use-permissions', () => ({
+vi.mock('@/hooks/use-permissions', () => ({
   usePermissions: () => ({ can: canMock }),
 }));
 
@@ -37,7 +37,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { OrderCard } = await import('./order-card');
+const { OrderCard } = await import('@/components/orders/order-card');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({

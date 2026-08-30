@@ -8,7 +8,7 @@ import { Route as menuLayoutRoute } from './_layout';
 import { itemsQuery, categoriesQuery } from '@/lib/queries/catalog';
 import { coerceStatusFilter } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
 import { ItemsTable } from '@/components/menu/items-table';
 import { ItemsFilterBar } from '@/components/menu/items-filter-bar';

@@ -238,7 +238,7 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     );
     const backBtn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.includes('common.back'));
+      .find((b) => b.textContent.includes('common.back'));
     expect(backBtn).toBeDefined();
     expect(backBtn).toBeDisabled();
   });
@@ -256,7 +256,7 @@ describe('ItemsTable list render (Plan 07.6-05 Task 4)', () => {
     );
     const backBtn = screen
       .getAllByRole('button')
-      .find((b) => b.textContent?.includes('common.back'));
+      .find((b) => b.textContent.includes('common.back'));
     expect(backBtn).not.toBeDisabled();
   });
 });
@@ -346,10 +346,10 @@ describe('StickyPublishBar publish-toast id (Plan 07.6-05 Task 4)', () => {
 });
 
 // ---------------------------------------------------------------------------
-// 4. Dashboard widget driven by stopListQuery data
+// 4. Stop-list widget driven by stopListQuery data
 // ---------------------------------------------------------------------------
 
-describe('dashboard TodaysWidget count from stopListQuery (Plan 07.6-05 Task 4)', () => {
+describe('TodaysWidget count from stopListQuery (Plan 07.6-05 Task 4)', () => {
   it('renders the stop count in the badge', () => {
     render(
       <Wrap>
@@ -363,7 +363,7 @@ describe('dashboard TodaysWidget count from stopListQuery (Plan 07.6-05 Task 4)'
     expect(stopListQuery('loc-1').queryKey).toEqual(['catalog', 'stop-list', 'loc-1']);
   });
 
-  it('dashboard index maps stopListQuery result.data.items.length to widget count', () => {
+  it('maps stopListQuery result.data.items.length to widget count', () => {
     render(
       <Wrap>
         <TodaysWidget count={2} />

@@ -526,7 +526,9 @@
     "kpiNewGuests": "Новые гости",
     "kpiRefunds": "Возвраты",
     "kpiPrevious": "Предыдущий период: {{value}}",
-    "kpiNoBaseline": "нет данных за прошлый период"
+    "kpiNoBaseline": "нет данных за прошлый период",
+    "noReportsTitle": "Показатели недоступны",
+    "noReportsDescription": "Цифры по выручке и заказам видят владелец и администратор."
   },
   "tables": {
     "pageTitle": "Столы",

@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { printTablesSheet, type PrintableTable } from './print-tables-sheet';
+import { printTablesSheet, type PrintableTable } from '@/lib/qr/print-tables-sheet';
 
 const { createMock, toStringMock } = vi.hoisted(() => ({
   createMock: vi.fn(),

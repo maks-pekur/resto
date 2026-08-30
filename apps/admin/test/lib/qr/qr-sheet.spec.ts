@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { A4_SHEET, layoutSheet, moduleSizeMm } from './qr-sheet';
+import { A4_SHEET, layoutSheet, moduleSizeMm } from '@/lib/qr/qr-sheet';
 
 describe('layoutSheet', () => {
   it('places 20 codes across exactly 4 pages', () => {

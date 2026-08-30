@@ -34,7 +34,9 @@ beforeAll(() => {
   }
 });
 
-type RouteEntry = { fullPath?: string };
+interface RouteEntry {
+  fullPath?: string;
+}
 
 describe('D-06 admin route tree — every static root segment is reserved', () => {
   it('all static first-path-segments of the assembled router are in RESERVED_SLUG_SET', async () => {
@@ -45,7 +47,7 @@ describe('D-06 admin route tree — every static root segment is reserved', () =
     const staticRootSegments = new Set<string>();
 
     for (const route of routes) {
-      const fullPath = route?.fullPath ?? '';
+      const fullPath = route.fullPath ?? '';
 
       if (!fullPath || fullPath === '/') continue;
 

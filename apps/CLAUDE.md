@@ -12,13 +12,13 @@ not depend on each other.
   contexts: tenancy, catalog, ordering, payments, reservations, loyalty,
   inventory, analytics, notifications, audit; identity returns in MVP-2 —
   see ADR-0012). Will gain a child CLAUDE.md once scaffolded.
-- `admin/` — Next.js 15 (App Router, RSC) admin panel for tenant operators.
-  Scaffolded; uses shadcn/ui (`new-york`, `neutral`) on Tailwind 4 per
-  ADR-0016. shadcn-managed dirs (`components/ui/**`,
-  `hooks/use-mobile.ts`, sidebar-07 navigation files) have relaxed ESLint
-  rules so `npx shadcn add …` stays a clean upgrade path. Strict TS is
-  on except `exactOptionalPropertyTypes` (incompatible with Radix
-  prop spreads).
+- `admin/` — Vite + React SPA (TanStack Router + Query) admin panel for tenant
+  operators. shadcn/ui (`new-york`, `neutral`) on Tailwind 4 per ADR-0016;
+  shadcn-managed paths (`src/components/ui/**`, `src/hooks/use-mobile.ts`,
+  sidebar-07 navigation files) have relaxed ESLint rules so `npx shadcn add …`
+  stays a clean upgrade path. Strict TS is on except
+  `exactOptionalPropertyTypes` (incompatible with Radix prop spreads).
+  Folder layout, test placement and component rules: `.claude/skills/admin-ui`.
 - `website/` — Next.js tenant storefront (multi-tenant SSR; one Next app
   serves all tenants via host-based routing). Guest chrome, menu, item dialog
   and cart come from `@resto/ui`; only checkout is website-specific.

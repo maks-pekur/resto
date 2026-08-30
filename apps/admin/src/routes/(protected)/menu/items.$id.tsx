@@ -1,7 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import { Route as menuLayoutRoute } from './_layout';
 import { itemQuery, categoriesQuery, modifierGroupsQuery } from '@/lib/queries/catalog';
 import { ItemEditorShell } from '@/components/menu/item-editor-shell';

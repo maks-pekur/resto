@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import {
   Table,
   TableBody,

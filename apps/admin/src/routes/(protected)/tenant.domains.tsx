@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { tenantDomainsQuery } from '@/lib/queries/tenancy';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,

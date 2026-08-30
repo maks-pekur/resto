@@ -5,7 +5,7 @@ import {
   hasPermission,
   isForbiddenRouteError,
   requirePermission,
-} from './permissions';
+} from '@/lib/auth/permissions';
 import type { MeResponse } from '@/lib/queries/identity';
 
 const operator = (over: Partial<MeResponse> = {}): MeResponse => ({

@@ -3,7 +3,7 @@ import { fromLocalizedText } from '@/lib/menu/localized';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import {
   ModifierGroupFormComponent,
   type ModifierGroupFormState,

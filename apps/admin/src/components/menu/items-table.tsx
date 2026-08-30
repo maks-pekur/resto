@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, ImageIcon } from 'lucide-react';
 import { showError } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import {
   Table,
   TableBody,

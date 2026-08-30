@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as menuLayoutRoute } from './_layout';
 import { modifierGroupsQuery } from '@/lib/queries/catalog';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import {
   Table,
   TableBody,

@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { ThemeToggle } from '@resto/ui';
-import { ThemeProvider, useTheme } from '@/components/theme-provider';
+import { ThemeProvider, useTheme } from '@/components/common/theme-provider';
 
 const Toggle = () => {
   const { resolvedTheme, toggleTheme } = useTheme();

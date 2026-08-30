@@ -4,8 +4,8 @@ import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
-import { PageHeading } from '@/components/page-heading';
-import { DangerZoneCard } from '@/components/danger-zone-card';
+import { PageHeading } from '@/components/common/page-heading';
+import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 import { TwoFactorSection } from '@/components/settings/two-factor-section';
 
 export const Route = createRoute({

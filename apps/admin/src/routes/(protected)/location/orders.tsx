@@ -12,11 +12,11 @@ import {
   type OrderStatusPreset,
   type OrderDatePreset,
 } from '@/lib/queries/orders';
-import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
-import { useOrderSound } from '@/lib/hooks/use-order-sound';
-import { useTabTitle } from '@/lib/hooks/use-tab-title';
-import { PageHeading } from '@/components/page-heading';
-import { EmptyState } from '@/components/empty-state';
+import { useEffectiveLocation } from '@/hooks/use-effective-location';
+import { useOrderSound } from '@/hooks/use-order-sound';
+import { useTabTitle } from '@/hooks/use-tab-title';
+import { PageHeading } from '@/components/common/page-heading';
+import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { OrderCard } from '@/components/orders/order-card';

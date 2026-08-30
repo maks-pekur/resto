@@ -2,7 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import { Route as menuLayoutRoute } from './_layout';
 import { modifierGroupQuery } from '@/lib/queries/catalog';
 import { GroupEditorShell } from '@/components/menu/group-editor-shell';

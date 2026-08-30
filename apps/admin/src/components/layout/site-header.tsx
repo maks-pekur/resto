@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next';
 import { ThemeToggle } from '@resto/ui';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { NavUser } from '@/components/nav-user';
-import { useTheme } from '@/components/theme-provider';
+import { NavUser } from '@/components/layout/nav-user';
+import { useTheme } from '@/components/common/theme-provider';
 import type { OperatorSummary } from '@/lib/queries/identity';
 
 export function SiteHeader({ operator }: { operator: OperatorSummary }) {

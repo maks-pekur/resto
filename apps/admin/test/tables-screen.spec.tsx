@@ -41,7 +41,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { EmptyState } = await import('@/components/empty-state');
+const { EmptyState } = await import('@/components/common/empty-state');
 const { TableZoneList } = await import('@/components/tables/table-zone-list');
 
 const OWNER_ME = {

@@ -526,7 +526,9 @@
     "kpiNewGuests": "New guests",
     "kpiRefunds": "Refunds",
     "kpiPrevious": "Previous period: {{value}}",
-    "kpiNoBaseline": "no data for the previous period"
+    "kpiNoBaseline": "no data for the previous period",
+    "noReportsTitle": "Reports are not available",
+    "noReportsDescription": "Revenue and order figures are visible to the owner and administrators."
   },
   "tables": {
     "pageTitle": "Tables",

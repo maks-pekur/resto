@@ -3,7 +3,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Route as menuLayoutRoute } from './_layout';
 import { categoriesQuery } from '@/lib/queries/catalog';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CategoriesTable } from '@/components/menu/categories-table';

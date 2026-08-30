@@ -14,8 +14,8 @@ import {
   tenantLocationsQuery,
   updateLocationMutation,
 } from '@/lib/queries/locations';
-import { PageHeading } from '@/components/page-heading';
-import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/common/page-heading';
+import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

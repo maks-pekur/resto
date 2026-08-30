@@ -526,7 +526,9 @@
     "kpiNewGuests": "Nuevos clientes",
     "kpiRefunds": "Reembolsos",
     "kpiPrevious": "Periodo anterior: {{value}}",
-    "kpiNoBaseline": "sin datos del periodo anterior"
+    "kpiNoBaseline": "sin datos del periodo anterior",
+    "noReportsTitle": "Informes no disponibles",
+    "noReportsDescription": "Las cifras de ingresos y pedidos las ven el propietario y los administradores."
   },
   "tables": {
     "pageTitle": "Mesas",

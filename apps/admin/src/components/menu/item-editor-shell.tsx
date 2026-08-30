@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { ItemDetailForm, type ItemDetailFormState } from '@/components/menu/item-detail-form';
 import { ItemAside } from '@/components/menu/item-aside';
 import type { AvailableGroup } from '@/components/menu/item-modifier-groups-card';

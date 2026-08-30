@@ -24,7 +24,7 @@ describe('parseTenantSlugFromHost (T-10.2-17-01)', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { parseTenantSlugFromHost } = await import('./admin-host');
+    const { parseTenantSlugFromHost } = await import('@/lib/admin-host');
     expect(parseTenantSlugFromHost('acme.admin.resto.app')).toBe('acme');
   });
 
@@ -33,7 +33,7 @@ describe('parseTenantSlugFromHost (T-10.2-17-01)', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { parseTenantSlugFromHost } = await import('./admin-host');
+    const { parseTenantSlugFromHost } = await import('@/lib/admin-host');
     expect(parseTenantSlugFromHost('admin.resto.app')).toBeNull();
   });
 
@@ -42,7 +42,7 @@ describe('parseTenantSlugFromHost (T-10.2-17-01)', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { parseTenantSlugFromHost } = await import('./admin-host');
+    const { parseTenantSlugFromHost } = await import('@/lib/admin-host');
     expect(parseTenantSlugFromHost('evil-admin.resto.app.attacker.com')).toBeNull();
   });
 
@@ -51,7 +51,7 @@ describe('parseTenantSlugFromHost (T-10.2-17-01)', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { parseTenantSlugFromHost } = await import('./admin-host');
+    const { parseTenantSlugFromHost } = await import('@/lib/admin-host');
     expect(parseTenantSlugFromHost('admin.resto.app.evil.com')).toBeNull();
   });
 
@@ -60,7 +60,7 @@ describe('parseTenantSlugFromHost (T-10.2-17-01)', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { parseTenantSlugFromHost } = await import('./admin-host');
+    const { parseTenantSlugFromHost } = await import('@/lib/admin-host');
     expect(parseTenantSlugFromHost('a.b.admin.resto.app')).toBeNull();
   });
 });
@@ -78,7 +78,7 @@ describe('adminUrlForTenant', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.resto.app';
     vi.resetModules();
 
-    const { adminUrlForTenant } = await import('./admin-host');
+    const { adminUrlForTenant } = await import('@/lib/admin-host');
     expect(adminUrlForTenant('acme', '/dashboard')).toBe('https://acme.admin.resto.app/dashboard');
   });
 
@@ -88,7 +88,7 @@ describe('adminUrlForTenant', () => {
     metaEnv.VITE_ADMIN_HOST_SUFFIX = 'admin.localhost';
     vi.resetModules();
 
-    const { adminUrlForTenant } = await import('./admin-host');
+    const { adminUrlForTenant } = await import('@/lib/admin-host');
     expect(adminUrlForTenant('acme', '/dashboard')).toBe(
       'http://acme.admin.localhost:4000/dashboard',
     );

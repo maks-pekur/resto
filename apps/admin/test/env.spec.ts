@@ -6,7 +6,7 @@ const metaEnv = import.meta.env as Record<string, unknown>;
 
 const saveEnv = () => ({ ...metaEnv });
 const restoreEnv = (saved: Record<string, unknown>) => {
-  for (const key of Object.keys(metaEnv)) delete metaEnv[key];
+  for (const key of Object.keys(metaEnv)) Reflect.deleteProperty(metaEnv, key);
   Object.assign(metaEnv, saved);
 };
 

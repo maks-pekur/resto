@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useOrderSound } from './use-order-sound';
+import { useOrderSound } from '@/hooks/use-order-sound';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 
 const makeRow = (id: string, createdAt: string): OrderFeedRowApi => ({

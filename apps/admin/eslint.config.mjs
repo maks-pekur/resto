@@ -13,9 +13,8 @@ export default [
   {
     files: [
       'src/components/ui/**/*.{ts,tsx}',
-      'src/components/app-sidebar.tsx',
-      'src/components/nav-*.tsx',
-      'src/components/team-switcher.tsx',
+      'src/components/layout/app-sidebar.tsx',
+      'src/components/layout/nav-*.tsx',
       'src/hooks/use-mobile.ts',
     ],
     rules: {
@@ -25,6 +24,15 @@ export default [
       '@typescript-eslint/no-unnecessary-template-expression': 'off',
       '@typescript-eslint/no-unnecessary-type-conversion': 'off',
       '@typescript-eslint/prefer-nullish-coalescing': 'off',
+    },
+  },
+  {
+    files: ['test/**/*.{ts,tsx}'],
+    rules: {
+      // Test doubles are empty on purpose, and a mocked handler is async because the real
+      // one is, not because it awaits anything.
+      '@typescript-eslint/no-empty-function': 'off',
+      '@typescript-eslint/require-await': 'off',
     },
   },
   {
@@ -42,10 +50,6 @@ export default [
       'vite.config.ts',
       'vitest.config.ts',
       'app/**',
-      'lib/**',
-      'components/**',
-      'test/**',
-      'hooks/**',
     ],
   },
 ];

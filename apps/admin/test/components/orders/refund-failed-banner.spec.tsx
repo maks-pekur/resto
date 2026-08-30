@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/lib/i18n';
-import { RefundFailedBanner } from './refund-failed-banner';
+import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 
 describe('RefundFailedBanner', () => {
   it('renders nothing when count is 0', () => {

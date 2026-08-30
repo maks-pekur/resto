@@ -6,7 +6,7 @@ const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
 vi.mock('@/lib/api-client', () => ({ apiFetch: apiFetchMock }));
 
-vi.mock('@/lib/hooks/use-effective-location', () => ({
+vi.mock('@/hooks/use-effective-location', () => ({
   useEffectiveLocation: () => ({ mode: 'all', locationId: undefined, locationSlug: undefined }),
 }));
 
@@ -21,7 +21,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { DashboardKpis } = await import('@/components/dashboard-kpis');
+const { DashboardKpis } = await import('@/components/widgets/dashboard-kpis');
 
 const kpis = {
   range: { from: '2026-08-02T00:00:00.000Z', to: '2026-08-31T00:00:00.000Z', days: 28 },

@@ -7,7 +7,7 @@ import { authClient } from '@/lib/auth-client';
 import { meTenantsQuery, type OperatorSummary } from '@/lib/queries/identity';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { LocaleSwitcherItems } from '@/components/locale-switcher-items';
+import { LocaleSwitcherItems } from '@/components/layout/locale-switcher-items';
 import {
   DropdownMenu,
   DropdownMenuContent,

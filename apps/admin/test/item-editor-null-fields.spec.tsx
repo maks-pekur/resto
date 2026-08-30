@@ -53,19 +53,6 @@ const ITEM_WITH_NULL_FIELDS = {
   modifierGroupIds: [],
 } as unknown as ItemDetailApi;
 
-// An item that really has a photo. The api returns an S3 key, never a URL — the editor
-// used to read a `photoS3Key` field that does not exist, so it started every edit with
-// "no photo" and then saved that emptiness back over the real one.
-const ITEM_WITH_PHOTO = {
-  ...ITEM_WITH_NULL_FIELDS,
-  photos: [
-    {
-      s3Key: 'tenant/f1db72ce-4869-4bcb-a34e-afa4dc54264d/menu-items/2a7510ba.webp',
-      sortOrder: 0,
-    },
-  ],
-} as unknown as ItemDetailApi;
-
 const renderShell = (item: ItemDetailApi): void => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
@@ -114,7 +101,7 @@ describe('ItemEditorShell with the api’s real null fields', () => {
             sortOrder: 1,
           },
         ],
-      } as unknown as ItemDetailApi);
+      });
     }).not.toThrow();
   });
 
@@ -124,7 +111,7 @@ describe('ItemEditorShell with the api’s real null fields', () => {
         ...ITEM_WITH_NULL_FIELDS,
         allergens: ['gluten'],
         ingredients: ['water'],
-      } as unknown as ItemDetailApi);
+      });
     }).not.toThrow();
   });
 });

@@ -6,7 +6,7 @@ import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/rea
 import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {

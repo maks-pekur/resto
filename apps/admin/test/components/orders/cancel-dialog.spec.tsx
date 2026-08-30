@@ -33,7 +33,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { CancelDialog } = await import('./cancel-dialog');
+const { CancelDialog } = await import('@/components/orders/cancel-dialog');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({
