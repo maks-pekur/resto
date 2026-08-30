@@ -208,10 +208,8 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           }
           title={t(`channel.${channel.labelKey}`)}
         >
-          <ChannelIcon className="size-4" />
-          <span className="w-full truncate text-center text-[10px] leading-none">
-            {t(`channel.${channel.labelKey}`)}
-          </span>
+          <ChannelIcon className="size-5" />
+          <span className="sr-only">{t(`channel.${channel.labelKey}`)}</span>
         </span>
 
         <span
