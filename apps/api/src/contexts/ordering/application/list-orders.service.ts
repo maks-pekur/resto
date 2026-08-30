@@ -32,6 +32,16 @@ const PREPARING_STATUSES: readonly OrderStatus[] = ['preparing'];
 const READY_STATUSES: readonly OrderStatus[] = ['ready'];
 const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled', 'refunded'];
 
+// The tabs an operator works from are queues: the order waiting longest sits at the top. A
+// finished list is history and reads the other way round, newest first.
+const QUEUE_PRESETS: readonly OrderStatusPreset[] = [
+  'active',
+  'unaccepted',
+  'accepted',
+  'preparing',
+  'ready',
+];
+
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
@@ -97,6 +107,7 @@ export class ListOrdersService {
       ...(input.channel !== undefined ? { channel: input.channel } : {}),
       ...(input.fulfillmentMode !== undefined ? { fulfillmentMode: input.fulfillmentMode } : {}),
       ...(statusPreset === 'unaccepted' ? { unacceptedOnly: true } : {}),
+      sort: QUEUE_PRESETS.includes(statusPreset) ? 'oldest_first' : 'newest_first',
       createdFrom: from,
       createdTo: to,
       ...(input.since !== undefined ? { since: input.since } : {}),

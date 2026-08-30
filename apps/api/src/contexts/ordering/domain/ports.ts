@@ -117,6 +117,8 @@ export const OrderFeedQuerySchema = z.object({
     .optional(),
   /** `paid` alone is not the whole answer: an accepted order keeps that status until it is started. */
   unacceptedOnly: z.boolean().optional(),
+  /** Open work is served oldest first — the order waiting longest is the one to act on. */
+  sort: z.enum(['oldest_first', 'newest_first']).optional(),
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
 });

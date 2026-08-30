@@ -82,6 +82,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     channel?: 'site' | 'qr-menu';
     fulfillmentMode?: 'dine_in' | 'pickup' | 'delivery';
     acceptedAt?: Date;
+    etaAt?: Date;
     createdAt: Date;
   }): Promise<string> => {
     const orderId = randomUUID();
@@ -95,6 +96,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         status: opts.status,
         fulfillmentMode: opts.fulfillmentMode ?? 'dine_in',
         acceptedAt: opts.acceptedAt ?? null,
+        etaAt: opts.etaAt ?? null,
         subtotal: '10.00',
         total: '10.00',
         currency: 'EUR',
@@ -119,6 +121,40 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
       new OrderFeedDrizzleRepository(stack.db),
       new LocationDrizzleRepository(stack.db),
     );
+
+  it('queues open orders by serve time, soonest first', async () => {
+    const location = randomUUID();
+    await stack.db.withoutTenant('seed serve-order location', (tx) =>
+      tx.insert(schema.locations).values({
+        id: location,
+        tenantId,
+        name: 'Serve order',
+        slug: `serve-${location.slice(0, 8)}`,
+      }),
+    );
+    const now = Date.now();
+    const lateArrivalDueSoon = await seedOrder({
+      locationId: location,
+      status: 'accepted',
+      acceptedAt: new Date(now),
+      etaAt: new Date(now + 5 * 60_000),
+      createdAt: new Date(now),
+    });
+    const earlyArrivalDueLater = await seedOrder({
+      locationId: location,
+      status: 'accepted',
+      acceptedAt: new Date(now - 30 * 60_000),
+      etaAt: new Date(now + 40 * 60_000),
+      createdAt: new Date(now - 30 * 60_000),
+    });
+
+    const service = makeListOrdersService();
+    const result = await runInTenantContext({ tenantId, locationId: location }, () =>
+      service.execute({ statusPreset: 'accepted' }),
+    );
+
+    expect(result.rows.map((r) => r.id)).toEqual([lateArrivalDueSoon, earlyArrivalDueLater]);
+  });
 
   it('status preset "unaccepted" keeps the paid order nobody has taken yet', async () => {
     const now = new Date();

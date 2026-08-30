@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
-import { and, desc, eq, gt, gte, inArray, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { OrderStatus } from '../domain/order.aggregate';
 import {
   type OrderFeedCounts,
@@ -67,7 +67,7 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
       const predicate = and(eq(schema.orders.locationId, locationId), buildFilterPredicate(input));
       const orderRows = await scoped
         .selectFrom(schema.orders, predicate)
-        .orderBy(desc(schema.orders.createdAt), desc(schema.orders.id));
+        .orderBy(...feedOrder(input));
       return this.#toPagedResult(tx, input, orderRows);
     });
   }
@@ -85,7 +85,7 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
         .select()
         .from(schema.orders)
         .where(predicate)
-        .orderBy(desc(schema.orders.createdAt), desc(schema.orders.id));
+        .orderBy(...feedOrder(input));
       return this.#toPagedResult(tx, input, orderRows);
     });
   }
@@ -162,6 +162,16 @@ const EMPTY_COUNTS: OrderFeedCounts = {
   completed: 0,
   canceled: 0,
 };
+
+// Serve time is what a kitchen queues on. An order nobody has accepted yet has no promise to
+// serve by, so it falls back to when it arrived — which is the promise it is closest to having.
+const dueAt = sql`coalesce(${schema.orders.etaAt}, ${schema.orders.createdAt})`;
+
+function feedOrder(input: OrderFeedQuery): [SQL, SQL] {
+  return input.sort === 'oldest_first'
+    ? [asc(dueAt), asc(schema.orders.id)]
+    : [desc(dueAt), desc(schema.orders.id)];
+}
 
 function buildFilterPredicate(input: OrderFeedQuery): SQL | undefined {
   const parts: SQL[] = [
