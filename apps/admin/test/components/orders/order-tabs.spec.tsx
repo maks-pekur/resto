@@ -93,4 +93,10 @@ describe('OrderFulfillmentTabs', () => {
 
     expect(onChange).toHaveBeenCalledWith('delivery');
   });
+
+  it('offers the in-house tab, since a QR order is neither delivery nor pickup', () => {
+    render(<OrderFulfillmentTabs value="all" onChange={vi.fn()} />);
+
+    expect(screen.getByRole('tab', { name: 'orders.tabs.dine_in' })).toBeInTheDocument();
+  });
 });

@@ -482,6 +482,7 @@
     },
     "tabs": {
       "all": "Todos los pedidos",
+      "dine_in": "En sala",
       "delivery": "Entrega",
       "pickup": "Recogida",
       "unaccepted": "Sin confirmar",

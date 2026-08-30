@@ -1,6 +1,6 @@
 import type * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { ListOrdered, ShoppingBag, Truck } from 'lucide-react';
+import { ListOrdered, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
@@ -14,15 +14,21 @@ const TAB_LIST_CLASS =
 const TAB_TRIGGER_CLASS =
   'h-full min-h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
 
-export type OrderFulfillmentTab = 'all' | 'delivery' | 'pickup';
+export type OrderFulfillmentTab = 'all' | 'dine_in' | 'delivery' | 'pickup';
 
-export const ORDER_FULFILLMENT_TABS: readonly OrderFulfillmentTab[] = ['all', 'delivery', 'pickup'];
+export const ORDER_FULFILLMENT_TABS: readonly OrderFulfillmentTab[] = [
+  'all',
+  'dine_in',
+  'delivery',
+  'pickup',
+];
 
 const FULFILLMENT_TAB_ICON: Record<
   OrderFulfillmentTab,
   React.ComponentType<{ className?: string }>
 > = {
   all: ListOrdered,
+  dine_in: UtensilsCrossed,
   delivery: Truck,
   pickup: ShoppingBag,
 };

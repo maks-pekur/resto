@@ -482,6 +482,7 @@
     },
     "tabs": {
       "all": "All orders",
+      "dine_in": "Dine-in",
       "delivery": "Delivery",
       "pickup": "Pickup",
       "unaccepted": "Unconfirmed",
