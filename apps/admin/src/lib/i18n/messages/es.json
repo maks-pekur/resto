@@ -71,7 +71,8 @@
       "localeEs": "Español"
     },
     "groupOperations": "Operación",
-    "groupAdministration": "Administración"
+    "groupAdministration": "Administración",
+    "transactions": "Transacciones"
   },
   "pickTenant": {
     "title": "Elige tu restaurante",
@@ -356,12 +357,7 @@
       "live": "En vivo",
       "reconnecting": "Reconectando…",
       "staleNotice": "No se pudo actualizar la lista — mostrando datos de {{time}}",
-      "staleRetry": "Actualizar",
-      "refundBanner_one": "{{count}} reembolso fallido — se requiere acción",
-      "refundBanner_few": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBanner_many": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBanner_other": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBannerAction": "Mostrar"
+      "staleRetry": "Actualizar"
     },
     "card": {
       "newBadge": "Nuevo",
@@ -610,5 +606,30 @@
     "minutesShort": "min",
     "hoursShort": "h",
     "daysShort": "d"
+  },
+  "transactions": {
+    "title": "Transacciones",
+    "tabs": {
+      "all": "Todas",
+      "paid": "Pagadas",
+      "refunded": "Reembolsadas",
+      "refund_failed": "Reembolso fallido"
+    },
+    "status": {
+      "paid": "Pagada",
+      "refunded": "Reembolsada",
+      "failed": "Reembolso fallido: requiere acción"
+    },
+    "columnDate": "Fecha",
+    "columnOrder": "Pedido",
+    "columnAmount": "Importe",
+    "columnRefunded": "Reembolso",
+    "columnStatus": "Estado",
+    "orderNumber": "n.º {{n}}",
+    "retryBtn": "Reintentar reembolso",
+    "retrySucceeded": "Reembolso reenviado",
+    "retryFailed": "No se pudo reintentar el reembolso.",
+    "empty": "No hay transacciones en este periodo",
+    "failedBadgeAria": "Reembolsos que requieren acción: {{count}}"
   }
 }

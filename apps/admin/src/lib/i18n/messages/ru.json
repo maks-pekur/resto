@@ -71,7 +71,8 @@
       "localeEs": "Español"
     },
     "groupOperations": "Работа",
-    "groupAdministration": "Администрирование"
+    "groupAdministration": "Администрирование",
+    "transactions": "Транзакции"
   },
   "pickTenant": {
     "title": "Выберите ресторан",
@@ -356,12 +357,7 @@
       "live": "В сети",
       "reconnecting": "Переподключение…",
       "staleNotice": "Не удалось обновить список — показаны данные на {{time}}",
-      "staleRetry": "Обновить",
-      "refundBanner_one": "{{count}} возврат не прошёл — требуется действие",
-      "refundBanner_few": "{{count}} возврата не прошли — требуется действие",
-      "refundBanner_many": "{{count}} возвратов не прошли — требуется действие",
-      "refundBanner_other": "{{count}} возвратов не прошли — требуется действие",
-      "refundBannerAction": "Показать"
+      "staleRetry": "Обновить"
     },
     "card": {
       "newBadge": "Новый",
@@ -610,5 +606,30 @@
     "minutesShort": "м",
     "hoursShort": "ч",
     "daysShort": "д"
+  },
+  "transactions": {
+    "title": "Транзакции",
+    "tabs": {
+      "all": "Все",
+      "paid": "Оплаченные",
+      "refunded": "С возвратом",
+      "refund_failed": "Возврат не прошёл"
+    },
+    "status": {
+      "paid": "Оплачен",
+      "refunded": "Возврат оформлен",
+      "failed": "Возврат не прошёл — нужно действие"
+    },
+    "columnDate": "Дата",
+    "columnOrder": "Заказ",
+    "columnAmount": "Сумма",
+    "columnRefunded": "Возврат",
+    "columnStatus": "Статус",
+    "orderNumber": "№{{n}}",
+    "retryBtn": "Повторить возврат",
+    "retrySucceeded": "Возврат отправлен повторно",
+    "retryFailed": "Не удалось повторить возврат.",
+    "empty": "За выбранный период транзакций нет",
+    "failedBadgeAria": "Возвратов, требующих действия: {{count}}"
   }
 }

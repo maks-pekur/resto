@@ -8,6 +8,7 @@ import {
   LayoutDashboard,
   MapPin,
   Settings2,
+  Receipt,
   Table2,
   Users,
   UtensilsCrossed,
@@ -21,6 +22,7 @@ import { sortLocations } from '@/lib/default-location';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { hasPermission } from '@/lib/auth/permissions';
 import { DEFAULT_ORDER_FEED_FILTERS, ordersFeedQuery } from '@/lib/queries/orders';
+import { transactionAlertsQuery } from '@/lib/queries/transactions';
 import { Sidebar, SidebarContent, SidebarHeader, SidebarRail } from '@/components/ui/sidebar';
 
 type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
@@ -28,6 +30,7 @@ type AppSidebarProps = React.ComponentProps<typeof Sidebar>;
 export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }: AppSidebarProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tOrders } = useTranslation('translation', { keyPrefix: 'orders' });
+  const { t: tTransactions } = useTranslation('translation', { keyPrefix: 'transactions' });
 
   // Hiding is convenience, not security — every route refuses a direct link with the same
   // `hasPermission` call (see lib/auth/permissions). This only stops an operator being offered a
@@ -54,6 +57,15 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
   const unacceptedCount = (unacceptedFeedResult?.data?.rows ?? []).filter(
     (row) => row.status === 'paid' && row.acceptedAt === null,
   ).length;
+
+  // Tenant-wide and date-less: a refund that failed yesterday is still money owed today, so the
+  // badge must not depend on which day or point the operator happens to be looking at.
+  const { data: transactionAlerts } = useQuery({
+    ...transactionAlertsQuery(),
+    enabled: hasPermission(me, 'billing', 'read'),
+    refetchInterval: 60_000,
+  });
+  const refundFailedCount = transactionAlerts?.data?.refundFailed ?? 0;
 
   const navOperations: NavMainItem[] = [
     { title: t('dashboard'), url: '/dashboard', icon: LayoutDashboard },
@@ -104,7 +116,17 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
       ? [{ title: t('tables'), url: `/locations/${navLocationSlug}/tables`, icon: Table2 }]
       : []),
     ...(hasPermission(me, 'billing', 'read')
-      ? [{ title: t('payments'), url: '/tenant/payouts', icon: CreditCard }]
+      ? [
+          { title: t('payments'), url: '/tenant/payouts', icon: CreditCard },
+          {
+            title: t('transactions'),
+            url: '/tenant/transactions',
+            icon: Receipt,
+            badge: refundFailedCount,
+            badgeTone: 'destructive' as const,
+            badgeAriaLabel: tTransactions('failedBadgeAria', { count: refundFailedCount }),
+          },
+        ]
       : []),
     ...(hasPermission(me, 'staff', 'invite')
       ? [{ title: t('team'), url: '/team', icon: Users }]

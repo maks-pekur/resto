@@ -1,5 +1,6 @@
 import { ChevronRight, type LucideIcon } from 'lucide-react';
 import { Link } from '@tanstack/react-router';
+import { cn } from '@/lib/utils';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   SidebarGroup,
@@ -26,6 +27,8 @@ export interface NavMainItem {
   items?: NavMainSubItem[];
   badge?: number;
   badgeAriaLabel?: string;
+  /** `destructive` is for counts that mean money is stuck, not merely that work is waiting. */
+  badgeTone?: 'default' | 'destructive';
 }
 
 export function NavMain({ items, label }: { items: NavMainItem[]; label: string }) {
@@ -46,7 +49,15 @@ export function NavMain({ items, label }: { items: NavMainItem[]; label: string 
                   </Link>
                 </SidebarMenuButton>
                 {item.badge && item.badge > 0 ? (
-                  <SidebarMenuBadge aria-label={item.badgeAriaLabel}>{item.badge}</SidebarMenuBadge>
+                  <SidebarMenuBadge
+                    aria-label={item.badgeAriaLabel}
+                    className={cn(
+                      item.badgeTone === 'destructive' &&
+                        'bg-destructive text-destructive-foreground rounded-full px-1.5',
+                    )}
+                  >
+                    {item.badge}
+                  </SidebarMenuBadge>
                 ) : null}
               </SidebarMenuItem>
             );

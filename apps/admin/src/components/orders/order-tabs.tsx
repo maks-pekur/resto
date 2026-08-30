@@ -1,37 +1,16 @@
-import type * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ListOrdered, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { cn } from '@/lib/utils';
+import { FilterTabs, type FilterTabItem } from '@/components/common/filter-tabs';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
-
-// The tab groups sit inside one filter bar, so they carry no surface of their own — the active
-// tab is marked against the bar's background rather than against a pill inside it.
-// `group-data-[orientation=horizontal]/tabs:h-full` is not decoration: the shadcn list pins its
-// own height with that same variant, and a plain `h-full` loses to it on specificity.
-const TAB_LIST_CLASS =
-  'h-full gap-0 rounded-none bg-transparent p-0 group-data-[orientation=horizontal]/tabs:h-full';
-const TAB_TRIGGER_CLASS =
-  'h-full min-h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
 
 export type OrderFulfillmentTab = 'all' | 'dine_in' | 'delivery' | 'pickup';
 
-export const ORDER_FULFILLMENT_TABS: readonly OrderFulfillmentTab[] = [
-  'all',
-  'dine_in',
-  'delivery',
-  'pickup',
-];
-
-const FULFILLMENT_TAB_ICON: Record<
-  OrderFulfillmentTab,
-  React.ComponentType<{ className?: string }>
-> = {
-  all: ListOrdered,
-  dine_in: UtensilsCrossed,
-  delivery: Truck,
-  pickup: ShoppingBag,
-};
+export const ORDER_FULFILLMENT_TABS = [
+  { value: 'all', icon: ListOrdered },
+  { value: 'dine_in', icon: UtensilsCrossed },
+  { value: 'delivery', icon: Truck },
+  { value: 'pickup', icon: ShoppingBag },
+] as const satisfies readonly { value: OrderFulfillmentTab; icon: unknown }[];
 
 export interface OrderFulfillmentTabsProps {
   readonly value: OrderFulfillmentTab;
@@ -42,25 +21,15 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
   const { t } = useTranslation('translation', { keyPrefix: 'orders.tabs' });
 
   return (
-    <Tabs
-      className="h-full gap-0"
+    <FilterTabs
       value={value}
-      onValueChange={(next) => {
-        onChange(next as OrderFulfillmentTab);
-      }}
-    >
-      <TabsList className={TAB_LIST_CLASS}>
-        {ORDER_FULFILLMENT_TABS.map((tab) => {
-          const Icon = FULFILLMENT_TAB_ICON[tab];
-          return (
-            <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
-              <Icon className="text-muted-foreground size-4" />
-              {t(tab)}
-            </TabsTrigger>
-          );
-        })}
-      </TabsList>
-    </Tabs>
+      onChange={onChange}
+      items={ORDER_FULFILLMENT_TABS.map((tab) => ({
+        value: tab.value,
+        label: t(tab.value),
+        icon: tab.icon,
+      }))}
+    />
   );
 }
 
@@ -72,8 +41,6 @@ export const ORDER_STATUS_TABS = [
   'completed',
   'canceled',
 ] as const satisfies readonly OrderStatusPreset[];
-
-export type OrderStatusTab = (typeof ORDER_STATUS_TABS)[number];
 
 export interface OrderStatusTabsProps {
   readonly value: OrderStatusPreset;
@@ -91,38 +58,19 @@ export function OrderStatusTabs({
 }: OrderStatusTabsProps) {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.tabs' });
 
-  return (
-    <Tabs
-      className="h-full gap-0"
-      value={value}
-      onValueChange={(next) => {
-        onChange(next as OrderStatusPreset);
-      }}
-    >
-      <TabsList
-        className={cn(
-          TAB_LIST_CLASS,
-          'w-full justify-start overflow-x-auto [&::-webkit-scrollbar]:hidden',
-        )}
-      >
-        {ORDER_STATUS_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab} className={cn(TAB_TRIGGER_CLASS, 'gap-1.5')}>
-            {t(tab)}
-            {counts !== null ? (
-              <span className="text-muted-foreground tabular-nums">{counts[tab]}</span>
-            ) : null}
-          </TabsTrigger>
-        ))}
-        {refundFailedCount > 0 ? (
-          <TabsTrigger
-            value="refund_failed"
-            className={cn(TAB_TRIGGER_CLASS, 'text-destructive gap-1.5')}
-          >
-            {t('refundFailed')}
-            <span className="tabular-nums">{refundFailedCount}</span>
-          </TabsTrigger>
-        ) : null}
-      </TabsList>
-    </Tabs>
-  );
+  const items: FilterTabItem<OrderStatusPreset>[] = ORDER_STATUS_TABS.map((tab) => ({
+    value: tab,
+    label: t(tab),
+    ...(counts === null ? {} : { count: counts[tab] }),
+  }));
+  if (refundFailedCount > 0) {
+    items.push({
+      value: 'refund_failed',
+      label: t('refundFailed'),
+      count: refundFailedCount,
+      tone: 'destructive',
+    });
+  }
+
+  return <FilterTabs value={value} onChange={onChange} items={items} stretch />;
 }

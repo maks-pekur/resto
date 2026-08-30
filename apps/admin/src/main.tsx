@@ -48,6 +48,7 @@ import { Route as menuModifierGroupDetailRoute } from './routes/(protected)/menu
 import { Route as tenantDomainsRoute } from './routes/(protected)/tenant.domains';
 import { Route as tenantThemeRoute } from './routes/(protected)/tenant.theme';
 import { Route as tenantPayoutsRoute } from './routes/(protected)/tenant.payouts';
+import { Route as tenantTransactionsRoute } from './routes/(protected)/tenant.transactions';
 import '@resto/config-tailwind/tokens.css';
 import './styles.css';
 
@@ -106,6 +107,7 @@ const protectedRouteTree = protectedLayoutRoute.addChildren([
   tenantDomainsRoute,
   tenantThemeRoute,
   tenantPayoutsRoute,
+  tenantTransactionsRoute,
   onboardingIndexRoute,
   locationRouteTree,
 ]);

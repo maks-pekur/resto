@@ -27,7 +27,6 @@ import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { type OrderFulfillmentTab } from '@/components/orders/order-tabs';
 import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
-import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 
 /**
  * The feed is strictly single-location (founder, 2026-08-18), which is why it lives under the
@@ -123,12 +122,6 @@ function OrdersPage() {
     <>
       <PageHeading title={tNav('orders')} />
       {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
-      <RefundFailedBanner
-        count={refundFailedCount}
-        onShowClick={() => {
-          setStatusTab('refund_failed');
-        }}
-      />
       <OrderFilterBar
         fulfillment={fulfillment}
         onFulfillmentChange={setFulfillment}

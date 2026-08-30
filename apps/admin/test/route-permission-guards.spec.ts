@@ -111,6 +111,7 @@ describe('admin route tree — every protected route decides who may open it', (
       '/team': { resource: 'staff', action: 'invite' },
       '/settings': { resource: 'settings', action: 'update' },
       '/tenant/payouts': { resource: 'billing', action: 'read' },
+      '/tenant/transactions': { resource: 'billing', action: 'read' },
       '/tenant/domains': { resource: 'settings', action: 'update' },
       '/tenant/theme': { resource: 'settings', action: 'update' },
     });

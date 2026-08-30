@@ -71,7 +71,8 @@
       "localeEs": "Español"
     },
     "groupOperations": "Operations",
-    "groupAdministration": "Administration"
+    "groupAdministration": "Administration",
+    "transactions": "Transactions"
   },
   "pickTenant": {
     "title": "Choose your restaurant",
@@ -356,12 +357,7 @@
       "live": "Live",
       "reconnecting": "Reconnecting…",
       "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
-      "staleRetry": "Refresh",
-      "refundBanner_one": "{{count}} refund failed — action required",
-      "refundBanner_few": "{{count}} refunds failed — action required",
-      "refundBanner_many": "{{count}} refunds failed — action required",
-      "refundBanner_other": "{{count}} refunds failed — action required",
-      "refundBannerAction": "Show"
+      "staleRetry": "Refresh"
     },
     "card": {
       "newBadge": "New",
@@ -610,5 +606,30 @@
     "minutesShort": "m",
     "hoursShort": "h",
     "daysShort": "d"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "tabs": {
+      "all": "All",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "refund_failed": "Refund failed"
+    },
+    "status": {
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "failed": "Refund failed — action needed"
+    },
+    "columnDate": "Date",
+    "columnOrder": "Order",
+    "columnAmount": "Amount",
+    "columnRefunded": "Refunded",
+    "columnStatus": "Status",
+    "orderNumber": "#{{n}}",
+    "retryBtn": "Retry refund",
+    "retrySucceeded": "Refund sent again",
+    "retryFailed": "Could not retry the refund.",
+    "empty": "No transactions in this period",
+    "failedBadgeAria": "Refunds needing action: {{count}}"
   }
 }
