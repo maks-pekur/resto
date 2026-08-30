@@ -24,8 +24,11 @@ export const remainingTime = (etaAt: string | null, now: number): RemainingTime 
 };
 
 export interface Countdown {
-  /** Whole minutes left, or overdue by, always non-negative — `late` carries the sign. */
+  /** Parts of the remaining span, always non-negative — `late` carries the sign. */
+  readonly days: number;
+  readonly hours: number;
   readonly minutes: number;
+  readonly totalMinutes: number;
   readonly late: boolean;
   /** 1 at the moment the promise was made, 0 when it comes due. */
   readonly progress: number;
@@ -48,10 +51,16 @@ export const countdown = (
   // by zero and painting a full ring on an order that is already due.
   const spanMs = due - start;
   const progress = late || spanMs <= 0 ? 0 : Math.min(remainingMs / spanMs, 1);
-  const minutes = Math.max(Math.round(Math.abs(remainingMs) / 60_000), 0);
+  const totalMinutes = Math.max(Math.round(Math.abs(remainingMs) / 60_000), 0);
+  const days = Math.floor(totalMinutes / 1_440);
+  const hours = Math.floor((totalMinutes % 1_440) / 60);
+  const minutes = totalMinutes % 60;
 
   return {
+    days,
+    hours,
     minutes,
+    totalMinutes,
     late,
     progress,
     tone: late ? 'late' : progress <= WARNING_AT ? 'warning' : 'calm',

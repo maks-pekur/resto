@@ -134,6 +134,16 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     },
   });
 
+  // Minutes read fine up to an hour; past that a bare "180" tells an operator nothing.
+  const countdownLabel =
+    remaining === null
+      ? ''
+      : remaining.days > 0
+        ? `${String(remaining.days)}${t('card.unitDays')}${String(remaining.hours)}${t('card.unitHours')}`
+        : remaining.hours > 0
+          ? `${String(remaining.hours)}${t('card.unitHours')}${String(remaining.minutes).padStart(2, '0')}`
+          : `${String(remaining.minutes)}${t('card.unitMinutes')}`;
+
   const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
   const promisedAt = new Date(row.etaAt ?? row.createdAt);
   const dayWord = ((): string => {
@@ -189,9 +199,9 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
             <CountdownRing
               progress={remaining.progress}
               tone={remaining.tone}
-              label={`${remaining.late ? '−' : ''}${String(remaining.minutes)}`}
+              label={`${remaining.late ? '−' : ''}${countdownLabel}`}
               ariaLabel={t(remaining.late ? 'card.overdueByAria' : 'card.remainingAria', {
-                minutes: remaining.minutes,
+                duration: countdownLabel,
               })}
             />
           ) : null}

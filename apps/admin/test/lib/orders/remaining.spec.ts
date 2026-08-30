@@ -41,7 +41,9 @@ describe('countdown', () => {
   it('drains from the moment the promise was made', () => {
     const half = countdown(at('2026-08-30T12:20:00.000Z'), started, NOW);
 
+    expect(half?.totalMinutes).toBe(20);
     expect(half?.minutes).toBe(20);
+    expect(half?.hours).toBe(0);
     expect(half?.late).toBe(false);
     expect(half?.progress).toBeCloseTo(0.5, 2);
     expect(half?.tone).toBe('calm');
@@ -57,7 +59,7 @@ describe('countdown', () => {
     const late = countdown(at('2026-08-30T11:56:00.000Z'), started, NOW);
 
     expect(late?.late).toBe(true);
-    expect(late?.minutes).toBe(4);
+    expect(late?.totalMinutes).toBe(4);
     expect(late?.progress).toBe(0);
     expect(late?.tone).toBe('late');
   });
@@ -66,5 +68,20 @@ describe('countdown', () => {
     const instant = countdown(at('2026-08-30T12:00:00.000Z'), at('2026-08-30T12:00:00.000Z'), NOW);
 
     expect(instant?.progress).toBe(0);
+  });
+
+  it('splits a long span into hours and minutes', () => {
+    const long = countdown(at('2026-08-30T14:35:00.000Z'), at('2026-08-30T10:00:00.000Z'), NOW);
+
+    expect(long?.hours).toBe(2);
+    expect(long?.minutes).toBe(35);
+    expect(long?.days).toBe(0);
+  });
+
+  it('splits a span of more than a day into days and hours', () => {
+    const long = countdown(at('2026-09-01T15:00:00.000Z'), at('2026-08-30T10:00:00.000Z'), NOW);
+
+    expect(long?.days).toBe(2);
+    expect(long?.hours).toBe(3);
   });
 });

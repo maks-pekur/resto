@@ -386,8 +386,11 @@
       "fulfillmentDelivery": "Delivery",
       "tableLabel": "{{zone}} · Table {{number}}",
       "statusUpdateFailed": "Couldn't update the order status.",
-      "remainingAria": "Minutes left: {{minutes}}",
-      "overdueByAria": "Overdue by minutes: {{minutes}}"
+      "remainingAria": "Left: {{duration}}",
+      "overdueByAria": "Overdue by {{duration}}",
+      "unitMinutes": "m",
+      "unitHours": "h",
+      "unitDays": "d"
     },
     "accept": {
       "title": "How soon will it be ready?",

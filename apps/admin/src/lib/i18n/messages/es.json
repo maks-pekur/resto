@@ -386,8 +386,11 @@
       "fulfillmentDelivery": "Entrega a domicilio",
       "tableLabel": "{{zone}} · Mesa {{number}}",
       "statusUpdateFailed": "No se pudo actualizar el estado del pedido.",
-      "remainingAria": "Minutos restantes: {{minutes}}",
-      "overdueByAria": "Retraso en minutos: {{minutes}}"
+      "remainingAria": "Queda: {{duration}}",
+      "overdueByAria": "Retraso: {{duration}}",
+      "unitMinutes": "m",
+      "unitHours": "h",
+      "unitDays": "d"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",
