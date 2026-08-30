@@ -15,6 +15,7 @@ import { StartTenantOnboardingService } from './application/start-tenant-onboard
 import { ProvisionLocationService } from './application/provision-location.service';
 import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
+import { RestoreLocationService } from './application/restore-location.service';
 import { UpdateLocationService } from './application/update-location.service';
 import { CreateTableZoneService } from './application/create-table-zone.service';
 import { ListTableZonesService } from './application/list-table-zones.service';
@@ -78,6 +79,7 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    RestoreLocationService,
     UpdateLocationService,
     CreateTableZoneService,
     ListTableZonesService,
@@ -103,6 +105,7 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    RestoreLocationService,
     UpdateLocationService,
     GuestMenuUrlService,
   ],

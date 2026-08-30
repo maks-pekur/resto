@@ -121,6 +121,14 @@ export class LocationAlreadyArchivedError extends Error {
   }
 }
 
+export class LocationNotArchivedError extends Error {
+  readonly kind = 'LocationNotArchivedError' as const;
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" is not archived, so it cannot be restored.`);
+    this.name = 'LocationNotArchivedError';
+  }
+}
+
 export class StripeOnboardingFailedError extends Error {
   constructor(
     public readonly tenantId: string,

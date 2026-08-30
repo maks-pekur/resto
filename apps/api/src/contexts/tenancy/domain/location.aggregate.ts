@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { LocationId, TenantId } from '@resto/domain';
-import { LocationAlreadyArchivedError } from './errors';
+import { LocationNotArchivedError, LocationAlreadyArchivedError } from './errors';
 
 export const LocationName = z.string().min(1).max(200);
 
@@ -111,6 +111,19 @@ export class Location {
       tenantId: this.snapshot.tenantId,
       occurredAt: now,
     });
+  }
+
+  /** Archiving is our delete, so un-archiving has to exist — otherwise a slip is permanent. */
+  restore(now: Date = new Date()): void {
+    if (this.snapshot.status !== 'archived') {
+      throw new LocationNotArchivedError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'active',
+      archivedAt: null,
+      updatedAt: now,
+    };
   }
 
   pullEvents(): LocationDomainEvent[] {

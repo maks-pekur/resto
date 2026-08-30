@@ -87,6 +87,11 @@ export const createLocationMutation = (input: CreateLocationInput) =>
     body: input,
   });
 
+export const restoreLocationMutation = (id: string) =>
+  apiFetch<LocationView>(`/v1/tenancy/locations/${id}/restore`, {
+    method: 'PATCH',
+  });
+
 export const archiveLocationMutation = (id: string) =>
   apiFetch<{ scopedMemberCount: number }>(`/v1/tenancy/locations/${id}/archive`, {
     method: 'PATCH',

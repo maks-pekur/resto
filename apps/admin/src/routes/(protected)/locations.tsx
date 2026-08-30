@@ -2,13 +2,14 @@ import { useState } from 'react';
 import { createRoute, Link } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Archive, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, Plus } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import {
   tenantLocationsQuery,
   archiveLocationMutation,
+  restoreLocationMutation,
   friendlyLocationError,
   type LocationView,
 } from '@/lib/queries/locations';
@@ -55,6 +56,21 @@ function LocationsPage() {
     void qc.invalidateQueries({ queryKey: ['locations'] });
     void qc.invalidateQueries({ queryKey: ['identity', 'me-locations'] });
   };
+
+  const restoreMutation = useMutation({
+    mutationFn: (location: LocationView) => restoreLocationMutation(location.id),
+    onSuccess: (res, location) => {
+      if (!res.ok) {
+        toast.error(friendlyLocationError(res.status, res.data as { detail?: string } | null));
+        return;
+      }
+      toast.success(`"${location.name}" restored.`);
+      invalidateLocations();
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+    },
+  });
 
   const archiveMutation = useMutation({
     mutationFn: (location: LocationView) => archiveLocationMutation(location.id),
@@ -159,7 +175,17 @@ function LocationsPage() {
                                 },
                               },
                             ]
-                          : []
+                          : [
+                              {
+                                key: 'restore',
+                                label: 'Restore',
+                                icon: ArchiveRestore,
+                                disabled: restoreMutation.isPending,
+                                onSelect: () => {
+                                  restoreMutation.mutate(location);
+                                },
+                              },
+                            ]
                       }
                     />
                   </DataTableCell>

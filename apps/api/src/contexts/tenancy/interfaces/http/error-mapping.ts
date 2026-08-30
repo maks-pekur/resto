@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import {
   LocationAlreadyArchivedError,
+  LocationNotArchivedError,
   LocationNotFoundError,
   LocationTableLimitReachedError,
   RestaurantTableAlreadyArchivedError,
@@ -111,6 +112,9 @@ export const mapDomainError = (err: unknown): unknown => {
       code: 'tenancy.location_not_found',
       message: err.message,
     });
+  }
+  if (err instanceof LocationNotArchivedError) {
+    return new ConflictException({ code: 'location.not_archived', message: err.message });
   }
   if (err instanceof LocationAlreadyArchivedError) {
     return new ConflictException({

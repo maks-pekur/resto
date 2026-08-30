@@ -27,6 +27,7 @@ import { ProvisionLocationService } from '../../application/provision-location.s
 import { ListLocationsService } from '../../application/list-locations.service';
 import { UpdateLocationService } from '../../application/update-location.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
+import { RestoreLocationService } from '../../application/restore-location.service';
 import {
   LocationAddress,
   LocationLatitude,
@@ -108,6 +109,7 @@ export class LocationsController {
     private readonly provisionLocation: ProvisionLocationService,
     @Inject(ListLocationsService) private readonly listLocations: ListLocationsService,
     @Inject(ArchiveLocationService) private readonly archiveLocation: ArchiveLocationService,
+    @Inject(RestoreLocationService) private readonly restoreLocation: RestoreLocationService,
     @Inject(UpdateLocationService) private readonly updateLocation: UpdateLocationService,
   ) {}
 
@@ -157,5 +159,16 @@ export class LocationsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   archive(@Param('id', ParseUUIDPipe) id: string): Promise<ArchiveLocationResponseDto> {
     return wrap(() => this.archiveLocation.execute(id));
+  }
+
+  @Patch(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ location: ['update'] })
+  @RequireActiveTenant()
+  @ApiOkResponse({ type: LocationResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  restore(@Param('id', ParseUUIDPipe) id: string): Promise<LocationResponseDto> {
+    return wrap(async () => toResponse(await this.restoreLocation.execute(id)));
   }
 }

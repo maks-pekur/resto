@@ -465,6 +465,31 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tenancy/locations/{id}/restore:
+    patch:
+      operationId: LocationsController_restore
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LocationResponseDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tenancy/table-zones:
     get:
       operationId: TableZonesController_list

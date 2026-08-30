@@ -308,6 +308,22 @@ export interface paths {
         patch: operations["LocationsController_archive"];
         trace?: never;
     };
+    "/v1/tenancy/locations/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["LocationsController_restore"];
+        trace?: never;
+    };
     "/v1/tenancy/table-zones": {
         parameters: {
             query?: never;
@@ -2941,6 +2957,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArchiveLocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponseDto"];
                 };
             };
             403: {
