@@ -353,9 +353,6 @@
   },
   "orders": {
     "feed": {
-      "groupWaiting": "En espera",
-      "groupInProgress": "En curso",
-      "groupDone": "Completados",
       "live": "En vivo",
       "reconnecting": "Reconectando…",
       "staleNotice": "No se pudo actualizar la lista — mostrando datos de {{time}}",
@@ -365,18 +362,6 @@
       "refundBanner_many": "{{count}} reembolsos fallidos — se requiere acción",
       "refundBanner_other": "{{count}} reembolsos fallidos — se requiere acción",
       "refundBannerAction": "Mostrar"
-    },
-    "filters": {
-      "statusLabel": "Estado",
-      "statusActive": "Activos",
-      "statusAllToday": "Todos hoy",
-      "statusCompleted": "Completados",
-      "statusCanceled": "Cancelados",
-      "statusRefundFailed": "Reembolso fallido",
-      "dateLabel": "Fecha",
-      "dateToday": "Hoy",
-      "dateYesterday": "Ayer",
-      "dateWeek": "7 días"
     },
     "card": {
       "newBadge": "Nuevo",
@@ -503,6 +488,37 @@
     "error": {
       "initialLoadTitle": "No se pudieron cargar los pedidos",
       "initialLoadBody": "Revisa tu conexión e inténtalo de nuevo."
+    },
+    "tabs": {
+      "all": "Todos los pedidos",
+      "delivery": "Entrega",
+      "pickup": "Recogida",
+      "unaccepted": "Sin confirmar",
+      "accepted": "Nuevos",
+      "preparing": "En cocina",
+      "ready": "Listos",
+      "completed": "Cerrados",
+      "canceled": "Cancelados",
+      "refundFailed": "Reembolso fallido"
+    },
+    "dateNav": {
+      "today": "Hoy",
+      "tomorrow": "Mañana",
+      "yesterday": "Ayer",
+      "previous": "Día anterior",
+      "next": "Día siguiente"
+    },
+    "payment": {
+      "paid": "Pagado",
+      "refunded": "Reembolsado",
+      "unpaid": "Sin pagar"
+    },
+    "table": {
+      "number": "N.º y estado",
+      "time": "Hora",
+      "type": "Tipo",
+      "customer": "Cliente",
+      "total": "Total"
     }
   },
   "dashboard": {

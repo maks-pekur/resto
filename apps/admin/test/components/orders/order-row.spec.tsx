@@ -4,7 +4,7 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
-import { deriveOrderCardState, UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-card';
+import { deriveOrderRowState, UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-row';
 
 const { canMock } = vi.hoisted(() => ({
   canMock: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { OrderCard } = await import('@/components/orders/order-card');
+const { OrderRow } = await import('@/components/orders/order-row');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({
@@ -57,6 +57,8 @@ const baseRow: OrderFeedRowApi = {
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,
+  customerName: null,
+  customerPhone: null,
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,
@@ -73,41 +75,41 @@ const baseRow: OrderFeedRowApi = {
   hasFailedRefund: false,
 };
 
-describe('deriveOrderCardState', () => {
+describe('deriveOrderRowState', () => {
   it('returns new for a just-paid, unaccepted order', () => {
     const now = UNACCEPTED_ESCALATION_MS - 1_000;
-    expect(deriveOrderCardState(baseRow, now)).toBe('new');
+    expect(deriveOrderRowState(baseRow, now)).toBe('new');
   });
 
   it('escalates at the 5-minute threshold', () => {
     const now = UNACCEPTED_ESCALATION_MS;
-    expect(deriveOrderCardState(baseRow, now)).toBe('escalated');
+    expect(deriveOrderRowState(baseRow, now)).toBe('escalated');
   });
 
   it('maps accepted/preparing/ready statuses directly', () => {
-    expect(deriveOrderCardState({ ...baseRow, status: 'accepted' }, 0)).toBe('accepted');
-    expect(deriveOrderCardState({ ...baseRow, status: 'preparing' }, 0)).toBe('preparing');
-    expect(deriveOrderCardState({ ...baseRow, status: 'ready' }, 0)).toBe('ready');
+    expect(deriveOrderRowState({ ...baseRow, status: 'accepted' }, 0)).toBe('accepted');
+    expect(deriveOrderRowState({ ...baseRow, status: 'preparing' }, 0)).toBe('preparing');
+    expect(deriveOrderRowState({ ...baseRow, status: 'ready' }, 0)).toBe('ready');
   });
 
   it('buckets canceled/refunded/failed as canceled', () => {
-    expect(deriveOrderCardState({ ...baseRow, status: 'canceled' }, 0)).toBe('canceled');
-    expect(deriveOrderCardState({ ...baseRow, status: 'refunded' }, 0)).toBe('canceled');
-    expect(deriveOrderCardState({ ...baseRow, status: 'failed' }, 0)).toBe('canceled');
+    expect(deriveOrderRowState({ ...baseRow, status: 'canceled' }, 0)).toBe('canceled');
+    expect(deriveOrderRowState({ ...baseRow, status: 'refunded' }, 0)).toBe('canceled');
+    expect(deriveOrderRowState({ ...baseRow, status: 'failed' }, 0)).toBe('canceled');
   });
 
   it('defaults unrecognized statuses to completed', () => {
-    expect(deriveOrderCardState({ ...baseRow, status: 'completed' }, 0)).toBe('completed');
-    expect(deriveOrderCardState({ ...baseRow, status: 'created' }, 0)).toBe('completed');
+    expect(deriveOrderRowState({ ...baseRow, status: 'completed' }, 0)).toBe('completed');
+    expect(deriveOrderRowState({ ...baseRow, status: 'created' }, 0)).toBe('completed');
   });
 
   it('never escalates once accepted, even past the threshold', () => {
     const row = { ...baseRow, status: 'accepted' as const, acceptedAt: new Date(0).toISOString() };
-    expect(deriveOrderCardState(row, UNACCEPTED_ESCALATION_MS * 10)).toBe('accepted');
+    expect(deriveOrderRowState(row, UNACCEPTED_ESCALATION_MS * 10)).toBe('accepted');
   });
 });
 
-describe('OrderCard — table line precedence (TBL-12)', () => {
+describe('OrderRow — table line precedence (TBL-12)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     canMock.mockReturnValue(true);
@@ -119,16 +121,18 @@ describe('OrderCard — table line precedence (TBL-12)', () => {
       fulfillmentMode: 'dine_in',
       tableZoneName: 'Зал 1',
       tableNumber: '14',
+      customerName: null,
+      customerPhone: null,
       tableIdentifier: null,
     };
     render(
       <Wrap>
-        <OrderCard row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
     const expectedLabel = `orders.card.tableLabel(${JSON.stringify({ zone: 'Зал 1', number: '14' })})`;
-    expect(screen.getByTestId('order-card-table-line').textContent).toBe(expectedLabel);
+    expect(screen.getByTestId('order-row-table-line').textContent).toBe(expectedLabel);
   });
 
   it('a dine-in order with no resolved table but a legacy free-text identifier renders that text', () => {
@@ -137,15 +141,17 @@ describe('OrderCard — table line precedence (TBL-12)', () => {
       fulfillmentMode: 'dine_in',
       tableZoneName: null,
       tableNumber: null,
+      customerName: null,
+      customerPhone: null,
       tableIdentifier: 'T7',
     };
     render(
       <Wrap>
-        <OrderCard row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
-    expect(screen.getByTestId('order-card-table-line').textContent).toBe('T7');
+    expect(screen.getByTestId('order-row-table-line').textContent).toBe('T7');
   });
 
   it('a pickup order with no table data at all renders no table line', () => {
@@ -154,14 +160,16 @@ describe('OrderCard — table line precedence (TBL-12)', () => {
       fulfillmentMode: 'pickup',
       tableZoneName: null,
       tableNumber: null,
+      customerName: null,
+      customerPhone: null,
       tableIdentifier: null,
     };
     render(
       <Wrap>
-        <OrderCard row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
-    expect(screen.queryByTestId('order-card-table-line')).toBeNull();
+    expect(screen.queryByTestId('order-row-table-line')).toBeNull();
   });
 });

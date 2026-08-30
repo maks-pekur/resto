@@ -353,9 +353,6 @@
   },
   "orders": {
     "feed": {
-      "groupWaiting": "Waiting",
-      "groupInProgress": "In progress",
-      "groupDone": "Done",
       "live": "Live",
       "reconnecting": "Reconnecting…",
       "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
@@ -365,18 +362,6 @@
       "refundBanner_many": "{{count}} refunds failed — action required",
       "refundBanner_other": "{{count}} refunds failed — action required",
       "refundBannerAction": "Show"
-    },
-    "filters": {
-      "statusLabel": "Status",
-      "statusActive": "Active",
-      "statusAllToday": "All today",
-      "statusCompleted": "Completed",
-      "statusCanceled": "Canceled",
-      "statusRefundFailed": "Refund failed",
-      "dateLabel": "Date",
-      "dateToday": "Today",
-      "dateYesterday": "Yesterday",
-      "dateWeek": "7 days"
     },
     "card": {
       "newBadge": "New",
@@ -503,6 +488,37 @@
     "error": {
       "initialLoadTitle": "Couldn't load orders",
       "initialLoadBody": "Check your connection and try again."
+    },
+    "tabs": {
+      "all": "All orders",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "unaccepted": "Unconfirmed",
+      "accepted": "New",
+      "preparing": "Cooking",
+      "ready": "Ready",
+      "completed": "Closed",
+      "canceled": "Canceled",
+      "refundFailed": "Refund failed"
+    },
+    "dateNav": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "yesterday": "Yesterday",
+      "previous": "Previous day",
+      "next": "Next day"
+    },
+    "payment": {
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "unpaid": "Unpaid"
+    },
+    "table": {
+      "number": "No. and status",
+      "time": "Time",
+      "type": "Type",
+      "customer": "Customer",
+      "total": "Total"
     }
   },
   "dashboard": {

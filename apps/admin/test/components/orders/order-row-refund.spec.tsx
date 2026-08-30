@@ -37,7 +37,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { OrderCard } = await import('@/components/orders/order-card');
+const { OrderRow } = await import('@/components/orders/order-row');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({
@@ -60,6 +60,8 @@ const failedRefundRow: OrderFeedRowApi = {
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,
+  customerName: null,
+  customerPhone: null,
   total: '1200.00',
   currency: 'RUB',
   itemCount: 1,
@@ -76,7 +78,7 @@ const failedRefundRow: OrderFeedRowApi = {
   hasFailedRefund: true,
 };
 
-describe('OrderCard — refund-failure surface (D-11)', () => {
+describe('OrderRow — refund-failure surface (D-11)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     canMock.mockReturnValue(true);
@@ -85,14 +87,14 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
   it('a failed-refund terminal card renders undimmed and with a retry action', () => {
     const { container } = render(
       <Wrap>
-        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
-    const card = container.querySelector('[data-slot="card"]');
-    expect(card).not.toBeNull();
-    expect(card?.className).not.toContain('opacity-80');
-    expect(card?.className).not.toContain('bg-muted/40');
+    const row = container.querySelector('[data-testid="order-row-order-1"]');
+    expect(row).not.toBeNull();
+    expect(row?.className).not.toContain('opacity');
+    expect(row?.className).toContain('bg-destructive');
 
     expect(screen.getByRole('button', { name: /orders\.refund\.retryBtn/ })).toBeTruthy();
   });
@@ -101,7 +103,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     canMock.mockReturnValue(false);
     render(
       <Wrap>
-        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -113,7 +115,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -136,7 +138,7 @@ describe('OrderCard — refund-failure surface (D-11)', () => {
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={failedRefundRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 

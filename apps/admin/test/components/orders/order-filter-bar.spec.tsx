@@ -17,10 +17,10 @@ const { OrderFilterBar } = await import('@/components/orders/order-filter-bar');
 const renderBar = (soundReady: boolean) =>
   render(
     <OrderFilterBar
-      statusFilter="active"
-      onStatusFilterChange={vi.fn()}
-      datePreset="today"
-      onDatePresetChange={vi.fn()}
+      fulfillment="all"
+      onFulfillmentChange={vi.fn()}
+      range={{ from: '2026-08-30', to: '2026-08-30' }}
+      onRangeChange={vi.fn()}
       isLive
       soundMuted={false}
       onSoundMutedChange={vi.fn()}

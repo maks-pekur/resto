@@ -2038,6 +2038,8 @@ export interface components {
                 tableIdentifier: string | null;
                 tableZoneName: string | null;
                 tableNumber: string | null;
+                customerName: string | null;
+                customerPhone: string | null;
                 total: string;
                 currency: string;
                 itemCount: number;

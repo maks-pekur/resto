@@ -36,7 +36,7 @@ vi.mock('react-i18next', async () => {
 });
 
 const { RejectPopover } = await import('@/components/orders/reject-popover');
-const { OrderCard } = await import('@/components/orders/order-card');
+const { OrderRow } = await import('@/components/orders/order-row');
 
 const makeQueryClient = (): QueryClient =>
   new QueryClient({
@@ -59,6 +59,8 @@ const baseOrder: OrderFeedRowApi = {
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,
+  customerName: null,
+  customerPhone: null,
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,
@@ -154,7 +156,7 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 
@@ -184,7 +186,7 @@ describe('OrderCard advance mutation — Product MED-17 (concurrent-transition i
     const user = userEvent.setup();
     render(
       <Wrap>
-        <OrderCard row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
+        <OrderRow row={acceptedRow} showLocationBadge={false} onOpenDetail={vi.fn()} />
       </Wrap>,
     );
 

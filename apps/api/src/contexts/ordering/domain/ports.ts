@@ -150,6 +150,8 @@ export const OrderFeedRowSchema = z.object({
   tableIdentifier: z.string().nullable(),
   tableZoneName: z.string().nullable(),
   tableNumber: z.string().nullable(),
+  customerName: z.string().nullable(),
+  customerPhone: z.string().nullable(),
   total: z.string(),
   currency: z.string(),
   itemCount: z.number().int(),

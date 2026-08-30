@@ -12,7 +12,16 @@ export type OrderStatus =
   | 'refunded'
   | 'failed';
 
-export type OrderStatusPreset = 'active' | 'all_today' | 'completed' | 'canceled' | 'refund_failed';
+export type OrderStatusPreset =
+  | 'active'
+  | 'all_today'
+  | 'unaccepted'
+  | 'accepted'
+  | 'preparing'
+  | 'ready'
+  | 'completed'
+  | 'canceled'
+  | 'refund_failed';
 export type OrderDatePreset = 'today' | 'yesterday' | 'week';
 export type OrderChannel = 'site' | 'qr-menu';
 export type OrderFulfillmentMode = 'dine_in' | 'pickup' | 'delivery';
@@ -27,6 +36,8 @@ export interface OrderFeedRowApi {
   readonly tableIdentifier: string | null;
   readonly tableZoneName: string | null;
   readonly tableNumber: string | null;
+  readonly customerName: string | null;
+  readonly customerPhone: string | null;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -58,6 +69,9 @@ export interface OrderFeedSinceCursor {
 export interface OrderFeedFilters {
   readonly statusFilter?: OrderStatusPreset;
   readonly datePreset?: OrderDatePreset;
+  readonly from?: string;
+  readonly to?: string;
+  readonly fulfillmentMode?: OrderFulfillmentMode;
   readonly channel?: OrderChannel;
   readonly since?: OrderFeedSinceCursor;
   readonly limit?: number;
@@ -65,7 +79,7 @@ export interface OrderFeedFilters {
 }
 
 export const DEFAULT_ORDER_FEED_FILTERS: OrderFeedFilters = {
-  statusFilter: 'active',
+  statusFilter: 'unaccepted',
   datePreset: 'today',
 };
 
@@ -73,6 +87,9 @@ const buildFeedQueryString = (filters: OrderFeedFilters): string => {
   const params = new URLSearchParams();
   if (filters.statusFilter) params.set('statusFilter', filters.statusFilter);
   if (filters.datePreset) params.set('datePreset', filters.datePreset);
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  if (filters.fulfillmentMode) params.set('fulfillmentMode', filters.fulfillmentMode);
   if (filters.channel) params.set('channel', filters.channel);
   if (filters.since) {
     params.set('sinceCreatedAt', filters.since.createdAt);
@@ -92,6 +109,40 @@ export const ordersFeedQuery = (
   queryKey: ['orders', 'feed', locationId, filters] as const,
   queryFn: ({ signal }: { signal: AbortSignal }) =>
     apiFetch<OrderFeedResponse>(buildFeedQueryString(filters), { locationId, signal }),
+});
+
+export interface OrderFeedCountsApi {
+  readonly unaccepted: number;
+  readonly accepted: number;
+  readonly preparing: number;
+  readonly ready: number;
+  readonly completed: number;
+  readonly canceled: number;
+}
+
+export interface OrderCountsFilters {
+  readonly from?: string;
+  readonly to?: string;
+  readonly fulfillmentMode?: OrderFulfillmentMode;
+}
+
+export const ordersCountsQuery = (
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  locationId: string | 'all',
+  filters: OrderCountsFilters,
+) => ({
+  queryKey: ['orders', 'counts', locationId, filters] as const,
+  queryFn: ({ signal }: { signal: AbortSignal }) => {
+    const params = new URLSearchParams();
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    if (filters.fulfillmentMode) params.set('fulfillmentMode', filters.fulfillmentMode);
+    const qs = params.toString();
+    return apiFetch<OrderFeedCountsApi>(
+      qs ? `/v1/orders/feed/counts?${qs}` : '/v1/orders/feed/counts',
+      { locationId, signal },
+    );
+  },
 });
 
 export interface OrderModifierApi {

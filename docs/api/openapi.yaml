@@ -4114,6 +4114,12 @@ components:
               tableNumber:
                 type: string
                 nullable: true
+              customerName:
+                type: string
+                nullable: true
+              customerPhone:
+                type: string
+                nullable: true
               total:
                 type: string
               currency:
@@ -4163,6 +4169,8 @@ components:
               - tableIdentifier
               - tableZoneName
               - tableNumber
+              - customerName
+              - customerPhone
               - total
               - currency
               - itemCount

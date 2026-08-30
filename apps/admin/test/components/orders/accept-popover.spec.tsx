@@ -55,6 +55,8 @@ const baseOrder: OrderFeedRowApi = {
   tableIdentifier: null,
   tableZoneName: null,
   tableNumber: null,
+  customerName: null,
+  customerPhone: null,
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,

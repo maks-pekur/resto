@@ -21,7 +21,7 @@ import {
   type OrderFeedRowApi,
 } from '@/lib/queries/orders';
 import { OrderStatusBadge } from './order-status-badge';
-import { AGE_BAND_CLASS, deriveOrderCardState } from './order-card';
+import { AGE_BAND_CLASS, deriveOrderRowState } from './order-row';
 import { REASON_LABEL_KEYS, type OrderCancelReasonCode } from './reject-popover';
 import { CancelDialog } from './cancel-dialog';
 
@@ -157,7 +157,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
     return <div className="p-4 text-sm text-muted-foreground">{tCommon('loading')}</div>;
   }
 
-  const state = deriveOrderCardState(detail, now);
+  const state = deriveOrderRowState(detail, now);
   const stateEnteredAt =
     state === 'new'
       ? detail.createdAt

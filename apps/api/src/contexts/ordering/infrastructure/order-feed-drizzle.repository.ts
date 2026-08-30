@@ -200,6 +200,8 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     tableIdentifier: row.tableIdentifier ?? null,
     tableZoneName: row.tableZoneName ?? null,
     tableNumber: row.tableNumber ?? null,
+    customerName: row.customerName ?? null,
+    customerPhone: row.customerPhone ?? null,
     total: row.total,
     currency: row.currency,
     itemCount,

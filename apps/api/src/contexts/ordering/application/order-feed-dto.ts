@@ -33,6 +33,8 @@ export interface OrderFeedResponseRow {
   readonly tableIdentifier: string | null;
   readonly tableZoneName: string | null;
   readonly tableNumber: string | null;
+  readonly customerName: string | null;
+  readonly customerPhone: string | null;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -69,6 +71,8 @@ export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow 
   tableIdentifier: row.tableIdentifier,
   tableZoneName: row.tableZoneName,
   tableNumber: row.tableNumber,
+  customerName: row.customerName,
+  customerPhone: row.customerPhone,
   total: row.total,
   currency: row.currency,
   itemCount: row.itemCount,

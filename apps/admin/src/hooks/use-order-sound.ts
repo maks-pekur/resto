@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-card';
+import { UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-row';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 
 const MUTE_STORAGE_KEY = 'orders.soundMuted';

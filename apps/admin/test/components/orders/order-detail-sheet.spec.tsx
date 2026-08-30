@@ -53,6 +53,8 @@ const feedRow: OrderFeedRowApi = {
   status: 'accepted',
   locationId: 'loc-1',
   locationName: 'Центр',
+  customerName: null,
+  customerPhone: null,
   fulfillmentMode: 'dine_in',
   tableIdentifier: null,
   tableZoneName: null,
