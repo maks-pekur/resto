@@ -47,10 +47,10 @@ export function OrderFilterBar({
 
   return (
     <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
-      <div className="flex min-h-11 flex-wrap items-stretch">
+      <div className="flex h-11 items-stretch">
         <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
 
-        <div className="ml-auto flex items-center gap-2 px-3">
+        <div className="ml-auto flex shrink-0 items-center gap-2 px-3">
           <DateRangeStepper value={range} onChange={onRangeChange} />
 
           {soundBlocked ? (

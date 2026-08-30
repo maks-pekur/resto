@@ -1,4 +1,6 @@
+import type * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ListOrdered, ShoppingBag, Truck } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
@@ -12,6 +14,15 @@ const TAB_TRIGGER_CLASS =
 export type OrderFulfillmentTab = 'all' | 'delivery' | 'pickup';
 
 export const ORDER_FULFILLMENT_TABS: readonly OrderFulfillmentTab[] = ['all', 'delivery', 'pickup'];
+
+const FULFILLMENT_TAB_ICON: Record<
+  OrderFulfillmentTab,
+  React.ComponentType<{ className?: string }>
+> = {
+  all: ListOrdered,
+  delivery: Truck,
+  pickup: ShoppingBag,
+};
 
 export interface OrderFulfillmentTabsProps {
   readonly value: OrderFulfillmentTab;
@@ -30,11 +41,15 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
       }}
     >
       <TabsList className={TAB_LIST_CLASS}>
-        {ORDER_FULFILLMENT_TABS.map((tab) => (
-          <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
-            {t(tab)}
-          </TabsTrigger>
-        ))}
+        {ORDER_FULFILLMENT_TABS.map((tab) => {
+          const Icon = FULFILLMENT_TAB_ICON[tab];
+          return (
+            <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
+              <Icon className="text-muted-foreground size-4" />
+              {t(tab)}
+            </TabsTrigger>
+          );
+        })}
       </TabsList>
     </Tabs>
   );
@@ -75,7 +90,12 @@ export function OrderStatusTabs({
         onChange(next as OrderStatusPreset);
       }}
     >
-      <TabsList className={cn(TAB_LIST_CLASS, 'w-full justify-start overflow-x-auto')}>
+      <TabsList
+        className={cn(
+          TAB_LIST_CLASS,
+          'w-full justify-start overflow-x-auto [&::-webkit-scrollbar]:hidden',
+        )}
+      >
         {ORDER_STATUS_TABS.map((tab) => (
           <TabsTrigger key={tab} value={tab} className={cn(TAB_TRIGGER_CLASS, 'gap-1.5')}>
             {t(tab)}

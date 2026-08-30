@@ -21,6 +21,8 @@ export interface DateRangePickerProps {
   readonly className?: string;
   /** `icon` drops the label — for toolbars that already say which dates are shown. */
   readonly trigger?: 'label' | 'icon';
+  /** Overrides the trigger text when the surrounding control words the range its own way. */
+  readonly label?: string;
 }
 
 export function DateRangePicker({
@@ -28,6 +30,7 @@ export function DateRangePicker({
   onChange,
   className,
   trigger = 'label',
+  label: labelOverride,
 }: DateRangePickerProps) {
   const { t, i18n } = useTranslation('translation', { keyPrefix: 'dashboard' });
   const [open, setOpen] = useState(false);
@@ -56,7 +59,7 @@ export function DateRangePicker({
         ) : (
           <Button variant="outline" size="sm" className={cn('gap-2 font-normal', className)}>
             <CalendarIcon className="size-4 opacity-70" />
-            <span>{active === null ? label : t(`range.${active}`)}</span>
+            <span>{labelOverride ?? (active === null ? label : t(`range.${active}`))}</span>
           </Button>
         )}
       </PopoverTrigger>

@@ -40,11 +40,14 @@ export function DateRangeStepper({ value, onChange, className }: DateRangeSteppe
           ? t('dateNav.yesterday')
           : formatDay.format(fromDateKey(value.from));
 
+  // One control, not three: the arrows and the calendar sit in a single bordered group, and the
+  // date between them is the button that opens the calendar.
   return (
-    <div className={cn('flex items-center gap-1', className)}>
+    <div className={cn('flex h-9 items-center overflow-hidden rounded-md border', className)}>
       <Button
         variant="ghost"
         size="icon"
+        className="h-full rounded-none"
         aria-label={t('dateNav.previous')}
         onClick={() => {
           onChange(shiftRange(value, -span));
@@ -52,10 +55,16 @@ export function DateRangeStepper({ value, onChange, className }: DateRangeSteppe
       >
         <ChevronLeft className="size-4" />
       </Button>
-      <span className="min-w-28 text-center text-sm font-medium">{label}</span>
+      <DateRangePicker
+        value={value}
+        onChange={onChange}
+        label={label}
+        className="h-full min-w-32 justify-center rounded-none border-x border-y-0 shadow-none"
+      />
       <Button
         variant="ghost"
         size="icon"
+        className="h-full rounded-none"
         aria-label={t('dateNav.next')}
         // The future holds no orders, so the arrow stops at the day that does.
         disabled={value.to >= today}
@@ -65,7 +74,6 @@ export function DateRangeStepper({ value, onChange, className }: DateRangeSteppe
       >
         <ChevronRight className="size-4" />
       </Button>
-      <DateRangePicker value={value} onChange={onChange} trigger="icon" />
     </div>
   );
 }
