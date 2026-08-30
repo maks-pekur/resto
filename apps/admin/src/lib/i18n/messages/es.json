@@ -64,7 +64,7 @@
     "settings": "Configuración",
     "payments": "Pagos",
     "orders": "Pedidos",
-    "tables": "Mesas",
+    "tables": "Salas y mesas",
     "themeLabel": "Tema",
     "user": {
       "accountItem": "Cuenta",
@@ -563,7 +563,7 @@
     }
   },
   "tables": {
-    "pageTitle": "Mesas",
+    "pageTitle": "Salas y mesas",
     "emptyTitle": "Todavía no hay zonas",
     "emptyDescription": "Crea una zona para empezar a imprimir los códigos QR de las mesas del salón.",
     "createZoneBtn": "Nueva zona",

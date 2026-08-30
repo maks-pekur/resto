@@ -64,7 +64,7 @@
     "settings": "Settings",
     "payments": "Payments",
     "orders": "Orders",
-    "tables": "Tables",
+    "tables": "Halls & tables",
     "themeLabel": "Theme",
     "user": {
       "accountItem": "Account",
@@ -563,7 +563,7 @@
     }
   },
   "tables": {
-    "pageTitle": "Tables",
+    "pageTitle": "Halls & tables",
     "emptyTitle": "No zones yet",
     "emptyDescription": "Create a zone to start printing table QR codes for the floor.",
     "createZoneBtn": "New zone",

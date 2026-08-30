@@ -64,7 +64,7 @@
     "settings": "Настройки",
     "payments": "Платежи",
     "orders": "Заказы",
-    "tables": "Столы",
+    "tables": "Залы и столы",
     "themeLabel": "Тема",
     "user": {
       "accountItem": "Аккаунт",
@@ -563,7 +563,7 @@
     }
   },
   "tables": {
-    "pageTitle": "Столы",
+    "pageTitle": "Залы и столы",
     "emptyTitle": "Пока нет зон",
     "emptyDescription": "Создайте зону, чтобы начать печатать QR-коды столов зала.",
     "createZoneBtn": "Новая зона",
