@@ -87,6 +87,7 @@ function SortableCategoryRow({
   isPendingNestTarget,
 }: SortableCategoryRowProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
+  const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
@@ -135,7 +136,7 @@ function SortableCategoryRow({
           actions={[
             {
               key: 'edit',
-              label: t('editAriaLabel', { name: displayName }),
+              label: tCommon('edit'),
               icon: Pencil,
               onSelect: onEdit,
             },
@@ -144,7 +145,7 @@ function SortableCategoryRow({
               : [
                   {
                     key: 'archive',
-                    label: t('archiveAriaLabel', { name: displayName }),
+                    label: tCommon('archive'),
                     icon: Archive,
                     tone: 'destructive' as const,
                     onSelect: onArchive,

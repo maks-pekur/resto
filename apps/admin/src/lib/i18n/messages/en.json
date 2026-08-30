@@ -22,7 +22,8 @@
     "notFound": "Not found.",
     "forbiddenTitle": "You do not have access to this page.",
     "forbiddenBody": "Your role does not include the permission this page needs. Ask an owner to grant it.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "archive": "Archive"
   },
   "auth": {
     "signInTitle": "Sign in to Resto",
