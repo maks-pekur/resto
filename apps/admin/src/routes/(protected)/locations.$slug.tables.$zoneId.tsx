@@ -9,7 +9,7 @@ import { tableZonesQuery } from '@/lib/queries/table-zones';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
-import { ZoneCreateForm } from '@/components/tables/zone-create-form';
+import { ZoneForm } from '@/components/tables/zone-form';
 import { ZoneDetail } from '@/components/tables/zone-detail';
 
 const NEW_ZONE = 'new';
@@ -57,7 +57,7 @@ function ZonePage() {
       <>
         <PageHeading title={t('createZoneDialogTitle')} action={backLink} />
         <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
-          <ZoneCreateForm
+          <ZoneForm
             locationId={location.id}
             onCreated={(createdId) => {
               void navigate({
@@ -87,7 +87,10 @@ function ZonePage() {
             description={t('zoneNotFoundDescription')}
           />
         ) : (
-          <ZoneDetail zone={zone} locationId={location.id} />
+          <>
+            <ZoneForm locationId={location.id} zone={zone} />
+            <ZoneDetail zone={zone} locationId={location.id} />
+          </>
         )}
       </div>
     </>

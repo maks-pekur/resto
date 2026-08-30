@@ -49,7 +49,6 @@ import {
   friendlyTableError,
   MAX_TABLES_PER_BULK_CALL,
   renameTableMutation,
-  renameTableZoneMutation,
   type ProblemDetails,
   type TableView,
   type TableZoneView,
@@ -84,9 +83,6 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
   const queryClient = useQueryClient();
   const zoneQueryKey = ['tenancy', 'table-zones', locationId];
 
-  const [renameOpen, setRenameOpen] = React.useState(false);
-  const [renameValue, setRenameValue] = React.useState(zone.name);
-  const [renameError, setRenameError] = React.useState<string | null>(null);
   const [addTablesOpen, setAddTablesOpen] = React.useState(false);
   const [addTablesCount, setAddTablesCount] = React.useState('1');
   const [addTablesError, setAddTablesError] = React.useState<string | null>(null);
@@ -95,25 +91,6 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
   const [printing, setPrinting] = React.useState(false);
 
   const activeTableCount = zone.tables.filter((table) => table.status === 'active').length;
-
-  const renameMutation = useMutation({
-    mutationFn: () => renameTableZoneMutation(locationId, zone.id, renameValue.trim()),
-    onSuccess: (res) => {
-      if (!res.ok) {
-        const message = friendlyTableError(res.status, res.data as ProblemDetails | null);
-        showError(message);
-        setRenameError(message);
-        return;
-      }
-      showSuccess(t('renameZoneSuccess'));
-      void queryClient.invalidateQueries({ queryKey: zoneQueryKey });
-      setRenameOpen(false);
-    },
-    onError: () => {
-      showError(null, t('errors.generic'));
-      setRenameError(t('errors.generic'));
-    },
-  });
 
   const addTablesCountNumber = Number(addTablesCount);
   const isAddCountValid =
@@ -203,18 +180,6 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
                 variant="outline"
                 size="sm"
                 onClick={() => {
-                  setRenameValue(zone.name);
-                  setRenameError(null);
-                  setRenameOpen(true);
-                }}
-              >
-                <Pencil className="size-4" />
-                {t('renameZoneAction')}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
                   setAddTablesError(null);
                   setAddTablesOpen(true);
                 }}
@@ -262,43 +227,6 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
           </TableBody>
         </Table>
       </CardContent>
-
-      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('renameZoneDialogTitle')}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-1.5">
-            <Label htmlFor={`rename-zone-${zone.id}`}>{t('zoneNameLabel')}</Label>
-            <Input
-              id={`rename-zone-${zone.id}`}
-              value={renameValue}
-              onChange={(e) => {
-                setRenameValue(e.target.value);
-              }}
-            />
-          </div>
-          <DialogError message={renameError} />
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setRenameOpen(false);
-              }}
-            >
-              {t('cancelAction')}
-            </Button>
-            <Button
-              disabled={renameValue.trim().length === 0 || renameMutation.isPending}
-              onClick={() => {
-                renameMutation.mutate();
-              }}
-            >
-              {t('renameZoneSubmit')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       <Dialog open={addTablesOpen} onOpenChange={setAddTablesOpen}>
         <DialogContent>

@@ -561,8 +561,6 @@
     "addTablesCountLabel": "How many tables to add",
     "addTablesSubmit": "Add",
     "addTablesSuccess": "Tables added.",
-    "renameZoneAction": "Rename zone",
-    "renameZoneDialogTitle": "Rename zone",
     "renameZoneSubmit": "Save",
     "renameZoneSuccess": "Zone renamed.",
     "archiveZoneAction": "Archive zone",
@@ -603,7 +601,10 @@
     "editZoneAction": "Edit zone",
     "zoneNotFoundTitle": "Zone not found",
     "zoneNotFoundDescription": "It may have been archived, or the link is out of date.",
-    "tableCountAria": "Tables in the zone"
+    "tableCountAria": "Tables in the zone",
+    "zoneNameDescription": "The guest sees this name on the order — \"Terrace\", \"Second floor\".",
+    "zoneNameRequired": "Enter a zone name.",
+    "tableCountDescription": "Tables live inside the zone. You can add or rename them later."
   },
   "format": {
     "ago": "{{n}}{{unit}} ago",

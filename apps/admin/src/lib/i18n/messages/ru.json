@@ -561,8 +561,6 @@
     "addTablesCountLabel": "Сколько столов добавить",
     "addTablesSubmit": "Добавить",
     "addTablesSuccess": "Столы добавлены.",
-    "renameZoneAction": "Переименовать зону",
-    "renameZoneDialogTitle": "Переименовать зону",
     "renameZoneSubmit": "Сохранить",
     "renameZoneSuccess": "Зона переименована.",
     "archiveZoneAction": "Архивировать зону",
@@ -603,7 +601,10 @@
     "editZoneAction": "Редактировать зону",
     "zoneNotFoundTitle": "Зона не найдена",
     "zoneNotFoundDescription": "Возможно, её архивировали или ссылка устарела.",
-    "tableCountAria": "Столов в зоне"
+    "tableCountAria": "Столов в зоне",
+    "zoneNameDescription": "Гость увидит это название в заказе — «Терраса», «Второй этаж».",
+    "zoneNameRequired": "Введите название зоны.",
+    "tableCountDescription": "Столы создаются внутри зоны. Позже их можно добавить или переименовать."
   },
   "format": {
     "ago": "{{n}}{{unit}} назад",

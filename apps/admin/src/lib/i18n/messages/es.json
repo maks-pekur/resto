@@ -561,8 +561,6 @@
     "addTablesCountLabel": "Cuántas mesas añadir",
     "addTablesSubmit": "Añadir",
     "addTablesSuccess": "Mesas añadidas.",
-    "renameZoneAction": "Renombrar zona",
-    "renameZoneDialogTitle": "Renombrar zona",
     "renameZoneSubmit": "Guardar",
     "renameZoneSuccess": "Zona renombrada.",
     "archiveZoneAction": "Archivar zona",
@@ -603,7 +601,10 @@
     "editZoneAction": "Editar zona",
     "zoneNotFoundTitle": "Zona no encontrada",
     "zoneNotFoundDescription": "Puede que se haya archivado o que el enlace esté obsoleto.",
-    "tableCountAria": "Mesas en la zona"
+    "tableCountAria": "Mesas en la zona",
+    "zoneNameDescription": "El cliente verá este nombre en el pedido: «Terraza», «Segunda planta».",
+    "zoneNameRequired": "Introduce un nombre de zona.",
+    "tableCountDescription": "Las mesas se crean dentro de la zona. Podrás añadirlas o renombrarlas después."
   },
   "format": {
     "ago": "hace {{n}}{{unit}}",
