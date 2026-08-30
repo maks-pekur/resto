@@ -5,15 +5,15 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { MoreHorizontal, ImageIcon } from 'lucide-react';
 import { showError } from '@/lib/ui/toast-helpers';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/common/empty-state';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { EmptyState } from '@/components/common/empty-state';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -141,17 +141,15 @@ export function ItemsTable({
 
   return (
     <>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[48px]" />
-            <TableHead>{t('tableNameHeader')}</TableHead>
-            <TableHead className="w-[100px]">{t('tablePriceHeader')}</TableHead>
-            <TableHead className="w-[120px]">{t('tableStatusHeader')}</TableHead>
-            <TableHead className="w-[60px] text-right" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
+      <DataTable>
+        <DataTableHeaderRow>
+          <DataTableHeadCell className="w-[48px]" />
+          <DataTableHeadCell>{t('tableNameHeader')}</DataTableHeadCell>
+          <DataTableHeadCell className="w-[100px]">{t('tablePriceHeader')}</DataTableHeadCell>
+          <DataTableHeadCell className="w-[120px]">{t('tableStatusHeader')}</DataTableHeadCell>
+          <DataTableHeadCell className="w-[60px] text-right" />
+        </DataTableHeaderRow>
+        <DataTableBody>
           {items.map((item) => {
             const name = fromLocalizedText(item.name);
             const categoryPath = buildCategoryPath(item);
@@ -168,7 +166,7 @@ export function ItemsTable({
             };
 
             return (
-              <TableRow
+              <DataTableRow
                 key={item.id}
                 className="h-12 cursor-pointer hover:bg-muted/50 focus-visible:bg-muted/50 focus-visible:outline-none"
                 data-testid={`item-row-${item.id}`}
@@ -183,7 +181,7 @@ export function ItemsTable({
                   }
                 }}
               >
-                <TableCell>
+                <DataTableCell>
                   {item.photo ? (
                     <img src={item.photo.url} alt="" className="size-10 rounded object-cover" />
                   ) : (
@@ -194,16 +192,16 @@ export function ItemsTable({
                       <ImageIcon className="size-4 text-muted-foreground" />
                     </div>
                   )}
-                </TableCell>
-                <TableCell>
+                </DataTableCell>
+                <DataTableCell>
                   <span className="font-medium">{name}</span>
                   <div className="text-xs text-muted-foreground">{categoryPath}</div>
-                </TableCell>
-                <TableCell>{formatPrice(item.basePrice, item.hasSizes)}</TableCell>
-                <TableCell>
+                </DataTableCell>
+                <DataTableCell>{formatPrice(item.basePrice, item.hasSizes)}</DataTableCell>
+                <DataTableCell>
                   <StatusBadge status={status} />
-                </TableCell>
-                <TableCell className="text-right" onClick={stopPropagation}>
+                </DataTableCell>
+                <DataTableCell className="text-right" onClick={stopPropagation}>
                   <div
                     className="relative inline-block"
                     ref={openMenuId === item.id ? openMenuRef : undefined}
@@ -251,12 +249,12 @@ export function ItemsTable({
                       </div>
                     ) : null}
                   </div>
-                </TableCell>
-              </TableRow>
+                </DataTableCell>
+              </DataTableRow>
             );
           })}
-        </TableBody>
-      </Table>
+        </DataTableBody>
+      </DataTable>
 
       <div className="flex items-center justify-between pt-2">
         <div className="text-sm text-muted-foreground">

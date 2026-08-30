@@ -8,7 +8,6 @@ import { meLocationsQuery } from '@/lib/queries/locations';
 import { sortLocations } from '@/lib/default-location';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { DEFAULT_DASHBOARD_RANGE, type DateRange } from '@/lib/date-range';
-import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { ALL_LOCATIONS, LocationsFilter } from '@/components/common/locations-filter';
 import { DateRangePicker } from '@/components/common/date-range-picker';
@@ -38,7 +37,6 @@ export function DashboardPage() {
 
   return (
     <>
-      <PageHeading title={t('title')} />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {mode === 'none' ? (
           // D-19: zero active locations (owner) — empty state + create-location CTA, no

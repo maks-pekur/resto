@@ -254,7 +254,8 @@
       "archiveFailed": "No se pudo archivar la categoría.",
       "pageTitle": "Categorías",
       "nameRequired": "Introduce un nombre",
-      "reorderFailed": "No se pudo reordenar"
+      "reorderFailed": "No se pudo reordenar",
+      "rowActionsAriaLabel": "Acciones para «{{name}}»"
     },
     "modifierGroups": {
       "createGroup": "+ Crear grupo",
@@ -617,7 +618,9 @@
       "save": "Guardar",
       "create": "Crear zona",
       "saving": "Guardando…"
-    }
+    },
+    "zoneStatusHeader": "Estado",
+    "rowActionsAriaLabel": "Acciones para «{{name}}»"
   },
   "format": {
     "ago": "hace {{n}}{{unit}}",
@@ -649,6 +652,8 @@
     "retrySucceeded": "Reembolso reenviado",
     "retryFailed": "No se pudo reintentar el reembolso.",
     "empty": "No hay transacciones en este periodo",
-    "failedBadgeAria": "Reembolsos que requieren acción: {{count}}"
+    "failedBadgeAria": "Reembolsos que requieren acción: {{count}}",
+    "columnActions": "Acciones",
+    "rowActionsAriaLabel": "Acciones del pedido n.º {{n}}"
   }
 }

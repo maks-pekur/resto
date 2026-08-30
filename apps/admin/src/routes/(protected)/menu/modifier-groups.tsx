@@ -8,15 +8,15 @@ import { Route as menuLayoutRoute } from './_layout';
 import { modifierGroupsQuery } from '@/lib/queries/catalog';
 import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
-import { EmptyState } from '@/components/common/empty-state';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { EmptyState } from '@/components/common/empty-state';
 
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
@@ -58,15 +58,13 @@ function ModifierGroupsPage() {
             action={<Button onClick={goToNew}>{t('addGroup')}</Button>}
           />
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('tableName')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+          <DataTable>
+            <DataTableHeaderRow>
+              <DataTableHeadCell>{t('tableName')}</DataTableHeadCell>
+            </DataTableHeaderRow>
+            <DataTableBody>
               {groups.map((g) => (
-                <TableRow
+                <DataTableRow
                   key={g.id}
                   className="cursor-pointer hover:bg-muted/50"
                   role="button"
@@ -78,11 +76,11 @@ function ModifierGroupsPage() {
                     if (e.key === 'Enter') goToGroup(g.id);
                   }}
                 >
-                  <TableCell className="font-medium">{fromLocalizedText(g.name)}</TableCell>
-                </TableRow>
+                  <DataTableCell className="font-medium">{fromLocalizedText(g.name)}</DataTableCell>
+                </DataTableRow>
               ))}
-            </TableBody>
-          </Table>
+            </DataTableBody>
+          </DataTable>
         )}
       </div>
     </>

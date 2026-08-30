@@ -1,8 +1,16 @@
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { cn, formatMoney } from '@/lib/utils';
+import { AlertCircle, RotateCcw } from 'lucide-react';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { RowActions } from '@/components/common/row-actions';
+import { formatMoney } from '@/lib/utils';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { usePermissions } from '@/hooks/use-permissions';
 import { retryRefundMutation } from '@/lib/queries/orders';
@@ -39,68 +47,77 @@ export function TransactionsTable({ rows }: TransactionsTableProps) {
   });
 
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <div className="text-muted-foreground hidden border-b py-1.5 text-xs sm:flex">
-        <span className="w-36 shrink-0 px-3">{t('columnDate')}</span>
-        <span className="w-24 shrink-0 px-3">{t('columnOrder')}</span>
-        <span className="w-28 shrink-0 px-3 text-right">{t('columnAmount')}</span>
-        <span className="w-28 shrink-0 px-3 text-right">{t('columnRefunded')}</span>
-        <span className="flex-1 px-3">{t('columnStatus')}</span>
-      </div>
-      {rows.map((row) => {
-        const state = stateOf(row);
-        return (
-          <div
-            key={row.paymentId}
-            data-testid={`transaction-${row.paymentId}`}
-            className={cn(
-              'flex flex-wrap items-center border-b py-2 text-sm',
-              state === 'failed' ? 'bg-destructive/5' : 'hover:bg-muted/40',
-            )}
-          >
-            <span className="text-muted-foreground w-36 shrink-0 px-3 tabular-nums">
-              {new Date(row.createdAt).toLocaleString([], {
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
-            </span>
-            <span className="w-24 shrink-0 px-3 font-medium tabular-nums">
-              {t('orderNumber', { n: row.orderShortNumber })}
-            </span>
-            <span className="w-28 shrink-0 px-3 text-right tabular-nums">
-              {formatMoney(row.amount, row.currency)}
-            </span>
-            <span className="text-muted-foreground w-28 shrink-0 px-3 text-right tabular-nums">
-              {Number(row.refundedAmount) > 0 ? formatMoney(row.refundedAmount, row.currency) : '—'}
-            </span>
-            <span
-              className={cn(
-                'flex flex-1 items-center gap-1.5 px-3',
-                state === 'failed' ? 'text-destructive' : 'text-muted-foreground',
-              )}
+    <DataTable>
+      <DataTableHeaderRow>
+        <DataTableHeadCell className="w-40">{t('columnDate')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-24">{t('columnOrder')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-32 text-right">{t('columnAmount')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-32 text-right">{t('columnRefunded')}</DataTableHeadCell>
+        <DataTableHeadCell>{t('columnStatus')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-16 text-right">
+          <span className="sr-only">{t('columnActions')}</span>
+        </DataTableHeadCell>
+      </DataTableHeaderRow>
+      <DataTableBody>
+        {rows.map((row) => {
+          const state = stateOf(row);
+          return (
+            <DataTableRow
+              key={row.paymentId}
+              data-testid={`transaction-${row.paymentId}`}
+              className={state === 'failed' ? 'bg-destructive/5' : undefined}
             >
-              {state === 'failed' ? <AlertCircle className="size-4" /> : null}
-              {t(`status.${state}`)}
-            </span>
-            {state === 'failed' && can('order', 'cancel') ? (
-              <span className="px-3">
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  disabled={retryMutation.isPending}
-                  onClick={() => {
-                    retryMutation.mutate(row);
-                  }}
-                >
-                  {t('retryBtn')}
-                </Button>
-              </span>
-            ) : null}
-          </div>
-        );
-      })}
-    </div>
+              <DataTableCell className="text-muted-foreground tabular-nums">
+                {new Date(row.createdAt).toLocaleString([], {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })}
+              </DataTableCell>
+              <DataTableCell className="font-medium tabular-nums">
+                {t('orderNumber', { n: row.orderShortNumber })}
+              </DataTableCell>
+              <DataTableCell className="text-right tabular-nums">
+                {formatMoney(row.amount, row.currency)}
+              </DataTableCell>
+              <DataTableCell className="text-muted-foreground text-right tabular-nums">
+                {Number(row.refundedAmount) > 0
+                  ? formatMoney(row.refundedAmount, row.currency)
+                  : '—'}
+              </DataTableCell>
+              <DataTableCell
+                className={state === 'failed' ? 'text-destructive' : 'text-muted-foreground'}
+              >
+                <span className="flex items-center gap-1.5">
+                  {state === 'failed' ? <AlertCircle className="size-4" /> : null}
+                  {t(`status.${state}`)}
+                </span>
+              </DataTableCell>
+              <DataTableCell className="text-right">
+                <RowActions
+                  label={t('rowActionsAriaLabel', { n: row.orderShortNumber })}
+                  actions={
+                    state === 'failed' && can('order', 'cancel')
+                      ? [
+                          {
+                            key: 'retry',
+                            label: t('retryBtn'),
+                            icon: RotateCcw,
+                            disabled: retryMutation.isPending,
+                            onSelect: () => {
+                              retryMutation.mutate(row);
+                            },
+                          },
+                        ]
+                      : []
+                  }
+                />
+              </DataTableCell>
+            </DataTableRow>
+          );
+        })}
+      </DataTableBody>
+    </DataTable>
   );
 }

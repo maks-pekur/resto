@@ -141,7 +141,12 @@ describe('tables screen', () => {
     expect(screen.getByText('Terrace')).toBeInTheDocument();
     expect(screen.getByText('1')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /tables\.printAction/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /tables\.downloadAction/ })).toBeInTheDocument();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /tables\.rowActionsAriaLabel/ }));
+    expect(
+      await screen.findByRole('menuitem', { name: /tables\.downloadAction/ }),
+    ).toBeInTheDocument();
   });
 
   it('states the sheet ordering and the scan-to-verify line next to the print action', async () => {
@@ -220,12 +225,16 @@ describe('tables screen', () => {
     });
 
     expect(await screen.findByRole('button', { name: /tables\.printAction/ })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /tables\.downloadAction/ })).toBeInTheDocument();
-
-    expect(screen.queryByRole('button', { name: /tables\.renameZoneAction/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /tables\.addTablesAction/ })).toBeNull();
     expect(screen.queryByRole('button', { name: /tables\.archiveZoneAction/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /tables\.renameTableAction/ })).toBeNull();
-    expect(screen.queryByRole('button', { name: /tables\.archiveTableAction/ })).toBeNull();
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /tables\.rowActionsAriaLabel/ }));
+
+    expect(
+      await screen.findByRole('menuitem', { name: /tables\.downloadAction/ }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('menuitem', { name: /tables\.renameTableAction/ })).toBeNull();
+    expect(screen.queryByRole('menuitem', { name: /tables\.archiveTableAction/ })).toBeNull();
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { canMock } = vi.hoisted(() => ({ canMock: vi.fn(() => true) }));
@@ -48,7 +49,9 @@ describe('TransactionsTable', () => {
     renderTable([row()]);
 
     expect(screen.getByText('transactions.status.paid')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'transactions.retryBtn' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /transactions\.rowActionsAriaLabel/ }),
+    ).not.toBeInTheDocument();
   });
 
   it('separates a refunded payment from a failed one', () => {
@@ -57,11 +60,17 @@ describe('TransactionsTable', () => {
     expect(screen.getByText('transactions.status.refunded')).toBeInTheDocument();
   });
 
-  it('offers a retry on the payment whose refund failed', () => {
+  it('offers a retry on the payment whose refund failed', async () => {
+    const user = userEvent.setup();
     renderTable([row({ hasFailedRefund: true })]);
 
     expect(screen.getByText('transactions.status.failed')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'transactions.retryBtn' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /transactions\.rowActionsAriaLabel/ }));
+
+    expect(
+      await screen.findByRole('menuitem', { name: 'transactions.retryBtn' }),
+    ).toBeInTheDocument();
   });
 
   it('withholds the retry from an operator who cannot cancel orders', () => {
@@ -69,6 +78,8 @@ describe('TransactionsTable', () => {
 
     renderTable([row({ hasFailedRefund: true })]);
 
-    expect(screen.queryByRole('button', { name: 'transactions.retryBtn' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /transactions\.rowActionsAriaLabel/ }),
+    ).not.toBeInTheDocument();
   });
 });

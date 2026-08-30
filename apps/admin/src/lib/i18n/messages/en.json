@@ -254,7 +254,8 @@
       "archiveFailed": "Couldn't archive the category.",
       "pageTitle": "Categories",
       "nameRequired": "Enter a name",
-      "reorderFailed": "Could not reorder"
+      "reorderFailed": "Could not reorder",
+      "rowActionsAriaLabel": "Actions for “{{name}}”"
     },
     "modifierGroups": {
       "createGroup": "+ Create group",
@@ -617,7 +618,9 @@
       "save": "Save",
       "create": "Create zone",
       "saving": "Saving…"
-    }
+    },
+    "zoneStatusHeader": "Status",
+    "rowActionsAriaLabel": "Actions for “{{name}}”"
   },
   "format": {
     "ago": "{{n}}{{unit}} ago",
@@ -649,6 +652,8 @@
     "retrySucceeded": "Refund sent again",
     "retryFailed": "Could not retry the refund.",
     "empty": "No transactions in this period",
-    "failedBadgeAria": "Refunds needing action: {{count}}"
+    "failedBadgeAria": "Refunds needing action: {{count}}",
+    "columnActions": "Actions",
+    "rowActionsAriaLabel": "Actions for order #{{n}}"
   }
 }

@@ -20,6 +20,15 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { RowActions } from '@/components/common/row-actions';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -31,14 +40,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { hasPermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -206,15 +207,13 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
       <CardContent className="flex flex-col gap-2">
         <p className="text-muted-foreground text-sm">{t('printOrderingLine')}</p>
         <p className="text-muted-foreground text-sm">{t('printVerifyLine')}</p>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>{t('tableNumberHeader')}</TableHead>
-              <TableHead>{t('tableStatusHeader')}</TableHead>
-              <TableHead className="text-right">{t('tableActionsHeader')}</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
+        <DataTable>
+          <DataTableHeaderRow>
+            <DataTableHeadCell>{t('tableNumberHeader')}</DataTableHeadCell>
+            <DataTableHeadCell>{t('tableStatusHeader')}</DataTableHeadCell>
+            <DataTableHeadCell className="text-right">{t('tableActionsHeader')}</DataTableHeadCell>
+          </DataTableHeaderRow>
+          <DataTableBody>
             {zone.tables.map((table) => (
               <TableRowItem
                 key={table.id}
@@ -224,8 +223,8 @@ export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactEl
                 canUpdate={canUpdate}
               />
             ))}
-          </TableBody>
-        </Table>
+          </DataTableBody>
+        </DataTable>
       </CardContent>
 
       <Dialog open={addTablesOpen} onOpenChange={setAddTablesOpen}>
@@ -371,50 +370,50 @@ function TableRowItem({
   };
 
   return (
-    <TableRow>
-      <TableCell className="font-medium">{table.number}</TableCell>
-      <TableCell>
+    <DataTableRow>
+      <DataTableCell className="font-medium">{table.number}</DataTableCell>
+      <DataTableCell>
         <Badge variant={table.status === 'archived' ? 'secondary' : 'default'}>
           {table.status === 'archived' ? t('statusArchived') : t('statusActive')}
         </Badge>
-      </TableCell>
-      <TableCell className="flex flex-wrap justify-end gap-2">
-        <Button variant="ghost" size="sm" disabled={downloading} onClick={handleDownload}>
-          {downloading ? (
-            <Loader2 className="size-4 animate-spin" />
-          ) : (
-            <Download className="size-4" />
-          )}
-          {t('downloadAction')}
-        </Button>
-        {canUpdate ? (
-          <>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setRenameValue(table.number);
-                setRenameError(null);
-                setRenameOpen(true);
-              }}
-            >
-              <Pencil className="size-4" />
-              {t('renameTableAction')}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="text-destructive"
-              onClick={() => {
-                setArchiveError(null);
-                setArchiveOpen(true);
-              }}
-            >
-              <Trash2 className="size-4" />
-              {t('archiveTableAction')}
-            </Button>
-          </>
-        ) : null}
+      </DataTableCell>
+      <DataTableCell className="text-right">
+        <RowActions
+          label={t('rowActionsAriaLabel', { name: table.number })}
+          actions={[
+            {
+              key: 'download',
+              label: t('downloadAction'),
+              icon: downloading ? Loader2 : Download,
+              disabled: downloading,
+              onSelect: handleDownload,
+            },
+            ...(canUpdate
+              ? [
+                  {
+                    key: 'rename',
+                    label: t('renameTableAction'),
+                    icon: Pencil,
+                    onSelect: () => {
+                      setRenameValue(table.number);
+                      setRenameError(null);
+                      setRenameOpen(true);
+                    },
+                  },
+                  {
+                    key: 'archive',
+                    label: t('archiveTableAction'),
+                    icon: Trash2,
+                    tone: 'destructive' as const,
+                    onSelect: () => {
+                      setArchiveError(null);
+                      setArchiveOpen(true);
+                    },
+                  },
+                ]
+              : []),
+          ]}
+        />
 
         <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
           <DialogContent>
@@ -473,7 +472,7 @@ function TableRowItem({
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
-      </TableCell>
-    </TableRow>
+      </DataTableCell>
+    </DataTableRow>
   );
 }

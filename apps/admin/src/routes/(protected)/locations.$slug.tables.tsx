@@ -11,6 +11,7 @@ import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
 import { ZoneList } from '@/components/tables/zone-list';
+import { LocationsFilter } from '@/components/common/locations-filter';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
@@ -36,7 +37,8 @@ function TablesPage() {
   const canUpdate = hasPermission(me, 'table', 'update');
 
   const { data: locationsResult, isPending: isLocationsPending } = useQuery(tenantLocationsQuery());
-  const location = (locationsResult?.data ?? []).find((loc) => loc.slug === slug);
+  const locations = locationsResult?.data ?? [];
+  const location = locations.find((loc) => loc.slug === slug);
 
   const { data: zonesResult, isPending: isZonesPending } = useQuery({
     ...tableZonesQuery(location?.id ?? ''),
@@ -88,6 +90,15 @@ function TablesPage() {
         }
       />
       <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
+        <LocationsFilter
+          locations={locations.map((item) => ({ id: item.id, name: item.name }))}
+          value={location.id}
+          onChange={(nextId) => {
+            const next = locations.find((item) => item.id === nextId);
+            if (next === undefined) return;
+            void navigate({ to: '/locations/$slug/tables', params: { slug: next.slug } });
+          }}
+        />
         {isZonesPending ? (
           <div className="flex flex-1 items-center justify-center py-16">
             <Loader2 className="size-6 animate-spin" />

@@ -14,6 +14,13 @@ import {
 } from '@/lib/queries/locations';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
+import {
+  DataTable,
+  DataTableCell,
+  DataTableHead,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { RowActions } from '@/components/common/row-actions';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -87,15 +94,18 @@ function LocationsPage() {
 
   return (
     <>
-      <PageHeading title="Locations" description="Create and manage your locations." />
-      <div className="flex justify-end px-4 lg:px-6">
-        <Button asChild>
-          <Link to="/locations/$slug" params={{ slug: 'new' }}>
-            <Plus className="size-4" />
-            Add new
-          </Link>
-        </Button>
-      </div>
+      <PageHeading
+        title="Locations"
+        description="Create and manage your locations."
+        action={
+          <Button asChild>
+            <Link to="/locations/$slug" params={{ slug: 'new' }}>
+              <Plus className="size-4" />
+              Add new
+            </Link>
+          </Button>
+        }
+      />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {isPending ? null : locations.length === 0 ? (
           <EmptyState
@@ -104,63 +114,59 @@ function LocationsPage() {
             description="Add your first location to start taking orders there."
           />
         ) : (
-          <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Name
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Web address
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Address
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {locations.map((location) => (
-                  <tr key={location.id} className="border-b last:border-0">
-                    <td className="px-4 py-2 font-medium">
-                      <Link
-                        className="underline-offset-4 hover:underline"
-                        to="/locations/$slug"
-                        params={{ slug: location.slug }}
-                      >
-                        {location.name}
-                      </Link>
-                    </td>
-                    <td className="text-muted-foreground px-4 py-2">
-                      <code>{location.slug}</code>
-                    </td>
-                    <td className="px-4 py-2 text-muted-foreground">{location.address ?? '—'}</td>
-                    <td className="px-4 py-2 capitalize">{location.status}</td>
-                    <td className="px-4 py-2">
-                      {location.status === 'active' ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Archive ${location.name}`}
-                          onClick={() => {
-                            setArchiveTarget(location);
-                          }}
-                        >
-                          <Archive className="size-4" />
-                        </Button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable>
+            <DataTableHead
+              columns={[
+                { label: 'Name' },
+                { label: 'Web address' },
+                { label: 'Address' },
+                { label: 'Status' },
+                { label: 'Actions', className: 'w-12 text-right', srOnly: true },
+              ]}
+            />
+            <tbody>
+              {locations.map((location) => (
+                <DataTableRow key={location.id}>
+                  <DataTableCell className="font-medium">
+                    <Link
+                      className="underline-offset-4 hover:underline"
+                      to="/locations/$slug"
+                      params={{ slug: location.slug }}
+                    >
+                      {location.name}
+                    </Link>
+                  </DataTableCell>
+                  <DataTableCell className="text-muted-foreground">
+                    <code>{location.slug}</code>
+                  </DataTableCell>
+                  <DataTableCell className="text-muted-foreground">
+                    {location.address ?? '—'}
+                  </DataTableCell>
+                  <DataTableCell className="capitalize">{location.status}</DataTableCell>
+                  <DataTableCell className="text-right">
+                    <RowActions
+                      label={`Actions for ${location.name}`}
+                      actions={
+                        location.status === 'active'
+                          ? [
+                              {
+                                key: 'archive',
+                                label: 'Archive',
+                                icon: Archive,
+                                tone: 'destructive' as const,
+                                onSelect: () => {
+                                  setArchiveTarget(location);
+                                },
+                              },
+                            ]
+                          : []
+                      }
+                    />
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
 

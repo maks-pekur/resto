@@ -254,7 +254,8 @@
       "archiveFailed": "Не удалось архивировать категорию.",
       "pageTitle": "Категории",
       "nameRequired": "Введите название",
-      "reorderFailed": "Не удалось изменить порядок"
+      "reorderFailed": "Не удалось изменить порядок",
+      "rowActionsAriaLabel": "Действия для «{{name}}»"
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",
@@ -617,7 +618,9 @@
       "save": "Сохранить",
       "create": "Создать зону",
       "saving": "Сохраняем…"
-    }
+    },
+    "zoneStatusHeader": "Статус",
+    "rowActionsAriaLabel": "Действия для «{{name}}»"
   },
   "format": {
     "ago": "{{n}}{{unit}} назад",
@@ -649,6 +652,8 @@
     "retrySucceeded": "Возврат отправлен повторно",
     "retryFailed": "Не удалось повторить возврат.",
     "empty": "За выбранный период транзакций нет",
-    "failedBadgeAria": "Возвратов, требующих действия: {{count}}"
+    "failedBadgeAria": "Возвратов, требующих действия: {{count}}",
+    "columnActions": "Действия",
+    "rowActionsAriaLabel": "Действия по заказу №{{n}}"
   }
 }

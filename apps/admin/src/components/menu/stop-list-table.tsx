@@ -1,17 +1,17 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
 import { EmptyState } from '@/components/common/empty-state';
 import { ImageIcon } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { formatAge, formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
@@ -62,17 +62,17 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[48px]">{t('tablePhotoHeader')}</TableHead>
-          <TableHead>{t('tableNameHeader')}</TableHead>
-          <TableHead>{t('tableCategoryHeader')}</TableHead>
-          <TableHead className="w-[160px]">{t('tableStoppedAtHeader')}</TableHead>
-          <TableHead className="w-[80px] text-right">{t('tableStopHeader')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <DataTable>
+      <DataTableHeaderRow>
+        <DataTableHeadCell className="w-[48px]">{t('tablePhotoHeader')}</DataTableHeadCell>
+        <DataTableHeadCell>{t('tableNameHeader')}</DataTableHeadCell>
+        <DataTableHeadCell>{t('tableCategoryHeader')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-[160px]">{t('tableStoppedAtHeader')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-[80px] text-right">
+          {t('tableStopHeader')}
+        </DataTableHeadCell>
+      </DataTableHeaderRow>
+      <DataTableBody>
         {visibleItems.map((item) => {
           const name = item.itemName ? fromLocalizedText(item.itemName) : '';
           const categoryPath = buildCategoryPath(item);
@@ -81,8 +81,8 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
           const isStale = msSince > STALE_THRESHOLD_MS;
           const isPending = toggleMutation.isPending && toggleMutation.variables === item.id;
           return (
-            <TableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
-              <TableCell>
+            <DataTableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
+              <DataTableCell>
                 {item.photo ? (
                   <img src={item.photo.url} alt="" className="size-10 rounded object-cover" />
                 ) : (
@@ -93,18 +93,18 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
                     <ImageIcon className="size-4 text-muted-foreground" />
                   </div>
                 )}
-              </TableCell>
-              <TableCell className="font-medium">{name}</TableCell>
-              <TableCell className="text-muted-foreground">{categoryPath}</TableCell>
-              <TableCell>
+              </DataTableCell>
+              <DataTableCell className="font-medium">{name}</DataTableCell>
+              <DataTableCell className="text-muted-foreground">{categoryPath}</DataTableCell>
+              <DataTableCell>
                 <span className="text-sm">{formatAge(stoppedAtMs, now)}</span>
                 {isStale ? (
                   <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                     {t('staleWarning', { duration: formatDuration(msSince) })}
                   </p>
                 ) : null}
-              </TableCell>
-              <TableCell className="text-right">
+              </DataTableCell>
+              <DataTableCell className="text-right">
                 <Switch
                   className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                   checked
@@ -114,11 +114,11 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
                   }}
                   aria-label={t('resumeAriaLabel', { name })}
                 />
-              </TableCell>
-            </TableRow>
+              </DataTableCell>
+            </DataTableRow>
           );
         })}
-      </TableBody>
-    </Table>
+      </DataTableBody>
+    </DataTable>
   );
 }
