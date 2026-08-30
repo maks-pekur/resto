@@ -110,4 +110,30 @@ describe('useOrderSound', () => {
 
     expect(playMock).not.toHaveBeenCalled();
   });
+
+  it('starts locked until the operator has bought playback permission', () => {
+    const { result } = renderHook(() => useOrderSound([]));
+
+    expect(result.current.unlocked).toBe(false);
+  });
+
+  it('unlock plays once, remembers the permission and reports itself unlocked', () => {
+    const { result } = renderHook(() => useOrderSound([]));
+
+    act(() => {
+      result.current.unlock();
+    });
+
+    expect(playMock).toHaveBeenCalledTimes(1);
+    expect(result.current.unlocked).toBe(true);
+    expect(window.localStorage.getItem('orders.soundUnlocked')).toBe('1');
+  });
+
+  it('starts unlocked on the next visit', () => {
+    window.localStorage.setItem('orders.soundUnlocked', '1');
+
+    const { result } = renderHook(() => useOrderSound([]));
+
+    expect(result.current.unlocked).toBe(true);
+  });
 });

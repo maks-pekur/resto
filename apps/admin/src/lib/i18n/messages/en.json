@@ -376,10 +376,7 @@
       "dateLabel": "Date",
       "dateToday": "Today",
       "dateYesterday": "Yesterday",
-      "dateWeek": "7 days",
-      "channelLabel": "Channel",
-      "channelSiteOnly": "Website",
-      "channelHint": "More channels appear once QR ordering is connected"
+      "dateWeek": "7 days"
     },
     "card": {
       "newBadge": "New",

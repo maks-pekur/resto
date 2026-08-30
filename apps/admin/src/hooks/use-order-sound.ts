@@ -3,6 +3,7 @@ import { UNACCEPTED_ESCALATION_MS } from '@/components/orders/order-card';
 import type { OrderFeedRowApi } from '@/lib/queries/orders';
 
 const MUTE_STORAGE_KEY = 'orders.soundMuted';
+const UNLOCK_STORAGE_KEY = 'orders.soundUnlocked';
 const CHIME_URL = '/sounds/order-chime.wav';
 const REPEAT_INTERVAL_MS = 30_000;
 const CHECK_INTERVAL_MS = 5_000;
@@ -11,6 +12,8 @@ export interface UseOrderSoundResult {
   readonly muted: boolean;
   readonly setMuted: (muted: boolean) => void;
   readonly blocked: boolean;
+  /** False until the operator's first click has bought playback permission from the browser. */
+  readonly unlocked: boolean;
   readonly unlock: () => void;
 }
 
@@ -19,9 +22,15 @@ const readStoredMuted = (): boolean => {
   return window.localStorage.getItem(MUTE_STORAGE_KEY) === '1';
 };
 
+const readStoredUnlocked = (): boolean => {
+  if (typeof window === 'undefined') return true;
+  return window.localStorage.getItem(UNLOCK_STORAGE_KEY) === '1';
+};
+
 export function useOrderSound(unacceptedRows: readonly OrderFeedRowApi[]): UseOrderSoundResult {
   const [muted, setMutedState] = React.useState<boolean>(readStoredMuted);
   const [blocked, setBlocked] = React.useState(false);
+  const [unlocked, setUnlocked] = React.useState<boolean>(readStoredUnlocked);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const seenIdsRef = React.useRef<ReadonlySet<string>>(new Set());
   const lastEscalationChimeRef = React.useRef<Map<string, number>>(new Map());
@@ -88,6 +97,14 @@ export function useOrderSound(unacceptedRows: readonly OrderFeedRowApi[]): UseOr
     };
   }, [unacceptedRows, play]);
 
+  const unlock = React.useCallback((): void => {
+    play();
+    setUnlocked(true);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(UNLOCK_STORAGE_KEY, '1');
+    }
+  }, [play]);
+
   const setMuted = React.useCallback((next: boolean): void => {
     setMutedState(next);
     if (typeof window !== 'undefined') {
@@ -95,5 +112,5 @@ export function useOrderSound(unacceptedRows: readonly OrderFeedRowApi[]): UseOr
     }
   }, []);
 
-  return { muted, setMuted, blocked, unlock: play };
+  return { muted, setMuted, blocked, unlocked, unlock };
 }

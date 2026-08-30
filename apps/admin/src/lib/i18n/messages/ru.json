@@ -376,10 +376,7 @@
       "dateLabel": "Дата",
       "dateToday": "Сегодня",
       "dateYesterday": "Вчера",
-      "dateWeek": "7 дней",
-      "channelLabel": "Канал",
-      "channelSiteOnly": "Сайт",
-      "channelHint": "Появятся другие каналы, когда подключим QR-меню"
+      "dateWeek": "7 дней"
     },
     "card": {
       "newBadge": "Новый",

@@ -157,7 +157,7 @@ function OrdersPage() {
   return (
     <>
       <PageHeading title={tNav('orders')} />
-      <EnableSoundBanner onUnlock={sound.unlock} />
+      {sound.unlocked ? null : <EnableSoundBanner onUnlock={sound.unlock} />}
       <RefundFailedBanner
         count={refundFailedCount}
         onShowClick={() => {
@@ -173,6 +173,7 @@ function OrdersPage() {
         soundMuted={sound.muted}
         onSoundMutedChange={sound.setMuted}
         soundBlocked={sound.blocked}
+        soundReady={sound.unlocked}
       />
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (

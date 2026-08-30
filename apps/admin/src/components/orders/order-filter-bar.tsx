@@ -10,7 +10,6 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { OrderStatusPreset, OrderDatePreset } from '@/lib/queries/orders';
 
@@ -23,6 +22,7 @@ export interface OrderFilterBarProps {
   readonly soundMuted: boolean;
   readonly onSoundMutedChange: (muted: boolean) => void;
   readonly soundBlocked: boolean;
+  readonly soundReady: boolean;
 }
 
 export function OrderFilterBar({
@@ -34,6 +34,7 @@ export function OrderFilterBar({
   soundMuted,
   onSoundMutedChange,
   soundBlocked,
+  soundReady,
 }: OrderFilterBarProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.filters' });
   const { t: tFeed } = useTranslation('translation', { keyPrefix: 'orders.feed' });
@@ -75,34 +76,29 @@ export function OrderFilterBar({
         </SelectContent>
       </Select>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Badge variant="outline" className="gap-1" aria-label={t('channelLabel')}>
-            {t('channelSiteOnly')}
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>{t('channelHint')}</TooltipContent>
-      </Tooltip>
-
       <div className="ml-auto flex items-center gap-3">
         {soundBlocked ? (
           <span className="text-xs text-muted-foreground">{tAlerts('soundBlockedHint')}</span>
         ) : null}
-        <div className="flex items-center gap-1.5">
-          {soundMuted ? (
-            <VolumeX className="size-4 text-muted-foreground" />
-          ) : (
-            <Volume2 className="size-4 text-muted-foreground" />
-          )}
-          <span className="text-xs text-muted-foreground">{tAlerts('muteToggleLabel')}</span>
-          <Switch
-            checked={!soundMuted}
-            onCheckedChange={(checked) => {
-              onSoundMutedChange(!checked);
-            }}
-            aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
-          />
-        </div>
+        {/* Until the browser has been unlocked the banner above is the sound control; two of
+            them on one screen read as a duplicate. */}
+        {soundReady ? (
+          <div className="flex items-center gap-1.5">
+            {soundMuted ? (
+              <VolumeX className="text-muted-foreground size-4" />
+            ) : (
+              <Volume2 className="text-muted-foreground size-4" />
+            )}
+            <span className="text-muted-foreground text-xs">{tAlerts('muteToggleLabel')}</span>
+            <Switch
+              checked={!soundMuted}
+              onCheckedChange={(checked) => {
+                onSoundMutedChange(!checked);
+              }}
+              aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+            />
+          </div>
+        ) : null}
         <Badge variant="outline" className="gap-1.5">
           <span
             className={cn(
