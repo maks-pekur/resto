@@ -181,7 +181,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     <div
       data-testid={`order-row-${row.id}`}
       className={cn(
-        'flex items-stretch overflow-hidden rounded-md border transition-colors',
+        'flex min-h-14 items-stretch overflow-hidden rounded-md border transition-colors',
         // A refund that failed is unfinished business: the row must not read as closed and done.
         row.hasFailedRefund ? 'bg-destructive/5' : 'hover:bg-muted/40',
       )}
@@ -194,9 +194,16 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           onOpenDetail(row);
         }}
       >
-        <span className="text-muted-foreground flex w-24 shrink-0 flex-col items-center justify-center gap-1 px-2 py-2">
+        {/* Square by construction: the width matches the row height, so the source reads as a
+            stamp on the order rather than as another column of text. */}
+        <span
+          className="text-muted-foreground flex w-14 shrink-0 flex-col items-center justify-center gap-0.5 px-1"
+          title={t(`channel.${channel.labelKey}`)}
+        >
           <ChannelIcon className="size-4" />
-          <span className="truncate text-[11px]">{t(`channel.${channel.labelKey}`)}</span>
+          <span className="w-full truncate text-center text-[10px] leading-none">
+            {t(`channel.${channel.labelKey}`)}
+          </span>
         </span>
 
         <span
