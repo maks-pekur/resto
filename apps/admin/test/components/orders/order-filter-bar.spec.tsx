@@ -25,7 +25,6 @@ const renderBar = (soundReady: boolean) =>
       onStatusChange={vi.fn()}
       counts={null}
       refundFailedCount={0}
-      isLive
       soundMuted={false}
       onSoundMutedChange={vi.fn()}
       soundBlocked={false}

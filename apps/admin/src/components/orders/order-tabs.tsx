@@ -5,7 +5,7 @@ import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders
 
 // The tab groups sit inside one filter bar, so they carry no surface of their own — the active
 // tab is marked against the bar's background rather than against a pill inside it.
-const TAB_LIST_CLASS = 'h-9 gap-0 rounded-none bg-transparent p-0';
+const TAB_LIST_CLASS = 'h-full gap-0 rounded-none bg-transparent p-0';
 const TAB_TRIGGER_CLASS =
   'h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
 
@@ -23,12 +23,13 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
 
   return (
     <Tabs
+      className="h-full gap-0"
       value={value}
       onValueChange={(next) => {
         onChange(next as OrderFulfillmentTab);
       }}
     >
-      <TabsList className={cn(TAB_LIST_CLASS, 'h-10')}>
+      <TabsList className={TAB_LIST_CLASS}>
         {ORDER_FULFILLMENT_TABS.map((tab) => (
           <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
             {t(tab)}
@@ -68,12 +69,13 @@ export function OrderStatusTabs({
 
   return (
     <Tabs
+      className="h-full gap-0"
       value={value}
       onValueChange={(next) => {
         onChange(next as OrderStatusPreset);
       }}
     >
-      <TabsList className={cn(TAB_LIST_CLASS, 'h-10 w-full justify-start overflow-x-auto')}>
+      <TabsList className={cn(TAB_LIST_CLASS, 'w-full justify-start overflow-x-auto')}>
         {ORDER_STATUS_TABS.map((tab) => (
           <TabsTrigger key={tab} value={tab} className={cn(TAB_TRIGGER_CLASS, 'gap-1.5')}>
             {t(tab)}

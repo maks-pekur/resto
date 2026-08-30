@@ -141,7 +141,6 @@ function OrdersPage() {
         onFulfillmentChange={setFulfillment}
         range={range}
         onRangeChange={setRange}
-        isLive={!feedQuery.isRefetchError}
         soundMuted={sound.muted}
         onSoundMutedChange={sound.setMuted}
         soundBlocked={sound.blocked}

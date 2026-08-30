@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Volume2, VolumeX } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { DateRangeStepper } from '@/components/common/date-range-stepper';
 import {
@@ -9,7 +8,6 @@ import {
   OrderStatusTabs,
   type OrderFulfillmentTab,
 } from '@/components/orders/order-tabs';
-import { cn } from '@/lib/utils';
 import type { DateRange } from '@/lib/date-range';
 import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders';
 
@@ -22,7 +20,6 @@ export interface OrderFilterBarProps {
   readonly refundFailedCount: number;
   readonly range: DateRange;
   readonly onRangeChange: (range: DateRange) => void;
-  readonly isLive: boolean;
   readonly soundMuted: boolean;
   readonly onSoundMutedChange: (muted: boolean) => void;
   readonly soundBlocked: boolean;
@@ -40,22 +37,20 @@ export function OrderFilterBar({
   refundFailedCount,
   range,
   onRangeChange,
-  isLive,
   soundMuted,
   onSoundMutedChange,
   soundBlocked,
   soundReady,
   notificationsBlocked,
 }: OrderFilterBarProps): React.ReactElement {
-  const { t: tFeed } = useTranslation('translation', { keyPrefix: 'orders.feed' });
   const { t: tAlerts } = useTranslation('translation', { keyPrefix: 'orders.alerts' });
 
   return (
     <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
-      <div className="flex flex-wrap items-stretch gap-y-2">
+      <div className="flex min-h-11 flex-wrap items-stretch">
         <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
 
-        <div className="ml-auto flex items-center gap-2 px-3 py-1">
+        <div className="ml-auto flex items-center gap-2 px-3">
           <DateRangeStepper value={range} onChange={onRangeChange} />
 
           {soundBlocked ? (
@@ -83,20 +78,10 @@ export function OrderFilterBar({
               />
             </div>
           ) : null}
-
-          <Badge variant="outline" className="gap-1.5">
-            <span
-              className={cn(
-                'size-1.5 rounded-full',
-                isLive ? 'bg-success' : 'animate-pulse bg-warning',
-              )}
-            />
-            {isLive ? tFeed('live') : tFeed('reconnecting')}
-          </Badge>
         </div>
       </div>
 
-      <div className="border-t">
+      <div className="h-11 border-t">
         <OrderStatusTabs
           value={status}
           onChange={onStatusChange}
