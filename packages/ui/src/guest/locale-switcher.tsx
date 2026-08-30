@@ -3,6 +3,13 @@
 import { cn } from '../lib/utils';
 import { useGuestUi } from './guest-ui-provider';
 
+const LOCALE_FLAG: Record<string, string> = {
+  ru: '🇷🇺',
+  en: '🇬🇧',
+  es: '🇪🇸',
+  uk: '🇺🇦',
+};
+
 export interface LocaleSwitcherProps {
   readonly locales: readonly string[];
   readonly activeLocale: string;
@@ -10,6 +17,11 @@ export interface LocaleSwitcherProps {
   readonly className?: string;
 }
 
+/**
+ * Flag discs with the code on them: a guest picks their language by recognising it, not by
+ * reading it. A locale we have no flag for keeps the code alone rather than borrowing someone
+ * else's — a wrong flag reads as a wrong country.
+ */
 export const LocaleSwitcher = ({
   locales,
   activeLocale,
@@ -24,10 +36,11 @@ export const LocaleSwitcher = ({
     <div
       role="group"
       aria-label={t('locale.label')}
-      className={cn('bg-muted inline-flex items-center rounded-full p-0.5', className)}
+      className={cn('inline-flex items-center gap-1.5', className)}
     >
       {locales.map((locale) => {
         const isActive = locale === activeLocale;
+        const flag = LOCALE_FLAG[locale];
         return (
           <button
             key={locale}
@@ -37,13 +50,23 @@ export const LocaleSwitcher = ({
               onSelect(locale);
             }}
             className={cn(
-              'focus-visible:ring-ring min-h-11 cursor-pointer rounded-full px-4 text-xs font-bold uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none sm:min-h-8 sm:px-3',
-              isActive
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground',
+              'focus-visible:ring-ring relative flex min-h-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:min-h-8',
+              isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100',
             )}
           >
-            {locale}
+            <span
+              className={cn(
+                'bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1',
+                isActive ? 'ring-primary ring-2' : 'ring-border',
+              )}
+            >
+              {flag ?? <span className="text-[10px] font-bold uppercase">{locale}</span>}
+            </span>
+            {flag === undefined ? null : (
+              <span className="bg-primary text-primary-foreground border-background absolute -right-1 bottom-0 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase sm:-bottom-1">
+                {locale}
+              </span>
+            )}
           </button>
         );
       })}
