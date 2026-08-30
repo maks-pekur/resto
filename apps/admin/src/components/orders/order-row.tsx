@@ -250,16 +250,18 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           </span>
         ) : null}
 
-        <span className="flex w-32 shrink-0 flex-col items-end justify-center px-3 py-2">
-          <span className="font-semibold tabular-nums">{formatMoney(row.total, row.currency)}</span>
+        <span className="flex w-32 shrink-0 flex-col justify-center gap-1 py-2">
+          <span className="px-3 text-right font-semibold tabular-nums">
+            {formatMoney(row.total, row.currency)}
+          </span>
           {row.hasFailedRefund ? (
             <OrderRefundFailedBadge />
           ) : (
             <span
               className={cn(
-                'w-full rounded-sm px-1.5 py-0.5 text-center text-[11px]',
+                'w-full py-0.5 text-center text-[11px] font-medium',
                 paymentKey === 'online'
-                  ? 'bg-success/10 text-success'
+                  ? 'bg-success text-success-foreground'
                   : 'bg-muted text-muted-foreground',
               )}
             >
