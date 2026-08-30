@@ -2,11 +2,14 @@ import { Link } from '@tanstack/react-router';
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { stopListQuery, stopListAggregateQuery } from '@/lib/queries/catalog';
+import { meQuery } from '@/lib/queries/identity';
+import { hasPermission } from '@/lib/auth/permissions';
 import { useEffectiveLocation } from '@/lib/hooks/use-effective-location';
 import { SetupChecklistCard } from '@/components/setup-checklist-card';
 import { PageHeading } from '@/components/page-heading';
 import { EmptyState } from '@/components/empty-state';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
+import { DashboardKpis } from '@/components/dashboard-kpis';
 import { Button } from '@/components/ui/button';
 
 /**
@@ -21,6 +24,11 @@ export function DashboardPage() {
   // (location.context_required) for an owner with no location selected — closes the 08.4 gap.
   // D-07: only stop-list-derived counters render here, never a silently-empty order counter.
   const { mode, locationId } = useEffectiveLocation();
+
+  // Staff have no `reports:read`; the widgets are simply absent for them rather than
+  // rendered as a row of refusals.
+  const { data: meResult } = useQuery(meQuery());
+  const canSeeReports = hasPermission(meResult?.data ?? null, 'reports', 'read');
 
   const { data: singleResult } = useQuery({
     ...stopListQuery(locationId ?? ''),
@@ -54,9 +62,12 @@ export function DashboardPage() {
             }
           />
         ) : (
-          <div className="grid gap-4 md:grid-cols-2">
-            <SetupChecklistCard />
-            <TodaysWidget count={stopCount} />
+          <div className="flex flex-col gap-4">
+            {canSeeReports ? <DashboardKpis /> : null}
+            <div className="grid gap-4 md:grid-cols-2">
+              <SetupChecklistCard />
+              <TodaysWidget count={stopCount} />
+            </div>
           </div>
         )}
       </div>

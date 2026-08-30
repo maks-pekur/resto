@@ -5,6 +5,7 @@ import { BackgroundJobsModule } from './infrastructure/background-jobs.module';
 import { DatabaseModule } from './infrastructure/database.module';
 import { NatsModule } from './infrastructure/nats.module';
 import { HealthModule } from './health/health.module';
+import { AnalyticsModule } from './contexts/analytics/analytics.module';
 import { AuditModule } from './contexts/audit/audit.module';
 import { CatalogModule } from './contexts/catalog/catalog.module';
 import { NotificationsModule } from './contexts/notifications/notifications.module';
@@ -31,6 +32,7 @@ import { TenantContextMiddleware } from './shared/tenant-context.middleware';
     IdentityHttpModule,
     CatalogModule,
     OrderingModule,
+    AnalyticsModule,
     PaymentsModule,
     AuditModule,
     NotificationsModule,

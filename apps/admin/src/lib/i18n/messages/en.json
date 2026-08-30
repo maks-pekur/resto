@@ -519,7 +519,14 @@
     "editItemTitle": "Edit item",
     "newItemTitle": "New item",
     "editGroupTitle": "Edit modifier group",
-    "newGroupTitle": "New modifier group"
+    "newGroupTitle": "New modifier group",
+    "kpiRange": "Last {{days}} days",
+    "kpiRevenue": "Revenue",
+    "kpiOrders": "Orders fulfilled",
+    "kpiNewGuests": "New guests",
+    "kpiRefunds": "Refunds",
+    "kpiPrevious": "Previous period: {{value}}",
+    "kpiNoBaseline": "no data for the previous period"
   },
   "tables": {
     "pageTitle": "Tables",

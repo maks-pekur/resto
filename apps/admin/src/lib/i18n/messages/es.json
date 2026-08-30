@@ -519,7 +519,14 @@
     "editItemTitle": "Editar plato",
     "newItemTitle": "Nuevo plato",
     "editGroupTitle": "Editar grupo de modificadores",
-    "newGroupTitle": "Nuevo grupo de modificadores"
+    "newGroupTitle": "Nuevo grupo de modificadores",
+    "kpiRange": "Últimos {{days}} días",
+    "kpiRevenue": "Ingresos",
+    "kpiOrders": "Pedidos completados",
+    "kpiNewGuests": "Nuevos clientes",
+    "kpiRefunds": "Reembolsos",
+    "kpiPrevious": "Periodo anterior: {{value}}",
+    "kpiNoBaseline": "sin datos del periodo anterior"
   },
   "tables": {
     "pageTitle": "Mesas",

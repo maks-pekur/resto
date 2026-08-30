@@ -1545,6 +1545,19 @@ paths:
                 $ref: "#/components/schemas/OrderSnapshotResponseDto"
       tags:
         - ordering
+  /v1/analytics/dashboard:
+    get:
+      operationId: AnalyticsController_dashboard
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardKpisResponseDto"
+      tags:
+        - analytics
   /webhook/stripe:
     post:
       operationId: StripeWebhookController_handleWebhook
@@ -4629,6 +4642,88 @@ components:
             - completed
       required:
         - targetStatus
+    DashboardKpisResponseDto:
+      type: object
+      properties:
+        range:
+          type: object
+          properties:
+            from:
+              type: string
+              format: date-time
+            to:
+              type: string
+              format: date-time
+            days:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: true
+          required:
+            - from
+            - to
+            - days
+        currency:
+          type: string
+          pattern: ^[A-Z]{3}$
+        revenue:
+          type: object
+          properties:
+            value:
+              type: string
+              pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+            previous:
+              type: string
+              pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+          required:
+            - value
+            - previous
+        completedOrders:
+          type: object
+          properties:
+            value:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: false
+            previous:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: false
+          required:
+            - value
+            - previous
+        newGuests:
+          type: object
+          properties:
+            value:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: false
+            previous:
+              type: integer
+              minimum: 0
+              exclusiveMinimum: false
+          required:
+            - value
+            - previous
+        refunds:
+          type: object
+          properties:
+            value:
+              type: string
+              pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+            previous:
+              type: string
+              pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+          required:
+            - value
+            - previous
+      required:
+        - range
+        - currency
+        - revenue
+        - completedOrders
+        - newGuests
+        - refunds
     CreatePaymentIntentInputDto:
       type: object
       properties:

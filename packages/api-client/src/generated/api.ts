@@ -1060,6 +1060,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/analytics/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AnalyticsController_dashboard"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/webhook/stripe": {
         parameters: {
             query?: never;
@@ -2153,6 +2169,32 @@ export interface components {
         AdvanceOrderStatusInputDto: {
             /** @enum {string} */
             targetStatus: "preparing" | "ready" | "completed";
+        };
+        DashboardKpisResponseDto: {
+            range: {
+                /** Format: date-time */
+                from: string;
+                /** Format: date-time */
+                to: string;
+                days: number;
+            };
+            currency: string;
+            revenue: {
+                value: string;
+                previous: string;
+            };
+            completedOrders: {
+                value: number;
+                previous: number;
+            };
+            newGuests: {
+                value: number;
+                previous: number;
+            };
+            refunds: {
+                value: string;
+                previous: string;
+            };
         };
         CreatePaymentIntentInputDto: {
             /** Format: uuid */
@@ -4341,6 +4383,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderSnapshotResponseDto"];
+                };
+            };
+        };
+    };
+    AnalyticsController_dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardKpisResponseDto"];
                 };
             };
         };

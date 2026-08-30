@@ -519,7 +519,14 @@
     "editItemTitle": "Редактирование блюда",
     "newItemTitle": "Новое блюдо",
     "editGroupTitle": "Редактирование группы модификаторов",
-    "newGroupTitle": "Новая группа модификаторов"
+    "newGroupTitle": "Новая группа модификаторов",
+    "kpiRange": "За последние {{days}} дней",
+    "kpiRevenue": "Выручка",
+    "kpiOrders": "Выполненные заказы",
+    "kpiNewGuests": "Новые гости",
+    "kpiRefunds": "Возвраты",
+    "kpiPrevious": "Предыдущий период: {{value}}",
+    "kpiNoBaseline": "нет данных за прошлый период"
   },
   "tables": {
     "pageTitle": "Столы",
