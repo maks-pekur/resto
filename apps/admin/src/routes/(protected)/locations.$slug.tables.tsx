@@ -77,7 +77,6 @@ function TablesPage() {
     <>
       <PageHeading
         title={t('pageTitle')}
-        description={location.name}
         action={canUpdate ? <CreateTableZoneDialog locationId={location.id} /> : undefined}
       />
       <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
