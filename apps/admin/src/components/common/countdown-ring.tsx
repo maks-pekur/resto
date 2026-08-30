@@ -6,6 +6,8 @@ export interface CountdownRingProps {
   /** 1 is the whole promise still ahead, 0 is none of it left. */
   readonly progress: number;
   readonly label: string;
+  /** Rendered under the label, for spans that need two units to be read. */
+  readonly sublabel?: string;
   readonly tone: CountdownTone;
   readonly ariaLabel?: string;
   readonly className?: string;
@@ -26,7 +28,14 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
  * Minutes inside a ring that drains as the promise is spent. Colour is the second signal, never
  * the only one — the number and the minus sign say the same thing without it.
  */
-export function CountdownRing({ progress, label, tone, ariaLabel, className }: CountdownRingProps) {
+export function CountdownRing({
+  progress,
+  label,
+  sublabel,
+  tone,
+  ariaLabel,
+  className,
+}: CountdownRingProps) {
   const clamped = Math.min(Math.max(progress, 0), 1);
 
   return (
@@ -62,8 +71,11 @@ export function CountdownRing({ progress, label, tone, ariaLabel, className }: C
           transform={`rotate(-90 ${String(SIZE / 2)} ${String(SIZE / 2)})`}
         />
       </svg>
-      <span aria-hidden className="absolute text-xs font-semibold tabular-nums">
-        {label}
+      <span aria-hidden className="absolute flex flex-col items-center leading-none">
+        <span className="text-xs font-semibold tabular-nums">{label}</span>
+        {sublabel === undefined ? null : (
+          <span className="text-[10px] tabular-nums opacity-80">{sublabel}</span>
+        )}
       </span>
     </span>
   );

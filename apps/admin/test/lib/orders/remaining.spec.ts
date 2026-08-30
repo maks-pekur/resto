@@ -84,4 +84,16 @@ describe('countdown', () => {
     expect(long?.days).toBe(2);
     expect(long?.hours).toBe(3);
   });
+
+  it('gives up on the exact figure once the span passes three days', () => {
+    const far = countdown(at('2026-09-05T12:00:00.000Z'), at('2026-08-30T10:00:00.000Z'), NOW);
+
+    expect(far?.overflow).toBe(true);
+  });
+
+  it('keeps the figure while the span is still readable', () => {
+    const near = countdown(at('2026-09-01T12:00:00.000Z'), at('2026-08-30T10:00:00.000Z'), NOW);
+
+    expect(near?.overflow).toBe(false);
+  });
 });

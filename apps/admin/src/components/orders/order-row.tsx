@@ -134,15 +134,26 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     },
   });
 
-  // Minutes read fine up to an hour; past that a bare "180" tells an operator nothing.
-  const countdownLabel =
-    remaining === null
-      ? ''
-      : remaining.days > 0
-        ? `${String(remaining.days)}${t('card.unitDays')}${String(remaining.hours)}${t('card.unitHours')}`
-        : remaining.hours > 0
-          ? `${String(remaining.hours)}${t('card.unitHours')}${String(remaining.minutes).padStart(2, '0')}`
-          : `${String(remaining.minutes)}${t('card.unitMinutes')}`;
+  // Minutes read fine up to an hour; past that a bare "180" tells an operator nothing, and past
+  // three days the exact figure stops being information at all.
+  const countdownParts = ((): { label: string; sublabel?: string } => {
+    if (remaining === null) return { label: '' };
+    if (remaining.overflow) return { label: remaining.late ? '!' : '∞' };
+    const sign = remaining.late ? '−' : '';
+    if (remaining.days > 0) {
+      return {
+        label: `${sign}${String(remaining.days)}${t('card.unitDays')}`,
+        sublabel: `${String(remaining.hours)}${t('card.unitHours')}`,
+      };
+    }
+    if (remaining.hours > 0) {
+      return {
+        label: `${sign}${String(remaining.hours)}${t('card.unitHours')}`,
+        sublabel: `${String(remaining.minutes).padStart(2, '0')}${t('card.unitMinutes')}`,
+      };
+    }
+    return { label: `${sign}${String(remaining.minutes)}${t('card.unitMinutes')}` };
+  })();
 
   const FulfillmentIcon = FULFILLMENT_ICON[row.fulfillmentMode];
   const promisedAt = new Date(row.etaAt ?? row.createdAt);
@@ -199,9 +210,12 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
             <CountdownRing
               progress={remaining.progress}
               tone={remaining.tone}
-              label={`${remaining.late ? '−' : ''}${countdownLabel}`}
+              label={countdownParts.label}
+              {...(countdownParts.sublabel === undefined
+                ? {}
+                : { sublabel: countdownParts.sublabel })}
               ariaLabel={t(remaining.late ? 'card.overdueByAria' : 'card.remainingAria', {
-                duration: countdownLabel,
+                duration: `${countdownParts.label} ${countdownParts.sublabel ?? ''}`.trim(),
               })}
             />
           ) : null}

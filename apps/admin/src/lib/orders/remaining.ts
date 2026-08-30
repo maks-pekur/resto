@@ -29,6 +29,8 @@ export interface Countdown {
   readonly hours: number;
   readonly minutes: number;
   readonly totalMinutes: number;
+  /** True once the span is too far out for a number to say anything useful. */
+  readonly overflow: boolean;
   readonly late: boolean;
   /** 1 at the moment the promise was made, 0 when it comes due. */
   readonly progress: number;
@@ -36,6 +38,8 @@ export interface Countdown {
 }
 
 const WARNING_AT = 0.25;
+/** Past this the exact figure stops being information — three days out is simply "not now". */
+const OVERFLOW_MINUTES = 3 * 24 * 60;
 
 export const countdown = (
   etaAt: string | null,
@@ -61,6 +65,7 @@ export const countdown = (
     hours,
     minutes,
     totalMinutes,
+    overflow: totalMinutes >= OVERFLOW_MINUTES,
     late,
     progress,
     tone: late ? 'late' : progress <= WARNING_AT ? 'warning' : 'calm',
