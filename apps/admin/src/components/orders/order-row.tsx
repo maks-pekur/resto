@@ -172,28 +172,32 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
       >
         <span
           className={cn(
-            'flex w-28 shrink-0 flex-col justify-center gap-0.5 px-3 py-2',
+            'flex w-24 shrink-0 flex-col justify-center gap-0.5 px-3 py-2',
             late ? 'bg-destructive/15 text-destructive' : STATE_TONE[state],
           )}
         >
-          <span className="flex items-center gap-2">
-            <span className="text-lg leading-none font-semibold tabular-nums">
-              {row.shortNumber}
-            </span>
-            {remaining !== null && isOpen ? (
-              <CountdownRing
-                progress={remaining.progress}
-                tone={remaining.tone}
-                label={`${remaining.late ? '−' : ''}${String(remaining.minutes)}`}
-                ariaLabel={t(remaining.late ? 'card.overdueByAria' : 'card.remainingAria', {
-                  minutes: remaining.minutes,
-                })}
-              />
-            ) : null}
-          </span>
+          <span className="text-lg leading-none font-semibold tabular-nums">{row.shortNumber}</span>
           <span className="truncate text-[11px] tracking-wide uppercase">
             {t(`card.${STATE_LABEL_KEY[state]}`)}
           </span>
+        </span>
+
+        <span
+          className={cn(
+            'flex w-16 shrink-0 items-center justify-center px-2 py-2',
+            late ? 'bg-destructive/15' : undefined,
+          )}
+        >
+          {remaining !== null && isOpen ? (
+            <CountdownRing
+              progress={remaining.progress}
+              tone={remaining.tone}
+              label={`${remaining.late ? '−' : ''}${String(remaining.minutes)}`}
+              ariaLabel={t(remaining.late ? 'card.overdueByAria' : 'card.remainingAria', {
+                minutes: remaining.minutes,
+              })}
+            />
+          ) : null}
         </span>
 
         <span className="flex w-20 shrink-0 flex-col justify-center px-3 py-2">
