@@ -16,22 +16,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { LocalizedField } from '@/components/common/localized-field';
+import { PrefixedInput } from '@/components/common/prefixed-input';
+import { socialPresentation } from '@/lib/settings/socials';
 import { LogoUpload } from '@/components/settings/logo-upload';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { BrandFormSchema, withScheme, type BrandFormValues } from '@/lib/settings/brand-schema';
 import { updateBrand, type TenantResponse } from '@/lib/queries/tenancy';
-
-const SOCIAL_LABEL: Readonly<Record<string, string>> = {
-  instagram: 'Instagram',
-  facebook: 'Facebook',
-  tiktok: 'TikTok',
-  telegram: 'Telegram',
-  whatsapp: 'WhatsApp',
-  youtube: 'YouTube',
-  x: 'X',
-  tripadvisor: 'Tripadvisor',
-};
 
 const initialValues = (tenant: TenantResponse): BrandFormValues => ({
   displayName: tenant.displayName,
@@ -104,6 +95,8 @@ export function BrandForm({ tenant }: BrandFormProps) {
   });
 
   const [lastAdded, setLastAdded] = React.useState<string | null>(null);
+  // The restaurant's own slug is already url-safe, so it reads as a real example of the link.
+  const handle = tenant.slug;
   const socials = form.watch('socials');
   const addedSocials = SOCIAL_PLATFORMS.filter((platform) => platform in socials);
   const availableSocials = SOCIAL_PLATFORMS.filter((platform) => !(platform in socials));
@@ -205,8 +198,16 @@ export function BrandForm({ tenant }: BrandFormProps) {
             </Field>
             <Field data-invalid={form.formState.errors.website ? true : undefined}>
               <FieldLabel htmlFor="brand-website">{t('websiteLabel')}</FieldLabel>
-              <Input id="brand-website" inputMode="url" {...form.register('website')} />
-              <FieldDescription>{t('websiteHint')}</FieldDescription>
+              <PrefixedInput
+                id="brand-website"
+                inputMode="url"
+                prefix="https://"
+                placeholder={`${handle}.com`}
+                value={form.watch('website')}
+                onValueChange={(next) => {
+                  form.setValue('website', next, { shouldDirty: true, shouldValidate: true });
+                }}
+              />
               {form.formState.errors.website ? (
                 <FieldError>{messageFor(form.formState.errors.website.message)}</FieldError>
               ) : null}
@@ -230,21 +231,30 @@ export function BrandForm({ tenant }: BrandFormProps) {
                 return (
                   <Field key={platform} data-invalid={error ? true : undefined}>
                     <FieldLabel htmlFor={`social-${platform}`}>
-                      {SOCIAL_LABEL[platform] ?? platform}
+                      {socialPresentation(platform, handle).label}
                     </FieldLabel>
                     <div className="flex items-center gap-2">
-                      <Input
+                      <PrefixedInput
                         id={`social-${platform}`}
                         inputMode="url"
                         autoFocus={platform === lastAdded}
-                        placeholder={t('socialPlaceholder')}
-                        {...form.register(`socials.${platform}`)}
+                        prefix={socialPresentation(platform, handle).prefix}
+                        placeholder={socialPresentation(platform, handle).placeholder}
+                        value={socials[platform] ?? ''}
+                        onValueChange={(next) => {
+                          form.setValue(`socials.${platform}`, next, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          });
+                        }}
                       />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        aria-label={t('socialRemove', { name: SOCIAL_LABEL[platform] ?? platform })}
+                        aria-label={t('socialRemove', {
+                          name: socialPresentation(platform, handle).label,
+                        })}
                         onClick={() => {
                           removeSocial(platform);
                         }}
@@ -274,7 +284,7 @@ export function BrandForm({ tenant }: BrandFormProps) {
                         addSocial(platform);
                       }}
                     >
-                      {SOCIAL_LABEL[platform] ?? platform}
+                      {socialPresentation(platform, handle).label}
                     </DropdownMenuItem>
                   ))}
                 </DropdownMenuContent>

@@ -29,6 +29,7 @@ vi.mock('@/hooks/use-content-locales', () => ({
 const { BrandForm } = await import('@/components/settings/brand-form');
 
 const tenant = {
+  slug: 'cafe-roma',
   displayName: 'Cafe Roma',
   description: null,
   socials: {},
@@ -48,7 +49,7 @@ describe('BrandForm', () => {
     const user = userEvent.setup();
     renderForm({ socials: { instagram: 'https://instagram.com/caferoma' } });
 
-    expect(screen.getByLabelText('Instagram')).toHaveValue('https://instagram.com/caferoma');
+    expect(screen.getByLabelText('Instagram')).toHaveValue('caferoma');
 
     await user.click(screen.getByRole('button', { name: 'settings.brand.socialAdd' }));
 
@@ -73,13 +74,13 @@ describe('BrandForm', () => {
     expect(screen.getByRole('button', { name: 'settings.brand.save' })).toBeDisabled();
   });
 
-  it('adds the scheme an operator did not type', async () => {
+  it('keeps the constant head of the link out of the field', async () => {
     const user = userEvent.setup();
     renderForm();
 
     await user.click(screen.getByRole('button', { name: 'settings.brand.socialAdd' }));
     await user.click(await screen.findByRole('menuitem', { name: 'Instagram' }));
-    await user.type(screen.getByLabelText('Instagram'), 'instagram.com/caferoma');
+    await user.type(screen.getByLabelText('Instagram'), 'caferoma');
     await user.click(screen.getByRole('button', { name: 'settings.brand.save' }));
 
     expect(updateBrand).toHaveBeenCalledWith(
