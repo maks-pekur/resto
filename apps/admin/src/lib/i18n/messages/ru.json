@@ -468,7 +468,9 @@
       "enableAlertsBtn": "Разрешить",
       "alertsBlockedHint": "Уведомления отключены в настройках браузера.",
       "newOrderTitle": "Новый заказ №{{number}}",
-      "newOrderBody": "{{total}} · {{mode}}"
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "Звук нового заказа включён — нажмите, чтобы выключить",
+      "muteOffHint": "Звук нового заказа выключен — нажмите, чтобы включить"
     },
     "empty": {
       "pickLocationTitle": "Выберите точку",

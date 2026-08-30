@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
 export interface IconToggleProps {
@@ -8,6 +9,8 @@ export interface IconToggleProps {
   readonly onIcon: ComponentType<{ className?: string }>;
   readonly offIcon: ComponentType<{ className?: string }>;
   readonly label: string;
+  /** Explains what the toggle is for; the label alone only says what it is. */
+  readonly hint?: string;
   readonly className?: string;
 }
 
@@ -21,15 +24,15 @@ export function IconToggle({
   onIcon: OnIcon,
   offIcon: OffIcon,
   label,
+  hint,
   className,
 }: IconToggleProps) {
-  return (
+  const button = (
     <Button
       variant="ghost"
       size="icon"
       aria-label={label}
       aria-pressed={pressed}
-      title={label}
       className={cn('relative rounded-full', className)}
       onClick={() => {
         onPressedChange(!pressed);
@@ -48,5 +51,17 @@ export function IconToggle({
         )}
       />
     </Button>
+  );
+
+  if (hint === undefined) return button;
+
+  // Its own provider: a toggle should not stop explaining itself because of where it was placed.
+  return (
+    <TooltipProvider delayDuration={300}>
+      <Tooltip>
+        <TooltipTrigger asChild>{button}</TooltipTrigger>
+        <TooltipContent>{hint}</TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }

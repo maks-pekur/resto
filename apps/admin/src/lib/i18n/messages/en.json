@@ -468,7 +468,9 @@
       "enableAlertsBtn": "Allow",
       "alertsBlockedHint": "Notifications are blocked in the browser settings.",
       "newOrderTitle": "New order #{{number}}",
-      "newOrderBody": "{{total}} · {{mode}}"
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "New-order sound is on — click to turn it off",
+      "muteOffHint": "New-order sound is off — click to turn it on"
     },
     "empty": {
       "pickLocationTitle": "Choose a location",

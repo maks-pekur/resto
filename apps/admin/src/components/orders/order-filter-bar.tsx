@@ -68,6 +68,7 @@ export function OrderFilterBar({
               onIcon={Volume2}
               offIcon={VolumeX}
               label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+              hint={soundMuted ? tAlerts('muteOffHint') : tAlerts('muteOnHint')}
             />
           ) : null}
         </div>

@@ -468,7 +468,9 @@
       "enableAlertsBtn": "Permitir",
       "alertsBlockedHint": "Las notificaciones están bloqueadas en los ajustes del navegador.",
       "newOrderTitle": "Nuevo pedido n.º {{number}}",
-      "newOrderBody": "{{total}} · {{mode}}"
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "El sonido de nuevo pedido está activado: haz clic para desactivarlo",
+      "muteOffHint": "El sonido de nuevo pedido está desactivado: haz clic para activarlo"
     },
     "empty": {
       "pickLocationTitle": "Elige un local",
