@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Volume2, VolumeX } from 'lucide-react';
-import { Switch } from '@/components/ui/switch';
+import { IconToggle } from '@/components/common/icon-toggle';
 import { DateRangeStepper } from '@/components/common/date-range-stepper';
 import {
   OrderFulfillmentTabs,
@@ -65,20 +65,15 @@ export function OrderFilterBar({
           {/* Until the browser has been unlocked the banner above is the sound control; two of
               them on one screen read as a duplicate. */}
           {soundReady ? (
-            <div className="flex items-center gap-1.5">
-              {soundMuted ? (
-                <VolumeX className="text-muted-foreground size-4" />
-              ) : (
-                <Volume2 className="text-muted-foreground size-4" />
-              )}
-              <Switch
-                checked={!soundMuted}
-                onCheckedChange={(checked) => {
-                  onSoundMutedChange(!checked);
-                }}
-                aria-label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
-              />
-            </div>
+            <IconToggle
+              pressed={!soundMuted}
+              onPressedChange={(next) => {
+                onSoundMutedChange(!next);
+              }}
+              onIcon={Volume2}
+              offIcon={VolumeX}
+              label={soundMuted ? tAlerts('muteOffAria') : tAlerts('muteOnAria')}
+            />
           ) : null}
         </div>
       </div>
