@@ -307,7 +307,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
       </div>
 
       <span className="flex w-24 shrink-0 flex-col justify-center gap-1 border-l pt-2">
-        <span className="px-3 text-right text-sm font-semibold tabular-nums">
+        <span className="px-2 text-center text-sm font-semibold tabular-nums">
           {money(row.total, row.currency)}
         </span>
         {row.hasFailedRefund ? (
