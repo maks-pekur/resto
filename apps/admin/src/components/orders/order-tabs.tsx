@@ -10,6 +10,7 @@ import type { OrderFeedCountsApi, OrderStatusPreset } from '@/lib/queries/orders
 const TAB_LIST_CLASS = 'h-full gap-0 rounded-none bg-transparent p-0';
 const TAB_TRIGGER_CLASS =
   'h-full rounded-none border-0 px-4 data-[state=active]:bg-muted data-[state=active]:shadow-none dark:data-[state=active]:bg-muted dark:data-[state=active]:border-0';
+const FULFILLMENT_TRIGGER_CLASS = 'gap-2 px-5 text-base [&_svg:not([class*=size-])]:size-5';
 
 export type OrderFulfillmentTab = 'all' | 'delivery' | 'pickup';
 
@@ -44,8 +45,12 @@ export function OrderFulfillmentTabs({ value, onChange }: OrderFulfillmentTabsPr
         {ORDER_FULFILLMENT_TABS.map((tab) => {
           const Icon = FULFILLMENT_TAB_ICON[tab];
           return (
-            <TabsTrigger key={tab} value={tab} className={TAB_TRIGGER_CLASS}>
-              <Icon className="text-muted-foreground size-4" />
+            <TabsTrigger
+              key={tab}
+              value={tab}
+              className={cn(TAB_TRIGGER_CLASS, FULFILLMENT_TRIGGER_CLASS)}
+            >
+              <Icon className="text-muted-foreground size-5" />
               {t(tab)}
             </TabsTrigger>
           );

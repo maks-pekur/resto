@@ -47,12 +47,14 @@ export function OrderFilterBar({
 
   return (
     <div className="bg-card mx-4 flex flex-col overflow-hidden rounded-lg border lg:mx-6">
-      <div className="flex h-11 items-stretch">
+      {/* Three columns rather than a flex row: the date sits in the middle of the bar itself,
+          not in the middle of whatever space the tabs and the controls leave over. */}
+      <div className="grid h-14 grid-cols-[1fr_auto_1fr] items-stretch">
         <OrderFulfillmentTabs value={fulfillment} onChange={onFulfillmentChange} />
 
-        <div className="ml-auto flex shrink-0 items-center gap-2 px-3">
-          <DateRangeStepper value={range} onChange={onRangeChange} />
+        <DateRangeStepper value={range} onChange={onRangeChange} className="self-center" />
 
+        <div className="flex shrink-0 items-center justify-end gap-2 px-3">
           {soundBlocked ? (
             <span className="text-muted-foreground text-xs">{tAlerts('soundBlockedHint')}</span>
           ) : null}
