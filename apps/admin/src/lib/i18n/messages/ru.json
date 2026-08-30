@@ -598,7 +598,12 @@
       "tableZoneAlreadyArchived": "Эта зона уже архивирована.",
       "tableAlreadyArchived": "Этот стол уже архивирован.",
       "generic": "Что-то пошло не так. Попробуйте ещё раз."
-    }
+    },
+    "backToZones": "К списку зон",
+    "editZoneAction": "Редактировать зону",
+    "zoneNotFoundTitle": "Зона не найдена",
+    "zoneNotFoundDescription": "Возможно, её архивировали или ссылка устарела.",
+    "tableCountAria": "Столов в зоне"
   },
   "format": {
     "ago": "{{n}}{{unit}} назад",

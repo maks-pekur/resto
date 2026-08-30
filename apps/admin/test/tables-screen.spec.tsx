@@ -42,7 +42,7 @@ vi.mock('react-i18next', async () => {
 });
 
 const { EmptyState } = await import('@/components/common/empty-state');
-const { TableZoneList } = await import('@/components/tables/table-zone-list');
+const { ZoneDetail } = await import('@/components/tables/zone-detail');
 
 const OWNER_ME = {
   status: 200,
@@ -89,12 +89,13 @@ function TablesBody({
   readonly zones: readonly TableZoneView[];
   readonly locationId: string;
 }): React.ReactElement {
-  if (zones.length === 0) {
+  const [zone] = zones;
+  if (zone === undefined) {
     return (
       <EmptyState variant="empty" title="tables.emptyTitle" description="tables.emptyDescription" />
     );
   }
-  return <TableZoneList zones={zones} locationId={locationId} />;
+  return <ZoneDetail zone={zone} locationId={locationId} />;
 }
 
 const oneZone = (tableCount: number): TableZoneView[] => [

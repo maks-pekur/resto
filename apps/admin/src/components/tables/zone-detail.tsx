@@ -57,25 +57,6 @@ import {
 import { printTablesSheet } from '@/lib/qr/print-tables-sheet';
 import { downloadTableSvg } from '@/lib/qr/download-table-svg';
 
-export interface TableZoneListProps {
-  readonly zones: readonly TableZoneView[];
-  readonly locationId: string;
-}
-
-export function TableZoneList({ zones, locationId }: TableZoneListProps): React.ReactElement {
-  const { data: meResult } = useQuery(meQuery());
-  const me = meResult?.data ?? null;
-  const canUpdate = hasPermission(me, 'table', 'update');
-
-  return (
-    <div className="flex flex-col gap-4">
-      {zones.map((zone) => (
-        <ZoneCard key={zone.id} zone={zone} locationId={locationId} canUpdate={canUpdate} />
-      ))}
-    </div>
-  );
-}
-
 /**
  * The mutation's failure sentence is rendered here (in addition to the toast), inside whichever
  * dialog is open — a page-level banner sits behind Radix's `aria-hidden` background mask while a
@@ -90,14 +71,16 @@ function DialogError({ message }: { readonly message: string | null }): React.Re
   );
 }
 
-interface ZoneCardProps {
+export interface ZoneDetailProps {
   readonly zone: TableZoneView;
   readonly locationId: string;
-  readonly canUpdate: boolean;
 }
 
-function ZoneCard({ zone, locationId, canUpdate }: ZoneCardProps): React.ReactElement {
+/** Everything about one zone: its name, its life, and every table under it. */
+export function ZoneDetail({ zone, locationId }: ZoneDetailProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'tables' });
+  const { data: meResult } = useQuery(meQuery());
+  const canUpdate = hasPermission(meResult?.data ?? null, 'table', 'update');
   const queryClient = useQueryClient();
   const zoneQueryKey = ['tenancy', 'table-zones', locationId];
 

@@ -28,6 +28,7 @@ import { Route as teamRoute } from './routes/(protected)/team';
 import { Route as locationsRoute } from './routes/(protected)/locations';
 import { Route as locationFormRoute } from './routes/(protected)/locations.$slug';
 import { Route as locationTablesRoute } from './routes/(protected)/locations.$slug.tables';
+import { Route as locationZoneRoute } from './routes/(protected)/locations.$slug.tables.$zoneId';
 import { Route as rolesRoute } from './routes/(protected)/roles';
 import { Route as roleDetailRoute } from './routes/(protected)/roles.$roleId';
 import { Route as onboardingIndexRoute } from './routes/(protected)/onboarding/index';
@@ -102,6 +103,7 @@ const protectedRouteTree = protectedLayoutRoute.addChildren([
   locationsRoute,
   locationFormRoute,
   locationTablesRoute,
+  locationZoneRoute,
   OrdersRedirectRoute,
   menuRouteTree,
   tenantDomainsRoute,

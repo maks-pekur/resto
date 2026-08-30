@@ -598,7 +598,12 @@
       "tableZoneAlreadyArchived": "Esta zona ya está archivada.",
       "tableAlreadyArchived": "Esta mesa ya está archivada.",
       "generic": "Algo salió mal. Inténtalo de nuevo."
-    }
+    },
+    "backToZones": "Volver a las zonas",
+    "editZoneAction": "Editar zona",
+    "zoneNotFoundTitle": "Zona no encontrada",
+    "zoneNotFoundDescription": "Puede que se haya archivado o que el enlace esté obsoleto.",
+    "tableCountAria": "Mesas en la zona"
   },
   "format": {
     "ago": "hace {{n}}{{unit}}",

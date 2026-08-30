@@ -1,7 +1,7 @@
-import { createRoute, useNavigate } from '@tanstack/react-router';
+import { createRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -10,8 +10,7 @@ import { tableZonesQuery } from '@/lib/queries/table-zones';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
-import { CreateTableZoneDialog } from '@/components/tables/create-table-zone-dialog';
-import { TableZoneList } from '@/components/tables/table-zone-list';
+import { ZoneList } from '@/components/tables/zone-list';
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
@@ -77,7 +76,16 @@ function TablesPage() {
     <>
       <PageHeading
         title={t('pageTitle')}
-        action={canUpdate ? <CreateTableZoneDialog locationId={location.id} /> : undefined}
+        action={
+          canUpdate ? (
+            <Button asChild>
+              <Link to="/locations/$slug/tables/$zoneId" params={{ slug, zoneId: 'new' }}>
+                <Plus className="size-4" />
+                {t('createZoneBtn')}
+              </Link>
+            </Button>
+          ) : undefined
+        }
       />
       <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
         {isZonesPending ? (
@@ -87,7 +95,7 @@ function TablesPage() {
         ) : zones.length === 0 ? (
           <EmptyState variant="empty" title={t('emptyTitle')} description={t('emptyDescription')} />
         ) : (
-          <TableZoneList zones={zones} locationId={location.id} />
+          <ZoneList zones={zones} locationSlug={slug} />
         )}
       </div>
     </>
