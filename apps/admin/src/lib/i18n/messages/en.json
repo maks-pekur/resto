@@ -603,8 +603,21 @@
     "zoneNotFoundDescription": "It may have been archived, or the link is out of date.",
     "tableCountAria": "Tables in the zone",
     "zoneNameDescription": "The guest sees this name on the order — \"Terrace\", \"Second floor\".",
-    "zoneNameRequired": "Enter a zone name.",
-    "tableCountDescription": "Tables live inside the zone. You can add or rename them later."
+    "tableCountDescription": "Tables live inside the zone. You can add or rename them later.",
+    "form": {
+      "createTitle": "New zone",
+      "createDescription": "A zone is a part of the room — terrace, second floor, summer patio. Tables live inside it.",
+      "editTitle": "Zone settings",
+      "editDescription": "The guest sees this name on the order and the operator sees it in the feed.",
+      "summaryTitle": "Check the form:",
+      "nameRequired": "Enter a zone name.",
+      "nameTooLong": "The name is longer than 60 characters.",
+      "countInvalid": "Enter a whole number of tables, zero or more.",
+      "countTooMany": "At most 200 tables can be created at once.",
+      "save": "Save",
+      "create": "Create zone",
+      "saving": "Saving…"
+    }
   },
   "format": {
     "ago": "{{n}}{{unit}} ago",

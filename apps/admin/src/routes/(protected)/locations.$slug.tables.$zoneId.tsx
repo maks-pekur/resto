@@ -59,6 +59,7 @@ function ZonePage() {
         <div className="flex flex-1 flex-col gap-6 px-4 pb-8 lg:px-6">
           <ZoneForm
             locationId={location.id}
+            locationSlug={slug}
             onCreated={(createdId) => {
               void navigate({
                 to: '/locations/$slug/tables/$zoneId',
@@ -88,7 +89,7 @@ function ZonePage() {
           />
         ) : (
           <>
-            <ZoneForm locationId={location.id} zone={zone} />
+            <ZoneForm locationId={location.id} locationSlug={slug} zone={zone} />
             <ZoneDetail zone={zone} locationId={location.id} />
           </>
         )}

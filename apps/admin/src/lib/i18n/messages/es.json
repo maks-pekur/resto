@@ -603,8 +603,21 @@
     "zoneNotFoundDescription": "Puede que se haya archivado o que el enlace esté obsoleto.",
     "tableCountAria": "Mesas en la zona",
     "zoneNameDescription": "El cliente verá este nombre en el pedido: «Terraza», «Segunda planta».",
-    "zoneNameRequired": "Introduce un nombre de zona.",
-    "tableCountDescription": "Las mesas se crean dentro de la zona. Podrás añadirlas o renombrarlas después."
+    "tableCountDescription": "Las mesas se crean dentro de la zona. Podrás añadirlas o renombrarlas después.",
+    "form": {
+      "createTitle": "Nueva zona",
+      "createDescription": "Una zona es una parte de la sala: terraza, segunda planta, patio. Las mesas se crean dentro.",
+      "editTitle": "Ajustes de la zona",
+      "editDescription": "El cliente ve este nombre en el pedido y el operador en la lista.",
+      "summaryTitle": "Revisa el formulario:",
+      "nameRequired": "Introduce un nombre de zona.",
+      "nameTooLong": "El nombre supera los 60 caracteres.",
+      "countInvalid": "Introduce un número entero de mesas, cero o más.",
+      "countTooMany": "Como máximo se pueden crear 200 mesas a la vez.",
+      "save": "Guardar",
+      "create": "Crear zona",
+      "saving": "Guardando…"
+    }
   },
   "format": {
     "ago": "hace {{n}}{{unit}}",
