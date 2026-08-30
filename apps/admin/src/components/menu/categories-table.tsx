@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button } from '@/components/ui/button';
+import { RowActions } from '@/components/common/row-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,28 +130,28 @@ function SortableCategoryRow({
       </TableCell>
       <TableCell className="text-center">{parentName}</TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="min-h-11 min-w-11"
-            aria-label={t('editAriaLabel', { name: displayName })}
-            onClick={onEdit}
-          >
-            <Pencil className="size-4" />
-          </Button>
-          {category.status === 'archived' ? null : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              aria-label={t('archiveAriaLabel', { name: displayName })}
-              onClick={onArchive}
-            >
-              <Archive className="size-4" />
-            </Button>
-          )}
-        </div>
+        <RowActions
+          label={t('rowActionsAriaLabel', { name: displayName })}
+          actions={[
+            {
+              key: 'edit',
+              label: t('editAriaLabel', { name: displayName }),
+              icon: Pencil,
+              onSelect: onEdit,
+            },
+            ...(category.status === 'archived'
+              ? []
+              : [
+                  {
+                    key: 'archive',
+                    label: t('archiveAriaLabel', { name: displayName }),
+                    icon: Archive,
+                    tone: 'destructive' as const,
+                    onSelect: onArchive,
+                  },
+                ]),
+          ]}
+        />
       </TableCell>
     </TableRow>
   );
