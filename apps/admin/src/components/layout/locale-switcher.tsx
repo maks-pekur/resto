@@ -22,15 +22,25 @@ const LOCALES: readonly LocaleOption[] = [
 ];
 
 /** A flag disc with the language code on it — a locale a person recognises before they read. */
-function LocaleDisc({ option, className }: { option: LocaleOption; className?: string }) {
+function LocaleDisc({
+  option,
+  withCode = true,
+  className,
+}: {
+  option: LocaleOption;
+  withCode?: boolean;
+  className?: string;
+}) {
   return (
     <span className={cn('relative inline-flex shrink-0', className)}>
       <span className="ring-border bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1">
         {option.flag ?? <Globe className="text-muted-foreground size-4" />}
       </span>
-      <span className="bg-primary text-primary-foreground border-background absolute -right-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold tracking-wide uppercase">
-        {option.code}
-      </span>
+      {withCode ? (
+        <span className="bg-primary text-primary-foreground border-background absolute -right-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold tracking-wide uppercase">
+          {option.code}
+        </span>
+      ) : null}
     </span>
   );
 }
@@ -49,7 +59,7 @@ export function LocaleSwitcher() {
           className="rounded-full"
           aria-label={t('languageLabel')}
         >
-          <LocaleDisc option={active} />
+          <LocaleDisc option={active} withCode={false} />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">
