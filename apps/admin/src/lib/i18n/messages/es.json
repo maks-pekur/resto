@@ -475,13 +475,16 @@
       "failedBanner": "Reembolso de {{amount}} fallido"
     },
     "alerts": {
-      "enableSoundTitle": "Activa las notificaciones de pedidos",
-      "enableSoundBody": "Permite el sonido en esta pestaña para no perderte un nuevo pedido.",
-      "enableSoundBtn": "Activar sonido",
       "soundBlockedHint": "Es posible que el sonido no funcione en este navegador.",
       "muteToggleLabel": "Sonido",
       "muteOnAria": "Sonido activado",
-      "muteOffAria": "Sonido desactivado"
+      "muteOffAria": "Sonido desactivado",
+      "enableAlertsTitle": "Activa los avisos de pedidos",
+      "enableAlertsBody": "Sonido y notificaciones del navegador, para no perder un pedido con la pestaña en segundo plano.",
+      "enableAlertsBtn": "Permitir",
+      "alertsBlockedHint": "Las notificaciones están bloqueadas en los ajustes del navegador.",
+      "newOrderTitle": "Nuevo pedido n.º {{number}}",
+      "newOrderBody": "{{total}} · {{mode}}"
     },
     "empty": {
       "activationTitle": "Aquí aparecerán tus primeros pedidos",

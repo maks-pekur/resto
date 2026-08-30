@@ -475,13 +475,16 @@
       "failedBanner": "Возврат {{amount}} не прошёл"
     },
     "alerts": {
-      "enableSoundTitle": "Включите звук уведомлений",
-      "enableSoundBody": "Чтобы не пропустить новый заказ, разрешите звук в этой вкладке.",
-      "enableSoundBtn": "Включить звук",
       "soundBlockedHint": "Звук может не работать в этом браузере.",
       "muteToggleLabel": "Звук",
       "muteOnAria": "Звук включён",
-      "muteOffAria": "Звук выключен"
+      "muteOffAria": "Звук выключен",
+      "enableAlertsTitle": "Включите оповещения о заказах",
+      "enableAlertsBody": "Звук и уведомления браузера — чтобы не пропустить заказ, даже когда вкладка свёрнута.",
+      "enableAlertsBtn": "Разрешить",
+      "alertsBlockedHint": "Уведомления отключены в настройках браузера.",
+      "newOrderTitle": "Новый заказ №{{number}}",
+      "newOrderBody": "{{total}} · {{mode}}"
     },
     "empty": {
       "activationTitle": "Здесь появятся ваши первые заказы",

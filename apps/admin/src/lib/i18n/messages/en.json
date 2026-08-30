@@ -475,13 +475,16 @@
       "failedBanner": "Refund of {{amount}} failed"
     },
     "alerts": {
-      "enableSoundTitle": "Turn on order notifications",
-      "enableSoundBody": "Allow sound in this tab so you don't miss a new order.",
-      "enableSoundBtn": "Turn on sound",
       "soundBlockedHint": "Sound may not work in this browser.",
       "muteToggleLabel": "Sound",
       "muteOnAria": "Sound on",
-      "muteOffAria": "Sound off"
+      "muteOffAria": "Sound off",
+      "enableAlertsTitle": "Turn on order alerts",
+      "enableAlertsBody": "Sound and browser notifications, so a new order reaches you even with the tab in the background.",
+      "enableAlertsBtn": "Allow",
+      "alertsBlockedHint": "Notifications are blocked in the browser settings.",
+      "newOrderTitle": "New order #{{number}}",
+      "newOrderBody": "{{total}} · {{mode}}"
     },
     "empty": {
       "activationTitle": "Your first orders will show up here",

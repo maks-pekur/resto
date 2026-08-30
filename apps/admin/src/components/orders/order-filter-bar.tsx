@@ -23,6 +23,7 @@ export interface OrderFilterBarProps {
   readonly onSoundMutedChange: (muted: boolean) => void;
   readonly soundBlocked: boolean;
   readonly soundReady: boolean;
+  readonly notificationsBlocked: boolean;
 }
 
 export function OrderFilterBar({
@@ -35,6 +36,7 @@ export function OrderFilterBar({
   onSoundMutedChange,
   soundBlocked,
   soundReady,
+  notificationsBlocked,
 }: OrderFilterBarProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders.filters' });
   const { t: tFeed } = useTranslation('translation', { keyPrefix: 'orders.feed' });
@@ -78,7 +80,10 @@ export function OrderFilterBar({
 
       <div className="ml-auto flex items-center gap-3">
         {soundBlocked ? (
-          <span className="text-xs text-muted-foreground">{tAlerts('soundBlockedHint')}</span>
+          <span className="text-muted-foreground text-xs">{tAlerts('soundBlockedHint')}</span>
+        ) : null}
+        {notificationsBlocked ? (
+          <span className="text-muted-foreground text-xs">{tAlerts('alertsBlockedHint')}</span>
         ) : null}
         {/* Until the browser has been unlocked the banner above is the sound control; two of
             them on one screen read as a duplicate. */}

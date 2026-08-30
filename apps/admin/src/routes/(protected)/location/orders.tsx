@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { RefreshCw, WifiOff } from 'lucide-react';
 import { Route as locationLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
+import { formatMoney } from '@/lib/utils';
 import {
   ordersFeedQuery,
   DEFAULT_ORDER_FEED_FILTERS,
@@ -14,15 +15,16 @@ import {
 } from '@/lib/queries/orders';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { useOrderSound } from '@/hooks/use-order-sound';
+import { useOrderNotifications } from '@/hooks/use-order-notifications';
 import { useTabTitle } from '@/hooks/use-tab-title';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { OrderCard } from '@/components/orders/order-card';
+import { FULFILLMENT_LABEL_KEY, OrderCard } from '@/components/orders/order-card';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { OrdersEmptyState } from '@/components/orders/orders-empty-state';
-import { EnableSoundBanner } from '@/components/orders/enable-sound-banner';
+import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
 import { OrderDetailSheet } from '@/components/orders/order-detail-sheet';
 import { RefundFailedBanner } from '@/components/orders/refund-failed-banner';
 
@@ -101,6 +103,7 @@ function OrdersPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
   const { t: tNav } = useTranslation('translation', { keyPrefix: 'nav' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
+  const { t: tCard } = useTranslation('translation', { keyPrefix: 'orders.card' });
   const { locationId } = useEffectiveLocation();
   const feedLocationId = locationId === 'all' ? undefined : locationId;
 
@@ -152,12 +155,27 @@ function OrdersPage() {
   const showLocationBadge = false;
 
   const sound = useOrderSound(groups.waiting);
+  const notifications = useOrderNotifications(groups.waiting, (row) => ({
+    title: t('alerts.newOrderTitle', { number: row.shortNumber }),
+    body: t('alerts.newOrderBody', {
+      total: formatMoney(row.total, row.currency),
+      mode: tCard(FULFILLMENT_LABEL_KEY[row.fulfillmentMode]),
+    }),
+  }));
   useTabTitle(groups.waiting.length);
+
+  // Both permissions are bought with one click: the browser dialog opens from it, and the
+  // same gesture is what an autoplay policy accepts in place of a permission it never offers.
+  const enableAlerts = (): void => {
+    sound.unlock();
+    notifications.request();
+  };
+  const alertsPending = !sound.unlocked || notifications.permission === 'default';
 
   return (
     <>
       <PageHeading title={tNav('orders')} />
-      {sound.unlocked ? null : <EnableSoundBanner onUnlock={sound.unlock} />}
+      {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
       <RefundFailedBanner
         count={refundFailedCount}
         onShowClick={() => {
@@ -174,6 +192,7 @@ function OrdersPage() {
         onSoundMutedChange={sound.setMuted}
         soundBlocked={sound.blocked}
         soundReady={sound.unlocked}
+        notificationsBlocked={notifications.permission === 'denied'}
       />
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (

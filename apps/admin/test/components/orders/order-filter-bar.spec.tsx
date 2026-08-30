@@ -26,6 +26,7 @@ const renderBar = (soundReady: boolean) =>
       onSoundMutedChange={vi.fn()}
       soundBlocked={false}
       soundReady={soundReady}
+      notificationsBlocked={false}
     />,
   );
 

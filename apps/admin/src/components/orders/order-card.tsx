@@ -53,7 +53,7 @@ const FULFILLMENT_ICON: Record<
   delivery: Truck,
 };
 
-const FULFILLMENT_LABEL_KEY: Record<OrderFeedRowApi['fulfillmentMode'], string> = {
+export const FULFILLMENT_LABEL_KEY: Record<OrderFeedRowApi['fulfillmentMode'], string> = {
   dine_in: 'fulfillmentDineIn',
   pickup: 'fulfillmentPickup',
   delivery: 'fulfillmentDelivery',
