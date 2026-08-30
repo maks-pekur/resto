@@ -37,9 +37,13 @@ export function PrefixedInput({
   const tail = value.length === 0 ? '' : stripPrefix(value, prefix);
 
   return (
-    <InputGroup className={className}>
-      <InputGroupAddon>
-        <InputGroupText className="text-muted-foreground font-normal">{prefix}</InputGroupText>
+    // The add-on owns its own padding and the input's left inset, so the constant head and the
+    // part being typed read as one address rather than two fields.
+    <InputGroup className={cn('[&>input]:pl-1.5!', className)}>
+      <InputGroupAddon className="bg-muted/70 border-input h-full cursor-default rounded-l-md border-r pr-2 pl-2.5">
+        <InputGroupText className="text-muted-foreground font-normal select-none">
+          {prefix}
+        </InputGroupText>
       </InputGroupAddon>
       <InputGroupInput
         value={tail}
