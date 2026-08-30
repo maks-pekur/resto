@@ -10,7 +10,8 @@ import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { DEFAULT_DASHBOARD_RANGE, type DateRange } from '@/lib/date-range';
 import { PageHeading } from '@/components/common/page-heading';
 import { EmptyState } from '@/components/common/empty-state';
-import { ALL_LOCATIONS, DashboardFilters } from '@/components/dashboard/dashboard-filters';
+import { ALL_LOCATIONS, LocationsFilter } from '@/components/common/locations-filter';
+import { DateRangePicker } from '@/components/common/date-range-picker';
 import { DashboardKpis } from '@/components/widgets/dashboard-kpis';
 import { Button } from '@/components/ui/button';
 
@@ -54,13 +55,17 @@ export function DashboardPage() {
           />
         ) : canSeeReports ? (
           <>
-            <DashboardFilters
-              locations={locations.map((location) => ({ id: location.id, name: location.name }))}
-              locationId={filterValue}
-              onLocationChange={setSelectedLocation}
-              range={range}
-              onRangeChange={setRange}
-            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <LocationsFilter
+                locations={locations.map((location) => ({
+                  id: location.id,
+                  name: location.name,
+                }))}
+                value={filterValue}
+                onChange={setSelectedLocation}
+              />
+              <DateRangePicker value={range} onChange={setRange} />
+            </div>
             <DashboardKpis locationId={filterValue} range={range} />
           </>
         ) : (
