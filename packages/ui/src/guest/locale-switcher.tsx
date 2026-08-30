@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import { cn } from '../lib/utils';
 import { useGuestUi } from './guest-ui-provider';
 
@@ -10,6 +11,36 @@ const LOCALE_FLAG: Record<string, string> = {
   uk: '🇺🇦',
 };
 
+/** Each language named in itself, which is what a guest scanning the list looks for. */
+const endonym = (locale: string): string => {
+  try {
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(locale) ?? locale;
+  } catch {
+    return locale;
+  }
+};
+
+interface DiscProps {
+  readonly locale: string;
+  readonly withCode: boolean;
+}
+
+function LocaleDisc({ locale, withCode }: DiscProps) {
+  const flag = LOCALE_FLAG[locale];
+  return (
+    <span className="relative inline-flex shrink-0">
+      <span className="ring-border bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1">
+        {flag ?? <span className="text-[10px] font-bold uppercase">{locale}</span>}
+      </span>
+      {withCode && flag !== undefined ? (
+        <span className="bg-primary text-primary-foreground border-background absolute -right-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase">
+          {locale}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export interface LocaleSwitcherProps {
   readonly locales: readonly string[];
   readonly activeLocale: string;
@@ -18,9 +49,9 @@ export interface LocaleSwitcherProps {
 }
 
 /**
- * Flag discs with the code on them: a guest picks their language by recognising it, not by
- * reading it. A locale we have no flag for keeps the code alone rather than borrowing someone
- * else's — a wrong flag reads as a wrong country.
+ * The same control the operator panel uses: a flag on the trigger, the choice behind it. Written
+ * without a menu library on purpose — the guest bundle is opened on a phone over mobile data,
+ * and a popover dependency is not worth two clicks.
  */
 export const LocaleSwitcher = ({
   locales,
@@ -29,47 +60,69 @@ export const LocaleSwitcher = ({
   className,
 }: LocaleSwitcherProps) => {
   const { t } = useGuestUi();
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: MouseEvent | TouchEvent): void => {
+      if (rootRef.current?.contains(event.target as Node) === false) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    document.addEventListener('pointerdown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open]);
 
   if (locales.length < 2) return null;
 
   return (
-    <div
-      role="group"
-      aria-label={t('locale.label')}
-      className={cn('inline-flex items-center gap-1.5', className)}
-    >
-      {locales.map((locale) => {
-        const isActive = locale === activeLocale;
-        const flag = LOCALE_FLAG[locale];
-        return (
-          <button
-            key={locale}
-            type="button"
-            aria-current={isActive ? 'true' : undefined}
-            onClick={() => {
-              onSelect(locale);
-            }}
-            className={cn(
-              'focus-visible:ring-ring relative flex min-h-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:min-h-8',
-              isActive ? 'opacity-100' : 'opacity-60 hover:opacity-100',
-            )}
-          >
-            <span
-              className={cn(
-                'bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1',
-                isActive ? 'ring-primary ring-2' : 'ring-border',
-              )}
-            >
-              {flag ?? <span className="text-[10px] font-bold uppercase">{locale}</span>}
-            </span>
-            {flag === undefined ? null : (
-              <span className="bg-primary text-primary-foreground border-background absolute -right-1 bottom-0 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase sm:-bottom-1">
-                {locale}
-              </span>
-            )}
-          </button>
-        );
-      })}
+    <div ref={rootRef} className={cn('relative inline-flex', className)}>
+      <button
+        type="button"
+        aria-label={t('locale.label')}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => {
+          setOpen((prev) => !prev);
+        }}
+        className="focus-visible:ring-ring flex min-h-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:min-h-8"
+      >
+        <LocaleDisc locale={activeLocale} withCode={false} />
+      </button>
+
+      {open ? (
+        <div
+          role="menu"
+          className="bg-popover text-popover-foreground absolute end-0 top-full z-50 mt-2 min-w-44 rounded-md border p-1 shadow-md"
+        >
+          {locales.map((locale) => {
+            const isActive = locale === activeLocale;
+            return (
+              <button
+                key={locale}
+                type="button"
+                role="menuitem"
+                aria-current={isActive ? 'true' : undefined}
+                onClick={() => {
+                  setOpen(false);
+                  if (!isActive) onSelect(locale);
+                }}
+                className="hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-start text-sm"
+              >
+                <LocaleDisc locale={locale} withCode />
+                <span className="flex-1 truncate capitalize">{endonym(locale)}</span>
+                {isActive ? <span aria-hidden>✓</span> : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
     </div>
   );
 };
