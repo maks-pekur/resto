@@ -1646,6 +1646,32 @@ paths:
                 $ref: "#/components/schemas/RetryRefundResponseDto"
       tags:
         - orders
+  /v1/payments/transactions:
+    get:
+      operationId: TransactionsController_list
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionsResponseDto"
+      tags:
+        - payments
+  /v1/payments/transactions/alerts:
+    get:
+      operationId: TransactionsController_alerts
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionAlertsResponseDto"
+      tags:
+        - payments
 info:
   title: Resto API
   description: Resto multi-tenant SaaS backend.
@@ -4867,3 +4893,74 @@ components:
         - stripeRefundId
         - amountMinor
         - fullyRefunded
+    TransactionsResponseDto:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            type: object
+            properties:
+              paymentId:
+                type: string
+                format: uuid
+              orderId:
+                type: string
+                format: uuid
+              orderShortNumber:
+                type: integer
+              locationId:
+                type: string
+                format: uuid
+              status:
+                type: string
+              amount:
+                type: string
+                pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+              refundedAmount:
+                type: string
+                pattern: ^(?:0|[1-9]\d*)(?:\.\d{1,2})?$
+              currency:
+                type: string
+                pattern: ^[A-Z]{3}$
+              hasFailedRefund:
+                type: boolean
+              createdAt:
+                type: string
+            required:
+              - paymentId
+              - orderId
+              - orderShortNumber
+              - locationId
+              - status
+              - amount
+              - refundedAmount
+              - currency
+              - hasFailedRefund
+              - createdAt
+        total:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+        limit:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: true
+        offset:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - rows
+        - total
+        - limit
+        - offset
+    TransactionAlertsResponseDto:
+      type: object
+      properties:
+        refundFailed:
+          type: integer
+          minimum: 0
+          exclusiveMinimum: false
+      required:
+        - refundFailed
