@@ -65,15 +65,15 @@ const STATE_LABEL_KEY: Record<OrderCardState, string> = {
 };
 
 // Colour carries the same message as the word beneath it, never on its own: an operator who
-// cannot tell the yellow from the grey still reads "Готово" against "Готовится".
-const STATE_TONE: Record<OrderCardState, string> = {
-  new: 'bg-primary/10 text-foreground',
-  escalated: 'bg-destructive/15 text-destructive',
-  accepted: 'bg-primary/10 text-foreground',
-  preparing: 'bg-muted text-muted-foreground',
-  ready: 'bg-warning/20 text-foreground',
-  completed: 'bg-muted/50 text-muted-foreground',
-  canceled: 'bg-muted/50 text-muted-foreground',
+// cannot tell the amber from the grey still reads "Готово" against "Готовится".
+const STATE_TEXT_TONE: Record<OrderCardState, string> = {
+  new: 'text-foreground',
+  escalated: 'text-destructive',
+  accepted: 'text-foreground',
+  preparing: 'text-muted-foreground',
+  ready: 'text-warning',
+  completed: 'text-muted-foreground',
+  canceled: 'text-muted-foreground',
 };
 
 const paymentKeyOf = (status: OrderFeedRowApi['status']): 'paid' | 'refunded' | 'unpaid' => {
@@ -173,7 +173,9 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         <span
           className={cn(
             'flex w-24 shrink-0 flex-col justify-center gap-0.5 px-3 py-2',
-            late ? 'bg-destructive/15 text-destructive' : STATE_TONE[state],
+            // Colour without a fill: the status word and the ring carry the state, the row
+            // keeps one background so nothing reads as a separate block.
+            late ? 'text-destructive' : STATE_TEXT_TONE[state],
           )}
         >
           <span className="text-lg leading-none font-semibold tabular-nums">{row.shortNumber}</span>
@@ -182,12 +184,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           </span>
         </span>
 
-        <span
-          className={cn(
-            'flex w-16 shrink-0 items-center justify-center px-2 py-2',
-            late ? 'bg-destructive/15' : undefined,
-          )}
-        >
+        <span className="flex w-16 shrink-0 items-center justify-center px-2 py-2">
           {remaining !== null && isOpen ? (
             <CountdownRing
               progress={remaining.progress}
