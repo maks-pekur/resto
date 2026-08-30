@@ -188,7 +188,7 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           <ChannelIcon className="size-4" />
           <span className="sr-only">{t(`channel.${channel.labelKey}`)}</span>
           <span className="flex items-center gap-1 text-base leading-none font-semibold tabular-nums">
-            <span className="text-xs font-normal opacity-60">#</span>
+            <span className="text-sm font-normal opacity-60">#</span>
             {row.shortNumber}
           </span>
         </span>
