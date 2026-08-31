@@ -29,7 +29,7 @@ export class AnalyticsDrizzleReader implements AnalyticsReader {
     return this.db.withTenant(async (tx) => {
       const orderRows = await tx
         .select({
-          revenue: sql<string>`coalesce(sum(${schema.orders.total}) filter (where ${schema.orders.paymentState} = 'paid'), 0)::numeric(14, 2)::text`,
+          revenue: sql<string>`coalesce(sum(${schema.orders.total}) filter (where ${schema.orders.paymentStatus} = 'paid'), 0)::numeric(14, 2)::text`,
           completedOrders: sql<number>`(count(*) filter (where ${schema.orders.status} = 'completed'))::int`,
         })
         .from(schema.orders)
@@ -79,7 +79,7 @@ export class AnalyticsDrizzleReader implements AnalyticsReader {
           and(
             eq(schema.orders.tenantId, tenantId),
             inArray(schema.orders.locationId, locationIds),
-            eq(schema.orders.paymentState, 'paid'),
+            eq(schema.orders.paymentStatus, 'paid'),
             sql`${guestKey} is not null`,
           ),
         )

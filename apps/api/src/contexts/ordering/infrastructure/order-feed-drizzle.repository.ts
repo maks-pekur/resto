@@ -212,7 +212,7 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     customerName: row.customerName ?? null,
     customerPhone: row.customerPhone ?? null,
     paymentType: row.paymentType as OrderFeedRow['paymentType'],
-    paymentState: row.paymentState as OrderFeedRow['paymentState'],
+    paymentStatus: row.paymentStatus as OrderFeedRow['paymentStatus'],
     total: row.total,
     currency: row.currency,
     itemCount,

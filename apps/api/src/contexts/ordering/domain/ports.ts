@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
-import type { Order, OrderPaymentState, OrderStatus } from './order.aggregate';
+import type { Order, OrderPaymentStatus, OrderStatus } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
@@ -97,7 +97,7 @@ export const OrderStatusSchema: z.ZodType<OrderStatus> = z.enum([
   'canceled',
 ]);
 
-export const OrderPaymentStateSchema: z.ZodType<OrderPaymentState> = z.enum([
+export const OrderPaymentStatusSchema: z.ZodType<OrderPaymentStatus> = z.enum([
   'pending',
   'requires_action',
   'paid',
@@ -152,7 +152,7 @@ export const OrderFeedRowSchema = z.object({
   id: z.string().uuid(),
   shortNumber: z.number().int(),
   status: OrderStatusSchema,
-  paymentState: OrderPaymentStateSchema,
+  paymentStatus: OrderPaymentStatusSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
   orderType: z.enum(['dine_in', 'pickup', 'delivery']),

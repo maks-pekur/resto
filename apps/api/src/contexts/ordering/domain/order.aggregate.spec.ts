@@ -61,7 +61,7 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     shortNumber: 1,
     channel: 'site',
     paymentType: 'online',
-    paymentState: 'pending',
+    paymentStatus: 'pending',
     paidAt: null,
     acceptedAt: null,
     preparingAt: null,
@@ -86,7 +86,7 @@ describe('Order.create', () => {
   it('creates an order with status placed', () => {
     const order = Order.create(makeInput());
     expect(order.toSnapshot().status).toBe('placed');
-    expect(order.toSnapshot().paymentState).toBe('pending');
+    expect(order.toSnapshot().paymentStatus).toBe('pending');
   });
 
   it('emits exactly one OrderCreated event with required envelope fields', () => {
@@ -300,7 +300,7 @@ describe('markPaid', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_123');
-    expect(order.toSnapshot().paymentState).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     expect(order.toSnapshot().paidAt).toBeInstanceOf(Date);
     expect(order.toSnapshot().status).toBe('placed');
     const events = order.pullEvents();
@@ -379,7 +379,7 @@ describe('accept', () => {
     order.pullEvents();
     order.accept(null, 'user-1');
     expect(order.toSnapshot().status).toBe('accepted');
-    expect(order.toSnapshot().paymentState).toBe('pending');
+    expect(order.toSnapshot().paymentStatus).toBe('pending');
   });
 
   it('throws InvalidOrderTransitionError from canceled state', () => {
@@ -657,7 +657,7 @@ describe('refund', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(1250, 0);
-    expect(order.toSnapshot().paymentState).toBe('refunded');
+    expect(order.toSnapshot().paymentStatus).toBe('refunded');
     expect(order.toSnapshot().status).toBe('placed');
     const events = order.pullEvents();
     const [event] = events;
@@ -730,7 +730,7 @@ describe('markFailed', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markFailed('payment gateway error');
-    expect(order.toSnapshot().paymentState).toBe('failed');
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -747,7 +747,7 @@ describe('markFailed', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     order.markFailed('webhook timeout');
-    expect(order.toSnapshot().paymentState).toBe('failed');
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
     expect(order.toSnapshot().paidAt).toBeNull();
     const events = order.pullEvents();
     const [event] = events;
@@ -768,7 +768,7 @@ describe('markFailed', () => {
 
     order.markFailed('chargeback');
 
-    expect(order.toSnapshot().paymentState).toBe('failed');
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
     expect(order.toSnapshot().status).toBe('completed');
   });
 
@@ -790,7 +790,7 @@ describe('requireAction (D-08 SCA state)', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.requireAction('pi_sca_1');
-    expect(order.toSnapshot().paymentState).toBe('requires_action');
+    expect(order.toSnapshot().paymentStatus).toBe('requires_action');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -817,7 +817,7 @@ describe('requireAction (D-08 SCA state)', () => {
     order.requireAction('pi_sca_1');
     order.pullEvents();
     order.markPaid('pi_sca_1');
-    expect(order.toSnapshot().paymentState).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -833,7 +833,7 @@ describe('partial refund (D-04)', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(500, 0);
-    expect(order.toSnapshot().paymentState).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -851,10 +851,10 @@ describe('partial refund (D-04)', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(500, 0);
-    expect(order.toSnapshot().paymentState).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     order.pullEvents();
     order.refund(750, 500);
-    expect(order.toSnapshot().paymentState).toBe('refunded');
+    expect(order.toSnapshot().paymentStatus).toBe('refunded');
   });
 
   it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {

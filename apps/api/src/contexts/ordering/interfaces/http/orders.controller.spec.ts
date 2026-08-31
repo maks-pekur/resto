@@ -34,7 +34,7 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   shortNumber: 1,
   channel: 'site',
   paymentType: 'online',
-  paymentState: 'pending',
+  paymentStatus: 'pending',
   paidAt: null,
   acceptedAt: null,
   preparingAt: null,
@@ -70,7 +70,7 @@ const buildController = () => {
 
 const FROZEN_STATUS_RESPONSE_KEYS = [
   'status',
-  'paymentState',
+  'paymentStatus',
   'shortNumber',
   'orderNumber',
   'total',
@@ -92,7 +92,7 @@ describe('OrdersController GET /:id/status', () => {
     expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
     expect(result).toEqual({
       status: 'placed',
-      paymentState: 'pending',
+      paymentStatus: 'pending',
       shortNumber: 1,
       orderNumber: '20260627-ABCDE',
       total: '25.00',
@@ -108,7 +108,7 @@ describe('OrdersController GET /:id/status', () => {
     const { controller, getOrderService } = buildController();
     const snap = makeOrderSnap({
       status: 'accepted',
-      paymentState: 'pending',
+      paymentStatus: 'pending',
       paidAt: null,
     });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
@@ -116,7 +116,7 @@ describe('OrdersController GET /:id/status', () => {
     const result = await controller.getStatus(snap.id);
 
     expect(result.status).toBe('accepted');
-    expect(result.paymentState).toBe('pending');
+    expect(result.paymentStatus).toBe('pending');
   });
 
   it('does NOT mutate order state (read-only)', async () => {

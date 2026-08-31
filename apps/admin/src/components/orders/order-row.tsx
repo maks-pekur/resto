@@ -49,8 +49,8 @@ export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> 
 // What the money is doing outranks how the guest meant to pay: an unpaid order at a table is the
 // operator's job to chase, and it now says so whatever stage the kitchen is at.
 const paymentKeyOf = (row: OrderFeedRowApi): string => {
-  if (row.paymentState === 'refunded') return 'refunded';
-  if (row.paymentState === 'paid') return row.paymentType;
+  if (row.paymentStatus === 'refunded') return 'refunded';
+  if (row.paymentStatus === 'paid') return row.paymentType;
   return 'unpaid';
 };
 

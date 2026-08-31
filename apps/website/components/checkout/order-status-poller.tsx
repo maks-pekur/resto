@@ -92,7 +92,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     const scheduleNext = (currentStatus: string) => {
       if (TERMINAL_STATUSES.has(currentStatus as KnownStatus)) return;
       // A payment that failed or was returned goes nowhere on its own either.
-      if (status.paymentState === 'failed' || status.paymentState === 'refunded') return;
+      if (status.paymentStatus === 'failed' || status.paymentStatus === 'refunded') return;
       timerRef.current = setTimeout(() => {
         if (cancelled) return;
         setIsPolling(true);
@@ -129,7 +129,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     <p className="text-xs text-muted-foreground">{t('status.updating')}</p>
   ) : null;
 
-  if (status.paymentState === 'failed') {
+  if (status.paymentStatus === 'failed') {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold">{t('status.paymentFailedTitle')}</h1>
@@ -140,7 +140,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     );
   }
 
-  if (status.status === 'canceled' || status.paymentState === 'refunded') {
+  if (status.status === 'canceled' || status.paymentStatus === 'refunded') {
     // Refused before the kitchen took it on reads as declined; stopped later reads as canceled.
     const title =
       status.canceledFromStatus === 'placed'
@@ -164,7 +164,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
   }
 
   // Money still in flight: the guest is looking at a payment, not at a kitchen.
-  if (status.paymentState === 'pending' || status.paymentState === 'requires_action') {
+  if (status.paymentStatus === 'pending' || status.paymentStatus === 'requires_action') {
     return (
       <div className="flex flex-col gap-4">
         <p className="text-base text-muted-foreground">{t('status.awaitingPayment')}</p>

@@ -60,7 +60,7 @@ const baseRow: OrderFeedRowApi = {
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
-  paymentState: 'paid',
+  paymentStatus: 'paid',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,
@@ -135,7 +135,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
-      paymentState: 'paid',
+      paymentStatus: 'paid',
       tableIdentifier: null,
     };
     render(
@@ -157,7 +157,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
-      paymentState: 'paid',
+      paymentStatus: 'paid',
       tableIdentifier: 'T7',
     };
     render(
@@ -178,7 +178,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
-      paymentState: 'paid',
+      paymentStatus: 'paid',
       tableIdentifier: null,
     };
     render(

@@ -2178,7 +2178,7 @@ export interface components {
         };
         OrderStatusResponseDto: {
             status: string;
-            paymentState: string;
+            paymentStatus: string;
             shortNumber: number | null;
             orderNumber: string;
             total: string;

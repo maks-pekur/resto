@@ -56,8 +56,8 @@ export class CreateCheckoutPaymentService {
 
     // Checkout is about money, so it is the payment axis that decides: a confirmed order still
     // waiting to be paid is exactly the case the QR menu needs (migration 0010).
-    if (snap.paymentState !== 'pending' && snap.paymentState !== 'requires_action') {
-      throw new OrderNotCheckoutableError(input.orderId, snap.paymentState);
+    if (snap.paymentStatus !== 'pending' && snap.paymentStatus !== 'requires_action') {
+      throw new OrderNotCheckoutableError(input.orderId, snap.paymentStatus);
     }
     if (snap.status === 'canceled') {
       throw new OrderNotCheckoutableError(input.orderId, snap.status);
@@ -116,7 +116,7 @@ export class CreateCheckoutPaymentService {
         },
       });
 
-      if (snap.paymentState === 'pending') {
+      if (snap.paymentStatus === 'pending') {
         order.requireAction(piResult.paymentIntentId);
         await this.orderRepo.update(order, tx);
       }

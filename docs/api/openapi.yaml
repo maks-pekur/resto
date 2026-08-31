@@ -4331,7 +4331,7 @@ components:
       properties:
         status:
           type: string
-        paymentState:
+        paymentStatus:
           type: string
         shortNumber:
           type: integer
@@ -4360,7 +4360,7 @@ components:
           nullable: true
       required:
         - status
-        - paymentState
+        - paymentStatus
         - shortNumber
         - orderNumber
         - total

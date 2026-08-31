@@ -72,7 +72,7 @@ const makeOrderSnap = (
   shortNumber: 1,
   channel: 'site',
   paymentType: 'online',
-  paymentState: 'pending',
+  paymentStatus: 'pending',
   paidAt: null,
   acceptedAt: null,
   preparingAt: null,
@@ -334,7 +334,7 @@ describe('CreateCheckoutPaymentService', () => {
 
       expect(orderRepo.update).toHaveBeenCalledTimes(1);
       const savedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
-      expect(savedOrder?.toSnapshot().paymentState).toBe('requires_action');
+      expect(savedOrder?.toSnapshot().paymentStatus).toBe('requires_action');
 
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         // The payment row keeps its own status; the order's payment axis is a separate field.
@@ -347,7 +347,7 @@ describe('CreateCheckoutPaymentService', () => {
       const { sut, orderRepo, orderSnap, tenantId } = buildSut();
       const paidOrder = Order.fromSnapshot({
         ...orderSnap,
-        paymentState: 'paid',
+        paymentStatus: 'paid',
         paidAt: new Date(),
       });
       vi.mocked(orderRepo.findById).mockResolvedValue(paidOrder);

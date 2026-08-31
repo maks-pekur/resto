@@ -27,7 +27,7 @@ const makeTx = (): RestoTx => {
 
 const makeOrder = (
   status: string,
-  payment: { paymentState?: string; paidAt?: Date } = {},
+  payment: { paymentStatus?: string; paidAt?: Date } = {},
 ): Order => {
   const snap = {
     id: OrderId.parse(ORDER_ID),
@@ -54,7 +54,7 @@ const makeOrder = (
     scheduledFor: null,
     shortNumber: 1,
     paymentType: 'online',
-    paymentState: payment.paymentState ?? 'pending',
+    paymentStatus: payment.paymentStatus ?? 'pending',
     paidAt: payment.paidAt ?? null,
     channel: 'site' as const,
     acceptedAt: null,
@@ -233,7 +233,7 @@ describe('HandleStripeEventService', () => {
 
       expect(orderRepo.update).toHaveBeenCalled();
       const updatedOrder = (orderRepo.update.mock.calls[0] as [Order])[0];
-      expect(updatedOrder.toSnapshot().paymentState).toBe('paid');
+      expect(updatedOrder.toSnapshot().paymentStatus).toBe('paid');
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'succeeded', latestChargeId: CHARGE_ID }),
         expect.anything(),
@@ -250,7 +250,7 @@ describe('HandleStripeEventService', () => {
     });
 
     it('double-charge guard: orphan PI on already-paid order triggers auto-refund', async () => {
-      const paidOrder = makeOrder('placed', { paymentState: 'paid', paidAt: new Date() });
+      const paidOrder = makeOrder('placed', { paymentStatus: 'paid', paidAt: new Date() });
       orderRepo.findByIdInTx.mockResolvedValue(paidOrder);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
       paymentRepo.findByOrderId.mockResolvedValue(
@@ -276,7 +276,7 @@ describe('HandleStripeEventService', () => {
 
   describe('payment_intent.payment_failed', () => {
     it('records failure without clobbering a paid order', async () => {
-      const paidOrder = makeOrder('placed', { paymentState: 'paid', paidAt: new Date() });
+      const paidOrder = makeOrder('placed', { paymentStatus: 'paid', paidAt: new Date() });
       orderRepo.findById.mockResolvedValue(paidOrder);
       paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow({ status: 'failed' }));
 

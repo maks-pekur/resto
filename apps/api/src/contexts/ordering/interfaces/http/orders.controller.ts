@@ -20,7 +20,7 @@ class OrderResponseDto extends createZodDto(OrderResponseSchema) {}
 
 const OrderStatusResponseSchema = z.object({
   status: z.string(),
-  paymentState: z.string(),
+  paymentStatus: z.string(),
   shortNumber: z.number().int().nullable(),
   orderNumber: z.string(),
   total: z.string(),
@@ -64,7 +64,7 @@ export class OrdersController {
       return {
         status: snap.status,
         // The guest surface waits on both: staff confirm the order, then the money settles.
-        paymentState: snap.paymentState,
+        paymentStatus: snap.paymentStatus,
         shortNumber: snap.shortNumber,
         orderNumber: snap.orderNumber,
         total: snap.total,

@@ -58,7 +58,7 @@ const baseOrder: OrderFeedRowApi = {
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
-  paymentState: 'paid',
+  paymentStatus: 'paid',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,

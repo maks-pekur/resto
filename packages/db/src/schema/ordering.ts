@@ -28,11 +28,11 @@ export const orders = pgTable(
     locationId: uuid('location_id').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     orderNumber: text('order_number').notNull(),
-    // How far the kitchen has taken the order. Whether the money arrived is `paymentState`'s
+    // How far the kitchen has taken the order. Whether the money arrived is `paymentStatus`'s
     // business — one column could not say "confirmed but not yet paid" (migration 0010).
     // 'canceled' acts as the soft delete: no hard deletes.
     status: text('status').notNull(),
-    paymentState: text('payment_state').notNull().default('pending'),
+    paymentStatus: text('payment_status').notNull().default('pending'),
     paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
     orderType: text('order_type').notNull(),
     // Legacy free-text table label — no writer from phase 10.3 on (CONTEXT D-03).
@@ -99,12 +99,12 @@ export const orders = pgTable(
       sql`${table.status} IN ('placed','accepted','preparing','ready','completed','canceled')`,
     ),
     check(
-      'orders_payment_state_chk',
-      sql`${table.paymentState} IN ('pending','requires_action','paid','failed','refunded')`,
+      'orders_payment_status_chk',
+      sql`${table.paymentStatus} IN ('pending','requires_action','paid','failed','refunded')`,
     ),
     check(
       'orders_paid_at_chk',
-      sql`(${table.paymentState} = 'paid') = (${table.paidAt} IS NOT NULL)`,
+      sql`(${table.paymentStatus} = 'paid') = (${table.paidAt} IS NOT NULL)`,
     ),
     check('orders_order_type_chk', sql`${table.orderType} IN ('dine_in','pickup','delivery')`),
     check('orders_channel_chk', sql`${table.channel} IN ('site','qr-menu')`),

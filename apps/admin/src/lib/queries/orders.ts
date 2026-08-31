@@ -1,9 +1,9 @@
 import { apiFetch } from '@/lib/api-client';
 
-/** How far the kitchen has taken the order. Money is `OrderPaymentState`'s business. */
+/** How far the kitchen has taken the order. Money is `OrderPaymentStatus`'s business. */
 export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled';
 
-export type OrderPaymentState = 'pending' | 'requires_action' | 'paid' | 'failed' | 'refunded';
+export type OrderPaymentStatus = 'pending' | 'requires_action' | 'paid' | 'failed' | 'refunded';
 
 export type OrderStatusPreset =
   | 'active'
@@ -32,7 +32,7 @@ export interface OrderFeedRowApi {
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
-  readonly paymentState: OrderPaymentState;
+  readonly paymentStatus: OrderPaymentStatus;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
