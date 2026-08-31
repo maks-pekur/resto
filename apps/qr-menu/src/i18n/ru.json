@@ -31,7 +31,6 @@
   "cart.close": "Закрыть",
   "cart.table": "Стол {table}",
   "cart.itemCount": "Корзина · {n}",
-  "cart.added": "Добавлено в корзину",
   "table.current": "Стол {table}",
   "table.notRecognized": "Стол не распознан — обратитесь к сотруднику",
   "locale.label": "Язык",

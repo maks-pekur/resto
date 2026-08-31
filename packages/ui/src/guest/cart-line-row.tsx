@@ -23,46 +23,46 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
   const removeItem = useCartStore((s) => s.removeItem);
 
   return (
-    <div className="flex items-center gap-3 py-4">
+    <div className="flex items-center gap-2.5 py-3">
       {item.imageUrl ? (
-        <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg">
-          <Image src={item.imageUrl} alt="" sizes="56px" className="size-full object-cover" />
+        <span className="bg-muted relative size-12 shrink-0 overflow-hidden rounded-lg">
+          <Image src={item.imageUrl} alt="" sizes="48px" className="size-full object-cover" />
         </span>
       ) : null}
 
-      <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="truncate text-sm font-bold">{item.name}</p>
         {item.modifiers.length > 0 ? (
-          <p className="text-muted-foreground mt-0.5 truncate text-xs">
+          <p className="text-muted-foreground truncate text-xs">
             {item.modifiers.map((m) => m.name).join(', ')}
           </p>
         ) : null}
-        <p className="mt-1 text-sm font-bold tabular-nums">
+        <p className="text-sm font-bold whitespace-nowrap tabular-nums">
           {formatPrice(lineTotal(item), item.currency, locale)}
         </p>
       </div>
 
-      <div className="bg-muted flex items-center gap-1 rounded-full p-1">
+      <div className="bg-muted flex shrink-0 items-center rounded-full p-0.5">
         <button
           type="button"
           onClick={() => {
             updateQuantity(item.itemId, item.sizeId, -1);
           }}
           aria-label={t('item.qtyDecrease', { name: item.name })}
-          className="hover:bg-background focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
+          className="hover:bg-background focus-visible:ring-ring flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
         >
-          <Minus className="size-4" aria-hidden="true" />
+          <Minus className="size-3.5" aria-hidden="true" />
         </button>
-        <span className="w-6 text-center text-sm font-bold tabular-nums">{item.quantity}</span>
+        <span className="w-5 text-center text-sm font-bold tabular-nums">{item.quantity}</span>
         <button
           type="button"
           onClick={() => {
             updateQuantity(item.itemId, item.sizeId, 1);
           }}
           aria-label={t('item.qtyIncrease', { name: item.name })}
-          className="hover:bg-background focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
+          className="hover:bg-background focus-visible:ring-ring flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
         >
-          <Plus className="size-4" aria-hidden="true" />
+          <Plus className="size-3.5" aria-hidden="true" />
         </button>
       </div>
 
@@ -72,7 +72,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
           removeItem(item.itemId, item.sizeId);
         }}
         aria-label={t('item.remove', { name: item.name })}
-        className="text-muted-foreground hover:text-destructive focus-visible:ring-ring flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9"
+        className="text-muted-foreground hover:text-destructive focus-visible:ring-ring -mr-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <X className="size-4" aria-hidden="true" />
       </button>

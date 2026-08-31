@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
 import {
@@ -203,9 +202,6 @@ export const App = () => {
           initialItemId={openItemId}
           onItemOpen={openItem}
           onItemClose={closeItem}
-          onAddedToCart={() => {
-            toast(t('cart.added'));
-          }}
           headerActions={
             <>
               <ThemeToggle
