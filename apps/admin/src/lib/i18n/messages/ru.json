@@ -396,7 +396,8 @@
       "overdueByAria": "Опоздание: {{duration}}",
       "unitMinutes": "м",
       "unitHours": "ч",
-      "unitDays": "д"
+      "unitDays": "д",
+      "noCustomer": "Без имени"
     },
     "accept": {
       "title": "Через сколько будет готово?",
@@ -525,6 +526,14 @@
       "uberEats": "Uber Eats",
       "bolt": "Bolt Food",
       "wolt": "Wolt"
+    },
+    "columns": {
+      "order": "Заказ",
+      "remaining": "Время",
+      "promised": "Отдать",
+      "type": "Тип",
+      "for": "Для",
+      "total": "Сумма"
     }
   },
   "dashboard": {

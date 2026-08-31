@@ -23,6 +23,7 @@ import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { ORDER_TYPE_LABEL_KEY, OrderRow } from '@/components/orders/order-row';
+import { OrderFeedHeader } from '@/components/orders/order-feed-header';
 import { OrderFilterBar } from '@/components/orders/order-filter-bar';
 import { type OrderTypeTab } from '@/components/orders/order-tabs';
 import { EnableAlertsBanner } from '@/components/orders/enable-alerts-banner';
@@ -186,9 +187,8 @@ function OrdersPage() {
         ) : rows.length === 0 ? (
           <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
         ) : (
-          // The feed is a list of orders, not a table of fields: each row carries its own
-          // labels through icons and words, so a column header would only repeat them.
           <div className="flex flex-col gap-2">
+            <OrderFeedHeader />
             {rows.map((row) => (
               <OrderRow
                 key={row.id}

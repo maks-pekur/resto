@@ -396,7 +396,8 @@
       "overdueByAria": "Retraso: {{duration}}",
       "unitMinutes": "m",
       "unitHours": "h",
-      "unitDays": "d"
+      "unitDays": "d",
+      "noCustomer": "Sin nombre"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",
@@ -525,6 +526,14 @@
       "uberEats": "Uber Eats",
       "bolt": "Bolt Food",
       "wolt": "Wolt"
+    },
+    "columns": {
+      "order": "Pedido",
+      "remaining": "Queda",
+      "promised": "Para",
+      "type": "Tipo",
+      "for": "Para quién",
+      "total": "Total"
     }
   },
   "dashboard": {

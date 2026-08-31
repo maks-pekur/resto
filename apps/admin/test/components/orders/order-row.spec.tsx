@@ -134,7 +134,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
     );
 
     const expectedLabel = `orders.card.tableLabel(${JSON.stringify({ zone: 'Зал 1', number: '14' })})`;
-    expect(screen.getByTestId('order-row-table-line').textContent).toBe(expectedLabel);
+    expect(screen.getByTestId('order-row-for-line').textContent).toBe(expectedLabel);
   });
 
   it('a dine-in order with no resolved table but a legacy free-text identifier renders that text', () => {
@@ -154,10 +154,10 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       </Wrap>,
     );
 
-    expect(screen.getByTestId('order-row-table-line').textContent).toBe('T7');
+    expect(screen.getByTestId('order-row-for-line').textContent).toBe('T7');
   });
 
-  it('a pickup order with no table data at all renders no table line', () => {
+  it('a pickup order with no table falls back to the customer, then to a placeholder', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
       orderType: 'pickup',
@@ -174,6 +174,6 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       </Wrap>,
     );
 
-    expect(screen.queryByTestId('order-row-table-line')).toBeNull();
+    expect(screen.getByTestId('order-row-for-line').textContent).toBe('orders.card.noCustomer');
   });
 });

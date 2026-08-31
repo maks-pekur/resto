@@ -1,13 +1,14 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, MapPin, ShoppingBag, Truck, UtensilsCrossed } from 'lucide-react';
+import { AlertCircle, MapPin } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useMoney } from '@/hooks/use-money';
 import { countdown } from '@/lib/orders/remaining';
 import { channelPresentation } from '@/lib/orders/channels';
+import { orderTypePresentation } from '@/lib/orders/order-types';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { usePermissions } from '@/hooks/use-permissions';
 import { advanceOrderStatusMutation, retryRefundMutation } from '@/lib/queries/orders';
@@ -39,15 +40,6 @@ export const AGE_BAND_CLASS = (ageMs: number): string => {
   if (ageMs < 5 * 60_000) return 'text-success';
   if (ageMs < 15 * 60_000) return 'text-warning';
   return 'text-destructive';
-};
-
-const ORDER_TYPE_ICON: Record<
-  OrderFeedRowApi['orderType'],
-  React.ComponentType<{ className?: string }>
-> = {
-  dine_in: UtensilsCrossed,
-  pickup: ShoppingBag,
-  delivery: Truck,
 };
 
 export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> = {
@@ -141,7 +133,8 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
 
   const channel = channelPresentation(row.channel);
   const ChannelIcon = channel.icon;
-  const OrderTypeIcon = ORDER_TYPE_ICON[row.orderType];
+  const orderType = orderTypePresentation(row.orderType);
+  const OrderTypeIcon = orderType.icon;
   const promisedAt = new Date(row.etaAt ?? row.createdAt);
   const dayWord = ((): string => {
     const startOfDay = (d: Date): number => new Date(d).setHours(0, 0, 0, 0);
@@ -158,6 +151,16 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
     row.tableZoneName !== null && row.tableNumber !== null
       ? t('card.tableLabel', { zone: row.tableZoneName, number: row.tableNumber })
       : row.tableIdentifier;
+
+  // Who the order is for: a guest at a table gave us no name, and the table is what the floor
+  // needs anyway; everyone else is a person to call.
+  const recipient: { readonly title: string; readonly detail: string | null } =
+    tableLabel !== null
+      ? { title: tableLabel, detail: t('card.itemCount', { count: row.itemCount }) }
+      : {
+          title: row.customerName ?? t('card.noCustomer'),
+          detail: row.customerPhone ?? t('card.itemCount', { count: row.itemCount }),
+        };
   const paymentKey = paymentKeyOf(row);
 
   return (
@@ -222,26 +225,18 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           <span className="text-muted-foreground text-xs">{dayWord}</span>
         </span>
 
-        <span className="hidden w-40 shrink-0 flex-col justify-center px-3 py-2 sm:flex">
-          <span className="flex items-center gap-1.5 text-sm">
-            <OrderTypeIcon className="text-muted-foreground size-4" />
-            {t(`card.${ORDER_TYPE_LABEL_KEY[row.orderType]}`)}
-          </span>
-          {tableLabel !== null ? (
-            <span
-              data-testid="order-row-table-line"
-              className="text-muted-foreground truncate text-xs"
-            >
-              {tableLabel}
-            </span>
-          ) : null}
+        <span className="hidden w-36 shrink-0 items-center gap-2 px-3 py-2 sm:flex">
+          <OrderTypeIcon className={cn('size-5 shrink-0', orderType.tone)} />
+          <span className="truncate text-sm">{t(`card.${orderType.labelKey}`)}</span>
         </span>
 
         <span className="hidden min-w-0 flex-1 flex-col justify-center px-3 py-2 md:flex">
-          <span className="truncate text-sm">{row.customerName ?? '—'}</span>
-          <span className="text-muted-foreground truncate text-xs">
-            {row.customerPhone ?? t('card.itemCount', { count: row.itemCount })}
+          <span className="truncate text-sm" data-testid="order-row-for-line">
+            {recipient.title}
           </span>
+          {recipient.detail === null ? null : (
+            <span className="text-muted-foreground truncate text-xs">{recipient.detail}</span>
+          )}
         </span>
 
         {showLocationBadge ? (
