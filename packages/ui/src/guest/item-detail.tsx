@@ -160,16 +160,15 @@ export const ItemDetail = ({
         </div>
       </div>
 
-      <div className="bg-background sticky bottom-0 flex items-center gap-3 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:px-6">
-        <span className="text-xl font-extrabold tabular-nums">
-          {formatPrice(selection.livePrice, currency, locale)}
-        </span>
+      {/* Glass, so the dish keeps scrolling under the one control that ends the visit. */}
+      <div className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky bottom-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
         <button
           type="button"
           onClick={handleAdd}
-          className="bg-primary text-primary-foreground focus-visible:ring-ring ml-auto inline-flex h-12 flex-1 cursor-pointer items-center justify-center rounded-full px-6 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none sm:flex-none sm:min-w-52"
+          className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
-          {t('item.addToCart')}
+          <span>{t('item.addToCart')}</span>
+          <span className="tabular-nums">{formatPrice(selection.livePrice, currency, locale)}</span>
         </button>
       </div>
     </div>

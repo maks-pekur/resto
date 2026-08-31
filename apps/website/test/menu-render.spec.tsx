@@ -88,7 +88,9 @@ describe('MenuPageClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Soup' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Soup' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: en.item.addToCart })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: new RegExp(en.item.addToCart, 'u') }),
+    ).toBeInTheDocument();
   });
 
   it('renders the empty state when the menu has no items', () => {

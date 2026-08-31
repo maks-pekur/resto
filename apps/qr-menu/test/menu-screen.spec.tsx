@@ -107,7 +107,10 @@ describe('MenuScreen on qr-menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Margherita' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Margherita' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: t('item.addToCart') })).toBeInTheDocument();
+    // The button carries the price beside the words, so its name is the pair.
+    expect(
+      within(dialog).getByRole('button', { name: new RegExp(t('item.addToCart'), 'u') }),
+    ).toBeInTheDocument();
   });
 
   it('marks a stopped item unavailable and refuses to open it', () => {
