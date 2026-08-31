@@ -15,6 +15,8 @@ export interface CartLineItem {
   readonly name: string;
   readonly unitPrice: string;
   readonly currency: string;
+  /** Kept on the line: the cart outlives the menu payload it was built from. */
+  readonly photoUrl?: string | null;
   readonly modifiers: readonly CartModifier[];
   quantity: number;
 }

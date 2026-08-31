@@ -18,12 +18,18 @@ export interface CartLineRowProps {
 }
 
 export const CartLineRow = ({ item }: CartLineRowProps) => {
-  const { locale, t } = useGuestUi();
+  const { locale, t, Image } = useGuestUi();
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
   return (
     <div className="flex items-center gap-3 py-4">
+      {item.photoUrl ? (
+        <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg">
+          <Image src={item.photoUrl} alt={item.name} sizes="56px" className="object-cover" />
+        </span>
+      ) : null}
+
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm font-bold">{item.name}</p>
         {item.modifiers.length > 0 ? (
