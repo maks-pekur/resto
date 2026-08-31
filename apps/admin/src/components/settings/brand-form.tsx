@@ -5,7 +5,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Plus, X } from 'lucide-react';
 import { SOCIAL_PLATFORMS } from '@resto/domain';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -15,6 +14,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { SettingsSection } from '@/components/settings/settings-section';
 import { LocalizedField } from '@/components/common/localized-field';
 import { PrefixedInput } from '@/components/common/prefixed-input';
 import { socialPresentation } from '@/lib/settings/socials';
@@ -124,175 +124,157 @@ export function BrandForm({ tenant }: BrandFormProps) {
   return (
     <form
       noValidate
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-6"
       onSubmit={(event) => {
         void onSubmit(event);
       }}
     >
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('profileTitle')}</CardTitle>
-          <CardDescription>{t('profileDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <LogoUpload
-              logoUrl={form.watch('logoUrl')}
-              onUploaded={(s3Key, previewUrl) => {
-                form.setValue('logoS3Key', s3Key, { shouldDirty: true });
-                form.setValue('logoUrl', previewUrl, { shouldDirty: true });
-              }}
-              onCleared={() => {
-                form.setValue('logoS3Key', null, { shouldDirty: true });
-                form.setValue('logoUrl', null, { shouldDirty: true });
+      <SettingsSection title={t('profileTitle')} description={t('profileDescription')}>
+        <FieldGroup>
+          <LogoUpload
+            logoUrl={form.watch('logoUrl')}
+            onUploaded={(s3Key, previewUrl) => {
+              form.setValue('logoS3Key', s3Key, { shouldDirty: true });
+              form.setValue('logoUrl', previewUrl, { shouldDirty: true });
+            }}
+            onCleared={() => {
+              form.setValue('logoS3Key', null, { shouldDirty: true });
+              form.setValue('logoUrl', null, { shouldDirty: true });
+            }}
+          />
+
+          <Field data-invalid={form.formState.errors.displayName ? true : undefined}>
+            <FieldLabel htmlFor="brand-name">{t('nameLabel')}</FieldLabel>
+            <Input id="brand-name" maxLength={120} {...form.register('displayName')} />
+            <FieldDescription>{t('nameHint')}</FieldDescription>
+            {form.formState.errors.displayName ? (
+              <FieldError>{messageFor(form.formState.errors.displayName.message)}</FieldError>
+            ) : null}
+          </Field>
+
+          <LocalizedField
+            id="brand-description"
+            label={t('descriptionLabel')}
+            value={form.watch('description')}
+            onChange={(next) => {
+              form.setValue('description', next, { shouldDirty: true });
+            }}
+            locales={locales}
+            defaultLocale={defaultLocale}
+            multiline
+            nullable
+            maxLength={2000}
+            description={t('descriptionHint')}
+          />
+        </FieldGroup>
+      </SettingsSection>
+
+      <SettingsSection title={t('contactsTitle')} description={t('contactsDescription')}>
+        <FieldGroup>
+          <Field data-invalid={form.formState.errors.phone ? true : undefined}>
+            <FieldLabel htmlFor="brand-phone">{t('phoneLabel')}</FieldLabel>
+            <Input id="brand-phone" inputMode="tel" {...form.register('phone')} />
+            {form.formState.errors.phone ? (
+              <FieldError>{messageFor(form.formState.errors.phone.message)}</FieldError>
+            ) : null}
+          </Field>
+          <Field data-invalid={form.formState.errors.email ? true : undefined}>
+            <FieldLabel htmlFor="brand-email">{t('emailLabel')}</FieldLabel>
+            <Input id="brand-email" inputMode="email" {...form.register('email')} />
+            {form.formState.errors.email ? (
+              <FieldError>{messageFor(form.formState.errors.email.message)}</FieldError>
+            ) : null}
+          </Field>
+          <Field data-invalid={form.formState.errors.website ? true : undefined}>
+            <FieldLabel htmlFor="brand-website">{t('websiteLabel')}</FieldLabel>
+            <PrefixedInput
+              id="brand-website"
+              inputMode="url"
+              prefix="https://"
+              placeholder={`${handle}.com`}
+              value={form.watch('website')}
+              onValueChange={(next) => {
+                form.setValue('website', next, { shouldDirty: true, shouldValidate: true });
               }}
             />
+            {form.formState.errors.website ? (
+              <FieldError>{messageFor(form.formState.errors.website.message)}</FieldError>
+            ) : null}
+          </Field>
+        </FieldGroup>
+      </SettingsSection>
 
-            <Field data-invalid={form.formState.errors.displayName ? true : undefined}>
-              <FieldLabel htmlFor="brand-name">{t('nameLabel')}</FieldLabel>
-              <Input id="brand-name" maxLength={120} {...form.register('displayName')} />
-              <FieldDescription>{t('nameHint')}</FieldDescription>
-              {form.formState.errors.displayName ? (
-                <FieldError>{messageFor(form.formState.errors.displayName.message)}</FieldError>
-              ) : null}
-            </Field>
-
-            <LocalizedField
-              id="brand-description"
-              label={t('descriptionLabel')}
-              value={form.watch('description')}
-              onChange={(next) => {
-                form.setValue('description', next, { shouldDirty: true });
-              }}
-              locales={locales}
-              defaultLocale={defaultLocale}
-              multiline
-              nullable
-              maxLength={2000}
-              description={t('descriptionHint')}
-            />
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('contactsTitle')}</CardTitle>
-          <CardDescription>{t('contactsDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field data-invalid={form.formState.errors.phone ? true : undefined}>
-              <FieldLabel htmlFor="brand-phone">{t('phoneLabel')}</FieldLabel>
-              <Input id="brand-phone" inputMode="tel" {...form.register('phone')} />
-              {form.formState.errors.phone ? (
-                <FieldError>{messageFor(form.formState.errors.phone.message)}</FieldError>
-              ) : null}
-            </Field>
-            <Field data-invalid={form.formState.errors.email ? true : undefined}>
-              <FieldLabel htmlFor="brand-email">{t('emailLabel')}</FieldLabel>
-              <Input id="brand-email" inputMode="email" {...form.register('email')} />
-              {form.formState.errors.email ? (
-                <FieldError>{messageFor(form.formState.errors.email.message)}</FieldError>
-              ) : null}
-            </Field>
-            <Field data-invalid={form.formState.errors.website ? true : undefined}>
-              <FieldLabel htmlFor="brand-website">{t('websiteLabel')}</FieldLabel>
-              <PrefixedInput
-                id="brand-website"
-                inputMode="url"
-                prefix="https://"
-                placeholder={`${handle}.com`}
-                value={form.watch('website')}
-                onValueChange={(next) => {
-                  form.setValue('website', next, { shouldDirty: true, shouldValidate: true });
-                }}
-              />
-              {form.formState.errors.website ? (
-                <FieldError>{messageFor(form.formState.errors.website.message)}</FieldError>
-              ) : null}
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('socialsTitle')}</CardTitle>
-          <CardDescription>{t('socialsDescription')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            {addedSocials.length === 0 ? (
-              <p className="text-muted-foreground text-sm">{t('socialsEmpty')}</p>
-            ) : (
-              addedSocials.map((platform) => {
-                const error = form.formState.errors.socials?.[platform];
-                return (
-                  <Field key={platform} data-invalid={error ? true : undefined}>
-                    <FieldLabel htmlFor={`social-${platform}`}>
-                      {socialPresentation(platform, handle).label}
-                    </FieldLabel>
-                    <div className="flex items-center gap-2">
-                      <PrefixedInput
-                        id={`social-${platform}`}
-                        inputMode="url"
-                        autoFocus={platform === lastAdded}
-                        prefix={socialPresentation(platform, handle).prefix}
-                        placeholder={socialPresentation(platform, handle).placeholder}
-                        value={socials[platform] ?? ''}
-                        onValueChange={(next) => {
-                          form.setValue(`socials.${platform}`, next, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                          });
-                        }}
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon"
-                        aria-label={t('socialRemove', {
-                          name: socialPresentation(platform, handle).label,
-                        })}
-                        onClick={() => {
-                          removeSocial(platform);
-                        }}
-                      >
-                        <X className="size-4" />
-                      </Button>
-                    </div>
-                    {error ? <FieldError>{messageFor(error.message)}</FieldError> : null}
-                  </Field>
-                );
-              })
-            )}
-
-            {availableSocials.length > 0 ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button type="button" variant="outline" size="sm" className="w-fit gap-1">
-                    <Plus className="size-4" />
-                    {t('socialAdd')}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start">
-                  {availableSocials.map((platform) => (
-                    <DropdownMenuItem
-                      key={platform}
-                      onSelect={() => {
-                        addSocial(platform);
+      <SettingsSection title={t('socialsTitle')} description={t('socialsDescription')}>
+        <FieldGroup>
+          {addedSocials.length === 0 ? (
+            <p className="text-muted-foreground text-sm">{t('socialsEmpty')}</p>
+          ) : (
+            addedSocials.map((platform) => {
+              const error = form.formState.errors.socials?.[platform];
+              return (
+                <Field key={platform} data-invalid={error ? true : undefined}>
+                  <FieldLabel htmlFor={`social-${platform}`}>
+                    {socialPresentation(platform, handle).label}
+                  </FieldLabel>
+                  <div className="flex items-center gap-2">
+                    <PrefixedInput
+                      id={`social-${platform}`}
+                      inputMode="url"
+                      autoFocus={platform === lastAdded}
+                      prefix={socialPresentation(platform, handle).prefix}
+                      placeholder={socialPresentation(platform, handle).placeholder}
+                      value={socials[platform] ?? ''}
+                      onValueChange={(next) => {
+                        form.setValue(`socials.${platform}`, next, {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        });
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      aria-label={t('socialRemove', {
+                        name: socialPresentation(platform, handle).label,
+                      })}
+                      onClick={() => {
+                        removeSocial(platform);
                       }}
                     >
-                      {socialPresentation(platform, handle).label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : null}
-          </FieldGroup>
-        </CardContent>
-      </Card>
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                  {error ? <FieldError>{messageFor(error.message)}</FieldError> : null}
+                </Field>
+              );
+            })
+          )}
+
+          {availableSocials.length > 0 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button type="button" variant="outline" size="sm" className="w-fit gap-1">
+                  <Plus className="size-4" />
+                  {t('socialAdd')}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {availableSocials.map((platform) => (
+                  <DropdownMenuItem
+                    key={platform}
+                    onSelect={() => {
+                      addSocial(platform);
+                    }}
+                  >
+                    {socialPresentation(platform, handle).label}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : null}
+        </FieldGroup>
+      </SettingsSection>
 
       <div className="flex justify-end gap-2">
         {form.formState.isDirty ? (

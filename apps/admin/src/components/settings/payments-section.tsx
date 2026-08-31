@@ -4,7 +4,7 @@ import { loadConnectAndInitialize, type StripeConnectInstance } from '@stripe/co
 import { ConnectAccountOnboarding, ConnectComponentsProvider } from '@stripe/react-connect-js';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { SettingsSection } from '@/components/settings/settings-section';
 import {
   getTenantPaymentStatus,
   startTenantEmbeddedSession,
@@ -64,46 +64,101 @@ export function PaymentsSection() {
   const accountType = status?.accountType ?? null;
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Stripe Connect</CardTitle>
-        <CardDescription>Accept payments via Stripe.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading payment status…</p>
-        ) : accountType === 'standard' ? (
-          <StandardAccountView
-            canAcceptPayments={status?.canAcceptPayments ?? false}
-            chargesEnabled={status?.chargesEnabled ?? false}
-            payoutsEnabled={status?.payoutsEnabled ?? false}
-            onboardingStatus={status?.onboardingStatus ?? 'not_started'}
+    <SettingsSection title="Stripe Connect" description="Accept payments via Stripe.">
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading payment status…</p>
+      ) : accountType === 'standard' ? (
+        <StandardAccountView
+          canAcceptPayments={status?.canAcceptPayments ?? false}
+          chargesEnabled={status?.chargesEnabled ?? false}
+          payoutsEnabled={status?.payoutsEnabled ?? false}
+          onboardingStatus={status?.onboardingStatus ?? 'not_started'}
+        />
+      ) : status?.canAcceptPayments ? (
+        <div className="flex items-center gap-2">
+          <span className="bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium">
+            Payments active
+          </span>
+          <p className="text-muted-foreground text-sm">
+            Your Stripe account is verified and ready to accept payments.
+          </p>
+        </div>
+      ) : status?.onboardingStatus === 'restricted' ? (
+        <div className="flex flex-col gap-3">
+          <span className="bg-red-100 text-red-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
+            Restricted — additional info required
+          </span>
+          {Array.isArray(status.requirementsDue) && status.requirementsDue.length > 0 && (
+            <p className="text-muted-foreground text-sm">
+              Requirements due: {(status.requirementsDue as string[]).join(', ')}
+            </p>
+          )}
+          <EmbeddedOrFallback
+            connectInstance={connectInstance}
+            showEmbedded={showEmbedded}
+            onStartExpress={() => {
+              setShowEmbedded(true);
+            }}
+            onExit={() => {
+              void statusQuery.refetch();
+            }}
+            onFallback={() => {
+              hostedLinkMutation.mutate();
+            }}
+            fallbackPending={hostedLinkMutation.isPending}
+            resumeLabel="Resume onboarding"
           />
-        ) : status?.canAcceptPayments ? (
-          <div className="flex items-center gap-2">
-            <span className="bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm font-medium">
-              Payments active
-            </span>
-            <p className="text-muted-foreground text-sm">
-              Your Stripe account is verified and ready to accept payments.
-            </p>
-          </div>
-        ) : status?.onboardingStatus === 'restricted' ? (
-          <div className="flex flex-col gap-3">
-            <span className="bg-red-100 text-red-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
-              Restricted — additional info required
-            </span>
-            {Array.isArray(status.requirementsDue) && status.requirementsDue.length > 0 && (
-              <p className="text-muted-foreground text-sm">
-                Requirements due: {(status.requirementsDue as string[]).join(', ')}
-              </p>
-            )}
-            <EmbeddedOrFallback
-              connectInstance={connectInstance}
-              showEmbedded={showEmbedded}
-              onStartExpress={() => {
+        </div>
+      ) : accountType === 'express' ? (
+        <div className="flex flex-col gap-3">
+          <span className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
+            Onboarding pending — finish Stripe verification
+          </span>
+          <EmbeddedOrFallback
+            connectInstance={connectInstance}
+            showEmbedded={showEmbedded}
+            onStartExpress={() => {
+              setShowEmbedded(true);
+            }}
+            onExit={() => {
+              void statusQuery.refetch();
+            }}
+            onFallback={() => {
+              hostedLinkMutation.mutate();
+            }}
+            fallbackPending={hostedLinkMutation.isPending}
+            resumeLabel="Resume onboarding"
+          />
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <p className="text-muted-foreground text-sm">
+            Connect your Stripe account to start accepting payments from guests.
+          </p>
+          <div className="flex flex-col gap-2">
+            <Button
+              onClick={() => {
                 setShowEmbedded(true);
               }}
+              className="w-fit"
+              disabled={showEmbedded}
+            >
+              Create new (Express)
+            </Button>
+            <Button
+              variant="outline"
+              className="w-fit"
+              onClick={() => {
+                oauthMutation.mutate();
+              }}
+              disabled={oauthMutation.isPending}
+            >
+              {oauthMutation.isPending ? 'Redirecting…' : 'Connect existing (Standard)'}
+            </Button>
+          </div>
+          {showEmbedded && (
+            <EmbeddedOnboarding
+              connectInstance={connectInstance}
               onExit={() => {
                 void statusQuery.refetch();
               }}
@@ -111,72 +166,11 @@ export function PaymentsSection() {
                 hostedLinkMutation.mutate();
               }}
               fallbackPending={hostedLinkMutation.isPending}
-              resumeLabel="Resume onboarding"
             />
-          </div>
-        ) : accountType === 'express' ? (
-          <div className="flex flex-col gap-3">
-            <span className="bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-sm font-medium w-fit">
-              Onboarding pending — finish Stripe verification
-            </span>
-            <EmbeddedOrFallback
-              connectInstance={connectInstance}
-              showEmbedded={showEmbedded}
-              onStartExpress={() => {
-                setShowEmbedded(true);
-              }}
-              onExit={() => {
-                void statusQuery.refetch();
-              }}
-              onFallback={() => {
-                hostedLinkMutation.mutate();
-              }}
-              fallbackPending={hostedLinkMutation.isPending}
-              resumeLabel="Resume onboarding"
-            />
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-sm">
-              Connect your Stripe account to start accepting payments from guests.
-            </p>
-            <div className="flex flex-col gap-2">
-              <Button
-                onClick={() => {
-                  setShowEmbedded(true);
-                }}
-                className="w-fit"
-                disabled={showEmbedded}
-              >
-                Create new (Express)
-              </Button>
-              <Button
-                variant="outline"
-                className="w-fit"
-                onClick={() => {
-                  oauthMutation.mutate();
-                }}
-                disabled={oauthMutation.isPending}
-              >
-                {oauthMutation.isPending ? 'Redirecting…' : 'Connect existing (Standard)'}
-              </Button>
-            </div>
-            {showEmbedded && (
-              <EmbeddedOnboarding
-                connectInstance={connectInstance}
-                onExit={() => {
-                  void statusQuery.refetch();
-                }}
-                onFallback={() => {
-                  hostedLinkMutation.mutate();
-                }}
-                fallbackPending={hostedLinkMutation.isPending}
-              />
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </div>
+      )}
+    </SettingsSection>
   );
 }
 
