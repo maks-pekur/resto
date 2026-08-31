@@ -203,7 +203,16 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
         </span>
 
         <span className="flex w-16 shrink-0 items-center justify-center px-2 py-2">
-          {remaining !== null && isOpen ? (
+          {remaining === null && isOpen ? (
+            // Nothing is promised until the order is accepted: the operator sets the prep time
+            // then, so a draining ring here would be counting down to a time nobody named.
+            <CountdownRing
+              progress={0}
+              tone="idle"
+              label="?"
+              ariaLabel={t('card.etaUnknownAria')}
+            />
+          ) : remaining !== null && isOpen ? (
             <CountdownRing
               progress={remaining.progress}
               tone={remaining.tone}

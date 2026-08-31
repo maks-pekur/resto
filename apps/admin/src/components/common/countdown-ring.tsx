@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils';
 
-export type CountdownTone = 'calm' | 'warning' | 'late';
+export type CountdownTone = 'idle' | 'calm' | 'warning' | 'late';
 
 export interface CountdownRingProps {
   /** 1 is the whole promise still ahead, 0 is none of it left. */
@@ -14,6 +14,7 @@ export interface CountdownRingProps {
 }
 
 const TONE_CLASS: Record<CountdownTone, string> = {
+  idle: 'text-muted-foreground',
   calm: 'text-success',
   warning: 'text-warning',
   late: 'text-destructive',

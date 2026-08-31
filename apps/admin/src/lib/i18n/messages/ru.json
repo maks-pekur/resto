@@ -397,7 +397,8 @@
       "unitMinutes": "м",
       "unitHours": "ч",
       "unitDays": "д",
-      "noCustomer": "Без имени"
+      "noCustomer": "Без имени",
+      "etaUnknownAria": "Время отдачи назначается при подтверждении"
     },
     "accept": {
       "title": "Через сколько будет готово?",

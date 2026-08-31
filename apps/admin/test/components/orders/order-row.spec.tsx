@@ -177,3 +177,21 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
     expect(screen.getByTestId('order-row-for-line').textContent).toBe('orders.card.noCustomer');
   });
 });
+
+describe('OrderRow — a promise nobody has made yet', () => {
+  it('shows an unknown time on an order that has not been accepted', () => {
+    const row: OrderFeedRowApi = {
+      ...baseRow,
+      status: 'paid',
+      acceptedAt: null,
+      etaAt: null,
+    };
+    render(
+      <Wrap>
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+      </Wrap>,
+    );
+
+    expect(screen.getByRole('img', { name: 'orders.card.etaUnknownAria' })).toHaveTextContent('?');
+  });
+});

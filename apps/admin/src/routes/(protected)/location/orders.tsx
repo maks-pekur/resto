@@ -113,20 +113,28 @@ function OrdersPage() {
     <>
       <PageHeading title={tNav('orders')} />
       {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
-      <OrderFilterBar
-        orderType={orderType}
-        onOrderTypeChange={setOrderType}
-        range={range}
-        onRangeChange={setRange}
-        soundMuted={sound.muted}
-        onSoundMutedChange={sound.setMuted}
-        soundBlocked={sound.blocked}
-        soundReady={sound.unlocked}
-        notificationsBlocked={notifications.permission === 'denied'}
-        status={statusTab}
-        onStatusChange={setStatusTab}
-        counts={counts}
-      />
+      {/* The filter bar and the column heads stay put; only the orders move under them. */}
+      <div className="bg-background sticky top-(--header-height) z-20 flex flex-col gap-4 pb-3">
+        <OrderFilterBar
+          orderType={orderType}
+          onOrderTypeChange={setOrderType}
+          range={range}
+          onRangeChange={setRange}
+          soundMuted={sound.muted}
+          onSoundMutedChange={sound.setMuted}
+          soundBlocked={sound.blocked}
+          soundReady={sound.unlocked}
+          notificationsBlocked={notifications.permission === 'denied'}
+          status={statusTab}
+          onStatusChange={setStatusTab}
+          counts={counts}
+        />
+        {feedLocationId !== undefined && rows.length > 0 ? (
+          <div className="px-4 lg:px-6">
+            <OrderFeedHeader />
+          </div>
+        ) : null}
+      </div>
 
       <div className="flex flex-col gap-4 px-4 lg:px-6">
         {feedQuery.isRefetchError ? (
@@ -188,7 +196,6 @@ function OrdersPage() {
           <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
         ) : (
           <div className="flex flex-col gap-2">
-            <OrderFeedHeader />
             {rows.map((row) => (
               <OrderRow
                 key={row.id}
