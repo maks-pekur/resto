@@ -698,7 +698,6 @@
       "primaryLabel": "Primary language"
     },
     "pageTitle": "Settings",
-    "tabBrand": "Brand",
     "tabSecurity": "Security",
     "tabDanger": "Danger zone",
     "brand": {
@@ -735,6 +734,22 @@
       "socialsEmpty": "No links yet.",
       "socialAdd": "Add a profile",
       "socialRemove": "Remove {{name}}"
+    },
+    "pageDescription": "The restaurant profile, languages, domains and payouts.",
+    "navLabel": "Settings sections",
+    "tabProfile": "Profile",
+    "tabLanguages": "Languages",
+    "tabDomains": "Domains",
+    "tabPayments": "Payments",
+    "domains": {
+      "title": "Domains",
+      "description": "The addresses guests open the site and the menu at.",
+      "empty": "No custom domain connected yet.",
+      "columnDomain": "Domain",
+      "columnKind": "Kind",
+      "columnStatus": "Verified",
+      "primary": "primary",
+      "pending": "pending"
     }
   }
 }

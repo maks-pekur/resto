@@ -22,6 +22,8 @@ export interface NavMainSubItem {
 export interface NavMainItem {
   title: string;
   url: string;
+  /** Query for routes that address a section rather than a page of their own. */
+  search?: Record<string, string>;
   icon?: LucideIcon;
   isActive?: boolean;
   items?: NavMainSubItem[];
@@ -43,7 +45,7 @@ export function NavMain({ items, label }: { items: NavMainItem[]; label: string 
             return (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild tooltip={item.title}>
-                  <Link to={item.url as '/'}>
+                  <Link to={item.url as '/'} search={item.search as never}>
                     {item.icon && <item.icon />}
                     <span>{item.title}</span>
                   </Link>

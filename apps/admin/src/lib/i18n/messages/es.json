@@ -698,7 +698,6 @@
       "primaryLabel": "Idioma principal"
     },
     "pageTitle": "Ajustes",
-    "tabBrand": "Marca",
     "tabSecurity": "Seguridad",
     "tabDanger": "Zona de peligro",
     "brand": {
@@ -735,6 +734,22 @@
       "socialsEmpty": "Todavía no hay enlaces.",
       "socialAdd": "Añadir perfil",
       "socialRemove": "Quitar {{name}}"
+    },
+    "pageDescription": "El perfil del restaurante, los idiomas, los dominios y los cobros.",
+    "navLabel": "Secciones de ajustes",
+    "tabProfile": "Perfil",
+    "tabLanguages": "Idiomas",
+    "tabDomains": "Dominios",
+    "tabPayments": "Cobros",
+    "domains": {
+      "title": "Dominios",
+      "description": "Las direcciones donde el invitado abre la web y el menú.",
+      "empty": "Todavía no hay ningún dominio propio.",
+      "columnDomain": "Dominio",
+      "columnKind": "Tipo",
+      "columnStatus": "Verificado",
+      "primary": "principal",
+      "pending": "pendiente"
     }
   }
 }

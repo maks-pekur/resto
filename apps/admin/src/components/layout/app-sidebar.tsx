@@ -117,7 +117,16 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
       : []),
     ...(hasPermission(me, 'billing', 'read')
       ? [
-          { title: t('payments'), url: '/tenant/payouts', icon: CreditCard },
+          // Payments lives in settings for whoever can open settings; a billing-only role
+          // still has its own page.
+          hasPermission(me, 'settings', 'update')
+            ? {
+                title: t('payments'),
+                url: '/settings',
+                search: { setting: 'payments' },
+                icon: CreditCard,
+              }
+            : { title: t('payments'), url: '/tenant/payouts', icon: CreditCard },
           {
             title: t('transactions'),
             url: '/tenant/transactions',

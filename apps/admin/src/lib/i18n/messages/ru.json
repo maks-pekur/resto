@@ -698,7 +698,6 @@
       "primaryLabel": "Основной язык"
     },
     "pageTitle": "Настройки",
-    "tabBrand": "Бренд",
     "tabSecurity": "Безопасность",
     "tabDanger": "Опасная зона",
     "brand": {
@@ -735,6 +734,22 @@
       "socialsEmpty": "Пока ни одной ссылки.",
       "socialAdd": "Добавить соцсеть",
       "socialRemove": "Убрать {{name}}"
+    },
+    "pageDescription": "Профиль ресторана, языки, домены и оплата.",
+    "navLabel": "Разделы настроек",
+    "tabProfile": "Профиль",
+    "tabLanguages": "Языки",
+    "tabDomains": "Домены",
+    "tabPayments": "Оплата",
+    "domains": {
+      "title": "Домены",
+      "description": "Адреса, по которым гость открывает сайт и меню.",
+      "empty": "Свой домен пока не подключён.",
+      "columnDomain": "Домен",
+      "columnKind": "Тип",
+      "columnStatus": "Подтверждён",
+      "primary": "основной",
+      "pending": "ожидает"
     }
   }
 }

@@ -1,22 +1,25 @@
-import { createRoute, useNavigate } from '@tanstack/react-router';
+import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
+import { CreditCard, Globe, Languages, ShieldCheck, Store, TriangleAlert } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
-import { requirePermission } from '@/lib/auth/permissions';
+import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/common/page-heading';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { SettingsNav, type SettingsNavItem } from '@/components/settings/settings-nav';
 import { BrandForm } from '@/components/settings/brand-form';
 import { ContentLocalesSection } from '@/components/settings/content-locales-section';
+import { DomainsSection } from '@/components/settings/domains-section';
+import { PaymentsSection } from '@/components/settings/payments-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 import { TwoFactorSection } from '@/components/settings/two-factor-section';
 
-const TABS = ['brand', 'security', 'danger'] as const;
+const SETTINGS = ['profile', 'languages', 'domains', 'payments', 'security', 'danger'] as const;
 
 const searchSchema = z.object({
-  tab: z.enum(TABS).catch('brand'),
+  setting: z.enum(SETTINGS).catch('profile'),
 });
 
 export const Route = createRoute({
@@ -34,8 +37,7 @@ export const Route = createRoute({
 
 function SettingsPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'settings' });
-  const { tab } = Route.useSearch();
-  const navigate = useNavigate({ from: Route.fullPath });
+  const { setting } = Route.useSearch();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: tenantResult } = useSuspenseQuery(tenancyQuery());
 
@@ -46,48 +48,49 @@ function SettingsPage() {
     return null;
   }
 
-  const isOwner = me.baseRole === 'owner';
+  const canSeePayments = hasPermission(me, 'billing', 'read');
+  const items: SettingsNavItem[] = [
+    { value: 'profile', label: t('tabProfile'), icon: Store },
+    { value: 'languages', label: t('tabLanguages'), icon: Languages },
+    { value: 'domains', label: t('tabDomains'), icon: Globe },
+    ...(canSeePayments ? [{ value: 'payments', label: t('tabPayments'), icon: CreditCard }] : []),
+    { value: 'security', label: t('tabSecurity'), icon: ShieldCheck },
+    { value: 'danger', label: t('tabDanger'), icon: TriangleAlert },
+  ];
+
+  const active = setting === 'payments' && !canSeePayments ? 'profile' : setting;
 
   return (
     <>
-      <PageHeading title={t('pageTitle')} />
-      <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <Tabs
-          value={tab}
-          onValueChange={(next) => {
-            void navigate({ search: { tab: next } });
-          }}
-        >
-          <TabsList>
-            <TabsTrigger value="brand">{t('tabBrand')}</TabsTrigger>
-            <TabsTrigger value="security">{t('tabSecurity')}</TabsTrigger>
-            <TabsTrigger value="danger">{t('tabDanger')}</TabsTrigger>
-          </TabsList>
+      <PageHeading title={t('pageTitle')} description={t('pageDescription')} />
+      <div className="flex flex-1 flex-col gap-6 px-4 md:flex-row lg:px-6">
+        <SettingsNav items={items} active={active} ariaLabel={t('navLabel')} />
 
-          <TabsContent value="brand" className="flex flex-col gap-4">
-            <BrandForm tenant={tenant} />
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {active === 'profile' ? <BrandForm tenant={tenant} /> : null}
+          {active === 'languages' ? (
             <ContentLocalesSection
               defaultLocale={tenant.locale}
               contentLocales={tenant.contentLocales}
             />
-          </TabsContent>
-
-          <TabsContent value="security">
+          ) : null}
+          {active === 'domains' ? <DomainsSection /> : null}
+          {active === 'payments' ? <PaymentsSection /> : null}
+          {active === 'security' ? (
             <TwoFactorSection twoFactorEnabled={me.twoFactorEnabled === true} />
-          </TabsContent>
-
-          <TabsContent value="danger">
+          ) : null}
+          {active === 'danger' ? (
             <DangerZoneCard
               tenant={{
                 slug: tenant.slug,
                 status: tenant.status,
                 offboardingScheduledAt: tenant.offboardingScheduledAt,
               }}
-              isOwner={isOwner}
+              isOwner={me.baseRole === 'owner'}
               userId={me.userId ?? ''}
             />
-          </TabsContent>
-        </Tabs>
+          ) : null}
+        </div>
       </div>
     </>
   );
