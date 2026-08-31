@@ -2,7 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { CreditCard, Globe, Languages, ShieldCheck, Store, TriangleAlert } from 'lucide-react';
+import { Globe, Languages, Plug, Store, TriangleAlert } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -14,9 +14,8 @@ import { ContentLocalesSection } from '@/components/settings/content-locales-sec
 import { DomainsSection } from '@/components/settings/domains-section';
 import { PaymentsSection } from '@/components/settings/payments-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
-import { TwoFactorSection } from '@/components/settings/two-factor-section';
 
-const SETTINGS = ['profile', 'languages', 'domains', 'payments', 'security', 'danger'] as const;
+const SETTINGS = ['profile', 'languages', 'domains', 'integrations', 'danger'] as const;
 
 const searchSchema = z.object({
   setting: z.enum(SETTINGS).catch('profile'),
@@ -48,17 +47,18 @@ function SettingsPage() {
     return null;
   }
 
-  const canSeePayments = hasPermission(me, 'billing', 'read');
+  const canSeeIntegrations = hasPermission(me, 'billing', 'read');
   const items: SettingsNavItem[] = [
     { value: 'profile', label: t('tabProfile'), icon: Store },
     { value: 'languages', label: t('tabLanguages'), icon: Languages },
     { value: 'domains', label: t('tabDomains'), icon: Globe },
-    ...(canSeePayments ? [{ value: 'payments', label: t('tabPayments'), icon: CreditCard }] : []),
-    { value: 'security', label: t('tabSecurity'), icon: ShieldCheck },
+    ...(canSeeIntegrations
+      ? [{ value: 'integrations', label: t('tabIntegrations'), icon: Plug }]
+      : []),
     { value: 'danger', label: t('tabDanger'), icon: TriangleAlert },
   ];
 
-  const active = setting === 'payments' && !canSeePayments ? 'profile' : setting;
+  const active = setting === 'integrations' && !canSeeIntegrations ? 'profile' : setting;
 
   return (
     <>
@@ -75,10 +75,7 @@ function SettingsPage() {
             />
           ) : null}
           {active === 'domains' ? <DomainsSection /> : null}
-          {active === 'payments' ? <PaymentsSection /> : null}
-          {active === 'security' ? (
-            <TwoFactorSection twoFactorEnabled={me.twoFactorEnabled === true} />
-          ) : null}
+          {active === 'integrations' ? <PaymentsSection /> : null}
           {active === 'danger' ? (
             <DangerZoneCard
               tenant={{

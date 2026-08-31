@@ -24,6 +24,7 @@ import { Route as protectedLayoutRoute } from './routes/(protected)/_layout';
 import { Route as dashboardIndexRoute } from './routes/(protected)/index';
 import { Route as dashboardRoute } from './routes/(protected)/dashboard';
 import { Route as settingsRoute } from './routes/(protected)/settings';
+import { Route as accountRoute } from './routes/(protected)/account';
 import { Route as teamRoute } from './routes/(protected)/team';
 import { Route as locationsRoute } from './routes/(protected)/locations';
 import { Route as locationFormRoute } from './routes/(protected)/locations.$slug';
@@ -97,6 +98,7 @@ const protectedRouteTree = protectedLayoutRoute.addChildren([
   dashboardIndexRoute,
   dashboardRoute,
   settingsRoute,
+  accountRoute,
   teamRoute,
   rolesRoute,
   roleDetailRoute,

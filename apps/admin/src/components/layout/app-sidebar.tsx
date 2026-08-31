@@ -123,7 +123,7 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
             ? {
                 title: t('payments'),
                 url: '/settings',
-                search: { setting: 'payments' },
+                search: { setting: 'integrations' },
                 icon: CreditCard,
               }
             : { title: t('payments'), url: '/tenant/payouts', icon: CreditCard },

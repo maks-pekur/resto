@@ -698,7 +698,6 @@
       "primaryLabel": "Primary language"
     },
     "pageTitle": "Settings",
-    "tabSecurity": "Security",
     "tabDanger": "Danger zone",
     "brand": {
       "profileTitle": "Restaurant profile",
@@ -740,7 +739,6 @@
     "tabProfile": "Profile",
     "tabLanguages": "Languages",
     "tabDomains": "Domains",
-    "tabPayments": "Payments",
     "domains": {
       "title": "Domains",
       "description": "The addresses guests open the site and the menu at.",
@@ -750,6 +748,15 @@
       "columnStatus": "Verified",
       "primary": "primary",
       "pending": "pending"
-    }
+    },
+    "tabIntegrations": "Integrations"
+  },
+  "account": {
+    "pageTitle": "Account",
+    "pageDescription": "Your own sign-in — separate from the restaurant settings.",
+    "identityTitle": "Sign-in",
+    "identityDescription": "The address you sign in to the panel with.",
+    "emailLabel": "Email",
+    "roleLabel": "Role"
   }
 }

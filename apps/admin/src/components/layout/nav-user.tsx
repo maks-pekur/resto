@@ -87,7 +87,7 @@ export function NavUser({ operator }: { operator: OperatorSummary }) {
         ) : null}
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link to="/settings">
+            <Link to="/account">
               <BadgeCheck />
               {t('accountItem')}
             </Link>

@@ -38,6 +38,7 @@ const UNGATED_FULL_PATHS = new Set([
   '/$locationSlug', // resolves the slug and hands it to its children; refusal is theirs
   '/$locationSlug/dashboard', // one location's dashboard
   '/onboarding', // pre-tenant setup; the layout redirects here before any gate matters
+  '/account', // an operator's own sign-in and 2FA — theirs to manage, whatever their role
   '/dashboard/$', // legacy-path redirect, resolves before it renders
   '/orders', // legacy address; redirects to /$locationSlug/orders, which is guarded
 ]);

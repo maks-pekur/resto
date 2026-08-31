@@ -698,7 +698,6 @@
       "primaryLabel": "Idioma principal"
     },
     "pageTitle": "Ajustes",
-    "tabSecurity": "Seguridad",
     "tabDanger": "Zona de peligro",
     "brand": {
       "profileTitle": "Perfil del restaurante",
@@ -740,7 +739,6 @@
     "tabProfile": "Perfil",
     "tabLanguages": "Idiomas",
     "tabDomains": "Dominios",
-    "tabPayments": "Cobros",
     "domains": {
       "title": "Dominios",
       "description": "Las direcciones donde el invitado abre la web y el menú.",
@@ -750,6 +748,15 @@
       "columnStatus": "Verificado",
       "primary": "principal",
       "pending": "pendiente"
-    }
+    },
+    "tabIntegrations": "Integraciones"
+  },
+  "account": {
+    "pageTitle": "Cuenta",
+    "pageDescription": "Tu acceso al panel, independiente de los ajustes del restaurante.",
+    "identityTitle": "Acceso",
+    "identityDescription": "El correo con el que entras al panel.",
+    "emailLabel": "Correo",
+    "roleLabel": "Rol"
   }
 }

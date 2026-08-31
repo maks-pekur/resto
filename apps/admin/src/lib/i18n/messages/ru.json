@@ -698,7 +698,6 @@
       "primaryLabel": "Основной язык"
     },
     "pageTitle": "Настройки",
-    "tabSecurity": "Безопасность",
     "tabDanger": "Опасная зона",
     "brand": {
       "profileTitle": "Профиль ресторана",
@@ -740,7 +739,6 @@
     "tabProfile": "Профиль",
     "tabLanguages": "Языки",
     "tabDomains": "Домены",
-    "tabPayments": "Оплата",
     "domains": {
       "title": "Домены",
       "description": "Адреса, по которым гость открывает сайт и меню.",
@@ -750,6 +748,15 @@
       "columnStatus": "Подтверждён",
       "primary": "основной",
       "pending": "ожидает"
-    }
+    },
+    "tabIntegrations": "Интеграции"
+  },
+  "account": {
+    "pageTitle": "Аккаунт",
+    "pageDescription": "Ваш вход в панель — он не зависит от настроек ресторана.",
+    "identityTitle": "Учётная запись",
+    "identityDescription": "Под этой почтой вы входите в панель.",
+    "emailLabel": "Почта",
+    "roleLabel": "Роль"
   }
 }
