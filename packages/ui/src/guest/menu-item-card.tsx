@@ -48,14 +48,16 @@ export const MenuItemCard = ({
   };
 
   return (
-    <div className={cn('group flex w-full flex-col', unavailable && 'opacity-45')}>
+    // h-full + the growing top half: every card in a row ends at the same line, with the price
+    // pinned to it however short the name is.
+    <div className={cn('group flex h-full w-full flex-col', unavailable && 'opacity-45')}>
       <button
         type="button"
         aria-label={name}
         aria-disabled={unavailable ? 'true' : undefined}
         onClick={open}
         className={cn(
-          'focus-visible:ring-ring flex w-full flex-col rounded-2xl text-left transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none',
+          'focus-visible:ring-ring flex w-full flex-1 flex-col rounded-2xl text-left transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none',
           unavailable ? 'cursor-not-allowed' : 'cursor-pointer',
         )}
       >
@@ -79,7 +81,7 @@ export const MenuItemCard = ({
           ) : null}
         </div>
 
-        <div className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-2 sm:pt-3">
+        <div className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-2 pb-2 sm:pt-3 sm:pb-3">
           <h3 className="text-sm leading-snug font-extrabold text-balance sm:text-lg">{name}</h3>
           {description ? (
             <p className="text-muted-foreground line-clamp-2 text-xs leading-snug sm:line-clamp-3 sm:text-sm">
@@ -104,7 +106,7 @@ export const MenuItemCard = ({
           onQuickAdd(item);
         }}
         className={cn(
-          'bg-primary-tint text-primary-strong focus-visible:ring-ring mx-1 mt-2 inline-flex h-9 items-center justify-center rounded-full px-3 text-sm font-extrabold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none sm:mt-3',
+          'bg-primary-tint text-primary-strong focus-visible:ring-ring mx-1 mt-auto inline-flex h-9 shrink-0 items-center justify-center rounded-full px-3 text-sm font-extrabold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none',
           unavailable
             ? 'cursor-not-allowed'
             : 'hover:bg-primary hover:text-primary-foreground cursor-pointer',
