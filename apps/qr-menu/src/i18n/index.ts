@@ -1,7 +1,11 @@
 import en from './en.json';
+import es from './es.json';
 import ru from './ru.json';
+import uk from './uk.json';
 
-const RESOURCES: Record<string, Record<string, string>> = { en, ru };
+// Every language a restaurant may publish its menu in: the chrome has to follow the dish names,
+// or a guest reading a Spanish menu presses an English button.
+const RESOURCES: Record<string, Record<string, string>> = { en, es, ru, uk };
 
 export type Locale = keyof typeof RESOURCES;
 

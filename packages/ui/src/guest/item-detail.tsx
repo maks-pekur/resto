@@ -96,11 +96,11 @@ export const ItemDetail = ({
             {item.sizes.length > 0 ? (
               <fieldset className="flex flex-col gap-2">
                 <legend className="sr-only">{t('item.size')}</legend>
-                <div className="bg-muted flex rounded-full p-1">
+                <div className="bg-muted flex rounded-full p-0.5">
                   {item.sizes.map((size) => (
                     <label
                       key={size.id}
-                      className="has-[:checked]:bg-background has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring flex-1 cursor-pointer rounded-full px-3 py-2 text-center text-sm font-bold transition-colors has-[:checked]:shadow-sm has-[:focus-visible]:ring-2"
+                      className="has-[:checked]:bg-background has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring flex-1 cursor-pointer rounded-full px-3 py-1 text-center text-xs font-bold transition-colors has-[:checked]:shadow-sm has-[:focus-visible]:ring-2"
                     >
                       <input
                         type="radio"
