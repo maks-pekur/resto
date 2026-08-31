@@ -82,8 +82,8 @@ export const ItemDetail = ({
             ) : null}
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
+            <div className="mb-2 flex flex-col gap-2">
               <div className="flex items-start gap-3">
                 <Heading className="min-w-0 flex-1 text-2xl leading-tight font-extrabold text-balance">
                   {name}
