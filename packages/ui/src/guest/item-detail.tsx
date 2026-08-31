@@ -114,7 +114,7 @@ export const ItemDetail = ({
                   {item.sizes.map((size) => (
                     <label
                       key={size.id}
-                      className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex-1 cursor-pointer rounded-full px-3 py-1 text-center text-xs font-bold transition-colors has-[:focus-visible]:ring-2"
+                      className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex-1 cursor-pointer rounded-full px-3 py-1.5 text-center text-sm font-bold transition-colors has-[:focus-visible]:ring-2"
                     >
                       <input
                         type="radio"
