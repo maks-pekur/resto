@@ -26,7 +26,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
     <div className="flex items-center gap-3 py-4">
       {item.photoUrl ? (
         <span className="bg-muted relative size-14 shrink-0 overflow-hidden rounded-lg">
-          <Image src={item.photoUrl} alt={item.name} sizes="56px" className="object-cover" />
+          <Image src={item.photoUrl} alt="" sizes="56px" className="size-full object-cover" />
         </span>
       ) : null}
 

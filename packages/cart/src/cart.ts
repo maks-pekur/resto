@@ -98,7 +98,17 @@ export const useCartStore = create<CartState>()(
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i === existing ? { ...i, quantity: i.quantity + 1 } : i,
+                i === existing
+                  ? {
+                      ...i,
+                      // A line stored before the menu carried a photo would otherwise never get
+                      // one: adding the same item again only ever bumped the quantity.
+                      ...(i.photoUrl == null && newItem.photoUrl != null
+                        ? { photoUrl: newItem.photoUrl }
+                        : {}),
+                      quantity: i.quantity + 1,
+                    }
+                  : i,
               ),
             };
           }
