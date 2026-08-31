@@ -38,8 +38,19 @@ export function OrderSummary() {
             key={`${item.itemId}:${item.sizeId ?? 'base'}`}
             className="flex items-center justify-between text-sm"
           >
-            <span className="min-w-0 truncate">
-              {item.quantity} × {item.name}
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate">
+                {item.quantity} × {item.name}
+              </span>
+              {/* The same detail line the cart shows: a guest paying should see what they picked. */}
+              {[item.sizeName, ...item.modifiers.map((modifier) => modifier.name)].filter(Boolean)
+                .length > 0 ? (
+                <span className="text-muted-foreground truncate text-xs">
+                  {[item.sizeName, ...item.modifiers.map((modifier) => modifier.name)]
+                    .filter(Boolean)
+                    .join(' · ')}
+                </span>
+              ) : null}
             </span>
             <span className="tabular-nums">
               {lineTotal(item)} {currency}

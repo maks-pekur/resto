@@ -17,6 +17,8 @@ export interface CartLineItem {
   readonly currency: string;
   /** Kept on the line: the cart outlives the menu payload it was built from. */
   readonly imageUrl?: string | null;
+  /** The size the guest chose, spelled out — `sizeId` alone means nothing to a reader. */
+  readonly sizeName?: string | null;
   readonly modifiers: readonly CartModifier[];
   quantity: number;
 }

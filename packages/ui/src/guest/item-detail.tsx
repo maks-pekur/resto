@@ -44,9 +44,11 @@ export const ItemDetail = ({
   const [firstUnmet] = selection.unmetGroups;
 
   const handleAdd = (): void => {
+    const size = item.sizes.find((candidate) => candidate.id === selection.sizeId);
     onAddToCart({
       itemId: item.id,
       sizeId: selection.sizeId,
+      sizeName: size ? localized(size.name, locale, defaultContentLocale) : null,
       name,
       unitPrice: selection.livePrice,
       currency,

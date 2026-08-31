@@ -22,6 +22,10 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
+  const details = [item.sizeName, ...item.modifiers.map((modifier) => modifier.name)].filter(
+    (part): part is string => typeof part === 'string' && part.length > 0,
+  );
+
   return (
     <div className="flex items-center gap-2.5 py-3">
       {item.imageUrl ? (
@@ -32,10 +36,9 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
 
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <p className="truncate text-sm font-bold">{item.name}</p>
-        {item.modifiers.length > 0 ? (
-          <p className="text-muted-foreground truncate text-xs">
-            {item.modifiers.map((m) => m.name).join(', ')}
-          </p>
+        {/* What the guest actually ordered: the size first, then everything they added to it. */}
+        {details.length > 0 ? (
+          <p className="text-muted-foreground truncate text-xs">{details.join(' · ')}</p>
         ) : null}
         <p className="text-sm font-bold whitespace-nowrap tabular-nums">
           {formatPrice(lineTotal(item), item.currency, locale)}

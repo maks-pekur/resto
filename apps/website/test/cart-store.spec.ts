@@ -21,6 +21,29 @@ describe('cart store', () => {
     useCartStore.setState({ mode: null, items: [] });
   });
 
+  describe('what the guest chose', () => {
+    it('keeps the size and the modifiers on the line', () => {
+      useCartStore.getState().addItem(
+        makeItem({
+          sizeId: 'size-30',
+          sizeName: '30 см',
+          modifiers: [{ optionId: 'o1', name: 'Тонкое', priceDelta: '0.00' }],
+        }),
+      );
+
+      const [line] = useCartStore.getState().items;
+      expect(line?.sizeName).toBe('30 см');
+      expect(line?.modifiers[0]?.name).toBe('Тонкое');
+    });
+
+    it('keeps two sizes of one dish apart', () => {
+      useCartStore.getState().addItem(makeItem({ sizeId: 'size-25', sizeName: '25 см' }));
+      useCartStore.getState().addItem(makeItem({ sizeId: 'size-30', sizeName: '30 см' }));
+
+      expect(useCartStore.getState().items).toHaveLength(2);
+    });
+  });
+
   describe('the line photo', () => {
     it('keeps the photo the guest saw when they picked the dish', () => {
       useCartStore.getState().addItem(makeItem({ imageUrl: 'https://cdn/burger.webp' }));
