@@ -112,5 +112,15 @@
     "label": "Colour theme",
     "light": "Light",
     "system": "System"
+  },
+  "nav": {
+    "label": "Navigation",
+    "menu": "Menu",
+    "cart": "Cart",
+    "info": "Info"
+  },
+  "info": {
+    "contacts": "Contacts",
+    "socials": "Find us online"
   }
 }

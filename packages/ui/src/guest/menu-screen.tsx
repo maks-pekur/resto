@@ -21,6 +21,12 @@ const CartSheet = lazy(async () => ({ default: (await import('./cart-sheet')).Ca
 
 const PRIORITY_IMAGE_COUNT = 4;
 
+export interface MenuScreenBarApi {
+  readonly itemCount: number;
+  readonly total: string;
+  readonly openCart: () => void;
+}
+
 export interface MenuScreenProps {
   readonly menu: MenuDto;
   readonly stoppedItemIds: readonly string[];
@@ -32,6 +38,11 @@ export interface MenuScreenProps {
   readonly footerActions?: ReactNode;
   readonly footerLinks?: readonly GuestFooterLink[];
   readonly banner?: ReactNode;
+  /**
+   * Replaces the cart bar — a surface with its own bottom navigation supplies it instead. Given a
+   * function, it receives the cart handles the default bar uses.
+   */
+  readonly bar?: ReactNode | ((api: MenuScreenBarApi) => ReactNode);
   readonly cartPrimaryAction?: ReactNode;
 }
 
@@ -46,6 +57,7 @@ export const MenuScreen = ({
   footerActions,
   footerLinks,
   banner,
+  bar,
   cartPrimaryAction,
 }: MenuScreenProps) => {
   const { locale, t, defaultContentLocale } = useGuestUi();
@@ -134,7 +146,11 @@ export const MenuScreen = ({
           actions={footerActions}
         />
       }
-      bar={<CartBar itemCount={itemCount} total={total} onOpen={openCart} />}
+      bar={
+        typeof bar === 'function'
+          ? bar({ itemCount, total, openCart })
+          : (bar ?? <CartBar itemCount={itemCount} total={total} onOpen={openCart} />)
+      }
     >
       {sections.length === 0 ? (
         <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-24 text-center">

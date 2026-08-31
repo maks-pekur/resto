@@ -40,5 +40,11 @@
   "theme.label": "Colour theme",
   "theme.system": "System",
   "theme.light": "Light",
-  "theme.dark": "Dark"
+  "theme.dark": "Dark",
+  "nav.label": "Navigation",
+  "nav.menu": "Menu",
+  "nav.cart": "Cart",
+  "nav.info": "Info",
+  "info.contacts": "Contacts",
+  "info.socials": "Find us online"
 }

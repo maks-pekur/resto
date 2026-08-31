@@ -2,7 +2,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { GuestUiProvider, MenuScreen, ThemeToggle, Toaster, useGuestTheme } from '@resto/ui';
+import {
+  GuestInfoSheet,
+  GuestTabBar,
+  GuestUiProvider,
+  MenuScreen,
+  ThemeToggle,
+  Toaster,
+  localized,
+  useGuestTheme,
+} from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
 import { LocaleControl } from './components/LocaleControl';
@@ -168,6 +177,9 @@ export const App = () => {
     setAttempt((n) => n + 1);
   }, []);
 
+  const [infoOpen, setInfoOpen] = useState(false);
+  const tenant = state.kind === 'ready' ? state.menu.tenant : null;
+
   return (
     <GuestUiProvider
       key={localeRevision}
@@ -213,8 +225,48 @@ export const App = () => {
             </div>
           }
           banner={<TableBanner notRecognized={tableUnrecognized} />}
+          bar={({ itemCount, openCart }) => (
+            <GuestTabBar
+              ariaLabel={t('nav.label')}
+              active={infoOpen ? 'info' : 'menu'}
+              tabs={[
+                {
+                  id: 'menu',
+                  label: t('nav.menu'),
+                  icon: 'menu',
+                  onSelect: () => {
+                    setInfoOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  },
+                },
+                {
+                  id: 'cart',
+                  label: t('nav.cart'),
+                  icon: 'cart',
+                  badge: itemCount,
+                  onSelect: openCart,
+                },
+                {
+                  id: 'info',
+                  label: t('nav.info'),
+                  icon: 'info',
+                  onSelect: () => {
+                    setInfoOpen(true);
+                  },
+                },
+              ]}
+            />
+          )}
         />
       )}
+      <GuestInfoSheet
+        open={infoOpen}
+        onOpenChange={setInfoOpen}
+        tenantName={tenant?.displayName ?? t('menu.title')}
+        description={localized(tenant?.description, getActiveLocale(), menuLocales.default)}
+        contacts={tenant?.contacts ?? {}}
+        socials={tenant?.socials ?? {}}
+      />
       <Toaster position="bottom-center" theme={resolvedTheme} />
     </GuestUiProvider>
   );

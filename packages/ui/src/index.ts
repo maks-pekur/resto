@@ -38,5 +38,13 @@ export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
 export { CartBar, type CartBarProps } from './guest/cart-bar';
 export { CartButton, type CartButtonProps } from './guest/cart-button';
+export {
+  GuestTabBar,
+  type GuestTab,
+  type GuestTabBarProps,
+  type GuestTabIcon,
+} from './guest/guest-tab-bar';
+export { GuestInfoSheet, type GuestInfoSheetProps } from './guest/guest-info-sheet';
+export { useScrollShrink } from './guest/use-scroll-shrink';
 export { ThemeToggle, type ThemeToggleProps } from './guest/theme-toggle';
 export { useGuestTheme, type GuestTheme, type GuestThemeState } from './guest/use-guest-theme';

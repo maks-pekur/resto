@@ -40,5 +40,11 @@
   "theme.label": "Оформление",
   "theme.system": "Как в системе",
   "theme.light": "Светлое",
-  "theme.dark": "Тёмное"
+  "theme.dark": "Тёмное",
+  "nav.label": "Навигация",
+  "nav.menu": "Меню",
+  "nav.cart": "Корзина",
+  "nav.info": "Инфо",
+  "info.contacts": "Контакты",
+  "info.socials": "Мы в соцсетях"
 }

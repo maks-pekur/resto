@@ -112,5 +112,15 @@
     "label": "Tema de color",
     "light": "Claro",
     "system": "Sistema"
+  },
+  "nav": {
+    "label": "Navegación",
+    "menu": "Menú",
+    "cart": "Carrito",
+    "info": "Info"
+  },
+  "info": {
+    "contacts": "Contacto",
+    "socials": "Síguenos"
   }
 }
