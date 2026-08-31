@@ -7,7 +7,7 @@ import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
 
 const IMAGE_SIZES =
-  '(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 112px';
+  '(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 50vw';
 
 export interface MenuItemCardProps {
   readonly item: MenuItemDto;
@@ -39,11 +39,11 @@ export const MenuItemCard = ({
         if (!unavailable) onSelect(item.id);
       }}
       className={cn(
-        'group focus-visible:ring-ring flex w-full gap-3 rounded-2xl text-left transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none sm:flex-col sm:gap-0',
+        'group focus-visible:ring-ring flex w-full flex-col rounded-2xl text-left transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none',
         unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
       )}
     >
-      <div className="bg-muted relative aspect-square w-28 shrink-0 overflow-hidden rounded-2xl sm:w-full">
+      <div className="bg-muted relative aspect-square w-full shrink-0 overflow-hidden rounded-2xl">
         {item.imageUrl ? (
           <Image
             src={item.imageUrl}
@@ -63,22 +63,22 @@ export const MenuItemCard = ({
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:px-1 sm:pt-3">
-        <h3 className="text-base leading-snug font-extrabold text-balance sm:text-lg">{name}</h3>
+      <div className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-2 sm:pt-3">
+        <h3 className="text-sm leading-snug font-extrabold text-balance sm:text-lg">{name}</h3>
         {description ? (
-          <p className="text-muted-foreground line-clamp-2 text-sm leading-snug sm:line-clamp-3">
+          <p className="text-muted-foreground line-clamp-2 text-xs leading-snug sm:line-clamp-3 sm:text-sm">
             {description}
           </p>
         ) : null}
 
-        <div className="mt-auto flex items-center justify-between gap-2 pt-2 sm:pt-3">
-          <span className="text-base font-extrabold tabular-nums">
+        <div className="mt-auto flex items-center justify-between gap-1.5 pt-2 sm:pt-3">
+          <span className="text-sm font-extrabold tabular-nums sm:text-base">
             {item.sizes.length > 0 ? t('item.priceFrom', { price }) : price}
           </span>
           <span
             aria-hidden="true"
             className={cn(
-              'bg-primary-tint text-primary-strong inline-flex h-9 items-center rounded-full px-3.5 text-sm font-bold transition-colors sm:px-4',
+              'bg-primary-tint text-primary-strong inline-flex h-7 shrink-0 items-center rounded-full px-2.5 text-xs font-bold transition-colors sm:h-9 sm:px-4 sm:text-sm',
               unavailable ? '' : 'sm:group-hover:bg-primary sm:group-hover:text-primary-foreground',
             )}
           >

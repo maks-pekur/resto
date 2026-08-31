@@ -180,7 +180,7 @@ export const MenuScreen = ({
               >
                 {localized(category.name, locale, defaultContentLocale)}
               </h2>
-              <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {
                   const priority = imageIndex < PRIORITY_IMAGE_COUNT;
                   imageIndex += 1;
