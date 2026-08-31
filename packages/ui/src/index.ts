@@ -43,6 +43,7 @@ export { CategoryRail, sectionElementId, type CategoryRailProps } from './guest/
 export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
 export { CartBar, type CartBarProps } from './guest/cart-bar';
+export { useDragToDismiss, type DragToDismiss } from './guest/use-drag-to-dismiss';
 export { CartButton, type CartButtonProps } from './guest/cart-button';
 export { ThemeToggle, type ThemeToggleProps } from './guest/theme-toggle';
 export { useGuestTheme, type GuestTheme, type GuestThemeState } from './guest/use-guest-theme';

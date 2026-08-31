@@ -1,10 +1,12 @@
 'use client';
 
+import { useCallback } from 'react';
 import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '../components/ui/sheet';
 import { ItemDetail } from './item-detail';
+import { useDragToDismiss } from './use-drag-to-dismiss';
 
 export interface ItemDialogProps {
   readonly item: MenuItemDto | null;
@@ -26,6 +28,11 @@ export const ItemDialog = ({
   onAddToCart,
   presentation = 'dialog',
 }: ItemDialogProps) => {
+  const dismiss = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+  const drag = useDragToDismiss(open && presentation === 'sheet', dismiss);
+
   if (!item) return null;
 
   const detail = (Heading: typeof DialogTitle | typeof SheetTitle) => (
@@ -46,7 +53,12 @@ export const ItemDialog = ({
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
+          ref={drag.ref}
           side="bottom"
+          style={{
+            transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
+            transition: drag.dragging ? 'none' : undefined,
+          }}
           className="mx-auto max-h-[92dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
         >
           {/* The grip says the sheet came from the bottom edge and goes back there. */}

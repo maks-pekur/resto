@@ -1,5 +1,6 @@
 'use client';
 
+import { useCallback } from 'react';
 import {
   MailIcon,
   PhoneIcon,
@@ -8,6 +9,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  useDragToDismiss,
   type GuestFooterContacts,
 } from '@resto/ui';
 import { t } from '../i18n';
@@ -40,6 +42,10 @@ export const InfoSheet = ({
   contacts = {},
   socials = {},
 }: InfoSheetProps) => {
+  const dismiss = useCallback(() => {
+    onOpenChange(false);
+  }, [onOpenChange]);
+  const drag = useDragToDismiss(open, dismiss);
   const rows = [
     contacts.phone
       ? {
@@ -65,7 +71,12 @@ export const InfoSheet = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        ref={drag.ref}
         side="bottom"
+        style={{
+          transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
+          transition: drag.dragging ? 'none' : undefined,
+        }}
         className="mx-auto max-h-[85dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
       >
         {/* Same grip as the item sheet: both came from the bottom edge and go back there. */}
