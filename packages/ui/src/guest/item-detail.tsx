@@ -165,9 +165,12 @@ export const ItemDetail = ({
         <button
           type="button"
           onClick={handleAdd}
-          className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-between gap-3 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
+          className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none"
         >
           <span>{t('item.addToCart')}</span>
+          <span aria-hidden className="opacity-60">
+            ·
+          </span>
           <span className="tabular-nums">{formatPrice(selection.livePrice, currency, locale)}</span>
         </button>
       </div>
