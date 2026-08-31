@@ -43,6 +43,10 @@ export interface MenuScreenProps {
    * function, it receives the cart handles the default bar uses.
    */
   readonly bar?: ReactNode | ((api: MenuScreenBarApi) => ReactNode);
+  /** The rail's cart button — off where the surface already carries a cart in its own nav. */
+  readonly showCartButton?: boolean;
+  /** How an item opens: centred for a desktop page, from the bottom edge on a phone. */
+  readonly itemPresentation?: 'dialog' | 'sheet';
   readonly cartPrimaryAction?: ReactNode;
 }
 
@@ -58,6 +62,8 @@ export const MenuScreen = ({
   footerLinks,
   banner,
   bar,
+  showCartButton = true,
+  itemPresentation = 'dialog',
   cartPrimaryAction,
 }: MenuScreenProps) => {
   const { locale, t, defaultContentLocale } = useGuestUi();
@@ -131,7 +137,9 @@ export const MenuScreen = ({
       rail={
         <CategoryRail
           categories={sections.map((section) => section.category)}
-          action={<CartButton itemCount={itemCount} onOpen={openCart} />}
+          action={
+            showCartButton ? <CartButton itemCount={itemCount} onOpen={openCart} /> : undefined
+          }
         />
       }
       banner={banner}
@@ -198,6 +206,7 @@ export const MenuScreen = ({
             item={dialogItem}
             modifierGroups={dialogGroups}
             currency={menu.currency}
+            presentation={itemPresentation}
             open={selectedItem != null}
             onOpenChange={(open) => {
               if (!open) closeItem();

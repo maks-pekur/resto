@@ -1,4 +1,5 @@
 export { cn } from './lib/utils';
+export * from './icons';
 export { localized } from './lib/localized';
 export { formatPrice } from './lib/format-price';
 
@@ -31,20 +32,17 @@ export {
 export type { GuestUiKey } from './guest/messages';
 export { GuestShell, type GuestShellProps } from './guest/guest-shell';
 export { GuestHeader, type GuestHeaderProps } from './guest/guest-header';
-export { GuestFooter, type GuestFooterLink, type GuestFooterProps } from './guest/guest-footer';
+export {
+  GuestFooter,
+  type GuestFooterContacts,
+  type GuestFooterLink,
+  type GuestFooterProps,
+} from './guest/guest-footer';
 export { LocaleSwitcher, type LocaleSwitcherProps } from './guest/locale-switcher';
 export { CategoryRail, sectionElementId, type CategoryRailProps } from './guest/category-rail';
 export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
 export { CartBar, type CartBarProps } from './guest/cart-bar';
 export { CartButton, type CartButtonProps } from './guest/cart-button';
-export {
-  GuestTabBar,
-  type GuestTab,
-  type GuestTabBarProps,
-  type GuestTabIcon,
-} from './guest/guest-tab-bar';
-export { GuestInfoSheet, type GuestInfoSheetProps } from './guest/guest-info-sheet';
-export { useScrollShrink } from './guest/use-scroll-shrink';
 export { ThemeToggle, type ThemeToggleProps } from './guest/theme-toggle';
 export { useGuestTheme, type GuestTheme, type GuestThemeState } from './guest/use-guest-theme';

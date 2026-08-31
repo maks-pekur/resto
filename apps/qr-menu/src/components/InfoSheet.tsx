@@ -1,9 +1,16 @@
 'use client';
 
-import { Mail, Phone, Globe } from 'lucide-react';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
-import { useGuestUi } from './guest-ui-provider';
-import type { GuestFooterContacts } from './guest-footer';
+import {
+  MailIcon,
+  PhoneIcon,
+  WebsiteIcon,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  type GuestFooterContacts,
+} from '@resto/ui';
+import { t } from '../i18n';
 
 const SOCIAL_LABEL: Readonly<Record<string, string>> = {
   instagram: 'Instagram',
@@ -16,7 +23,7 @@ const SOCIAL_LABEL: Readonly<Record<string, string>> = {
   tripadvisor: 'Tripadvisor',
 };
 
-export interface GuestInfoSheetProps {
+export interface InfoSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly tenantName: string;
@@ -25,34 +32,42 @@ export interface GuestInfoSheetProps {
   readonly socials?: Readonly<Record<string, string>>;
 }
 
-export const GuestInfoSheet = ({
+export const InfoSheet = ({
   open,
   onOpenChange,
   tenantName,
   description,
   contacts = {},
   socials = {},
-}: GuestInfoSheetProps) => {
-  const { t } = useGuestUi();
+}: InfoSheetProps) => {
   const rows = [
     contacts.phone
-      ? { icon: Phone, label: contacts.phone, href: `tel:${contacts.phone.replace(/\s/gu, '')}` }
+      ? {
+          icon: PhoneIcon,
+          label: contacts.phone,
+          href: `tel:${contacts.phone.replace(/\s/gu, '')}`,
+        }
       : null,
-    contacts.email ? { icon: Mail, label: contacts.email, href: `mailto:${contacts.email}` } : null,
+    contacts.email
+      ? { icon: MailIcon, label: contacts.email, href: `mailto:${contacts.email}` }
+      : null,
     contacts.website
       ? {
-          icon: Globe,
+          icon: WebsiteIcon,
           label: contacts.website.replace(/^https?:\/\//u, ''),
           href: contacts.website,
         }
       : null,
-  ].filter((row): row is { icon: typeof Phone; label: string; href: string } => row !== null);
+  ].filter((row): row is { icon: typeof PhoneIcon; label: string; href: string } => row !== null);
 
   const socialEntries = Object.entries(socials).filter(([, href]) => href.length > 0);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="max-h-[85dvh] gap-0 overflow-y-auto rounded-t-2xl">
+      <SheetContent
+        side="bottom"
+        className="mx-auto max-h-[85dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl"
+      >
         <SheetHeader className="px-5 py-4">
           <SheetTitle>{tenantName}</SheetTitle>
         </SheetHeader>

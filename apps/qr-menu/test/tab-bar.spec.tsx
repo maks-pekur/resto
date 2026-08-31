@@ -1,21 +1,22 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, act } from '@testing-library/react';
 import { fireEvent } from '@testing-library/react';
-import { GuestTabBar, GuestUiProvider } from '@resto/ui';
+import { CartIcon, GuestUiProvider, InfoIcon, MenuIcon } from '@resto/ui';
+import { TabBar } from '../src/components/TabBar';
 
 const renderBar = (badge?: number) => {
   const onCart = vi.fn();
   render(
     <GuestUiProvider locale="ru" t={(key) => key}>
-      <GuestTabBar
+      <TabBar
         ariaLabel="nav.label"
         active="menu"
         tabs={[
-          { id: 'menu', label: 'Меню', icon: 'menu', onSelect: vi.fn() },
+          { id: 'menu', label: 'Меню', icon: MenuIcon, onSelect: vi.fn() },
           ...(badge === undefined
             ? []
-            : [{ id: 'cart', label: 'Корзина', icon: 'cart' as const, badge, onSelect: onCart }]),
-          { id: 'info', label: 'Инфо', icon: 'info', onSelect: vi.fn() },
+            : [{ id: 'cart', label: 'Корзина', icon: CartIcon, badge, onSelect: onCart }]),
+          { id: 'info', label: 'Инфо', icon: InfoIcon, onSelect: vi.fn() },
         ]}
       />
     </GuestUiProvider>,
@@ -35,7 +36,7 @@ const scrollTo = async (y: number): Promise<void> => {
   });
 };
 
-describe('GuestTabBar', () => {
+describe('TabBar', () => {
   it('marks the open tab for assistive tech', () => {
     renderBar();
 

@@ -3,8 +3,9 @@ import { toast } from 'sonner';
 import { useCartStore } from '@resto/cart';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
 import {
-  GuestInfoSheet,
-  GuestTabBar,
+  CartIcon,
+  InfoIcon,
+  MenuIcon,
   GuestUiProvider,
   MenuScreen,
   ThemeToggle,
@@ -14,6 +15,8 @@ import {
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
+import { InfoSheet } from './components/InfoSheet';
+import { TabBar } from './components/TabBar';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
 import { TableBanner } from './components/TableBanner';
@@ -225,15 +228,17 @@ export const App = () => {
             </div>
           }
           banner={<TableBanner notRecognized={tableUnrecognized} />}
+          showCartButton={false}
+          itemPresentation="sheet"
           bar={({ itemCount, openCart }) => (
-            <GuestTabBar
+            <TabBar
               ariaLabel={t('nav.label')}
               active={infoOpen ? 'info' : 'menu'}
               tabs={[
                 {
                   id: 'menu',
                   label: t('nav.menu'),
-                  icon: 'menu',
+                  icon: MenuIcon,
                   onSelect: () => {
                     setInfoOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -242,14 +247,14 @@ export const App = () => {
                 {
                   id: 'cart',
                   label: t('nav.cart'),
-                  icon: 'cart',
+                  icon: CartIcon,
                   badge: itemCount,
                   onSelect: openCart,
                 },
                 {
                   id: 'info',
                   label: t('nav.info'),
-                  icon: 'info',
+                  icon: InfoIcon,
                   onSelect: () => {
                     setInfoOpen(true);
                   },
@@ -259,7 +264,7 @@ export const App = () => {
           )}
         />
       )}
-      <GuestInfoSheet
+      <InfoSheet
         open={infoOpen}
         onOpenChange={setInfoOpen}
         tenantName={tenant?.displayName ?? t('menu.title')}

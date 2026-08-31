@@ -32,10 +32,4 @@ export type GuestUiKey =
   | 'theme.light'
   | 'theme.dark'
   | 'footer.poweredBy'
-  | 'footer.socialsLabel'
-  | 'nav.label'
-  | 'nav.menu'
-  | 'nav.cart'
-  | 'nav.info'
-  | 'info.contacts'
-  | 'info.socials';
+  | 'footer.socialsLabel';

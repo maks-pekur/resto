@@ -1,28 +1,18 @@
 'use client';
 
-import { BookOpen, Info, ShoppingBag } from 'lucide-react';
-import { cn } from '../lib/utils';
+import type { ComponentType } from 'react';
+import { cn } from '@resto/ui';
 import { useScrollShrink } from './use-scroll-shrink';
-
-/** A closed set: the icon belongs to the shared visual system, so the guest apps never
- * pick one — and never pull an icon library into a bundle opened over mobile data. */
-export type GuestTabIcon = 'menu' | 'cart' | 'info';
-
-const ICON = {
-  menu: BookOpen,
-  cart: ShoppingBag,
-  info: Info,
-} as const;
 
 export interface GuestTab {
   readonly id: string;
   readonly label: string;
-  readonly icon: GuestTabIcon;
+  readonly icon: ComponentType<{ className?: string }>;
   readonly badge?: number;
   readonly onSelect: () => void;
 }
 
-export interface GuestTabBarProps {
+export interface TabBarProps {
   readonly tabs: readonly GuestTab[];
   readonly active: string;
   readonly ariaLabel: string;
@@ -33,11 +23,11 @@ export interface GuestTabBarProps {
  * browser's own bottom chrome — `env(safe-area-inset-bottom)` is the only measurement that knows
  * where those end — and gives half its height back while the guest is reading downwards.
  */
-export const GuestTabBar = ({ tabs, active, ariaLabel }: GuestTabBarProps) => {
+export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
   const compact = useScrollShrink();
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:hidden">
+    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       <nav
         aria-label={ariaLabel}
         data-compact={compact ? '' : undefined}
@@ -47,7 +37,7 @@ export const GuestTabBar = ({ tabs, active, ariaLabel }: GuestTabBarProps) => {
         )}
       >
         {tabs.map((tab) => {
-          const Icon = ICON[tab.icon];
+          const Icon = tab.icon;
           const isActive = tab.id === active;
           return (
             <button
