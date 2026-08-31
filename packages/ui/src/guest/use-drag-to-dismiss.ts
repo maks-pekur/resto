@@ -29,7 +29,9 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
   const latest = useRef(0);
 
   useEffect(() => {
-    if (!open) {
+    // Reset on the way in, never on the way out: a sheet released at 200px should slide out from
+    // there, not snap back to its place first and leave from the top.
+    if (open) {
       setOffset(0);
       setDragging(false);
       latest.current = 0;
