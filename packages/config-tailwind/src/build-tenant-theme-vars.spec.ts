@@ -20,6 +20,12 @@ describe('buildTenantThemeVars', () => {
     );
   });
 
+  it('keeps the white label on a brand orange, the way a restaurant prints it', () => {
+    expect(buildTenantThemeVars({ primaryColor: '#ff6900' })['--primary-foreground']).toBe(
+      '#ffffff',
+    );
+  });
+
   it('expands shorthand hex before measuring contrast', () => {
     expect(buildTenantThemeVars({ primaryColor: '#fd0' })['--primary-foreground']).toBe('#241100');
   });

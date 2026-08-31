@@ -18,7 +18,7 @@
   --popover-foreground: #1f1f1f;
 
   --primary: #ff6900;
-  --primary-foreground: #241100;
+  --primary-foreground: #ffffff;
   /* Derived from --primary AND the surrounding page, so both a tenant override
    * and a theme switch carry through: --primary at brand saturation fails 4.5:1
    * as text on either ground, --primary-strong passes on both. */
