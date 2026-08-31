@@ -29,7 +29,6 @@ const buildItem = (): PublishedMenuItem => ({
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   sizes: [],
   modifierGroupIds: [],
 });

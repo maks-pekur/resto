@@ -3,28 +3,26 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import type { MenuItemDto } from '@resto/api-client/public';
 import { GuestUiProvider, MenuItemCard } from '@resto/ui';
 
-const item = (over: Partial<MenuItemDto> = {}): MenuItemDto =>
-  ({
-    id: 'item-1',
-    slug: 'cola',
-    categoryId: 'cat-1',
-    name: { ru: 'Кола' },
-    description: null,
-    basePrice: '45.00',
-    currency: 'UAH',
-    imageUrl: null,
-    photos: [],
-    allergens: [],
-    proteins: null,
-    fats: null,
-    carbs: null,
-    kcal: null,
-    nutritionEstimated: false,
-    sortOrder: 0,
-    sizes: [],
-    modifierGroupIds: [],
-    ...over,
-  });
+const item = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
+  id: 'item-1',
+  slug: 'cola',
+  categoryId: 'cat-1',
+  name: { ru: 'Кола' },
+  description: null,
+  basePrice: '45.00',
+  currency: 'UAH',
+  imageUrl: null,
+  photos: [],
+  allergens: [],
+  proteins: null,
+  fats: null,
+  carbs: null,
+  kcal: null,
+  sortOrder: 0,
+  sizes: [],
+  modifierGroupIds: [],
+  ...over,
+});
 
 const renderCard = (dish: MenuItemDto) => {
   const onSelect = vi.fn();

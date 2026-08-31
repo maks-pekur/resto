@@ -51,7 +51,6 @@ export class UpsertItemService {
       fats: input.fats,
       carbs: input.carbs,
       kcal: input.kcal,
-      nutritionEstimated: input.nutritionEstimated,
       source: input.source,
       needsReview: input.needsReview,
       sourceExternalId: input.sourceExternalId,

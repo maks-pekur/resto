@@ -37,7 +37,6 @@ export class GetItemService {
       fats: row.fats,
       carbs: row.carbs,
       kcal: row.kcal,
-      nutritionEstimated: row.nutritionEstimated,
       source: row.source,
       needsReview: row.needsReview,
       sourceExternalId: row.sourceExternalId,

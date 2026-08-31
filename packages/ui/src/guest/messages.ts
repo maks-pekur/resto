@@ -12,7 +12,6 @@ export type GuestUiKey =
   | 'item.nutrition'
   | 'item.nutritionOpen'
   | 'item.nutritionPer100g'
-  | 'item.nutritionEstimated'
   | 'item.calories'
   | 'item.protein'
   | 'item.fat'

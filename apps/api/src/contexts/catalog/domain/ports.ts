@@ -123,7 +123,6 @@ export interface UpsertItemRow {
   readonly fats: number | null;
   readonly carbs: number | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
   readonly needsReview: boolean;
   readonly sourceExternalId: string | null;
@@ -227,7 +226,6 @@ export interface ItemDetailRow {
   readonly fats: number | null;
   readonly carbs: number | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
   readonly needsReview: boolean;
   readonly sourceExternalId: string | null;

@@ -22,7 +22,6 @@ const FORM = {
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
 } as unknown as ItemEditorForm;
 
 const bodyOf = (): Record<string, unknown> => {

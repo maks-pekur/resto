@@ -57,7 +57,6 @@ export const ItemEditorFormSchema = z.object({
   fats: z.number().min(0).max(999.99).nullable(),
   carbs: z.number().min(0).max(999.99).nullable(),
   kcal: z.number().int().min(0).max(32000).nullable(),
-  nutritionEstimated: z.boolean(),
 });
 
 export type ItemEditorForm = z.infer<typeof ItemEditorFormSchema>;

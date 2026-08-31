@@ -71,7 +71,6 @@ const PublishedMenuItemSchema = z.object({
   fats: z.string().nullable(),
   carbs: z.string().nullable(),
   kcal: z.number().int().nullable(),
-  nutritionEstimated: z.boolean(),
   sizes: z.array(PublishedMenuItemSizeSchema),
   modifierGroupIds: z.array(z.string().uuid()),
 });

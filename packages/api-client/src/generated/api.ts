@@ -1675,7 +1675,6 @@ export interface components {
                 fats: string | null;
                 carbs: string | null;
                 kcal: number | null;
-                nutritionEstimated: boolean;
                 sizes: {
                     /** Format: uuid */
                     id: string;
@@ -1747,7 +1746,6 @@ export interface components {
             fats: string | null;
             carbs: string | null;
             kcal: number | null;
-            nutritionEstimated: boolean;
             sizes: {
                 /** Format: uuid */
                 id: string;
@@ -1837,8 +1835,6 @@ export interface components {
             carbs: number | null;
             /** @default null */
             kcal: number | null;
-            /** @default false */
-            nutritionEstimated: boolean;
             /**
              * @default manual
              * @enum {string}
@@ -2021,7 +2017,6 @@ export interface components {
             fats: number | null;
             carbs: number | null;
             kcal: number | null;
-            nutritionEstimated: boolean;
             /** @enum {string} */
             source: "manual" | "ai_generated" | "imported_iiko" | "imported_csv";
             needsReview: boolean;

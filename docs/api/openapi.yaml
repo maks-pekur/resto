@@ -2904,8 +2904,6 @@ components:
               kcal:
                 type: integer
                 nullable: true
-              nutritionEstimated:
-                type: boolean
               sizes:
                 type: array
                 items:
@@ -2956,7 +2954,6 @@ components:
               - fats
               - carbs
               - kcal
-              - nutritionEstimated
               - sizes
               - modifierGroupIds
         modifierGroups:
@@ -3134,8 +3131,6 @@ components:
         kcal:
           type: integer
           nullable: true
-        nutritionEstimated:
-          type: boolean
         sizes:
           type: array
           items:
@@ -3186,7 +3181,6 @@ components:
         - fats
         - carbs
         - kcal
-        - nutritionEstimated
         - sizes
         - modifierGroupIds
     UpsertCategoryInputDto:
@@ -3397,9 +3391,6 @@ components:
           exclusiveMaximum: false
           nullable: true
           default: null
-        nutritionEstimated:
-          type: boolean
-          default: false
         source:
           type: string
           enum:
@@ -3870,8 +3861,6 @@ components:
         kcal:
           type: integer
           nullable: true
-        nutritionEstimated:
-          type: boolean
         source:
           type: string
           enum:
@@ -3944,7 +3933,6 @@ components:
         - fats
         - carbs
         - kcal
-        - nutritionEstimated
         - source
         - needsReview
         - sourceExternalId

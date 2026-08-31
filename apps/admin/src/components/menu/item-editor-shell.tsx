@@ -34,7 +34,6 @@ const emptyValues = (currency: string): ItemEditorForm => ({
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
 });
 
 const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
@@ -53,7 +52,6 @@ const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
   fats: item.fats,
   carbs: item.carbs,
   kcal: item.kcal,
-  nutritionEstimated: item.nutritionEstimated,
 });
 
 export function ItemEditorShell({

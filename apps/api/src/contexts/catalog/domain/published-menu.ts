@@ -113,7 +113,6 @@ export interface PublishedMenuItem {
   readonly fats: string | null;
   readonly carbs: string | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   /**
    * Item sizes (D-4a CAT-05). Renamed from `variants`; `price` is the
    * absolute per-size price (not a delta on top of `basePrice`).

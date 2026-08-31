@@ -24,7 +24,6 @@ const makeItem = (overrides: Partial<MenuItemDto>): MenuItemDto => ({
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],

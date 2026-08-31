@@ -379,7 +379,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
         fats: 18.2,
         carbs: 9.7,
         kcal: 410,
-        nutritionEstimated: true,
         source: 'ai_generated',
         needsReview: true,
         status: 'published',
@@ -401,7 +400,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
         fats: string | null;
         carbs: string | null;
         kcal: number | null;
-        nutritionEstimated: boolean;
       }[];
     }>();
     const item = menu.items.find((i) => i.slug === 'cobb');
@@ -413,7 +411,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(item?.fats).toBe('18.20');
     expect(item?.carbs).toBe('9.70');
     expect(item?.kcal).toBe(410);
-    expect(item?.nutritionEstimated).toBe(true);
   }, 60_000);
 
   it('creates a modifier group then attaches an option; option fields round-trip on /v1/menu', async () => {

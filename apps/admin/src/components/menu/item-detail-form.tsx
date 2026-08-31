@@ -262,7 +262,6 @@ function ItemNutritionCard(): React.ReactElement {
             fats={form.watch('fats')}
             carbs={form.watch('carbs')}
             kcal={form.watch('kcal')}
-            nutritionEstimated={form.watch('nutritionEstimated')}
             onChange={(name: BjuField, value: number | null) => {
               form.setValue(name, value, { shouldDirty: true, shouldTouch: true });
             }}

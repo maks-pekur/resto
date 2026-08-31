@@ -70,7 +70,7 @@ export const NutritionInfo = ({ item, className }: NutritionInfoProps) => {
         onClick={() => {
           setOpen((previous) => !previous);
         }}
-        className="ring-border bg-muted text-muted-foreground hover:text-foreground focus-visible:ring-ring grid size-7 cursor-pointer place-items-center rounded-full ring-1 transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring grid size-7 cursor-pointer place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
         <Info className="size-4" />
       </button>
@@ -90,9 +90,6 @@ export const NutritionInfo = ({ item, className }: NutritionInfoProps) => {
               </div>
             ))}
           </dl>
-          {item.nutritionEstimated ? (
-            <p className="text-muted-foreground mt-2 text-xs">{t('item.nutritionEstimated')}</p>
-          ) : null}
         </div>
       ) : null}
     </div>

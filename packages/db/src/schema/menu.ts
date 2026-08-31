@@ -103,7 +103,6 @@ export const menuItems = pgTable(
     fats: numeric('fats', { precision: 5, scale: 2 }),
     carbs: numeric('carbs', { precision: 5, scale: 2 }),
     kcal: smallint('kcal'),
-    nutritionEstimated: boolean('nutrition_estimated').notNull().default(false),
     source: text('source').notNull().default('manual'),
     needsReview: boolean('needs_review').notNull().default(false),
     sourceExternalId: text('source_external_id'),

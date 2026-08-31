@@ -37,7 +37,6 @@ const menu: MenuDto = {
       fats: null,
       carbs: null,
       kcal: null,
-      nutritionEstimated: false,
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],

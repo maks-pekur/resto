@@ -51,7 +51,6 @@ export interface MenuItemDto {
   fats: string | null;
   carbs: string | null;
   kcal: number | null;
-  nutritionEstimated: boolean;
   sortOrder: number;
   sizes: readonly MenuItemSizeDto[];
   modifierGroupIds: readonly string[];

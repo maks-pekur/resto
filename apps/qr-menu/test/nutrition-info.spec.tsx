@@ -18,7 +18,6 @@ const dish = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
   fats: '7.5',
   carbs: '32.9',
   kcal: 236,
-  nutritionEstimated: false,
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
@@ -63,12 +62,5 @@ describe('NutritionInfo', () => {
     const panel = screen.getByRole('dialog');
     expect(panel).toHaveTextContent('item.protein');
     expect(panel).not.toHaveTextContent('item.fat');
-  });
-
-  it('says when the numbers are an estimate', () => {
-    renderInfo(dish({ nutritionEstimated: true }));
-    fireEvent.click(screen.getByRole('button', { name: 'item.nutritionOpen' }));
-
-    expect(screen.getByRole('dialog')).toHaveTextContent('item.nutritionEstimated');
   });
 });

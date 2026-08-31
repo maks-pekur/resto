@@ -43,7 +43,6 @@ const ITEM_WITH_NULL_FIELDS = {
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   photos: [],
   source: 'manual',
   needsReview: false,

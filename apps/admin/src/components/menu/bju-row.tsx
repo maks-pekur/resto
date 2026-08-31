@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 
 export type BjuField = 'proteins' | 'fats' | 'carbs' | 'kcal';
@@ -10,7 +9,6 @@ export interface BjuRowProps {
   readonly fats: number | null;
   readonly carbs: number | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   readonly onChange: (field: BjuField, value: number | null) => void;
 }
 
@@ -20,14 +18,7 @@ const parseValue = (raw: string, isInt: boolean): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-export function BjuRow({
-  proteins,
-  fats,
-  carbs,
-  kcal,
-  nutritionEstimated,
-  onChange,
-}: BjuRowProps): React.ReactElement {
+export function BjuRow({ proteins, fats, carbs, kcal, onChange }: BjuRowProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
   const fields: readonly {
     readonly key: BjuField;
@@ -59,14 +50,7 @@ export function BjuRow({
           </label>
         ))}
       </div>
-      <p className="text-xs text-muted-foreground">
-        {t('nutritionPer100g')}
-        {nutritionEstimated ? (
-          <Badge variant="secondary" className="ml-2 text-xs">
-            {t('nutritionAiBadge')}
-          </Badge>
-        ) : null}
-      </p>
+      <p className="text-xs text-muted-foreground">{t('nutritionPer100g')}</p>
     </div>
   );
 }
