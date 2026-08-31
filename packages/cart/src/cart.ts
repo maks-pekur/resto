@@ -16,7 +16,7 @@ export interface CartLineItem {
   readonly unitPrice: string;
   readonly currency: string;
   /** Kept on the line: the cart outlives the menu payload it was built from. */
-  readonly photoUrl?: string | null;
+  readonly imageUrl?: string | null;
   readonly modifiers: readonly CartModifier[];
   quantity: number;
 }
@@ -101,10 +101,10 @@ export const useCartStore = create<CartState>()(
                 i === existing
                   ? {
                       ...i,
-                      // A line stored before the menu carried a photo would otherwise never get
-                      // one: adding the same item again only ever bumped the quantity.
-                      ...(i.photoUrl == null && newItem.photoUrl != null
-                        ? { photoUrl: newItem.photoUrl }
+                      // A line stored before the menu carried an image would otherwise never get
+                      // one: adding the same dish again only ever bumped the quantity.
+                      ...(i.imageUrl == null && newItem.imageUrl != null
+                        ? { imageUrl: newItem.imageUrl }
                         : {}),
                       quantity: i.quantity + 1,
                     }

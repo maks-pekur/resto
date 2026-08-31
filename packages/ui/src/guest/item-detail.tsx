@@ -46,7 +46,7 @@ export const ItemDetail = ({
       name,
       unitPrice: selection.livePrice,
       currency,
-      photoUrl: item.imageUrl ?? item.photos[0]?.url ?? null,
+      imageUrl: item.imageUrl ?? item.photos[0]?.url ?? null,
       modifiers: selection.chosenModifiers,
     });
   };

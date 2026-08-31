@@ -23,18 +23,18 @@ describe('cart store', () => {
 
   describe('the line photo', () => {
     it('keeps the photo the guest saw when they picked the dish', () => {
-      useCartStore.getState().addItem(makeItem({ photoUrl: 'https://cdn/burger.webp' }));
+      useCartStore.getState().addItem(makeItem({ imageUrl: 'https://cdn/burger.webp' }));
 
-      expect(useCartStore.getState().items[0]?.photoUrl).toBe('https://cdn/burger.webp');
+      expect(useCartStore.getState().items[0]?.imageUrl).toBe('https://cdn/burger.webp');
     });
 
     it('fills in a photo a line stored before the menu carried one never had', () => {
       useCartStore.getState().addItem(makeItem());
-      useCartStore.getState().addItem(makeItem({ photoUrl: 'https://cdn/burger.webp' }));
+      useCartStore.getState().addItem(makeItem({ imageUrl: 'https://cdn/burger.webp' }));
 
       const [line] = useCartStore.getState().items;
       expect(line?.quantity).toBe(2);
-      expect(line?.photoUrl).toBe('https://cdn/burger.webp');
+      expect(line?.imageUrl).toBe('https://cdn/burger.webp');
     });
   });
 
