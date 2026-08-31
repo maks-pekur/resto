@@ -82,7 +82,9 @@ export const MenuItemCard = ({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-2 pb-2 sm:pt-3 sm:pb-3">
-          <h3 className="text-sm leading-snug font-extrabold text-balance sm:text-lg">{name}</h3>
+          <h3 className="text-center text-sm leading-snug font-extrabold text-balance sm:text-lg">
+            {name}
+          </h3>
           {description ? (
             <p className="text-muted-foreground line-clamp-2 text-xs leading-snug sm:line-clamp-3 sm:text-sm">
               {description}
