@@ -50,9 +50,7 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
               className={cn(
                 'relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full transition-all',
                 compact ? 'py-1.5' : 'py-2',
-                isActive
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-muted-foreground hover:text-foreground',
+                isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
               )}
             >
               <span className="relative">
