@@ -698,7 +698,6 @@
       "primaryLabel": "Основной язык"
     },
     "pageTitle": "Настройки",
-    "tabDanger": "Опасная зона",
     "brand": {
       "profileTitle": "Профиль ресторана",
       "profileDescription": "Как ресторан выглядит для гостя — на сайте, в QR-меню и в письмах.",
@@ -736,7 +735,7 @@
     },
     "pageDescription": "Профиль ресторана, языки, домены и оплата.",
     "navLabel": "Разделы настроек",
-    "tabProfile": "Профиль",
+    "tabGeneral": "Основные",
     "tabLanguages": "Языки",
     "tabDomains": "Домены",
     "domains": {

@@ -698,7 +698,6 @@
       "primaryLabel": "Idioma principal"
     },
     "pageTitle": "Ajustes",
-    "tabDanger": "Zona de peligro",
     "brand": {
       "profileTitle": "Perfil del restaurante",
       "profileDescription": "Cómo ve el restaurante un invitado: en la web, en el menú QR y en los correos.",
@@ -736,7 +735,7 @@
     },
     "pageDescription": "El perfil del restaurante, los idiomas, los dominios y los cobros.",
     "navLabel": "Secciones de ajustes",
-    "tabProfile": "Perfil",
+    "tabGeneral": "General",
     "tabLanguages": "Idiomas",
     "tabDomains": "Dominios",
     "domains": {

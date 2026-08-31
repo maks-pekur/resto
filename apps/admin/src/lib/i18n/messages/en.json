@@ -698,7 +698,6 @@
       "primaryLabel": "Primary language"
     },
     "pageTitle": "Settings",
-    "tabDanger": "Danger zone",
     "brand": {
       "profileTitle": "Restaurant profile",
       "profileDescription": "How the restaurant looks to a guest — on the site, in the QR menu and in emails.",
@@ -736,7 +735,7 @@
     },
     "pageDescription": "The restaurant profile, languages, domains and payouts.",
     "navLabel": "Settings sections",
-    "tabProfile": "Profile",
+    "tabGeneral": "General",
     "tabLanguages": "Languages",
     "tabDomains": "Domains",
     "domains": {

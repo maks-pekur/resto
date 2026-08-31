@@ -2,7 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Globe, Languages, Plug, Store, TriangleAlert } from 'lucide-react';
+import { Globe, Languages, Plug, Store } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -15,10 +15,10 @@ import { DomainsSection } from '@/components/settings/domains-section';
 import { PaymentsSection } from '@/components/settings/payments-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 
-const SETTINGS = ['profile', 'languages', 'domains', 'integrations', 'danger'] as const;
+const SETTINGS = ['general', 'languages', 'domains', 'integrations'] as const;
 
 const searchSchema = z.object({
-  setting: z.enum(SETTINGS).catch('profile'),
+  setting: z.enum(SETTINGS).catch('general'),
 });
 
 export const Route = createRoute({
@@ -49,16 +49,15 @@ function SettingsPage() {
 
   const canSeeIntegrations = hasPermission(me, 'billing', 'read');
   const items: SettingsNavItem[] = [
-    { value: 'profile', label: t('tabProfile'), icon: Store },
+    { value: 'general', label: t('tabGeneral'), icon: Store },
     { value: 'languages', label: t('tabLanguages'), icon: Languages },
     { value: 'domains', label: t('tabDomains'), icon: Globe },
     ...(canSeeIntegrations
       ? [{ value: 'integrations', label: t('tabIntegrations'), icon: Plug }]
       : []),
-    { value: 'danger', label: t('tabDanger'), icon: TriangleAlert },
   ];
 
-  const active = setting === 'integrations' && !canSeeIntegrations ? 'profile' : setting;
+  const active = setting === 'integrations' && !canSeeIntegrations ? 'general' : setting;
 
   return (
     <>
@@ -67,7 +66,21 @@ function SettingsPage() {
         <SettingsNav items={items} active={active} ariaLabel={t('navLabel')} />
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          {active === 'profile' ? <BrandForm tenant={tenant} /> : null}
+          {active === 'general' ? (
+            <>
+              <BrandForm tenant={tenant} />
+              {/* Last, and last for a reason: everything above is routine, this is not. */}
+              <DangerZoneCard
+                tenant={{
+                  slug: tenant.slug,
+                  status: tenant.status,
+                  offboardingScheduledAt: tenant.offboardingScheduledAt,
+                }}
+                isOwner={me.baseRole === 'owner'}
+                userId={me.userId ?? ''}
+              />
+            </>
+          ) : null}
           {active === 'languages' ? (
             <ContentLocalesSection
               defaultLocale={tenant.locale}
@@ -76,17 +89,6 @@ function SettingsPage() {
           ) : null}
           {active === 'domains' ? <DomainsSection /> : null}
           {active === 'integrations' ? <PaymentsSection /> : null}
-          {active === 'danger' ? (
-            <DangerZoneCard
-              tenant={{
-                slug: tenant.slug,
-                status: tenant.status,
-                offboardingScheduledAt: tenant.offboardingScheduledAt,
-              }}
-              isOwner={me.baseRole === 'owner'}
-              userId={me.userId ?? ''}
-            />
-          ) : null}
         </div>
       </div>
     </>
