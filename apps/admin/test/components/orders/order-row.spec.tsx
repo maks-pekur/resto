@@ -197,7 +197,7 @@ describe('OrderRow — a promise nobody has made yet', () => {
 });
 
 describe('OrderRow — the time column', () => {
-  it('stamps an accepted order with the moment it was taken on', () => {
+  it('stamps every order with the moment it came in', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
       status: 'preparing',
@@ -211,14 +211,14 @@ describe('OrderRow — the time column', () => {
       </Wrap>,
     );
 
-    const expected = new Date(row.acceptedAt ?? '').toLocaleTimeString([], {
+    const expected = new Date(row.createdAt).toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     });
     expect(screen.getByText(expected)).toBeInTheDocument();
   });
 
-  it('falls back to when an unaccepted order arrived', () => {
+  it('shows the same fact on an order nobody has accepted yet', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
       status: 'paid',

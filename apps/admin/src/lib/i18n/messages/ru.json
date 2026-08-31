@@ -531,7 +531,7 @@
     "columns": {
       "order": "Заказ",
       "remaining": "Время",
-      "promised": "Принят",
+      "placed": "Создан",
       "type": "Тип",
       "for": "Для",
       "total": "Сумма"

@@ -135,10 +135,10 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
   const ChannelIcon = channel.icon;
   const orderType = orderTypePresentation(row.orderType);
   const OrderTypeIcon = orderType.icon;
-  // The ring counts down to the promise; this column is the plain fact of when the order was
-  // taken on — and, while nobody has taken it on yet, when it arrived. The full date rides in
-  // the tooltip, since the column shows only a clock time.
-  const stampedAt = new Date(row.acceptedAt ?? row.createdAt);
+  // The ring counts down to the promise; this column is the one time that is true of every
+  // order at every stage — when it came in. The full date rides in the tooltip, since the
+  // column shows only a clock time.
+  const stampedAt = new Date(row.createdAt);
   const stampTitle = new Intl.DateTimeFormat(i18n.language, {
     dateStyle: 'medium',
     timeStyle: 'short',

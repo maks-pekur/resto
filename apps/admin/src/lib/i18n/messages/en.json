@@ -531,7 +531,7 @@
     "columns": {
       "order": "Order",
       "remaining": "Left",
-      "promised": "Accepted",
+      "placed": "Placed",
       "type": "Type",
       "for": "For",
       "total": "Total"

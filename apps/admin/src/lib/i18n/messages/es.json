@@ -531,7 +531,7 @@
     "columns": {
       "order": "Pedido",
       "remaining": "Queda",
-      "promised": "Aceptado",
+      "placed": "Recibido",
       "type": "Tipo",
       "for": "Para quién",
       "total": "Total"
