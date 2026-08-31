@@ -155,9 +155,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             isDefault: v.isDefault,
             sortOrder: v.sortOrder,
           })),
-          modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
-            MenuModifierId.parse(m.modifierGroupId),
-          ),
+          // The link table stores the order the operator arranged; without this the guest sees
+          // whatever order the rows came back in.
+          modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? [])
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((m) => MenuModifierId.parse(m.modifierGroupId)),
         };
       });
 

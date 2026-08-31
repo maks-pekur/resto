@@ -13,7 +13,11 @@ export interface NutritionInfoProps {
 
 /** True when the dish has anything worth opening a panel for. */
 export const hasNutrition = (item: MenuItemDto): boolean =>
-  item.kcal !== null || item.proteins !== null || item.fats !== null || item.carbs !== null;
+  item.kcal !== null ||
+  item.proteins !== null ||
+  item.fats !== null ||
+  item.carbs !== null ||
+  item.weight !== null;
 
 const amount = (value: string | number, locale: string): string =>
   new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(Number(value));
@@ -57,6 +61,13 @@ export const NutritionInfo = ({ item, className }: NutritionInfoProps) => {
     item.carbs === null
       ? null
       : { label: t('item.carbs'), value: `${amount(item.carbs, locale)} ${t('item.gram')}` },
+    item.weight === null
+      ? null
+      : {
+          label: t('item.weight'),
+          // The unit is the dish's own: a drink is measured in millilitres, a pizza in grams.
+          value: `${amount(item.weight, locale)} ${t(`item.unit.${item.measureUnit ?? 'g'}`)}`,
+        },
   ].filter((row): row is { label: string; value: string } => row !== null);
 
   if (rows.length === 0) return null;

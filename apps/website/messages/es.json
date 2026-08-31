@@ -105,7 +105,16 @@
     "fat": "Grasas",
     "carbs": "Carbohidratos",
     "kcal": "kcal",
-    "gram": "g"
+    "gram": "g",
+    "unit": {
+      "g": "g",
+      "kg": "kg",
+      "ml": "ml",
+      "l": "l",
+      "pcs": "ud"
+    },
+    "chooseFirst": "Elige primero: {group}",
+    "weight": "Peso"
   },
   "locale": {
     "label": "Idioma"

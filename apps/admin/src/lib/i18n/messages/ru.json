@@ -227,7 +227,9 @@
       "createFailed": "Не удалось создать группу.",
       "updateFailed": "Не удалось обновить модификаторы.",
       "validateGroup": "Проверьте поля группы.",
-      "validateOption": "Проверьте поля варианта."
+      "validateOption": "Проверьте поля варианта.",
+      "chipMoveEarlierAriaLabel": "Переместить группу {{name}} выше",
+      "chipMoveLaterAriaLabel": "Переместить группу {{name}} ниже"
     },
     "categories": {
       "addCategory": "+ Добавить категорию",

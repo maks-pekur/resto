@@ -13,10 +13,27 @@ export interface ItemSelection {
   readonly selectSize: (sizeId: string) => void;
   readonly isOptionChosen: (groupId: string, optionId: string) => boolean;
   readonly toggleOption: (groupId: string, optionId: string, singleChoice: boolean) => void;
+  /** Groups the guest still owes an answer to; the order cannot be placed until it is empty. */
+  readonly unmetGroups: readonly MenuModifierGroupDto[];
   readonly livePrice: string;
   readonly chosenModifiers: readonly CartModifier[];
   readonly reset: () => void;
 }
+
+/** What the kitchen would put on the dish if nobody chose: iiko's `default_amount`. */
+const preselected = (groups: readonly MenuModifierGroupDto[]): Map<string, Set<string>> => {
+  const chosen = new Map<string, Set<string>>();
+  for (const group of groups) {
+    const defaults = group.options.filter((option) => option.defaultAmount > 0);
+    if (defaults.length === 0) continue;
+    const capped = group.maxSelectable > 0 ? defaults.slice(0, group.maxSelectable) : defaults;
+    chosen.set(group.id, new Set(capped.map((option) => option.id)));
+  }
+  return chosen;
+};
+
+const requiredCount = (group: MenuModifierGroupDto): number =>
+  Math.max(group.minSelectable, group.isRequired ? 1 : 0);
 
 export const useItemSelection = (
   item: MenuItemDto | null,
@@ -24,7 +41,15 @@ export const useItemSelection = (
   locale: string,
 ): ItemSelection => {
   const [sizeOverride, setSizeOverride] = useState<string | null>(null);
-  const [chosen, setChosen] = useState<Map<string, Set<string>>>(new Map());
+  const [chosen, setChosen] = useState<Map<string, Set<string>>>(() => preselected(groups));
+  const [preselectedFor, setPreselectedFor] = useState(item?.id ?? null);
+
+  // A new dish arrives with its own defaults; the hook outlives the sheet it fills.
+  if (item !== null && item.id !== preselectedFor) {
+    setPreselectedFor(item.id);
+    setChosen(preselected(groups));
+    setSizeOverride(null);
+  }
 
   const defaultSizeId = item?.sizes.find((s) => s.isDefault)?.id ?? item?.sizes[0]?.id ?? null;
   const sizeId = sizeOverride ?? defaultSizeId;
@@ -69,21 +94,25 @@ export const useItemSelection = (
           next.set(groupId, new Set([optionId]));
           return next;
         }
+        const group = groups.find((g) => g.id === groupId);
         const current = new Set(next.get(groupId) ?? []);
         if (current.has(optionId)) {
           current.delete(optionId);
         } else {
+          // The server refuses an order past `maxSelectable`; the sheet should never build one.
+          if (group !== undefined && current.size >= group.maxSelectable) return prev;
           current.add(optionId);
         }
         next.set(groupId, current);
         return next;
       });
     },
+    unmetGroups: groups.filter((group) => (chosen.get(group.id)?.size ?? 0) < requiredCount(group)),
     livePrice,
     chosenModifiers,
     reset: () => {
       setSizeOverride(null);
-      setChosen(new Map());
+      setChosen(preselected(groups));
     },
   };
 };

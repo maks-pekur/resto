@@ -56,5 +56,12 @@
   "item.fat": "Fat",
   "item.carbs": "Carbohydrate",
   "item.kcal": "kcal",
-  "item.gram": "g"
+  "item.gram": "g",
+  "item.chooseFirst": "Choose {group} first",
+  "item.weight": "Weight",
+  "item.unit.g": "g",
+  "item.unit.kg": "kg",
+  "item.unit.ml": "ml",
+  "item.unit.l": "l",
+  "item.unit.pcs": "pcs"
 }

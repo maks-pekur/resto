@@ -227,7 +227,9 @@
       "createFailed": "No se pudo crear el grupo.",
       "updateFailed": "No se pudieron actualizar los modificadores.",
       "validateGroup": "Revisa los campos del grupo.",
-      "validateOption": "Revisa los campos de la opción."
+      "validateOption": "Revisa los campos de la opción.",
+      "chipMoveEarlierAriaLabel": "Mover el grupo {{name}} antes",
+      "chipMoveLaterAriaLabel": "Mover el grupo {{name}} después"
     },
     "categories": {
       "addCategory": "+ Añadir categoría",

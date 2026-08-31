@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { useFormContext } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -101,6 +101,27 @@ export function ItemModifierGroupsCard({
     try {
       await assignMutation.mutateAsync(next);
       showSuccess(tCommon('saved'), { duration: 1500 });
+    } catch {
+      setAssignedIds(previous);
+      showError(null, t('updateFailed'));
+    }
+  };
+
+  // The order of the chips is the order the guest meets the questions in — the api stores it
+  // from this list's own order.
+  const onMove = async (groupId: string, delta: -1 | 1): Promise<void> => {
+    if (isNewItem) return;
+    const index = assignedIds.indexOf(groupId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= assignedIds.length) return;
+    const next = [...assignedIds];
+    const [moved] = next.splice(index, 1);
+    if (moved === undefined) return;
+    next.splice(target, 0, moved);
+    const previous = assignedIds;
+    setAssignedIds(next);
+    try {
+      await assignMutation.mutateAsync(next);
     } catch {
       setAssignedIds(previous);
       showError(null, t('updateFailed'));
@@ -208,7 +229,29 @@ export function ItemModifierGroupsCard({
                 className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm"
                 data-testid={`mg-chip-${g.id}`}
               >
+                <button
+                  type="button"
+                  aria-label={t('chipMoveEarlierAriaLabel', { name: g.name })}
+                  onClick={() => {
+                    void onMove(g.id, -1);
+                  }}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  disabled={isPending || assignedIds[0] === g.id}
+                >
+                  <ChevronLeft className="size-3" aria-hidden="true" />
+                </button>
                 <span>{g.name}</span>
+                <button
+                  type="button"
+                  aria-label={t('chipMoveLaterAriaLabel', { name: g.name })}
+                  onClick={() => {
+                    void onMove(g.id, 1);
+                  }}
+                  className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                  disabled={isPending || assignedIds[assignedIds.length - 1] === g.id}
+                >
+                  <ChevronRight className="size-3" aria-hidden="true" />
+                </button>
                 <button
                   type="button"
                   aria-label={t('chipRemoveAriaLabel', { name: g.name })}

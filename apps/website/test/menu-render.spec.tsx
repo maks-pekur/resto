@@ -17,6 +17,8 @@ const makeItem = (overrides: Partial<MenuItemDto>): MenuItemDto => ({
   description: null,
   basePrice: '5.00',
   currency: 'EUR',
+  weight: null,
+  measureUnit: null,
   imageUrl: null,
   photos: [],
   allergens: [],

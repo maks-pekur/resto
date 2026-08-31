@@ -56,5 +56,12 @@
   "item.fat": "Жиры",
   "item.carbs": "Углеводы",
   "item.kcal": "ккал",
-  "item.gram": "г"
+  "item.gram": "г",
+  "item.chooseFirst": "Выберите: {group}",
+  "item.weight": "Вес",
+  "item.unit.g": "г",
+  "item.unit.kg": "кг",
+  "item.unit.ml": "мл",
+  "item.unit.l": "л",
+  "item.unit.pcs": "шт"
 }

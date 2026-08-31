@@ -44,6 +44,8 @@ export interface MenuItemDto {
   description: LocalizedText | null;
   basePrice: string;
   currency: string;
+  weight: string | null;
+  measureUnit: 'g' | 'kg' | 'ml' | 'l' | 'pcs' | null;
   imageUrl: string | null;
   photos: readonly MenuPhotoDto[];
   allergens: readonly string[];

@@ -227,7 +227,9 @@
       "createFailed": "Couldn't create the group.",
       "updateFailed": "Couldn't update modifiers.",
       "validateGroup": "Please check the group fields.",
-      "validateOption": "Please check the option fields."
+      "validateOption": "Please check the option fields.",
+      "chipMoveEarlierAriaLabel": "Move group {{name}} earlier",
+      "chipMoveLaterAriaLabel": "Move group {{name}} later"
     },
     "categories": {
       "addCategory": "+ Add category",

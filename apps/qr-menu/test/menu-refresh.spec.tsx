@@ -29,6 +29,8 @@ const menuWithPhoto = (url: string): MenuDto => ({
       description: null,
       basePrice: '189.00',
       currency: 'UAH',
+      weight: null,
+      measureUnit: null,
       imageUrl: url,
       photos: [],
       allergens: [],

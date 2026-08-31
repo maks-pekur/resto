@@ -12,6 +12,8 @@ const item = (overrides: Partial<MenuItemDto> = {}): MenuItemDto => ({
   description: null,
   basePrice: '12.50',
   currency: 'USD',
+  weight: null,
+  measureUnit: null,
   imageUrl: 'https://cdn.example.test/margherita.jpg',
   photos: [],
   allergens: [],

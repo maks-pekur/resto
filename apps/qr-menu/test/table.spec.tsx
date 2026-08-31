@@ -33,6 +33,8 @@ const menu: MenuDto = {
       description: null,
       basePrice: '189.00',
       currency: 'UAH',
+      weight: null,
+      measureUnit: null,
       imageUrl: null,
       photos: [],
       allergens: [],

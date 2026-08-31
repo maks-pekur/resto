@@ -11,6 +11,8 @@ const dish = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
   description: null,
   basePrice: '239.00',
   currency: 'UAH',
+  weight: null,
+  measureUnit: null,
   imageUrl: null,
   photos: [],
   allergens: [],
