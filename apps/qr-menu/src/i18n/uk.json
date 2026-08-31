@@ -47,5 +47,15 @@
   "info.contacts": "Контакти",
   "info.socials": "Ми в соцмережах",
   "item.choose": "Обрати {name}",
-  "item.addNamed": "Додати {name} за {price}"
+  "item.addNamed": "Додати {name} за {price}",
+  "item.nutrition": "Харчова цінність",
+  "item.nutritionOpen": "Харчова цінність",
+  "item.nutritionPer100g": "Харчова цінність на 100 г",
+  "item.nutritionEstimated": "Значення приблизні",
+  "item.calories": "Калорії",
+  "item.protein": "Білки",
+  "item.fat": "Жири",
+  "item.carbs": "Вуглеводи",
+  "item.kcal": "ккал",
+  "item.gram": "г"
 }

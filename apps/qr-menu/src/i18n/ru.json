@@ -47,5 +47,15 @@
   "info.contacts": "Контакты",
   "info.socials": "Мы в соцсетях",
   "item.choose": "Выбрать {name}",
-  "item.addNamed": "Добавить {name} за {price}"
+  "item.addNamed": "Добавить {name} за {price}",
+  "item.nutrition": "Пищевая ценность",
+  "item.nutritionOpen": "Пищевая ценность",
+  "item.nutritionPer100g": "Пищевая ценность на 100 г",
+  "item.nutritionEstimated": "Значения приблизительные",
+  "item.calories": "Калории",
+  "item.protein": "Белки",
+  "item.fat": "Жиры",
+  "item.carbs": "Углеводы",
+  "item.kcal": "ккал",
+  "item.gram": "г"
 }

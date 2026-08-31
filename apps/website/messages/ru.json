@@ -96,7 +96,17 @@
     "size": "Размер",
     "unavailable": "Сегодня недоступно",
     "choose": "Выбрать {name}",
-    "addNamed": "Добавить {name} за {price}"
+    "addNamed": "Добавить {name} за {price}",
+    "nutrition": "Пищевая ценность",
+    "nutritionOpen": "Пищевая ценность",
+    "nutritionPer100g": "Пищевая ценность на 100 г",
+    "nutritionEstimated": "Значения приблизительные",
+    "calories": "Калории",
+    "protein": "Белки",
+    "fat": "Жиры",
+    "carbs": "Углеводы",
+    "kcal": "ккал",
+    "gram": "г"
   },
   "locale": {
     "label": "Язык"

@@ -96,7 +96,17 @@
     "size": "Size",
     "unavailable": "Unavailable today",
     "choose": "Choose {name}",
-    "addNamed": "Add {name} for {price}"
+    "addNamed": "Add {name} for {price}",
+    "nutrition": "Nutrition facts",
+    "nutritionOpen": "Nutrition facts",
+    "nutritionPer100g": "Nutrition facts (per 100 g)",
+    "nutritionEstimated": "Values are approximate",
+    "calories": "Calories",
+    "protein": "Protein",
+    "fat": "Fat",
+    "carbs": "Carbohydrate",
+    "kcal": "kcal",
+    "gram": "g"
   },
   "locale": {
     "label": "Language"

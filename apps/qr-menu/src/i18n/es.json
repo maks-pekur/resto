@@ -47,5 +47,15 @@
   "info.contacts": "Contacto",
   "info.socials": "Síguenos",
   "item.choose": "Elegir {name}",
-  "item.addNamed": "Añadir {name} por {price}"
+  "item.addNamed": "Añadir {name} por {price}",
+  "item.nutrition": "Información nutricional",
+  "item.nutritionOpen": "Información nutricional",
+  "item.nutritionPer100g": "Información nutricional (por 100 g)",
+  "item.nutritionEstimated": "Valores aproximados",
+  "item.calories": "Calorías",
+  "item.protein": "Proteínas",
+  "item.fat": "Grasas",
+  "item.carbs": "Carbohidratos",
+  "item.kcal": "kcal",
+  "item.gram": "g"
 }

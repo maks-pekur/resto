@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
+import { hasNutrition, NutritionInfo } from './nutrition-info';
 import { isSingleChoiceGroup, useItemSelection } from './use-item-selection';
 
 export interface ItemDetailProps {
@@ -85,9 +86,13 @@ export const ItemDetail = ({
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Heading className="text-2xl leading-tight font-extrabold text-balance">
-                {name}
-              </Heading>
+              <div className="flex items-start justify-between gap-3">
+                <Heading className="text-2xl leading-tight font-extrabold text-balance">
+                  {name}
+                </Heading>
+                {/* Only for a dish whose nutrition someone actually filled in. */}
+                {hasNutrition(item) ? <NutritionInfo item={item} className="mt-1" /> : null}
+              </div>
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
               ) : null}

@@ -96,7 +96,17 @@
     "size": "Розмір",
     "unavailable": "Сьогодні недоступно",
     "choose": "Обрати {name}",
-    "addNamed": "Додати {name} за {price}"
+    "addNamed": "Додати {name} за {price}",
+    "nutrition": "Харчова цінність",
+    "nutritionOpen": "Харчова цінність",
+    "nutritionPer100g": "Харчова цінність на 100 г",
+    "nutritionEstimated": "Значення приблизні",
+    "calories": "Калорії",
+    "protein": "Білки",
+    "fat": "Жири",
+    "carbs": "Вуглеводи",
+    "kcal": "ккал",
+    "gram": "г"
   },
   "locale": {
     "label": "Мова"
