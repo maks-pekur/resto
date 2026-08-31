@@ -50,7 +50,7 @@
     sans-serif;
 
   --header-height: 3.5rem;
-  --category-rail-height: 3.5rem;
+  --category-rail-height: 2.75rem;
 }
 
 html[data-theme='light'] {
@@ -120,6 +120,6 @@ html[data-theme='dark'] {
 @media (min-width: 640px) {
   :root {
     --header-height: 4rem;
-    --category-rail-height: 3.25rem;
+    --category-rail-height: 2.75rem;
   }
 }

@@ -23,22 +23,25 @@ export const ThemeToggle = ({ resolvedTheme, onToggle, label, className }: Theme
       title={label}
       onClick={onToggle}
       className={cn(
-        'text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-ring relative flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none sm:size-9',
+        'focus-visible:ring-ring flex min-h-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:min-h-8',
         className,
       )}
     >
-      <Sun
-        className={cn(
-          'absolute size-5 transition-all duration-200',
-          isDark ? 'scale-0 -rotate-90' : 'scale-100 rotate-0',
-        )}
-      />
-      <Moon
-        className={cn(
-          'absolute size-5 transition-all duration-200',
-          isDark ? 'scale-100 rotate-0' : 'scale-0 rotate-90',
-        )}
-      />
+      {/* The same disc the language control wears: two round controls, one shape. */}
+      <span className="ring-border bg-muted text-muted-foreground relative grid size-7 shrink-0 place-items-center rounded-full ring-1">
+        <Sun
+          className={cn(
+            'absolute size-4 transition-all duration-200',
+            isDark ? 'scale-0 -rotate-90' : 'scale-100 rotate-0',
+          )}
+        />
+        <Moon
+          className={cn(
+            'absolute size-4 transition-all duration-200',
+            isDark ? 'scale-100 rotate-0' : 'scale-0 rotate-90',
+          )}
+        />
+      </span>
     </button>
   );
 };

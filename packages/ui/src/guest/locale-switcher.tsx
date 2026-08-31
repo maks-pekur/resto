@@ -99,7 +99,7 @@ export const LocaleSwitcher = ({
       {open ? (
         <div
           role="menu"
-          className="bg-popover text-popover-foreground absolute end-0 top-full z-50 mt-2 min-w-44 rounded-md border p-1 shadow-md"
+          className="bg-popover text-popover-foreground absolute end-0 top-full z-50 mt-2 w-auto rounded-md border p-1 shadow-md"
         >
           {locales.map((locale) => {
             const isActive = locale === activeLocale;
@@ -109,15 +109,21 @@ export const LocaleSwitcher = ({
                 type="button"
                 role="menuitem"
                 aria-current={isActive ? 'true' : undefined}
+                aria-label={endonym(locale)}
                 onClick={() => {
                   setOpen(false);
                   if (!isActive) onSelect(locale);
                 }}
-                className="hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-3 rounded-sm px-2 py-2 text-start text-sm"
+                className={cn(
+                  'hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-start text-sm',
+                  isActive && 'text-primary font-semibold',
+                )}
               >
-                <LocaleDisc locale={locale} withCode />
-                <span className="flex-1 truncate capitalize">{endonym(locale)}</span>
-                {isActive ? <span aria-hidden>✓</span> : null}
+                <LocaleDisc locale={locale} withCode={false} />
+                {/* The code, not the language's name: the flag already says which one it is. */}
+                <span aria-hidden className="text-xs font-semibold uppercase">
+                  {locale}
+                </span>
               </button>
             );
           })}
