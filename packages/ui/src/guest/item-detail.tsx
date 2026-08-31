@@ -39,6 +39,11 @@ export const ItemDetail = ({
     ? localized(item.description, locale, defaultContentLocale)
     : null;
 
+  const selectedSizeIndex = Math.max(
+    item.sizes.findIndex((size) => size.id === selection.sizeId),
+    0,
+  );
+
   const handleAdd = (): void => {
     onAddToCart({
       itemId: item.id,
@@ -96,11 +101,20 @@ export const ItemDetail = ({
             {item.sizes.length > 0 ? (
               <fieldset className="flex flex-col gap-2">
                 <legend className="sr-only">{t('item.size')}</legend>
-                <div className="bg-muted flex rounded-full p-0.5">
+                <div className="bg-muted relative flex rounded-full p-0.5">
+                  {/* One pill that slides, rather than a background that blinks on and off. */}
+                  <span
+                    aria-hidden
+                    className="bg-background absolute inset-y-0.5 left-0.5 rounded-full shadow-sm transition-transform duration-200 ease-out"
+                    style={{
+                      width: `calc((100% - 0.25rem) / ${String(item.sizes.length)})`,
+                      transform: `translateX(${String(selectedSizeIndex * 100)}%)`,
+                    }}
+                  />
                   {item.sizes.map((size) => (
                     <label
                       key={size.id}
-                      className="has-[:checked]:bg-background has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring flex-1 cursor-pointer rounded-full px-3 py-1 text-center text-xs font-bold transition-colors has-[:checked]:shadow-sm has-[:focus-visible]:ring-2"
+                      className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex-1 cursor-pointer rounded-full px-3 py-1 text-center text-xs font-bold transition-colors has-[:focus-visible]:ring-2"
                     >
                       <input
                         type="radio"
