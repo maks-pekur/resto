@@ -33,7 +33,7 @@ function LocaleDisc({ locale, withCode }: DiscProps) {
         {flag ?? <span className="text-[10px] font-bold uppercase">{locale}</span>}
       </span>
       {withCode && flag !== undefined ? (
-        <span className="bg-primary text-primary-foreground border-background absolute -right-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase">
+        <span className="bg-primary text-primary-foreground border-background absolute -end-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase">
           {locale}
         </span>
       ) : null}

@@ -86,12 +86,12 @@ export const ItemDetail = ({
 
           <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <div className="flex items-start justify-between gap-3">
-                <Heading className="text-2xl leading-tight font-extrabold text-balance">
+              <div className="flex items-start gap-3">
+                <Heading className="min-w-0 flex-1 text-2xl leading-tight font-extrabold text-balance">
                   {name}
                 </Heading>
-                {/* Only for a dish whose nutrition someone actually filled in. */}
-                {hasNutrition(item) ? <NutritionInfo item={item} className="mt-1" /> : null}
+                {/* `ms-auto` rather than a right edge: in Arabic the end of the line is the left. */}
+                {hasNutrition(item) ? <NutritionInfo item={item} className="mt-1 ms-auto" /> : null}
               </div>
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
@@ -110,7 +110,7 @@ export const ItemDetail = ({
                   {/* One pill that slides, rather than a background that blinks on and off. */}
                   <span
                     aria-hidden
-                    className="bg-background absolute inset-y-0.5 left-0.5 rounded-full shadow-sm transition-transform duration-200 ease-out"
+                    className="bg-background absolute inset-y-0.5 start-0.5 rounded-full shadow-sm transition-transform duration-200 ease-out"
                     style={{
                       width: `calc((100% - 0.25rem) / ${String(item.sizes.length)})`,
                       transform: `translateX(${String(selectedSizeIndex * 100)}%)`,

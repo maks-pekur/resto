@@ -57,7 +57,7 @@ export const MenuItemCard = ({
         aria-disabled={unavailable ? 'true' : undefined}
         onClick={open}
         className={cn(
-          'focus-visible:ring-ring flex w-full flex-1 flex-col rounded-2xl text-left transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none',
+          'focus-visible:ring-ring flex w-full flex-1 flex-col rounded-2xl text-start transition-opacity focus-visible:ring-2 focus-visible:ring-offset-4 focus-visible:outline-none',
           unavailable ? 'cursor-not-allowed' : 'cursor-pointer',
         )}
       >

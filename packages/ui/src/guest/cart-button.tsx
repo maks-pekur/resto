@@ -27,7 +27,7 @@ export const CartButton = ({ itemCount, onOpen, className }: CartButtonProps) =>
       {itemCount > 0 ? (
         <span
           aria-hidden="true"
-          className="bg-primary text-primary-foreground absolute top-0.5 right-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-4 font-extrabold tabular-nums"
+          className="bg-primary text-primary-foreground absolute top-0.5 end-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[0.625rem] leading-4 font-extrabold tabular-nums"
         >
           {itemCount}
         </span>
