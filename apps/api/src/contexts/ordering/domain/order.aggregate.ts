@@ -9,17 +9,11 @@ import {
 import { toMinorUnits, fromMinorUnits } from './money-utils';
 import { applyDiscount, type DiscountSpec } from './discount';
 
-export type OrderStatus =
-  | 'created'
-  | 'requires_action'
-  | 'paid'
-  | 'accepted'
-  | 'preparing'
-  | 'ready'
-  | 'completed'
-  | 'canceled'
-  | 'refunded'
-  | 'failed';
+/** How far the kitchen has taken the order. Money is `OrderPaymentState`'s business. */
+export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled';
+
+/** Whether the money arrived, which a guest may settle before or after staff confirm the order. */
+export type OrderPaymentState = 'pending' | 'requires_action' | 'paid' | 'failed' | 'refunded';
 
 const CANCEL_REASON_CODES = [
   'guest_no_show',
@@ -36,13 +30,7 @@ function isCancelReasonCode(value: string): value is CancelReasonCode {
   return (CANCEL_REASON_CODES as readonly string[]).includes(value);
 }
 
-const CANCELABLE_STATUSES: readonly OrderStatus[] = [
-  'created',
-  'paid',
-  'accepted',
-  'preparing',
-  'ready',
-];
+const CANCELABLE_STATUSES: readonly OrderStatus[] = ['placed', 'accepted', 'preparing', 'ready'];
 
 export interface OrderModifierSnapshot {
   readonly optionId: string;
@@ -71,6 +59,8 @@ export interface OrderSnapshot {
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
+  readonly paymentState: OrderPaymentState;
+  readonly paidAt: Date | null;
   readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
   readonly tableId: string | null;
@@ -224,7 +214,9 @@ export class Order {
       locationId: input.locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
-      status: 'created',
+      status: 'placed',
+      paymentState: 'pending',
+      paidAt: null,
       orderType: input.orderType,
       tableIdentifier: input.tableIdentifier ?? null,
       tableId: input.tableId ?? null,
@@ -278,10 +270,12 @@ export class Order {
   }
 
   markPaid(paymentId: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'requires_action') {
+    // Money can arrive before staff confirm the order or long after: only a cancelled order
+    // refuses it, and where the kitchen has got to is none of this method's business.
+    if (this.snapshot.status === 'canceled') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'paid');
     }
-    this.snapshot = { ...this.snapshot, status: 'paid', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentState: 'paid', paidAt: now, updatedAt: now };
     this.#events.push({
       kind: 'OrderPaid',
       orderId: this.snapshot.id,
@@ -295,7 +289,7 @@ export class Order {
   }
 
   requireAction(paymentIntentId: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created') {
+    if (this.snapshot.paymentState !== 'pending') {
       throw new InvalidOrderTransitionError(
         this.snapshot.id,
         this.snapshot.status,
@@ -303,7 +297,7 @@ export class Order {
       );
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'requires_action', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentState: 'requires_action', updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
@@ -318,7 +312,9 @@ export class Order {
   }
 
   accept(etaAt: Date | null, actorUserId: string | null, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'paid') {
+    // Confirmation is about the kitchen taking the order on, which a guest paying at the table
+    // does after this point, not before.
+    if (this.snapshot.status !== 'placed') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'accepted');
     }
     const previousStatus = this.snapshot.status;
@@ -442,7 +438,12 @@ export class Order {
         capturedMinor,
       );
     }
-    this.snapshot = { ...this.snapshot, updatedAt: now };
+    const fullyRefunded = amountMinor + alreadyRefundedMinor >= capturedMinor;
+    this.snapshot = {
+      ...this.snapshot,
+      ...(fullyRefunded ? { paymentState: 'refunded' as const, paidAt: null } : {}),
+      updatedAt: now,
+    };
     this.#events.push({
       kind: 'OrderRefunded',
       orderId: this.snapshot.id,
@@ -455,11 +456,11 @@ export class Order {
   }
 
   markFailed(reason: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'paid') {
+    if (this.snapshot.paymentState === 'refunded') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'failed');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'failed', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentState: 'failed', paidAt: null, updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,

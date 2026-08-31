@@ -32,12 +32,12 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
     return this.db.withTenant(async (tx) => {
       const rows = await tx
         .select({
-          unaccepted: sql<number>`(count(*) filter (where ${schema.orders.status} = 'paid' and ${schema.orders.acceptedAt} is null))::int`,
+          unaccepted: sql<number>`(count(*) filter (where ${schema.orders.status} = 'placed' and ${schema.orders.acceptedAt} is null))::int`,
           accepted: sql<number>`(count(*) filter (where ${schema.orders.status} = 'accepted'))::int`,
           preparing: sql<number>`(count(*) filter (where ${schema.orders.status} = 'preparing'))::int`,
           ready: sql<number>`(count(*) filter (where ${schema.orders.status} = 'ready'))::int`,
           completed: sql<number>`(count(*) filter (where ${schema.orders.status} = 'completed'))::int`,
-          canceled: sql<number>`(count(*) filter (where ${schema.orders.status} in ('canceled', 'refunded', 'failed')))::int`,
+          canceled: sql<number>`(count(*) filter (where ${schema.orders.status} = 'canceled'))::int`,
         })
         .from(schema.orders)
         .where(
@@ -212,6 +212,7 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     customerName: row.customerName ?? null,
     customerPhone: row.customerPhone ?? null,
     paymentType: row.paymentType as OrderFeedRow['paymentType'],
+    paymentState: row.paymentState as OrderFeedRow['paymentState'],
     total: row.total,
     currency: row.currency,
     itemCount,

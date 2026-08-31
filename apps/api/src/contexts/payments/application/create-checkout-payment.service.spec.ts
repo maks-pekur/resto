@@ -52,7 +52,7 @@ const makeOrderSnap = (
   locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: 'ORD-001',
-  status: 'created',
+  status: 'placed',
   orderType: 'dine_in',
   tableIdentifier: 'A1',
   tableId: null,
@@ -72,6 +72,8 @@ const makeOrderSnap = (
   shortNumber: 1,
   channel: 'site',
   paymentType: 'online',
+  paymentState: 'pending',
+  paidAt: null,
   acceptedAt: null,
   preparingAt: null,
   readyAt: null,
@@ -332,9 +334,10 @@ describe('CreateCheckoutPaymentService', () => {
 
       expect(orderRepo.update).toHaveBeenCalledTimes(1);
       const savedOrder = vi.mocked(orderRepo.update).mock.calls[0]?.[0];
-      expect(savedOrder?.toSnapshot().status).toBe('requires_action');
+      expect(savedOrder?.toSnapshot().paymentState).toBe('requires_action');
 
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
+        // The payment row keeps its own status; the order's payment axis is a separate field.
         expect.objectContaining({ status: 'requires_action' }),
         expect.anything(),
       );
@@ -342,7 +345,11 @@ describe('CreateCheckoutPaymentService', () => {
 
     it('rejects an order that is already paid', async () => {
       const { sut, orderRepo, orderSnap, tenantId } = buildSut();
-      const paidOrder = Order.fromSnapshot({ ...orderSnap, status: 'paid' });
+      const paidOrder = Order.fromSnapshot({
+        ...orderSnap,
+        paymentState: 'paid',
+        paidAt: new Date(),
+      });
       vi.mocked(orderRepo.findById).mockResolvedValue(paidOrder);
 
       await expect(sut.execute({ orderId: orderSnap.id, tenantId })).rejects.toThrow(

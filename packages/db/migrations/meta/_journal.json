@@ -71,6 +71,13 @@
       "when": 1788195600000,
       "tag": "0009_drop_nutrition_estimated",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788282000000,
+      "tag": "0010_order_payment_state",
+      "breakpoints": true
     }
   ]
 }

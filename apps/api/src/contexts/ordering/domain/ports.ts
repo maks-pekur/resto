@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
-import type { Order, OrderStatus } from './order.aggregate';
+import type { Order, OrderPaymentState, OrderStatus } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
@@ -89,16 +89,20 @@ export interface OrderSequencePort {
 export const ORDER_SEQUENCE_PORT = Symbol('ORDER_SEQUENCE_PORT');
 
 export const OrderStatusSchema: z.ZodType<OrderStatus> = z.enum([
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
+]);
+
+export const OrderPaymentStateSchema: z.ZodType<OrderPaymentState> = z.enum([
+  'pending',
+  'requires_action',
+  'paid',
   'failed',
+  'refunded',
 ]);
 
 export const OrderFeedQuerySchema = z.object({
@@ -148,6 +152,7 @@ export const OrderFeedRowSchema = z.object({
   id: z.string().uuid(),
   shortNumber: z.number().int(),
   status: OrderStatusSchema,
+  paymentState: OrderPaymentStateSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
   orderType: z.enum(['dine_in', 'pickup', 'delivery']),

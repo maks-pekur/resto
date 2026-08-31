@@ -53,6 +53,8 @@ const makeOrder = (status: string, total = '20.00') =>
     scheduledFor: null,
     shortNumber: 1,
     paymentType: 'online',
+    paymentState: 'pending',
+    paidAt: null,
     channel: 'site' as const,
     acceptedAt: null,
     preparingAt: null,

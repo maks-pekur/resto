@@ -14,7 +14,7 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: '20260627-ABCDE',
-  status: 'created',
+  status: 'placed',
   orderType: 'dine_in',
   tableIdentifier: 'A1',
   tableId: null,
@@ -34,6 +34,8 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   shortNumber: 1,
   channel: 'site',
   paymentType: 'online',
+  paymentState: 'pending',
+  paidAt: null,
   acceptedAt: null,
   preparingAt: null,
   readyAt: null,
@@ -68,6 +70,7 @@ const buildController = () => {
 
 const FROZEN_STATUS_RESPONSE_KEYS = [
   'status',
+  'paymentState',
   'shortNumber',
   'orderNumber',
   'total',
@@ -81,14 +84,15 @@ const FROZEN_STATUS_RESPONSE_KEYS = [
 describe('OrdersController GET /:id/status', () => {
   it('returns exactly the frozen nine-field contract for a found order', async () => {
     const { controller, getOrderService } = buildController();
-    const snap = makeOrderSnap({ status: 'requires_action' });
+    const snap = makeOrderSnap({ status: 'placed' });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
     expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
     expect(result).toEqual({
-      status: 'requires_action',
+      status: 'placed',
+      paymentState: 'pending',
       shortNumber: 1,
       orderNumber: '20260627-ABCDE',
       total: '25.00',
@@ -100,14 +104,19 @@ describe('OrdersController GET /:id/status', () => {
     });
   });
 
-  it('returns paid status when order is paid', async () => {
+  it('reports the money separately from the kitchen stage', async () => {
     const { controller, getOrderService } = buildController();
-    const snap = makeOrderSnap({ status: 'paid' });
+    const snap = makeOrderSnap({
+      status: 'accepted',
+      paymentState: 'pending',
+      paidAt: null,
+    });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
-    expect(result.status).toBe('paid');
+    expect(result.status).toBe('accepted');
+    expect(result.paymentState).toBe('pending');
   });
 
   it('does NOT mutate order state (read-only)', async () => {
@@ -157,14 +166,14 @@ describe('OrdersController GET /:id/status', () => {
     const snap = makeOrderSnap({
       status: 'canceled',
       cancelReason: 'kitchen_out_of_stock',
-      canceledFromStatus: 'paid',
+      canceledFromStatus: 'placed',
     });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
     expect(result.cancelReason).toBe('kitchen_out_of_stock');
-    expect(result.canceledFromStatus).toBe('paid');
+    expect(result.canceledFromStatus).toBe('placed');
   });
 
   it('never leaks guest PII or internal operator identities', async () => {

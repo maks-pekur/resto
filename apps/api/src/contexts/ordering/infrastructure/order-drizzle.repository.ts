@@ -24,16 +24,12 @@ import type { OrderRepository } from '../domain/ports';
 import { toMinorUnits } from '../domain/money-utils';
 
 const ALLOWED_STATUSES = new Set<string>([
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
-  'failed',
 ]);
 
 const parseStatus = (raw: string): OrderStatus => {
@@ -77,6 +73,8 @@ export class OrderDrizzleRepository implements OrderRepository {
           shortNumber: snapshot.shortNumber,
           channel: snapshot.channel,
           paymentType: snapshot.paymentType,
+          paymentState: snapshot.paymentState,
+          paidAt: snapshot.paidAt,
           acceptedAt: snapshot.acceptedAt,
           preparingAt: snapshot.preparingAt,
           readyAt: snapshot.readyAt,
@@ -281,6 +279,8 @@ export class OrderDrizzleRepository implements OrderRepository {
       shortNumber: row.shortNumber,
       channel: row.channel as OrderSnapshot['channel'],
       paymentType: row.paymentType as OrderSnapshot['paymentType'],
+      paymentState: row.paymentState as OrderSnapshot['paymentState'],
+      paidAt: row.paidAt ?? null,
       acceptedAt: row.acceptedAt ?? null,
       preparingAt: row.preparingAt ?? null,
       readyAt: row.readyAt ?? null,

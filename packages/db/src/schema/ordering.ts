@@ -28,8 +28,12 @@ export const orders = pgTable(
     locationId: uuid('location_id').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
     orderNumber: text('order_number').notNull(),
-    // status acts as soft-delete: 'canceled'/'refunded' replace archived_at (no hard deletes)
+    // How far the kitchen has taken the order. Whether the money arrived is `paymentState`'s
+    // business — one column could not say "confirmed but not yet paid" (migration 0010).
+    // 'canceled' acts as the soft delete: no hard deletes.
     status: text('status').notNull(),
+    paymentState: text('payment_state').notNull().default('pending'),
+    paidAt: timestamp('paid_at', { withTimezone: true, mode: 'date' }),
     orderType: text('order_type').notNull(),
     // Legacy free-text table label — no writer from phase 10.3 on (CONTEXT D-03).
     // Kept for past orders, seeds, and any future non-QR order path.
@@ -92,7 +96,15 @@ export const orders = pgTable(
     tenantParentUniqueIndex('orders', { id: table.id, tenantId: table.tenantId }),
     check(
       'orders_status_chk',
-      sql`${table.status} IN ('created','requires_action','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
+      sql`${table.status} IN ('placed','accepted','preparing','ready','completed','canceled')`,
+    ),
+    check(
+      'orders_payment_state_chk',
+      sql`${table.paymentState} IN ('pending','requires_action','paid','failed','refunded')`,
+    ),
+    check(
+      'orders_paid_at_chk',
+      sql`(${table.paymentState} = 'paid') = (${table.paidAt} IS NOT NULL)`,
     ),
     check('orders_order_type_chk', sql`${table.orderType} IN ('dine_in','pickup','delivery')`),
     check('orders_channel_chk', sql`${table.channel} IN ('site','qr-menu')`),
@@ -106,7 +118,7 @@ export const orders = pgTable(
     ),
     check(
       'orders_canceled_from_status_chk',
-      sql`${table.canceledFromStatus} IS NULL OR ${table.canceledFromStatus} IN ('created','requires_action','paid','accepted','preparing','ready','completed','canceled','refunded','failed')`,
+      sql`${table.canceledFromStatus} IS NULL OR ${table.canceledFromStatus} IN ('placed','accepted','preparing','ready','completed','canceled')`,
     ),
     index('orders_feed_idx').on(
       table.tenantId,

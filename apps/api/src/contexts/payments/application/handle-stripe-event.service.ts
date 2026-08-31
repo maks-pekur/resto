@@ -196,13 +196,7 @@ export class HandleStripeEventService {
 
       const snap = order.toSnapshot();
 
-      if (
-        snap.status === 'paid' ||
-        snap.status === 'accepted' ||
-        snap.status === 'preparing' ||
-        snap.status === 'ready' ||
-        snap.status === 'completed'
-      ) {
+      if (snap.paymentState === 'paid') {
         const existingPayment = await this.paymentRepo.findByOrderId(parsedTenantId, orderId, tx);
         if (existingPayment && existingPayment.paymentIntentId !== rawPi.id) {
           this.logger.warn(

@@ -12,25 +12,23 @@ import type { OrderStatus } from '../domain/order.aggregate';
 import { addDays, zonedMidnightUtc } from '../../../shared/zoned-day';
 import type { OrderDatePreset, OrderStatusPreset } from './order-feed-dto';
 
-const ACTIVE_STATUSES: readonly OrderStatus[] = ['paid', 'accepted', 'preparing', 'ready'];
+const ACTIVE_STATUSES: readonly OrderStatus[] = ['placed', 'accepted', 'preparing', 'ready'];
 const ALL_STATUSES: readonly OrderStatus[] = [
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
-  'failed',
 ];
 const COMPLETED_STATUSES: readonly OrderStatus[] = ['completed'];
-const PAID_STATUSES: readonly OrderStatus[] = ['paid'];
+// An order waiting for staff to take it on, paid or not — the unpaid ones are exactly why this
+// queue exists (migration 0010).
+const PLACED_STATUSES: readonly OrderStatus[] = ['placed'];
 const ACCEPTED_STATUSES: readonly OrderStatus[] = ['accepted'];
 const PREPARING_STATUSES: readonly OrderStatus[] = ['preparing'];
 const READY_STATUSES: readonly OrderStatus[] = ['ready'];
-const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled', 'refunded'];
+const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled'];
 
 // The tabs an operator works from are queues: the order waiting longest sits at the top. A
 // finished list is history and reads the other way round, newest first.
@@ -157,7 +155,7 @@ function resolveStatusPreset(preset: OrderStatusPreset): readonly OrderStatus[] 
     case 'refund_failed':
       return ALL_STATUSES;
     case 'unaccepted':
-      return PAID_STATUSES;
+      return PLACED_STATUSES;
     case 'accepted':
       return ACCEPTED_STATUSES;
     case 'preparing':

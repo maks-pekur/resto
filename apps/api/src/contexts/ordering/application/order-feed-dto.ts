@@ -27,6 +27,7 @@ export interface OrderFeedResponseRow {
   readonly id: string;
   readonly shortNumber: number;
   readonly status: string;
+  readonly paymentState: string;
   readonly locationId: string;
   readonly locationName: string;
   readonly orderType: 'dine_in' | 'pickup' | 'delivery';
@@ -66,6 +67,7 @@ export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow 
   id: row.id,
   shortNumber: row.shortNumber,
   status: row.status,
+  paymentState: row.paymentState,
   locationId: row.locationId,
   locationName: row.locationName,
   orderType: row.orderType,

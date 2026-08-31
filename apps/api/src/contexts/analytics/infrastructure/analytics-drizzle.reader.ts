@@ -5,7 +5,8 @@ import type { AnalyticsReader, DashboardTotals, DashboardTotalsQuery } from '../
 
 // Money a guest actually paid: `created` and `requires_action` never charged, `canceled`,
 // `failed` and `refunded` are not revenue. Refunds are counted on their own, not netted off.
-const REVENUE_STATUSES = ['paid', 'accepted', 'preparing', 'ready', 'completed'] as const;
+// Revenue is money that arrived, which since migration 0010 is a column of its own — an accepted
+// order the guest has not paid for yet is not revenue.
 
 const EMPTY: DashboardTotals = {
   revenue: '0.00',
@@ -28,7 +29,7 @@ export class AnalyticsDrizzleReader implements AnalyticsReader {
     return this.db.withTenant(async (tx) => {
       const orderRows = await tx
         .select({
-          revenue: sql<string>`coalesce(sum(${schema.orders.total}) filter (where ${schema.orders.status} in ('paid', 'accepted', 'preparing', 'ready', 'completed')), 0)::numeric(14, 2)::text`,
+          revenue: sql<string>`coalesce(sum(${schema.orders.total}) filter (where ${schema.orders.paymentState} = 'paid'), 0)::numeric(14, 2)::text`,
           completedOrders: sql<number>`(count(*) filter (where ${schema.orders.status} = 'completed'))::int`,
         })
         .from(schema.orders)
@@ -78,7 +79,7 @@ export class AnalyticsDrizzleReader implements AnalyticsReader {
           and(
             eq(schema.orders.tenantId, tenantId),
             inArray(schema.orders.locationId, locationIds),
-            inArray(schema.orders.status, [...REVENUE_STATUSES]),
+            eq(schema.orders.paymentState, 'paid'),
             sql`${guestKey} is not null`,
           ),
         )
