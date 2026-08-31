@@ -398,9 +398,7 @@
       "unitHours": "h",
       "unitDays": "d",
       "noCustomer": "Sin nombre",
-      "etaUnknownAria": "La hora de entrega se fija al aceptar el pedido",
-      "stampAccepted": "aceptado",
-      "stampCreated": "recibido"
+      "etaUnknownAria": "La hora de entrega se fija al aceptar el pedido"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",

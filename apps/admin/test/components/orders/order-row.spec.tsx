@@ -216,10 +216,9 @@ describe('OrderRow — the time column', () => {
       minute: '2-digit',
     });
     expect(screen.getByText(expected)).toBeInTheDocument();
-    expect(screen.getByText('orders.card.stampAccepted')).toBeInTheDocument();
   });
 
-  it('falls back to when an unaccepted order arrived, and says so', () => {
+  it('falls back to when an unaccepted order arrived', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
       status: 'paid',
@@ -233,6 +232,10 @@ describe('OrderRow — the time column', () => {
       </Wrap>,
     );
 
-    expect(screen.getByText('orders.card.stampCreated')).toBeInTheDocument();
+    const expected = new Date(row.createdAt).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    expect(screen.getByText(expected)).toBeInTheDocument();
   });
 });

@@ -136,19 +136,13 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
   const orderType = orderTypePresentation(row.orderType);
   const OrderTypeIcon = orderType.icon;
   // The ring counts down to the promise; this column is the plain fact of when the order was
-  // taken on — and, while nobody has taken it on yet, when it arrived.
+  // taken on — and, while nobody has taken it on yet, when it arrived. The full date rides in
+  // the tooltip, since the column shows only a clock time.
   const stampedAt = new Date(row.acceptedAt ?? row.createdAt);
-  const stampLabel = ((): string => {
-    const word = t(row.acceptedAt === null ? 'card.stampCreated' : 'card.stampAccepted');
-    const startOfDay = (d: Date): number => new Date(d).setHours(0, 0, 0, 0);
-    const sameDay = startOfDay(stampedAt) === startOfDay(new Date());
-    if (sameDay) return word;
-    const date = new Intl.DateTimeFormat(i18n.language, {
-      day: 'numeric',
-      month: 'short',
-    }).format(stampedAt);
-    return `${date} · ${word}`;
-  })();
+  const stampTitle = new Intl.DateTimeFormat(i18n.language, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(stampedAt);
 
   const tableLabel =
     row.tableZoneName !== null && row.tableNumber !== null
@@ -230,11 +224,11 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
           ) : null}
         </span>
 
-        <span className="flex w-20 shrink-0 flex-col justify-center px-3 py-2">
-          <span className="text-base leading-tight font-semibold tabular-nums">
-            {stampedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </span>
-          <span className="text-muted-foreground truncate text-xs">{stampLabel}</span>
+        <span
+          className="flex w-20 shrink-0 items-center px-3 py-2 text-base font-semibold tabular-nums"
+          title={stampTitle}
+        >
+          {stampedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
         </span>
 
         <span className="hidden w-36 shrink-0 items-center gap-2 px-3 py-2 sm:flex">

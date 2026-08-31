@@ -398,9 +398,7 @@
       "unitHours": "h",
       "unitDays": "d",
       "noCustomer": "No name",
-      "etaUnknownAria": "The due time is set when the order is accepted",
-      "stampAccepted": "accepted",
-      "stampCreated": "placed"
+      "etaUnknownAria": "The due time is set when the order is accepted"
     },
     "accept": {
       "title": "How soon will it be ready?",
