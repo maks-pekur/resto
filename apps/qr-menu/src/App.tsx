@@ -13,8 +13,11 @@ import {
   useGuestTheme,
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
+import type { PlacedOrder } from './api/client';
 import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
+import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
 import { InfoSheet } from './components/InfoSheet';
+import { OrderStatusSheet } from './components/OrderStatusSheet';
 import { TabBar } from './components/TabBar';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
@@ -180,6 +183,8 @@ export const App = () => {
   }, []);
 
   const [infoOpen, setInfoOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [placed, setPlaced] = useState<{ order: PlacedOrder; payment: PaymentChoice } | null>(null);
   const tenant = state.kind === 'ready' ? state.menu.tenant : null;
 
   return (
@@ -213,6 +218,17 @@ export const App = () => {
             </>
           }
           banner={<TableBanner notRecognized={tableUnrecognized} />}
+          cartPrimaryAction={
+            <button
+              type="button"
+              onClick={() => {
+                setCheckoutOpen(true);
+              }}
+              className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none"
+            >
+              {t('checkout.open')}
+            </button>
+          }
           showCartButton={false}
           itemPresentation="sheet"
           bar={({ itemCount, openCart }) => (
@@ -247,6 +263,25 @@ export const App = () => {
               ]}
             />
           )}
+        />
+      )}
+      <CheckoutSheet
+        open={checkoutOpen}
+        onOpenChange={setCheckoutOpen}
+        currency={state.kind === 'ready' ? state.menu.currency : 'EUR'}
+        tableId={tableIdParam}
+        onPlaced={(order, payment) => {
+          setPlaced({ order, payment });
+        }}
+      />
+      {placed === null ? null : (
+        <OrderStatusSheet
+          open
+          onOpenChange={(next) => {
+            if (!next) setPlaced(null);
+          }}
+          order={placed.order}
+          payment={placed.payment}
         />
       )}
       <InfoSheet

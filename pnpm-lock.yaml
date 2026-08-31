@@ -377,6 +377,12 @@ importers:
       '@resto/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      '@stripe/react-stripe-js':
+        specifier: ^6.6.0
+        version: 6.6.0(@stripe/stripe-js@9.8.0)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      '@stripe/stripe-js':
+        specifier: ^9.8.0
+        version: 9.8.0
       react:
         specifier: ^19.0.0
         version: 19.2.5
