@@ -106,8 +106,8 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
       : []),
   ];
 
-  // Brand grain: these configure the restaurant company, not a point. Grouping them apart is the
-  // same distinction the URL makes — no location slug in their addresses.
+  // One list, in the order a shift uses them: what is happening now first, what configures the
+  // restaurant after it.
   const navAdministration: NavMainItem[] = [
     ...(hasPermission(me, 'location', 'create')
       ? [{ title: 'Locations', url: '/locations', icon: MapPin }]
@@ -151,8 +151,7 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
         <TenantIdentity />
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={navOperations} label={t('groupOperations')} />
-        <NavMain items={navAdministration} label={t('groupAdministration')} />
+        <NavMain items={[...navOperations, ...navAdministration]} />
       </SidebarContent>
       <SidebarRail />
     </Sidebar>

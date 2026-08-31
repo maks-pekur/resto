@@ -33,11 +33,11 @@ export interface NavMainItem {
   badgeTone?: 'default' | 'destructive';
 }
 
-export function NavMain({ items, label }: { items: NavMainItem[]; label: string }) {
+export function NavMain({ items, label }: { items: NavMainItem[]; label?: string }) {
   if (items.length === 0) return null;
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>{label}</SidebarGroupLabel>
+      {label === undefined ? null : <SidebarGroupLabel>{label}</SidebarGroupLabel>}
       <SidebarMenu>
         {items.map((item) => {
           const hasSubItems = item.items && item.items.length > 0;

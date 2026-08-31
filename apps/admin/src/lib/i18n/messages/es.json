@@ -75,8 +75,6 @@
       "switchTenantItem": "Cambiar de restaurante",
       "localeEs": "Español"
     },
-    "groupOperations": "Operación",
-    "groupAdministration": "Administración",
     "transactions": "Transacciones"
   },
   "pickTenant": {

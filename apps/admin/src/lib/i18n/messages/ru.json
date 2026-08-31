@@ -75,8 +75,6 @@
       "switchTenantItem": "Сменить ресторан",
       "localeEs": "Español"
     },
-    "groupOperations": "Работа",
-    "groupAdministration": "Администрирование",
     "transactions": "Транзакции"
   },
   "pickTenant": {
