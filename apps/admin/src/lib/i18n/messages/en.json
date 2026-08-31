@@ -398,7 +398,9 @@
       "unitHours": "h",
       "unitDays": "d",
       "noCustomer": "No name",
-      "etaUnknownAria": "The due time is set when the order is accepted"
+      "etaUnknownAria": "The due time is set when the order is accepted",
+      "stampAccepted": "accepted",
+      "stampCreated": "placed"
     },
     "accept": {
       "title": "How soon will it be ready?",
@@ -531,7 +533,7 @@
     "columns": {
       "order": "Order",
       "remaining": "Left",
-      "promised": "Due",
+      "promised": "Accepted",
       "type": "Type",
       "for": "For",
       "total": "Total"

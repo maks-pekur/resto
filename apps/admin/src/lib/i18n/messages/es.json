@@ -398,7 +398,9 @@
       "unitHours": "h",
       "unitDays": "d",
       "noCustomer": "Sin nombre",
-      "etaUnknownAria": "La hora de entrega se fija al aceptar el pedido"
+      "etaUnknownAria": "La hora de entrega se fija al aceptar el pedido",
+      "stampAccepted": "aceptado",
+      "stampCreated": "recibido"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",
@@ -531,7 +533,7 @@
     "columns": {
       "order": "Pedido",
       "remaining": "Queda",
-      "promised": "Para",
+      "promised": "Aceptado",
       "type": "Tipo",
       "for": "Para quién",
       "total": "Total"

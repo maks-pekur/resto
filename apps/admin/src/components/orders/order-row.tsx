@@ -135,16 +135,19 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
   const ChannelIcon = channel.icon;
   const orderType = orderTypePresentation(row.orderType);
   const OrderTypeIcon = orderType.icon;
-  const promisedAt = new Date(row.etaAt ?? row.createdAt);
-  const dayWord = ((): string => {
+  // The ring counts down to the promise; this column is the plain fact of when the order was
+  // taken on — and, while nobody has taken it on yet, when it arrived.
+  const stampedAt = new Date(row.acceptedAt ?? row.createdAt);
+  const stampLabel = ((): string => {
+    const word = t(row.acceptedAt === null ? 'card.stampCreated' : 'card.stampAccepted');
     const startOfDay = (d: Date): number => new Date(d).setHours(0, 0, 0, 0);
-    const days = Math.round((startOfDay(promisedAt) - startOfDay(new Date())) / 86_400_000);
-    if (days === 0) return t('dateNav.today');
-    if (days === 1) return t('dateNav.tomorrow');
-    if (days === -1) return t('dateNav.yesterday');
-    return new Intl.DateTimeFormat(i18n.language, { day: 'numeric', month: 'short' }).format(
-      promisedAt,
-    );
+    const sameDay = startOfDay(stampedAt) === startOfDay(new Date());
+    if (sameDay) return word;
+    const date = new Intl.DateTimeFormat(i18n.language, {
+      day: 'numeric',
+      month: 'short',
+    }).format(stampedAt);
+    return `${date} · ${word}`;
   })();
 
   const tableLabel =
@@ -229,9 +232,9 @@ export function OrderRow({ row, showLocationBadge, onOpenDetail }: OrderRowProps
 
         <span className="flex w-20 shrink-0 flex-col justify-center px-3 py-2">
           <span className="text-base leading-tight font-semibold tabular-nums">
-            {promisedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {stampedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </span>
-          <span className="text-muted-foreground text-xs">{dayWord}</span>
+          <span className="text-muted-foreground truncate text-xs">{stampLabel}</span>
         </span>
 
         <span className="hidden w-36 shrink-0 items-center gap-2 px-3 py-2 sm:flex">

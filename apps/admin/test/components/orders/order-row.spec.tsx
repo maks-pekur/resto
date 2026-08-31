@@ -195,3 +195,44 @@ describe('OrderRow — a promise nobody has made yet', () => {
     expect(screen.getByRole('img', { name: 'orders.card.etaUnknownAria' })).toHaveTextContent('?');
   });
 });
+
+describe('OrderRow — the time column', () => {
+  it('stamps an accepted order with the moment it was taken on', () => {
+    const row: OrderFeedRowApi = {
+      ...baseRow,
+      status: 'preparing',
+      createdAt: '2026-08-31T09:00:00.000Z',
+      acceptedAt: '2026-08-31T09:07:00.000Z',
+      etaAt: '2026-08-31T09:32:00.000Z',
+    };
+    render(
+      <Wrap>
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+      </Wrap>,
+    );
+
+    const expected = new Date(row.acceptedAt ?? '').toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    expect(screen.getByText(expected)).toBeInTheDocument();
+    expect(screen.getByText('orders.card.stampAccepted')).toBeInTheDocument();
+  });
+
+  it('falls back to when an unaccepted order arrived, and says so', () => {
+    const row: OrderFeedRowApi = {
+      ...baseRow,
+      status: 'paid',
+      createdAt: new Date().toISOString(),
+      acceptedAt: null,
+      etaAt: null,
+    };
+    render(
+      <Wrap>
+        <OrderRow row={row} showLocationBadge={false} onOpenDetail={vi.fn()} />
+      </Wrap>,
+    );
+
+    expect(screen.getByText('orders.card.stampCreated')).toBeInTheDocument();
+  });
+});

@@ -113,99 +113,102 @@ function OrdersPage() {
     <>
       <PageHeading title={tNav('orders')} />
       {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
-      {/* The filter bar and the column heads stay put; only the orders move under them. */}
-      <div className="bg-background sticky top-(--header-height) z-20 flex flex-col gap-4 pb-3">
-        <OrderFilterBar
-          orderType={orderType}
-          onOrderTypeChange={setOrderType}
-          range={range}
-          onRangeChange={setRange}
-          soundMuted={sound.muted}
-          onSoundMutedChange={sound.setMuted}
-          soundBlocked={sound.blocked}
-          soundReady={sound.unlocked}
-          notificationsBlocked={notifications.permission === 'denied'}
-          status={statusTab}
-          onStatusChange={setStatusTab}
-          counts={counts}
-        />
-        {feedLocationId !== undefined && rows.length > 0 ? (
-          <div className="px-4 lg:px-6">
-            <OrderFeedHeader />
-          </div>
-        ) : null}
-      </div>
-
-      <div className="flex flex-col gap-4 px-4 lg:px-6">
-        {feedQuery.isRefetchError ? (
-          <div className="bg-muted/40 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-            <span>
-              {t('feed.staleNotice', {
-                time: new Date(feedQuery.dataUpdatedAt).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                }),
-              })}
-            </span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                void feedQuery.refetch();
-              }}
-            >
-              {t('feed.staleRetry')}
-            </Button>
-          </div>
-        ) : null}
-
-        {feedLocationId === undefined ? (
-          <EmptyState
-            variant="empty"
-            title={t('empty.pickLocationTitle')}
-            description={t('empty.pickLocationBody')}
+      {/* One block so the layout's own row gap cannot open a gulf between the heads and the
+          first order; the filter bar and the heads stay put, only the orders move under them. */}
+      <div className="flex flex-col gap-2">
+        <div className="bg-background sticky top-(--header-height) z-20 flex flex-col gap-4 pb-2">
+          <OrderFilterBar
+            orderType={orderType}
+            onOrderTypeChange={setOrderType}
+            range={range}
+            onRangeChange={setRange}
+            soundMuted={sound.muted}
+            onSoundMutedChange={sound.setMuted}
+            soundBlocked={sound.blocked}
+            soundReady={sound.unlocked}
+            notificationsBlocked={notifications.permission === 'denied'}
+            status={statusTab}
+            onStatusChange={setStatusTab}
+            counts={counts}
           />
-        ) : feedQuery.isPending ? (
-          <div className="flex flex-col gap-2">
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-            <Skeleton className="h-14 w-full" />
-          </div>
-        ) : feedQuery.isError && !feedQuery.isRefetchError ? (
-          <div
-            role="alert"
-            className="flex flex-col items-center justify-center gap-4 px-6 py-12 text-center"
-          >
-            <div className="bg-destructive/10 text-destructive flex size-12 items-center justify-center rounded-full">
-              <WifiOff className="size-6" />
+          {feedLocationId !== undefined && rows.length > 0 ? (
+            <div className="px-4 lg:px-6">
+              <OrderFeedHeader />
             </div>
-            <div className="max-w-md space-y-1.5">
-              <h2 className="text-lg font-medium">{t('error.initialLoadTitle')}</h2>
-              <p className="text-muted-foreground text-sm">{t('error.initialLoadBody')}</p>
+          ) : null}
+        </div>
+
+        <div className="flex flex-col gap-4 px-4 lg:px-6">
+          {feedQuery.isRefetchError ? (
+            <div className="bg-muted/40 flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+              <span>
+                {t('feed.staleNotice', {
+                  time: new Date(feedQuery.dataUpdatedAt).toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  }),
+                })}
+              </span>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  void feedQuery.refetch();
+                }}
+              >
+                {t('feed.staleRetry')}
+              </Button>
             </div>
-            <Button
-              onClick={() => {
-                void feedQuery.refetch();
-              }}
+          ) : null}
+
+          {feedLocationId === undefined ? (
+            <EmptyState
+              variant="empty"
+              title={t('empty.pickLocationTitle')}
+              description={t('empty.pickLocationBody')}
+            />
+          ) : feedQuery.isPending ? (
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+              <Skeleton className="h-14 w-full" />
+            </div>
+          ) : feedQuery.isError && !feedQuery.isRefetchError ? (
+            <div
+              role="alert"
+              className="flex flex-col items-center justify-center gap-4 px-6 py-12 text-center"
             >
-              <RefreshCw className="size-4" />
-              {tCommon('retry')}
-            </Button>
-          </div>
-        ) : rows.length === 0 ? (
-          <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {rows.map((row) => (
-              <OrderRow
-                key={row.id}
-                row={row}
-                showLocationBadge={false}
-                onOpenDetail={setOpenOrder}
-              />
-            ))}
-          </div>
-        )}
+              <div className="bg-destructive/10 text-destructive flex size-12 items-center justify-center rounded-full">
+                <WifiOff className="size-6" />
+              </div>
+              <div className="max-w-md space-y-1.5">
+                <h2 className="text-lg font-medium">{t('error.initialLoadTitle')}</h2>
+                <p className="text-muted-foreground text-sm">{t('error.initialLoadBody')}</p>
+              </div>
+              <Button
+                onClick={() => {
+                  void feedQuery.refetch();
+                }}
+              >
+                <RefreshCw className="size-4" />
+                {tCommon('retry')}
+              </Button>
+            </div>
+          ) : rows.length === 0 ? (
+            <p className="text-muted-foreground py-12 text-center text-sm">{t('empty.noOrders')}</p>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {rows.map((row) => (
+                <OrderRow
+                  key={row.id}
+                  row={row}
+                  showLocationBadge={false}
+                  onOpenDetail={setOpenOrder}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <OrderDetailSheet
         order={openOrder}
