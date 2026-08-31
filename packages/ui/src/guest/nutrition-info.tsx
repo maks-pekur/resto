@@ -70,9 +70,9 @@ export const NutritionInfo = ({ item, className }: NutritionInfoProps) => {
         onClick={() => {
           setOpen((previous) => !previous);
         }}
-        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring grid size-7 cursor-pointer place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        className="text-muted-foreground hover:text-foreground focus-visible:ring-ring grid cursor-pointer place-items-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
       >
-        <Info className="size-4" />
+        <Info className="size-5" />
       </button>
 
       {open ? (

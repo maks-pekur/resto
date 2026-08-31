@@ -91,7 +91,9 @@ export const ItemDetail = ({
                   {name}
                 </Heading>
                 {/* `ms-auto` rather than a right edge: in Arabic the end of the line is the left. */}
-                {hasNutrition(item) ? <NutritionInfo item={item} className="mt-1 ms-auto" /> : null}
+                {hasNutrition(item) ? (
+                  <NutritionInfo item={item} className="mt-1.5 ms-auto" />
+                ) : null}
               </div>
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
