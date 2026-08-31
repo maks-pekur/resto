@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
+import { SegmentedChoice } from './segmented-choice';
 import { hasNutrition, NutritionInfo } from './nutrition-info';
 import { isSingleChoiceGroup, useItemSelection } from './use-item-selection';
 
@@ -39,11 +40,6 @@ export const ItemDetail = ({
   const description = item.description
     ? localized(item.description, locale, defaultContentLocale)
     : null;
-
-  const selectedSizeIndex = Math.max(
-    item.sizes.findIndex((size) => size.id === selection.sizeId),
-    0,
-  );
 
   const [firstUnmet] = selection.unmetGroups;
 
@@ -108,47 +104,56 @@ export const ItemDetail = ({
             </div>
 
             {item.sizes.length > 0 ? (
-              <fieldset className="flex flex-col gap-2">
+              <fieldset>
                 <legend className="sr-only">{t('item.size')}</legend>
-                <div className="bg-muted relative flex rounded-full p-0.5">
-                  {/* One pill that slides, rather than a background that blinks on and off. */}
-                  <span
-                    aria-hidden
-                    className="bg-background absolute inset-y-0.5 start-0.5 rounded-full shadow-sm transition-transform duration-200 ease-out"
-                    style={{
-                      width: `calc((100% - 0.25rem) / ${String(item.sizes.length)})`,
-                      transform: `translateX(${String(selectedSizeIndex * 100)}%)`,
-                    }}
-                  />
-                  {item.sizes.map((size) => (
-                    <label
-                      key={size.id}
-                      className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex-1 cursor-pointer rounded-full px-3 py-1.5 text-center text-sm font-bold transition-colors has-[:focus-visible]:ring-2"
-                    >
-                      <input
-                        type="radio"
-                        className="sr-only"
-                        name={`size-${item.id}`}
-                        value={size.id}
-                        checked={selection.sizeId === size.id}
-                        onChange={() => {
-                          selection.selectSize(size.id);
-                        }}
-                      />
-                      {localized(size.name, locale, defaultContentLocale)}
-                    </label>
-                  ))}
-                </div>
+                <SegmentedChoice
+                  name={`size-${item.id}`}
+                  selectedId={selection.sizeId}
+                  onSelect={selection.selectSize}
+                  options={item.sizes.map((size) => ({
+                    id: size.id,
+                    label: localized(size.name, locale, defaultContentLocale),
+                  }))}
+                />
               </fieldset>
             ) : null}
 
             {modifierGroups.map((group) => {
               const singleChoice = isSingleChoiceGroup(group);
+              const groupName = localized(group.name, locale, defaultContentLocale);
+
+              // One answer out of a few is the same question a size asks, so it wears the same
+              // control — and, like the sizes, needs no heading above it.
+              if (singleChoice) {
+                return (
+                  <fieldset key={group.id}>
+                    <legend className="sr-only">{groupName}</legend>
+                    <SegmentedChoice
+                      name={`modifier-${group.id}`}
+                      selectedId={
+                        group.options.find((option) =>
+                          selection.isOptionChosen(group.id, option.id),
+                        )?.id ?? null
+                      }
+                      onSelect={(optionId) => {
+                        selection.toggleOption(group.id, optionId, true);
+                      }}
+                      options={group.options.map((option) => ({
+                        id: option.id,
+                        label: localized(option.name, locale, defaultContentLocale),
+                        note:
+                          Number(option.priceDelta) === 0
+                            ? null
+                            : `+${formatPrice(option.priceDelta, currency, locale)}`,
+                      }))}
+                    />
+                  </fieldset>
+                );
+              }
+
               return (
                 <fieldset key={group.id} className="flex flex-col gap-2">
-                  <legend className="pb-1 text-sm font-extrabold">
-                    {localized(group.name, locale, defaultContentLocale)}
-                  </legend>
+                  <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
                   <div className="flex flex-col gap-2">
                     {group.options.map((option) => (
                       <label
@@ -157,13 +162,12 @@ export const ItemDetail = ({
                       >
                         <span className="flex items-center gap-3 text-sm font-semibold">
                           <input
-                            type={singleChoice ? 'radio' : 'checkbox'}
+                            type="checkbox"
                             className="accent-primary size-4"
-                            name={singleChoice ? `modifier-${group.id}` : undefined}
                             value={option.id}
                             checked={selection.isOptionChosen(group.id, option.id)}
                             onChange={() => {
-                              selection.toggleOption(group.id, option.id, singleChoice);
+                              selection.toggleOption(group.id, option.id, false);
                             }}
                           />
                           {localized(option.name, locale, defaultContentLocale)}
