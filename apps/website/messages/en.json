@@ -94,7 +94,9 @@
     "qtyIncrease": "Increase quantity of {name}",
     "remove": "Remove {name} from cart",
     "size": "Size",
-    "unavailable": "Unavailable today"
+    "unavailable": "Unavailable today",
+    "choose": "Choose {name}",
+    "addNamed": "Add {name} for {price}"
   },
   "locale": {
     "label": "Language"

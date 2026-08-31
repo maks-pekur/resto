@@ -45,5 +45,7 @@
   "nav.cart": "Cart",
   "nav.info": "Info",
   "info.contacts": "Contacts",
-  "info.socials": "Find us online"
+  "info.socials": "Find us online",
+  "item.choose": "Choose {name}",
+  "item.addNamed": "Add {name} for {price}"
 }

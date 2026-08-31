@@ -12,6 +12,8 @@ const formatterFor = (
     const formatter = new Intl.NumberFormat(locale, {
       style: 'currency',
       currency,
+      // A menu prints ₴, not UAH — and the guest is standing in the restaurant that charges it.
+      currencyDisplay: 'narrowSymbol',
       minimumFractionDigits: fractionDigits,
       maximumFractionDigits: fractionDigits,
     });

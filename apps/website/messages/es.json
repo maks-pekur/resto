@@ -94,7 +94,9 @@
     "qtyIncrease": "Aumentar la cantidad de {name}",
     "remove": "Eliminar {name} del carrito",
     "size": "Tamaño",
-    "unavailable": "No disponible hoy"
+    "unavailable": "No disponible hoy",
+    "choose": "Elegir {name}",
+    "addNamed": "Añadir {name} por {price}"
   },
   "locale": {
     "label": "Idioma"

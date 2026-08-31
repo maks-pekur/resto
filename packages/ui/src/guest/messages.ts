@@ -5,6 +5,8 @@ export type GuestUiKey =
   | 'menu.emptyBody'
   | 'item.back'
   | 'item.priceFrom'
+  | 'item.choose'
+  | 'item.addNamed'
   | 'item.size'
   | 'item.allergens'
   | 'item.unavailable'

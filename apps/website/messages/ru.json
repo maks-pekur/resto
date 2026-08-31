@@ -94,7 +94,9 @@
     "qtyIncrease": "Увеличить количество {name}",
     "remove": "Удалить {name} из корзины",
     "size": "Размер",
-    "unavailable": "Сегодня недоступно"
+    "unavailable": "Сегодня недоступно",
+    "choose": "Выбрать {name}",
+    "addNamed": "Добавить {name} за {price}"
   },
   "locale": {
     "label": "Язык"

@@ -45,5 +45,7 @@
   "nav.cart": "Корзина",
   "nav.info": "Инфо",
   "info.contacts": "Контакты",
-  "info.socials": "Мы в соцсетях"
+  "info.socials": "Мы в соцсетях",
+  "item.choose": "Выбрать {name}",
+  "item.addNamed": "Добавить {name} за {price}"
 }

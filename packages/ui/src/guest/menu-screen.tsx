@@ -129,6 +129,20 @@ export const MenuScreen = ({
     onItemClose?.();
   };
 
+  const quickAdd = (item: MenuDto['items'][number]): void => {
+    const line = {
+      itemId: item.id,
+      sizeId: null,
+      name: localized(item.name, locale, defaultContentLocale),
+      unitPrice: item.basePrice,
+      currency: item.currency,
+      imageUrl: item.imageUrl,
+      modifiers: [],
+    };
+    addItem(line);
+    onAddedToCart?.(line);
+  };
+
   let imageIndex = 0;
 
   return (
@@ -189,6 +203,7 @@ export const MenuScreen = ({
                       key={item.id}
                       item={item}
                       onSelect={openItem}
+                      onQuickAdd={quickAdd}
                       unavailable={stopped.has(item.id)}
                       priority={priority}
                     />
