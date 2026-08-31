@@ -1,16 +1,35 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { selectSubtotal, useCartStore } from '@resto/cart';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, formatPrice } from '@resto/ui';
-import { placeOrder, OrderRequestError, type PlacedOrder } from '../api/client';
+import { fetchTable, placeOrder, OrderRequestError, type PlacedOrder } from '../api/client';
+import { canScanInPage } from './TableScanner';
 import { getActiveLocale, t } from '../i18n';
 
+const Scanner = lazy(async () => ({ default: (await import('./TableScanner')).TableScanner }));
+
 export type PaymentChoice = 'online' | 'cash';
+
+/** Our own codes carry the table either as `?t=<id>` or, later, as `/t/<token>`. */
+export const tableIdFromScan = (raw: string): string | null => {
+  try {
+    const url = new URL(raw, window.location.origin);
+    if (url.host !== window.location.host) return null;
+    const fromQuery = url.searchParams.get('t');
+    if (fromQuery !== null && fromQuery.trim().length > 0) return fromQuery;
+    const fromPath = /^\/t\/([^/]+)\/?$/.exec(url.pathname)?.[1];
+    return fromPath ?? null;
+  } catch {
+    return null;
+  }
+};
 
 export interface CheckoutSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly currency: string;
   readonly tableId: string | undefined;
+  /** A table read off a code mid-checkout: the guest never leaves this sheet. */
+  readonly onTableScanned: (tableId: string) => void;
   readonly onPlaced: (order: PlacedOrder, payment: PaymentChoice) => void;
 }
 
@@ -21,6 +40,7 @@ export const CheckoutSheet = ({
   onOpenChange,
   currency,
   tableId,
+  onTableScanned,
   onPlaced,
 }: CheckoutSheetProps) => {
   const items = useCartStore((s) => s.items);
@@ -30,6 +50,8 @@ export const CheckoutSheet = ({
   const clearCart = useCartStore((s) => s.clearCart);
 
   const [payment, setPayment] = useState<PaymentChoice>('online');
+  const [scanning, setScanning] = useState(false);
+  const [scanFailed, setScanFailed] = useState(false);
   const [name, setName] = useState('');
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,6 +90,33 @@ export const CheckoutSheet = ({
   };
 
   const table = zoneName !== null && tableNumber !== null ? `${zoneName} · ${tableNumber}` : null;
+
+  const applyScan = (raw: string): void => {
+    const scanned = tableIdFromScan(raw);
+    if (scanned === null) {
+      setScanFailed(true);
+      return;
+    }
+    // Resolve before accepting it: a code from another restaurant must not silently pass.
+    fetchTable(scanned)
+      .then((resolved) => {
+        if (resolved === null) {
+          setScanFailed(true);
+          return;
+        }
+        useCartStore.getState().setTable({
+          tableId: resolved.tableId,
+          zoneName: resolved.zoneName,
+          number: resolved.number,
+        });
+        setScanning(false);
+        setScanFailed(false);
+        onTableScanned(resolved.tableId);
+      })
+      .catch(() => {
+        setScanFailed(true);
+      });
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -128,21 +177,63 @@ export const CheckoutSheet = ({
             <p className="text-destructive text-sm">{t('checkout.failed')}</p>
           )}
 
-          <button
-            type="button"
-            disabled={pending || items.length === 0 || tableId === undefined}
-            onClick={() => {
-              void submit();
-            }}
-            className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <span>{pending ? t('checkout.placing') : t('checkout.place')}</span>
-            <span className="tabular-nums">{formatPrice(subtotal, currency, locale)}</span>
-          </button>
-
           {tableId === undefined ? (
-            <p className="text-muted-foreground text-center text-xs">{t('checkout.noTable')}</p>
-          ) : null}
+            // The order is not refused, only paused: the cart stays exactly as it is while the
+            // guest points their phone at the code on the table.
+            <div className="border-primary/40 bg-primary-tint/40 flex flex-col gap-3 rounded-2xl border p-4">
+              <div className="flex flex-col gap-1">
+                <p className="text-sm font-extrabold">{t('table.needScanTitle')}</p>
+                <p className="text-muted-foreground text-sm">{t('table.needScanBody')}</p>
+              </div>
+
+              {scanning ? (
+                <Suspense
+                  fallback={
+                    <p className="text-muted-foreground text-sm">{t('table.scanStarting')}</p>
+                  }
+                >
+                  <Scanner
+                    onDecoded={applyScan}
+                    onUnavailable={() => {
+                      setScanning(false);
+                      setScanFailed(true);
+                    }}
+                  />
+                </Suspense>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setScanFailed(false);
+                    setScanning(true);
+                  }}
+                  disabled={!canScanInPage()}
+                  className="bg-primary text-primary-foreground flex h-11 w-full cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {t('table.scanAction')}
+                </button>
+              )}
+
+              <p className="text-muted-foreground text-xs">
+                {canScanInPage() ? t('table.scanCartKept') : t('table.scanWithCamera')}
+              </p>
+              {scanFailed ? (
+                <p className="text-destructive text-xs">{t('table.scanFailed')}</p>
+              ) : null}
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={pending || items.length === 0}
+              onClick={() => {
+                void submit();
+              }}
+              className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <span>{pending ? t('checkout.placing') : t('checkout.place')}</span>
+              <span className="tabular-nums">{formatPrice(subtotal, currency, locale)}</span>
+            </button>
+          )}
         </div>
       </SheetContent>
     </Sheet>

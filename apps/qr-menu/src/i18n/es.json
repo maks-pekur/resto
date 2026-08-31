@@ -77,7 +77,6 @@
   "checkout.place": "Enviar el pedido",
   "checkout.placing": "Enviando…",
   "checkout.failed": "No pudimos enviar el pedido. Inténtalo de nuevo.",
-  "checkout.noTable": "Escanea el código QR de tu mesa para pedir.",
   "order.number": "Pedido n.º {n}",
   "order.stagePlaced": "Esperando confirmación",
   "order.stageAccepted": "Pedido confirmado",
@@ -93,5 +92,13 @@
   "order.payNow": "Pagar",
   "order.payLoading": "Preparando el pago…",
   "order.payFailed": "El pago no se completó. Inténtalo de nuevo.",
-  "order.paid": "Pagado"
+  "order.paid": "Pagado",
+  "table.needScanTitle": "Confirma tu mesa",
+  "table.needScanBody": "Apunta la cámara al código de la mesa: tu carrito se mantiene.",
+  "table.scanAction": "Escanear el código",
+  "table.scanStarting": "Encendiendo la cámara…",
+  "table.scanHint": "Encuadra el código",
+  "table.scanCartKept": "Tu carrito se queda como está.",
+  "table.scanWithCamera": "Abre la cámara del teléfono y apunta al código: el menú se abre y el carrito se mantiene.",
+  "table.scanFailed": "Ese código no es de este restaurante. Inténtalo de nuevo."
 }

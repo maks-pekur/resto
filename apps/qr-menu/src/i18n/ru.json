@@ -77,7 +77,6 @@
   "checkout.place": "Отправить заказ",
   "checkout.placing": "Отправляем…",
   "checkout.failed": "Не удалось отправить заказ. Попробуйте ещё раз.",
-  "checkout.noTable": "Отсканируйте QR-код на столе, чтобы сделать заказ.",
   "order.number": "Заказ №{n}",
   "order.stagePlaced": "Ждём подтверждения",
   "order.stageAccepted": "Заказ подтверждён",
@@ -93,5 +92,13 @@
   "order.payNow": "Оплатить",
   "order.payLoading": "Готовим оплату…",
   "order.payFailed": "Оплата не прошла. Попробуйте ещё раз.",
-  "order.paid": "Оплачено"
+  "order.paid": "Оплачено",
+  "table.needScanTitle": "Подтвердите стол",
+  "table.needScanBody": "Наведите камеру на код на столе — заказ и корзина сохранятся.",
+  "table.scanAction": "Отсканировать код",
+  "table.scanStarting": "Включаем камеру…",
+  "table.scanHint": "Наведите рамку на код",
+  "table.scanCartKept": "Корзина останется на месте.",
+  "table.scanWithCamera": "Откройте камеру телефона и наведите её на код — меню откроется, корзина сохранится.",
+  "table.scanFailed": "Это не код этого ресторана. Попробуйте ещё раз."
 }

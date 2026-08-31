@@ -34,6 +34,7 @@ const renderSheet = (tableId: string | undefined) => {
       onOpenChange={vi.fn()}
       currency="UAH"
       tableId={tableId}
+      onTableScanned={vi.fn()}
       onPlaced={onPlaced}
     />,
   );
@@ -99,10 +100,13 @@ describe('CheckoutSheet', () => {
     });
   });
 
-  it('will not order without a table — the guest has not scanned a code', () => {
+  it('asks for a scan instead of a dead end when there is no table', () => {
     renderSheet(undefined);
 
-    expect(screen.getByRole('button', { name: /checkout.place/u })).toBeDisabled();
+    expect(screen.getByText('table.needScanTitle')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'table.scanAction' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /checkout.place/u })).not.toBeInTheDocument();
+    expect(useCartStore.getState().items).toHaveLength(1);
   });
 
   it('keeps the cart when the order is refused', async () => {

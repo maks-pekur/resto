@@ -77,7 +77,6 @@
   "checkout.place": "Надіслати замовлення",
   "checkout.placing": "Надсилаємо…",
   "checkout.failed": "Не вдалося надіслати замовлення. Спробуйте ще раз.",
-  "checkout.noTable": "Відскануйте QR-код на столі, щоб замовити.",
   "order.number": "Замовлення №{n}",
   "order.stagePlaced": "Чекаємо підтвердження",
   "order.stageAccepted": "Замовлення підтверджено",
@@ -93,5 +92,13 @@
   "order.payNow": "Оплатити",
   "order.payLoading": "Готуємо оплату…",
   "order.payFailed": "Оплата не пройшла. Спробуйте ще раз.",
-  "order.paid": "Оплачено"
+  "order.paid": "Оплачено",
+  "table.needScanTitle": "Підтвердіть стіл",
+  "table.needScanBody": "Наведіть камеру на код на столі — кошик збережеться.",
+  "table.scanAction": "Сканувати код",
+  "table.scanStarting": "Вмикаємо камеру…",
+  "table.scanHint": "Наведіть рамку на код",
+  "table.scanCartKept": "Кошик залишиться на місці.",
+  "table.scanWithCamera": "Відкрийте камеру телефона та наведіть на код — меню відкриється, кошик збережеться.",
+  "table.scanFailed": "Це код іншого ресторану. Спробуйте ще раз."
 }

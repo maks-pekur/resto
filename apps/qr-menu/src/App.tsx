@@ -54,7 +54,7 @@ export const App = () => {
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
-  const [tableIdParam] = useState<string | undefined>(() =>
+  const [tableIdParam, setTableIdParam] = useState<string | undefined>(() =>
     typeof window === 'undefined' ? undefined : parseTableId(window.location.search),
   );
   const [tableUnrecognized, setTableUnrecognized] = useState(false);
@@ -270,6 +270,7 @@ export const App = () => {
         onOpenChange={setCheckoutOpen}
         currency={state.kind === 'ready' ? state.menu.currency : 'EUR'}
         tableId={tableIdParam}
+        onTableScanned={setTableIdParam}
         onPlaced={(order, payment) => {
           setPlaced({ order, payment });
         }}

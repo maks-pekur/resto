@@ -77,7 +77,6 @@
   "checkout.place": "Send the order",
   "checkout.placing": "Sending…",
   "checkout.failed": "We could not send the order. Please try again.",
-  "checkout.noTable": "Scan the QR code on your table to order.",
   "order.number": "Order #{n}",
   "order.stagePlaced": "Waiting for confirmation",
   "order.stageAccepted": "Order confirmed",
@@ -93,5 +92,13 @@
   "order.payNow": "Pay",
   "order.payLoading": "Preparing payment…",
   "order.payFailed": "The payment did not go through. Please try again.",
-  "order.paid": "Paid"
+  "order.paid": "Paid",
+  "table.needScanTitle": "Confirm your table",
+  "table.needScanBody": "Point your camera at the code on the table — your cart is kept.",
+  "table.scanAction": "Scan the code",
+  "table.scanStarting": "Starting the camera…",
+  "table.scanHint": "Line the code up in the frame",
+  "table.scanCartKept": "Your cart stays as it is.",
+  "table.scanWithCamera": "Open your phone camera and point it at the code — the menu opens and your cart is kept.",
+  "table.scanFailed": "That code is not from this restaurant. Please try again."
 }
