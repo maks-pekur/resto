@@ -85,9 +85,7 @@ export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
                 }}
                 className={cn(
                   'focus-visible:ring-ring h-11 shrink-0 cursor-pointer rounded-full px-4 text-sm font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:h-9',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
                 {localized(category.name, locale, defaultContentLocale)}
