@@ -218,6 +218,7 @@ const baseInput = (overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
   customerPhone: '+15555550123',
   idempotencyKey: randomUUID(),
   channel: 'site',
+  paymentType: 'online',
   marketingConsent: false,
   ...overrides,
 });

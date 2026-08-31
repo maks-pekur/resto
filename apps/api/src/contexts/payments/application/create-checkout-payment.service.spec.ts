@@ -71,6 +71,7 @@ const makeOrderSnap = (
   scheduledFor: null,
   shortNumber: 1,
   channel: 'site',
+  paymentType: 'online',
   acceptedAt: null,
   preparingAt: null,
   readyAt: null,

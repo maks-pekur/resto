@@ -39,6 +39,8 @@ export const CreateOrderInputSchema = z
       })
       .optional(),
     channel: OrderChannelSchema.optional().default('site'),
+    /** How the guest intends to pay. The money itself arrives later, on its own path. */
+    paymentType: z.enum(['online', 'cash', 'card_on_delivery']).optional().default('online'),
     marketingConsent: z.boolean().optional().default(false),
   })
   .refine(
@@ -64,7 +66,11 @@ export const CreateOrderInputSchema = z
       message: 'customerName and customerPhone are required for pickup/delivery orders',
       path: ['customerName'],
     },
-  );
+  )
+  .refine((data) => data.paymentType !== 'card_on_delivery' || data.orderType === 'delivery', {
+    message: 'card_on_delivery is only for delivery orders',
+    path: ['paymentType'],
+  });
 
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 export class CreateOrderInputDto extends createZodDto(CreateOrderInputSchema) {}

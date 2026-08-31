@@ -89,6 +89,8 @@ export interface OrderSnapshot {
   readonly scheduledFor: Date | null;
   readonly shortNumber: number;
   readonly channel: 'site' | 'qr-menu';
+  /** How the guest means to pay; whether they have is the payments table's business. */
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
   readonly acceptedAt: Date | null;
   readonly preparingAt: Date | null;
   readonly readyAt: Date | null;
@@ -140,6 +142,7 @@ export interface CreateOrderInput {
   readonly scheduledFor?: Date | null;
   readonly shortNumber: number;
   readonly channel?: 'site' | 'qr-menu';
+  readonly paymentType?: 'online' | 'cash' | 'card_on_delivery';
   readonly marketingConsent?: boolean;
 }
 
@@ -240,6 +243,7 @@ export class Order {
       scheduledFor: input.scheduledFor ?? null,
       shortNumber: input.shortNumber,
       channel: input.channel ?? 'site',
+      paymentType: input.paymentType ?? 'online',
       acceptedAt: null,
       preparingAt: null,
       readyAt: null,

@@ -50,6 +50,7 @@ const makeOrder = (status: string): Order => {
     currency: Currency.parse('EUR'),
     scheduledFor: null,
     shortNumber: 1,
+    paymentType: 'online',
     channel: 'site' as const,
     acceptedAt: null,
     preparingAt: null,

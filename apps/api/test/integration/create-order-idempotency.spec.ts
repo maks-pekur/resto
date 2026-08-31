@@ -84,6 +84,7 @@ const makeCartInput = (
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),
   channel: 'site',
+  paymentType: 'online',
   marketingConsent: false,
   ...overrides,
 });
