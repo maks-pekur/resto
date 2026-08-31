@@ -55,7 +55,7 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
     refetchIntervalInBackground: true,
   });
   const unacceptedCount = (unacceptedFeedResult?.data?.rows ?? []).filter(
-    (row) => row.status === 'paid' && row.acceptedAt === null,
+    (row) => row.status === 'placed' && row.acceptedAt === null,
   ).length;
 
   // Tenant-wide and date-less: a refund that failed yesterday is still money owed today, so the

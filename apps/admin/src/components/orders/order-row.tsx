@@ -23,16 +23,14 @@ export const UNACCEPTED_ESCALATION_MS = 5 * 60_000;
 export type OrderRowStateSource = Pick<OrderFeedRowApi, 'status' | 'acceptedAt' | 'createdAt'>;
 
 export function deriveOrderRowState(row: OrderRowStateSource, now: number): OrderCardState {
-  if (row.status === 'paid' && row.acceptedAt === null) {
+  if (row.status === 'placed' && row.acceptedAt === null) {
     const age = now - new Date(row.createdAt).getTime();
     return age >= UNACCEPTED_ESCALATION_MS ? 'escalated' : 'new';
   }
   if (row.status === 'accepted') return 'accepted';
   if (row.status === 'preparing') return 'preparing';
   if (row.status === 'ready') return 'ready';
-  if (row.status === 'canceled' || row.status === 'refunded' || row.status === 'failed') {
-    return 'canceled';
-  }
+  if (row.status === 'canceled') return 'canceled';
   return 'completed';
 }
 
@@ -48,14 +46,12 @@ export const ORDER_TYPE_LABEL_KEY: Record<OrderFeedRowApi['orderType'], string> 
   delivery: 'orderTypeDelivery',
 };
 
-// The order carries how the guest pays; a refund or a failed charge overrides it, because the
-// money is what the operator needs to see there, not the intention.
+// What the money is doing outranks how the guest meant to pay: an unpaid order at a table is the
+// operator's job to chase, and it now says so whatever stage the kitchen is at.
 const paymentKeyOf = (row: OrderFeedRowApi): string => {
-  if (row.status === 'refunded') return 'refunded';
-  if (row.status === 'created' || row.status === 'requires_action' || row.status === 'failed') {
-    return 'unpaid';
-  }
-  return row.paymentType;
+  if (row.paymentState === 'refunded') return 'refunded';
+  if (row.paymentState === 'paid') return row.paymentType;
+  return 'unpaid';
 };
 
 export interface OrderRowProps {

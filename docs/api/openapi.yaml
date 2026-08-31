@@ -4278,6 +4278,13 @@ components:
             - site
             - qr-menu
           default: site
+        paymentType:
+          type: string
+          enum:
+            - online
+            - cash
+            - card_on_delivery
+          default: online
         marketingConsent:
           type: boolean
           default: false
@@ -4324,6 +4331,8 @@ components:
       properties:
         status:
           type: string
+        paymentState:
+          type: string
         shortNumber:
           type: integer
           nullable: true
@@ -4351,6 +4360,7 @@ components:
           nullable: true
       required:
         - status
+        - paymentState
         - shortNumber
         - orderNumber
         - total
@@ -4375,16 +4385,12 @@ components:
               status:
                 type: string
                 enum:
-                  - created
-                  - requires_action
-                  - paid
+                  - placed
                   - accepted
                   - preparing
                   - ready
                   - completed
                   - canceled
-                  - refunded
-                  - failed
               locationId:
                 type: string
                 format: uuid
@@ -4548,16 +4554,12 @@ components:
         status:
           type: string
           enum:
-            - created
-            - requires_action
-            - paid
+            - placed
             - accepted
             - preparing
             - ready
             - completed
             - canceled
-            - refunded
-            - failed
         orderType:
           type: string
           enum:
@@ -4687,16 +4689,12 @@ components:
         canceledFromStatus:
           type: string
           enum:
-            - created
-            - requires_action
-            - paid
+            - placed
             - accepted
             - preparing
             - ready
             - completed
             - canceled
-            - refunded
-            - failed
           nullable: true
         etaAt:
           type: string
@@ -4784,16 +4782,12 @@ components:
         status:
           type: string
           enum:
-            - created
-            - requires_action
-            - paid
+            - placed
             - accepted
             - preparing
             - ready
             - completed
             - canceled
-            - refunded
-            - failed
         orderType:
           type: string
           enum:
@@ -4923,16 +4917,12 @@ components:
         canceledFromStatus:
           type: string
           enum:
-            - created
-            - requires_action
-            - paid
+            - placed
             - accepted
             - preparing
             - ready
             - completed
             - canceled
-            - refunded
-            - failed
           nullable: true
         etaAt:
           type: string

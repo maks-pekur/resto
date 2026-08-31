@@ -8,26 +8,16 @@ import { Button } from '@resto/ui';
 import { cn } from '@resto/ui';
 import { getOrderStatus, type OrderStatusResponse } from '@/lib/checkout-api';
 
-type TrackerStatus = 'paid' | 'accepted' | 'preparing' | 'ready';
-const TRACKER_ORDER: readonly TrackerStatus[] = ['paid', 'accepted', 'preparing', 'ready'];
+type TrackerStatus = 'placed' | 'accepted' | 'preparing' | 'ready';
+const TRACKER_ORDER: readonly TrackerStatus[] = ['placed', 'accepted', 'preparing', 'ready'];
 
-type KnownStatus =
-  | TrackerStatus
-  | 'created'
-  | 'requires_action'
-  | 'completed'
-  | 'canceled'
-  | 'refunded'
-  | 'failed';
+type KnownStatus = TrackerStatus | 'completed' | 'canceled';
 
-const TERMINAL_STATUSES = new Set<KnownStatus>(['completed', 'canceled', 'refunded', 'failed']);
+const TERMINAL_STATUSES = new Set<KnownStatus>(['completed', 'canceled']);
 
 function pollIntervalMs(status: string): number {
   switch (status) {
-    case 'created':
-    case 'requires_action':
-      return 2_000;
-    case 'paid':
+    case 'placed':
       return 5_000;
     case 'accepted':
     case 'preparing':
@@ -101,6 +91,8 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
 
     const scheduleNext = (currentStatus: string) => {
       if (TERMINAL_STATUSES.has(currentStatus as KnownStatus)) return;
+      // A payment that failed or was returned goes nowhere on its own either.
+      if (status.paymentState === 'failed' || status.paymentState === 'refunded') return;
       timerRef.current = setTimeout(() => {
         if (cancelled) return;
         setIsPolling(true);
@@ -137,7 +129,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     <p className="text-xs text-muted-foreground">{t('status.updating')}</p>
   ) : null;
 
-  if (status.status === 'failed') {
+  if (status.paymentState === 'failed') {
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-semibold">{t('status.paymentFailedTitle')}</h1>
@@ -148,9 +140,12 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     );
   }
 
-  if (status.status === 'canceled' || status.status === 'refunded') {
+  if (status.status === 'canceled' || status.paymentState === 'refunded') {
+    // Refused before the kitchen took it on reads as declined; stopped later reads as canceled.
     const title =
-      status.canceledFromStatus === 'paid' ? t('status.declinedTitle') : t('status.canceledTitle');
+      status.canceledFromStatus === 'placed'
+        ? t('status.declinedTitle')
+        : t('status.canceledTitle');
     const reasonKey = reasonMessageKey(status.cancelReason);
     return (
       <div className="flex flex-col gap-4">
@@ -168,7 +163,8 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     );
   }
 
-  if (status.status === 'created' || status.status === 'requires_action') {
+  // Money still in flight: the guest is looking at a payment, not at a kitchen.
+  if (status.paymentState === 'pending' || status.paymentState === 'requires_action') {
     return (
       <div className="flex flex-col gap-4">
         <p className="text-base text-muted-foreground">{t('status.awaitingPayment')}</p>
@@ -186,7 +182,7 @@ export function OrderStatusPoller({ orderId, initialStatus }: Props) {
     status.orderType === 'dine_in' ? t('status.stepReadyDineIn') : t('status.stepReadyPickup');
 
   const steps: { key: TrackerStatus; label: string }[] = [
-    { key: 'paid', label: t('status.stepPaid') },
+    { key: 'placed', label: t('status.stepPaid') },
     { key: 'accepted', label: t('status.stepAccepted') },
     { key: 'preparing', label: t('status.stepPreparing') },
     { key: 'ready', label: readyLabel },

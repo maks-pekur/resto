@@ -56,6 +56,7 @@ const feedRow: OrderFeedRowApi = {
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
+  paymentState: 'paid',
   orderType: 'dine_in',
   tableIdentifier: null,
   tableZoneName: null,

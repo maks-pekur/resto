@@ -42,6 +42,7 @@ export interface CreatePaymentIntentResponse {
 
 export interface OrderStatusResponse {
   status: string;
+  paymentState: string;
   shortNumber: number | null;
   orderNumber: string;
   total: string;

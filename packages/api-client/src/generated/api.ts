@@ -2157,6 +2157,11 @@ export interface components {
              * @enum {string}
              */
             channel: "site" | "qr-menu";
+            /**
+             * @default online
+             * @enum {string}
+             */
+            paymentType: "online" | "cash" | "card_on_delivery";
             /** @default false */
             marketingConsent: boolean;
         };
@@ -2173,6 +2178,7 @@ export interface components {
         };
         OrderStatusResponseDto: {
             status: string;
+            paymentState: string;
             shortNumber: number | null;
             orderNumber: string;
             total: string;
@@ -2190,7 +2196,7 @@ export interface components {
                 id: string;
                 shortNumber: number;
                 /** @enum {string} */
-                status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+                status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
                 /** Format: uuid */
                 locationId: string;
                 locationName: string;
@@ -2237,7 +2243,7 @@ export interface components {
             locationId: string;
             orderNumber: string;
             /** @enum {string} */
-            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
             /** @enum {string} */
             orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
@@ -2283,7 +2289,7 @@ export interface components {
             cancelReason: string | null;
             cancelNote: string | null;
             /** @enum {string|null} */
-            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            canceledFromStatus: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | null;
             etaAt: string | null;
             marketingConsent: boolean;
             marketingConsentAt: string | null;
@@ -2302,7 +2308,7 @@ export interface components {
             locationId: string;
             orderNumber: string;
             /** @enum {string} */
-            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
             /** @enum {string} */
             orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
@@ -2348,7 +2354,7 @@ export interface components {
             cancelReason: string | null;
             cancelNote: string | null;
             /** @enum {string|null} */
-            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            canceledFromStatus: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | null;
             etaAt: string | null;
             marketingConsent: boolean;
             marketingConsentAt: string | null;

@@ -26,13 +26,7 @@ import { AGE_BAND_CLASS, deriveOrderRowState } from './order-row';
 import { REASON_LABEL_KEYS, type OrderCancelReasonCode } from './reject-popover';
 import { CancelDialog } from './cancel-dialog';
 
-const CANCELABLE_STATUSES: readonly string[] = [
-  'created',
-  'paid',
-  'accepted',
-  'preparing',
-  'ready',
-];
+const CANCELABLE_STATUSES: readonly string[] = ['placed', 'accepted', 'preparing', 'ready'];
 const REFUNDABLE_STATUSES: readonly string[] = ['completed'];
 
 const ORDER_TYPE_LABEL_KEY: Record<OrderDetailApi['orderType'], string> = {

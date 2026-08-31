@@ -6,7 +6,7 @@ import type { OrderFeedRowApi } from '@/lib/queries/orders';
 const makeRow = (id: string, createdAt: string): OrderFeedRowApi => ({
   id,
   shortNumber: 1,
-  status: 'paid',
+  status: 'placed',
   locationId: 'loc-1',
   locationName: 'Центр',
   orderType: 'dine_in',
@@ -16,6 +16,7 @@ const makeRow = (id: string, createdAt: string): OrderFeedRowApi => ({
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
+  paymentState: 'paid',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 1,

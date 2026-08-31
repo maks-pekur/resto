@@ -50,7 +50,7 @@ const Wrap = ({ children }: { children: React.ReactNode }): React.ReactElement =
 const baseRow: OrderFeedRowApi = {
   id: 'order-1',
   shortNumber: 42,
-  status: 'paid',
+  status: 'placed',
   locationId: 'loc-1',
   locationName: 'Центр',
   orderType: 'dine_in',
@@ -60,6 +60,7 @@ const baseRow: OrderFeedRowApi = {
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
+  paymentState: 'paid',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,
@@ -93,15 +94,24 @@ describe('deriveOrderRowState', () => {
     expect(deriveOrderRowState({ ...baseRow, status: 'ready' }, 0)).toBe('ready');
   });
 
-  it('buckets canceled/refunded/failed as canceled', () => {
+  it('buckets a canceled order as canceled, whatever happened to the money', () => {
     expect(deriveOrderRowState({ ...baseRow, status: 'canceled' }, 0)).toBe('canceled');
-    expect(deriveOrderRowState({ ...baseRow, status: 'refunded' }, 0)).toBe('canceled');
-    expect(deriveOrderRowState({ ...baseRow, status: 'failed' }, 0)).toBe('canceled');
+    expect(deriveOrderRowState({ ...baseRow, status: 'canceled' }, 0)).toBe('canceled');
   });
 
-  it('defaults unrecognized statuses to completed', () => {
+  it('reads a served order as completed', () => {
     expect(deriveOrderRowState({ ...baseRow, status: 'completed' }, 0)).toBe('completed');
-    expect(deriveOrderRowState({ ...baseRow, status: 'created' }, 0)).toBe('completed');
+  });
+
+  it('reads a placed order the moment it is accepted, not before', () => {
+    const placed = { ...baseRow, status: 'placed' as const, acceptedAt: null };
+    expect(deriveOrderRowState(placed, 0)).toBe('new');
+    expect(
+      deriveOrderRowState(
+        { ...placed, status: 'accepted', acceptedAt: new Date().toISOString() },
+        0,
+      ),
+    ).toBe('accepted');
   });
 
   it('never escalates once accepted, even past the threshold', () => {
@@ -125,6 +135,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
+      paymentState: 'paid',
       tableIdentifier: null,
     };
     render(
@@ -146,6 +157,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
+      paymentState: 'paid',
       tableIdentifier: 'T7',
     };
     render(
@@ -166,6 +178,7 @@ describe('OrderRow — table line precedence (TBL-12)', () => {
       customerName: null,
       customerPhone: null,
       paymentType: 'online',
+      paymentState: 'paid',
       tableIdentifier: null,
     };
     render(
@@ -182,7 +195,7 @@ describe('OrderRow — a promise nobody has made yet', () => {
   it('shows an unknown time on an order that has not been accepted', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
-      status: 'paid',
+      status: 'placed',
       acceptedAt: null,
       etaAt: null,
     };
@@ -221,7 +234,7 @@ describe('OrderRow — the time column', () => {
   it('shows the same fact on an order nobody has accepted yet', () => {
     const row: OrderFeedRowApi = {
       ...baseRow,
-      status: 'paid',
+      status: 'placed',
       createdAt: new Date().toISOString(),
       acceptedAt: null,
       etaAt: null,

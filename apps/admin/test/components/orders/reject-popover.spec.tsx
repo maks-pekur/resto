@@ -52,7 +52,7 @@ const Wrap = ({ children }: { children: React.ReactNode }): React.ReactElement =
 const baseOrder: OrderFeedRowApi = {
   id: 'order-1',
   shortNumber: 42,
-  status: 'paid',
+  status: 'placed',
   locationId: 'loc-1',
   locationName: 'Центр',
   orderType: 'dine_in',
@@ -62,6 +62,7 @@ const baseOrder: OrderFeedRowApi = {
   customerName: null,
   customerPhone: null,
   paymentType: 'online',
+  paymentState: 'paid',
   total: '1200.00',
   currency: 'RUB',
   itemCount: 3,
