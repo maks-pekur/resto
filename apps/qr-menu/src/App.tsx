@@ -208,20 +208,9 @@ export const App = () => {
                 resolvedTheme={resolvedTheme}
                 onToggle={toggleTheme}
                 label={t('theme.label')}
-                className="hidden sm:flex"
               />
-              <LocaleControl locales={menuLocales.supported} className="hidden sm:inline-flex" />
-            </>
-          }
-          footerActions={
-            <div className="flex flex-wrap items-center gap-2">
               <LocaleControl locales={menuLocales.supported} />
-              <ThemeToggle
-                resolvedTheme={resolvedTheme}
-                onToggle={toggleTheme}
-                label={t('theme.label')}
-              />
-            </div>
+            </>
           }
           banner={<TableBanner notRecognized={tableUnrecognized} />}
           showCartButton={false}

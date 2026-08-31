@@ -53,7 +53,7 @@ vi.mock('../src/api/client', () => ({
 }));
 
 const themeToggle = () =>
-  within(screen.getByRole('contentinfo')).getByRole('button', { name: t('theme.label') });
+  within(screen.getByRole('banner')).getByRole('button', { name: t('theme.label') });
 
 beforeEach(() => {
   window.localStorage.clear();
