@@ -37,6 +37,8 @@ export interface MenuScreenProps {
   readonly headerActions?: ReactNode;
   readonly footerActions?: ReactNode;
   readonly footerLinks?: readonly GuestFooterLink[];
+  /** `credit` leaves only the platform line — for a surface that shows its contacts elsewhere. */
+  readonly footerVariant?: 'full' | 'credit';
   readonly banner?: ReactNode;
   /**
    * Replaces the cart bar — a surface with its own bottom navigation supplies it instead. Given a
@@ -60,6 +62,7 @@ export const MenuScreen = ({
   headerActions,
   footerActions,
   footerLinks,
+  footerVariant = 'full',
   banner,
   bar,
   showCartButton = true,
@@ -166,6 +169,7 @@ export const MenuScreen = ({
           contacts={menu.tenant?.contacts ?? {}}
           links={footerLinks ?? []}
           actions={footerActions}
+          variant={footerVariant}
         />
       }
       bar={

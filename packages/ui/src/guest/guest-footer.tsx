@@ -22,6 +22,11 @@ export interface GuestFooterProps {
   readonly contacts?: GuestFooterContacts;
   readonly links?: readonly GuestFooterLink[];
   readonly actions?: ReactNode;
+  /**
+   * `credit` is the whole footer on a surface that carries its contacts elsewhere — the QR menu
+   * keeps them in its drawer, and repeating them under a phone-sized menu only lengthens it.
+   */
+  readonly variant?: 'full' | 'credit';
 }
 
 /** Named rather than glyphed on purpose: a wrong or unlicensed brand mark is worse than a word. */
@@ -44,6 +49,7 @@ export const GuestFooter = ({
   contacts = {},
   links = [],
   actions,
+  variant = 'full',
 }: GuestFooterProps) => {
   const { t, Image } = useGuestUi();
   const socialEntries = Object.entries(socials).filter(([, href]) => href.length > 0);
@@ -56,6 +62,16 @@ export const GuestFooter = ({
       ? { label: contacts.website.replace(/^https?:\/\//u, ''), href: contacts.website }
       : null,
   ].filter((entry): entry is { label: string; href: string } => entry !== null);
+
+  if (variant === 'credit') {
+    return (
+      <footer className="mt-10 border-t">
+        <p className="text-muted-foreground mx-auto max-w-7xl px-4 py-6 text-center text-xs">
+          {t('footer.poweredBy')}
+        </p>
+      </footer>
+    );
+  }
 
   return (
     <footer className="bg-muted mt-16 border-t">

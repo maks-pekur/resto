@@ -338,6 +338,7 @@ export const App = () => {
               {t('checkout.open')}
             </button>
           }
+          footerVariant="credit"
           showCartButton={false}
           itemPresentation="sheet"
           bar={({ itemCount, openCart }) => (
