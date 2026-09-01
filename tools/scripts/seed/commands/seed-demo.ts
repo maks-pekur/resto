@@ -150,6 +150,7 @@ interface VenueDef {
   readonly wifi: { readonly ssid: string; readonly password: string };
   readonly address: string;
   readonly phone: string;
+  readonly socials: Readonly<Record<string, string>>;
   readonly legal: LegalDef;
 }
 
@@ -169,6 +170,12 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
     wifi: { ssid: 'PizzaPalace_Guest', password: 'margherita2026' },
     address: 'Київ, вул. Хрещатик, 10',
     phone: '+380 44 200 10 10',
+    socials: {
+      instagram: 'https://instagram.com/pizzapalace',
+      telegram: 'https://t.me/pizzapalace',
+      // The listing, not a profile: this is where a guest reads reviews and taps "route".
+      googleMaps: 'https://maps.app.goo.gl/demo-pizza-palace',
+    },
     legal: {
       about:
         'ООО «Пицца Палас», ЕГРПОУ 41234567.\nЮридический адрес: Киев, ул. Крещатик, 10.\nРаботаем с 2019 года.',
@@ -198,6 +205,10 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
     wifi: { ssid: 'BurgerBarn_Guest', password: 'doublecheese' },
     address: '14 High Street, London',
     phone: '+44 20 7000 0000',
+    socials: {
+      instagram: 'https://instagram.com/burgerbarn',
+      googleMaps: 'https://maps.app.goo.gl/demo-burger-barn',
+    },
     legal: {
       about: 'Burger Barn Ltd, company number 09876543.\nRegistered at 14 High Street, London.',
       payment: 'Cards online, cash or card at the table. Money is taken once the kitchen accepts.',
@@ -739,6 +750,7 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
     current.theme?.coverUrl == null ? await uploadBrandCover(op, venue.coverFile) : null;
 
   await op.patch('/v1/tenants/me/brand', {
+    socials: venue.socials,
     legalDocuments: {
       about: { ru: venue.legal.about },
       payment: { ru: venue.legal.payment },
