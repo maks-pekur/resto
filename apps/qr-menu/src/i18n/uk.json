@@ -100,5 +100,19 @@
   "table.orderingTitle": "Не бачимо, за яким ви столом",
   "table.orderingBody": "Відскануйте, будь ласка, код на столі — і ми надішлемо замовлення. Кошик збережеться.",
   "table.seatedTitle": "Чудово, тепер бачимо",
-  "table.seatedBody": "Стіл визначено — продовжуємо замовлення."
+  "table.seatedBody": "Стіл визначено — продовжуємо замовлення.",
+  "info.hours": "Години роботи",
+  "info.wifi": "Wi-Fi",
+  "info.copy": "копіювати",
+  "info.copied": "скопійовано",
+  "info.openNow": "Зараз відчинено",
+  "info.closedNow": "Зараз зачинено",
+  "info.closedDay": "вихідний",
+  "weekday.mon": "Понеділок",
+  "weekday.tue": "Вівторок",
+  "weekday.wed": "Середа",
+  "weekday.thu": "Четвер",
+  "weekday.fri": "П'ятниця",
+  "weekday.sat": "Субота",
+  "weekday.sun": "Неділя"
 }

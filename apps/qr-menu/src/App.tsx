@@ -330,6 +330,9 @@ export const App = () => {
         description={localized(tenant?.description, getActiveLocale(), menuLocales.default)}
         contacts={tenant?.contacts ?? {}}
         socials={tenant?.socials ?? {}}
+        coverUrl={tenant?.theme?.coverUrl ?? null}
+        openingHours={tenant?.openingHours ?? null}
+        wifi={tenant?.wifi ?? null}
       />
       <Toaster position="bottom-center" theme={resolvedTheme} />
     </GuestUiProvider>

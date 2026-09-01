@@ -16,4 +16,7 @@ export type {
   MenuTenantLocalesDto,
   MenuTenantContactsDto,
   MenuDto,
+  OpeningHoursDto,
+  OpeningIntervalDto,
+  WifiAccessDto,
 } from './menu-types.js';

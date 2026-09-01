@@ -100,5 +100,19 @@
   "table.orderingTitle": "Aún no sabemos en qué mesa estás",
   "table.orderingBody": "Escanea el código de tu mesa, por favor, y enviamos el pedido. El carrito se mantiene.",
   "table.seatedTitle": "Listo, ya te vemos",
-  "table.seatedBody": "Tu mesa está identificada, seguimos con el pedido."
+  "table.seatedBody": "Tu mesa está identificada, seguimos con el pedido.",
+  "info.hours": "Horario",
+  "info.wifi": "Wi-Fi",
+  "info.copy": "copiar",
+  "info.copied": "copiado",
+  "info.openNow": "Abierto ahora",
+  "info.closedNow": "Cerrado ahora",
+  "info.closedDay": "cerrado",
+  "weekday.mon": "Lunes",
+  "weekday.tue": "Martes",
+  "weekday.wed": "Miércoles",
+  "weekday.thu": "Jueves",
+  "weekday.fri": "Viernes",
+  "weekday.sat": "Sábado",
+  "weekday.sun": "Domingo"
 }

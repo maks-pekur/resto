@@ -13,7 +13,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { MenuItemId, TenantId } from '@resto/domain';
+import { MenuItemId, OpeningHours, TenantId, WifiAccess } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/availability/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
@@ -110,6 +110,7 @@ const MenuAvailabilitySchema = z.object({
 
 const MenuTenantThemeSchema = z.object({
   logoUrl: z.string().url().nullable(),
+  coverUrl: z.string().url().nullable(),
   primaryColor: z.string().nullable(),
   font: z.string().nullable(),
 });
@@ -126,6 +127,9 @@ const MenuTenantSchema = z.object({
     website: z.string().nullable(),
   }),
   theme: MenuTenantThemeSchema.nullable(),
+  openingHours: OpeningHours.nullable(),
+  /** Guest wi-fi, printed on the table tent anyway — never staff credentials. */
+  wifi: WifiAccess.nullable(),
   /** The languages this menu exists in — guest surfaces build their switcher from these. */
   locales: z.object({
     default: z.string(),
@@ -163,10 +167,13 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
   theme: tenant.theme
     ? {
         logoUrl: tenant.theme.logoUrl,
+        coverUrl: tenant.theme.coverUrl,
         primaryColor: tenant.theme.primaryColor,
         font: tenant.theme.font,
       }
     : null,
+  openingHours: tenant.openingHours,
+  wifi: tenant.wifi,
   locales: { default: tenant.locale, supported: [...tenant.contentLocales] },
 });
 

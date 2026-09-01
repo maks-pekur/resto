@@ -85,6 +85,13 @@
       "when": 1788368400000,
       "tag": "0011_table_qr_sessions",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788454800000,
+      "tag": "0012_tenant_venue_info",
+      "breakpoints": true
     }
   ]
 }

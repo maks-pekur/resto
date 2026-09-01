@@ -100,5 +100,19 @@
   "table.orderingTitle": "We do not know your table yet",
   "table.orderingBody": "Please scan the code on your table and we will send the order. Your cart is kept.",
   "table.seatedTitle": "Got it — we see you now",
-  "table.seatedBody": "Your table is set, back to your order."
+  "table.seatedBody": "Your table is set, back to your order.",
+  "info.hours": "Opening hours",
+  "info.wifi": "Wi-Fi",
+  "info.copy": "copy",
+  "info.copied": "copied",
+  "info.openNow": "Open now",
+  "info.closedNow": "Closed now",
+  "info.closedDay": "closed",
+  "weekday.mon": "Monday",
+  "weekday.tue": "Tuesday",
+  "weekday.wed": "Wednesday",
+  "weekday.thu": "Thursday",
+  "weekday.fri": "Friday",
+  "weekday.sat": "Saturday",
+  "weekday.sun": "Sunday"
 }

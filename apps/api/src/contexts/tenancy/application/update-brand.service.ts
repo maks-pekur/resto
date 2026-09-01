@@ -37,6 +37,8 @@ export class UpdateBrandService {
       description: input.description === undefined ? snapshot.description : input.description,
       socials: input.socials ?? snapshot.socials,
       contacts: input.contacts ?? snapshot.contacts,
+      openingHours: input.openingHours === undefined ? snapshot.openingHours : input.openingHours,
+      wifi: input.wifi === undefined ? snapshot.wifi : input.wifi,
       theme,
       updatedAt: new Date(),
     };
@@ -51,16 +53,29 @@ export class UpdateBrandService {
     input: UpdateBrandRequest,
     tenantId: TenantId,
   ): Promise<TenantTheme | null> {
-    if (input.logoS3Key === undefined) return snapshot.theme;
-    if (input.logoS3Key === null) {
-      return TenantTheme.parse({ ...(snapshot.theme ?? {}), logoUrl: null });
-    }
+    if (input.logoS3Key === undefined && input.coverS3Key === undefined) return snapshot.theme;
+
+    const logoUrl = await this.resolveImage(input.logoS3Key, tenantId);
+    const coverUrl = await this.resolveImage(input.coverS3Key, tenantId);
+
+    return TenantTheme.parse({
+      ...(snapshot.theme ?? {}),
+      ...(logoUrl === undefined ? {} : { logoUrl }),
+      ...(coverUrl === undefined ? {} : { coverUrl }),
+    });
+  }
+
+  private async resolveImage(
+    s3Key: string | null | undefined,
+    tenantId: TenantId,
+  ): Promise<string | null | undefined> {
+    if (s3Key === undefined) return undefined;
+    if (s3Key === null) return null;
     // The key is echoed back by the browser, so it is only trustworthy after the prefix the
     // presign service put there is checked against the caller's own tenant.
-    if (!input.logoS3Key.startsWith(`tenant/${tenantId}/brand/`)) {
+    if (!s3Key.startsWith(`tenant/${tenantId}/brand/`)) {
       throw new BrandLogoNotOwnedError(tenantId);
     }
-    const logoUrl = await this.media.publish(input.logoS3Key);
-    return TenantTheme.parse({ ...(snapshot.theme ?? {}), logoUrl });
+    return this.media.publish(s3Key);
   }
 }

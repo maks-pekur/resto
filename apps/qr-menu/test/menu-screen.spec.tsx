@@ -40,6 +40,8 @@ const buildMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
     description: null,
     socials: {},
     contacts: { phone: null, email: null, website: null },
+    openingHours: null,
+    wifi: null,
   },
   categories: [
     { id: 'cat-1', slug: 'pizza', name: { en: 'Pizza' }, description: null, sortOrder: 0 },
@@ -72,6 +74,7 @@ describe('MenuScreen on qr-menu', () => {
           displayName: 'Cafe Demo',
           theme: {
             logoUrl: 'https://cdn.example.test/logo.png',
+            coverUrl: null,
             primaryColor: null,
             font: null,
           },
@@ -79,6 +82,8 @@ describe('MenuScreen on qr-menu', () => {
           description: null,
           socials: {},
           contacts: { phone: null, email: null, website: null },
+          openingHours: null,
+          wifi: null,
         },
       }),
     );

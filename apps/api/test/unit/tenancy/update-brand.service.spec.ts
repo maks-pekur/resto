@@ -78,7 +78,12 @@ describe('UpdateBrandService', () => {
   it('drops the logo when the key is explicitly cleared', async () => {
     const repo = buildRepo(
       snapshot({
-        theme: { logoUrl: 'https://cdn.example/old.png', primaryColor: null, font: null },
+        theme: {
+          logoUrl: 'https://cdn.example/old.png',
+          coverUrl: null,
+          primaryColor: null,
+          font: null,
+        },
       }),
     );
     const service = new UpdateBrandService(repo, buildMedia());

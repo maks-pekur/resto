@@ -68,8 +68,22 @@ export interface MenuCategoryDto {
 
 export interface MenuTenantThemeDto {
   readonly logoUrl: string | null;
+  readonly coverUrl: string | null;
   readonly primaryColor: string | null;
   readonly font: string | null;
+}
+
+export interface OpeningIntervalDto {
+  readonly from: string;
+  readonly to: string;
+}
+
+/** Intervals per weekday; an empty day is a closed day. */
+export type OpeningHoursDto = Readonly<Record<string, readonly OpeningIntervalDto[]>>;
+
+export interface WifiAccessDto {
+  readonly ssid: string;
+  readonly password: string | null;
 }
 
 export interface MenuTenantLocalesDto {
@@ -91,6 +105,8 @@ export interface MenuTenantDto {
   readonly socials: Readonly<Record<string, string>>;
   readonly contacts: MenuTenantContactsDto;
   readonly theme: MenuTenantThemeDto | null;
+  readonly openingHours: OpeningHoursDto | null;
+  readonly wifi: WifiAccessDto | null;
   readonly locales: MenuTenantLocalesDto;
 }
 

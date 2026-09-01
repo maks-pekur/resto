@@ -11,6 +11,7 @@ const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/u;
 export const TenantTheme = z
   .object({
     logoUrl: z.string().url().nullable().default(null),
+    coverUrl: z.string().url().nullable().default(null),
     primaryColor: z
       .string()
       .regex(HEX_COLOR_RE, '#RRGGBB hex color required')

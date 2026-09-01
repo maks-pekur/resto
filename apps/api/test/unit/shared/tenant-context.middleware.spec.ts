@@ -158,14 +158,17 @@ describe('TenantContextMiddleware — x-tenant-slug header gating', () => {
     const repo = buildRepo();
     const cafe = tenantFor('cafe-a');
     repo.findBySlug = vi.fn().mockResolvedValue(cafe);
-    const { middleware, resolveBySlug } = setup(
+    const { middleware } = setup(
       baseEnv({ NODE_ENV: 'development', TENANT_DEV_FALLBACK_SLUG: 'cafe-a' }),
       repo,
     );
 
-    await middleware.use(reqWith({ host: 'localhost' }), {} as never, next);
+    let bound: string | undefined;
+    await middleware.use(reqWith({ host: 'localhost' }), {} as never, () => {
+      bound = getTenantContext()?.tenantId;
+    });
 
-    expect(resolveBySlug).toHaveBeenCalledWith('cafe-a');
+    expect(bound).toBe(cafe.id);
   });
 
   it('does not consult the dev fallback in production even if (somehow) set', async () => {

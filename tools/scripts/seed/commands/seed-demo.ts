@@ -7,7 +7,7 @@ import { log } from '../lib/logger';
 import type { RuntimeOptions } from '../lib/options';
 import { OperatorHttpClient, signInAsOperator } from '../lib/operator-http';
 import { createAppDb, seedDemoOrder, DEMO_ORDER_SPECS } from '../lib/demo-orders';
-import { uploadPhotoFromUrl } from '../lib/photo-upload';
+import { uploadBrandCover, uploadPhotoFromUrl } from '../lib/photo-upload';
 import {
   assertPaymentsReadyAllowed,
   markTenantPaymentsReady,
@@ -133,6 +133,43 @@ const PIZZA_SIZES = (small: string, medium: string, large: string): readonly Siz
   { name: { en: '30 cm', uk: '30 см', ru: '30 см' }, price: medium },
   { name: { en: '35 cm', uk: '35 см', ru: '35 см' }, price: large },
 ];
+
+interface VenueDef {
+  /** Repo-relative, so a fresh clone seeds the same room. */
+  readonly coverFile: string;
+  readonly openingHours: Readonly<Record<string, readonly { from: string; to: string }[]>>;
+  readonly wifi: { readonly ssid: string; readonly password: string };
+}
+
+/** What a guest sees in the info sheet: the room, the hours, the wi-fi. */
+const VENUE: Readonly<Record<string, VenueDef>> = {
+  pizza: {
+    coverFile: 'tools/scripts/seed/fixtures/venue-cover.jpg',
+    openingHours: {
+      mon: [{ from: '10:00', to: '23:00' }],
+      tue: [{ from: '10:00', to: '23:00' }],
+      wed: [{ from: '10:00', to: '23:00' }],
+      thu: [{ from: '10:00', to: '23:00' }],
+      fri: [{ from: '10:00', to: '02:00' }],
+      sat: [{ from: '11:00', to: '02:00' }],
+      sun: [{ from: '11:00', to: '22:00' }],
+    },
+    wifi: { ssid: 'PizzaPalace_Guest', password: 'margherita2026' },
+  },
+  burger: {
+    coverFile: 'tools/scripts/seed/fixtures/venue-cover.jpg',
+    openingHours: {
+      mon: [{ from: '11:00', to: '22:00' }],
+      tue: [{ from: '11:00', to: '22:00' }],
+      wed: [{ from: '11:00', to: '22:00' }],
+      thu: [{ from: '11:00', to: '22:00' }],
+      fri: [{ from: '11:00', to: '23:00' }],
+      sat: [{ from: '11:00', to: '23:00' }],
+      sun: [],
+    },
+    wifi: { ssid: 'BurgerBarn_Guest', password: 'doublecheese' },
+  },
+};
 
 /** Items an earlier fixture created and this one replaced. Archived on every run so a demo
  * menu never keeps a photoless leftover next to its replacement. */
@@ -655,6 +692,22 @@ const ensureItemSizes = async (
   log('seed-demo.item.sizes', { tenant: tenantSlug, menuItemId, sizes: item.sizes.length });
 };
 
+const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {
+  const venue = VENUE[tenantSlug];
+  if (!venue) return;
+
+  const current = await op.get<{ theme: { coverUrl: string | null } | null }>('/v1/tenants/me');
+  const coverS3Key =
+    current.theme?.coverUrl == null ? await uploadBrandCover(op, venue.coverFile) : null;
+
+  await op.patch('/v1/tenants/me/brand', {
+    openingHours: venue.openingHours,
+    wifi: venue.wifi,
+    ...(coverS3Key === null ? {} : { coverS3Key }),
+  });
+  log('seed-demo.venue.ready', { tenant: tenantSlug, cover: coverS3Key !== null });
+};
+
 const archiveRetiredItems = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {
   const slugs = RETIRED_ITEMS[tenantSlug] ?? [];
   if (slugs.length === 0) return;
@@ -908,6 +961,7 @@ export const runSeedDemo = async (
 
       const locationsByName = await ensureLocations(op, tenantDef);
       await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country), refreshPhotos);
+      await ensureVenueInfo(op, tenantDef.slug);
 
       for (const staff of staffForTenant) {
         const memberId = memberIdByEmail.get(staff.email);

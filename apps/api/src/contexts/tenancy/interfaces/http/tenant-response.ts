@@ -5,9 +5,11 @@ import {
   CountryCodeValue,
   CurrencyValue,
   LocalizedText,
+  OpeningHours,
   SocialLinksSchema,
   TenantSlugValue,
   TenantTheme,
+  WifiAccess,
 } from '@resto/domain';
 import type { TenantSnapshot } from '../../domain/tenant.aggregate';
 
@@ -24,6 +26,8 @@ const TenantResponseSchema = z.object({
   description: LocalizedText.nullable(),
   socials: SocialLinksSchema,
   contacts: BrandContactsSchema,
+  openingHours: OpeningHours.nullable(),
+  wifi: WifiAccess.nullable(),
   legalName: z.string().nullable(),
   legalForm: z.enum(['IP', 'OOO', 'LLC', 'SOLE_PROP', 'OTHER']).nullable(),
   taxId: z.string().nullable(),
@@ -58,6 +62,8 @@ export const toResponse = (s: TenantSnapshot): TenantResponse => ({
   description: s.description,
   socials: s.socials,
   contacts: s.contacts,
+  openingHours: s.openingHours,
+  wifi: s.wifi,
   legalName: s.legalName,
   legalForm: s.legalForm,
   taxId: s.taxId,

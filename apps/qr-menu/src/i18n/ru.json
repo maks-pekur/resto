@@ -100,5 +100,19 @@
   "table.orderingTitle": "Не видим, за каким вы столом",
   "table.orderingBody": "Отсканируйте, пожалуйста, код на столе — и мы отправим заказ. Корзина сохранится.",
   "table.seatedTitle": "Отлично, теперь видим",
-  "table.seatedBody": "Стол определён — продолжаем заказ."
+  "table.seatedBody": "Стол определён — продолжаем заказ.",
+  "info.hours": "Часы работы",
+  "info.wifi": "Wi-Fi",
+  "info.copy": "копировать",
+  "info.copied": "скопировано",
+  "info.openNow": "Сейчас открыто",
+  "info.closedNow": "Сейчас закрыто",
+  "info.closedDay": "выходной",
+  "weekday.mon": "Понедельник",
+  "weekday.tue": "Вторник",
+  "weekday.wed": "Среда",
+  "weekday.thu": "Четверг",
+  "weekday.fri": "Пятница",
+  "weekday.sat": "Суббота",
+  "weekday.sun": "Воскресенье"
 }

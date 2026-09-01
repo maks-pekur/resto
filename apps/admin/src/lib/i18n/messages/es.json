@@ -747,7 +747,59 @@
       "primary": "principal",
       "pending": "pendiente"
     },
-    "tabIntegrations": "Integraciones"
+    "tabIntegrations": "Integraciones",
+    "tabVenue": "Local",
+    "tabApps": "Aplicaciones",
+    "venue": {
+      "coverTitle": "Foto del local",
+      "coverDescription": "El banner que ve el cliente sobre tus datos.",
+      "coverRejected": "JPG, PNG o WebP de hasta 2 MB",
+      "coverUploadFailed": "No se pudo subir",
+      "coverUploading": "Subiendo…",
+      "coverChoose": "Elegir foto",
+      "coverRemove": "Quitar",
+      "coverHint": "Foto horizontal, mínimo 1200 px de ancho",
+      "hoursTitle": "Horario",
+      "hoursDescription": "El cliente lo ve en el menú y sabe si estás abierto.",
+      "closed": "cerrado",
+      "wifiTitle": "Wi-Fi para clientes",
+      "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
+      "ssidLabel": "Nombre de la red",
+      "ssidHint": "Déjalo vacío para ocultar el wi-fi",
+      "passwordLabel": "Contraseña",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "saveFailed": "No se pudo guardar",
+      "weekday": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
+      }
+    },
+    "apps": {
+      "title": "Aplicaciones",
+      "description": "Las superficies por las que te ve el cliente.",
+      "live": "activo",
+      "open": "Abrir",
+      "qr-menu": {
+        "name": "Menú QR",
+        "description": "El menú en la mesa: escanear, pedir, pagar."
+      },
+      "website": {
+        "name": "Sitio web",
+        "description": "Tu página pública con el menú y pedidos para llevar."
+      },
+      "settingsLink": {
+        "venue": "Local",
+        "languages": "Idiomas",
+        "domains": "Dominios"
+      }
+    }
   },
   "account": {
     "pageTitle": "Cuenta",

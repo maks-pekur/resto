@@ -16,6 +16,8 @@ const menuWithPhoto = (url: string): MenuDto => ({
     description: null,
     socials: {},
     contacts: { phone: null, email: null, website: null },
+    openingHours: null,
+    wifi: null,
   },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
