@@ -48,7 +48,7 @@ describe('qr-menu drawer and profile', () => {
 
     fireEvent.click(screen.getByTestId('drawer-trigger'));
 
-    expect(await screen.findByText(/Войдите/u)).toBeInTheDocument();
+    expect(await screen.findByText(/Авторизуйтесь/u)).toBeInTheDocument();
     fireEvent.click(screen.getByTestId('drawer-account'));
 
     expect(await screen.findByPlaceholderText('+7 900 000-00-00')).toBeInTheDocument();

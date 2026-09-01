@@ -1,5 +1,6 @@
 export { cn } from './lib/utils';
 export * from './icons';
+export { BrandIcon, type BrandIconProps } from './guest/brand-icon';
 export { localized } from './lib/localized';
 export { formatPrice } from './lib/format-price';
 

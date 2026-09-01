@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import {
+  BrandIcon,
   ChevronIcon,
   ExternalIcon,
   MapPinIcon,
@@ -28,6 +29,19 @@ const SOCIAL_LABEL: Readonly<Record<string, string>> = {
   yandexMaps: 'Яндекс',
   twogis: '2ГИС',
 };
+
+/** The networks we carry a mark for; the rest are map listings and wear a pin. */
+const BRAND_MARKS = new Set([
+  'instagram',
+  'facebook',
+  'youtube',
+  'x',
+  'telegram',
+  'whatsapp',
+  'tiktok',
+  'tripadvisor',
+  'googleMaps',
+]);
 
 const USEFUL: readonly LegalDocumentKeyDto[] = ['about', 'payment', 'returns'];
 const LEGAL: readonly LegalDocumentKeyDto[] = ['cookies', 'terms', 'privacy'];
@@ -100,13 +114,11 @@ export const GuestDrawer = ({
         </SheetHeader>
 
         <div className="flex flex-col gap-6 px-5 pt-2">
-          <section className="bg-muted flex flex-col gap-3 rounded-2xl p-4">
-            <div className="flex items-start gap-3">
-              <span className="bg-background grid size-10 shrink-0 place-items-center rounded-full">
-                <UserIcon className="size-5" />
-              </span>
-              <p className="text-muted-foreground text-sm leading-snug">{t('drawer.signInBody')}</p>
-            </div>
+          <section className="bg-muted flex flex-col items-center gap-3 rounded-2xl p-4 text-center">
+            <span className="bg-background grid size-12 place-items-center rounded-full">
+              <UserIcon className="size-6" />
+            </span>
+            <p className="text-muted-foreground text-sm leading-snug">{t('drawer.signInBody')}</p>
             <button
               type="button"
               data-testid="drawer-account"
@@ -157,10 +169,13 @@ export const GuestDrawer = ({
                       href={href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="ring-border hover:bg-muted flex h-12 items-center gap-2 rounded-xl px-3 text-sm font-semibold ring-1"
+                      className="ring-border hover:bg-muted flex h-12 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold ring-1"
                     >
+                      <BrandIcon platform={platform} className="size-5 shrink-0" />
+                      {BRAND_MARKS.has(platform) ? null : (
+                        <MapPinIcon className="text-muted-foreground size-5 shrink-0" />
+                      )}
                       <span className="flex-1 truncate">{SOCIAL_LABEL[platform] ?? platform}</span>
-                      <ExternalIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
                     </a>
                   </li>
                 ))}
