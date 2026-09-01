@@ -11,6 +11,8 @@ import {
   Toaster,
   localized,
   useGuestTheme,
+  BurgerIcon,
+  UserIcon,
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import type { PlacedOrder } from './api/client';
@@ -23,6 +25,8 @@ import {
   fetchVenue,
 } from './api/client';
 import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
+import { AccountSheet } from './components/AccountSheet';
+import { GuestDrawer } from './components/GuestDrawer';
 import { InfoSheet } from './components/InfoSheet';
 import { OrderStatusSheet } from './components/OrderStatusSheet';
 import { TabBar } from './components/TabBar';
@@ -220,6 +224,8 @@ export const App = () => {
   }, []);
 
   const [infoOpen, setInfoOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Pressed "order" with no table: the scan sheet stands in, then hands the guest straight on.
   const [placed, setPlaced] = useState<{ order: PlacedOrder; payment: PaymentChoice } | null>(null);
@@ -245,6 +251,19 @@ export const App = () => {
           initialItemId={openItemId}
           onItemOpen={openItem}
           onItemClose={closeItem}
+          headerLeading={
+            <button
+              type="button"
+              aria-label={t('drawer.open')}
+              data-testid="drawer-trigger"
+              onClick={() => {
+                setDrawerOpen(true);
+              }}
+              className="focus-visible:ring-ring -ms-2 flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+            >
+              <BurgerIcon className="size-[1.375rem]" />
+            </button>
+          }
           headerActions={
             <>
               <ThemeToggle
@@ -253,6 +272,19 @@ export const App = () => {
                 label={t('theme.label')}
               />
               <LocaleControl locales={menuLocales.supported} />
+              <button
+                type="button"
+                aria-label={t('nav.profile')}
+                data-testid="account-trigger"
+                onClick={() => {
+                  setAccountOpen(true);
+                }}
+                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+              >
+                <span className="ring-border bg-muted text-muted-foreground grid size-9 place-items-center rounded-full ring-1">
+                  <UserIcon className="size-[1.125rem]" />
+                </span>
+              </button>
             </>
           }
           cartPrimaryAction={
@@ -337,6 +369,32 @@ export const App = () => {
           payment={placed.payment}
         />
       )}
+      <GuestDrawer
+        open={drawerOpen}
+        onOpenChange={setDrawerOpen}
+        tenantName={tenant?.displayName ?? t('menu.title')}
+        entries={[
+          {
+            id: 'info',
+            label: t('drawer.info'),
+            icon: InfoIcon,
+            onSelect: () => {
+              setInfoOpen(true);
+            },
+          },
+          {
+            id: 'account',
+            label: t('nav.profile'),
+            icon: UserIcon,
+            onSelect: () => {
+              setAccountOpen(true);
+            },
+          },
+        ]}
+      />
+
+      <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
+
       <InfoSheet
         open={infoOpen}
         onOpenChange={setInfoOpen}

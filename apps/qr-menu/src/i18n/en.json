@@ -114,5 +114,16 @@
   "weekday.thu": "Thursday",
   "weekday.fri": "Friday",
   "weekday.sat": "Saturday",
-  "weekday.sun": "Sunday"
+  "weekday.sun": "Sunday",
+  "account.title": "Profile",
+  "account.body": "Orders are tied to your phone number — that is how you find their status and history.",
+  "account.phoneLabel": "Phone",
+  "account.phonePlaceholder": "+44 7700 900000",
+  "account.submit": "Send the code",
+  "account.soon": "Signing in by code is on its way. For now an order is found by the number you give at checkout.",
+  "nav.profile": "Profile",
+  "nav.menuLabel": "Menu",
+  "drawer.info": "About the venue",
+  "drawer.orders": "My orders",
+  "drawer.open": "Menu"
 }

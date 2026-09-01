@@ -114,5 +114,16 @@
   "weekday.thu": "Четверг",
   "weekday.fri": "Пятница",
   "weekday.sat": "Суббота",
-  "weekday.sun": "Воскресенье"
+  "weekday.sun": "Воскресенье",
+  "account.title": "Профиль",
+  "account.body": "Заказы привязываются к номеру телефона — по нему вы увидите их историю и статус.",
+  "account.phoneLabel": "Телефон",
+  "account.phonePlaceholder": "+7 900 000-00-00",
+  "account.submit": "Получить код",
+  "account.soon": "Вход по коду скоро заработает. Пока заказ находится по номеру, который вы указываете при оформлении.",
+  "nav.profile": "Профиль",
+  "nav.menuLabel": "Меню",
+  "drawer.info": "О заведении",
+  "drawer.orders": "Мои заказы",
+  "drawer.open": "Меню"
 }

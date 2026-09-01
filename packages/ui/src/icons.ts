@@ -10,5 +10,8 @@ export {
   Phone as PhoneIcon,
   Mail as MailIcon,
   Globe as WebsiteIcon,
+  Menu as BurgerIcon,
+  User as UserIcon,
+  ChevronRight as ChevronIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

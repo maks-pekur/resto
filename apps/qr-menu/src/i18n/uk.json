@@ -114,5 +114,16 @@
   "weekday.thu": "Четвер",
   "weekday.fri": "П'ятниця",
   "weekday.sat": "Субота",
-  "weekday.sun": "Неділя"
+  "weekday.sun": "Неділя",
+  "account.title": "Профіль",
+  "account.body": "Замовлення прив’язуються до номера телефона — за ним ви побачите статус та історію.",
+  "account.phoneLabel": "Телефон",
+  "account.phonePlaceholder": "+380 00 000 0000",
+  "account.submit": "Отримати код",
+  "account.soon": "Вхід за кодом скоро запрацює. Наразі замовлення шукається за номером, який ви вказуєте при оформленні.",
+  "nav.profile": "Профіль",
+  "nav.menuLabel": "Меню",
+  "drawer.info": "Про заклад",
+  "drawer.orders": "Мої замовлення",
+  "drawer.open": "Меню"
 }
