@@ -32,7 +32,9 @@ export const GuestHeader = ({ tenantName, logoUrl, actions }: GuestHeaderProps) 
           </span>
         </a>
 
-        <div className="flex shrink-0 items-center gap-1">{actions}</div>
+        {/* The controls are 44px targets around 36px discs, so their own 4px of air would otherwise
+            read as a wider margin than the content's. Pulling them out lines the discs up with it. */}
+        <div className="-me-1 flex shrink-0 items-center gap-1">{actions}</div>
       </div>
     </header>
   );
