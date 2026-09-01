@@ -70,23 +70,26 @@ export const TableScanCard = ({ title, body, onSeated, autoStart = false }: Tabl
             }}
           />
         </Suspense>
-      ) : (
+      ) : canScanInPage() ? (
         <button
           type="button"
           onClick={() => {
             setFailed(false);
             setScanning(true);
           }}
-          disabled={!canScanInPage()}
-          className="bg-primary text-primary-foreground flex h-11 w-full cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold disabled:cursor-not-allowed disabled:opacity-50"
+          className="bg-primary text-primary-foreground flex h-11 w-full cursor-pointer items-center justify-center rounded-full px-5 text-sm font-bold"
         >
           {t('table.scanAction')}
         </button>
+      ) : (
+        // No in-page camera — an inert button would only invite a tap that does nothing, so the
+        // instruction takes its place.
+        <p className="bg-muted rounded-xl px-4 py-3 text-sm">{t('table.scanWithCamera')}</p>
       )}
 
-      <p className="text-muted-foreground text-xs">
-        {canScanInPage() ? t('table.scanCartKept') : t('table.scanWithCamera')}
-      </p>
+      {canScanInPage() ? (
+        <p className="text-muted-foreground text-xs">{t('table.scanCartKept')}</p>
+      ) : null}
       {failed ? <p className="text-destructive text-xs">{t('table.scanFailed')}</p> : null}
     </div>
   );
