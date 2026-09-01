@@ -124,11 +124,21 @@ const PIZZA_PHOTO = (id: string): string =>
 const PIZZA_PHOTO_CUTOUT = (id: string): string =>
   `https://media.dodostatic.net/image/r:1875x1875/${id}.webp`;
 
+/** Studio shots on white from a Kurgan delivery menu, cut out on upload like the pizzas above.
+ * Development fixture only — the photography is theirs, and must never ship in a public demo. */
+const SNACK_PHOTO = (file: string): string => `https://image.yapoki.net/img/${file}`;
+
 const PIZZA_SIZES = (small: string, medium: string, large: string): readonly SizeDef[] => [
   { name: { en: '25 cm', uk: '25 см', ru: '25 см' }, price: small, isDefault: true },
   { name: { en: '30 cm', uk: '30 см', ru: '30 см' }, price: medium },
   { name: { en: '35 cm', uk: '35 см', ru: '35 см' }, price: large },
 ];
+
+/** Items an earlier fixture created and this one replaced. Archived on every run so a demo
+ * menu never keeps a photoless leftover next to its replacement. */
+const RETIRED_ITEMS: Readonly<Record<string, readonly string[]>> = {
+  pizza: ['dodster', 'cheese-balls', 'three-chocolate-muffin', 'sweet-and-sour-sauce'],
+};
 
 const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
   pizza: [
@@ -284,21 +294,28 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
       name: { en: 'Snacks', uk: 'Закуски', ru: 'Закуски' },
       items: [
         {
-          slug: 'dodster',
-          name: { en: 'Dodster', uk: 'Додстер', ru: 'Додстер' },
-          description: {
-            en: 'Chicken, tomatoes, mozzarella and cheddar, ranch sauce in a thin flatbread',
-            uk: 'Курка, томати, моцарела та чедер, соус ранч у тонкому коржі',
-            ru: 'Цыплёнок, томаты, моцарелла и чеддер, соус ранч в тонкой лепёшке',
+          slug: 'chicken-roti',
+          name: {
+            en: 'BBQ chicken roti',
+            uk: 'Роті з курчам барбекю',
+            ru: 'Роти с цыплёнком барбекю',
           },
-          price: '159.00',
+          description: {
+            en: 'Chicken, mozzarella, red onion and BBQ sauce in a roti flatbread',
+            uk: 'Курча, моцарела, червона цибуля та соус барбекю в коржі роті',
+            ru: 'Цыплёнок, моцарелла, красный лук и соус барбекю в лепёшке роти',
+          },
+          price: '189.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_4d0a3236a61baa128c05cd751c8339e2352824441cf430de9c3e3826f53418a9.webp',
+          ),
         },
         {
           slug: 'chicken-nuggets',
           name: {
-            en: 'Chicken nuggets, 6 pcs',
-            uk: 'Курячі нагетси, 6 шт.',
-            ru: 'Куриные наггетсы, 6 шт.',
+            en: 'Chicken nuggets, 5 pcs',
+            uk: 'Курячі нагетси, 5 шт.',
+            ru: 'Наггетсы, 5 шт.',
           },
           description: {
             en: 'Chicken fillet in a crisp breading',
@@ -306,26 +323,52 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Куриное филе в хрустящей панировке',
           },
           price: '149.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_a2f5d76290deb006216744684b61b07ea5a564b15cd94f6c2748ad4c541de410.webp',
+          ),
         },
         {
           slug: 'oven-potatoes',
           name: { en: 'Oven potatoes', uk: 'Картопля з печі', ru: 'Картофель из печи' },
           description: {
-            en: 'Potato wedges with Provence herbs',
-            uk: 'Часточки картоплі з прованськими травами',
-            ru: 'Дольки картофеля с прованскими травами',
+            en: 'Baked to order, salted while hot',
+            uk: 'Запікається на замовлення, солиться гарячою',
+            ru: 'Запекается под заказ, солится горячим',
           },
           price: '129.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_0eaf34cc2f5392a03363e0d048e1a2206476b71904799886e07e310e82820fc0.webp',
+          ),
         },
         {
-          slug: 'cheese-balls',
-          name: { en: 'Cheese balls', uk: 'Сирні кульки', ru: 'Сырные шарики' },
+          slug: 'potato-wedges',
+          name: {
+            en: 'Potato wedges',
+            uk: 'Картопляні часточки з печі',
+            ru: 'Картофельные дольки из печи',
+          },
           description: {
-            en: 'Crisp on the outside, molten mozzarella inside',
-            uk: 'Хрусткі назовні, розплавлена моцарела всередині',
-            ru: 'Хрустящие снаружи, расплавленная моцарелла внутри',
+            en: 'Wedges with the skin on, Provence herbs',
+            uk: 'Часточки в шкірці, прованські трави',
+            ru: 'Дольки в кожуре, прованские травы',
           },
           price: '139.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_97c008069b5ebc1573913f99e9a1bb3c35499082335298a4a36f35fa11cb6bf0.webp',
+          ),
+        },
+        {
+          slug: 'pork-gyoza',
+          name: { en: 'Pork gyoza', uk: 'Гедза зі свининою', ru: 'Гедза со свининой' },
+          description: {
+            en: 'Pan-fried dumplings, soy dip on the side',
+            uk: 'Смажені вареники, соєвий соус окремо',
+            ru: 'Жареные пельмешки, соевый соус отдельно',
+          },
+          price: '199.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_fbf9bae36684ff8b6e626f82b80a4d7b1f505b09f514933850ac5cf39b2fc216.webp',
+          ),
         },
       ],
     },
@@ -335,41 +378,63 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
       items: [
         {
           slug: 'cheesecake-new-york',
-          name: {
-            en: 'New York cheesecake',
-            uk: 'Чізкейк Нью-Йорк',
-            ru: 'Чизкейк Нью-Йорк',
-          },
+          name: { en: 'New York cheesecake', uk: 'Чізкейк Нью-Йорк', ru: 'Чизкейк Нью-Йорк' },
           description: {
-            en: 'The classic, on a shortcrust base',
-            uk: 'Класичний, на пісочній основі',
-            ru: 'Классический, на песочной основе',
+            en: 'The classic American cheesecake',
+            uk: 'Класичний американський чізкейк',
+            ru: 'Классический американский чизкейк',
           },
           price: '149.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_ae6d43a948e7f958aa1473498732d02ef04a5477baa8e5eaf796243bf5ad04ce.webp',
+          ),
         },
         {
-          slug: 'three-chocolate-muffin',
+          slug: 'salted-caramel-cheesecake',
           name: {
-            en: 'Three chocolate muffin',
-            uk: 'Мафін «Три шоколади»',
-            ru: 'Маффин «Три шоколада»',
+            en: 'Salted caramel cheesecake',
+            uk: 'Чізкейк із солоною карамеллю',
+            ru: 'Чизкейк с солёной карамелью',
           },
           description: {
-            en: 'Dark, milk and white chocolate in one cake',
-            uk: 'Чорний, молочний і білий шоколад в одному кексі',
-            ru: 'Тёмный, молочный и белый шоколад в одном кексе',
+            en: 'The classic under a salted caramel topping',
+            uk: 'Класичний під топінгом із солоної карамелі',
+            ru: 'Классический под топингом из солёной карамели',
           },
-          price: '99.00',
+          price: '159.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_09d7f81206d47ad539196b1f9a08edab8d23bdabf2ce0b929854a66cfd826f68.webp',
+          ),
+        },
+        {
+          slug: 'walnut-brownie',
+          name: {
+            en: 'Walnut brownie',
+            uk: 'Брауні з волоськими горіхами',
+            ru: 'Брауни с грецкими орехами',
+          },
+          description: {
+            en: 'Dense chocolate, walnuts through it',
+            uk: 'Щільний шоколад, волоські горіхи всередині',
+            ru: 'Плотный шоколад, грецкие орехи внутри',
+          },
+          price: '119.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_02a3b7b4c1f90c79d9d33fa7733e56ac21acaab8522062da5106cd01f67aeb2e.webp',
+          ),
         },
         {
           slug: 'glazed-donut',
-          name: { en: 'Glazed donut', uk: 'Пончик у глазурі', ru: 'Пончик в глазури' },
+          name: { en: 'Strawberry donut', uk: 'Пончик полуничний', ru: 'Пончик клубничный' },
           description: {
-            en: 'Airy dough under a chocolate glaze',
-            uk: 'Повітряне тісто під шоколадною глазур’ю',
-            ru: 'Воздушное тесто под шоколадной глазурью',
+            en: 'Strawberry filling, coloured sprinkles',
+            uk: 'Полунична начинка, кольорове посипання',
+            ru: 'Клубничная начинка, разноцветная посыпка',
           },
-          price: '79.00',
+          price: '89.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_514612f3762ac3fca1848b834388bda3da3e72921c7f63e5799974f0dce05783.webp',
+          ),
         },
       ],
     },
@@ -381,25 +446,33 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
           slug: 'cheese-sauce',
           name: { en: 'Cheese sauce', uk: 'Сирний соус', ru: 'Сырный соус' },
           price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_40b7aeb7d5f3ba156fac3863498d07b30f7332693e052998dde21c4923a1f719.webp',
+          ),
         },
         {
           slug: 'bbq-sauce',
           name: { en: 'BBQ sauce', uk: 'Соус барбекю', ru: 'Соус барбекю' },
           price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_5124252fd5c63270aa414e8789f53a3b53b5ee15372c842871a54f14c8bd9271.webp',
+          ),
         },
         {
           slug: 'garlic-sauce',
           name: { en: 'Garlic sauce', uk: 'Часниковий соус', ru: 'Чесночный соус' },
           price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_e9e75ce9fcdab2489c117c4478ccd18f2592c1e8885a2a56e02e18246a20e32b.webp',
+          ),
         },
         {
-          slug: 'sweet-and-sour-sauce',
-          name: {
-            en: 'Sweet and sour sauce',
-            uk: 'Кисло-солодкий соус',
-            ru: 'Кисло-сладкий соус',
-          },
+          slug: 'caesar-sauce',
+          name: { en: 'Caesar sauce', uk: 'Соус цезар', ru: 'Соус цезарь' },
           price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_cdc6e8b47ac2a47855f8c4e8a70267656176d0d51943b72d8c2d1f5376b7f02f.webp',
+          ),
         },
       ],
     },
@@ -411,6 +484,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
           slug: 'cola',
           name: { en: 'Cola 0.5 l', uk: 'Кола 0,5 л', ru: 'Кола 0,5 л' },
           price: '45.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_905623bd1c3c321b06e840f8fff5b6ddecb72826f218986820b5c84731bbcc6a.jpg',
+          ),
         },
         {
           slug: 'orange-juice',
@@ -420,6 +496,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Сок апельсиновый 0,3 л',
           },
           price: '55.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_29eaf8709a7af360e6cb1f8f0205e3490821c4eaad22cf17436ad6bfe7cb5fcb.jpg',
+          ),
         },
         {
           slug: 'water',
@@ -429,6 +508,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Вода негазированная 0,5 л',
           },
           price: '30.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_809eb01d1b933696410b48372bc7bcd0df55a896918a4d64af035c523b1cc9d1.webp',
+          ),
         },
       ],
     },
@@ -573,6 +655,19 @@ const ensureItemSizes = async (
   log('seed-demo.item.sizes', { tenant: tenantSlug, menuItemId, sizes: item.sizes.length });
 };
 
+const archiveRetiredItems = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {
+  const slugs = RETIRED_ITEMS[tenantSlug] ?? [];
+  if (slugs.length === 0) return;
+
+  const live = await op.get<ItemListResponse>('/v1/catalog/items?status=published&limit=200');
+  for (const slug of slugs) {
+    const item = live.items.find((i) => i.slug === slug);
+    if (!item) continue;
+    await op.patch(`/v1/catalog/items/${item.id}/archive`, {});
+    log('seed-demo.item.archived', { tenant: tenantSlug, slug });
+  }
+};
+
 const ensureCatalog = async (
   op: OperatorHttpClient,
   tenantSlug: string,
@@ -636,6 +731,8 @@ const ensureCatalog = async (
       await ensureItemSizes(op, tenantSlug, saved.id, item);
     }
   }
+
+  await archiveRetiredItems(op, tenantSlug);
 
   await op.post('/v1/catalog/publish', {}).catch((err: unknown) => {
     log('seed-demo.publish.skipped', { tenant: tenantSlug, err: String(err) });
