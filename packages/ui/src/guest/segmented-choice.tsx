@@ -38,7 +38,7 @@ export const SegmentedChoice = ({
       <span
         aria-hidden
         className={cn(
-          'bg-background absolute inset-y-0.5 start-0.5 rounded-full shadow-sm transition-transform duration-200 ease-out',
+          'bg-background ring-primary/30 absolute inset-y-0.5 start-0.5 rounded-full shadow-sm ring-1 transition-transform duration-200 ease-out',
           selectedId === null && 'opacity-0',
         )}
         style={{
