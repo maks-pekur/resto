@@ -133,7 +133,7 @@ export const InfoSheet = ({
             />
           </div>
         )}
-        <SheetHeader className="px-5 pt-4 pb-2">
+        <SheetHeader className="px-5 pt-4 pb-0">
           <div className="flex items-baseline justify-between gap-3">
             <SheetTitle className="text-2xl font-extrabold">{tenantName}</SheetTitle>
             {openingHours === null ? null : (
@@ -150,7 +150,7 @@ export const InfoSheet = ({
           </div>
         </SheetHeader>
 
-        <div className="flex flex-col gap-6 px-5 pb-6">
+        <div className="flex flex-col gap-6 px-5 pt-6 pb-6">
           {description ? (
             <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
           ) : null}
