@@ -29,8 +29,8 @@ function LocaleDisc({ locale, withCode }: DiscProps) {
   const flag = LOCALE_FLAG[locale];
   return (
     <span className="relative inline-flex shrink-0">
-      <span className="ring-border bg-muted grid size-7 place-items-center overflow-hidden rounded-full text-base leading-none ring-1">
-        {flag ?? <span className="text-[10px] font-bold uppercase">{locale}</span>}
+      <span className="ring-border bg-muted grid size-9 place-items-center overflow-hidden rounded-full text-lg leading-none ring-1">
+        {flag ?? <span className="text-xs font-bold uppercase">{locale}</span>}
       </span>
       {withCode && flag !== undefined ? (
         <span className="bg-primary text-primary-foreground border-background absolute -end-1 -bottom-1 rounded-full border px-1 text-[9px] leading-[1.3] font-bold uppercase">
@@ -91,7 +91,7 @@ export const LocaleSwitcher = ({
         onClick={() => {
           setOpen((prev) => !prev);
         }}
-        className="focus-visible:ring-ring flex min-h-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:min-h-8"
+        className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
       >
         <LocaleDisc locale={activeLocale} withCode={false} />
       </button>
@@ -115,7 +115,7 @@ export const LocaleSwitcher = ({
                   if (!isActive) onSelect(locale);
                 }}
                 className={cn(
-                  'hover:bg-accent hover:text-accent-foreground flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-start text-sm',
+                  'hover:bg-accent hover:text-accent-foreground flex min-h-11 w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-start text-sm',
                   isActive && 'text-primary font-semibold',
                 )}
               >
