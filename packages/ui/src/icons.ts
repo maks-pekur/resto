@@ -13,5 +13,6 @@ export {
   Menu as BurgerIcon,
   User as UserIcon,
   ChevronRight as ChevronIcon,
+  SunMoon as ThemeIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

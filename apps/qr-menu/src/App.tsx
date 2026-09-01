@@ -13,6 +13,7 @@ import {
   useGuestTheme,
   BurgerIcon,
   UserIcon,
+  ThemeIcon,
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import type { PlacedOrder } from './api/client';
@@ -251,26 +252,8 @@ export const App = () => {
           initialItemId={openItemId}
           onItemOpen={openItem}
           onItemClose={closeItem}
-          headerLeading={
-            <button
-              type="button"
-              aria-label={t('drawer.open')}
-              data-testid="drawer-trigger"
-              onClick={() => {
-                setDrawerOpen(true);
-              }}
-              className="focus-visible:ring-ring -ms-2 flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
-            >
-              <BurgerIcon className="size-[1.375rem]" />
-            </button>
-          }
           headerActions={
             <>
-              <ThemeToggle
-                resolvedTheme={resolvedTheme}
-                onToggle={toggleTheme}
-                label={t('theme.label')}
-              />
               <LocaleControl locales={menuLocales.supported} />
               <button
                 type="button"
@@ -284,6 +267,17 @@ export const App = () => {
                 <span className="ring-border bg-muted text-muted-foreground grid size-9 place-items-center rounded-full ring-1">
                   <UserIcon className="size-[1.125rem]" />
                 </span>
+              </button>
+              <button
+                type="button"
+                aria-label={t('drawer.open')}
+                data-testid="drawer-trigger"
+                onClick={() => {
+                  setDrawerOpen(true);
+                }}
+                className="focus-visible:ring-ring -me-2 flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+              >
+                <BurgerIcon className="size-[1.375rem]" />
               </button>
             </>
           }
@@ -374,6 +368,18 @@ export const App = () => {
         onOpenChange={setDrawerOpen}
         tenantName={tenant?.displayName ?? t('menu.title')}
         entries={[
+          {
+            id: 'theme',
+            label: t('theme.label'),
+            icon: ThemeIcon,
+            trailing: (
+              <ThemeToggle
+                resolvedTheme={resolvedTheme}
+                onToggle={toggleTheme}
+                label={t('theme.label')}
+              />
+            ),
+          },
           {
             id: 'info',
             label: t('drawer.info'),

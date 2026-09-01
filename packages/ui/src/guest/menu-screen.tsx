@@ -35,8 +35,6 @@ export interface MenuScreenProps {
   readonly onItemClose?: () => void;
   readonly onAddedToCart?: (line: Omit<CartLineItem, 'quantity'>) => void;
   readonly headerActions?: ReactNode;
-  /** Before the name — the drawer handle, where a surface has a drawer. */
-  readonly headerLeading?: ReactNode;
   readonly footerActions?: ReactNode;
   readonly footerLinks?: readonly GuestFooterLink[];
   readonly banner?: ReactNode;
@@ -60,7 +58,6 @@ export const MenuScreen = ({
   onItemClose,
   onAddedToCart,
   headerActions,
-  headerLeading,
   footerActions,
   footerLinks,
   banner,
@@ -150,14 +147,7 @@ export const MenuScreen = ({
 
   return (
     <GuestShell
-      header={
-        <GuestHeader
-          tenantName={tenantName}
-          logoUrl={logoUrl}
-          actions={headerActions}
-          leading={headerLeading}
-        />
-      }
+      header={<GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={headerActions} />}
       rail={
         <CategoryRail
           categories={sections.map((section) => section.category)}

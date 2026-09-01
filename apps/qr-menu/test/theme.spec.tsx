@@ -56,8 +56,19 @@ vi.mock('../src/api/client', () => ({
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));
 
-const themeToggle = () =>
-  within(screen.getByRole('banner')).getByRole('button', { name: t('theme.label') });
+const last = (nodes: readonly HTMLElement[]): HTMLElement => {
+  const node = nodes.at(-1);
+  if (node === undefined) throw new Error('The theme control is not on screen.');
+  return node;
+};
+
+// The control moved into the drawer, so reaching it starts at the burger.
+const themeToggle = (): HTMLElement => {
+  const onScreen = screen.queryAllByRole('button', { name: t('theme.label') });
+  if (onScreen.length > 0) return last(onScreen);
+  fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
+  return last(screen.getAllByRole('button', { name: t('theme.label') }));
+};
 
 beforeEach(() => {
   window.localStorage.clear();
