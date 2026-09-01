@@ -41,8 +41,6 @@ const initialValues = (tenant: TenantResponse): BrandFormValues => ({
   logoS3Key: null,
   coverUrl: tenant.theme?.coverUrl ?? null,
   coverS3Key: null,
-  wifiSsid: tenant.wifi?.ssid ?? '',
-  wifiPassword: tenant.wifi?.password ?? '',
 });
 
 export interface BrandFormProps {
@@ -87,10 +85,6 @@ export function BrandForm({ tenant }: BrandFormProps) {
         ...(values.logoUrl === null && tenant.theme?.logoUrl ? { logoS3Key: null } : {}),
         ...(values.coverS3Key === null ? {} : { coverS3Key: values.coverS3Key }),
         ...(values.coverUrl === null && tenant.theme?.coverUrl ? { coverS3Key: null } : {}),
-        wifi:
-          values.wifiSsid.length === 0
-            ? null
-            : { ssid: values.wifiSsid, password: values.wifiPassword || null },
       }),
     onSuccess: (res) => {
       if (!res.ok) {
@@ -296,20 +290,6 @@ export function BrandForm({ tenant }: BrandFormProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
-        </FieldGroup>
-      </SettingsSection>
-
-      <SettingsSection title={t('wifiTitle')} description={t('wifiDescription')}>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="wifi-ssid">{t('ssidLabel')}</FieldLabel>
-            <Input id="wifi-ssid" maxLength={64} {...form.register('wifiSsid')} />
-            <FieldDescription>{t('ssidHint')}</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="wifi-password">{t('passwordLabel')}</FieldLabel>
-            <Input id="wifi-password" maxLength={128} {...form.register('wifiPassword')} />
-          </Field>
         </FieldGroup>
       </SettingsSection>
 

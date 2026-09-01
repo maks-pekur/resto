@@ -1,4 +1,4 @@
-import type { MenuDto } from '@resto/api-client/public';
+import type { MenuDto, VenueDto } from '@resto/api-client/public';
 
 export class MenuNotFoundError extends Error {
   constructor() {
@@ -14,6 +14,12 @@ export const fetchMenu = async (signal?: AbortSignal): Promise<MenuDto> => {
   if (res.status === 404) throw new MenuNotFoundError();
   if (!res.ok) throw new Error(`fetchMenu failed: ${res.status.toString()}`);
   return res.json() as Promise<MenuDto>;
+};
+
+export const fetchVenue = async (signal?: AbortSignal): Promise<VenueDto | null> => {
+  const res = await fetch('/v1/venue', { ...(signal ? { signal } : {}) });
+  if (!res.ok) return null;
+  return res.json() as Promise<VenueDto>;
 };
 
 export interface MenuAvailability {

@@ -738,12 +738,7 @@
       "coverUploading": "Uploading…",
       "coverChoose": "Choose photo",
       "coverRemove": "Remove",
-      "coverHint": "Landscape photo, at least 1200 px wide",
-      "wifiTitle": "Guest wi-fi",
-      "wifiDescription": "Shown in the menu so nobody has to ask a waiter.",
-      "ssidLabel": "Network name",
-      "ssidHint": "Leave empty to hide wi-fi",
-      "passwordLabel": "Password"
+      "coverHint": "Landscape photo, at least 1200 px wide"
     },
     "pageDescription": "The restaurant profile, languages, domains and payouts.",
     "navLabel": "Settings sections",
@@ -776,28 +771,8 @@
         "description": "Your public page with the menu and takeaway orders."
       },
       "settingsLink": {
-        "venue": "Opening hours",
         "languages": "Languages",
         "domains": "Domains"
-      }
-    },
-    "tabHours": "Opening hours",
-    "hours": {
-      "title": "Opening hours",
-      "description": "Guests see them in the menu and know whether you are open.",
-      "closed": "closed",
-      "save": "Save",
-      "saving": "Saving…",
-      "saved": "Saved",
-      "saveFailed": "Could not save",
-      "weekday": {
-        "mon": "Monday",
-        "tue": "Tuesday",
-        "wed": "Wednesday",
-        "thu": "Thursday",
-        "fri": "Friday",
-        "sat": "Saturday",
-        "sun": "Sunday"
       }
     }
   },
@@ -808,5 +783,26 @@
     "identityDescription": "The address you sign in to the panel with.",
     "emailLabel": "Email",
     "roleLabel": "Role"
+  },
+  "locations": {
+    "hours": {
+      "title": "Opening hours",
+      "description": "Guests see them in the menu and know whether you are open.",
+      "closed": "closed",
+      "weekday": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "wifiTitle": "Guest wi-fi",
+    "wifiDescription": "Shown in the menu so nobody has to ask a waiter.",
+    "ssidLabel": "Network name",
+    "ssidHint": "Leave empty to hide wi-fi",
+    "passwordLabel": "Password"
   }
 }

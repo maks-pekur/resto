@@ -12,8 +12,6 @@ import {
   type TenantTheme,
   type CountryCodeValue,
   type Currency,
-  type OpeningHours,
-  type WifiAccess,
 } from '@resto/domain';
 import { z } from 'zod';
 import type { TenantDomain } from './tenant-domain';
@@ -75,9 +73,6 @@ export interface TenantSnapshot {
   /** What the restaurant says about itself, in every language it publishes in. */
   readonly description: LocalizedText | null;
   readonly socials: SocialLinks;
-  /** When the doors are open, per weekday; null until the venue fills it in. */
-  readonly openingHours: OpeningHours | null;
-  readonly wifi: WifiAccess | null;
   readonly contacts: BrandContacts;
   readonly legalName: string | null;
   readonly legalForm: TenantLegalForm | null;
@@ -178,8 +173,6 @@ export class Tenant {
       theme: null,
       description: null,
       socials: {},
-      openingHours: null,
-      wifi: null,
       contacts: EMPTY_BRAND_CONTACTS,
       legalName: null,
       legalForm: null,

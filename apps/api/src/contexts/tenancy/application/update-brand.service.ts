@@ -37,8 +37,6 @@ export class UpdateBrandService {
       description: input.description === undefined ? snapshot.description : input.description,
       socials: input.socials ?? snapshot.socials,
       contacts: input.contacts ?? snapshot.contacts,
-      openingHours: input.openingHours === undefined ? snapshot.openingHours : input.openingHours,
-      wifi: input.wifi === undefined ? snapshot.wifi : input.wifi,
       theme,
       updatedAt: new Date(),
     };

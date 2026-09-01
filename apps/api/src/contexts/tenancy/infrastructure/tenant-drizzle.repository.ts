@@ -7,7 +7,6 @@ import {
   TenantSlug,
   TenantTheme,
   type CountryCodeValue,
-  OpeningHours,
 } from '@resto/domain';
 import {
   appendToOutbox,
@@ -174,9 +173,6 @@ export class TenantDrizzleRepository implements TenantRepository {
             theme: snapshot.theme,
             description: snapshot.description,
             socials: { ...snapshot.socials },
-            openingHours: snapshot.openingHours,
-            wifiSsid: snapshot.wifi?.ssid ?? null,
-            wifiPassword: snapshot.wifi?.password ?? null,
             contactPhone: snapshot.contacts.phone,
             contactEmail: snapshot.contacts.email,
             contactWebsite: snapshot.contacts.website,
@@ -211,9 +207,6 @@ export class TenantDrizzleRepository implements TenantRepository {
               theme: snapshot.theme,
               description: snapshot.description,
               socials: { ...snapshot.socials },
-              openingHours: snapshot.openingHours,
-              wifiSsid: snapshot.wifi?.ssid ?? null,
-              wifiPassword: snapshot.wifi?.password ?? null,
               contactPhone: snapshot.contacts.phone,
               contactEmail: snapshot.contacts.email,
               contactWebsite: snapshot.contacts.website,
@@ -382,8 +375,6 @@ export class TenantDrizzleRepository implements TenantRepository {
       theme: row.theme === null ? null : TenantTheme.parse(row.theme),
       description: row.description,
       socials: SocialLinksSchema.parse(row.socials),
-      openingHours: row.openingHours === null ? null : OpeningHours.parse(row.openingHours),
-      wifi: row.wifiSsid === null ? null : { ssid: row.wifiSsid, password: row.wifiPassword },
       contacts: {
         phone: row.contactPhone,
         email: row.contactEmail,

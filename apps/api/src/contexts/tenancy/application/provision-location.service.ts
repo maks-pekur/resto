@@ -70,6 +70,8 @@ export class ProvisionLocationService {
       latitude: input.latitude,
       longitude: input.longitude,
       timezone,
+      openingHours: null,
+      wifi: null,
       contacts: input.contacts,
       status: 'active',
       createdAt: now,

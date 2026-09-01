@@ -22,6 +22,7 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
+import { OpeningHours, WifiAccess } from '@resto/domain';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { LocationNeutral, Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { ProvisionLocationService } from '../../application/provision-location.service';
@@ -63,6 +64,8 @@ const UpdateLocationInputSchema = z.object({
   longitude: LocationLongitude.optional(),
   timezone: LocationTimezone.nullable().optional(),
   contacts: LocationContactsSchema.nullable().optional(),
+  openingHours: OpeningHours.nullable().optional(),
+  wifi: WifiAccess.nullable().optional(),
 });
 class UpdateLocationInputDto extends createZodDto(UpdateLocationInputSchema) {}
 
@@ -75,6 +78,8 @@ const LocationResponseSchema = z.object({
   longitude: z.number().nullable(),
   timezone: z.string().nullable(),
   contacts: LocationContactsSchema.nullable(),
+  openingHours: OpeningHours.nullable(),
+  wifi: WifiAccess.nullable(),
   status: z.enum(['active', 'archived']),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -96,6 +101,8 @@ const toResponse = (s: LocationSnapshot) => ({
   longitude: s.longitude,
   timezone: s.timezone,
   contacts: s.contacts,
+  openingHours: s.openingHours,
+  wifi: s.wifi,
   status: s.status,
   createdAt: s.createdAt.toISOString(),
   updatedAt: s.updatedAt.toISOString(),

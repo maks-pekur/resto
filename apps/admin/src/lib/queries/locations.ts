@@ -6,6 +6,18 @@ export interface LocationContactsView {
   readonly email?: string;
 }
 
+export interface OpeningInterval {
+  readonly from: string;
+  readonly to: string;
+}
+
+export type OpeningHours = Readonly<Record<string, readonly OpeningInterval[]>>;
+
+export interface WifiAccess {
+  readonly ssid: string;
+  readonly password: string | null;
+}
+
 export interface LocationView {
   readonly id: string;
   readonly name: string;
@@ -15,6 +27,8 @@ export interface LocationView {
   readonly longitude: number | null;
   readonly timezone: string | null;
   readonly contacts: LocationContactsView | null;
+  readonly openingHours: OpeningHours | null;
+  readonly wifi: WifiAccess | null;
   readonly status: 'active' | 'archived';
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -36,6 +50,8 @@ export interface CreateLocationInput {
   /** Omitted inherits the tenant's zone — the server decides. */
   readonly timezone?: string | null;
   readonly contacts: LocationContactsView | null;
+  readonly openingHours?: OpeningHours | null;
+  readonly wifi?: WifiAccess | null;
 }
 
 export type UpdateLocationInput = Partial<CreateLocationInput>;

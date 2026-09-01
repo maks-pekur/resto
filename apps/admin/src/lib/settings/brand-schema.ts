@@ -40,8 +40,6 @@ export const BrandFormSchema = z.object({
   logoS3Key: z.string().nullable(),
   coverUrl: z.string().nullable(),
   coverS3Key: z.string().nullable(),
-  wifiSsid: z.string().trim().max(64, 'ssidTooLong'),
-  wifiPassword: z.string().trim().max(128, 'passwordTooLong'),
 });
 
 export type BrandFormValues = z.infer<typeof BrandFormSchema>;

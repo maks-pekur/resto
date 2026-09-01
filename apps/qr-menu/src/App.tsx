@@ -20,6 +20,7 @@ import {
   fetchTableSession,
   openTableSession,
   MenuNotFoundError,
+  fetchVenue,
 } from './api/client';
 import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
 import { InfoSheet } from './components/InfoSheet';
@@ -28,6 +29,7 @@ import { TabBar } from './components/TabBar';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
 import { TableProblemSheet } from './components/TableProblemSheet';
+import type { VenueDto } from '@resto/api-client/public';
 import { adoptTenantLocales, getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
@@ -61,8 +63,20 @@ export const App = () => {
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
   const [tableId, setTableId] = useState<string | undefined>(undefined);
+  const [venue, setVenue] = useState<VenueDto | null>(null);
 
   const menuFetchedAt = useRef(0);
+
+  // Hours and wi-fi follow the table: which point the guest sits in is the server's answer.
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchVenue(controller.signal)
+      .then(setVenue)
+      .catch(() => undefined);
+    return () => {
+      controller.abort();
+    };
+  }, [tableId]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -331,8 +345,8 @@ export const App = () => {
         contacts={tenant?.contacts ?? {}}
         socials={tenant?.socials ?? {}}
         coverUrl={tenant?.theme?.coverUrl ?? null}
-        openingHours={tenant?.openingHours ?? null}
-        wifi={tenant?.wifi ?? null}
+        openingHours={venue?.openingHours ?? null}
+        wifi={venue?.wifi ?? null}
       />
       <Toaster position="bottom-center" theme={resolvedTheme} />
     </GuestUiProvider>

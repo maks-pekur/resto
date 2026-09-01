@@ -25,6 +25,8 @@ const baseInput = {
   latitude: null,
   longitude: null,
   contacts: null,
+  openingHours: null,
+  wifi: null,
 };
 
 describe('ProvisionLocationService', () => {

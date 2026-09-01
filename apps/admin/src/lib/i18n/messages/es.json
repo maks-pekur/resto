@@ -738,12 +738,7 @@
       "coverUploading": "Subiendo…",
       "coverChoose": "Elegir foto",
       "coverRemove": "Quitar",
-      "coverHint": "Foto horizontal, mínimo 1200 px de ancho",
-      "wifiTitle": "Wi-Fi para clientes",
-      "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
-      "ssidLabel": "Nombre de la red",
-      "ssidHint": "Déjalo vacío para ocultar el wi-fi",
-      "passwordLabel": "Contraseña"
+      "coverHint": "Foto horizontal, mínimo 1200 px de ancho"
     },
     "pageDescription": "El perfil del restaurante, los idiomas, los dominios y los cobros.",
     "navLabel": "Secciones de ajustes",
@@ -776,28 +771,8 @@
         "description": "Tu página pública con el menú y pedidos para llevar."
       },
       "settingsLink": {
-        "venue": "Horario",
         "languages": "Idiomas",
         "domains": "Dominios"
-      }
-    },
-    "tabHours": "Horario",
-    "hours": {
-      "title": "Horario",
-      "description": "El cliente lo ve en el menú y sabe si estás abierto.",
-      "closed": "cerrado",
-      "save": "Guardar",
-      "saving": "Guardando…",
-      "saved": "Guardado",
-      "saveFailed": "No se pudo guardar",
-      "weekday": {
-        "mon": "Lunes",
-        "tue": "Martes",
-        "wed": "Miércoles",
-        "thu": "Jueves",
-        "fri": "Viernes",
-        "sat": "Sábado",
-        "sun": "Domingo"
       }
     }
   },
@@ -808,5 +783,26 @@
     "identityDescription": "El correo con el que entras al panel.",
     "emailLabel": "Correo",
     "roleLabel": "Rol"
+  },
+  "locations": {
+    "hours": {
+      "title": "Horario",
+      "description": "El cliente lo ve en el menú y sabe si estás abierto.",
+      "closed": "cerrado",
+      "weekday": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
+      }
+    },
+    "wifiTitle": "Wi-Fi para clientes",
+    "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
+    "ssidLabel": "Nombre de la red",
+    "ssidHint": "Déjalo vacío para ocultar el wi-fi",
+    "passwordLabel": "Contraseña"
   }
 }

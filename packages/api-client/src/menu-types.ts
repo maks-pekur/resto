@@ -86,6 +86,15 @@ export interface WifiAccessDto {
   readonly password: string | null;
 }
 
+/** The point the guest is sitting in — hours and wi-fi are per address, not per company. */
+export interface VenueDto {
+  readonly locationId: string | null;
+  readonly name: string | null;
+  readonly address: string | null;
+  readonly openingHours: OpeningHoursDto | null;
+  readonly wifi: WifiAccessDto | null;
+}
+
 export interface MenuTenantLocalesDto {
   readonly default: string;
   readonly supported: readonly string[];
@@ -105,8 +114,6 @@ export interface MenuTenantDto {
   readonly socials: Readonly<Record<string, string>>;
   readonly contacts: MenuTenantContactsDto;
   readonly theme: MenuTenantThemeDto | null;
-  readonly openingHours: OpeningHoursDto | null;
-  readonly wifi: WifiAccessDto | null;
   readonly locales: MenuTenantLocalesDto;
 }
 

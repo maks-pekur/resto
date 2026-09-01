@@ -700,12 +700,22 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   const coverS3Key =
     current.theme?.coverUrl == null ? await uploadBrandCover(op, venue.coverFile) : null;
 
-  await op.patch('/v1/tenants/me/brand', {
-    openingHours: venue.openingHours,
-    wifi: venue.wifi,
-    ...(coverS3Key === null ? {} : { coverS3Key }),
+  if (coverS3Key !== null) await op.patch('/v1/tenants/me/brand', { coverS3Key });
+
+  const locations =
+    await op.get<readonly { id: string; name: string; status: string }[]>('/v1/tenancy/locations');
+  const live = locations.filter((location) => location.status === 'active');
+  for (const location of live) {
+    await op.patch(`/v1/tenancy/locations/${location.id}`, {
+      openingHours: venue.openingHours,
+      wifi: venue.wifi,
+    });
+  }
+  log('seed-demo.venue.ready', {
+    tenant: tenantSlug,
+    cover: coverS3Key !== null,
+    locations: live.length,
   });
-  log('seed-demo.venue.ready', { tenant: tenantSlug, cover: coverS3Key !== null });
 };
 
 const archiveRetiredItems = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {

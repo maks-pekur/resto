@@ -20,8 +20,6 @@ const menu: MenuDto = {
     description: null,
     socials: {},
     contacts: { phone: null, email: null, website: null },
-    openingHours: null,
-    wifi: null,
   },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
@@ -64,6 +62,7 @@ const openTableSessionMock = vi.fn<(token: string) => Promise<ResolvedTable>>();
 const fetchTableSessionMock = vi.fn<(signal?: AbortSignal) => Promise<ResolvedTable | null>>();
 
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
   OrderRequestError: class extends Error {},
   fetchMenu: (signal?: AbortSignal) => fetchMenuMock(signal),

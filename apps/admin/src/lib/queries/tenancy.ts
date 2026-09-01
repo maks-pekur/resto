@@ -24,8 +24,6 @@ export interface TenantResponse {
   readonly description: Record<string, string> | null;
   readonly socials: Readonly<Record<string, string>>;
   readonly contacts: TenantContacts;
-  readonly openingHours: OpeningHours | null;
-  readonly wifi: WifiAccess | null;
   readonly legalName: string | null;
   readonly legalForm: 'IP' | 'OOO' | 'LLC' | 'SOLE_PROP' | 'OTHER' | null;
   readonly taxId: string | null;
@@ -80,18 +78,6 @@ export const setContentLocales = async (input: {
     body: input,
   });
 
-export interface OpeningInterval {
-  readonly from: string;
-  readonly to: string;
-}
-
-export type OpeningHours = Readonly<Record<string, readonly OpeningInterval[]>>;
-
-export interface WifiAccess {
-  readonly ssid: string;
-  readonly password: string | null;
-}
-
 export interface UpdateBrandBody {
   readonly displayName?: string;
   readonly description?: Record<string, string> | null;
@@ -99,8 +85,6 @@ export interface UpdateBrandBody {
   readonly contacts?: TenantContacts;
   readonly logoS3Key?: string | null;
   readonly coverS3Key?: string | null;
-  readonly openingHours?: OpeningHours | null;
-  readonly wifi?: WifiAccess | null;
 }
 
 export const updateBrand = async (body: UpdateBrandBody) =>

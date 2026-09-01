@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { LocationId } from '@resto/domain';
+import { LocationId, type OpeningHours, type WifiAccess } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../domain/ports';
 import { Location } from '../domain/location.aggregate';
 import type { LocationContacts, LocationSnapshot } from '../domain/location.aggregate';
@@ -12,6 +12,8 @@ export interface UpdateLocationInput {
   readonly longitude?: number | undefined;
   readonly timezone?: string | null | undefined;
   readonly contacts?: LocationContacts | null | undefined;
+  readonly openingHours?: OpeningHours | null | undefined;
+  readonly wifi?: WifiAccess | null | undefined;
 }
 
 @Injectable()

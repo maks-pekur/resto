@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, TenantScopedRepository } from '@resto/db';
-import { LocationId, TenantId } from '@resto/domain';
+import { LocationId, TenantId, OpeningHours } from '@resto/domain';
 import { asc, eq, sql } from 'drizzle-orm';
 import { LocationContactsSchema, type LocationSnapshot } from '../domain/location.aggregate';
 import type { LocationRepository } from '../domain/ports';
@@ -17,6 +17,9 @@ const ROW_TO_SNAPSHOT = (row: {
   longitude: string | null;
   timezone: string | null;
   contacts: Record<string, unknown> | null;
+  openingHours: Record<string, unknown> | null;
+  wifiSsid: string | null;
+  wifiPassword: string | null;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -31,6 +34,8 @@ const ROW_TO_SNAPSHOT = (row: {
   longitude: row.longitude === null ? null : Number(row.longitude),
   timezone: row.timezone,
   contacts: row.contacts === null ? null : LocationContactsSchema.parse(row.contacts),
+  openingHours: row.openingHours === null ? null : OpeningHours.parse(row.openingHours),
+  wifi: row.wifiSsid === null ? null : { ssid: row.wifiSsid, password: row.wifiPassword },
   status: row.status as LocationSnapshot['status'],
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -75,6 +80,9 @@ export class LocationDrizzleRepository
           longitude: snapshot.longitude === null ? null : String(snapshot.longitude),
           timezone: snapshot.timezone,
           contacts: snapshot.contacts,
+          openingHours: snapshot.openingHours,
+          wifiSsid: snapshot.wifi?.ssid ?? null,
+          wifiPassword: snapshot.wifi?.password ?? null,
           status: snapshot.status,
           createdAt: snapshot.createdAt,
           updatedAt: snapshot.updatedAt,
@@ -89,6 +97,9 @@ export class LocationDrizzleRepository
             longitude: snapshot.longitude === null ? null : String(snapshot.longitude),
             timezone: snapshot.timezone,
             contacts: snapshot.contacts,
+            openingHours: snapshot.openingHours,
+            wifiSsid: snapshot.wifi?.ssid ?? null,
+            wifiPassword: snapshot.wifi?.password ?? null,
             status: snapshot.status,
             updatedAt: snapshot.updatedAt,
             archivedAt: snapshot.archivedAt,

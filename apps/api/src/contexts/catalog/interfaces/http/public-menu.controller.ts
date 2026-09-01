@@ -13,7 +13,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { MenuItemId, OpeningHours, TenantId, WifiAccess } from '@resto/domain';
+import { MenuItemId, TenantId } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/availability/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
@@ -127,9 +127,6 @@ const MenuTenantSchema = z.object({
     website: z.string().nullable(),
   }),
   theme: MenuTenantThemeSchema.nullable(),
-  openingHours: OpeningHours.nullable(),
-  /** Guest wi-fi, printed on the table tent anyway — never staff credentials. */
-  wifi: WifiAccess.nullable(),
   /** The languages this menu exists in — guest surfaces build their switcher from these. */
   locales: z.object({
     default: z.string(),
@@ -172,8 +169,6 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
         font: tenant.theme.font,
       }
     : null,
-  openingHours: tenant.openingHours,
-  wifi: tenant.wifi,
   locales: { default: tenant.locale, supported: [...tenant.contentLocales] },
 });
 

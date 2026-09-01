@@ -11,7 +11,7 @@ interface GuestApp {
   readonly icon: typeof QrCode;
   readonly url: string | null;
   readonly settings: readonly {
-    readonly setting: 'hours' | 'languages' | 'domains';
+    readonly setting: 'languages' | 'domains';
     readonly key: string;
   }[];
 }
@@ -28,19 +28,13 @@ export function AppsSection({ tenant }: AppsSectionProps) {
       id: 'qr-menu',
       icon: QrCode,
       url: `https://${tenant.slug}.menu.${apex(tenant.primaryDomain)}`,
-      settings: [
-        { setting: 'hours', key: 'venue' },
-        { setting: 'languages', key: 'languages' },
-      ],
+      settings: [{ setting: 'languages', key: 'languages' }],
     },
     {
       id: 'website',
       icon: Globe,
       url: tenant.primaryDomain ? `https://${tenant.primaryDomain}` : null,
-      settings: [
-        { setting: 'domains', key: 'domains' },
-        { setting: 'hours', key: 'venue' },
-      ],
+      settings: [{ setting: 'domains', key: 'domains' }],
     },
   ];
 

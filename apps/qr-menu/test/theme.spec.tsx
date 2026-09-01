@@ -17,8 +17,6 @@ const menu: MenuDto = {
     description: null,
     socials: {},
     contacts: { phone: null, email: null, website: null },
-    openingHours: null,
-    wifi: null,
   },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
@@ -50,6 +48,7 @@ const menu: MenuDto = {
 };
 
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
   fetchTableSession: () => Promise.resolve(null),
   openTableSession: () => Promise.reject(new Error('no session')),

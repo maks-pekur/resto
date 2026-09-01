@@ -92,6 +92,13 @@
       "when": 1788454800000,
       "tag": "0012_tenant_venue_info",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788541200000,
+      "tag": "0013_location_hours_wifi",
+      "breakpoints": true
     }
   ]
 }

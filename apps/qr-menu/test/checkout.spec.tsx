@@ -4,6 +4,7 @@ import { useCartStore } from '@resto/cart';
 
 const placeOrder = vi.fn();
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
   placeOrder,
   openTableSession: vi.fn(),
   OrderRequestError: class extends Error {},
