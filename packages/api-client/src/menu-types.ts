@@ -68,7 +68,7 @@ export interface MenuCategoryDto {
 
 export interface MenuTenantThemeDto {
   readonly logoUrl: string | null;
-  readonly coverUrl: string | null;
+  readonly coverUrls: readonly string[];
   readonly primaryColor: string | null;
   readonly font: string | null;
 }

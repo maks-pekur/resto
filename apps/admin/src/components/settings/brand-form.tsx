@@ -39,8 +39,7 @@ const initialValues = (tenant: TenantResponse): BrandFormValues => ({
   ),
   logoUrl: tenant.theme?.logoUrl ?? null,
   logoS3Key: null,
-  coverUrl: tenant.theme?.coverUrl ?? null,
-  coverS3Key: null,
+  photos: [...(tenant.theme?.coverUrls ?? [])],
 });
 
 export interface BrandFormProps {
@@ -83,8 +82,7 @@ export function BrandForm({ tenant }: BrandFormProps) {
         ),
         ...(values.logoS3Key === null ? {} : { logoS3Key: values.logoS3Key }),
         ...(values.logoUrl === null && tenant.theme?.logoUrl ? { logoS3Key: null } : {}),
-        ...(values.coverS3Key === null ? {} : { coverS3Key: values.coverS3Key }),
-        ...(values.coverUrl === null && tenant.theme?.coverUrl ? { coverS3Key: null } : {}),
+        coverS3Keys: values.photos,
       }),
     onSuccess: (res) => {
       if (!res.ok) {
@@ -149,14 +147,9 @@ export function BrandForm({ tenant }: BrandFormProps) {
           />
 
           <CoverUpload
-            coverUrl={form.watch('coverUrl')}
-            onUploaded={(s3Key, previewUrl) => {
-              form.setValue('coverS3Key', s3Key, { shouldDirty: true });
-              form.setValue('coverUrl', previewUrl, { shouldDirty: true });
-            }}
-            onCleared={() => {
-              form.setValue('coverS3Key', null, { shouldDirty: true });
-              form.setValue('coverUrl', null, { shouldDirty: true });
+            photos={form.watch('photos')}
+            onChange={(next) => {
+              form.setValue('photos', [...next], { shouldDirty: true });
             }}
           />
 

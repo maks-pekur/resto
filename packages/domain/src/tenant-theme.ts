@@ -8,10 +8,13 @@ const HEX_COLOR_RE = /^#[0-9A-Fa-f]{6}$/u;
  * All fields optional; missing fields normalize to null so the wire shape
  * is uniform whether the operator has set theme bits yet or not.
  */
+export const COVER_MAX = 8;
+
 export const TenantTheme = z
   .object({
     logoUrl: z.string().url().nullable().default(null),
-    coverUrl: z.string().url().nullable().default(null),
+    /** The room, in as many shots as the venue cares to show. First one leads. */
+    coverUrls: z.array(z.string().url()).max(COVER_MAX).default([]),
     primaryColor: z
       .string()
       .regex(HEX_COLOR_RE, '#RRGGBB hex color required')

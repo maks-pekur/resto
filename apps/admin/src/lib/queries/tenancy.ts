@@ -17,7 +17,7 @@ export interface TenantResponse {
   readonly defaultCurrency: string;
   readonly theme: {
     logoUrl: string | null;
-    coverUrl: string | null;
+    coverUrls: readonly string[];
     primaryColor: string | null;
     font: string | null;
   } | null;
@@ -92,7 +92,7 @@ export interface UpdateBrandBody {
   readonly socials?: Record<string, string>;
   readonly contacts?: TenantContacts;
   readonly logoS3Key?: string | null;
-  readonly coverS3Key?: string | null;
+  readonly coverS3Keys?: readonly string[];
   readonly legalDocuments?: LegalDocuments | null;
 }
 

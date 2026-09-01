@@ -80,7 +80,7 @@ describe('UpdateBrandService', () => {
       snapshot({
         theme: {
           logoUrl: 'https://cdn.example/old.png',
-          coverUrl: null,
+          coverUrls: [],
           primaryColor: null,
           font: null,
         },

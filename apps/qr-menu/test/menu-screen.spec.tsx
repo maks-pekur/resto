@@ -72,7 +72,7 @@ describe('MenuScreen on qr-menu', () => {
           displayName: 'Cafe Demo',
           theme: {
             logoUrl: 'https://cdn.example.test/logo.png',
-            coverUrl: null,
+            coverUrls: [],
             primaryColor: null,
             font: null,
           },

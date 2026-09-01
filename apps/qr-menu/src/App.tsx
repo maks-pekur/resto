@@ -438,7 +438,7 @@ export const App = () => {
         description={localized(tenant?.description)}
         contacts={tenant?.contacts ?? {}}
         socials={tenant?.socials ?? {}}
-        coverUrl={tenant?.theme?.coverUrl ?? null}
+        photos={tenant?.theme?.coverUrls ?? []}
         openingHours={venue?.openingHours ?? null}
         wifi={venue?.wifi ?? null}
       />

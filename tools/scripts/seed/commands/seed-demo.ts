@@ -144,8 +144,8 @@ interface LegalDef {
 }
 
 interface VenueDef {
-  /** Repo-relative, so a fresh clone seeds the same room. */
-  readonly coverFile: string;
+  /** Repo-relative, so a fresh clone seeds the same room. First one leads the gallery. */
+  readonly coverFiles: readonly string[];
   readonly openingHours: Readonly<Record<string, readonly { from: string; to: string }[]>>;
   readonly wifi: { readonly ssid: string; readonly password: string };
   readonly address: string;
@@ -157,7 +157,11 @@ interface VenueDef {
 /** What a guest sees in the info sheet: the room, the hours, the wi-fi. */
 const VENUE: Readonly<Record<string, VenueDef>> = {
   pizza: {
-    coverFile: 'tools/scripts/seed/fixtures/venue-cover.jpg',
+    coverFiles: [
+      'tools/scripts/seed/fixtures/venue-cover.jpg',
+      'tools/scripts/seed/fixtures/venue-hall.jpg',
+      'tools/scripts/seed/fixtures/venue-bar.jpg',
+    ],
     openingHours: {
       mon: [{ from: '10:00', to: '23:00' }],
       tue: [{ from: '10:00', to: '23:00' }],
@@ -192,7 +196,7 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
     },
   },
   burger: {
-    coverFile: 'tools/scripts/seed/fixtures/venue-cover.jpg',
+    coverFiles: ['tools/scripts/seed/fixtures/venue-cover.jpg'],
     openingHours: {
       mon: [{ from: '11:00', to: '22:00' }],
       tue: [{ from: '11:00', to: '22:00' }],
@@ -745,9 +749,16 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   const venue = VENUE[tenantSlug];
   if (!venue) return;
 
-  const current = await op.get<{ theme: { coverUrl: string | null } | null }>('/v1/tenants/me');
-  const coverS3Key =
-    current.theme?.coverUrl == null ? await uploadBrandCover(op, venue.coverFile) : null;
+  const current = await op.get<{ theme: { coverUrls: readonly string[] } | null }>(
+    '/v1/tenants/me',
+  );
+  const alreadyPublished = current.theme?.coverUrls ?? [];
+  const coverS3Keys =
+    alreadyPublished.length > 0
+      ? null
+      : (await Promise.all(venue.coverFiles.map((file) => uploadBrandCover(op, file)))).filter(
+          (key): key is string => key !== null,
+        );
 
   await op.patch('/v1/tenants/me/brand', {
     socials: venue.socials,
@@ -759,7 +770,7 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
       terms: { ru: venue.legal.terms },
       privacy: { ru: venue.legal.privacy },
     },
-    ...(coverS3Key === null ? {} : { coverS3Key }),
+    ...(coverS3Keys === null ? {} : { coverS3Keys }),
   });
 
   const locations =
@@ -775,7 +786,7 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   }
   log('seed-demo.venue.ready', {
     tenant: tenantSlug,
-    cover: coverS3Key !== null,
+    covers: coverS3Keys?.length ?? 0,
     locations: live.length,
   });
 };

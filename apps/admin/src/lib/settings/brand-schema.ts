@@ -38,8 +38,7 @@ export const BrandFormSchema = z.object({
   socials: z.record(z.enum(SOCIAL_PLATFORMS), z.string().trim().refine(optionalUrl, 'urlInvalid')),
   logoUrl: z.string().nullable(),
   logoS3Key: z.string().nullable(),
-  coverUrl: z.string().nullable(),
-  coverS3Key: z.string().nullable(),
+  photos: z.array(z.string()),
 });
 
 export type BrandFormValues = z.infer<typeof BrandFormSchema>;

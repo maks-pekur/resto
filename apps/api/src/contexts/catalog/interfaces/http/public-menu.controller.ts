@@ -110,7 +110,7 @@ const MenuAvailabilitySchema = z.object({
 
 const MenuTenantThemeSchema = z.object({
   logoUrl: z.string().url().nullable(),
-  coverUrl: z.string().url().nullable(),
+  coverUrls: z.array(z.string().url()),
   primaryColor: z.string().nullable(),
   font: z.string().nullable(),
 });
@@ -164,7 +164,7 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
   theme: tenant.theme
     ? {
         logoUrl: tenant.theme.logoUrl,
-        coverUrl: tenant.theme.coverUrl,
+        coverUrls: tenant.theme.coverUrls,
         primaryColor: tenant.theme.primaryColor,
         font: tenant.theme.font,
       }

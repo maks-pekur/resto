@@ -14,6 +14,7 @@ import {
 } from '@resto/ui';
 import type { OpeningHoursDto, WifiAccessDto } from '@resto/api-client/public';
 import { t } from '../i18n';
+import { VenueGallery } from './VenueGallery';
 
 const WEEKDAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 
@@ -61,7 +62,7 @@ export interface InfoSheetProps {
   readonly description?: string | null;
   readonly contacts?: GuestFooterContacts;
   readonly socials?: Readonly<Record<string, string>>;
-  readonly coverUrl?: string | null;
+  readonly photos?: readonly string[];
   readonly openingHours?: OpeningHoursDto | null;
   readonly wifi?: WifiAccessDto | null;
 }
@@ -73,7 +74,7 @@ export const InfoSheet = ({
   description,
   contacts = {},
   socials = {},
-  coverUrl = null,
+  photos = [],
   openingHours = null,
   wifi = null,
 }: InfoSheetProps) => {
@@ -117,22 +118,10 @@ export const InfoSheet = ({
       >
         {/* Same grip as the item sheet: both came from the bottom edge and go back there. Over a
             photo it rides on top of it, so the banner reaches the sheet's own edge. */}
-        {coverUrl === null ? (
+        {photos.length === 0 ? (
           <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
         ) : null}
-        {coverUrl === null ? null : (
-          <div className="relative shrink-0">
-            <img
-              src={coverUrl}
-              alt=""
-              className="bg-muted aspect-[16/9] w-full rounded-t-2xl object-cover"
-            />
-            <span
-              aria-hidden
-              className="absolute inset-x-0 top-3 mx-auto h-1.5 w-10 rounded-full bg-white/70 shadow-sm"
-            />
-          </div>
-        )}
+        <VenueGallery photos={photos} />
         <SheetHeader className="px-5 pt-4 pb-0">
           <div className="flex items-baseline justify-between gap-3">
             <SheetTitle className="text-2xl font-extrabold">{tenantName}</SheetTitle>

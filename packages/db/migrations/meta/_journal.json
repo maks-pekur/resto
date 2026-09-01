@@ -113,6 +113,13 @@
       "when": 1788714000000,
       "tag": "0015_order_feedback",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788800400000,
+      "tag": "0016_tenant_cover_gallery",
+      "breakpoints": true
     }
   ]
 }

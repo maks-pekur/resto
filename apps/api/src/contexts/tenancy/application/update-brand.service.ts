@@ -53,16 +53,39 @@ export class UpdateBrandService {
     input: UpdateBrandRequest,
     tenantId: TenantId,
   ): Promise<TenantTheme | null> {
-    if (input.logoS3Key === undefined && input.coverS3Key === undefined) return snapshot.theme;
+    if (input.logoS3Key === undefined && input.coverS3Keys === undefined) return snapshot.theme;
 
     const logoUrl = await this.resolveImage(input.logoS3Key, tenantId);
-    const coverUrl = await this.resolveImage(input.coverS3Key, tenantId);
+    const coverUrls = await this.resolveGallery(input.coverS3Keys, snapshot, tenantId);
 
     return TenantTheme.parse({
       ...(snapshot.theme ?? {}),
       ...(logoUrl === undefined ? {} : { logoUrl }),
-      ...(coverUrl === undefined ? {} : { coverUrl }),
+      ...(coverUrls === undefined ? {} : { coverUrls }),
     });
+  }
+
+  /**
+   * The gallery arrives whole, in the order the operator arranged it. An entry already published
+   * comes back as its own URL rather than a key — republishing it would copy the bytes again.
+   */
+  private async resolveGallery(
+    keys: readonly string[] | undefined,
+    snapshot: TenantSnapshot,
+    tenantId: TenantId,
+  ): Promise<string[] | undefined> {
+    if (keys === undefined) return undefined;
+    const published = new Set(snapshot.theme?.coverUrls ?? []);
+    const urls: string[] = [];
+    for (const key of keys) {
+      if (published.has(key)) {
+        urls.push(key);
+        continue;
+      }
+      const url = await this.resolveImage(key, tenantId);
+      if (url !== undefined && url !== null) urls.push(url);
+    }
+    return urls;
   }
 
   private async resolveImage(

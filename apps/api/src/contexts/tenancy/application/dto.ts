@@ -6,6 +6,7 @@ import {
   LocalizedText,
   SocialLinksSchema,
   TenantSlug,
+  COVER_MAX,
   LegalDocuments,
 } from '@resto/domain';
 
@@ -72,8 +73,8 @@ export const UpdateBrandInputSchema = z.object({
   contacts: BrandContactsSchema.optional(),
   /** The key returned by the logo upload, or null to drop the logo. */
   logoS3Key: z.string().min(1).max(1024).nullable().optional(),
-  /** Same upload flow as the logo, for the photo the guest sees above the venue's details. */
-  coverS3Key: z.string().min(1).max(1024).nullable().optional(),
+  /** The venue's photos, in the order the guest will swipe them. Replaces the whole gallery. */
+  coverS3Keys: z.array(z.string().min(1).max(1024)).max(COVER_MAX).optional(),
   legalDocuments: LegalDocuments.nullable().optional(),
 });
 export type UpdateBrandRequest = z.infer<typeof UpdateBrandInputSchema>;

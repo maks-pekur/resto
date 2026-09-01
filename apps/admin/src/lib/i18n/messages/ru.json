@@ -735,13 +735,15 @@
       "socialAdd": "Добавить соцсеть",
       "socialRemove": "Убрать {{name}}",
       "coverTitle": "Фото заведения",
-      "coverDescription": "Баннер, который гость видит в информации о ресторане.",
-      "coverRejected": "Нужен JPG, PNG или WebP до 2 МБ",
+      "coverDescription": "Гость листает их в информации о ресторане. Первое — главное.",
+      "coverRejected": "Подойдут JPG, PNG или WebP до 2 МБ",
       "coverUploadFailed": "Не удалось загрузить",
       "coverUploading": "Загружаем…",
       "coverChoose": "Выбрать фото",
       "coverRemove": "Удалить",
-      "coverHint": "Горизонтальное фото, минимум 1200 px по ширине"
+      "coverHint": "Горизонтальные снимки, до {{max}} штук, каждый до 2 МБ",
+      "coverTooMany": "Не больше {{max}} фотографий",
+      "coverPrimary": "Главное"
     },
     "pageDescription": "Профиль ресторана, языки, домены и оплата.",
     "navLabel": "Разделы настроек",
