@@ -97,5 +97,6 @@
   "table.scanHint": "Encuadra el código",
   "table.scanCartKept": "Tu carrito se queda como está.",
   "table.scanWithCamera": "Abre la cámara del teléfono y apunta al código: el menú se abre y el carrito se mantiene.",
-  "table.scanFailed": "Ese código no es de este restaurante. Inténtalo de nuevo."
+  "table.scanFailed": "Ese código no es de este restaurante. Inténtalo de nuevo.",
+  "table.notRecognizedTitle": "No pudimos leer la mesa"
 }

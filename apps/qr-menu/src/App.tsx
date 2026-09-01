@@ -27,7 +27,7 @@ import { OrderStatusSheet } from './components/OrderStatusSheet';
 import { TabBar } from './components/TabBar';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
-import { TableBanner } from './components/TableBanner';
+import { TableProblemSheet } from './components/TableProblemSheet';
 import { adoptTenantLocales, getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
@@ -239,7 +239,6 @@ export const App = () => {
               <LocaleControl locales={menuLocales.supported} />
             </>
           }
-          banner={<TableBanner notRecognized={tableUnrecognized} />}
           cartPrimaryAction={
             <button
               type="button"
@@ -287,6 +286,15 @@ export const App = () => {
           )}
         />
       )}
+      <TableProblemSheet
+        open={tableUnrecognized}
+        onOpenChange={(next) => {
+          if (!next) setTableUnrecognized(false);
+        }}
+        onSeated={(resolved) => {
+          setTableId(resolved.tableId);
+        }}
+      />
       <CheckoutSheet
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}

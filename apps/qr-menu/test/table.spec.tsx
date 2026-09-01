@@ -103,7 +103,7 @@ describe('qr-menu table', () => {
     expect(useCartStore.getState().tableNumber).toBe('12');
   });
 
-  it('shows the not-recognised line but still renders the menu when the code is unknown', async () => {
+  it('opens a sheet offering another scan when the code is unknown', async () => {
     window.history.replaceState({}, '', '/t/someone-elses-code');
     openTableSessionMock.mockRejectedValue(new Error('unknown'));
     render(<App />);
@@ -111,7 +111,8 @@ describe('qr-menu table', () => {
     await waitFor(() => {
       expect(screen.getByText(t('table.notRecognized'))).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: 'Margherita' })).toBeInTheDocument();
+    // A sheet, not a line to read past: the way out is in it.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBeNull();
   });
 
