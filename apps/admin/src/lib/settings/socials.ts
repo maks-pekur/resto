@@ -32,6 +32,15 @@ const DEFINITIONS: Readonly<Record<SocialPlatform, SocialDefinition>> = {
     prefix: 'https://',
     placeholder: () => 'tripadvisor.com/Restaurant_Review-…',
   },
+  // Listings, not profiles: the card a guest reads reviews on and routes from. Each is a
+  // generated share link, so there is no handle worth suggesting.
+  googleMaps: { label: 'Google Maps', prefix: 'https://', placeholder: () => 'maps.app.goo.gl/…' },
+  yandexMaps: {
+    label: 'Яндекс Карты',
+    prefix: 'https://',
+    placeholder: () => 'yandex.ru/maps/org/…',
+  },
+  twogis: { label: '2ГИС', prefix: 'https://', placeholder: () => '2gis.ru/firm/…' },
 };
 
 export const socialPresentation = (platform: string, handle: string): SocialPresentation => {

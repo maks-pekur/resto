@@ -99,6 +99,13 @@
       "when": 1788541200000,
       "tag": "0013_location_hours_wifi",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788627600000,
+      "tag": "0014_tenant_legal_documents",
+      "breakpoints": true
     }
   ]
 }

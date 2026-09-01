@@ -134,11 +134,23 @@ const PIZZA_SIZES = (small: string, medium: string, large: string): readonly Siz
   { name: { en: '35 cm', uk: '35 см', ru: '35 см' }, price: large },
 ];
 
+interface LegalDef {
+  readonly about: string;
+  readonly payment: string;
+  readonly returns: string;
+  readonly cookies: string;
+  readonly terms: string;
+  readonly privacy: string;
+}
+
 interface VenueDef {
   /** Repo-relative, so a fresh clone seeds the same room. */
   readonly coverFile: string;
   readonly openingHours: Readonly<Record<string, readonly { from: string; to: string }[]>>;
   readonly wifi: { readonly ssid: string; readonly password: string };
+  readonly address: string;
+  readonly phone: string;
+  readonly legal: LegalDef;
 }
 
 /** What a guest sees in the info sheet: the room, the hours, the wi-fi. */
@@ -155,6 +167,22 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
       sun: [{ from: '11:00', to: '22:00' }],
     },
     wifi: { ssid: 'PizzaPalace_Guest', password: 'margherita2026' },
+    address: 'Київ, вул. Хрещатик, 10',
+    phone: '+380 44 200 10 10',
+    legal: {
+      about:
+        'ООО «Пицца Палас», ЕГРПОУ 41234567.\nЮридический адрес: Киев, ул. Крещатик, 10.\nРаботаем с 2019 года.',
+      payment:
+        'Принимаем Visa и Mastercard онлайн, а также оплату за столом — наличными или картой.\nДеньги списываются после того, как заведение подтвердит заказ.',
+      returns:
+        'Если блюдо приготовили не так, как вы просили, скажите официанту — переделаем или вернём деньги за эту позицию.\nВозврат на карту идёт до 5 банковских дней.',
+      cookies:
+        'В браузере мы храним язык меню, тему оформления и корзину.\nСторонней аналитики в меню нет.',
+      terms:
+        'Меню предназначено для заказа за столом заведения.\nЗаказ считается принятым после подтверждения заведением.',
+      privacy:
+        'Мы храним имя и телефон, которые вы указываете при оформлении, чтобы принести заказ именно вам.\nТретьим лицам данные не передаём, кроме платёжного провайдера.',
+    },
   },
   burger: {
     coverFile: 'tools/scripts/seed/fixtures/venue-cover.jpg',
@@ -168,6 +196,16 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
       sun: [],
     },
     wifi: { ssid: 'BurgerBarn_Guest', password: 'doublecheese' },
+    address: '14 High Street, London',
+    phone: '+44 20 7000 0000',
+    legal: {
+      about: 'Burger Barn Ltd, company number 09876543.\nRegistered at 14 High Street, London.',
+      payment: 'Cards online, cash or card at the table. Money is taken once the kitchen accepts.',
+      returns: 'Something wrong with the order? Tell the counter — we remake it or refund it.',
+      cookies: 'We keep your language, theme and basket in the browser. Nothing else.',
+      terms: 'The menu is for ordering at the venue. An order stands once we accept it.',
+      privacy: 'We keep the name and phone you leave at checkout, and share them with nobody.',
+    },
   },
 };
 
@@ -700,7 +738,17 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   const coverS3Key =
     current.theme?.coverUrl == null ? await uploadBrandCover(op, venue.coverFile) : null;
 
-  if (coverS3Key !== null) await op.patch('/v1/tenants/me/brand', { coverS3Key });
+  await op.patch('/v1/tenants/me/brand', {
+    legalDocuments: {
+      about: { ru: venue.legal.about },
+      payment: { ru: venue.legal.payment },
+      returns: { ru: venue.legal.returns },
+      cookies: { ru: venue.legal.cookies },
+      terms: { ru: venue.legal.terms },
+      privacy: { ru: venue.legal.privacy },
+    },
+    ...(coverS3Key === null ? {} : { coverS3Key }),
+  });
 
   const locations =
     await op.get<readonly { id: string; name: string; status: string }[]>('/v1/tenancy/locations');
@@ -709,6 +757,8 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
     await op.patch(`/v1/tenancy/locations/${location.id}`, {
       openingHours: venue.openingHours,
       wifi: venue.wifi,
+      address: venue.address,
+      contacts: { phone: venue.phone },
     });
   }
   log('seed-demo.venue.ready', {

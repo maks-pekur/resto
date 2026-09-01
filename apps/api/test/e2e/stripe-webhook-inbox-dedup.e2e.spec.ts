@@ -27,6 +27,7 @@ const makeFakeTenant = (tenantId: string): Tenant =>
     contentLocales: ['en'],
     description: null,
     socials: {},
+    legalDocuments: null,
     contacts: { phone: null, email: null, website: null },
     timezone: 'Europe/London',
     country: 'ES',

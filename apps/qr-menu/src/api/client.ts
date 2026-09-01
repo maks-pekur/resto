@@ -1,4 +1,4 @@
-import type { MenuDto, VenueDto } from '@resto/api-client/public';
+import type { LegalDocumentsDto, MenuDto, VenueDto } from '@resto/api-client/public';
 
 export class MenuNotFoundError extends Error {
   constructor() {
@@ -20,6 +20,14 @@ export const fetchVenue = async (signal?: AbortSignal): Promise<VenueDto | null>
   const res = await fetch('/v1/venue', { ...(signal ? { signal } : {}) });
   if (!res.ok) return null;
   return res.json() as Promise<VenueDto>;
+};
+
+export const fetchLegalDocuments = async (
+  signal?: AbortSignal,
+): Promise<LegalDocumentsDto | null> => {
+  const res = await fetch('/v1/legal', { ...(signal ? { signal } : {}) });
+  if (!res.ok) return null;
+  return res.json() as Promise<LegalDocumentsDto>;
 };
 
 export interface MenuAvailability {

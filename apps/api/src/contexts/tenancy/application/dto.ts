@@ -6,6 +6,7 @@ import {
   LocalizedText,
   SocialLinksSchema,
   TenantSlug,
+  LegalDocuments,
 } from '@resto/domain';
 
 export const ProvisionTenantInputSchema = z.object({
@@ -73,6 +74,7 @@ export const UpdateBrandInputSchema = z.object({
   logoS3Key: z.string().min(1).max(1024).nullable().optional(),
   /** Same upload flow as the logo, for the photo the guest sees above the venue's details. */
   coverS3Key: z.string().min(1).max(1024).nullable().optional(),
+  legalDocuments: LegalDocuments.nullable().optional(),
 });
 export type UpdateBrandRequest = z.infer<typeof UpdateBrandInputSchema>;
 export class UpdateBrandInputDto extends createZodDto(UpdateBrandInputSchema) {}

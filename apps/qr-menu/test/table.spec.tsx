@@ -63,6 +63,7 @@ const fetchTableSessionMock = vi.fn<(signal?: AbortSignal) => Promise<ResolvedTa
 
 vi.mock('../src/api/client', () => ({
   fetchVenue: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
   OrderRequestError: class extends Error {},
   fetchMenu: (signal?: AbortSignal) => fetchMenuMock(signal),

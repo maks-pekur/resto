@@ -45,6 +45,7 @@ import { LocationsController } from './interfaces/http/locations.controller';
 import { TableZonesController } from './interfaces/http/table-zones.controller';
 import { PublicTableResolutionController } from './interfaces/http/public-tables.controller';
 import { PublicVenueController } from './interfaces/http/public-venue.controller';
+import { PublicLegalController } from './interfaces/http/public-legal.controller';
 import {
   TenantOnboardingController,
   TenantOAuthCallbackController,
@@ -61,6 +62,7 @@ import {
     TableZonesController,
     PublicTableResolutionController,
     PublicVenueController,
+    PublicLegalController,
   ],
   providers: [
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },

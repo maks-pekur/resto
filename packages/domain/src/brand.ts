@@ -13,6 +13,10 @@ export const SOCIAL_PLATFORMS = [
   'youtube',
   'x',
   'tripadvisor',
+  // A listing rather than a profile: the card guests read reviews on and route from.
+  'googleMaps',
+  'yandexMaps',
+  'twogis',
 ] as const;
 
 export type SocialPlatform = (typeof SOCIAL_PLATFORMS)[number];

@@ -52,6 +52,7 @@ export const tenants = pgTable(
     theme: jsonb('theme').$type<Record<string, unknown> | null>(),
     description: jsonb('description').$type<Record<string, string> | null>(),
     socials: jsonb('socials').$type<Record<string, string>>().notNull().default({}),
+    legalDocuments: jsonb('legal_documents').$type<Record<string, unknown> | null>(),
     contactPhone: text('contact_phone'),
     contactEmail: text('contact_email'),
     contactWebsite: text('contact_website'),

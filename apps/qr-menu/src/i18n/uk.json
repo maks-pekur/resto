@@ -123,7 +123,18 @@
   "account.soon": "Вхід за кодом скоро запрацює. Наразі замовлення шукається за номером, який ви вказуєте при оформленні.",
   "nav.profile": "Профіль",
   "nav.menuLabel": "Меню",
-  "drawer.info": "Про заклад",
-  "drawer.orders": "Мої замовлення",
-  "drawer.open": "Меню"
+  "drawer.open": "Меню",
+  "drawer.signInBody": "Увійдіть — замовлення оформиться швидше, а історія буде під рукою.",
+  "drawer.signIn": "Увійти",
+  "drawer.contacts": "Контакти",
+  "drawer.socials": "Ми в мережі",
+  "drawer.useful": "Корисно знати",
+  "drawer.legal": "Правова інформація",
+  "drawer.appearance": "Вигляд",
+  "drawer.doc.about": "Про компанію",
+  "drawer.doc.payment": "Способи оплати",
+  "drawer.doc.returns": "Повернення",
+  "drawer.doc.cookies": "Файли cookie",
+  "drawer.doc.terms": "Умови користування",
+  "drawer.doc.privacy": "Політика конфіденційності"
 }

@@ -123,7 +123,18 @@
   "account.soon": "Вход по коду скоро заработает. Пока заказ находится по номеру, который вы указываете при оформлении.",
   "nav.profile": "Профиль",
   "nav.menuLabel": "Меню",
-  "drawer.info": "О заведении",
-  "drawer.orders": "Мои заказы",
-  "drawer.open": "Меню"
+  "drawer.open": "Меню",
+  "drawer.signInBody": "Войдите — заказ оформится быстрее, а история заказов будет под рукой.",
+  "drawer.signIn": "Войти",
+  "drawer.contacts": "Контакты",
+  "drawer.socials": "Мы в сети",
+  "drawer.useful": "Полезно знать",
+  "drawer.legal": "Правовая информация",
+  "drawer.appearance": "Внешний вид",
+  "drawer.doc.about": "О компании",
+  "drawer.doc.payment": "Способы оплаты",
+  "drawer.doc.returns": "Возврат и обмен",
+  "drawer.doc.cookies": "Файлы cookie",
+  "drawer.doc.terms": "Условия пользования",
+  "drawer.doc.privacy": "Политика конфиденциальности"
 }

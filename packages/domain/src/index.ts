@@ -19,6 +19,7 @@ export {
 
 export { Currency, CurrencyValue, Money, MoneyAmount, MoneyAmountValue, PriceDelta } from './money';
 export { LocalizedText } from './localized-text';
+export { LegalDocuments, LEGAL_DOCUMENTS, type LegalDocumentKey } from './legal-documents';
 export { Slug } from './slug';
 export { slugifyName } from './slugify';
 export { LOCATION_RESERVED_SLUGS, LOCATION_RESERVED_SLUG_SET, LocationSlug } from './location-slug';

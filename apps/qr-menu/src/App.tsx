@@ -13,7 +13,6 @@ import {
   useGuestTheme,
   BurgerIcon,
   UserIcon,
-  ThemeIcon,
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import type { PlacedOrder } from './api/client';
@@ -27,6 +26,7 @@ import {
 } from './api/client';
 import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
 import { AccountSheet } from './components/AccountSheet';
+import { DocumentSheet } from './components/DocumentSheet';
 import { GuestDrawer } from './components/GuestDrawer';
 import { InfoSheet } from './components/InfoSheet';
 import { OrderStatusSheet } from './components/OrderStatusSheet';
@@ -227,6 +227,7 @@ export const App = () => {
   const [infoOpen, setInfoOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
+  const [openDoc, setOpenDoc] = useState<{ title: string; body: string } | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Pressed "order" with no table: the scan sheet stands in, then hands the guest straight on.
   const [placed, setPlaced] = useState<{ order: PlacedOrder; payment: PaymentChoice } | null>(null);
@@ -367,36 +368,30 @@ export const App = () => {
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
         tenantName={tenant?.displayName ?? t('menu.title')}
-        entries={[
-          {
-            id: 'theme',
-            label: t('theme.label'),
-            icon: ThemeIcon,
-            trailing: (
-              <ThemeToggle
-                resolvedTheme={resolvedTheme}
-                onToggle={toggleTheme}
-                label={t('theme.label')}
-              />
-            ),
-          },
-          {
-            id: 'info',
-            label: t('drawer.info'),
-            icon: InfoIcon,
-            onSelect: () => {
-              setInfoOpen(true);
-            },
-          },
-          {
-            id: 'account',
-            label: t('nav.profile'),
-            icon: UserIcon,
-            onSelect: () => {
-              setAccountOpen(true);
-            },
-          },
-        ]}
+        venue={venue}
+        socials={tenant?.socials ?? {}}
+        onSignIn={() => {
+          setAccountOpen(true);
+        }}
+        onOpenDocument={(title, body) => {
+          setOpenDoc({ title, body });
+        }}
+        themeControl={
+          <ThemeToggle
+            resolvedTheme={resolvedTheme}
+            onToggle={toggleTheme}
+            label={t('theme.label')}
+          />
+        }
+      />
+
+      <DocumentSheet
+        open={openDoc !== null}
+        onOpenChange={(next) => {
+          if (!next) setOpenDoc(null);
+        }}
+        title={openDoc?.title ?? ''}
+        body={openDoc?.body ?? ''}
       />
 
       <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />

@@ -123,7 +123,18 @@
   "account.soon": "El acceso por código llegará pronto. Por ahora el pedido se busca por el número que das al finalizar.",
   "nav.profile": "Perfil",
   "nav.menuLabel": "Menú",
-  "drawer.info": "Sobre el local",
-  "drawer.orders": "Mis pedidos",
-  "drawer.open": "Menú"
+  "drawer.open": "Menú",
+  "drawer.signInBody": "Inicia sesión: pedir es más rápido y tu historial te acompaña.",
+  "drawer.signIn": "Iniciar sesión",
+  "drawer.contacts": "Contacto",
+  "drawer.socials": "Encuéntranos",
+  "drawer.useful": "Conviene saber",
+  "drawer.legal": "Información legal",
+  "drawer.appearance": "Apariencia",
+  "drawer.doc.about": "Sobre la empresa",
+  "drawer.doc.payment": "Formas de pago",
+  "drawer.doc.returns": "Devoluciones",
+  "drawer.doc.cookies": "Cookies",
+  "drawer.doc.terms": "Condiciones de uso",
+  "drawer.doc.privacy": "Política de privacidad"
 }

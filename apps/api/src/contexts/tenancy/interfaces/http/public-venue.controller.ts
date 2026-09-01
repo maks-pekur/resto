@@ -18,6 +18,10 @@ const VenueSchema = z.object({
   locationId: z.string().uuid().nullable(),
   name: z.string().nullable(),
   address: z.string().nullable(),
+  /** The point, so a guest surface can route to it rather than search for the text. */
+  latitude: z.number().nullable(),
+  longitude: z.number().nullable(),
+  phone: z.string().nullable(),
   openingHours: OpeningHours.nullable(),
   /** Guest wi-fi, the same one printed on the table tent. Never staff credentials. */
   wifi: WifiAccess.nullable(),
@@ -28,6 +32,9 @@ const EMPTY: z.infer<typeof VenueSchema> = {
   locationId: null,
   name: null,
   address: null,
+  latitude: null,
+  longitude: null,
+  phone: null,
   openingHours: null,
   wifi: null,
 };
@@ -69,6 +76,9 @@ export class PublicVenueController {
       locationId: location.id,
       name: location.name,
       address: location.address,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      phone: location.contacts?.phone ?? tenant.contacts.phone,
       openingHours: location.openingHours,
       wifi: location.wifi,
     };

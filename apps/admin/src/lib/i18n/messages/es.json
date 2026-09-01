@@ -774,6 +774,31 @@
         "languages": "Idiomas",
         "domains": "Dominios"
       }
+    },
+    "tabLegal": "Documentos",
+    "legal": {
+      "title": "Documentos e información",
+      "description": "Los textos que el cliente lee en el menú. Los vacíos no se muestran.",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "saveFailed": "No se pudo guardar",
+      "doc": {
+        "about": "Sobre la empresa",
+        "payment": "Formas de pago",
+        "returns": "Devoluciones",
+        "cookies": "Cookies",
+        "terms": "Condiciones de uso",
+        "privacy": "Política de privacidad"
+      },
+      "hint": {
+        "about": "Razón social, registro, dirección, NIF",
+        "payment": "Qué tarjetas y métodos aceptas y cuándo se cobra",
+        "returns": "Cuándo devuelves el importe y cómo se solicita",
+        "cookies": "Qué cookies usas y para qué",
+        "terms": "Las reglas de uso del menú y del pedido",
+        "privacy": "Qué datos recoges y cómo los guardas"
+      }
     }
   },
   "account": {

@@ -123,7 +123,18 @@
   "account.soon": "Signing in by code is on its way. For now an order is found by the number you give at checkout.",
   "nav.profile": "Profile",
   "nav.menuLabel": "Menu",
-  "drawer.info": "About the venue",
-  "drawer.orders": "My orders",
-  "drawer.open": "Menu"
+  "drawer.open": "Menu",
+  "drawer.signInBody": "Sign in — ordering gets quicker and your order history stays with you.",
+  "drawer.signIn": "Sign in",
+  "drawer.contacts": "Contacts",
+  "drawer.socials": "Find us",
+  "drawer.useful": "Good to know",
+  "drawer.legal": "Legal",
+  "drawer.appearance": "Appearance",
+  "drawer.doc.about": "About the company",
+  "drawer.doc.payment": "Ways to pay",
+  "drawer.doc.returns": "Refunds",
+  "drawer.doc.cookies": "Cookies",
+  "drawer.doc.terms": "Terms of use",
+  "drawer.doc.privacy": "Privacy policy"
 }

@@ -774,6 +774,31 @@
         "languages": "Languages",
         "domains": "Domains"
       }
+    },
+    "tabLegal": "Documents",
+    "legal": {
+      "title": "Documents and information",
+      "description": "The texts a guest reads in the menu. Empty ones are not shown.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "Could not save",
+      "doc": {
+        "about": "About the company",
+        "payment": "Ways to pay",
+        "returns": "Refunds",
+        "cookies": "Cookies",
+        "terms": "Terms of use",
+        "privacy": "Privacy policy"
+      },
+      "hint": {
+        "about": "Legal name, registration, address, tax number",
+        "payment": "Which cards and methods you take, when money is charged",
+        "returns": "When you refund an order and how a guest asks",
+        "cookies": "Which cookies you set and why",
+        "terms": "The rules for using the menu and ordering",
+        "privacy": "What data you collect and how you keep it"
+      }
     }
   },
   "account": {

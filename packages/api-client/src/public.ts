@@ -18,6 +18,8 @@ export type {
   MenuDto,
   OpeningHoursDto,
   OpeningIntervalDto,
+  LegalDocumentsDto,
+  LegalDocumentKeyDto,
   VenueDto,
   WifiAccessDto,
 } from './menu-types.js';

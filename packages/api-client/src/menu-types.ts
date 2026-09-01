@@ -86,11 +86,18 @@ export interface WifiAccessDto {
   readonly password: string | null;
 }
 
+export type LegalDocumentKeyDto = 'about' | 'payment' | 'returns' | 'cookies' | 'terms' | 'privacy';
+
+export type LegalDocumentsDto = Readonly<Record<LegalDocumentKeyDto, LocalizedText | null>>;
+
 /** The point the guest is sitting in — hours and wi-fi are per address, not per company. */
 export interface VenueDto {
   readonly locationId: string | null;
   readonly name: string | null;
   readonly address: string | null;
+  readonly latitude: number | null;
+  readonly longitude: number | null;
+  readonly phone: string | null;
   readonly openingHours: OpeningHoursDto | null;
   readonly wifi: WifiAccessDto | null;
 }

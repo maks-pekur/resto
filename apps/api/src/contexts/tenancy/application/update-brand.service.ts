@@ -37,6 +37,8 @@ export class UpdateBrandService {
       description: input.description === undefined ? snapshot.description : input.description,
       socials: input.socials ?? snapshot.socials,
       contacts: input.contacts ?? snapshot.contacts,
+      legalDocuments:
+        input.legalDocuments === undefined ? snapshot.legalDocuments : input.legalDocuments,
       theme,
       updatedAt: new Date(),
     };

@@ -2,7 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Globe, Languages, LayoutGrid, Plug, Store } from 'lucide-react';
+import { FileText, Globe, Languages, LayoutGrid, Plug, Store } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -11,12 +11,13 @@ import { PageHeading } from '@/components/common/page-heading';
 import { SettingsNav, type SettingsNavItem } from '@/components/settings/settings-nav';
 import { BrandForm } from '@/components/settings/brand-form';
 import { AppsSection } from '@/components/settings/apps-section';
+import { LegalForm } from '@/components/settings/legal-form';
 import { ContentLocalesSection } from '@/components/settings/content-locales-section';
 import { DomainsSection } from '@/components/settings/domains-section';
 import { PaymentsSection } from '@/components/settings/payments-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 
-const SETTINGS = ['general', 'apps', 'languages', 'domains', 'integrations'] as const;
+const SETTINGS = ['general', 'apps', 'languages', 'legal', 'domains', 'integrations'] as const;
 
 const searchSchema = z.object({
   setting: z.enum(SETTINGS).catch('general'),
@@ -53,6 +54,7 @@ function SettingsPage() {
     { value: 'general', label: t('tabGeneral'), icon: Store },
     { value: 'apps', label: t('tabApps'), icon: LayoutGrid },
     { value: 'languages', label: t('tabLanguages'), icon: Languages },
+    { value: 'legal', label: t('tabLegal'), icon: FileText },
     { value: 'domains', label: t('tabDomains'), icon: Globe },
     ...(canSeeIntegrations
       ? [{ value: 'integrations', label: t('tabIntegrations'), icon: Plug }]
@@ -90,6 +92,7 @@ function SettingsPage() {
               contentLocales={tenant.contentLocales}
             />
           ) : null}
+          {active === 'legal' ? <LegalForm tenant={tenant} /> : null}
           {active === 'domains' ? <DomainsSection /> : null}
           {active === 'integrations' ? <PaymentsSection /> : null}
         </div>

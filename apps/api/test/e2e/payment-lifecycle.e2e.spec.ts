@@ -34,6 +34,7 @@ const makeFakeTenantSnap = (tid: string, slug: string): TenantSnapshot => ({
   contentLocales: ['en'],
   description: null,
   socials: {},
+  legalDocuments: null,
   contacts: { phone: null, email: null, website: null },
   timezone: 'Europe/Madrid',
   country: 'ES',

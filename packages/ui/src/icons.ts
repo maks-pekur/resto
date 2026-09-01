@@ -14,5 +14,7 @@ export {
   User as UserIcon,
   ChevronRight as ChevronIcon,
   SunMoon as ThemeIcon,
+  MapPin as MapPinIcon,
+  ExternalLink as ExternalIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

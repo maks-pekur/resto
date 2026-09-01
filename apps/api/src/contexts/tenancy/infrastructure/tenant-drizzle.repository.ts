@@ -7,6 +7,7 @@ import {
   TenantSlug,
   TenantTheme,
   type CountryCodeValue,
+  LegalDocuments,
 } from '@resto/domain';
 import {
   appendToOutbox,
@@ -173,6 +174,7 @@ export class TenantDrizzleRepository implements TenantRepository {
             theme: snapshot.theme,
             description: snapshot.description,
             socials: { ...snapshot.socials },
+            legalDocuments: snapshot.legalDocuments,
             contactPhone: snapshot.contacts.phone,
             contactEmail: snapshot.contacts.email,
             contactWebsite: snapshot.contacts.website,
@@ -207,6 +209,7 @@ export class TenantDrizzleRepository implements TenantRepository {
               theme: snapshot.theme,
               description: snapshot.description,
               socials: { ...snapshot.socials },
+              legalDocuments: snapshot.legalDocuments,
               contactPhone: snapshot.contacts.phone,
               contactEmail: snapshot.contacts.email,
               contactWebsite: snapshot.contacts.website,
@@ -375,6 +378,7 @@ export class TenantDrizzleRepository implements TenantRepository {
       theme: row.theme === null ? null : TenantTheme.parse(row.theme),
       description: row.description,
       socials: SocialLinksSchema.parse(row.socials),
+      legalDocuments: row.legalDocuments === null ? null : LegalDocuments.parse(row.legalDocuments),
       contacts: {
         phone: row.contactPhone,
         email: row.contactEmail,

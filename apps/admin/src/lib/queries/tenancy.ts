@@ -24,6 +24,7 @@ export interface TenantResponse {
   readonly description: Record<string, string> | null;
   readonly socials: Readonly<Record<string, string>>;
   readonly contacts: TenantContacts;
+  readonly legalDocuments: LegalDocuments | null;
   readonly legalName: string | null;
   readonly legalForm: 'IP' | 'OOO' | 'LLC' | 'SOLE_PROP' | 'OTHER' | null;
   readonly taxId: string | null;
@@ -78,6 +79,13 @@ export const setContentLocales = async (input: {
     body: input,
   });
 
+export type LegalDocuments = Readonly<
+  Record<
+    'about' | 'payment' | 'returns' | 'cookies' | 'terms' | 'privacy',
+    Record<string, string> | null
+  >
+>;
+
 export interface UpdateBrandBody {
   readonly displayName?: string;
   readonly description?: Record<string, string> | null;
@@ -85,6 +93,7 @@ export interface UpdateBrandBody {
   readonly contacts?: TenantContacts;
   readonly logoS3Key?: string | null;
   readonly coverS3Key?: string | null;
+  readonly legalDocuments?: LegalDocuments | null;
 }
 
 export const updateBrand = async (body: UpdateBrandBody) =>

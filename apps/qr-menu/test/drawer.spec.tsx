@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import type * as ClientModule from '../src/api/client';
 
 const menu = {
@@ -25,6 +25,7 @@ vi.mock('../src/api/client', () => ({
   fetchMenu: vi.fn(() => Promise.resolve(menu)),
   fetchAvailability: vi.fn(() => Promise.resolve({ stoppedItemIds: [] })),
   fetchVenue: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
   fetchTableSession: vi.fn(() => Promise.resolve(null)),
   openTableSession: vi.fn(() => Promise.reject(new Error('no'))),
   fetchOrderStatus: vi.fn(),
@@ -41,16 +42,16 @@ describe('qr-menu drawer and profile', () => {
     window.history.replaceState({}, '', '/');
   });
 
-  it('opens the drawer from the header and reaches the venue info through it', async () => {
+  it('offers signing in from the drawer, in words rather than a bare button', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
     fireEvent.click(screen.getByTestId('drawer-trigger'));
-    fireEvent.click(await screen.findByTestId('drawer-info'));
 
-    await waitFor(() => {
-      expect(screen.getAllByText('Pizza Palace').length).toBeGreaterThan(1);
-    });
+    expect(await screen.findByText(/Войдите/u)).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('drawer-account'));
+
+    expect(await screen.findByPlaceholderText('+7 900 000-00-00')).toBeInTheDocument();
   });
 
   it('opens the profile straight from the header', async () => {
