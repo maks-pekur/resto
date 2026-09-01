@@ -58,7 +58,7 @@ const AVAILABILITY_POLL_MS = 20_000;
 const MENU_MAX_AGE_MS = 45 * 60 * 1000;
 
 export const App = () => {
-  const { theme, resolvedTheme, setTheme } = useGuestTheme();
+  const { resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
@@ -378,7 +378,7 @@ export const App = () => {
         onOpenDocument={(title, body) => {
           setOpenDoc({ title, body });
         }}
-        theme={theme}
+        resolvedTheme={resolvedTheme}
         onThemeChange={setTheme}
       />
 

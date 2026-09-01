@@ -45,8 +45,9 @@ export interface GuestDrawerProps {
   readonly socials: Readonly<Record<string, string>>;
   readonly onSignIn: () => void;
   readonly onOpenDocument: (title: string, body: string) => void;
-  readonly theme: 'system' | 'light' | 'dark';
-  readonly onThemeChange: (next: 'system' | 'light' | 'dark') => void;
+  /** What the guest is actually looking at, `system` already resolved. */
+  readonly resolvedTheme: 'light' | 'dark';
+  readonly onThemeChange: (next: 'light' | 'dark') => void;
 }
 
 /**
@@ -62,7 +63,7 @@ export const GuestDrawer = ({
   socials,
   onSignIn,
   onOpenDocument,
-  theme,
+  resolvedTheme,
   onThemeChange,
 }: GuestDrawerProps) => {
   const [documents, setDocuments] = useState<LegalDocumentsDto | null>(null);
@@ -182,24 +183,6 @@ export const GuestDrawer = ({
             </Section>
           )}
 
-          <Section title={t('drawer.appearance')}>
-            {/* The same control the menu uses for a pizza's size — one question, a few answers. */}
-            <div className="px-2 pt-1">
-              <SegmentedChoice
-                name="guest-theme"
-                selectedId={theme}
-                onSelect={(next) => {
-                  onThemeChange(next as 'system' | 'light' | 'dark');
-                }}
-                options={[
-                  { id: 'system', label: t('theme.system') },
-                  { id: 'light', label: t('theme.light') },
-                  { id: 'dark', label: t('theme.dark') },
-                ]}
-              />
-            </div>
-          </Section>
-
           {legal.length === 0 ? null : (
             <Section title={t('drawer.legal')}>
               {legal.map((row) => (
@@ -214,6 +197,24 @@ export const GuestDrawer = ({
               ))}
             </Section>
           )}
+
+          <Section title={t('drawer.appearance')}>
+            {/* Two answers, not three: `system` is where everyone starts, so it is the state of
+                the control rather than an option to pick. */}
+            <div className="px-2 pt-1">
+              <SegmentedChoice
+                name="guest-theme"
+                selectedId={resolvedTheme}
+                onSelect={(next) => {
+                  onThemeChange(next === 'dark' ? 'dark' : 'light');
+                }}
+                options={[
+                  { id: 'light', label: t('theme.light') },
+                  { id: 'dark', label: t('theme.dark') },
+                ]}
+              />
+            </div>
+          </Section>
         </div>
       </SheetContent>
     </Sheet>

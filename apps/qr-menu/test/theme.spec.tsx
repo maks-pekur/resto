@@ -82,7 +82,8 @@ describe('qr-menu colour theme', () => {
     expect(document.documentElement.getAttribute('data-theme')).toBe('system');
     expect(window.localStorage.getItem('resto.theme')).toBeNull();
     fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
-    expect(await screen.findByRole('radio', { name: t('theme.system') })).toBeChecked();
+    // Nothing was chosen, so the control simply shows what the system resolved to.
+    expect(await screen.findByRole('radio', { name: t('theme.light') })).toBeChecked();
   });
 
   it('applies and remembers an explicit dark choice', async () => {
