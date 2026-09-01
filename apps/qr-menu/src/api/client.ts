@@ -66,15 +66,6 @@ export interface PlaceOrderItem {
   }[];
 }
 
-export interface PlaceOrderInput {
-  readonly items: readonly PlaceOrderItem[];
-  readonly tableId: string;
-  readonly paymentType: 'online' | 'cash';
-  readonly customerName?: string;
-  readonly customerPhone?: string;
-  readonly idempotencyKey: string;
-}
-
 export interface PlacedOrder {
   readonly orderId: string;
   readonly orderNumber: string;
@@ -116,6 +107,15 @@ const postJson = async <T>(path: string, body: unknown): Promise<T> => {
   return res.json() as Promise<T>;
 };
 
+export interface PlaceOrderInput {
+  readonly items: readonly PlaceOrderItem[];
+  readonly paymentType: 'online' | 'cash';
+  readonly customerName?: string;
+  readonly customerPhone?: string;
+  readonly idempotencyKey: string;
+}
+
+/** No table travels with the order: the server reads it from the session the scan opened. */
 export const placeOrder = (input: PlaceOrderInput): Promise<PlacedOrder> =>
   postJson<PlacedOrder>('/v1/orders', {
     ...input,
@@ -128,6 +128,19 @@ export const startPayment = (
   orderId: string,
 ): Promise<{ clientSecret: string; connectedAccountId: string }> =>
   postJson('/v1/checkout/payment-intent', { orderId });
+
+/** Exchange the secret from a scanned code for a table session cookie. */
+export const openTableSession = (token: string): Promise<ResolvedTable> =>
+  postJson<ResolvedTable>('/v1/tables/session', { token });
+
+export const fetchTableSession = async (signal?: AbortSignal): Promise<ResolvedTable | null> => {
+  const init: RequestInit = {};
+  if (signal) init.signal = signal;
+  const res = await fetch('/v1/tables/session', init);
+  if (res.status === 404) return null;
+  if (!res.ok) throw new OrderRequestError(`http_${res.status.toString()}`);
+  return res.json() as Promise<ResolvedTable>;
+};
 
 export const fetchOrderStatus = async (
   orderId: string,

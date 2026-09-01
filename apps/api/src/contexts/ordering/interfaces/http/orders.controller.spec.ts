@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { OrdersController } from './orders.controller';
+import type { TableSessionService } from '../../../tenancy/application/table-session.service';
 import type { GetOrderService } from '../../application/get-order.service';
 import type { CreateOrderService } from '../../application/create-order.service';
 import { OrderNotFoundError } from '../../domain/errors';
@@ -63,7 +64,11 @@ const buildController = () => {
     execute: vi.fn(),
   } as unknown as GetOrderService;
 
-  const controller = new OrdersController(createOrderService, getOrderService);
+  const tableSessions = {
+    resolve: vi.fn().mockResolvedValue(null),
+  } as unknown as TableSessionService;
+
+  const controller = new OrdersController(createOrderService, getOrderService, tableSessions);
 
   return { controller, getOrderService, createOrderService };
 };

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import {
   check,
@@ -6,6 +7,7 @@ import {
   integer,
   pgTable,
   text,
+  timestamp,
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
@@ -69,6 +71,10 @@ export const restaurantTables = pgTable(
     locationId: uuid('location_id').notNull(),
     // Free display text — an operator may type `A1` or `терраса-3` (CONTEXT D-23).
     number: text('number').notNull(),
+    /** The secret printed in the QR code, exchanged for a table session (migration 0011). */
+    qrToken: text('qr_token')
+      .notNull()
+      .$defaultFn(() => randomToken()),
     // Integer sort key TBL-10's unlabelled sheet depends on; `number` alone
     // sorts lexicographically (1, 10, 11, 2, 20) — see CONTEXT D-23.
     ordinal: integer('ordinal').notNull(),
@@ -102,5 +108,37 @@ export const restaurantTables = pgTable(
       table.ordinal,
     ),
     tenantParentUniqueIndex('restaurant_tables', { id: table.id, tenantId: table.tenantId }),
+  ],
+);
+
+/** 16 random bytes: long enough that a code cannot be guessed from a neighbouring table's. */
+const randomToken = (): string => randomBytes(16).toString('hex');
+
+/**
+ * A guest's claim to a table, opened by scanning its code. Orders read the table from here rather
+ * than from whatever the browser sends, so a copied link cannot order to someone else's table.
+ */
+export const tableSessions = pgTable(
+  'table_sessions',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    tableId: uuid('table_id').notNull(),
+    locationId: uuid('location_id').notNull(),
+    expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'table_sessions_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'table_sessions_table_fk',
+      child: { id: table.tableId, tenantId: table.tenantId },
+      parent: { id: restaurantTables.id, tenantId: restaurantTables.tenantId },
+    }).onDelete('cascade'),
+    index('table_sessions_tenant_table_idx').on(table.tenantId, table.tableId, table.expiresAt),
   ],
 );

@@ -89,6 +89,14 @@ export interface TableZoneRepository {
   findZoneById(zoneId: string, locationId: LocationId): Promise<TableZoneSnapshot | null>;
   findTableById(tableId: string, locationId: LocationId): Promise<RestaurantTableSnapshot | null>;
   findActiveTableForResolution(tableId: string): Promise<RestaurantTableResolution | null>;
+  /** The code's secret is all a scanning guest carries; the table id never leaves the server. */
+  findActiveTableByQrToken(token: string): Promise<RestaurantTableResolution | null>;
+  openTableSession(input: {
+    readonly tableId: string;
+    readonly locationId: string;
+    readonly expiresAt: Date;
+  }): Promise<string>;
+  findLiveTableSession(sessionId: string): Promise<RestaurantTableResolution | null>;
   createZoneWithTables(input: CreateZoneWithTablesInput): Promise<TableZoneWithTables>;
   addTables(input: AddTablesInput): Promise<readonly RestaurantTableSnapshot[]>;
   saveZone(snapshot: TableZoneSnapshot): Promise<void>;

@@ -5,6 +5,7 @@ import { useCartStore } from '@resto/cart';
 const placeOrder = vi.fn();
 vi.mock('../src/api/client', () => ({
   placeOrder,
+  openTableSession: vi.fn(),
   OrderRequestError: class extends Error {},
 }));
 
@@ -54,7 +55,7 @@ describe('CheckoutSheet', () => {
     useCartStore.getState().addItem(line);
   });
 
-  it('sends the table, the cart and the payment the guest chose', async () => {
+  it('sends the cart and the payment the guest chose — the table comes from their session', async () => {
     const onPlaced = renderSheet('table-1');
 
     fireEvent.click(screen.getByRole('button', { name: /checkout.place/u }));
@@ -62,7 +63,6 @@ describe('CheckoutSheet', () => {
     await waitFor(() => {
       expect(placeOrder).toHaveBeenCalledWith(
         expect.objectContaining({
-          tableId: 'table-1',
           paymentType: 'online',
           items: [expect.objectContaining({ itemId: 'item-1', sizeId: 'size-30', quantity: 1 })],
         }),

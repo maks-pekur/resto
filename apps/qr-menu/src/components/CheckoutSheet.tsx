@@ -1,7 +1,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { selectSubtotal, useCartStore } from '@resto/cart';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, formatPrice } from '@resto/ui';
-import { fetchTable, placeOrder, OrderRequestError, type PlacedOrder } from '../api/client';
+import { openTableSession, placeOrder, OrderRequestError, type PlacedOrder } from '../api/client';
 import { canScanInPage } from './TableScanner';
 import { getActiveLocale, t } from '../i18n';
 
@@ -9,15 +9,12 @@ const Scanner = lazy(async () => ({ default: (await import('./TableScanner')).Ta
 
 export type PaymentChoice = 'online' | 'cash';
 
-/** Our own codes carry the table either as `?t=<id>` or, later, as `/t/<token>`. */
-export const tableIdFromScan = (raw: string): string | null => {
+/** Our codes carry the secret as `/t/<token>` — nothing else in them is worth reading. */
+export const qrTokenFromScan = (raw: string): string | null => {
   try {
     const url = new URL(raw, window.location.origin);
     if (url.host !== window.location.host) return null;
-    const fromQuery = url.searchParams.get('t');
-    if (fromQuery !== null && fromQuery.trim().length > 0) return fromQuery;
-    const fromPath = /^\/t\/([^/]+)\/?$/.exec(url.pathname)?.[1];
-    return fromPath ?? null;
+    return /^\/t\/([^/]+)\/?$/.exec(url.pathname)?.[1] ?? null;
   } catch {
     return null;
   }
@@ -63,7 +60,6 @@ export const CheckoutSheet = ({
     setError(null);
     try {
       const order = await placeOrder({
-        tableId,
         paymentType: payment,
         idempotencyKey: newIdempotencyKey(),
         ...(name.trim().length > 0 ? { customerName: name.trim() } : {}),
@@ -92,23 +88,16 @@ export const CheckoutSheet = ({
   const table = zoneName !== null && tableNumber !== null ? `${zoneName} · ${tableNumber}` : null;
 
   const applyScan = (raw: string): void => {
-    const scanned = tableIdFromScan(raw);
+    const scanned = qrTokenFromScan(raw);
     if (scanned === null) {
       setScanFailed(true);
       return;
     }
-    // Resolve before accepting it: a code from another restaurant must not silently pass.
-    fetchTable(scanned)
+    // The secret is exchanged for a session, exactly as a fresh scan would: a code from another
+    // restaurant simply does not resolve.
+    openTableSession(scanned)
       .then((resolved) => {
-        if (resolved === null) {
-          setScanFailed(true);
-          return;
-        }
-        useCartStore.getState().setTable({
-          tableId: resolved.tableId,
-          zoneName: resolved.zoneName,
-          number: resolved.number,
-        });
+        useCartStore.getState().setTable(resolved);
         setScanning(false);
         setScanFailed(false);
         onTableScanned(resolved.tableId);

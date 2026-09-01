@@ -8,7 +8,8 @@ const GUEST_HOST_LABEL = 'menu';
 
 export interface BuildGuestMenuUrlInput {
   readonly tenant: TenantSnapshot;
-  readonly tableId: string;
+  /** The code's own secret, not the table id: a copied address must not name a table. */
+  readonly qrToken: string;
 }
 
 /**
@@ -34,7 +35,7 @@ export class GuestMenuUrlService {
 
   async execute(input: BuildGuestMenuUrlInput): Promise<string> {
     const host = await this.#resolveGuestHost(input.tenant);
-    return `https://${host}/?t=${input.tableId}`;
+    return `https://${host}/t/${input.qrToken}`;
   }
 
   async #resolveGuestHost(tenant: TenantSnapshot): Promise<string> {

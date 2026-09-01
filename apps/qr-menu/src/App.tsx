@@ -14,7 +14,13 @@ import {
 } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 import type { PlacedOrder } from './api/client';
-import { fetchAvailability, fetchMenu, fetchTable, MenuNotFoundError } from './api/client';
+import {
+  fetchAvailability,
+  fetchMenu,
+  fetchTableSession,
+  openTableSession,
+  MenuNotFoundError,
+} from './api/client';
 import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
 import { InfoSheet } from './components/InfoSheet';
 import { OrderStatusSheet } from './components/OrderStatusSheet';
@@ -25,13 +31,12 @@ import { TableBanner } from './components/TableBanner';
 import { adoptTenantLocales, getActiveLocale, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
+const TABLE_PATH = /^\/t\/([^/]+)\/?$/;
 
 const parseItemId = (pathname: string): string | null => ITEM_PATH.exec(pathname)?.[1] ?? null;
 
-const parseTableId = (search: string): string | undefined => {
-  const raw = new URLSearchParams(search).get('t');
-  return raw != null && raw.trim().length > 0 ? raw : undefined;
-};
+/** The code's secret, which the app trades for a session and then wipes from the address bar. */
+const parseQrToken = (pathname: string): string | null => TABLE_PATH.exec(pathname)?.[1] ?? null;
 
 type State =
   | { kind: 'loading' }
@@ -54,9 +59,7 @@ export const App = () => {
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
-  const [tableIdParam, setTableIdParam] = useState<string | undefined>(() =>
-    typeof window === 'undefined' ? undefined : parseTableId(window.location.search),
-  );
+  const [tableId, setTableId] = useState<string | undefined>(undefined);
   const [tableUnrecognized, setTableUnrecognized] = useState(false);
   const menuFetchedAt = useRef(0);
 
@@ -77,41 +80,60 @@ export const App = () => {
           setState({ kind: 'error' });
         }
       });
-    fetchAvailability(tableIdParam, controller.signal)
+    fetchAvailability(tableId, controller.signal)
       .then((availability) => {
         setStoppedItemIds(availability.stoppedItemIds);
       })
       .catch(() => undefined);
-    if (tableIdParam) {
-      fetchTable(tableIdParam, controller.signal)
-        .then((resolved) => {
-          if (resolved) {
-            setTableUnrecognized(false);
-            useCartStore.getState().setTable({
-              tableId: resolved.tableId,
-              zoneName: resolved.zoneName,
-              number: resolved.number,
-            });
-          } else {
-            setTableUnrecognized(true);
-          }
-        })
-        .catch((err: unknown) => {
-          if ((err as { name?: string }).name === 'AbortError') return;
-          setTableUnrecognized(true);
-        });
-    }
     return () => {
       controller.abort();
     };
-  }, [attempt, tableIdParam]);
+  }, [attempt, tableId]);
+
+  // A scanned code is spent on arrival: it opens a session, then leaves the address bar so the
+  // link in the browser history names no table.
+  useEffect(() => {
+    const controller = new AbortController();
+    const token = parseQrToken(window.location.pathname);
+
+    const seat = (resolved: { tableId: string; zoneName: string; number: string }): void => {
+      setTableUnrecognized(false);
+      setTableId(resolved.tableId);
+      useCartStore.getState().setTable(resolved);
+    };
+
+    if (token !== null) {
+      openTableSession(token)
+        .then((resolved) => {
+          seat(resolved);
+          window.history.replaceState(null, '', '/');
+        })
+        .catch(() => {
+          setTableUnrecognized(true);
+          window.history.replaceState(null, '', '/');
+        });
+      return () => {
+        controller.abort();
+      };
+    }
+
+    fetchTableSession(controller.signal)
+      .then((resolved) => {
+        if (resolved !== null) seat(resolved);
+      })
+      .catch(() => undefined);
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
     const controller = new AbortController();
     const refresh = (): void => {
       if (document.hidden) return;
-      fetchAvailability(tableIdParam, controller.signal)
+      fetchAvailability(tableId, controller.signal)
         .then((availability) => {
           setStoppedItemIds(availability.stoppedItemIds);
         })
@@ -134,7 +156,7 @@ export const App = () => {
       window.removeEventListener('focus', refresh);
       document.removeEventListener('visibilitychange', refresh);
     };
-  }, [state.kind, tableIdParam]);
+  }, [state.kind, tableId]);
 
   useEffect(() => {
     if (state.kind !== 'ready') return;
@@ -269,8 +291,8 @@ export const App = () => {
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         currency={state.kind === 'ready' ? state.menu.currency : 'EUR'}
-        tableId={tableIdParam}
-        onTableScanned={setTableIdParam}
+        tableId={tableId}
+        onTableScanned={setTableId}
         onPlaced={(order, payment) => {
           setPlaced({ order, payment });
         }}

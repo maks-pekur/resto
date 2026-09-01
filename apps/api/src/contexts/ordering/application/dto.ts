@@ -25,6 +25,7 @@ export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
     orderType: z.enum(['dine_in', 'pickup', 'delivery']),
+    /** Only trusted from an operator; a guest's table comes from their scanned session. */
     tableId: z.string().uuid().optional(),
     customerName: z.string().max(200).optional(),
     customerPhone: z.string().max(30).optional(),
@@ -43,13 +44,7 @@ export const CreateOrderInputSchema = z
     paymentType: z.enum(['online', 'cash', 'card_on_delivery']).optional().default('online'),
     marketingConsent: z.boolean().optional().default(false),
   })
-  .refine(
-    (data) => {
-      if (data.orderType === 'dine_in') return data.tableId !== undefined;
-      return true;
-    },
-    { message: 'tableId is required for dine_in orders', path: ['tableId'] },
-  )
+
   .refine(
     (data) => {
       if (data.orderType === 'pickup' || data.orderType === 'delivery') {

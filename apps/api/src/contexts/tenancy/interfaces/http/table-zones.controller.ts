@@ -84,7 +84,7 @@ const buildTableResponse = async (
   number: table.number,
   ordinal: table.ordinal,
   status: table.status,
-  qrUrl: await guestMenuUrl.execute({ tenant, tableId: table.id }),
+  qrUrl: await guestMenuUrl.execute({ tenant, qrToken: table.qrToken }),
 });
 
 const buildZoneResponse = async (

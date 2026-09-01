@@ -49,6 +49,8 @@ const menu: MenuDto = {
 
 vi.mock('../src/api/client', () => ({
   MenuNotFoundError: class extends Error {},
+  fetchTableSession: () => Promise.resolve(null),
+  openTableSession: () => Promise.reject(new Error('no session')),
   fetchMenu: () => Promise.resolve(menu),
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));

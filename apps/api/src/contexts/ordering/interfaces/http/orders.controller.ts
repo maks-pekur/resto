@@ -1,9 +1,22 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Inject,
+  Param,
+  Post,
+  Req,
+} from '@nestjs/common';
 import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
+import type { FastifyRequest } from 'fastify';
+import { readTableSessionCookie } from '../../../../shared/table-session';
+import { TableSessionService } from '../../../tenancy/application/table-session.service';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   CreateOrderInputDto,
@@ -41,6 +54,7 @@ export class OrdersController {
   constructor(
     @Inject(CreateOrderService) private readonly createOrder: CreateOrderService,
     @Inject(GetOrderService) private readonly getOrder: GetOrderService,
+    @Inject(TableSessionService) private readonly tableSessions: TableSessionService,
   ) {}
 
   @Post()
@@ -48,10 +62,17 @@ export class OrdersController {
   @RequireActiveTenant()
   @ApiBody({ type: CreateOrderInputDto })
   @ApiCreatedResponse({ type: OrderResponseDto })
-  create(
+  async create(
     @Body(new RestoZodValidationPipe(CreateOrderInputDto)) input: CreateOrderInputDto,
+    @Req() req: FastifyRequest,
   ): Promise<OrderResponse> {
-    return wrap(() => this.createOrder.execute(input));
+    // A guest never names their own table: it comes from the session their scan opened, so a
+    // copied link cannot order to someone else's table.
+    const sessionId = readTableSessionCookie(req.headers);
+    const session = sessionId === undefined ? null : await this.tableSessions.resolve(sessionId);
+    const tableId = session?.tableId;
+
+    return wrap(() => this.createOrder.execute(input, tableId));
   }
 
   @Get(':id/status')

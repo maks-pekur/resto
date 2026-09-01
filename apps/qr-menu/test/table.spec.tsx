@@ -58,15 +58,17 @@ const fetchAvailabilityMock =
   vi.fn<
     (tableId: string | undefined, signal?: AbortSignal) => Promise<{ stoppedItemIds: string[] }>
   >();
-const fetchTableMock =
-  vi.fn<(tableId: string, signal?: AbortSignal) => Promise<ResolvedTable | null>>();
+const openTableSessionMock = vi.fn<(token: string) => Promise<ResolvedTable>>();
+const fetchTableSessionMock = vi.fn<(signal?: AbortSignal) => Promise<ResolvedTable | null>>();
 
 vi.mock('../src/api/client', () => ({
   MenuNotFoundError: class extends Error {},
+  OrderRequestError: class extends Error {},
   fetchMenu: (signal?: AbortSignal) => fetchMenuMock(signal),
   fetchAvailability: (tableId: string | undefined, signal?: AbortSignal) =>
     fetchAvailabilityMock(tableId, signal),
-  fetchTable: (tableId: string, signal?: AbortSignal) => fetchTableMock(tableId, signal),
+  openTableSession: (token: string) => openTableSessionMock(token),
+  fetchTableSession: (signal?: AbortSignal) => fetchTableSessionMock(signal),
 }));
 
 const bannerNode = (): Element | null => document.querySelector('.bg-muted.border-b');
@@ -77,7 +79,8 @@ beforeEach(() => {
   window.history.replaceState({}, '', '/');
   fetchMenuMock.mockReset().mockResolvedValue(menu);
   fetchAvailabilityMock.mockReset().mockResolvedValue({ stoppedItemIds: [] });
-  fetchTableMock.mockReset().mockResolvedValue(null);
+  openTableSessionMock.mockReset().mockRejectedValue(new Error('no session'));
+  fetchTableSessionMock.mockReset().mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -85,9 +88,9 @@ afterEach(() => {
 });
 
 describe('qr-menu table', () => {
-  it('resolves a scanned table id and renders the server-supplied label', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(resolvedTable);
+  it('trades a scanned code for a session and renders the server-supplied label', async () => {
+    window.history.replaceState({}, '', '/t/a-printed-secret');
+    openTableSessionMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {
@@ -98,9 +101,9 @@ describe('qr-menu table', () => {
     expect(useCartStore.getState().tableNumber).toBe('12');
   });
 
-  it('shows the not-recognised line but still renders the menu when the table is unknown', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(null);
+  it('shows the not-recognised line but still renders the menu when the code is unknown', async () => {
+    window.history.replaceState({}, '', '/t/someone-elses-code');
+    openTableSessionMock.mockRejectedValue(new Error('unknown'));
     render(<App />);
 
     await waitFor(() => {
@@ -110,21 +113,21 @@ describe('qr-menu table', () => {
     expect(useCartStore.getState().tableId).toBeNull();
   });
 
-  it('ignores the old free-text ?table= parameter entirely', async () => {
-    window.history.replaceState({}, '', '/?table=%D0%A1%D1%82%D0%BE%D0%BB%2099');
+  it('ignores a table named in the query — only a scanned code seats a guest', async () => {
+    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(openTableSessionMock).not.toHaveBeenCalled();
     expect(bannerNode()).not.toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBeNull();
   });
 
-  it('renders no table strip and no not-recognised line with no ?t= at all', async () => {
+  it('renders no table strip and no not-recognised line without a code', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(openTableSessionMock).not.toHaveBeenCalled();
     expect(bannerNode()).not.toBeInTheDocument();
     expect(screen.queryByText(t('table.notRecognized'))).not.toBeInTheDocument();
   });
@@ -137,8 +140,8 @@ describe('qr-menu table', () => {
   });
 
   it('carries the scanned table on the availability request', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(resolvedTable);
+    window.history.replaceState({}, '', '/t/a-printed-secret');
+    openTableSessionMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {

@@ -767,6 +767,43 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tables/session:
+    post:
+      operationId: PublicTableResolutionController_openSession
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableResolutionDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+    get:
+      operationId: PublicTableResolutionController_currentSession
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TableResolutionDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tables/{id}:
     get:
       operationId: PublicTableResolutionController_resolve

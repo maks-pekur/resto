@@ -39,7 +39,11 @@ export class CreateOrderService {
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
   ) {}
 
-  async execute(input: CreateOrderInput): Promise<OrderResponse> {
+  /**
+   * `tableFromSession` is how a guest names their table: they cannot put one in the request, so
+   * the controller passes what their scanned session resolved to.
+   */
+  async execute(input: CreateOrderInput, tableFromSession?: string): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
 
@@ -48,12 +52,13 @@ export class CreateOrderService {
       return toOrderResponse(existingOrder.toSnapshot());
     }
 
+    const tableId = tableFromSession ?? input.tableId;
     let locationId: string;
     let resolvedTable: ResolvedOrderTable | null = null;
-    if (input.tableId !== undefined) {
-      resolvedTable = await this.tableLookup.findActiveTable(input.tableId);
+    if (tableId !== undefined) {
+      resolvedTable = await this.tableLookup.findActiveTable(tableId);
       if (!resolvedTable) {
-        throw new OrderTableNotResolvedError(input.tableId);
+        throw new OrderTableNotResolvedError(tableId);
       }
       locationId = resolvedTable.locationId;
     } else {

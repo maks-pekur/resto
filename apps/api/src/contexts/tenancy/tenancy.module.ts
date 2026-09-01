@@ -30,6 +30,7 @@ import { RenameTableZoneService } from './application/rename-table-zone.service'
 import { RenameTableService } from './application/rename-table.service';
 import { ArchiveTableZoneService } from './application/archive-table-zone.service';
 import { ArchiveTableService } from './application/archive-table.service';
+import { TableSessionService } from './application/table-session.service';
 import { GuestMenuUrlService } from './application/guest-menu-url.service';
 import { ResolveTableService } from './application/resolve-table.service';
 import { LOCATION_REPOSITORY, TABLE_ZONE_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
@@ -100,6 +101,7 @@ import {
     ArchiveTableZoneService,
     ArchiveTableService,
     GuestMenuUrlService,
+    TableSessionService,
     ResolveTableService,
     SeedPresetRolesService,
   ],
@@ -121,6 +123,8 @@ import {
     SetContentLocalesService,
     UpdateLocationService,
     GuestMenuUrlService,
+    // The ordering controller reads a guest's table from their scanned session.
+    TableSessionService,
   ],
 })
 export class TenancyModule {}

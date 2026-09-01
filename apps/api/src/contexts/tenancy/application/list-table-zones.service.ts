@@ -29,7 +29,7 @@ export class ListTableZonesService {
     for (const zone of zones) {
       const tables: TableResponse[] = [];
       for (const table of zone.tables) {
-        const qrUrl = await this.guestMenuUrl.execute({ tenant, tableId: table.id });
+        const qrUrl = await this.guestMenuUrl.execute({ tenant, qrToken: table.qrToken });
         tables.push({
           id: table.id,
           number: table.number,

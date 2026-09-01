@@ -12,6 +12,8 @@ export interface RestaurantTableSnapshot {
   readonly locationId: LocationId;
   readonly number: string;
   readonly ordinal: number;
+  /** The secret in the table's printed code — never shown to a guest, only encoded. */
+  readonly qrToken: string;
   readonly status: 'active' | 'archived';
   readonly createdAt: Date;
   readonly updatedAt: Date;

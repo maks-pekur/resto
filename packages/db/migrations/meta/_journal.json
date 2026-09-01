@@ -78,6 +78,13 @@
       "when": 1788282000000,
       "tag": "0010_order_payment_status",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788368400000,
+      "tag": "0011_table_qr_sessions",
+      "breakpoints": true
     }
   ]
 }
