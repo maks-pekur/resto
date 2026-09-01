@@ -21,7 +21,7 @@ export interface TabBarProps {
 /**
  * The guest's way around, floating clear of the page. It sits above the home indicator and the
  * browser's own bottom chrome — `env(safe-area-inset-bottom)` is the only measurement that knows
- * where those end — and gives half its height back while the guest is reading downwards.
+ * where those end — and folds its labels away while the guest is reading downwards.
  */
 export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
   const compact = useScrollShrink();
@@ -32,8 +32,9 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
         aria-label={ariaLabel}
         data-compact={compact ? '' : undefined}
         className={cn(
-          'bg-background/85 ring-border pointer-events-auto flex w-full max-w-sm items-stretch gap-1 rounded-full p-1 shadow-lg ring-1 backdrop-blur transition-all duration-300',
-          compact && 'max-w-[15rem] p-0.5',
+          'bg-background/85 ring-border pointer-events-auto flex w-full max-w-sm items-stretch gap-1 rounded-full p-1 shadow-lg ring-1 backdrop-blur',
+          'transition-[max-width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+          compact && 'max-w-[19rem]',
         )}
       >
         {tabs.map((tab) => {
@@ -48,8 +49,7 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
               data-testid={`guest-tab-${tab.id}`}
               onClick={tab.onSelect}
               className={cn(
-                'relative flex flex-1 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-full transition-all',
-                compact ? 'py-1' : 'py-1.5',
+                'relative flex flex-1 cursor-pointer flex-col items-center justify-center rounded-full py-1.5 transition-colors',
                 isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
               )}
             >
@@ -64,8 +64,9 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
               {/* The label goes, not the target: the button keeps its full tap area either way. */}
               <span
                 className={cn(
-                  'overflow-hidden text-[10px] leading-none font-medium transition-all',
-                  compact ? 'h-0 opacity-0' : 'h-2.5 opacity-100',
+                  'overflow-hidden text-[10px] leading-none font-medium',
+                  'transition-all duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
+                  compact ? 'mt-0 h-0 opacity-0' : 'mt-0.5 h-2.5 opacity-100',
                 )}
               >
                 {tab.label}
