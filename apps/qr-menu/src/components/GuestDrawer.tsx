@@ -161,21 +161,21 @@ export const GuestDrawer = ({
 
           {socialEntries.length === 0 ? null : (
             <Section title={t('drawer.socials')}>
-              {/* Two to a row, the same height as every other row here: a link is a link. */}
-              <ul className="grid grid-cols-2 gap-2 px-2 pt-1">
+              {/* One per row, like the contacts above: at 320px two columns clipped every name. */}
+              <ul className="flex flex-col">
                 {socialEntries.map(([platform, href]) => (
                   <li key={platform}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="ring-border hover:bg-muted flex h-12 items-center gap-2.5 rounded-xl px-3 text-sm font-semibold ring-1"
+                      className="hover:bg-muted flex min-h-12 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
                     >
                       <BrandIcon platform={platform} className="size-5 shrink-0" />
                       {BRAND_MARKS.has(platform) ? null : (
                         <MapPinIcon className="text-muted-foreground size-5 shrink-0" />
                       )}
-                      <span className="flex-1 truncate">{SOCIAL_LABEL[platform] ?? platform}</span>
+                      <span className="flex-1">{SOCIAL_LABEL[platform] ?? platform}</span>
                     </a>
                   </li>
                 ))}
