@@ -537,6 +537,11 @@
     },
     "review": {
       "rating": "Guest's rating: {{rating}} of 5"
+    },
+    "service": {
+      "waiter": "{{zone}}, table {{number}} — calling a waiter",
+      "bill": "{{zone}}, table {{number}} — asking for the bill",
+      "done": "Done"
     }
   },
   "dashboard": {

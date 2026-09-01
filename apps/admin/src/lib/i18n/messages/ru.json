@@ -537,6 +537,11 @@
     },
     "review": {
       "rating": "Оценка гостя: {{rating}} из 5"
+    },
+    "service": {
+      "waiter": "Зал {{zone}}, стол {{number}} — зовут официанта",
+      "bill": "Зал {{zone}}, стол {{number}} — просят счёт",
+      "done": "Готово"
     }
   },
   "dashboard": {

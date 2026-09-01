@@ -147,5 +147,10 @@
   "review.rating.2": "Так собі",
   "review.rating.3": "Нормально",
   "review.rating.4": "Добре",
-  "review.rating.5": "Чудово"
+  "review.rating.5": "Чудово",
+  "drawer.service": "Обслуговування",
+  "service.waiter": "Покликати офіціанта",
+  "service.waiterAsked": "Офіціант іде",
+  "service.bill": "Рахунок",
+  "service.billAsked": "Рахунок несуть"
 }

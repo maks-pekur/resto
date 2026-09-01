@@ -147,5 +147,10 @@
   "review.rating.2": "Так себе",
   "review.rating.3": "Нормально",
   "review.rating.4": "Хорошо",
-  "review.rating.5": "Отлично"
+  "review.rating.5": "Отлично",
+  "drawer.service": "Обслуживание",
+  "service.waiter": "Позвать официанта",
+  "service.waiterAsked": "Официант идёт",
+  "service.bill": "Счёт",
+  "service.billAsked": "Счёт несут"
 }

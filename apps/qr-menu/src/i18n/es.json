@@ -147,5 +147,10 @@
   "review.rating.2": "Regular",
   "review.rating.3": "Normal",
   "review.rating.4": "Bien",
-  "review.rating.5": "Genial"
+  "review.rating.5": "Genial",
+  "drawer.service": "Servicio",
+  "service.waiter": "Llamar al camarero",
+  "service.waiterAsked": "El camarero viene",
+  "service.bill": "La cuenta",
+  "service.billAsked": "Traen la cuenta"
 }

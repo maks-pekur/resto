@@ -16,5 +16,7 @@ export {
   SunMoon as ThemeIcon,
   MapPin as MapPinIcon,
   ExternalLink as ExternalIcon,
+  Bell as BellIcon,
+  ReceiptText as ReceiptIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

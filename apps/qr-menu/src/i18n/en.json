@@ -147,5 +147,10 @@
   "review.rating.2": "Poor",
   "review.rating.3": "Fine",
   "review.rating.4": "Good",
-  "review.rating.5": "Great"
+  "review.rating.5": "Great",
+  "drawer.service": "Service",
+  "service.waiter": "Call a waiter",
+  "service.waiterAsked": "A waiter is coming",
+  "service.bill": "The bill",
+  "service.billAsked": "The bill is coming"
 }

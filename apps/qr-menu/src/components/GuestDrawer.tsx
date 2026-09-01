@@ -14,6 +14,7 @@ import {
 } from '@resto/ui';
 import type { LegalDocumentKeyDto, LegalDocumentsDto, VenueDto } from '@resto/api-client/public';
 import { localized, t } from '../i18n';
+import { ServiceCalls } from './ServiceCalls';
 
 const SOCIAL_LABEL: Readonly<Record<string, string>> = {
   instagram: 'Instagram',
@@ -58,6 +59,8 @@ export interface GuestDrawerProps {
   readonly socials: Readonly<Record<string, string>>;
   readonly onSignIn: () => void;
   readonly documents: LegalDocumentsDto | null;
+  /** Calling a waiter needs a table, and only a scan gives one. */
+  readonly seated: boolean;
   readonly onOpenDocument: (key: LegalDocumentKeyDto) => void;
   /** What the guest is actually looking at, `system` already resolved. */
   readonly resolvedTheme: 'light' | 'dark';
@@ -77,6 +80,7 @@ export const GuestDrawer = ({
   socials,
   onSignIn,
   documents,
+  seated,
   onOpenDocument,
   resolvedTheme,
   onThemeChange,
@@ -118,6 +122,14 @@ export const GuestDrawer = ({
               {t('drawer.signIn')}
             </button>
           </section>
+
+          {seated ? (
+            <Section title={t('drawer.service')}>
+              <div className="px-2 pt-1">
+                <ServiceCalls />
+              </div>
+            </Section>
+          ) : null}
 
           {venue?.address === null && venue.phone === null ? null : (
             <Section title={t('drawer.contacts')}>

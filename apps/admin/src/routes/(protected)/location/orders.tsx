@@ -19,6 +19,7 @@ import { useOrderSound } from '@/hooks/use-order-sound';
 import { useOrderNotifications } from '@/hooks/use-order-notifications';
 import { useTabTitle } from '@/hooks/use-tab-title';
 import { PageHeading } from '@/components/common/page-heading';
+import { ServiceRequestsBar } from '@/components/orders/service-requests-bar';
 import { EmptyState } from '@/components/common/empty-state';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -113,6 +114,7 @@ function OrdersPage() {
     <>
       <PageHeading title={tNav('orders')} />
       {alertsPending ? <EnableAlertsBanner onEnable={enableAlerts} /> : null}
+      {feedLocationId === undefined ? null : <ServiceRequestsBar locationId={feedLocationId} />}
       {/* One block so the layout's own row gap cannot open a gulf between the heads and the
           first order; the filter bar and the heads stay put, only the orders move under them. */}
       <div className="flex flex-col gap-2">

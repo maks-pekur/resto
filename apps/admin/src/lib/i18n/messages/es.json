@@ -537,6 +537,11 @@
     },
     "review": {
       "rating": "Valoración del cliente: {{rating}} de 5"
+    },
+    "service": {
+      "waiter": "{{zone}}, mesa {{number}} — llaman al camarero",
+      "bill": "{{zone}}, mesa {{number}} — piden la cuenta",
+      "done": "Hecho"
     }
   },
   "dashboard": {

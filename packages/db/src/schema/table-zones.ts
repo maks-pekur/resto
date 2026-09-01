@@ -142,3 +142,49 @@ export const tableSessions = pgTable(
     index('table_sessions_tenant_table_idx').on(table.tenantId, table.tableId, table.expiresAt),
   ],
 );
+
+/**
+ * A guest asking for someone: the software version of catching a waiter's eye. Open until the
+ * floor closes it, one of a kind at a time per table (migration 0017).
+ */
+export const serviceRequests = pgTable(
+  'service_requests',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    locationId: uuid('location_id').notNull(),
+    tableId: uuid('table_id').notNull(),
+    kind: text('kind').notNull(),
+    status: text('status').notNull().default('open'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+    resolvedAt: timestamp('resolved_at', { withTimezone: true, mode: 'date' }),
+  },
+  (table) => [
+    foreignKey({
+      name: 'service_requests_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'service_requests_table_fk',
+      child: { id: table.tableId, tenantId: table.tenantId },
+      parent: { id: restaurantTables.id, tenantId: restaurantTables.tenantId },
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'service_requests_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
+    check('service_requests_kind_chk', sql`${table.kind} IN ('waiter','bill')`),
+    check('service_requests_status_chk', sql`${table.status} IN ('open','resolved')`),
+    uniqueIndex('service_requests_open_uq')
+      .on(table.tenantId, table.tableId, table.kind)
+      .where(sql`status = 'open'`),
+    index('service_requests_open_idx').on(
+      table.tenantId,
+      table.locationId,
+      table.status,
+      table.createdAt,
+    ),
+  ],
+);

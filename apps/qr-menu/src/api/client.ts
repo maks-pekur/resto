@@ -30,6 +30,15 @@ export const fetchLegalDocuments = async (
   return res.json() as Promise<LegalDocumentsDto>;
 };
 
+export const requestService = async (kind: 'waiter' | 'bill'): Promise<boolean> => {
+  const res = await fetch('/v1/tables/service-request', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ kind }),
+  });
+  return res.ok;
+};
+
 export interface MenuAvailability {
   stoppedItemIds: string[];
 }

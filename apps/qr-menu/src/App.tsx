@@ -416,6 +416,7 @@ export const App = () => {
           setAccountOpen(true);
         }}
         documents={documents}
+        seated={tableId !== undefined}
         onOpenDocument={openDocument}
         resolvedTheme={resolvedTheme}
         onThemeChange={setTheme}
