@@ -27,6 +27,10 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
   const [dragging, setDragging] = useState(false);
   const gesture = useRef<{ y: number; at: number; armed: boolean } | null>(null);
   const latest = useRef(0);
+  // Held in a ref so a parent re-render cannot re-run the effect below: detaching and re-adding
+  // a touchmove listener mid-gesture loses the right to preventDefault, and the drag dies.
+  const dismiss = useRef(onDismiss);
+  dismiss.current = onDismiss;
 
   useEffect(() => {
     // Reset on the way in, never on the way out: a sheet released at 200px should slide out from
@@ -68,7 +72,7 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
         return;
       }
 
-      event.preventDefault();
+      if (event.cancelable) event.preventDefault();
       latest.current = delta;
       setDragging(true);
       setOffset(delta);
@@ -84,7 +88,7 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
       const elapsed = Math.max(event.timeStamp - current.at, 1);
       const flicked = travelled / elapsed > FLICK_VELOCITY;
       if (travelled > element.getBoundingClientRect().height * DISMISS_RATIO || flicked) {
-        onDismiss();
+        dismiss.current();
         return;
       }
       latest.current = 0;
@@ -101,7 +105,7 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
       element.removeEventListener('touchend', onTouchEnd);
       element.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [open, onDismiss]);
+  }, [open]);
 
   return { ref, offset, dragging };
 };
