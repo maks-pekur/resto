@@ -115,8 +115,11 @@ export const InfoSheet = ({
         }}
         className="mx-auto max-h-[85dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
       >
-        {/* Same grip as the item sheet: both came from the bottom edge and go back there. */}
-        <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
+        {/* Same grip as the item sheet: both came from the bottom edge and go back there. Over a
+            photo it rides on top of it, so the banner reaches the sheet's own edge. */}
+        {coverUrl === null ? (
+          <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
+        ) : null}
         {coverUrl === null ? null : (
           <img src={coverUrl} alt="" className="bg-muted mt-3 aspect-[16/9] w-full object-cover" />
         )}
