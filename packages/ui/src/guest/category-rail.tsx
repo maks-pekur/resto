@@ -84,7 +84,7 @@ export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
                   goToCategory(category.id);
                 }}
                 className={cn(
-                  'focus-visible:ring-ring h-8 shrink-0 cursor-pointer rounded-full px-2 text-sm font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                  'focus-visible:ring-ring h-9 shrink-0 cursor-pointer rounded-full px-2.5 text-base font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none',
                   isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
