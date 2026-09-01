@@ -134,18 +134,20 @@ export const InfoSheet = ({
           </div>
         )}
         <SheetHeader className="px-5 pt-4 pb-2">
-          <SheetTitle>{tenantName}</SheetTitle>
-          {openingHours === null ? null : (
-            <p
-              className={
-                isOpenNow(openingHours)
-                  ? 'text-sm font-semibold text-emerald-600'
-                  : 'text-muted-foreground text-sm font-semibold'
-              }
-            >
-              {t(isOpenNow(openingHours) ? 'info.openNow' : 'info.closedNow')}
-            </p>
-          )}
+          <div className="flex items-baseline justify-between gap-3">
+            <SheetTitle className="text-2xl font-extrabold">{tenantName}</SheetTitle>
+            {openingHours === null ? null : (
+              <span
+                className={
+                  isOpenNow(openingHours)
+                    ? 'shrink-0 text-sm font-bold text-emerald-600'
+                    : 'text-muted-foreground shrink-0 text-sm font-bold'
+                }
+              >
+                {t(isOpenNow(openingHours) ? 'info.openNow' : 'info.closedNow')}
+              </span>
+            )}
+          </div>
         </SheetHeader>
 
         <div className="flex flex-col gap-6 px-5 pb-6">
