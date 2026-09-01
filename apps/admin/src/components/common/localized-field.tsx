@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field';
 import { LocaleDisc } from '@/components/common/locale-disc';
-import { cn } from '@/lib/utils';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { LocalizedText } from '@/lib/menu/localized';
 
 export interface LocalizedFieldProps {
@@ -78,25 +78,19 @@ export function LocalizedField({
       </div>
 
       {locales.length > 1 ? (
-        <div role="tablist" aria-label={label} className="flex flex-wrap gap-1">
-          {locales.map((locale) => {
-            const isActive = locale === current;
-            return (
-              <button
+        <Tabs
+          value={current}
+          onValueChange={(locale) => {
+            setActive(locale);
+          }}
+        >
+          <TabsList aria-label={label}>
+            {locales.map((locale) => (
+              <TabsTrigger
                 key={locale}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
+                value={locale}
                 data-testid={`${id}-tab-${locale}`}
-                onClick={() => {
-                  setActive(locale);
-                }}
-                className={cn(
-                  'flex cursor-pointer items-center gap-1.5 rounded-md border px-2 py-1 text-xs transition-colors',
-                  isActive
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'hover:bg-muted text-muted-foreground',
-                )}
+                className="gap-1.5"
               >
                 <LocaleDisc locale={locale} withCode={false} className="[&>span]:size-4" />
                 <span className="uppercase">{locale}</span>
@@ -105,10 +99,10 @@ export function LocalizedField({
                 ) : filled(value, locale) ? (
                   <Check className="size-3" />
                 ) : null}
-              </button>
-            );
-          })}
-        </div>
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       ) : null}
 
       {multiline ? <Textarea rows={rows} {...controlProps} /> : <Input {...controlProps} />}

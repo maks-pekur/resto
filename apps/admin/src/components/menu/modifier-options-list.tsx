@@ -1,10 +1,12 @@
 import * as React from 'react';
-import { fromLocalizedText, mergeLocalized, type LocalizedText } from '@/lib/menu/localized';
+import { type LocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LocaleDisc } from '@/components/common/locale-disc';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierOption } from '@/lib/queries/catalog';
@@ -21,7 +23,8 @@ export interface ModifierOptionsListProps {
 interface RowDraft {
   readonly localKey: string;
   readonly optionId: string | null;
-  name: string;
+  /** Every language at once: the tab strip above the table decides which one is on screen. */
+  name: LocalizedText;
   priceDelta: number;
   defaultAmount: number;
   freeAmount: number;
@@ -32,14 +35,26 @@ interface RowDraft {
 const rowFromApi = (o: ModifierOptionApi): RowDraft => ({
   localKey: o.id,
   optionId: o.id,
-  name: fromLocalizedText(o.name),
+  name: { ...o.name },
   priceDelta: Number.parseFloat(o.priceDelta),
   defaultAmount: o.defaultAmount,
   freeAmount: o.freeAmount,
 });
 
+const sameText = (a: LocalizedText, b: LocalizedText): boolean =>
+  JSON.stringify(
+    Object.entries(a)
+      .filter(([, v]) => v.length > 0)
+      .sort(),
+  ) ===
+  JSON.stringify(
+    Object.entries(b)
+      .filter(([, v]) => v.length > 0)
+      .sort(),
+  );
+
 const rowsEqual = (a: RowDraft, b: ModifierOptionApi): boolean =>
-  a.name === fromLocalizedText(b.name) &&
+  sameText(a.name, b.name) &&
   a.priceDelta.toFixed(2) === Number.parseFloat(b.priceDelta).toFixed(2) &&
   a.defaultAmount === b.defaultAmount &&
   a.freeAmount === b.freeAmount;
@@ -50,7 +65,8 @@ export function ModifierOptionsList({
   onOptionsChange,
 }: ModifierOptionsListProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
-  const { defaultLocale } = useContentLocales();
+  const { defaultLocale, locales } = useContentLocales();
+  const [locale, setLocale] = React.useState(defaultLocale);
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [rows, setRows] = React.useState<RowDraft[]>(() => options.map(rowFromApi));
@@ -73,15 +89,14 @@ export function ModifierOptionsList({
   const upsertMutation = useMutation({
     mutationFn: (data: {
       id?: string;
-      name: string;
-      nameSource: LocalizedText | null;
+      name: LocalizedText;
       priceDelta: number;
       defaultAmount: number;
       freeAmount: number;
     }) =>
       upsertModifierOption(groupId, {
         ...(data.id ? { id: data.id } : {}),
-        name: mergeLocalized(data.nameSource, defaultLocale, data.name),
+        name: data.name,
         priceDelta: data.priceDelta,
         defaultAmount: data.defaultAmount,
         freeAmount: data.freeAmount,
@@ -101,7 +116,7 @@ export function ModifierOptionsList({
     const localKey = `draft-${Date.now().toString()}`;
     setRows((prev) => [
       ...prev,
-      { localKey, optionId: null, name: '', priceDelta: 0, defaultAmount: 0, freeAmount: 0 },
+      { localKey, optionId: null, name: {}, priceDelta: 0, defaultAmount: 0, freeAmount: 0 },
     ]);
   };
 
@@ -110,20 +125,19 @@ export function ModifierOptionsList({
     setPending(true);
     const failures: string[] = [];
     for (const row of rows) {
-      if (!row.name.trim()) continue;
+      if ((row.name[defaultLocale] ?? '').trim().length === 0) continue;
       const original = row.optionId ? options.find((o) => o.id === row.optionId) : null;
       if (original && rowsEqual(row, original)) continue;
       try {
         await upsertMutation.mutateAsync({
           ...(row.optionId ? { id: row.optionId } : {}),
           name: row.name,
-          nameSource: options.find((o) => o.id === row.optionId)?.name ?? null,
           priceDelta: row.priceDelta,
           defaultAmount: row.defaultAmount,
           freeAmount: row.freeAmount,
         });
       } catch {
-        failures.push(row.name);
+        failures.push(row.name[defaultLocale] ?? '');
       }
     }
     setPending(false);
@@ -138,11 +152,7 @@ export function ModifierOptionsList({
     onOptionsChange(
       rows.map((r, idx) => ({
         id: r.optionId ?? r.localKey,
-        name: mergeLocalized(
-          options.find((o) => o.id === r.optionId)?.name ?? null,
-          defaultLocale,
-          r.name,
-        ),
+        name: r.name,
         priceDelta: r.priceDelta.toFixed(2),
         defaultAmount: r.defaultAmount,
         freeAmount: r.freeAmount,
@@ -154,6 +164,28 @@ export function ModifierOptionsList({
   return (
     <TooltipProvider>
       <div className="flex flex-col gap-3">
+        {locales.length > 1 && rows.length > 0 ? (
+          <Tabs
+            value={locale}
+            onValueChange={(next) => {
+              setLocale(next);
+            }}
+          >
+            <TabsList aria-label={t('tableName')}>
+              {locales.map((code) => (
+                <TabsTrigger
+                  key={code}
+                  value={code}
+                  data-testid={`option-locale-${code}`}
+                  className="gap-1.5"
+                >
+                  <LocaleDisc locale={code} withCode={false} className="[&>span]:size-4" />
+                  <span className="uppercase">{code}</span>
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+        ) : null}
         {rows.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t('variantsEmpty')}</p>
         ) : (
@@ -181,9 +213,14 @@ export function ModifierOptionsList({
               >
                 <Input
                   placeholder={t('namePlaceholder')}
-                  value={row.name}
+                  value={row.name[locale] ?? ''}
                   onChange={(e) => {
-                    updateRow(row.localKey, { name: e.target.value });
+                    const text = e.target.value;
+                    const next: LocalizedText = Object.fromEntries(
+                      Object.entries(row.name).filter(([code]) => code !== locale),
+                    );
+                    if (text.length > 0) next[locale] = text;
+                    updateRow(row.localKey, { name: next });
                   }}
                 />
                 <Input
