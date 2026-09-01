@@ -113,7 +113,7 @@ export const GuestDrawer = ({
           <SheetTitle className="truncate text-xl font-extrabold">{tenantName}</SheetTitle>
         </SheetHeader>
 
-        <div className="flex flex-col gap-6 px-5 pt-2">
+        <div className="flex flex-col gap-5 px-5 pt-2">
           <section className="bg-muted flex flex-col items-center gap-3 rounded-2xl p-4 text-center">
             <span className="bg-background grid size-12 place-items-center rounded-full">
               <UserIcon className="size-6" />
@@ -140,7 +140,7 @@ export const GuestDrawer = ({
                   target="_blank"
                   rel="noreferrer noopener"
                   data-testid="drawer-address"
-                  className="hover:bg-muted flex min-h-12 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
+                  className="hover:bg-muted flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
                 >
                   <MapPinIcon className="text-muted-foreground size-5 shrink-0" />
                   <span className="flex-1">{venue.address}</span>
@@ -150,7 +150,7 @@ export const GuestDrawer = ({
               {venue?.phone ? (
                 <a
                   href={`tel:${venue.phone.replace(/\s/gu, '')}`}
-                  className="hover:bg-muted flex min-h-12 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
+                  className="hover:bg-muted flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
                 >
                   <PhoneIcon className="text-muted-foreground size-5 shrink-0" />
                   <span className="flex-1">{venue.phone}</span>
@@ -169,7 +169,7 @@ export const GuestDrawer = ({
                       href={href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="hover:bg-muted flex min-h-12 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
+                      className="hover:bg-muted flex min-h-11 items-center gap-3 rounded-xl px-2 text-sm font-semibold"
                     >
                       <BrandIcon platform={platform} className="size-5 shrink-0" />
                       {BRAND_MARKS.has(platform) ? null : (
@@ -250,7 +250,7 @@ const DocumentRow = ({ label, onSelect }: { label: string; onSelect: () => void 
     type="button"
     data-testid={`drawer-doc-${label}`}
     onClick={onSelect}
-    className="hover:bg-muted flex min-h-12 cursor-pointer items-center gap-3 rounded-xl px-2 text-start text-sm font-semibold transition-colors"
+    className="hover:bg-muted flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-2 text-start text-sm font-semibold transition-colors"
   >
     <span className="flex-1">{label}</span>
     <ChevronIcon className="text-muted-foreground size-4 shrink-0" />
