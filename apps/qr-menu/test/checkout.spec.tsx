@@ -26,19 +26,9 @@ const line = {
   modifiers: [{ optionId: 'o1', name: 'Тонкое', priceDelta: '0.00' }],
 };
 
-// A default parameter would swallow the very case this helper needs to express: no table.
-const renderSheet = (tableId: string | undefined) => {
+const renderSheet = () => {
   const onPlaced = vi.fn();
-  render(
-    <CheckoutSheet
-      open
-      onOpenChange={vi.fn()}
-      currency="UAH"
-      tableId={tableId}
-      onTableScanned={vi.fn()}
-      onPlaced={onPlaced}
-    />,
-  );
+  render(<CheckoutSheet open onOpenChange={vi.fn()} currency="UAH" onPlaced={onPlaced} />);
   return onPlaced;
 };
 
@@ -56,7 +46,7 @@ describe('CheckoutSheet', () => {
   });
 
   it('sends the cart and the payment the guest chose — the table comes from their session', async () => {
-    const onPlaced = renderSheet('table-1');
+    const onPlaced = renderSheet();
 
     fireEvent.click(screen.getByRole('button', { name: /checkout.place/u }));
 
@@ -77,7 +67,7 @@ describe('CheckoutSheet', () => {
   });
 
   it('records paying at the table when that is what the guest picked', async () => {
-    const onPlaced = renderSheet('table-1');
+    const onPlaced = renderSheet();
 
     fireEvent.click(screen.getByRole('radio', { name: /checkout.payment.cash/u }));
     fireEvent.click(screen.getByRole('button', { name: /checkout.place/u }));
@@ -91,7 +81,7 @@ describe('CheckoutSheet', () => {
   });
 
   it('empties the cart once the order is on its way to the kitchen', async () => {
-    renderSheet('table-1');
+    renderSheet();
 
     fireEvent.click(screen.getByRole('button', { name: /checkout.place/u }));
 
@@ -100,18 +90,9 @@ describe('CheckoutSheet', () => {
     });
   });
 
-  it('asks for a scan instead of a dead end when there is no table', () => {
-    renderSheet(undefined);
-
-    expect(screen.getByText('table.needScanTitle')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'table.scanAction' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /checkout.place/u })).not.toBeInTheDocument();
-    expect(useCartStore.getState().items).toHaveLength(1);
-  });
-
   it('keeps the cart when the order is refused', async () => {
     placeOrder.mockRejectedValue(new Error('nope'));
-    renderSheet('table-1');
+    renderSheet();
 
     fireEvent.click(screen.getByRole('button', { name: /checkout.place/u }));
 

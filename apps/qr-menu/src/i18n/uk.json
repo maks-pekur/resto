@@ -98,5 +98,6 @@
   "table.scanCartKept": "Кошик залишиться на місці.",
   "table.scanWithCamera": "Відкрийте камеру телефона та наведіть на код — меню відкриється, кошик збережеться.",
   "table.scanFailed": "Це код іншого ресторану. Спробуйте ще раз.",
-  "table.notRecognizedTitle": "Стіл не розпізнано"
+  "table.notRecognizedTitle": "Стіл не розпізнано",
+  "table.orderNeedsTable": "Щоб надіслати замовлення, підтвердіть стіл"
 }

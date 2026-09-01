@@ -7,13 +7,20 @@ export interface TableProblemSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onSeated: (table: ResolvedTable) => void;
+  /** Why the guest is looking at this: a code that would not read, or an order with no table. */
+  readonly reason: 'unreadable' | 'ordering';
 }
 
 /**
  * A code that did not resolve is not a line of text to read past — it is the one thing standing
  * between the guest and an order, so it arrives as a sheet with the camera already open.
  */
-export const TableProblemSheet = ({ open, onOpenChange, onSeated }: TableProblemSheetProps) => (
+export const TableProblemSheet = ({
+  open,
+  onOpenChange,
+  onSeated,
+  reason,
+}: TableProblemSheetProps) => (
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent
       side="bottom"
@@ -21,14 +28,16 @@ export const TableProblemSheet = ({ open, onOpenChange, onSeated }: TableProblem
     >
       <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
       <SheetHeader className="px-5 pt-4 pb-2">
-        <SheetTitle>{t('table.notRecognizedTitle')}</SheetTitle>
+        <SheetTitle>
+          {t(reason === 'unreadable' ? 'table.notRecognizedTitle' : 'table.needScanTitle')}
+        </SheetTitle>
       </SheetHeader>
 
       <div className="px-5 pb-6">
         <TableScanCard
           autoStart
-          title={t('table.needScanTitle')}
-          body={t('table.notRecognized')}
+          title={t(reason === 'unreadable' ? 'table.needScanTitle' : 'table.orderNeedsTable')}
+          body={t(reason === 'unreadable' ? 'table.notRecognized' : 'table.needScanBody')}
           onSeated={(table) => {
             onOpenChange(false);
             onSeated(table);

@@ -56,11 +56,12 @@ export const App = () => {
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
+  const [seatingFor, setSeatingFor] = useState<'unreadable' | 'ordering' | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
     typeof window === 'undefined' ? null : parseItemId(window.location.pathname),
   );
   const [tableId, setTableId] = useState<string | undefined>(undefined);
-  const [tableUnrecognized, setTableUnrecognized] = useState(false);
+
   const menuFetchedAt = useRef(0);
 
   useEffect(() => {
@@ -97,7 +98,7 @@ export const App = () => {
     const token = parseQrToken(window.location.pathname);
 
     const seat = (resolved: { tableId: string; zoneName: string; number: string }): void => {
-      setTableUnrecognized(false);
+      setSeatingFor(null);
       setTableId(resolved.tableId);
       useCartStore.getState().setTable(resolved);
     };
@@ -109,7 +110,7 @@ export const App = () => {
           window.history.replaceState(null, '', '/');
         })
         .catch(() => {
-          setTableUnrecognized(true);
+          setSeatingFor('unreadable');
           window.history.replaceState(null, '', '/');
         });
       return () => {
@@ -206,6 +207,7 @@ export const App = () => {
 
   const [infoOpen, setInfoOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  // Pressed "order" with no table: the scan sheet stands in, then hands the guest straight on.
   const [placed, setPlaced] = useState<{ order: PlacedOrder; payment: PaymentChoice } | null>(null);
   const tenant = state.kind === 'ready' ? state.menu.tenant : null;
 
@@ -243,6 +245,10 @@ export const App = () => {
             <button
               type="button"
               onClick={() => {
+                if (tableId === undefined) {
+                  setSeatingFor('ordering');
+                  return;
+                }
                 setCheckoutOpen(true);
               }}
               className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none"
@@ -287,20 +293,22 @@ export const App = () => {
         />
       )}
       <TableProblemSheet
-        open={tableUnrecognized}
+        open={seatingFor !== null}
+        reason={seatingFor ?? 'unreadable'}
         onOpenChange={(next) => {
-          if (!next) setTableUnrecognized(false);
+          if (!next) setSeatingFor(null);
         }}
         onSeated={(resolved) => {
           setTableId(resolved.tableId);
+          // Where the guest was going before the table got in the way.
+          if (seatingFor === 'ordering') setCheckoutOpen(true);
+          setSeatingFor(null);
         }}
       />
       <CheckoutSheet
         open={checkoutOpen}
         onOpenChange={setCheckoutOpen}
         currency={state.kind === 'ready' ? state.menu.currency : 'EUR'}
-        tableId={tableId}
-        onTableScanned={setTableId}
         onPlaced={(order, payment) => {
           setPlaced({ order, payment });
         }}

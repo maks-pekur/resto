@@ -2,8 +2,6 @@ import { useState } from 'react';
 import { selectSubtotal, useCartStore } from '@resto/cart';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, formatPrice } from '@resto/ui';
 import { placeOrder, OrderRequestError, type PlacedOrder } from '../api/client';
-import { TableScanCard } from './TableScanCard';
-
 export type PaymentChoice = 'online' | 'cash';
 import { getActiveLocale, t } from '../i18n';
 
@@ -11,22 +9,12 @@ export interface CheckoutSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly currency: string;
-  readonly tableId: string | undefined;
-  /** A table read off a code mid-checkout: the guest never leaves this sheet. */
-  readonly onTableScanned: (tableId: string) => void;
   readonly onPlaced: (order: PlacedOrder, payment: PaymentChoice) => void;
 }
 
 const newIdempotencyKey = (): string => crypto.randomUUID();
 
-export const CheckoutSheet = ({
-  open,
-  onOpenChange,
-  currency,
-  tableId,
-  onTableScanned,
-  onPlaced,
-}: CheckoutSheetProps) => {
+export const CheckoutSheet = ({ open, onOpenChange, currency, onPlaced }: CheckoutSheetProps) => {
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore(selectSubtotal);
   const clearCart = useCartStore((s) => s.clearCart);
@@ -38,7 +26,7 @@ export const CheckoutSheet = ({
   const locale = getActiveLocale();
 
   const submit = async (): Promise<void> => {
-    if (tableId === undefined || items.length === 0) return;
+    if (items.length === 0) return;
     setPending(true);
     setError(null);
     try {
@@ -123,31 +111,17 @@ export const CheckoutSheet = ({
             <p className="text-destructive text-sm">{t('checkout.failed')}</p>
           )}
 
-          {tableId === undefined ? (
-            // The order is not refused, only paused: the cart stays exactly as it is while the
-            // guest points their phone at the code on the table.
-            <div className="border-primary/40 bg-primary-tint/40 rounded-2xl border p-4">
-              <TableScanCard
-                title={t('table.needScanTitle')}
-                body={t('table.needScanBody')}
-                onSeated={(resolved) => {
-                  onTableScanned(resolved.tableId);
-                }}
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              disabled={pending || items.length === 0}
-              onClick={() => {
-                void submit();
-              }}
-              className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <span>{pending ? t('checkout.placing') : t('checkout.place')}</span>
-              <span className="tabular-nums">{formatPrice(subtotal, currency, locale)}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            disabled={pending || items.length === 0}
+            onClick={() => {
+              void submit();
+            }}
+            className="bg-primary text-primary-foreground focus-visible:ring-ring flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-full px-5 text-base font-bold transition-transform active:scale-[0.99] focus-visible:ring-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span>{pending ? t('checkout.placing') : t('checkout.place')}</span>
+            <span className="tabular-nums">{formatPrice(subtotal, currency, locale)}</span>
+          </button>
         </div>
       </SheetContent>
     </Sheet>

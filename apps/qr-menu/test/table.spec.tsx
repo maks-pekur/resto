@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCartStore } from '@resto/cart';
 import type { MenuDto } from '@resto/api-client/public';
@@ -186,5 +186,29 @@ describe('qr-menu table', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith('/v1/menu/availability', {});
+  });
+});
+
+describe('ordering without a table', () => {
+  it('asks for the code first, then carries the guest on to checkout', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    useCartStore.getState().addItem({
+      itemId: 'item-1',
+      sizeId: null,
+      name: 'Margherita',
+      unitPrice: '10.00',
+      currency: 'EUR',
+      modifiers: [],
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: t('nav.cart') }));
+    fireEvent.click(await screen.findByRole('button', { name: t('checkout.open') }));
+
+    // The scan sheet stands in for the checkout, and the cart is untouched.
+    expect(await screen.findByText(t('table.orderNeedsTable'))).toBeInTheDocument();
+    expect(screen.queryByText(t('checkout.paymentLabel'))).not.toBeInTheDocument();
+    expect(useCartStore.getState().items).toHaveLength(1);
   });
 });

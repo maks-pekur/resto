@@ -98,5 +98,6 @@
   "table.scanCartKept": "Корзина останется на месте.",
   "table.scanWithCamera": "Откройте камеру телефона и наведите её на код — меню откроется, корзина сохранится.",
   "table.scanFailed": "Это не код этого ресторана. Попробуйте ещё раз.",
-  "table.notRecognizedTitle": "Стол не распознан"
+  "table.notRecognizedTitle": "Стол не распознан",
+  "table.orderNeedsTable": "Чтобы отправить заказ, подтвердите стол"
 }

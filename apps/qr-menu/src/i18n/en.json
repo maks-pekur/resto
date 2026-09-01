@@ -98,5 +98,6 @@
   "table.scanCartKept": "Your cart stays as it is.",
   "table.scanWithCamera": "Open your phone camera and point it at the code — the menu opens and your cart is kept.",
   "table.scanFailed": "That code is not from this restaurant. Please try again.",
-  "table.notRecognizedTitle": "We could not read that table"
+  "table.notRecognizedTitle": "We could not read that table",
+  "table.orderNeedsTable": "Confirm your table to send the order"
 }
