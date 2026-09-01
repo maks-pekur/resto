@@ -1,9 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { t } from '../i18n';
 
-/** Chromium ships a barcode reader; Safari does not, so the caller offers instructions instead. */
+/**
+ * Chromium ships a barcode reader; Safari does not. `mediaDevices` is the second half: it is
+ * absent outside a secure context, which is how a plain-http dev host behaves.
+ */
 export const canScanInPage = (): boolean =>
-  typeof window !== 'undefined' && 'BarcodeDetector' in window;
+  typeof window !== 'undefined' && 'BarcodeDetector' in window && mediaDevices() !== undefined;
+
+/** `lib.dom` types `mediaDevices` as always present; outside a secure context it is not. */
+const mediaDevices = (): MediaDevices | undefined =>
+  typeof navigator === 'undefined'
+    ? undefined
+    : (navigator as Navigator & { mediaDevices?: MediaDevices }).mediaDevices;
 
 interface DetectedBarcode {
   readonly rawValue: string;
@@ -30,7 +39,10 @@ export const TableScanner = ({ onDecoded, onUnavailable }: TableScannerProps) =>
   useEffect(() => {
     const Detector = (window as unknown as { BarcodeDetector?: BarcodeDetectorCtor })
       .BarcodeDetector;
-    if (Detector === undefined) {
+    // Reading through an absent `mediaDevices` throws synchronously rather than rejecting, and
+    // would take the sheet down with it.
+    const media = mediaDevices();
+    if (Detector === undefined || media === undefined) {
       onUnavailable();
       return;
     }
@@ -61,7 +73,7 @@ export const TableScanner = ({ onDecoded, onUnavailable }: TableScannerProps) =>
         });
     };
 
-    navigator.mediaDevices
+    media
       .getUserMedia({ video: { facingMode: 'environment' } })
       .then((granted) => {
         if (stopped) {
