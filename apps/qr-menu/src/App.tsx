@@ -7,7 +7,6 @@ import {
   MenuIcon,
   GuestUiProvider,
   MenuScreen,
-  ThemeToggle,
   Toaster,
   localized,
   useGuestTheme,
@@ -59,7 +58,7 @@ const AVAILABILITY_POLL_MS = 20_000;
 const MENU_MAX_AGE_MS = 45 * 60 * 1000;
 
 export const App = () => {
-  const { resolvedTheme, toggleTheme } = useGuestTheme();
+  const { theme, resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
@@ -276,9 +275,12 @@ export const App = () => {
                 onClick={() => {
                   setDrawerOpen(true);
                 }}
-                className="focus-visible:ring-ring -me-2 flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
               >
-                <BurgerIcon className="size-[1.375rem]" />
+                {/* The same disc the language and profile controls wear, so the three read as one row. */}
+                <span className="ring-border bg-muted text-foreground grid size-9 place-items-center rounded-full ring-1">
+                  <BurgerIcon className="size-5" />
+                </span>
               </button>
             </>
           }
@@ -376,13 +378,8 @@ export const App = () => {
         onOpenDocument={(title, body) => {
           setOpenDoc({ title, body });
         }}
-        themeControl={
-          <ThemeToggle
-            resolvedTheme={resolvedTheme}
-            onToggle={toggleTheme}
-            label={t('theme.label')}
-          />
-        }
+        theme={theme}
+        onThemeChange={setTheme}
       />
 
       <DocumentSheet

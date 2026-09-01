@@ -4,11 +4,11 @@ import {
   ExternalIcon,
   MapPinIcon,
   PhoneIcon,
+  SegmentedChoice,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
-  ThemeIcon,
   UserIcon,
 } from '@resto/ui';
 import type { LegalDocumentKeyDto, LegalDocumentsDto, VenueDto } from '@resto/api-client/public';
@@ -45,7 +45,8 @@ export interface GuestDrawerProps {
   readonly socials: Readonly<Record<string, string>>;
   readonly onSignIn: () => void;
   readonly onOpenDocument: (title: string, body: string) => void;
-  readonly themeControl: ReactNode;
+  readonly theme: 'system' | 'light' | 'dark';
+  readonly onThemeChange: (next: 'system' | 'light' | 'dark') => void;
 }
 
 /**
@@ -61,7 +62,8 @@ export const GuestDrawer = ({
   socials,
   onSignIn,
   onOpenDocument,
-  themeControl,
+  theme,
+  onThemeChange,
 }: GuestDrawerProps) => {
   const [documents, setDocuments] = useState<LegalDocumentsDto | null>(null);
 
@@ -146,16 +148,18 @@ export const GuestDrawer = ({
 
           {socialEntries.length === 0 ? null : (
             <Section title={t('drawer.socials')}>
-              <ul className="flex flex-wrap gap-2 px-2 pt-1">
+              {/* Two to a row, the same height as every other row here: a link is a link. */}
+              <ul className="grid grid-cols-2 gap-2 px-2 pt-1">
                 {socialEntries.map(([platform, href]) => (
                   <li key={platform}>
                     <a
                       href={href}
                       target="_blank"
                       rel="noreferrer noopener"
-                      className="ring-border hover:bg-muted inline-flex min-h-11 items-center rounded-full px-4 text-sm font-semibold ring-1"
+                      className="ring-border hover:bg-muted flex h-12 items-center gap-2 rounded-xl px-3 text-sm font-semibold ring-1"
                     >
-                      {SOCIAL_LABEL[platform] ?? platform}
+                      <span className="flex-1 truncate">{SOCIAL_LABEL[platform] ?? platform}</span>
+                      <ExternalIcon aria-hidden className="text-muted-foreground size-4 shrink-0" />
                     </a>
                   </li>
                 ))}
@@ -179,10 +183,20 @@ export const GuestDrawer = ({
           )}
 
           <Section title={t('drawer.appearance')}>
-            <div className="flex min-h-12 items-center gap-3 rounded-xl px-2 text-sm font-semibold">
-              <ThemeIcon className="text-muted-foreground size-5 shrink-0" />
-              <span className="flex-1">{t('theme.label')}</span>
-              {themeControl}
+            {/* The same control the menu uses for a pizza's size — one question, a few answers. */}
+            <div className="px-2 pt-1">
+              <SegmentedChoice
+                name="guest-theme"
+                selectedId={theme}
+                onSelect={(next) => {
+                  onThemeChange(next as 'system' | 'light' | 'dark');
+                }}
+                options={[
+                  { id: 'system', label: t('theme.system') },
+                  { id: 'light', label: t('theme.light') },
+                  { id: 'dark', label: t('theme.dark') },
+                ]}
+              />
             </div>
           </Section>
 

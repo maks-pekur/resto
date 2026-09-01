@@ -57,18 +57,12 @@ vi.mock('../src/api/client', () => ({
   fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
 }));
 
-const last = (nodes: readonly HTMLElement[]): HTMLElement => {
-  const node = nodes.at(-1);
-  if (node === undefined) throw new Error('The theme control is not on screen.');
-  return node;
-};
-
-// The control moved into the drawer, so reaching it starts at the burger.
-const themeToggle = (): HTMLElement => {
-  const onScreen = screen.queryAllByRole('button', { name: t('theme.label') });
-  if (onScreen.length > 0) return last(onScreen);
-  fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
-  return last(screen.getAllByRole('button', { name: t('theme.label') }));
+// The choice lives in the drawer now, as one segmented control among three answers.
+const chooseTheme = (label: string): void => {
+  if (screen.queryAllByRole('radio', { name: label }).length === 0) {
+    fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
+  }
+  fireEvent.click(screen.getByRole('radio', { name: label }));
 };
 
 beforeEach(() => {
@@ -87,14 +81,15 @@ describe('qr-menu colour theme', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('system');
     expect(window.localStorage.getItem('resto.theme')).toBeNull();
-    expect(themeToggle()).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
+    expect(await screen.findByRole('radio', { name: t('theme.system') })).toBeChecked();
   });
 
   it('applies and remembers an explicit dark choice', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    fireEvent.click(themeToggle());
+    chooseTheme(t('theme.dark'));
 
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
@@ -102,16 +97,16 @@ describe('qr-menu colour theme', () => {
     expect(window.localStorage.getItem('resto.theme')).toBe('dark');
   });
 
-  it('toggles back to light on a second press', async () => {
+  it('lets the guest change their mind and go back to light', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    fireEvent.click(themeToggle());
+    chooseTheme(t('theme.dark'));
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
 
-    fireEvent.click(themeToggle());
+    chooseTheme(t('theme.light'));
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     });
