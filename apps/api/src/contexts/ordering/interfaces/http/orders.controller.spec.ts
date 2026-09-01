@@ -4,6 +4,8 @@ import { OrdersController } from './orders.controller';
 import type { TableSessionService } from '../../../tenancy/application/table-session.service';
 import type { GetOrderService } from '../../application/get-order.service';
 import type { CreateOrderService } from '../../application/create-order.service';
+import type { SubmitOrderFeedbackService } from '../../application/submit-order-feedback.service';
+import type { OrderFeedbackRepository } from '../../domain/ports';
 import { OrderNotFoundError } from '../../domain/errors';
 import type { OrderSnapshot } from '../../domain/order.aggregate';
 import { Currency, OrderId, TenantId } from '@resto/domain';
@@ -68,9 +70,24 @@ const buildController = () => {
     resolve: vi.fn().mockResolvedValue(null),
   } as unknown as TableSessionService;
 
-  const controller = new OrdersController(createOrderService, getOrderService, tableSessions);
+  const submitFeedback = {
+    execute: vi.fn(),
+  } as unknown as SubmitOrderFeedbackService;
 
-  return { controller, getOrderService, createOrderService };
+  const feedback = {
+    findByOrderId: vi.fn().mockResolvedValue(null),
+    submit: vi.fn(),
+  } as unknown as OrderFeedbackRepository;
+
+  const controller = new OrdersController(
+    createOrderService,
+    getOrderService,
+    tableSessions,
+    submitFeedback,
+    feedback,
+  );
+
+  return { controller, getOrderService, createOrderService, submitFeedback, feedback };
 };
 
 const FROZEN_STATUS_RESPONSE_KEYS = [
@@ -84,10 +101,11 @@ const FROZEN_STATUS_RESPONSE_KEYS = [
   'orderType',
   'cancelReason',
   'canceledFromStatus',
+  'reviewed',
 ].sort();
 
 describe('OrdersController GET /:id/status', () => {
-  it('returns exactly the frozen nine-field contract for a found order', async () => {
+  it('returns exactly the frozen contract for a found order', async () => {
     const { controller, getOrderService } = buildController();
     const snap = makeOrderSnap({ status: 'placed' });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
@@ -106,6 +124,7 @@ describe('OrdersController GET /:id/status', () => {
       orderType: 'dine_in',
       cancelReason: null,
       canceledFromStatus: null,
+      reviewed: false,
     });
   });
 

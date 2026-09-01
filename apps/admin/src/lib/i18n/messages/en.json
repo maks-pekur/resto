@@ -534,6 +534,9 @@
       "type": "Type",
       "for": "For",
       "total": "Total"
+    },
+    "review": {
+      "rating": "Guest's rating: {{rating}} of 5"
     }
   },
   "dashboard": {

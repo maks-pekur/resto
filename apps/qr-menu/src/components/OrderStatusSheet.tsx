@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, formatPrice } from '@resto/ui';
 import { fetchOrderStatus, type OrderStatus, type PlacedOrder } from '../api/client';
 import { getActiveLocale, t } from '../i18n';
+import { OrderReview } from './OrderReview';
 import { PayNow } from './PayNow';
 import type { PaymentChoice } from './CheckoutSheet';
 
@@ -29,6 +30,7 @@ const STAGE_KEY: Readonly<Record<OrderStatus['status'], string>> = {
  */
 export const OrderStatusSheet = ({ open, onOpenChange, order, payment }: OrderStatusSheetProps) => {
   const [status, setStatus] = useState<OrderStatus | null>(null);
+  const [justReviewed, setJustReviewed] = useState(false);
   const locale = getActiveLocale();
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -110,6 +112,20 @@ export const OrderStatusSheet = ({ open, onOpenChange, order, payment }: OrderSt
 
           {status?.paymentStatus === 'paid' ? (
             <p className="text-success text-sm font-semibold">{t('order.paid')}</p>
+          ) : null}
+
+          {/* Only once the order has been served: before that there is nothing to review. */}
+          {status?.status === 'completed' && !status.reviewed && !justReviewed ? (
+            <OrderReview
+              orderId={order.orderId}
+              onSubmitted={() => {
+                setJustReviewed(true);
+              }}
+            />
+          ) : null}
+
+          {justReviewed || (status?.status === 'completed' && status.reviewed) ? (
+            <p className="border-t pt-4 text-sm font-semibold">{t('review.thanks')}</p>
           ) : null}
         </div>
       </SheetContent>

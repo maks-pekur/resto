@@ -136,5 +136,16 @@
   "drawer.doc.returns": "Devoluciones",
   "drawer.doc.cookies": "Cookies",
   "drawer.doc.terms": "Condiciones de uso",
-  "drawer.doc.privacy": "Política de privacidad"
+  "drawer.doc.privacy": "Política de privacidad",
+  "review.title": "¿Qué tal el pedido?",
+  "review.commentPlaceholder": "¿Qué te gustó y qué deberíamos mejorar?",
+  "review.send": "Enviar",
+  "review.sending": "Enviando…",
+  "review.failed": "No se pudo enviar. Inténtalo otra vez.",
+  "review.thanks": "Gracias, lo leeremos.",
+  "review.rating.1": "Mal",
+  "review.rating.2": "Regular",
+  "review.rating.3": "Normal",
+  "review.rating.4": "Bien",
+  "review.rating.5": "Genial"
 }

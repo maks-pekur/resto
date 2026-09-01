@@ -199,6 +199,7 @@ export interface OrderDetailApi {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly hasFailedRefund: boolean;
+  readonly review: { readonly rating: number; readonly comment: string | null } | null;
   readonly failedRefundAmount: string | null;
   readonly failedRefundReason: string | null;
 }

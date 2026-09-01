@@ -136,5 +136,16 @@
   "drawer.doc.returns": "Повернення",
   "drawer.doc.cookies": "Файли cookie",
   "drawer.doc.terms": "Умови користування",
-  "drawer.doc.privacy": "Політика конфіденційності"
+  "drawer.doc.privacy": "Політика конфіденційності",
+  "review.title": "Як вам замовлення?",
+  "review.commentPlaceholder": "Що сподобалось, а що варто виправити?",
+  "review.send": "Надіслати",
+  "review.sending": "Надсилаємо…",
+  "review.failed": "Не вдалося надіслати. Спробуйте ще раз.",
+  "review.thanks": "Дякуємо, ми прочитаємо.",
+  "review.rating.1": "Погано",
+  "review.rating.2": "Так собі",
+  "review.rating.3": "Нормально",
+  "review.rating.4": "Добре",
+  "review.rating.5": "Чудово"
 }

@@ -185,3 +185,23 @@ export interface OrderFeedRepository {
 }
 
 export const ORDER_FEED_REPOSITORY = Symbol('ORDER_FEED_REPOSITORY');
+
+export interface OrderFeedback {
+  readonly orderId: string;
+  readonly rating: number;
+  readonly comment: string | null;
+  readonly createdAt: Date;
+}
+
+export interface OrderFeedbackRepository {
+  findByOrderId(orderId: string): Promise<OrderFeedback | null>;
+  submit(input: {
+    readonly tenantId: string;
+    readonly orderId: string;
+    readonly locationId: string;
+    readonly rating: number;
+    readonly comment: string | null;
+  }): Promise<OrderFeedback>;
+}
+
+export const ORDER_FEEDBACK_REPOSITORY = Symbol('ORDER_FEEDBACK_REPOSITORY');

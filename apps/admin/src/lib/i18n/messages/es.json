@@ -534,6 +534,9 @@
       "type": "Tipo",
       "for": "Para quién",
       "total": "Total"
+    },
+    "review": {
+      "rating": "Valoración del cliente: {{rating}} de 5"
     }
   },
   "dashboard": {

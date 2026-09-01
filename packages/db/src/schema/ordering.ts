@@ -293,3 +293,35 @@ export const paymentRefunds = pgTable(
     uniqueIndex('payment_refunds_request_id_uq').on(table.tenantId, table.refundRequestId),
   ],
 );
+
+/**
+ * What the guest thought, hung off the order rather than an account: ordering here is proof
+ * enough that they were, and asking for a login first would cost most of the answers.
+ */
+export const orderFeedback = pgTable(
+  'order_feedback',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    orderId: uuid('order_id').notNull(),
+    locationId: uuid('location_id').notNull(),
+    rating: smallint('rating').notNull(),
+    comment: text('comment'),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
+  },
+  (table) => [
+    foreignKey({
+      name: 'order_feedback_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'order_feedback_order_fk',
+      child: { id: table.orderId, tenantId: table.tenantId },
+      parent: { id: orders.id, tenantId: orders.tenantId },
+    }).onDelete('cascade'),
+    check('order_feedback_rating_chk', sql`${table.rating} BETWEEN 1 AND 5`),
+    uniqueIndex('order_feedback_order_uq').on(table.tenantId, table.orderId),
+    index('order_feedback_recent_idx').on(table.tenantId, table.locationId, table.createdAt),
+  ],
+);

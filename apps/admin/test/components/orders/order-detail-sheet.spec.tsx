@@ -78,6 +78,7 @@ const feedRow: OrderFeedRowApi = {
 };
 
 const detail: OrderDetailApi = {
+  review: null,
   id: 'order-1',
   tenantId: 'tenant-1',
   locationId: 'loc-1',

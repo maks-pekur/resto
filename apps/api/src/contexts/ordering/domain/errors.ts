@@ -113,3 +113,29 @@ export type OrderDomainError =
   | InvalidPrepMinutesError
   | OrderTableNotResolvedError
   | RefundExceedsCapturedError;
+
+/** A review follows a visit: until the order is served there is nothing to say about it. */
+export class OrderNotServedYetError extends Error {
+  readonly kind = 'OrderNotServedYetError' as const;
+  constructor(public readonly orderId: string) {
+    super(`Order "${orderId}" has not been served yet.`);
+    this.name = 'OrderNotServedYetError';
+  }
+}
+
+/** The order belongs to another table's session — the scan is what proves the guest was here. */
+export class OrderFeedbackNotYoursError extends Error {
+  readonly kind = 'OrderFeedbackNotYoursError' as const;
+  constructor(public readonly orderId: string) {
+    super(`Order "${orderId}" was not placed from this table session.`);
+    this.name = 'OrderFeedbackNotYoursError';
+  }
+}
+
+export class OrderFeedbackAlreadyLeftError extends Error {
+  readonly kind = 'OrderFeedbackAlreadyLeftError' as const;
+  constructor(public readonly orderId: string) {
+    super(`Order "${orderId}" already carries a review.`);
+    this.name = 'OrderFeedbackAlreadyLeftError';
+  }
+}

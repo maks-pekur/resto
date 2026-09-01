@@ -136,5 +136,16 @@
   "drawer.doc.returns": "Возврат и обмен",
   "drawer.doc.cookies": "Файлы cookie",
   "drawer.doc.terms": "Условия пользования",
-  "drawer.doc.privacy": "Политика конфиденциальности"
+  "drawer.doc.privacy": "Политика конфиденциальности",
+  "review.title": "Как вам заказ?",
+  "review.commentPlaceholder": "Что понравилось или что стоит исправить?",
+  "review.send": "Отправить",
+  "review.sending": "Отправляем…",
+  "review.failed": "Не удалось отправить. Попробуйте ещё раз.",
+  "review.thanks": "Спасибо, мы прочитаем.",
+  "review.rating.1": "Плохо",
+  "review.rating.2": "Так себе",
+  "review.rating.3": "Нормально",
+  "review.rating.4": "Хорошо",
+  "review.rating.5": "Отлично"
 }

@@ -98,7 +98,20 @@ export interface OrderStatus {
   readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly cancelReason: string | null;
   readonly canceledFromStatus: string | null;
+  readonly reviewed: boolean;
 }
+
+export const submitOrderFeedback = async (
+  orderId: string,
+  input: { rating: number; comment: string | null },
+): Promise<boolean> => {
+  const res = await fetch(`/v1/orders/${orderId}/feedback`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(input),
+  });
+  return res.ok;
+};
 
 export class OrderRequestError extends Error {
   constructor(readonly code: string) {

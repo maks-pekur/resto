@@ -188,6 +188,20 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+      {detail.review === null ? null : (
+        <div className="bg-muted flex flex-col gap-1 rounded-md p-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span aria-hidden>{'★'.repeat(detail.review.rating)}</span>
+            <span className="text-muted-foreground">
+              {t('review.rating', { rating: detail.review.rating })}
+            </span>
+          </div>
+          {detail.review.comment === null ? null : (
+            <p className="text-sm whitespace-pre-line">{detail.review.comment}</p>
+          )}
+        </div>
+      )}
+
       {detail.hasFailedRefund ? (
         <div className="flex flex-col gap-1 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive">
           <div className="flex items-center justify-between gap-2">

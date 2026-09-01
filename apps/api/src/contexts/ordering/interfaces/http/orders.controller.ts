@@ -25,6 +25,8 @@ import {
 } from '../../application/dto';
 import { CreateOrderService } from '../../application/create-order.service';
 import { GetOrderService } from '../../application/get-order.service';
+import { SubmitOrderFeedbackService } from '../../application/submit-order-feedback.service';
+import { ORDER_FEEDBACK_REPOSITORY, type OrderFeedbackRepository } from '../../domain/ports';
 import { mapOrderError } from './error-mapping';
 
 const wrap = wrapWith(mapOrderError);
@@ -42,9 +44,24 @@ const OrderStatusResponseSchema = z.object({
   orderType: z.enum(['dine_in', 'pickup', 'delivery']),
   cancelReason: z.string().nullable(),
   canceledFromStatus: z.string().nullable(),
+  /** So the guest surface knows whether to offer the review form or thank them for it. */
+  reviewed: z.boolean(),
 });
 type OrderStatusResponse = z.infer<typeof OrderStatusResponseSchema>;
 class OrderStatusResponseDto extends createZodDto(OrderStatusResponseSchema) {}
+
+const OrderFeedbackInputSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(2000).nullable().optional(),
+});
+class OrderFeedbackInputDto extends createZodDto(OrderFeedbackInputSchema) {}
+
+const OrderFeedbackResponseSchema = z.object({
+  rating: z.number().int(),
+  comment: z.string().nullable(),
+});
+type OrderFeedbackResponse = z.infer<typeof OrderFeedbackResponseSchema>;
+class OrderFeedbackResponseDto extends createZodDto(OrderFeedbackResponseSchema) {}
 
 @ApiTags('ordering')
 @Public()
@@ -55,6 +72,8 @@ export class OrdersController {
     @Inject(CreateOrderService) private readonly createOrder: CreateOrderService,
     @Inject(GetOrderService) private readonly getOrder: GetOrderService,
     @Inject(TableSessionService) private readonly tableSessions: TableSessionService,
+    @Inject(SubmitOrderFeedbackService) private readonly submitFeedback: SubmitOrderFeedbackService,
+    @Inject(ORDER_FEEDBACK_REPOSITORY) private readonly feedback: OrderFeedbackRepository,
   ) {}
 
   @Post()
@@ -73,6 +92,29 @@ export class OrdersController {
     const tableId = session?.tableId;
 
     return wrap(() => this.createOrder.execute(input, tableId));
+  }
+
+  @Post(':id/feedback')
+  @HttpCode(HttpStatus.CREATED)
+  @RequireActiveTenant()
+  @ApiBody({ type: OrderFeedbackInputDto })
+  @ApiCreatedResponse({ type: OrderFeedbackResponseDto })
+  async review(
+    @Param('id') id: string,
+    @Body(new RestoZodValidationPipe(OrderFeedbackInputDto)) input: OrderFeedbackInputDto,
+    @Req() req: FastifyRequest,
+  ): Promise<OrderFeedbackResponse> {
+    // The scan is the proof: only the session that placed the order may review it.
+    const sessionId = readTableSessionCookie(req.headers);
+    const session = sessionId === undefined ? null : await this.tableSessions.resolve(sessionId);
+
+    return wrap(async () => {
+      const saved = await this.submitFeedback.execute(
+        { orderId: id, rating: input.rating, comment: input.comment ?? null },
+        session?.tableId,
+      );
+      return { rating: saved.rating, comment: saved.comment };
+    });
   }
 
   @Get(':id/status')
@@ -94,6 +136,7 @@ export class OrdersController {
         orderType: snap.orderType,
         cancelReason: snap.cancelReason,
         canceledFromStatus: snap.canceledFromStatus,
+        reviewed: (await this.feedback.findByOrderId(id)) !== null,
       };
     });
   }

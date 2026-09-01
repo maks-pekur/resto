@@ -136,5 +136,16 @@
   "drawer.doc.returns": "Refunds",
   "drawer.doc.cookies": "Cookies",
   "drawer.doc.terms": "Terms of use",
-  "drawer.doc.privacy": "Privacy policy"
+  "drawer.doc.privacy": "Privacy policy",
+  "review.title": "How was it?",
+  "review.commentPlaceholder": "What worked, what should we fix?",
+  "review.send": "Send",
+  "review.sending": "Sending…",
+  "review.failed": "Could not send it. Try again.",
+  "review.thanks": "Thank you — we read every one.",
+  "review.rating.1": "Bad",
+  "review.rating.2": "Poor",
+  "review.rating.3": "Fine",
+  "review.rating.4": "Good",
+  "review.rating.5": "Great"
 }

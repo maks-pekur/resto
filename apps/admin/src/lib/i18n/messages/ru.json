@@ -534,6 +534,9 @@
       "type": "Тип",
       "for": "Для",
       "total": "Сумма"
+    },
+    "review": {
+      "rating": "Оценка гостя: {{rating}} из 5"
     }
   },
   "dashboard": {
