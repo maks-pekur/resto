@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import {
   BrandIcon,
   ChevronIcon,
@@ -13,7 +13,6 @@ import {
   UserIcon,
 } from '@resto/ui';
 import type { LegalDocumentKeyDto, LegalDocumentsDto, VenueDto } from '@resto/api-client/public';
-import { fetchLegalDocuments } from '../api/client';
 import { localized, t } from '../i18n';
 
 const SOCIAL_LABEL: Readonly<Record<string, string>> = {
@@ -58,7 +57,8 @@ export interface GuestDrawerProps {
   readonly venue: VenueDto | null;
   readonly socials: Readonly<Record<string, string>>;
   readonly onSignIn: () => void;
-  readonly onOpenDocument: (title: string, body: string) => void;
+  readonly documents: LegalDocumentsDto | null;
+  readonly onOpenDocument: (key: LegalDocumentKeyDto) => void;
   /** What the guest is actually looking at, `system` already resolved. */
   readonly resolvedTheme: 'light' | 'dark';
   readonly onThemeChange: (next: 'light' | 'dark') => void;
@@ -76,24 +76,11 @@ export const GuestDrawer = ({
   venue,
   socials,
   onSignIn,
+  documents,
   onOpenDocument,
   resolvedTheme,
   onThemeChange,
 }: GuestDrawerProps) => {
-  const [documents, setDocuments] = useState<LegalDocumentsDto | null>(null);
-
-  // Fetched when the drawer first opens: a guest who never opens it pays nothing for the text.
-  useEffect(() => {
-    if (!open || documents !== null) return;
-    const controller = new AbortController();
-    fetchLegalDocuments(controller.signal)
-      .then(setDocuments)
-      .catch(() => undefined);
-    return () => {
-      controller.abort();
-    };
-  }, [open, documents]);
-
   const socialEntries = Object.entries(socials).filter(([, href]) => href.length > 0);
   const documentRows = (keys: readonly LegalDocumentKeyDto[]) =>
     keys
@@ -191,7 +178,7 @@ export const GuestDrawer = ({
                   label={t(`drawer.doc.${row.key}`)}
                   onSelect={() => {
                     onOpenChange(false);
-                    onOpenDocument(t(`drawer.doc.${row.key}`), row.body);
+                    onOpenDocument(row.key);
                   }}
                 />
               ))}
@@ -206,7 +193,7 @@ export const GuestDrawer = ({
                   label={t(`drawer.doc.${row.key}`)}
                   onSelect={() => {
                     onOpenChange(false);
-                    onOpenDocument(t(`drawer.doc.${row.key}`), row.body);
+                    onOpenDocument(row.key);
                   }}
                 />
               ))}

@@ -8,7 +8,6 @@ import {
   GuestUiProvider,
   MenuScreen,
   Toaster,
-  localized,
   useGuestTheme,
   BurgerIcon,
   UserIcon,
@@ -22,6 +21,7 @@ import {
   openTableSession,
   MenuNotFoundError,
   fetchVenue,
+  fetchLegalDocuments,
 } from './api/client';
 import { CheckoutSheet, type PaymentChoice } from './components/CheckoutSheet';
 import { AccountSheet } from './components/AccountSheet';
@@ -33,13 +33,22 @@ import { TabBar } from './components/TabBar';
 import { LocaleControl } from './components/LocaleControl';
 import { StatusScreen } from './components/StatusScreen';
 import { TableProblemSheet } from './components/TableProblemSheet';
-import type { VenueDto } from '@resto/api-client/public';
-import { adoptTenantLocales, getActiveLocale, t } from './i18n';
+import type { LegalDocumentKeyDto, LegalDocumentsDto, VenueDto } from '@resto/api-client/public';
+import { adoptTenantLocales, getActiveLocale, localized, t } from './i18n';
 
 const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
+const INFO_PATH = /^\/info\/([a-z]+)\/?$/;
 const TABLE_PATH = /^\/t\/([^/]+)\/?$/;
 
 const parseItemId = (pathname: string): string | null => ITEM_PATH.exec(pathname)?.[1] ?? null;
+
+/** A document the venue publishes. In the address bar so back closes it and a link can be sent. */
+const parseDocumentKey = (pathname: string): LegalDocumentKeyDto | null => {
+  const key = INFO_PATH.exec(pathname)?.[1];
+  return key !== undefined && LEGAL_KEYS.has(key) ? (key as LegalDocumentKeyDto) : null;
+};
+
+const LEGAL_KEYS = new Set(['about', 'payment', 'returns', 'cookies', 'terms', 'privacy']);
 
 /** The code's secret, which the app trades for a session and then wipes from the address bar. */
 const parseQrToken = (pathname: string): string | null => TABLE_PATH.exec(pathname)?.[1] ?? null;
@@ -189,6 +198,7 @@ export const App = () => {
   useEffect(() => {
     const onPopState = (): void => {
       setOpenItemId(parseItemId(window.location.pathname));
+      setDocKey(parseDocumentKey(window.location.pathname));
     };
     window.addEventListener('popstate', onPopState);
     return () => {
@@ -219,6 +229,17 @@ export const App = () => {
     setOpenItemId(null);
   }, []);
 
+  const openDocument = useCallback((key: LegalDocumentKeyDto) => {
+    window.history.pushState(null, '', `/info/${key}`);
+    setDocKey(key);
+  }, []);
+
+  const closeDocument = useCallback(() => {
+    // Back rather than a new entry: the document was pushed on top of wherever the guest was.
+    if (parseDocumentKey(window.location.pathname) !== null) window.history.back();
+    setDocKey(null);
+  }, []);
+
   const retry = useCallback(() => {
     setAttempt((n) => n + 1);
   }, []);
@@ -226,7 +247,25 @@ export const App = () => {
   const [infoOpen, setInfoOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
-  const [openDoc, setOpenDoc] = useState<{ title: string; body: string } | null>(null);
+  const [docKey, setDocKey] = useState<LegalDocumentKeyDto | null>(() =>
+    typeof window === 'undefined' ? null : parseDocumentKey(window.location.pathname),
+  );
+  const [documents, setDocuments] = useState<LegalDocumentsDto | null>(null);
+
+  // Pulled once the guest asks for them — by opening the drawer or by arriving on a document's
+  // own address, which a shared link does.
+  useEffect(() => {
+    if (documents !== null || (!drawerOpen && docKey === null)) return;
+    const controller = new AbortController();
+    fetchLegalDocuments(controller.signal)
+      .then((loaded) => {
+        if (loaded !== null) setDocuments(loaded);
+      })
+      .catch(() => undefined);
+    return () => {
+      controller.abort();
+    };
+  }, [drawerOpen, docKey, documents]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   // Pressed "order" with no table: the scan sheet stands in, then hands the guest straight on.
   const [placed, setPlaced] = useState<{ order: PlacedOrder; payment: PaymentChoice } | null>(null);
@@ -375,20 +414,19 @@ export const App = () => {
         onSignIn={() => {
           setAccountOpen(true);
         }}
-        onOpenDocument={(title, body) => {
-          setOpenDoc({ title, body });
-        }}
+        documents={documents}
+        onOpenDocument={openDocument}
         resolvedTheme={resolvedTheme}
         onThemeChange={setTheme}
       />
 
       <DocumentSheet
-        open={openDoc !== null}
+        open={docKey !== null}
         onOpenChange={(next) => {
-          if (!next) setOpenDoc(null);
+          if (!next) closeDocument();
         }}
-        title={openDoc?.title ?? ''}
-        body={openDoc?.body ?? ''}
+        title={docKey === null ? '' : t(`drawer.doc.${docKey}`)}
+        body={docKey === null ? '' : localized(documents?.[docKey])}
       />
 
       <AccountSheet open={accountOpen} onOpenChange={setAccountOpen} />
@@ -397,7 +435,7 @@ export const App = () => {
         open={infoOpen}
         onOpenChange={setInfoOpen}
         tenantName={tenant?.displayName ?? t('menu.title')}
-        description={localized(tenant?.description, getActiveLocale(), menuLocales.default)}
+        description={localized(tenant?.description)}
         contacts={tenant?.contacts ?? {}}
         socials={tenant?.socials ?? {}}
         coverUrl={tenant?.theme?.coverUrl ?? null}

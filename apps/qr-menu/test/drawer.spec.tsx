@@ -25,7 +25,16 @@ vi.mock('../src/api/client', () => ({
   fetchMenu: vi.fn(() => Promise.resolve(menu)),
   fetchAvailability: vi.fn(() => Promise.resolve({ stoppedItemIds: [] })),
   fetchVenue: vi.fn(() => Promise.resolve(null)),
-  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() =>
+    Promise.resolve({
+      about: null,
+      payment: null,
+      returns: null,
+      cookies: { ru: 'Мы храним язык и корзину.' },
+      terms: null,
+      privacy: { ru: 'Телефон нужен, чтобы принести заказ.' },
+    }),
+  ),
   fetchTableSession: vi.fn(() => Promise.resolve(null)),
   openTableSession: vi.fn(() => Promise.reject(new Error('no'))),
   fetchOrderStatus: vi.fn(),
@@ -61,5 +70,25 @@ describe('qr-menu drawer and profile', () => {
     fireEvent.click(screen.getByTestId('account-trigger'));
 
     expect(await screen.findByPlaceholderText('+7 900 000-00-00')).toBeInTheDocument();
+  });
+});
+
+describe('a published document', () => {
+  it('lives at its own address, so back closes it and the link can be sent', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    fireEvent.click(screen.getByTestId('drawer-trigger'));
+    fireEvent.click(await screen.findByTestId('drawer-doc-Файлы cookie'));
+
+    expect(window.location.pathname).toBe('/info/cookies');
+    expect(await screen.findByText('Мы храним язык и корзину.')).toBeInTheDocument();
+  });
+
+  it('opens straight from a shared link', async () => {
+    window.history.replaceState({}, '', '/info/privacy');
+    render(<App />);
+
+    expect(await screen.findByText('Телефон нужен, чтобы принести заказ.')).toBeInTheDocument();
   });
 });
