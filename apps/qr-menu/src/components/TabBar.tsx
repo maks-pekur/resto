@@ -54,7 +54,7 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
               )}
             >
               <span className="relative">
-                <Icon className="size-[1.125rem]" />
+                <Icon className="size-[1.375rem]" />
                 {tab.badge !== undefined && tab.badge > 0 ? (
                   <span className="bg-primary text-primary-foreground absolute -end-2 -top-1.5 grid min-w-4 place-items-center rounded-full px-1 text-[10px] leading-4 font-bold">
                     {tab.badge}
