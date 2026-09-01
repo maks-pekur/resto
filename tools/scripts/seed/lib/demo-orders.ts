@@ -4,7 +4,7 @@ import postgres, { type Sql } from 'postgres';
 export const createAppDb = (databaseUrl: string): Sql =>
   postgres(databaseUrl, { max: 1, prepare: false });
 
-export type DemoOrderStatus = 'paid' | 'accepted' | 'preparing' | 'ready' | 'completed';
+export type DemoOrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed';
 
 export interface DemoOrderSpec {
   readonly status: DemoOrderStatus;
@@ -105,12 +105,14 @@ const advanceOrder = async (
     await tx`
       UPDATE orders
          SET status = ${spec.status},
+             payment_status = 'paid',
+             paid_at = now() - (${ageMinutes} * interval '1 minute'),
              created_at = now() - (${ageMinutes} * interval '1 minute'),
              updated_at = now()
        WHERE id = ${orderId}
     `;
 
-    if (spec.status !== 'paid') {
+    if (spec.status !== 'placed') {
       const acceptedAgo = Math.max(ageMinutes - 1, 0);
       await tx`
         UPDATE orders
@@ -143,9 +145,9 @@ export const seedDemoOrder = async (
 };
 
 export const DEMO_ORDER_SPECS: readonly DemoOrderSpec[] = [
-  { status: 'paid', ageMinutes: 0, customerName: 'Анна Петрова' },
-  { status: 'paid', ageMinutes: 2, customerName: 'Ivan Smirnov', quantity: 2 },
-  { status: 'paid', ageMinutes: 7, customerName: 'Late Order' },
+  { status: 'placed', ageMinutes: 0, customerName: 'Анна Петрова' },
+  { status: 'placed', ageMinutes: 2, customerName: 'Ivan Smirnov', quantity: 2 },
+  { status: 'placed', ageMinutes: 7, customerName: 'Late Order' },
   { status: 'accepted', ageMinutes: 9, prepMinutes: 20, customerName: 'Olga K' },
   { status: 'preparing', ageMinutes: 14, prepMinutes: 15, customerName: 'Pavel R' },
   { status: 'ready', ageMinutes: 21, prepMinutes: 10, customerName: 'Maria L' },

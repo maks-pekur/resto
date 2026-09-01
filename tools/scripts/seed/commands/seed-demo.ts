@@ -280,6 +280,130 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
       ],
     },
     {
+      slug: 'snacks',
+      name: { en: 'Snacks', uk: 'Закуски', ru: 'Закуски' },
+      items: [
+        {
+          slug: 'dodster',
+          name: { en: 'Dodster', uk: 'Додстер', ru: 'Додстер' },
+          description: {
+            en: 'Chicken, tomatoes, mozzarella and cheddar, ranch sauce in a thin flatbread',
+            uk: 'Курка, томати, моцарела та чедер, соус ранч у тонкому коржі',
+            ru: 'Цыплёнок, томаты, моцарелла и чеддер, соус ранч в тонкой лепёшке',
+          },
+          price: '159.00',
+        },
+        {
+          slug: 'chicken-nuggets',
+          name: {
+            en: 'Chicken nuggets, 6 pcs',
+            uk: 'Курячі нагетси, 6 шт.',
+            ru: 'Куриные наггетсы, 6 шт.',
+          },
+          description: {
+            en: 'Chicken fillet in a crisp breading',
+            uk: 'Куряче філе в хрусткій паніровці',
+            ru: 'Куриное филе в хрустящей панировке',
+          },
+          price: '149.00',
+        },
+        {
+          slug: 'oven-potatoes',
+          name: { en: 'Oven potatoes', uk: 'Картопля з печі', ru: 'Картофель из печи' },
+          description: {
+            en: 'Potato wedges with Provence herbs',
+            uk: 'Часточки картоплі з прованськими травами',
+            ru: 'Дольки картофеля с прованскими травами',
+          },
+          price: '129.00',
+        },
+        {
+          slug: 'cheese-balls',
+          name: { en: 'Cheese balls', uk: 'Сирні кульки', ru: 'Сырные шарики' },
+          description: {
+            en: 'Crisp on the outside, molten mozzarella inside',
+            uk: 'Хрусткі назовні, розплавлена моцарела всередині',
+            ru: 'Хрустящие снаружи, расплавленная моцарелла внутри',
+          },
+          price: '139.00',
+        },
+      ],
+    },
+    {
+      slug: 'desserts',
+      name: { en: 'Desserts', uk: 'Десерти', ru: 'Десерты' },
+      items: [
+        {
+          slug: 'cheesecake-new-york',
+          name: {
+            en: 'New York cheesecake',
+            uk: 'Чізкейк Нью-Йорк',
+            ru: 'Чизкейк Нью-Йорк',
+          },
+          description: {
+            en: 'The classic, on a shortcrust base',
+            uk: 'Класичний, на пісочній основі',
+            ru: 'Классический, на песочной основе',
+          },
+          price: '149.00',
+        },
+        {
+          slug: 'three-chocolate-muffin',
+          name: {
+            en: 'Three chocolate muffin',
+            uk: 'Мафін «Три шоколади»',
+            ru: 'Маффин «Три шоколада»',
+          },
+          description: {
+            en: 'Dark, milk and white chocolate in one cake',
+            uk: 'Чорний, молочний і білий шоколад в одному кексі',
+            ru: 'Тёмный, молочный и белый шоколад в одном кексе',
+          },
+          price: '99.00',
+        },
+        {
+          slug: 'glazed-donut',
+          name: { en: 'Glazed donut', uk: 'Пончик у глазурі', ru: 'Пончик в глазури' },
+          description: {
+            en: 'Airy dough under a chocolate glaze',
+            uk: 'Повітряне тісто під шоколадною глазур’ю',
+            ru: 'Воздушное тесто под шоколадной глазурью',
+          },
+          price: '79.00',
+        },
+      ],
+    },
+    {
+      slug: 'sauces',
+      name: { en: 'Sauces', uk: 'Соуси', ru: 'Соусы' },
+      items: [
+        {
+          slug: 'cheese-sauce',
+          name: { en: 'Cheese sauce', uk: 'Сирний соус', ru: 'Сырный соус' },
+          price: '25.00',
+        },
+        {
+          slug: 'bbq-sauce',
+          name: { en: 'BBQ sauce', uk: 'Соус барбекю', ru: 'Соус барбекю' },
+          price: '25.00',
+        },
+        {
+          slug: 'garlic-sauce',
+          name: { en: 'Garlic sauce', uk: 'Часниковий соус', ru: 'Чесночный соус' },
+          price: '25.00',
+        },
+        {
+          slug: 'sweet-and-sour-sauce',
+          name: {
+            en: 'Sweet and sour sauce',
+            uk: 'Кисло-солодкий соус',
+            ru: 'Кисло-сладкий соус',
+          },
+          price: '25.00',
+        },
+      ],
+    },
+    {
       slug: 'drinks',
       name: { en: 'Drinks', uk: 'Напої', ru: 'Напитки' },
       items: [
@@ -459,25 +583,22 @@ const ensureCatalog = async (
   const categoryBySlug = new Map(existingCategories.items.map((c) => [c.slug, c.id]));
 
   for (const [categoryIndex, category] of (CATALOG[tenantSlug] ?? []).entries()) {
-    let categoryId = categoryBySlug.get(category.slug);
-    if (categoryId) {
-      log('seed-demo.category.exists', { tenant: tenantSlug, slug: category.slug });
-    } else {
-      const created = await op.post<{ id: string }>('/v1/catalog/categories', {
-        slug: category.slug,
-        name: category.name,
-        parentId: null,
-        description: null,
-        sortOrder: categoryIndex,
-        code: null,
-      });
-      categoryId = created.id;
-      log('seed-demo.category.created', {
-        tenant: tenantSlug,
-        slug: category.slug,
-        id: categoryId,
-      });
-    }
+    const known = categoryBySlug.get(category.slug);
+    const saved = await op.post<{ id: string }>('/v1/catalog/categories', {
+      ...(known ? { id: known } : {}),
+      slug: category.slug,
+      name: category.name,
+      parentId: null,
+      description: null,
+      sortOrder: categoryIndex,
+      code: null,
+    });
+    const categoryId = saved.id;
+    log(known ? 'seed-demo.category.updated' : 'seed-demo.category.created', {
+      tenant: tenantSlug,
+      slug: category.slug,
+      id: categoryId,
+    });
 
     const existingItems = await op.get<ItemListResponse>(
       `/v1/catalog/items?categoryId=${categoryId}&status=all`,
