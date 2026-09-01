@@ -9,6 +9,7 @@ import tailwindcss from '@tailwindcss/vite';
 // fallback is :5001 — the `API_PORT` default in `env.schema.ts`, what the seed CLI
 // (`tools/scripts/seed/lib/options.ts`) targets, and what `.env.example` ships.
 const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:5001';
+const MEDIA_TARGET = process.env.MEDIA_PROXY_TARGET ?? 'http://localhost:9000';
 
 // A phone only hands the camera to a secure origin, so testing the QR scan on a real device
 // needs https even in dev. `pnpm dev:cert` mints the pair; without it — or with `DEV_TLS=0`,
@@ -54,6 +55,14 @@ export default defineConfig({
     proxy: {
       '/v1': { target: API_TARGET, changeOrigin: false },
       '/internal': { target: API_TARGET, changeOrigin: false },
+      // Dev only: object storage speaks plain http on localhost, which a phone can neither
+      // reach nor load into an https page. Same-origin through here, it can do both — point
+      // MEDIA_PUBLIC_BASE_URL at `<this origin>/media/<bucket>`.
+      '/media': {
+        target: MEDIA_TARGET,
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/media/u, ''),
+      },
     },
   },
 });

@@ -59,7 +59,7 @@ export const ItemDialog = ({
             transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
             transition: drag.dragging ? 'none' : undefined,
           }}
-          className="mx-auto max-h-[92dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
+          className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
         >
           {/* The grip says the sheet came from the bottom edge and goes back there. */}
           <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
