@@ -29,8 +29,6 @@ export const CartSheet = ({ open, onOpenChange, currency, primaryAction }: CartS
   const { locale, t } = useGuestUi();
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore(selectSubtotal);
-  const tableZoneName = useCartStore((s) => s.tableZoneName);
-  const tableNumber = useCartStore((s) => s.tableNumber);
   const clearCart = useCartStore((s) => s.clearCart);
 
   return (
@@ -58,11 +56,6 @@ export const CartSheet = ({ open, onOpenChange, currency, primaryAction }: CartS
             </div>
 
             <div className="flex flex-col gap-3 border-t px-5 py-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              {tableZoneName && tableNumber ? (
-                <p className="text-muted-foreground text-sm">
-                  {t('cart.table', { table: `${tableZoneName} · ${tableNumber}` })}
-                </p>
-              ) : null}
               <div className="flex items-center justify-between">
                 <span className="text-base font-bold">{t('cart.subtotal')}</span>
                 <span className="text-xl font-extrabold tabular-nums">

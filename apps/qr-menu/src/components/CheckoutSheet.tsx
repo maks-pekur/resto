@@ -42,8 +42,6 @@ export const CheckoutSheet = ({
 }: CheckoutSheetProps) => {
   const items = useCartStore((s) => s.items);
   const subtotal = useCartStore(selectSubtotal);
-  const zoneName = useCartStore((s) => s.tableZoneName);
-  const tableNumber = useCartStore((s) => s.tableNumber);
   const clearCart = useCartStore((s) => s.clearCart);
 
   const [payment, setPayment] = useState<PaymentChoice>('online');
@@ -85,8 +83,6 @@ export const CheckoutSheet = ({
     }
   };
 
-  const table = zoneName !== null && tableNumber !== null ? `${zoneName} · ${tableNumber}` : null;
-
   const applyScan = (raw: string): void => {
     const scanned = qrTokenFromScan(raw);
     if (scanned === null) {
@@ -119,10 +115,6 @@ export const CheckoutSheet = ({
         </SheetHeader>
 
         <div className="flex flex-col gap-5 px-5 pb-6">
-          {table === null ? null : (
-            <p className="text-muted-foreground text-sm">{t('checkout.table', { table })}</p>
-          )}
-
           <label className="flex flex-col gap-1.5">
             <span className="text-sm font-bold">{t('checkout.nameLabel')}</span>
             <input

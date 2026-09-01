@@ -42,7 +42,6 @@ export type GuestUiKey =
   | 'cart.clearCancel'
   | 'cart.checkout'
   | 'cart.close'
-  | 'cart.table'
   | 'cart.itemCount'
   | 'locale.label'
   | 'theme.label'

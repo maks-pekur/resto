@@ -88,14 +88,16 @@ afterEach(() => {
 });
 
 describe('qr-menu table', () => {
-  it('trades a scanned code for a session and renders the server-supplied label', async () => {
+  it('trades a scanned code for a session and seats the guest without saying so', async () => {
     window.history.replaceState({}, '', '/t/a-printed-secret');
     openTableSessionMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(t('table.current', { table: 'Terrace · 12' }))).toBeInTheDocument();
+      expect(useCartStore.getState().tableId).toBe(TABLE_UUID);
     });
+    // The guest can see which table they are sitting at; the app does not tell them.
+    expect(bannerNode()).not.toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBe(TABLE_UUID);
     expect(useCartStore.getState().tableZoneName).toBe('Terrace');
     expect(useCartStore.getState().tableNumber).toBe('12');
