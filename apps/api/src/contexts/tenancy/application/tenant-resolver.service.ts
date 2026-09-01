@@ -72,6 +72,14 @@ export class TenantResolverService {
    * unreachable until PUBLIC_APEX_DOMAIN existed to gate it; `resolveByHost`'s generic subdomain
    * match still accepts more than this does, which is why the guest controllers call this one.
    */
+  // A tunnel host (VS Code port forwarding, cloudflared) carries no tenant label, so a phone
+  // reaching dev through one has no way to name a tenant. The env schema rejects the fallback
+  // outside development.
+  private devFallbackSlug(): string | null {
+    if (this.env.NODE_ENV !== 'development') return null;
+    return this.env.TENANT_DEV_FALLBACK_SLUG ?? null;
+  }
+
   async resolveByCustomerHost(host: string | undefined): Promise<TenantSnapshot | null> {
     if (!host) return null;
     const hostname = host.split(':')[0]?.toLowerCase().replace(/\.$/, '');
@@ -80,7 +88,7 @@ export class TenantResolverService {
     const byDomain = await this.repo.findByDomainHost(hostname);
     if (byDomain && isPubliclyServable(byDomain.status)) return byDomain;
 
-    const candidate = this.guestSlugLabel(hostname.split('.'));
+    const candidate = this.guestSlugLabel(hostname.split('.')) ?? this.devFallbackSlug();
     if (!candidate) return null;
 
     const slug = TenantSlug.safeParse(candidate);

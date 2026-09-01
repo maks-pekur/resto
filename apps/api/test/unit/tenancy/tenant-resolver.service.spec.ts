@@ -198,3 +198,50 @@ describe('TenantResolverService.resolveByCustomerHost', () => {
     expect(repo.findBySlug).not.toHaveBeenCalled();
   });
 });
+
+describe('TenantResolverService.resolveByCustomerHost — the dev tunnel fallback', () => {
+  const envFor = (nodeEnv: string, slug?: string) =>
+    ({
+      PUBLIC_APEX_DOMAIN: 'resto.app',
+      NODE_ENV: nodeEnv,
+      ...(slug === undefined ? {} : { TENANT_DEV_FALLBACK_SLUG: slug }),
+    }) as ConstructorParameters<typeof TenantResolverService>[1];
+
+  it('stands in for the missing tenant label on a tunnel host in development', async () => {
+    const repo = buildRepo();
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('pizza'));
+    const service = new TenantResolverService(repo, envFor('development', 'pizza'));
+
+    const result = await service.resolveByCustomerHost('abc123-3003.euw.devtunnels.ms');
+
+    expect(result?.slug).toBe('pizza');
+  });
+
+  it('does not stand in outside development', async () => {
+    const repo = buildRepo();
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('pizza'));
+    const service = new TenantResolverService(repo, envFor('production', 'pizza'));
+
+    expect(await service.resolveByCustomerHost('abc123-3003.euw.devtunnels.ms')).toBeNull();
+  });
+
+  it('does not stand in when no fallback slug is configured', async () => {
+    const repo = buildRepo();
+    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('pizza'));
+    const service = new TenantResolverService(repo, envFor('development'));
+
+    expect(await service.resolveByCustomerHost('abc123-3003.euw.devtunnels.ms')).toBeNull();
+  });
+
+  it('still prefers a real tenant label when the host carries one', async () => {
+    const repo = buildRepo();
+    repo.findBySlug = vi.fn((slug: string) =>
+      Promise.resolve(slug === 'cafe-roma' ? tenantFor(slug) : null),
+    );
+    const service = new TenantResolverService(repo, envFor('development', 'pizza'));
+
+    const result = await service.resolveByCustomerHost('cafe-roma.menu.resto.app');
+
+    expect(result?.slug).toBe('cafe-roma');
+  });
+});

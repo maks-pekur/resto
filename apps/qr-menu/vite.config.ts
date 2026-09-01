@@ -11,11 +11,12 @@ import tailwindcss from '@tailwindcss/vite';
 const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:5001';
 
 // A phone only hands the camera to a secure origin, so testing the QR scan on a real device
-// needs https even in dev. `pnpm dev:cert` mints the pair; without it the server stays http.
+// needs https even in dev. `pnpm dev:cert` mints the pair; without it — or with `DEV_TLS=0`,
+// which is what a tunnel in front of the server wants — it stays http.
 const certPath = fileURLToPath(new URL('../../infra/dev-certs/dev.pem', import.meta.url));
 const keyPath = fileURLToPath(new URL('../../infra/dev-certs/dev-key.pem', import.meta.url));
 const devTls =
-  existsSync(certPath) && existsSync(keyPath)
+  process.env.DEV_TLS !== '0' && existsSync(certPath) && existsSync(keyPath)
     ? { https: { cert: readFileSync(certPath), key: readFileSync(keyPath) } }
     : {};
 
@@ -41,8 +42,10 @@ export default defineConfig({
     // Tenant subdomains (e.g. `cafe-demo.menu.lvh.me`) must be allowed through
     // Vite's host check so the dev server serves them; the tenant resolves from
     // this Host downstream. `.nip.io` is the same shape over a LAN address, for a
-    // real phone: `pizza.menu.192.168.1.5.nip.io` resolves to 192.168.1.5.
-    allowedHosts: ['.lvh.me', '.localhost', '.nip.io'],
+    // real phone: `pizza.menu.192.168.1.5.nip.io` resolves to 192.168.1.5. A tunnel host
+    // (VS Code port forwarding, cloudflared) carries no tenant label at all — the api falls
+    // back to TENANT_DEV_FALLBACK_SLUG there.
+    allowedHosts: ['.lvh.me', '.localhost', '.nip.io', '.devtunnels.ms', '.trycloudflare.com'],
     ...devTls,
     // Dev only: forward the public/internal api paths to the api on :3000.
     // `changeOrigin: false` keeps the tenant subdomain Host (e.g.
