@@ -12,7 +12,9 @@ const SEATED_PAUSE_MS = 1400;
 export const qrTokenFromScan = (raw: string): string | null => {
   try {
     const url = new URL(raw, window.location.origin);
-    if (url.host !== window.location.host) return null;
+    // A phone on the LAN browses a different host than the one printed on the code, and the
+    // token is validated server-side anyway — so in dev the host is not the gate.
+    if (!import.meta.env.DEV && url.host !== window.location.host) return null;
     return /^\/t\/([^/]+)\/?$/.exec(url.pathname)?.[1] ?? null;
   } catch {
     return null;

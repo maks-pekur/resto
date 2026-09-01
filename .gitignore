@@ -74,3 +74,6 @@ AGENTS.md
 
 # GSD planning artifacts — committed as source of truth (reset 2026-05-24)
 SPEC.md
+
+# Local TLS pair for device testing (mkcert) — never committed
+infra/dev-certs/

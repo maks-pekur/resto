@@ -23,6 +23,7 @@
     "dev:down": "docker compose -f infra/docker/docker-compose.dev.yml down",
     "dev:logs": "docker compose -f infra/docker/docker-compose.dev.yml logs -f",
     "dev:reset": "docker compose -f infra/docker/docker-compose.dev.yml down -v",
+    "dev:cert": "bash tools/scripts/dev-cert.sh",
     "test:stack:up": "node scripts/test-stack.mjs up",
     "test:stack:down": "node scripts/test-stack.mjs down",
     "test:stack:status": "node scripts/test-stack.mjs status",

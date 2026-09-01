@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -7,6 +9,15 @@ import tailwindcss from '@tailwindcss/vite';
 // fallback is :5001 — the `API_PORT` default in `env.schema.ts`, what the seed CLI
 // (`tools/scripts/seed/lib/options.ts`) targets, and what `.env.example` ships.
 const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:5001';
+
+// A phone only hands the camera to a secure origin, so testing the QR scan on a real device
+// needs https even in dev. `pnpm dev:cert` mints the pair; without it the server stays http.
+const certPath = fileURLToPath(new URL('../../infra/dev-certs/dev.pem', import.meta.url));
+const keyPath = fileURLToPath(new URL('../../infra/dev-certs/dev-key.pem', import.meta.url));
+const devTls =
+  existsSync(certPath) && existsSync(keyPath)
+    ? { https: { cert: readFileSync(certPath), key: readFileSync(keyPath) } }
+    : {};
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
@@ -29,8 +40,10 @@ export default defineConfig({
     host: true,
     // Tenant subdomains (e.g. `cafe-demo.menu.lvh.me`) must be allowed through
     // Vite's host check so the dev server serves them; the tenant resolves from
-    // this Host downstream.
-    allowedHosts: ['.lvh.me', '.localhost'],
+    // this Host downstream. `.nip.io` is the same shape over a LAN address, for a
+    // real phone: `pizza.menu.192.168.1.5.nip.io` resolves to 192.168.1.5.
+    allowedHosts: ['.lvh.me', '.localhost', '.nip.io'],
+    ...devTls,
     // Dev only: forward the public/internal api paths to the api on :3000.
     // `changeOrigin: false` keeps the tenant subdomain Host (e.g.
     // `cafe-demo.menu.lvh.me`) so the api resolves the tenant from it,
