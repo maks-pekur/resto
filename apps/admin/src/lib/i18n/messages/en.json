@@ -730,7 +730,20 @@
       "saveFailed": "Could not save the brand settings",
       "socialsEmpty": "No links yet.",
       "socialAdd": "Add a profile",
-      "socialRemove": "Remove {{name}}"
+      "socialRemove": "Remove {{name}}",
+      "coverTitle": "Venue photo",
+      "coverDescription": "The banner a guest sees above your details.",
+      "coverRejected": "JPG, PNG or WebP up to 2 MB",
+      "coverUploadFailed": "Upload failed",
+      "coverUploading": "Uploading…",
+      "coverChoose": "Choose photo",
+      "coverRemove": "Remove",
+      "coverHint": "Landscape photo, at least 1200 px wide",
+      "wifiTitle": "Guest wi-fi",
+      "wifiDescription": "Shown in the menu so nobody has to ask a waiter.",
+      "ssidLabel": "Network name",
+      "ssidHint": "Leave empty to hide wi-fi",
+      "passwordLabel": "Password"
     },
     "pageDescription": "The restaurant profile, languages, domains and payouts.",
     "navLabel": "Settings sections",
@@ -748,39 +761,7 @@
       "pending": "pending"
     },
     "tabIntegrations": "Integrations",
-    "tabVenue": "Venue",
     "tabApps": "Apps",
-    "venue": {
-      "coverTitle": "Venue photo",
-      "coverDescription": "The banner a guest sees above your details.",
-      "coverRejected": "JPG, PNG or WebP up to 2 MB",
-      "coverUploadFailed": "Upload failed",
-      "coverUploading": "Uploading…",
-      "coverChoose": "Choose photo",
-      "coverRemove": "Remove",
-      "coverHint": "Landscape photo, at least 1200 px wide",
-      "hoursTitle": "Opening hours",
-      "hoursDescription": "Guests see them in the menu and know whether you are open.",
-      "closed": "closed",
-      "wifiTitle": "Guest wi-fi",
-      "wifiDescription": "Shown in the menu so nobody has to ask a waiter.",
-      "ssidLabel": "Network name",
-      "ssidHint": "Leave empty to hide wi-fi",
-      "passwordLabel": "Password",
-      "save": "Save",
-      "saving": "Saving…",
-      "saved": "Saved",
-      "saveFailed": "Could not save",
-      "weekday": {
-        "mon": "Monday",
-        "tue": "Tuesday",
-        "wed": "Wednesday",
-        "thu": "Thursday",
-        "fri": "Friday",
-        "sat": "Saturday",
-        "sun": "Sunday"
-      }
-    },
     "apps": {
       "title": "Apps",
       "description": "The surfaces a guest meets you through.",
@@ -795,9 +776,28 @@
         "description": "Your public page with the menu and takeaway orders."
       },
       "settingsLink": {
-        "venue": "Venue",
+        "venue": "Opening hours",
         "languages": "Languages",
         "domains": "Domains"
+      }
+    },
+    "tabHours": "Opening hours",
+    "hours": {
+      "title": "Opening hours",
+      "description": "Guests see them in the menu and know whether you are open.",
+      "closed": "closed",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "Could not save",
+      "weekday": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
       }
     }
   },

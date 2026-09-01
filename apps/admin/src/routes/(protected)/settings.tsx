@@ -2,7 +2,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { z } from 'zod';
-import { Globe, Languages, LayoutGrid, Plug, Store, UtensilsCrossed } from 'lucide-react';
+import { Clock, Globe, Languages, LayoutGrid, Plug, Store } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
@@ -10,14 +10,14 @@ import { tenancyQuery } from '@/lib/queries/tenancy';
 import { PageHeading } from '@/components/common/page-heading';
 import { SettingsNav, type SettingsNavItem } from '@/components/settings/settings-nav';
 import { BrandForm } from '@/components/settings/brand-form';
-import { VenueForm } from '@/components/settings/venue-form';
+import { HoursForm } from '@/components/settings/hours-form';
 import { AppsSection } from '@/components/settings/apps-section';
 import { ContentLocalesSection } from '@/components/settings/content-locales-section';
 import { DomainsSection } from '@/components/settings/domains-section';
 import { PaymentsSection } from '@/components/settings/payments-section';
 import { DangerZoneCard } from '@/components/settings/danger-zone-card';
 
-const SETTINGS = ['general', 'venue', 'apps', 'languages', 'domains', 'integrations'] as const;
+const SETTINGS = ['general', 'hours', 'apps', 'languages', 'domains', 'integrations'] as const;
 
 const searchSchema = z.object({
   setting: z.enum(SETTINGS).catch('general'),
@@ -52,7 +52,7 @@ function SettingsPage() {
   const canSeeIntegrations = hasPermission(me, 'billing', 'read');
   const items: SettingsNavItem[] = [
     { value: 'general', label: t('tabGeneral'), icon: Store },
-    { value: 'venue', label: t('tabVenue'), icon: UtensilsCrossed },
+    { value: 'hours', label: t('tabHours'), icon: Clock },
     { value: 'apps', label: t('tabApps'), icon: LayoutGrid },
     { value: 'languages', label: t('tabLanguages'), icon: Languages },
     { value: 'domains', label: t('tabDomains'), icon: Globe },
@@ -85,7 +85,7 @@ function SettingsPage() {
               />
             </>
           ) : null}
-          {active === 'venue' ? <VenueForm tenant={tenant} /> : null}
+          {active === 'hours' ? <HoursForm tenant={tenant} /> : null}
           {active === 'apps' ? <AppsSection tenant={tenant} /> : null}
           {active === 'languages' ? (
             <ContentLocalesSection

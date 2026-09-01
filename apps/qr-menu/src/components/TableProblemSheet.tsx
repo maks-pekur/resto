@@ -24,7 +24,7 @@ export const TableProblemSheet = ({
   <Sheet open={open} onOpenChange={onOpenChange}>
     <SheetContent
       side="bottom"
-      className="mx-auto max-h-[92dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
+      className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
     >
       <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
       <SheetHeader className="items-center px-5 pt-4 pb-2 text-center">

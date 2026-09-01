@@ -19,6 +19,7 @@ import { LocalizedField } from '@/components/common/localized-field';
 import { PrefixedInput } from '@/components/common/prefixed-input';
 import { socialPresentation } from '@/lib/settings/socials';
 import { LogoUpload } from '@/components/settings/logo-upload';
+import { CoverUpload } from '@/components/settings/cover-upload';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { BrandFormSchema, withScheme, type BrandFormValues } from '@/lib/settings/brand-schema';
@@ -38,6 +39,10 @@ const initialValues = (tenant: TenantResponse): BrandFormValues => ({
   ),
   logoUrl: tenant.theme?.logoUrl ?? null,
   logoS3Key: null,
+  coverUrl: tenant.theme?.coverUrl ?? null,
+  coverS3Key: null,
+  wifiSsid: tenant.wifi?.ssid ?? '',
+  wifiPassword: tenant.wifi?.password ?? '',
 });
 
 export interface BrandFormProps {
@@ -80,6 +85,12 @@ export function BrandForm({ tenant }: BrandFormProps) {
         ),
         ...(values.logoS3Key === null ? {} : { logoS3Key: values.logoS3Key }),
         ...(values.logoUrl === null && tenant.theme?.logoUrl ? { logoS3Key: null } : {}),
+        ...(values.coverS3Key === null ? {} : { coverS3Key: values.coverS3Key }),
+        ...(values.coverUrl === null && tenant.theme?.coverUrl ? { coverS3Key: null } : {}),
+        wifi:
+          values.wifiSsid.length === 0
+            ? null
+            : { ssid: values.wifiSsid, password: values.wifiPassword || null },
       }),
     onSuccess: (res) => {
       if (!res.ok) {
@@ -140,6 +151,18 @@ export function BrandForm({ tenant }: BrandFormProps) {
             onCleared={() => {
               form.setValue('logoS3Key', null, { shouldDirty: true });
               form.setValue('logoUrl', null, { shouldDirty: true });
+            }}
+          />
+
+          <CoverUpload
+            coverUrl={form.watch('coverUrl')}
+            onUploaded={(s3Key, previewUrl) => {
+              form.setValue('coverS3Key', s3Key, { shouldDirty: true });
+              form.setValue('coverUrl', previewUrl, { shouldDirty: true });
+            }}
+            onCleared={() => {
+              form.setValue('coverS3Key', null, { shouldDirty: true });
+              form.setValue('coverUrl', null, { shouldDirty: true });
             }}
           />
 
@@ -273,6 +296,20 @@ export function BrandForm({ tenant }: BrandFormProps) {
               </DropdownMenuContent>
             </DropdownMenu>
           ) : null}
+        </FieldGroup>
+      </SettingsSection>
+
+      <SettingsSection title={t('wifiTitle')} description={t('wifiDescription')}>
+        <FieldGroup>
+          <Field>
+            <FieldLabel htmlFor="wifi-ssid">{t('ssidLabel')}</FieldLabel>
+            <Input id="wifi-ssid" maxLength={64} {...form.register('wifiSsid')} />
+            <FieldDescription>{t('ssidHint')}</FieldDescription>
+          </Field>
+          <Field>
+            <FieldLabel htmlFor="wifi-password">{t('passwordLabel')}</FieldLabel>
+            <Input id="wifi-password" maxLength={128} {...form.register('wifiPassword')} />
+          </Field>
         </FieldGroup>
       </SettingsSection>
 

@@ -113,7 +113,7 @@ export const InfoSheet = ({
           transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
           transition: drag.dragging ? 'none' : undefined,
         }}
-        className="mx-auto max-h-[85dvh] w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
+        className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
       >
         {/* Same grip as the item sheet: both came from the bottom edge and go back there. Over a
             photo it rides on top of it, so the banner reaches the sheet's own edge. */}
@@ -121,7 +121,17 @@ export const InfoSheet = ({
           <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
         ) : null}
         {coverUrl === null ? null : (
-          <img src={coverUrl} alt="" className="bg-muted mt-3 aspect-[16/9] w-full object-cover" />
+          <div className="relative shrink-0">
+            <img
+              src={coverUrl}
+              alt=""
+              className="bg-muted aspect-[16/9] w-full rounded-t-2xl object-cover"
+            />
+            <span
+              aria-hidden
+              className="absolute inset-x-0 top-3 mx-auto h-1.5 w-10 rounded-full bg-white/70 shadow-sm"
+            />
+          </div>
         )}
         <SheetHeader className="px-5 pt-4 pb-2">
           <SheetTitle>{tenantName}</SheetTitle>

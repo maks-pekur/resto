@@ -730,7 +730,20 @@
       "saveFailed": "No se pudieron guardar los ajustes de marca",
       "socialsEmpty": "Todavía no hay enlaces.",
       "socialAdd": "Añadir perfil",
-      "socialRemove": "Quitar {{name}}"
+      "socialRemove": "Quitar {{name}}",
+      "coverTitle": "Foto del local",
+      "coverDescription": "El banner que ve el cliente sobre tus datos.",
+      "coverRejected": "JPG, PNG o WebP de hasta 2 MB",
+      "coverUploadFailed": "No se pudo subir",
+      "coverUploading": "Subiendo…",
+      "coverChoose": "Elegir foto",
+      "coverRemove": "Quitar",
+      "coverHint": "Foto horizontal, mínimo 1200 px de ancho",
+      "wifiTitle": "Wi-Fi para clientes",
+      "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
+      "ssidLabel": "Nombre de la red",
+      "ssidHint": "Déjalo vacío para ocultar el wi-fi",
+      "passwordLabel": "Contraseña"
     },
     "pageDescription": "El perfil del restaurante, los idiomas, los dominios y los cobros.",
     "navLabel": "Secciones de ajustes",
@@ -748,39 +761,7 @@
       "pending": "pendiente"
     },
     "tabIntegrations": "Integraciones",
-    "tabVenue": "Local",
     "tabApps": "Aplicaciones",
-    "venue": {
-      "coverTitle": "Foto del local",
-      "coverDescription": "El banner que ve el cliente sobre tus datos.",
-      "coverRejected": "JPG, PNG o WebP de hasta 2 MB",
-      "coverUploadFailed": "No se pudo subir",
-      "coverUploading": "Subiendo…",
-      "coverChoose": "Elegir foto",
-      "coverRemove": "Quitar",
-      "coverHint": "Foto horizontal, mínimo 1200 px de ancho",
-      "hoursTitle": "Horario",
-      "hoursDescription": "El cliente lo ve en el menú y sabe si estás abierto.",
-      "closed": "cerrado",
-      "wifiTitle": "Wi-Fi para clientes",
-      "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
-      "ssidLabel": "Nombre de la red",
-      "ssidHint": "Déjalo vacío para ocultar el wi-fi",
-      "passwordLabel": "Contraseña",
-      "save": "Guardar",
-      "saving": "Guardando…",
-      "saved": "Guardado",
-      "saveFailed": "No se pudo guardar",
-      "weekday": {
-        "mon": "Lunes",
-        "tue": "Martes",
-        "wed": "Miércoles",
-        "thu": "Jueves",
-        "fri": "Viernes",
-        "sat": "Sábado",
-        "sun": "Domingo"
-      }
-    },
     "apps": {
       "title": "Aplicaciones",
       "description": "Las superficies por las que te ve el cliente.",
@@ -795,9 +776,28 @@
         "description": "Tu página pública con el menú y pedidos para llevar."
       },
       "settingsLink": {
-        "venue": "Local",
+        "venue": "Horario",
         "languages": "Idiomas",
         "domains": "Dominios"
+      }
+    },
+    "tabHours": "Horario",
+    "hours": {
+      "title": "Horario",
+      "description": "El cliente lo ve en el menú y sabe si estás abierto.",
+      "closed": "cerrado",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "saveFailed": "No se pudo guardar",
+      "weekday": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
       }
     }
   },

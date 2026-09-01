@@ -4,10 +4,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Switch } from '@/components/ui/switch';
 import { SettingsSection } from '@/components/settings/settings-section';
-import { CoverUpload } from '@/components/settings/cover-upload';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { updateBrand, type OpeningHours, type TenantResponse } from '@/lib/queries/tenancy';
 
@@ -40,41 +38,24 @@ const toHours = (week: Week): OpeningHours =>
     ]),
   );
 
-export interface VenueFormProps {
+export interface HoursFormProps {
   readonly tenant: TenantResponse;
 }
 
-export function VenueForm({ tenant }: VenueFormProps) {
-  const { t } = useTranslation('translation', { keyPrefix: 'settings.venue' });
+export function HoursForm({ tenant }: HoursFormProps) {
+  const { t } = useTranslation('translation', { keyPrefix: 'settings.hours' });
   const queryClient = useQueryClient();
 
   const [week, setWeek] = React.useState<Week>(() => toWeek(tenant.openingHours));
-  const [ssid, setSsid] = React.useState(tenant.wifi?.ssid ?? '');
-  const [password, setPassword] = React.useState(tenant.wifi?.password ?? '');
-  const [coverUrl, setCoverUrl] = React.useState<string | null>(tenant.theme?.coverUrl ?? null);
-  const [coverS3Key, setCoverS3Key] = React.useState<string | null>(null);
   const [dirty, setDirty] = React.useState(false);
 
   React.useEffect(() => {
     setWeek(toWeek(tenant.openingHours));
-    setSsid(tenant.wifi?.ssid ?? '');
-    setPassword(tenant.wifi?.password ?? '');
-    setCoverUrl(tenant.theme?.coverUrl ?? null);
-    setCoverS3Key(null);
     setDirty(false);
   }, [tenant]);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      updateBrand({
-        openingHours: toHours(week),
-        wifi:
-          ssid.trim().length === 0
-            ? null
-            : { ssid: ssid.trim(), password: password.trim() || null },
-        ...(coverS3Key === null ? {} : { coverS3Key }),
-        ...(coverUrl === null && tenant.theme?.coverUrl ? { coverS3Key: null } : {}),
-      }),
+    mutationFn: () => updateBrand({ openingHours: toHours(week) }),
     onSuccess: (res) => {
       if (!res.ok) {
         showError(null, t('saveFailed'));
@@ -103,23 +84,7 @@ export function VenueForm({ tenant }: VenueFormProps) {
         mutation.mutate();
       }}
     >
-      <SettingsSection title={t('coverTitle')} description={t('coverDescription')}>
-        <CoverUpload
-          coverUrl={coverUrl}
-          onUploaded={(key, preview) => {
-            setCoverS3Key(key);
-            setCoverUrl(preview);
-            setDirty(true);
-          }}
-          onCleared={() => {
-            setCoverS3Key(null);
-            setCoverUrl(null);
-            setDirty(true);
-          }}
-        />
-      </SettingsSection>
-
-      <SettingsSection title={t('hoursTitle')} description={t('hoursDescription')}>
+      <SettingsSection title={t('title')} description={t('description')}>
         <ul className="flex flex-col gap-2">
           {WEEKDAYS.map((day) => (
             <li key={day} className="flex items-center gap-3">
@@ -159,36 +124,6 @@ export function VenueForm({ tenant }: VenueFormProps) {
             </li>
           ))}
         </ul>
-      </SettingsSection>
-
-      <SettingsSection title={t('wifiTitle')} description={t('wifiDescription')}>
-        <FieldGroup>
-          <Field>
-            <FieldLabel htmlFor="wifi-ssid">{t('ssidLabel')}</FieldLabel>
-            <Input
-              id="wifi-ssid"
-              maxLength={64}
-              value={ssid}
-              onChange={(event) => {
-                setSsid(event.target.value);
-                setDirty(true);
-              }}
-            />
-            <FieldDescription>{t('ssidHint')}</FieldDescription>
-          </Field>
-          <Field>
-            <FieldLabel htmlFor="wifi-password">{t('passwordLabel')}</FieldLabel>
-            <Input
-              id="wifi-password"
-              maxLength={128}
-              value={password}
-              onChange={(event) => {
-                setPassword(event.target.value);
-                setDirty(true);
-              }}
-            />
-          </Field>
-        </FieldGroup>
       </SettingsSection>
 
       <div className="flex justify-end">

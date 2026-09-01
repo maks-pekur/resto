@@ -26,7 +26,7 @@ type State =
   | { readonly kind: 'error'; readonly message: string };
 
 export function CoverUpload({ coverUrl, onUploaded, onCleared }: CoverUploadProps) {
-  const { t } = useTranslation('translation', { keyPrefix: 'settings.venue' });
+  const { t } = useTranslation('translation', { keyPrefix: 'settings.brand' });
   const inputRef = React.useRef<HTMLInputElement | null>(null);
   const [state, setState] = React.useState<State>({ kind: 'idle' });
 
