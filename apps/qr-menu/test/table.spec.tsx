@@ -109,7 +109,7 @@ describe('qr-menu table', () => {
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(t('table.notRecognized'))).toBeInTheDocument();
+      expect(screen.getByText(t('table.unreadableTitle'))).toBeInTheDocument();
     });
     // A sheet, not a line to read past: the way out is in it.
     expect(screen.getByRole('dialog')).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('qr-menu table', () => {
 
     expect(openTableSessionMock).not.toHaveBeenCalled();
     expect(bannerNode()).not.toBeInTheDocument();
-    expect(screen.queryByText(t('table.notRecognized'))).not.toBeInTheDocument();
+    expect(screen.queryByText(t('table.unreadableTitle'))).not.toBeInTheDocument();
   });
 
   it('never asks the guest to type a table number', async () => {
@@ -207,7 +207,7 @@ describe('ordering without a table', () => {
     fireEvent.click(await screen.findByRole('button', { name: t('checkout.open') }));
 
     // The scan sheet stands in for the checkout, and the cart is untouched.
-    expect(await screen.findByText(t('table.orderNeedsTable'))).toBeInTheDocument();
+    expect(await screen.findByText(t('table.orderingTitle'))).toBeInTheDocument();
     expect(screen.queryByText(t('checkout.paymentLabel'))).not.toBeInTheDocument();
     expect(useCartStore.getState().items).toHaveLength(1);
   });
