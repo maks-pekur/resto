@@ -210,6 +210,23 @@
 - [ ] **TBL-12**: A dine-in order card in the operator feed shows the stored zone-and-number label
 - [x] **TBL-13**: Pricing and the stop list answer for the scanned table's location, not the tenant default
 
+### Ingredients (`ING`)
+
+> Added 2026-09-02 (Phase 10.6). Design source: `.planning/notes/ingredients.md`. The database, the domain and the iiko mapping keep saying `modifier`; the admin and guest UI say **Ingredients**. These lines are the traceable index, not a second source of truth.
+
+- [ ] **ING-01**: A modifier option is a tenant-level reusable entity — photo, description, price, `source` / `source_external_id` — no longer owned by one group; `modifier_group_id` is replaced by a membership table
+- [ ] **ING-02**: Operator manages the library from a Menu sub-tab: card grid, editor sheet, photo upload via the existing presigned path under a server-chosen `ingredients/` key prefix, archive as the only removal
+- [ ] **ING-03**: An ingredient group holds an ordered set of library ingredients, and one ingredient sits in several groups priced once
+- [ ] **ING-04**: Operator attaches single ingredients straight to a dish, beside groups; the dish's allowed set is the union of the two
+- [ ] **ING-05**: Selection rules stay on the group — effective min is `min_amount ?? 0`, effective max is `max_amount ?? 1`, and max counts distinct chosen options rather than amounts
+- [ ] **ING-06**: An ingredient with `default_amount > 0` arrives pre-selected; deselecting it reaches the order as `amount: 0`, contributes no money and no group count, and renders as "без <name>" on the operator card
+- [ ] **ING-07**: A selected ingredient whose effective max exceeds 1 gains a stepper; its money is `price_delta × max(0, amount − free_amount)`
+- [ ] **ING-08**: Ingredients carry their own per-location stop list sharing `catalog_location_stop_version`; a stopped ingredient leaves the published menu, and a dish whose required group it empties is stopped with it
+- [ ] **ING-09**: The published menu carries ingredients once in a top-level `modifierOptions[]` with description and presigned `imageUrl`; groups and items reference them by id
+- [ ] **ING-10**: The server prices every modifier row from the published snapshot — anything outside the dish's allowed set is refused, amount is validated against the option's range, and `amount: 0` is accepted only for a default-in option
+- [ ] **ING-11**: A guest block renders as tiles when at least one of its ingredients has a photo and as today's rows otherwise; radio-vs-checkbox behaviour comes from effective max alone, not from `is_required`
+- [ ] **ING-12**: `menu_items.ingredients` is renamed to `menu_items.composition` (admin-only, labelled "Состав") and moves out of the modifier-groups card into the item description form
+
 ### Delivery Zones — basic (`DELV`)
 
 > Polygons + minimums + in-zone check at checkout. Now Phase 9 — executes before Admin Order Intake. Per SPEC section 3.1.
@@ -547,6 +564,18 @@
 | TBL-11      | Phase 10.3    | Pending                 |
 | TBL-12      | Phase 10.3    | Pending                 |
 | TBL-13      | Phase 10.3    | Complete |
+| ING-01      | Phase 10.6    | Pending                 |
+| ING-02      | Phase 10.6    | Pending                 |
+| ING-03      | Phase 10.6    | Pending                 |
+| ING-04      | Phase 10.6    | Pending                 |
+| ING-05      | Phase 10.6    | Pending                 |
+| ING-06      | Phase 10.6    | Pending                 |
+| ING-07      | Phase 10.6    | Pending                 |
+| ING-08      | Phase 10.6    | Pending                 |
+| ING-09      | Phase 10.6    | Pending                 |
+| ING-10      | Phase 10.6    | Pending                 |
+| ING-11      | Phase 10.6    | Pending                 |
+| ING-12      | Phase 10.6    | Pending                 |
 | SCHED-01    | Phase 10.1    | Pending                 |
 | SCHED-02    | Phase 10.1    | Pending                 |
 | SCHED-03    | Phase 10.1    | Pending                 |

@@ -4,14 +4,14 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 10.3 context gathered; persona reviews (CTO + skeptic) running
-last_updated: "2026-08-29T16:39:37.689Z"
+last_updated: "2026-09-02T19:38:09.419Z"
 last_activity: 2026-08-29 -- Phase 10.3 execution started
 progress:
-  total_phases: 31
+  total_phases: 32
   completed_phases: 15
   total_plans: 157
-  completed_plans: 134
-  percent: 48
+  completed_plans: 147
+  percent: 47
 ---
 
 # Project State
@@ -177,6 +177,7 @@ _Updated after each plan completion_
 - Phase 10.2 scope grew (founder, 2026-08-19): signup + multi-step onboarding folded in, because the sign-in brand picker it already owned is the same screen the new-account flow needs. Confirmed model: `owner` is a TENANT role, not a brand role; a user creates their company, owns it, creates brands inside; staff never self-register. Live finding that motivated it — the admin signup form calls Better Auth directly and produces a user with ZERO memberships (stranded, cannot create a brand); its currency field is collected and never sent; its "Restaurant name" label actually feeds the person's name.
 - Phase 10 edited: goal, requirements (ORDINT-02/09 out), and all success criteria rewritten to match 10-CONTEXT.md; criterion 6 added (single migration + read-back-from-DB test fidelity); pre-requisite quick task noted
 - Phase 10.3 inserted after Phase 10: Table zones, tables and QR codes
+- Phase 10.6 inserted after Phase 10: Ingredient library, groups and how they reach the order (design: .planning/notes/ingredients.md)
 
 ### Decisions
 

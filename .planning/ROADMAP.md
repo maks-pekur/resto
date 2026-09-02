@@ -767,6 +767,41 @@ Plans:
 
 - [ ] 10.3-14-PLAN.md — Regenerate the published OpenAPI contract and the typed client; scan a real printed code
 
+### Phase 10.6: Ingredient library, groups and how they reach the order (INSERTED)
+
+**Goal**: A guest picks toppings on a dish — each with a photo, a name and a price — and every choice reaches the kitchen as a priced line, including the default one they took off. The operator builds the ingredients once in the Menu tab and reuses them across dishes
+**Depends on**: Phase 4a / 4b (the catalog schema and its admin UX are what this extends), Phase 8 (the order the priced rows land in)
+**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-06, ING-07, ING-08, ING-09, ING-10, ING-11, ING-12
+
+**Design source**: `.planning/notes/ingredients.md` (2026-09-02) — the model, the API surface, both UIs, the test list and the out-of-scope list are written there. Read it first; do not re-derive it.
+
+**Decided before planning** (do not re-litigate):
+
+1. **This is a modifier in the code and an Ingredient in the UI.** iiko / Syrve separate an *ingredient* — an assembly-chart line that exists for costing and write-off and that the guest never sees — from a *modifier*, a nomenclature product with its own id, name, image and price, which is the only thing that reaches the order. What is being built here is the second one. The database, the domain and the iiko mapping keep saying `modifier`; the admin and the guest say **Ingredients**.
+2. **`menu_items.ingredients` is renamed to `menu_items.composition`** so the two meanings stop sharing one word. It is admin-only — the published menu DTO never exposed it — so the rename costs one migration, one DTO field and one form label.
+3. **Membership moves out of the option row.** `menu_modifier_options` loses `modifier_group_id`; `menu_modifier_group_options` and `menu_item_modifier_options` carry it instead, both with `tenant_id` and composite tenant FKs per ADR-0020 I-2, both leading every index with `tenant_id`.
+4. **Shape and behaviour are independent axes, and neither is a flag on the group.** A block renders as tiles when at least one of its ingredients has a photo; radio-vs-checkbox comes from effective max alone, not from `is_required`. Existing dough and sauce groups carry no photos, so nothing about them changes on the day this ships.
+5. **The breaking `/v1/menu` change ships coordinated, not versioned.** Both consumers go through `packages/ui/src/guest` and `packages/api-client`, and both ship inside this phase.
+6. **Nothing goes into the order comment.** `order_modifiers` already stores `option_id`, `name_snapshot`, `price_delta`, `amount` and a nullable `modifier_group_id` — the last being `NULL` for a single ingredient attached straight to the dish.
+
+**Open questions for `/gsd-spec-phase` and `/gsd-discuss-phase`:**
+
+1. The migration backfills one `menu_modifier_group_options` row per existing option and then drops `modifier_group_id`. What proves that backfill against a live database — and does any tenant hold options today, or is the dev-reset allowance (10.2 D-12) still open? Note 10.4's decision that the allowance is void once a tenant has printed a QR sheet.
+2. Group `max_selectable` versus per-option `max_amount`: the note defines both, and the admin exposes the per-option one as "how many times it can be added". Where does the operator set the group's own maximum, and what is the reading when the two disagree?
+3. The stop-list cascade — a dish whose required group is emptied by a stopped ingredient is stopped with it — lives in `loadPublishedMenu`'s stop overlay. Computed per read, or materialised at publish?
+
+**Deliberately not in this phase** (each already has a home): price per size (`.planning/notes/modifier-pricing.md`), per-dish group rules (iiko's min / max on the dish-to-group link), assembly charts with grams and cost, nested modifiers.
+
+**Layers touched**: `packages/db` (library columns, two link tables, `menu_option_stop_list`, the `composition` rename, the backfill migration), `packages/domain` (option and group schemas, the amount rules), api catalog context (library CRUD, membership writes, stop list, published-menu payload), api ordering context (allowed-set union, amount and zero-amount pricing), `packages/api-client` + `docs/api/openapi.yaml`, `apps/admin` (Ingredients sub-tab, group picker, item-card block, stop-list section), `packages/ui/src/guest` + `apps/qr-menu` + `apps/website` (tile grid, stepper, `useItemSelection`).
+
+**Plans**: TBD
+**UI hint**: yes — both the admin and the guest surface
+**Persona reviewers**: persona-cto, persona-skeptic
+
+Plans:
+
+- [ ] TBD (run /gsd-plan-phase 10.6 to break down)
+
 ### Phase 10.5: Location as a filter, not a mode (INSERTED)
 
 **Goal**: Stop making the operator switch into a location. Operational screens show all points by default and filter down with a `?location=` control; configuration screens keep the location in their own path, where it cannot be ambiguous
