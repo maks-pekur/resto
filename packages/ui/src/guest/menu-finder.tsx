@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { SearchIcon, XIcon } from '../icons';
 import { cn } from '../lib/utils';
 import { useGuestUi } from './guest-ui-provider';
@@ -27,19 +28,39 @@ export const MenuFinder = ({
   onToggleDiet,
 }: MenuFinderProps) => {
   const { t } = useGuestUi();
+  const field = useRef<HTMLInputElement | null>(null);
+
+  // The field is kept mounted so it can grow out of the icon rather than appear at full width;
+  // focus therefore has to be asked for, `autoFocus` only fires on mount.
+  useEffect(() => {
+    if (searchOpen) field.current?.focus();
+  }, [searchOpen]);
 
   return (
     <div className="flex flex-col gap-2">
-      {searchOpen ? (
-        <div className="relative">
+      <div
+        // Grows from the magnifier's side of the header out to the full width, and folds back.
+        className={cn(
+          'flex overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none',
+          searchOpen ? 'h-10 opacity-100' : 'h-0 opacity-0',
+        )}
+        {...(searchOpen ? {} : { inert: true })}
+      >
+        <div
+          className={cn(
+            'relative ms-auto transition-[width] duration-300 ease-out motion-reduce:transition-none',
+            searchOpen ? 'w-full' : 'w-10',
+          )}
+        >
           <SearchIcon
             aria-hidden
             className="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2"
           />
           <input
-            autoFocus
             type="search"
+            ref={field}
             value={query}
+            tabIndex={searchOpen ? 0 : -1}
             aria-label={t('finder.searchLabel')}
             placeholder={t('finder.searchPlaceholder')}
             onChange={(event) => {
@@ -60,7 +81,7 @@ export const MenuFinder = ({
             </button>
           ) : null}
         </div>
-      ) : null}
+      </div>
 
       {diets.length > 0 ? (
         <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

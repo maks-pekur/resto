@@ -89,17 +89,24 @@ describe('diet marks', () => {
 });
 
 describe('the search field', () => {
-  it('stays behind its icon until asked for, and forgets the query when closed', () => {
+  it('stays out of reach until asked for, and forgets the query when closed', () => {
     renderMenu();
-    expect(screen.queryByLabelText('finder.searchLabel')).not.toBeInTheDocument();
+    // Mounted so it can grow out of the icon, but not reachable: no tab stop, and inert.
+    const field = screen.getByLabelText('finder.searchLabel');
+    expect(field).toHaveAttribute('tabindex', '-1');
+    expect(field.closest('[inert]')).not.toBeNull();
 
     fireEvent.click(screen.getByTestId('search-toggle'));
-    fireEvent.change(screen.getByLabelText('finder.searchLabel'), { target: { value: 'марг' } });
+    expect(field).toHaveAttribute('tabindex', '0');
+    expect(field.closest('[inert]')).toBeNull();
+    expect(field).toHaveFocus();
+
+    fireEvent.change(field, { target: { value: 'марг' } });
     expect(screen.queryByText('Пепперони')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByTestId('search-toggle'));
 
-    expect(screen.queryByLabelText('finder.searchLabel')).not.toBeInTheDocument();
+    expect(field).toHaveAttribute('tabindex', '-1');
     expect(screen.getByText('Пепперони')).toBeInTheDocument();
   });
 });
