@@ -187,17 +187,21 @@ export const MenuScreen = ({
       }
       banner={
         <>
-          <MenuFinder
-            query={query}
-            onQueryChange={setQuery}
-            diets={diets}
-            activeDiets={activeDiets}
-            onToggleDiet={(diet) => {
-              setActiveDiets((prev) =>
-                prev.includes(diet) ? prev.filter((entry) => entry !== diet) : [...prev, diet],
-              );
-            }}
-          />
+          {/* The page's own gutter, the same the rail and the grid use — the finder used to run
+              edge to edge and its chip row pushed a scrollbar out of the side. */}
+          <div className="mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6">
+            <MenuFinder
+              query={query}
+              onQueryChange={setQuery}
+              diets={diets}
+              activeDiets={activeDiets}
+              onToggleDiet={(diet) => {
+                setActiveDiets((prev) =>
+                  prev.includes(diet) ? prev.filter((entry) => entry !== diet) : [...prev, diet],
+                );
+              }}
+            />
+          </div>
           {banner}
         </>
       }

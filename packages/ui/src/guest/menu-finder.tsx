@@ -40,7 +40,7 @@ export const MenuFinder = ({
           onChange={(event) => {
             onQueryChange(event.target.value);
           }}
-          className="border-input focus-visible:ring-ring h-11 w-full rounded-full border ps-9 pe-9 text-base focus-visible:ring-2 focus-visible:outline-none"
+          className="border-input focus-visible:ring-ring h-10 w-full rounded-full border ps-9 pe-9 text-base focus-visible:ring-2 focus-visible:outline-none"
         />
         {query.length > 0 ? (
           <button
@@ -49,7 +49,7 @@ export const MenuFinder = ({
             onClick={() => {
               onQueryChange('');
             }}
-            className="text-muted-foreground hover:text-foreground absolute end-1 top-1/2 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full"
+            className="text-muted-foreground hover:text-foreground absolute end-0.5 top-1/2 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full"
           >
             <XIcon className="size-4" />
           </button>
@@ -57,7 +57,7 @@ export const MenuFinder = ({
       </div>
 
       {diets.length > 0 ? (
-        <ul className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {diets.map((diet) => {
             const active = activeDiets.includes(diet);
             return (
@@ -70,7 +70,7 @@ export const MenuFinder = ({
                     onToggleDiet(diet);
                   }}
                   className={cn(
-                    'flex h-9 cursor-pointer items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap transition-colors',
+                    'flex h-8 cursor-pointer items-center rounded-full px-3 text-sm font-semibold whitespace-nowrap transition-colors',
                     active
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted text-muted-foreground hover:text-foreground',
