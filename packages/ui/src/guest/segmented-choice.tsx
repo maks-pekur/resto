@@ -49,7 +49,7 @@ export const SegmentedChoice = ({
       {options.map((option) => (
         <label
           key={option.id}
-          className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex min-h-11 flex-1 cursor-pointer flex-col items-center justify-center rounded-full px-3 py-2 text-center text-xs font-bold transition-colors has-[:focus-visible]:ring-2"
+          className="has-[:checked]:text-foreground text-muted-foreground has-[:focus-visible]:ring-ring relative z-10 flex min-h-10 flex-1 cursor-pointer flex-col items-center justify-center rounded-full px-2 py-1.5 text-center text-sm font-bold transition-colors has-[:focus-visible]:ring-2"
         >
           <input
             type="radio"
