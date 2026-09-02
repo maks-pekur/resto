@@ -50,6 +50,8 @@ export interface MenuScreenProps {
   readonly showCartButton?: boolean;
   /** How an item opens: centred for a desktop page, from the bottom edge on a phone. */
   readonly itemPresentation?: 'dialog' | 'sheet';
+  /** How the cart arrives: from the side on a page, from the bottom edge on a phone. */
+  readonly cartPresentation?: 'drawer' | 'sheet';
   readonly cartPrimaryAction?: ReactNode;
 }
 
@@ -68,6 +70,7 @@ export const MenuScreen = ({
   bar,
   showCartButton = true,
   itemPresentation = 'dialog',
+  cartPresentation = 'drawer',
   cartPrimaryAction,
 }: MenuScreenProps) => {
   const { locale, t, defaultContentLocale } = useGuestUi();
@@ -282,6 +285,7 @@ export const MenuScreen = ({
             open={cartOpen}
             onOpenChange={setCartOpen}
             currency={menu.currency}
+            presentation={cartPresentation}
             primaryAction={cartPrimaryAction}
           />
         </Suspense>

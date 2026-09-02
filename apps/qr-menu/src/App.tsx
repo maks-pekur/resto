@@ -341,6 +341,7 @@ export const App = () => {
           footerVariant="credit"
           showCartButton={false}
           itemPresentation="sheet"
+          cartPresentation="sheet"
           bar={({ itemCount, openCart }) => (
             <TabBar
               ariaLabel={t('nav.label')}
