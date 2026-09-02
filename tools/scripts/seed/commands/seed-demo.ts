@@ -148,6 +148,7 @@ interface LegalDef {
 interface VenueDef {
   /** Repo-relative, so a fresh clone seeds the same room. First one leads the gallery. */
   readonly coverFiles: readonly string[];
+  readonly logoFile: string;
   readonly openingHours: Readonly<Record<string, readonly { from: string; to: string }[]>>;
   readonly wifi: { readonly ssid: string; readonly password: string };
   readonly address: string;
@@ -159,6 +160,7 @@ interface VenueDef {
 /** What a guest sees in the info sheet: the room, the hours, the wi-fi. */
 const VENUE: Readonly<Record<string, VenueDef>> = {
   pizza: {
+    logoFile: 'tools/scripts/seed/fixtures/venue-logo.svg',
     coverFiles: [
       'tools/scripts/seed/fixtures/venue-cover.jpg',
       'tools/scripts/seed/fixtures/venue-hall.jpg',
@@ -198,6 +200,7 @@ const VENUE: Readonly<Record<string, VenueDef>> = {
     },
   },
   burger: {
+    logoFile: 'tools/scripts/seed/fixtures/venue-logo.svg',
     coverFiles: ['tools/scripts/seed/fixtures/venue-cover.jpg'],
     openingHours: {
       mon: [{ from: '11:00', to: '22:00' }],
@@ -761,9 +764,11 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   const venue = VENUE[tenantSlug];
   if (!venue) return;
 
-  const current = await op.get<{ theme: { coverUrls: readonly string[] } | null }>(
-    '/v1/tenants/me',
-  );
+  const current = await op.get<{
+    theme: { coverUrls: readonly string[]; logoUrl: string | null } | null;
+  }>('/v1/tenants/me');
+  const logoS3Key =
+    current.theme?.logoUrl == null ? await uploadBrandCover(op, venue.logoFile) : null;
   const alreadyPublished = current.theme?.coverUrls ?? [];
   const coverS3Keys =
     alreadyPublished.length > 0
@@ -783,6 +788,7 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
       privacy: { ru: venue.legal.privacy },
     },
     ...(coverS3Keys === null ? {} : { coverS3Keys }),
+    ...(logoS3Key === null ? {} : { logoS3Key }),
   });
 
   const locations =
@@ -799,6 +805,7 @@ const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Prom
   log('seed-demo.venue.ready', {
     tenant: tenantSlug,
     covers: coverS3Keys?.length ?? 0,
+    logo: logoS3Key !== null,
     locations: live.length,
   });
 };

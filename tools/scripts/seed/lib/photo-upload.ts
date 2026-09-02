@@ -86,13 +86,20 @@ export const uploadPhotoFromUrl = async (
  * The venue photo the guest sees above the details. Uploaded whole — unlike a dish, a room is
  * not cut out of its background.
  */
+const brandContentType = (file: string): string => {
+  if (file.endsWith('.png')) return 'image/png';
+  if (file.endsWith('.svg')) return 'image/svg+xml';
+  if (file.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+};
+
 export const uploadBrandCover = async (
   op: OperatorHttpClient,
   file: string,
 ): Promise<string | null> => {
   const sourceUrl = file;
   try {
-    const contentType = file.endsWith('.png') ? 'image/png' : 'image/jpeg';
+    const contentType = brandContentType(file);
     const body = await readFile(file);
     if (body.byteLength === 0 || body.byteLength > MAX_COVER_BYTES) {
       log('seed-demo.cover.skipped', { sourceUrl, sizeBytes: body.byteLength });
