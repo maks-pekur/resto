@@ -13,6 +13,7 @@ import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
 import { MenuItemCard } from './menu-item-card';
 import { MenuFinder } from './menu-finder';
+import { dietsOf } from './diet-rules';
 import { useGuestUi } from './guest-ui-provider';
 
 // Radix dialog + sheet are the two heaviest chunks and neither is needed for the
@@ -93,16 +94,15 @@ export const MenuScreen = ({
   /** Every label the menu actually uses — a filter for something nobody cooks is noise. */
   const diets = useMemo(() => {
     const seen = new Set<string>();
-    for (const item of menu.items) for (const diet of item.diets) seen.add(diet);
+    for (const item of menu.items) for (const diet of dietsOf(item.diets)) seen.add(diet);
     return [...seen];
   }, [menu]);
 
   const matches = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return (item: MenuItemDto): boolean => {
-      if (activeDiets.length > 0 && !activeDiets.every((diet) => item.diets.includes(diet))) {
-        return false;
-      }
+      const has = dietsOf(item.diets);
+      if (activeDiets.length > 0 && !activeDiets.every((diet) => has.has(diet))) return false;
       if (needle.length === 0) return true;
       const haystack = [...Object.values(item.name), ...Object.values(item.description ?? {})];
       return haystack.some((text) => text.toLowerCase().includes(needle));

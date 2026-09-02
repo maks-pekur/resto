@@ -36,6 +36,7 @@ const menu = {
   items: [
     item({ id: 'margherita', name: { ru: 'Маргарита' }, diets: ['vegetarian'] }),
     item({ id: 'pepperoni', name: { ru: 'Пепперони' }, diets: ['spicy'] }),
+    item({ id: 'potato', name: { ru: 'Картофель' }, diets: ['vegan'] }),
   ],
   modifierGroups: [],
 } as unknown as MenuDto;
@@ -46,6 +47,10 @@ const renderMenu = () =>
       <MenuScreen menu={menu} stoppedItemIds={[]} />
     </GuestUiProvider>,
   );
+
+/** Every diet mark drawn over a photo, in card order. */
+const cardMarks = (container: HTMLElement): string[] =>
+  [...container.querySelectorAll('li[class*=backdrop-blur]')].map((li) => li.textContent);
 
 describe('finding a dish', () => {
   it('narrows the menu to what the guest typed', () => {
@@ -75,11 +80,28 @@ describe('diet marks', () => {
   it('are emoji on a card, and stay readable to a screen reader', () => {
     const { container } = renderMenu();
 
-    // Two dishes, one label each: a leaf on the margherita, a chilli on the pepperoni.
-    const marks = [...container.querySelectorAll('li[class*=backdrop-blur]')].map(
-      (li) => li.textContent,
+    // One label per dish: a salad on the margherita, a chilli on the pepperoni, a sprout on
+    // the potato.
+    expect(cardMarks(container)).toEqual(['🥗diet.vegetarian', '🌶️diet.spicy', '🌱diet.vegan']);
+  });
+});
+
+describe('what vegan implies', () => {
+  it('shows a vegan dish to someone filtering for vegetarian', () => {
+    renderMenu();
+
+    fireEvent.click(screen.getByTestId('diet-vegetarian'));
+
+    expect(screen.getByText('Маргарита')).toBeInTheDocument();
+    expect(screen.getByText('Картофель')).toBeInTheDocument();
+  });
+
+  it('marks a vegan dish once, with the stronger claim', () => {
+    const { container } = renderMenu();
+
+    expect(cardMarks(container).filter((mark) => mark.includes('🌱'))).toHaveLength(1);
+    expect(cardMarks(container).some((mark) => mark.includes('🥗') && mark.includes('🌱'))).toBe(
+      false,
     );
-    expect(marks).toEqual([expect.stringContaining('🥗'), expect.stringContaining('🌶')]);
-    expect(marks[0]).toContain('diet.vegetarian');
   });
 });

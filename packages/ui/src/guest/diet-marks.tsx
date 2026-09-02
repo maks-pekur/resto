@@ -1,6 +1,7 @@
 'use client';
 
 import { useGuestUi } from './guest-ui-provider';
+import { visibleDiets } from './diet-rules';
 
 /**
  * One mark per label, from the fixed vocabulary. Emoji rather than an icon set because they carry
@@ -8,8 +9,8 @@ import { useGuestUi } from './guest-ui-provider';
  * everywhere already use for "free from".
  */
 const DIET_EMOJI: Readonly<Record<string, string>> = {
-  // A salad reads as "no meat", a sprout as "nothing from an animal at all" — two marks a guest
-  // can tell apart at a glance, which two green leaves were not.
+  // The convention printed menus already use: a sprout means plant-based, a salad means
+  // meat-free but not dairy-free, and "free from" is the ingredient with a bar through it.
   vegetarian: '🥗',
   vegan: '🌱',
   gluten_free: '🚫🌾',
@@ -27,7 +28,7 @@ export interface DietMarksProps {
 
 export const DietMarks = ({ diets, withText = false, className }: DietMarksProps) => {
   const { t } = useGuestUi();
-  const marks = diets.filter((diet) => DIET_EMOJI[diet] !== undefined);
+  const marks = visibleDiets(diets).filter((diet) => DIET_EMOJI[diet] !== undefined);
   if (marks.length === 0) return null;
 
   return (
