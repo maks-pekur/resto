@@ -134,7 +134,13 @@ html {
   scrollbar-gutter: stable;
 }
 
-body[data-scroll-locked] {
+/* Beaten on specificity, not on order: react-remove-scroll injects its own
+   `body[data-scroll-locked] { padding-right: … !important }` after ours. */
+html body[data-scroll-locked] {
   margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+html body.with-scroll-bars-hidden {
   padding-right: 0 !important;
 }
