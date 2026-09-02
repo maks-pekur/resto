@@ -229,7 +229,8 @@ export const MenuScreen = ({
           <div
             className={cn(
               'mx-auto w-full max-w-7xl px-4 sm:px-6',
-              searchOpen || diets.length > 0 ? 'pt-3' : '',
+              // Clear of the category rail above it, and of the first row of dishes below.
+              searchOpen || diets.length > 0 ? 'pt-4 pb-1' : '',
             )}
           >
             <MenuFinder

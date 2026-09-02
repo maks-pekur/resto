@@ -66,7 +66,7 @@ export const MenuFinder = ({
             onChange={(event) => {
               onQueryChange(event.target.value);
             }}
-            className="border-input focus-visible:ring-ring h-10 w-full rounded-full border ps-9 pe-9 text-base focus-visible:ring-2 focus-visible:outline-none"
+            className="border-input focus-visible:border-primary h-10 w-full rounded-full border ps-9 pe-9 text-base transition-colors focus-visible:outline-none"
           />
           {query.length > 0 ? (
             <button
