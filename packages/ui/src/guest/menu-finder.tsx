@@ -39,7 +39,7 @@ export const MenuFinder = ({
   return (
     <div className="flex flex-col gap-2">
       <div
-        // Grows from the magnifier's side of the header out to the full width, and folds back.
+        // Opens from the middle outwards to both edges, and folds back into itself.
         className={cn(
           'flex overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none',
           searchOpen ? 'h-10 opacity-100' : 'h-0 opacity-0',
@@ -48,7 +48,7 @@ export const MenuFinder = ({
       >
         <div
           className={cn(
-            'relative ms-auto transition-[width] duration-300 ease-out motion-reduce:transition-none',
+            'relative mx-auto transition-[width] duration-300 ease-out motion-reduce:transition-none',
             searchOpen ? 'w-full' : 'w-10',
           )}
         >
