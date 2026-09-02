@@ -8,6 +8,7 @@ import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
+import { DietMarks } from './diet-marks';
 import { SegmentedChoice } from './segmented-choice';
 import { hasNutrition, NutritionInfo } from './nutrition-info';
 import { isSingleChoiceGroup, useItemSelection } from './use-item-selection';
@@ -98,18 +99,7 @@ export const ItemDetail = ({
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
               ) : null}
-              {item.diets.length > 0 ? (
-                <ul className="flex flex-wrap gap-1.5">
-                  {item.diets.map((diet) => (
-                    <li
-                      key={diet}
-                      className="bg-primary-tint text-primary rounded-full px-2 py-0.5 text-xs font-bold"
-                    >
-                      {t(`diet.${diet}`)}
-                    </li>
-                  ))}
-                </ul>
-              ) : null}
+              <DietMarks withText diets={item.diets} className="flex flex-wrap gap-1.5" />
               {item.allergens.length > 0 ? (
                 // Named through the same dictionary the filters use, so "milk" reads as one word
                 // in every language the menu speaks.

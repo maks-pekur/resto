@@ -70,3 +70,14 @@ describe('finding a dish', () => {
     expect(screen.queryByText('Пепперони')).not.toBeInTheDocument();
   });
 });
+
+describe('diet marks', () => {
+  it('are emoji on a card, and stay readable to a screen reader', () => {
+    const { container } = renderMenu();
+
+    // Two dishes, one label each: a leaf on the margherita, a chilli on the pepperoni.
+    const marks = [...container.querySelectorAll('h3 + ul li')].map((li) => li.textContent);
+    expect(marks).toEqual([expect.stringContaining('🌿'), expect.stringContaining('🌶')]);
+    expect(marks[0]).toContain('diet.vegetarian');
+  });
+});

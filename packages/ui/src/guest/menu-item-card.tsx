@@ -4,6 +4,7 @@ import type { MenuItemDto } from '@resto/api-client/public';
 import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
+import { DietMarks } from './diet-marks';
 import { useGuestUi } from './guest-ui-provider';
 
 const IMAGE_SIZES =
@@ -85,6 +86,7 @@ export const MenuItemCard = ({
           <h3 className="text-center text-sm leading-snug font-extrabold text-balance sm:text-lg">
             {name}
           </h3>
+          <DietMarks diets={item.diets} className="flex justify-center gap-1" />
           {description ? (
             <p className="text-muted-foreground line-clamp-2 text-xs leading-snug sm:line-clamp-3 sm:text-sm">
               {description}
