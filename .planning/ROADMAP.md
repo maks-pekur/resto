@@ -794,13 +794,35 @@ Plans:
 
 **Layers touched**: `packages/db` (library columns, two link tables, `menu_option_stop_list`, the `composition` rename, the backfill migration), `packages/domain` (option and group schemas, the amount rules), api catalog context (library CRUD, membership writes, stop list, published-menu payload), api ordering context (allowed-set union, amount and zero-amount pricing), `packages/api-client` + `docs/api/openapi.yaml`, `apps/admin` (Ingredients sub-tab, group picker, item-card block, stop-list section), `packages/ui/src/guest` + `apps/qr-menu` + `apps/website` (tile grid, stepper, `useItemSelection`).
 
-**Plans**: TBD
+**Superseded before planning:** decision 4 above ("shape comes from photos, behaviour from effective
+max") and all three open questions were answered and overridden at `/gsd-discuss-phase 10.6`. Read
+`10.6-CONTEXT.md` first — display and behaviour are now explicit group settings (D-07), there is no
+stop cascade (D-20), the stop overlay is computed per read (D-23), `min_selectable` /
+`max_selectable` are dropped (D-33), and an excluded composition line is discriminated by
+`order_modifiers.kind` (D-34).
+
+**Plans**: 16 plans in 11 waves
 **UI hint**: yes — both the admin and the guest surface
 **Persona reviewers**: persona-cto, persona-skeptic
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 10.6 to break down)
+- [ ] 10.6-01-PLAN.md — Drizzle schema: ingredient identity, two link tables, ingredient stop table, group enums, two-mode composition, `order_modifiers.kind`
+- [ ] 10.6-02-PLAN.md — Hand-written migration 0019 + journal + grants, applied against a reset dev database, with cross-tenant regression tests
+- [ ] 10.6-03-PLAN.md — Published menu read model: ingredients travel once, groups carry display/behaviour, availability answers a second list
+- [ ] 10.6-04-PLAN.md — Ordering: union allowed-set, behaviour validation, stopped-ingredient refusal, exclusions as their own rows
+- [ ] 10.6-05-PLAN.md — Catalog contracts and every existing write/list path moved onto the new columns
+- [ ] 10.6-06-PLAN.md — Catalog writes: library list/archive/usage, group and dish membership with the duplicate refusal, composition write
+- [ ] 10.6-07-PLAN.md — Ingredient stop list, the eight application services, module wiring, ingredient photo prefix
+- [ ] 10.6-08-PLAN.md — Nine catalog routes, OpenAPI + client regeneration, e2e for the refusals, the stop and the dedupe
+- [ ] 10.6-09-PLAN.md — Guest wire types in all three hand-written files, availability threading, selection hook rewrite with exclusion state
+- [ ] 10.6-10-PLAN.md — Guest rendering: ingredient tiles, the tabs+several pill strip, the composition line, guest copy
+- [ ] 10.6-11-PLAN.md — Admin foundation: radio-group, every copy string, typed queries, both form schemas, the shared picker
+- [ ] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
+- [ ] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
+- [ ] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
+- [ ] 10.6-15-PLAN.md — Admin stop list section, the D-22 dish offer, exclusions on the order detail
+- [ ] 10.6-16-PLAN.md — Phase verification sweep and the founder's browser walk-through
 
 ### Phase 10.5: Location as a filter, not a mode (INSERTED)
 
