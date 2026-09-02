@@ -123,3 +123,18 @@ html[data-theme='dark'] {
     --category-rail-height: 2.75rem;
   }
 }
+
+/**
+ * Opening a sheet locks the page scroll, and the vanishing scrollbar takes the layout with it:
+ * the header and the floating nav are fixed, so they shift while the body does not. Reserving
+ * the gutter permanently keeps the width constant, and the library's own compensation — which
+ * would now double-count — is turned off.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
+body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
