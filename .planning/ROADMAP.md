@@ -771,7 +771,7 @@ Plans:
 
 **Goal**: A guest picks toppings on a dish — each with a photo, a name and a price — and every choice reaches the kitchen as a priced line, including the default one they took off. The operator builds the ingredients once in the Menu tab and reuses them across dishes
 **Depends on**: Phase 4a / 4b (the catalog schema and its admin UX are what this extends), Phase 8 (the order the priced rows land in)
-**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-06, ING-07, ING-08, ING-09, ING-10, ING-11, ING-12
+**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-08, ING-09, ING-10, ING-11, ING-12, ING-13, ING-14, ING-15 _(ING-06 default-in and ING-07 the stepper were deferred to the backlog at `/gsd-discuss-phase 10.6`; ING-13 … ING-15 added there for the composition. Five of the remaining requirements were rewritten in the same session — read `10.6-CONTEXT.md` before `.planning/notes/ingredients.md`.)_
 
 **Design source**: `.planning/notes/ingredients.md` (2026-09-02) — the model, the API surface, both UIs, the test list and the out-of-scope list are written there. Read it first; do not re-derive it.
 

@@ -212,20 +212,23 @@
 
 ### Ingredients (`ING`)
 
-> Added 2026-09-02 (Phase 10.6). Design source: `.planning/notes/ingredients.md`. The database, the domain and the iiko mapping keep saying `modifier`; the admin and guest UI say **Ingredients**. These lines are the traceable index, not a second source of truth.
+> Added 2026-09-02 (Phase 10.6). Design source: `.planning/notes/ingredients.md`, **amended by `.planning/phases/10.6-ingredient-library-groups-and-how-they-reach-the-order/10.6-CONTEXT.md`** — ING-05, 08, 09, 10 and 11 were rewritten there, ING-06 and ING-07 deferred, and ING-13 … ING-15 added. Read the CONTEXT before the note. The database, the domain and the iiko mapping keep saying `modifier`; the admin and guest UI say **Ingredients**. These lines are the traceable index, not a second source of truth.
 
 - [ ] **ING-01**: A modifier option is a tenant-level reusable entity — photo, description, price, `source` / `source_external_id` — no longer owned by one group; `modifier_group_id` is replaced by a membership table
-- [ ] **ING-02**: Operator manages the library from a Menu sub-tab: card grid, editor sheet, photo upload via the existing presigned path under a server-chosen `ingredients/` key prefix, archive as the only removal
+- [ ] **ING-02**: Operator manages ingredients from one Menu screen holding two inner tabs — the ingredient card grid and the groups; editor sheet, photo upload via the existing presigned path under a server-chosen `ingredients/` key prefix, and archive as the only removal, warned by a list of every group and dish the ingredient appears in
 - [ ] **ING-03**: An ingredient group holds an ordered set of library ingredients, and one ingredient sits in several groups priced once
 - [ ] **ING-04**: Operator attaches single ingredients straight to a dish, beside groups; the dish's allowed set is the union of the two
-- [ ] **ING-05**: Selection rules stay on the group — effective min is `min_amount ?? 0`, effective max is `max_amount ?? 1`, and max counts distinct chosen options rather than amounts
-- [ ] **ING-06**: An ingredient with `default_amount > 0` arrives pre-selected; deselecting it reaches the order as `amount: 0`, contributes no money and no group count, and renders as "без <name>" on the operator card
-- [ ] **ING-07**: A selected ingredient whose effective max exceeds 1 gains a stepper; its money is `price_delta × max(0, amount − free_amount)`
-- [ ] **ING-08**: Ingredients carry their own per-location stop list sharing `catalog_location_stop_version`; a stopped ingredient leaves the published menu, and a dish whose required group it empties is stopped with it
-- [ ] **ING-09**: The published menu carries ingredients once in a top-level `modifierOptions[]` with description and presigned `imageUrl`; groups and items reference them by id
-- [ ] **ING-10**: The server prices every modifier row from the published snapshot — anything outside the dish's allowed set is refused, amount is validated against the option's range, and `amount: 0` is accepted only for a default-in option
-- [ ] **ING-11**: A guest block renders as tiles when at least one of its ingredients has a photo and as today's rows otherwise; radio-vs-checkbox behaviour comes from effective max alone, not from `is_required`
-- [ ] **ING-12**: `menu_items.ingredients` is renamed to `menu_items.composition` (admin-only, labelled "Состав") and moves out of the modifier-groups card into the item description form
+- [ ] **ING-05**: A group carries two explicit settings — display (`tiles` | `tabs`) and behaviour (`one` | `several`) — beside `is_required`; the operator never enters a number, and the numeric `min_selectable` / `max_selectable` leave the admin _(rewritten at `/gsd-discuss-phase 10.6`)_
+- [ ] **ING-06** _(deferred to backlog at `/gsd-discuss-phase 10.6`)_: An ingredient with `default_amount > 0` arrives pre-selected; deselecting it reaches the order as `amount: 0`, contributes no money and no group count, and renders as "без <name>" on the operator card. Superseded inside 10.6 by removable composition lines (ING-14); revisit only if a real menu needs a pre-checked *modifier*
+- [ ] **ING-07** _(deferred to backlog at `/gsd-discuss-phase 10.6`)_: A selected ingredient whose effective max exceeds 1 gains a stepper; its money is `price_delta × max(0, amount − free_amount)`. Until it ships every chosen ingredient is taken once and "double cheese" is its own ingredient
+- [ ] **ING-08**: Ingredients carry their own per-location stop list sharing `catalog_location_stop_version`; a stopped ingredient reaches the guest greyed through `GET /v1/menu/availability` and never leaves the published menu, and dishes are stopped only by the operator — offered, at the moment of the stop, a checkbox list of the dishes whose composition contains it _(rewritten at `/gsd-discuss-phase 10.6`: no automatic cascade)_
+- [ ] **ING-09**: The published menu carries ingredients once in a top-level `modifierOptions[]` with description and presigned `imageUrl`, and groups and items reference them by id; the payload omits nothing for a stop — availability answers that separately
+- [ ] **ING-10**: The server prices every modifier row from the published snapshot — anything outside the dish's allowed set is refused, and every row carries `amount: 1` while the stepper is deferred (ING-07)
+- [ ] **ING-11**: A guest block renders from the group's own display setting — photo tiles, with a placeholder in the photo slot for an ingredient that has none and the description as a small line under the name, or a tab strip — and single-versus-multiple behaviour comes from the group's behaviour setting, not from photos, `is_required` or any maximum _(rewritten at `/gsd-discuss-phase 10.6`)_
+- [ ] **ING-12**: `menu_items.ingredients` is renamed to `menu_items.composition` (labelled "Состав") and moves out of the modifier-groups card into the item description form
+- [ ] **ING-13**: A dish's composition is authored one of two ways at the operator's choice — free text, or an ordered list assembled from library ingredients carrying no grams and no cost — and it is shown to the guest as a line under the dish description _(added 2026-09-02 at `/gsd-discuss-phase 10.6`)_
+- [ ] **ING-14**: An assembled composition line is marked removable or not; a removable line reaches the guest with a cross and strikes through when tapped, meaning "leave it out", while a non-removable line reads as plain text _(added 2026-09-02)_
+- [ ] **ING-15**: An excluded composition line reaches the order as its own row with a name snapshot — never as order-comment text — and shows on the operator's order detail as a separate line _(added 2026-09-02)_
 
 ### Delivery Zones — basic (`DELV`)
 
@@ -569,13 +572,16 @@
 | ING-03      | Phase 10.6    | Pending                 |
 | ING-04      | Phase 10.6    | Pending                 |
 | ING-05      | Phase 10.6    | Pending                 |
-| ING-06      | Phase 10.6    | Pending                 |
-| ING-07      | Phase 10.6    | Pending                 |
+| ING-06      | Phase 10.6    | Deferred (backlog)      |
+| ING-07      | Phase 10.6    | Deferred (backlog)      |
 | ING-08      | Phase 10.6    | Pending                 |
 | ING-09      | Phase 10.6    | Pending                 |
 | ING-10      | Phase 10.6    | Pending                 |
 | ING-11      | Phase 10.6    | Pending                 |
 | ING-12      | Phase 10.6    | Pending                 |
+| ING-13      | Phase 10.6    | Pending                 |
+| ING-14      | Phase 10.6    | Pending                 |
+| ING-15      | Phase 10.6    | Pending                 |
 | SCHED-01    | Phase 10.1    | Pending                 |
 | SCHED-02    | Phase 10.1    | Pending                 |
 | SCHED-03    | Phase 10.1    | Pending                 |
