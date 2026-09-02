@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { GuestUiProvider, MenuScreen } from '@resto/ui';
+import { DietMarks, GuestUiProvider, MenuScreen } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 
 const item = (
@@ -103,5 +103,19 @@ describe('what vegan implies', () => {
     expect(cardMarks(container).some((mark) => mark.includes('🥗') && mark.includes('🌱'))).toBe(
       false,
     );
+  });
+});
+
+describe('a "free from" mark', () => {
+  it('is the ingredient with a line through it, not two emoji', () => {
+    const { container } = render(
+      <GuestUiProvider locale="ru" t={(key) => key}>
+        <DietMarks diets={['gluten_free']} />
+      </GuestUiProvider>,
+    );
+
+    expect(container.textContent).toContain('🌾');
+    expect(container.textContent).not.toContain('🚫');
+    expect(container.querySelector('span.bg-destructive')).not.toBeNull();
   });
 });

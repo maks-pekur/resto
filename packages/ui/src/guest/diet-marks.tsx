@@ -13,11 +13,14 @@ const DIET_EMOJI: Readonly<Record<string, string>> = {
   // meat-free but not dairy-free, and "free from" is the ingredient with a bar through it.
   vegetarian: '🥗',
   vegan: '🌱',
-  gluten_free: '🚫🌾',
-  lactose_free: '🚫🥛',
+  gluten_free: '🌾',
+  lactose_free: '🥛',
   spicy: '🌶️',
   halal: '☪️',
 };
+
+/** "Free from" is the ingredient with a line through it — two glyphs side by side read as litter. */
+const STRUCK_THROUGH = new Set(['gluten_free', 'lactose_free']);
 
 export interface DietMarksProps {
   readonly diets: readonly string[];
@@ -44,7 +47,12 @@ export const DietMarks = ({ diets, withText = false, className }: DietMarksProps
                 'bg-background/95 supports-[backdrop-filter]:bg-background/70 grid size-6 place-items-center rounded-full text-[0.8125rem] leading-none shadow-sm backdrop-blur'
           }
         >
-          <span aria-hidden>{DIET_EMOJI[diet]}</span>
+          <span aria-hidden className="relative inline-flex leading-none">
+            {DIET_EMOJI[diet]}
+            {STRUCK_THROUGH.has(diet) ? (
+              <span className="bg-destructive absolute inset-x-[-1px] top-1/2 h-[1.5px] -translate-y-1/2 -rotate-45 rounded-full" />
+            ) : null}
+          </span>
           {withText ? (
             <span>{t(`diet.${diet}`)}</span>
           ) : (
