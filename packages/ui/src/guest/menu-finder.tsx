@@ -39,17 +39,19 @@ export const MenuFinder = ({
   return (
     <div className="flex flex-col gap-2">
       <div
-        // Opens from the middle outwards to both edges, and folds back into itself.
+        // Two moves, not one: the strip makes room first, then the field spreads from the middle
+        // out to both edges. Done together, the growing height reads as a drawer sliding out and
+        // the sideways travel is lost.
         className={cn(
-          'flex overflow-hidden transition-all duration-300 ease-out motion-reduce:transition-none',
-          searchOpen ? 'h-10 opacity-100' : 'h-0 opacity-0',
+          'flex overflow-hidden transition-[height,opacity] duration-200 ease-out motion-reduce:transition-none',
+          searchOpen ? 'h-10 opacity-100 delay-0' : 'h-0 opacity-0 delay-200',
         )}
         {...(searchOpen ? {} : { inert: true })}
       >
         <div
           className={cn(
             'relative mx-auto transition-[width] duration-300 ease-out motion-reduce:transition-none',
-            searchOpen ? 'w-full' : 'w-10',
+            searchOpen ? 'w-full delay-150' : 'w-10 delay-0',
           )}
         >
           <SearchIcon
