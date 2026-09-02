@@ -20,7 +20,13 @@ export const AccountSheet = ({ open, onOpenChange }: AccountSheetProps) => {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="bottom"
-        className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
+        onOpenAutoFocus={(event) => {
+          // iOS answers a focused text field with the keyboard and its AutoFill bar, both on top
+          // of a sheet the guest has not touched yet. The panel takes the focus instead.
+          event.preventDefault();
+          (event.currentTarget as HTMLElement | null)?.focus();
+        }}
+        className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] outline-none"
       >
         <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
         <SheetHeader className="items-center px-5 pt-4 pb-0 text-center">
