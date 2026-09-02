@@ -113,7 +113,8 @@
       "pcs": "pcs"
     },
     "chooseFirst": "Choose {group} first",
-    "weight": "Weight"
+    "weight": "Weight",
+    "added": "Added"
   },
   "locale": {
     "label": "Language"

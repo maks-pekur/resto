@@ -20,5 +20,6 @@ export {
   ReceiptText as ReceiptIcon,
   Search as SearchIcon,
   X as XIcon,
+  Check as CheckIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

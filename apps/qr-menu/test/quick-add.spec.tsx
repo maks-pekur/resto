@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import type { MenuItemDto } from '@resto/api-client/public';
 import { GuestUiProvider, MenuItemCard } from '@resto/ui';
 
@@ -174,5 +174,26 @@ describe('ItemDetail choices', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Кетчуп' }));
 
     expect(screen.getByRole('button', { name: /item.addToCart/u })).toBeEnabled();
+  });
+});
+
+describe('the tap that adds', () => {
+  it('answers on the button, then goes back to showing the price', () => {
+    vi.useFakeTimers();
+    try {
+      renderCard(item());
+      fireEvent.click(priceButton());
+
+      // The cart lives a tab away, so the button itself has to say the tap landed.
+      expect(priceButton().textContent).toContain('item.added');
+
+      act(() => {
+        vi.advanceTimersByTime(1_500);
+      });
+
+      expect(priceButton().textContent).not.toContain('item.added');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

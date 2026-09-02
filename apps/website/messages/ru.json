@@ -113,7 +113,8 @@
       "pcs": "шт"
     },
     "chooseFirst": "Выберите: {group}",
-    "weight": "Вес"
+    "weight": "Вес",
+    "added": "В корзине"
   },
   "locale": {
     "label": "Язык"

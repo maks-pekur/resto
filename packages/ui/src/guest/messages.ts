@@ -50,6 +50,7 @@ export type GuestUiKey =
   | 'theme.dark'
   | 'footer.poweredBy'
   | 'footer.socialsLabel'
+  | 'item.added'
   | 'finder.searchLabel'
   | 'finder.searchToggle'
   | 'finder.searchPlaceholder'

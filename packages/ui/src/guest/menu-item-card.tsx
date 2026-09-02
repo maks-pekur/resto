@@ -3,7 +3,9 @@
 import type { MenuItemDto } from '@resto/api-client/public';
 import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
+import { useEffect, useRef, useState } from 'react';
 import { formatPrice } from '../lib/format-price';
+import { CheckIcon } from '../icons';
 import { DietMarks } from './diet-marks';
 import { useGuestUi } from './guest-ui-provider';
 
@@ -26,6 +28,8 @@ const lowestPrice = (item: MenuItemDto): string =>
     item.sizes[0]?.price ?? item.basePrice,
   );
 
+const ADDED_FOR_MS = 1_400;
+
 export const MenuItemCard = ({
   item,
   onSelect,
@@ -34,6 +38,16 @@ export const MenuItemCard = ({
   priority = false,
 }: MenuItemCardProps) => {
   const { locale, t, Image, defaultContentLocale } = useGuestUi();
+
+  const [justAdded, setJustAdded] = useState(false);
+  const addedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (addedTimer.current !== null) clearTimeout(addedTimer.current);
+    },
+    [],
+  );
 
   const name = localized(item.name, locale, defaultContentLocale);
   const description = item.description
@@ -108,15 +122,30 @@ export const MenuItemCard = ({
             return;
           }
           onQuickAdd(item);
+          // The cart is a tab away at the bottom of the screen: without a beat of confirmation
+          // here, a tap that worked and a tap that missed look exactly the same.
+          setJustAdded(true);
+          if (addedTimer.current !== null) clearTimeout(addedTimer.current);
+          addedTimer.current = setTimeout(() => {
+            setJustAdded(false);
+          }, ADDED_FOR_MS);
         }}
         className={cn(
-          'bg-primary-tint text-primary-strong focus-visible:ring-ring mx-1 mt-auto inline-flex h-9 shrink-0 items-center justify-center rounded-full px-3 text-sm font-extrabold tabular-nums transition-colors focus-visible:ring-2 focus-visible:outline-none',
+          'focus-visible:ring-ring mx-1 mt-auto inline-flex h-9 shrink-0 items-center justify-center gap-1 rounded-full px-3 text-sm font-extrabold tabular-nums transition-all focus-visible:ring-2 focus-visible:outline-none',
+          justAdded ? 'bg-primary text-primary-foreground' : 'bg-primary-tint text-primary-strong',
           unavailable
             ? 'cursor-not-allowed'
-            : 'hover:bg-primary hover:text-primary-foreground cursor-pointer',
+            : 'hover:bg-primary hover:text-primary-foreground cursor-pointer active:scale-95',
         )}
       >
-        {priceLabel}
+        {justAdded ? (
+          <>
+            <CheckIcon aria-hidden className="size-4" />
+            {t('item.added')}
+          </>
+        ) : (
+          priceLabel
+        )}
       </button>
     </div>
   );

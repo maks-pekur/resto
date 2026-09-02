@@ -177,5 +177,6 @@
   "allergen.sulphites": "сульфиты",
   "allergen.lupin": "люпин",
   "allergen.molluscs": "моллюски",
-  "finder.searchToggle": "Поиск"
+  "finder.searchToggle": "Поиск",
+  "item.added": "В корзине"
 }

@@ -177,5 +177,6 @@
   "allergen.sulphites": "sulphites",
   "allergen.lupin": "lupin",
   "allergen.molluscs": "molluscs",
-  "finder.searchToggle": "Search"
+  "finder.searchToggle": "Search",
+  "item.added": "Added"
 }
