@@ -24,42 +24,28 @@ const STRUCK_THROUGH = new Set(['gluten_free', 'lactose_free']);
 
 export interface DietMarksProps {
   readonly diets: readonly string[];
-  /** On a card the mark stands alone; in the detail it is read with its word. */
-  readonly withText?: boolean;
   readonly className?: string;
 }
 
-export const DietMarks = ({ diets, withText = false, className }: DietMarksProps) => {
+/** Read as part of the dish's name — "Маргарита 🥗" — rather than as a badge stuck on the photo. */
+export const DietMarks = ({ diets, className }: DietMarksProps) => {
   const { t } = useGuestUi();
   const marks = visibleDiets(diets).filter((diet) => DIET_EMOJI[diet] !== undefined);
   if (marks.length === 0) return null;
 
   return (
-    <ul className={className}>
+    <span className={className}>
       {marks.map((diet) => (
-        <li
-          key={diet}
-          className={
-            withText
-              ? 'bg-primary-tint text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold'
-              : // The header's glass, over a photo: frosted where the browser can, plainly
-                // opaque where it cannot.
-                'bg-background/95 supports-[backdrop-filter]:bg-background/70 grid size-5 place-items-center rounded-full text-[0.6875rem] leading-none shadow-sm backdrop-blur xs:size-6 xs:text-[0.8125rem]'
-          }
-        >
+        <span key={diet} className="ms-1 inline-flex align-baseline">
           <span aria-hidden className="relative inline-flex leading-none">
             {DIET_EMOJI[diet]}
             {STRUCK_THROUGH.has(diet) ? (
               <span className="bg-destructive absolute inset-x-[-1px] top-1/2 h-[1.5px] -translate-y-1/2 -rotate-45 rounded-full" />
             ) : null}
           </span>
-          {withText ? (
-            <span>{t(`diet.${diet}`)}</span>
-          ) : (
-            <span className="sr-only">{t(`diet.${diet}`)}</span>
-          )}
-        </li>
+          <span className="sr-only">{t(`diet.${diet}`)}</span>
+        </span>
       ))}
-    </ul>
+    </span>
   );
 };

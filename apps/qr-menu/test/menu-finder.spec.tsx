@@ -48,9 +48,9 @@ const renderMenu = () =>
     </GuestUiProvider>,
   );
 
-/** Every diet mark drawn over a photo, in card order. */
-const cardMarks = (container: HTMLElement): string[] =>
-  [...container.querySelectorAll('li[class*=backdrop-blur]')].map((li) => li.textContent);
+/** Each card's heading, marks and all, in card order. */
+const cardNames = (container: HTMLElement): string[] =>
+  [...container.querySelectorAll('h3')].map((heading) => heading.textContent);
 
 describe('finding a dish', () => {
   it('narrows the menu to what the guest typed', () => {
@@ -82,9 +82,12 @@ describe('diet marks', () => {
   it('are emoji on a card, and stay readable to a screen reader', () => {
     const { container } = renderMenu();
 
-    // One label per dish: a salad on the margherita, a chilli on the pepperoni, a sprout on
-    // the potato.
-    expect(cardMarks(container)).toEqual(['🥗diet.vegetarian', '🌶️diet.spicy', '🌱diet.vegan']);
+    // The mark reads as part of the name, and the word behind it stays for a screen reader.
+    expect(cardNames(container)).toEqual([
+      'Маргарита🥗diet.vegetarian',
+      'Пепперони🌶️diet.spicy',
+      'Картофель🌱diet.vegan',
+    ]);
   });
 });
 
@@ -124,8 +127,8 @@ describe('what vegan implies', () => {
   it('marks a vegan dish once, with the stronger claim', () => {
     const { container } = renderMenu();
 
-    expect(cardMarks(container).filter((mark) => mark.includes('🌱'))).toHaveLength(1);
-    expect(cardMarks(container).some((mark) => mark.includes('🥗') && mark.includes('🌱'))).toBe(
+    expect(cardNames(container).filter((name) => name.includes('🌱'))).toHaveLength(1);
+    expect(cardNames(container).some((name) => name.includes('🥗') && name.includes('🌱'))).toBe(
       false,
     );
   });
