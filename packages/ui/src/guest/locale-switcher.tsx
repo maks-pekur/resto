@@ -29,7 +29,7 @@ function LocaleDisc({ locale, withCode }: DiscProps) {
   const flag = LOCALE_FLAG[locale];
   return (
     <span className="relative inline-flex shrink-0">
-      <span className="ring-border bg-muted grid size-9 place-items-center overflow-hidden rounded-full text-lg leading-none ring-1">
+      <span className="ring-border bg-muted grid size-8 place-items-center overflow-hidden rounded-full text-base leading-none ring-1 xs:size-9 xs:text-lg">
         {flag ?? <span className="text-xs font-bold uppercase">{locale}</span>}
       </span>
       {withCode && flag !== undefined ? (
@@ -91,7 +91,7 @@ export const LocaleSwitcher = ({
         onClick={() => {
           setOpen((prev) => !prev);
         }}
-        className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+        className="focus-visible:ring-ring flex size-10 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none xs:size-11 sm:size-10"
       >
         <LocaleDisc locale={activeLocale} withCode={false} />
       </button>

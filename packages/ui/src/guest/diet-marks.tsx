@@ -44,7 +44,7 @@ export const DietMarks = ({ diets, withText = false, className }: DietMarksProps
               ? 'bg-primary-tint text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold'
               : // The header's glass, over a photo: frosted where the browser can, plainly
                 // opaque where it cannot.
-                'bg-background/95 supports-[backdrop-filter]:bg-background/70 grid size-6 place-items-center rounded-full text-[0.8125rem] leading-none shadow-sm backdrop-blur'
+                'bg-background/95 supports-[backdrop-filter]:bg-background/70 grid size-5 place-items-center rounded-full text-[0.6875rem] leading-none shadow-sm backdrop-blur xs:size-6 xs:text-[0.8125rem]'
           }
         >
           <span aria-hidden className="relative inline-flex leading-none">

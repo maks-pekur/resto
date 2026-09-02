@@ -32,7 +32,7 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
         aria-label={ariaLabel}
         data-compact={compact ? '' : undefined}
         className={cn(
-          'bg-background/85 ring-border pointer-events-auto flex w-full max-w-sm items-stretch gap-1 rounded-full p-1 shadow-lg ring-1 backdrop-blur',
+          'bg-background/85 ring-border pointer-events-auto flex w-full max-w-[17rem] items-stretch gap-1 rounded-full p-1 shadow-lg ring-1 backdrop-blur xs:max-w-sm',
           'transition-[max-width] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none',
           compact && 'max-w-[19rem]',
         )}
@@ -54,7 +54,7 @@ export const TabBar = ({ tabs, active, ariaLabel }: TabBarProps) => {
               )}
             >
               <span className="relative">
-                <Icon className="size-[1.375rem]" />
+                <Icon className="size-5 xs:size-[1.375rem]" />
                 {tab.badge !== undefined && tab.badge > 0 ? (
                   <span className="bg-primary text-primary-foreground absolute -end-2 -top-1.5 grid min-w-4 place-items-center rounded-full px-1 text-[10px] leading-4 font-bold">
                     {tab.badge}

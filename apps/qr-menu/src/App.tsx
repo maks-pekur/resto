@@ -301,10 +301,10 @@ export const App = () => {
                 onClick={() => {
                   setAccountOpen(true);
                 }}
-                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+                className="focus-visible:ring-ring flex size-10 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none xs:size-11 sm:size-10"
               >
-                <span className="ring-border bg-muted text-muted-foreground grid size-9 place-items-center rounded-full ring-1">
-                  <UserIcon className="size-[1.125rem]" />
+                <span className="ring-border bg-muted text-muted-foreground grid size-8 place-items-center rounded-full ring-1 xs:size-9">
+                  <UserIcon className="size-4 xs:size-[1.125rem]" />
                 </span>
               </button>
               <button
@@ -314,11 +314,11 @@ export const App = () => {
                 onClick={() => {
                   setDrawerOpen(true);
                 }}
-                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+                className="focus-visible:ring-ring flex size-10 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none xs:size-11 sm:size-10"
               >
                 {/* The same disc the language and profile controls wear, so the three read as one row. */}
-                <span className="ring-border bg-muted text-foreground grid size-9 place-items-center rounded-full ring-1">
-                  <BurgerIcon className="size-5" />
+                <span className="ring-border bg-muted text-foreground grid size-8 place-items-center rounded-full ring-1 xs:size-9">
+                  <BurgerIcon className="size-[1.125rem] xs:size-5" />
                 </span>
               </button>
             </>

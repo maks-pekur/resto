@@ -19,3 +19,14 @@ describe('the page under a sheet', () => {
     expect(css).toMatch(/html body\.with-scroll-bars-hidden[^}]*padding-right: 0 !important/s);
   });
 });
+
+describe('the phone-first breakpoint', () => {
+  it('names an `xs` step below Tailwind default, so 320px is the base and not an afterthought', () => {
+    const preset = readFileSync(
+      resolve(process.cwd(), '../../packages/config-tailwind/preset.css'),
+      'utf8',
+    );
+
+    expect(preset).toMatch(/--breakpoint-xs:\s*22\.5rem/);
+  });
+});

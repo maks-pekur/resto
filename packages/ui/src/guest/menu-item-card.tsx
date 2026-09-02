@@ -65,7 +65,7 @@ export const MenuItemCard = ({
         <div className="bg-muted relative aspect-square w-full shrink-0 overflow-hidden rounded-2xl">
           <DietMarks
             diets={item.diets}
-            className="absolute start-1.5 top-1.5 z-10 flex flex-col gap-1 sm:start-2 sm:top-2"
+            className="absolute start-1 top-1 z-10 flex flex-col gap-1 xs:start-1.5 xs:top-1.5 sm:start-2 sm:top-2"
           />
           {item.imageUrl ? (
             <Image
@@ -87,7 +87,7 @@ export const MenuItemCard = ({
         </div>
 
         <div className="flex min-w-0 flex-1 flex-col gap-1 px-1 pt-2 pb-2 sm:pt-3 sm:pb-3">
-          <h3 className="text-center text-sm leading-snug font-extrabold text-balance sm:text-lg">
+          <h3 className="text-center text-[0.8125rem] leading-snug font-extrabold text-balance xs:text-sm sm:text-lg">
             {name}
           </h3>
           {description ? (

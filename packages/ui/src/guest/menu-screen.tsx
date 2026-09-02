@@ -198,15 +198,15 @@ export const MenuScreen = ({
                     return !open;
                   });
                 }}
-                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+                className="focus-visible:ring-ring flex size-10 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none xs:size-11 sm:size-10"
               >
                 <span
                   className={cn(
-                    'ring-border grid size-9 place-items-center rounded-full ring-1 transition-colors',
+                    'ring-border grid size-8 place-items-center rounded-full ring-1 transition-colors xs:size-9',
                     searchOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
                   )}
                 >
-                  <SearchIcon className="size-[1.125rem]" />
+                  <SearchIcon className="size-4 xs:size-[1.125rem]" />
                 </span>
               </button>
               {headerActions}
@@ -286,7 +286,7 @@ export const MenuScreen = ({
               >
                 {localized(category.name, locale, defaultContentLocale)}
               </h2>
-              <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-5 xs:gap-x-3 xs:gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {
                   const priority = imageIndex < PRIORITY_IMAGE_COUNT;
                   imageIndex += 1;

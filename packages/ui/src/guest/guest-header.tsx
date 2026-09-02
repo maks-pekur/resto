@@ -17,7 +17,7 @@ export const GuestHeader = ({ tenantName, logoUrl, actions }: GuestHeaderProps) 
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
         <a href="/" className="flex min-w-0 items-center gap-2.5 focus-visible:outline-none">
           {logoUrl ? (
-            <span className="relative size-9 shrink-0 overflow-hidden rounded-xl">
+            <span className="relative size-8 shrink-0 overflow-hidden rounded-xl xs:size-9">
               <Image
                 src={logoUrl}
                 alt={tenantName}
@@ -27,7 +27,7 @@ export const GuestHeader = ({ tenantName, logoUrl, actions }: GuestHeaderProps) 
               />
             </span>
           ) : null}
-          <span className="truncate text-lg leading-tight font-extrabold sm:text-xl">
+          <span className="truncate text-base leading-tight font-extrabold xs:text-lg sm:text-xl">
             {tenantName}
           </span>
         </a>
