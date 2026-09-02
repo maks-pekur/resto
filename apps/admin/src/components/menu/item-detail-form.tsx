@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ALLERGENS, DIETS } from '@resto/domain';
 import { useNavigate } from '@tanstack/react-router';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,12 +54,6 @@ export interface ItemDetailFormProps {
   readonly currentPhotoS3Key: string | null;
   readonly initialPhotoS3Key: string | null;
 }
-
-const commaListFromInput = (raw: string): string[] =>
-  raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
 
 export function ItemDetailForm({
   initialValues,
@@ -155,7 +150,7 @@ export function ItemDetailForm({
           availableGroups={availableModifierGroups}
         />
         <ItemNutritionCard />
-        <ItemAllergensCard initialAllergens={initialValues.allergens} />
+        <ItemDietaryCard />
         <ItemSeoCard />
       </form>
     </FormProvider>
@@ -272,39 +267,91 @@ function ItemNutritionCard(): React.ReactElement {
   );
 }
 
-function ItemAllergensCard({
-  initialAllergens,
-}: {
-  readonly initialAllergens: readonly string[];
-}): React.ReactElement {
+function ItemDietaryCard(): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
-  const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const form = useFormContext<ItemEditorForm>();
-  const [allergensText, setAllergensText] = React.useState(initialAllergens.join(', '));
+  const allergens = form.watch('allergens');
+  const diets = form.watch('diets');
+
+  const toggle = (field: 'allergens' | 'diets', value: string, list: readonly string[]): void => {
+    const next = list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
+    form.setValue(field, next, { shouldDirty: true, shouldTouch: true });
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('allergens')}</CardTitle>
+        <CardTitle>{t('dietary')}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
         <Field>
-          <FieldLabel htmlFor="allergens">{t('allergens')}</FieldLabel>
-          <Input
-            id="allergens"
-            value={allergensText}
-            placeholder={t('allergensPlaceholder')}
-            onChange={(e) => {
-              setAllergensText(e.target.value);
-              form.setValue('allergens', commaListFromInput(e.target.value), {
-                shouldDirty: true,
-                shouldTouch: true,
-              });
+          <FieldLabel>{t('diets')}</FieldLabel>
+          <ChipGroup
+            options={DIETS}
+            selected={diets}
+            label={(diet) => t(`diet.${diet}`)}
+            onToggle={(diet) => {
+              toggle('diets', diet, diets);
             }}
           />
-          <FieldDescription>{tCommon('comma')}</FieldDescription>
+          <FieldDescription>{t('dietsHint')}</FieldDescription>
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('allergens')}</FieldLabel>
+          <ChipGroup
+            options={ALLERGENS}
+            selected={allergens}
+            label={(allergen) => t(`allergen.${allergen}`)}
+            onToggle={(allergen) => {
+              toggle('allergens', allergen, allergens);
+            }}
+          />
+          <FieldDescription>{t('allergensHint')}</FieldDescription>
         </Field>
       </CardContent>
     </Card>
+  );
+}
+
+/** The vocabulary is fixed, so the control is a set of switches rather than a text field:
+ * a typo in "gluten" is a dish a guest with coeliac disease cannot filter out. */
+function ChipGroup<T extends string>({
+  options,
+  selected,
+  label,
+  onToggle,
+}: {
+  readonly options: readonly T[];
+  readonly selected: readonly string[];
+  readonly label: (option: T) => string;
+  readonly onToggle: (option: T) => void;
+}): React.ReactElement {
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option);
+        return (
+          <li key={option}>
+            <button
+              type="button"
+              aria-pressed={active}
+              data-testid={`chip-${option}`}
+              onClick={() => {
+                onToggle(option);
+              }}
+              className={
+                active
+                  ? 'bg-primary text-primary-foreground flex h-9 cursor-pointer items-center rounded-full px-3 text-sm font-semibold'
+                  : 'bg-muted text-muted-foreground hover:text-foreground flex h-9 cursor-pointer items-center rounded-full px-3 text-sm font-semibold'
+              }
+            >
+              {label(option)}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

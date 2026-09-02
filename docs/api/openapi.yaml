@@ -767,6 +767,25 @@ paths:
                 $ref: "#/components/schemas/ProblemDetailsDto"
       tags:
         - tenancy
+  /v1/tables/service-request:
+    post:
+      operationId: PublicTableResolutionController_requestService
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceRequestResponseDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
   /v1/tables/session:
     post:
       operationId: PublicTableResolutionController_openSession
@@ -816,6 +835,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/TableResolutionDto"
         "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/venue:
+    get:
+      operationId: PublicVenueController_venue
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VenueDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/legal:
+    get:
+      operationId: PublicLegalController_documents
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalDocumentsDto"
+        "404":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/service-requests:
+    get:
+      operationId: ServiceRequestsController_listOpen
+      parameters: []
+      responses:
+        "200":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ServiceRequestListDto"
+        "403":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetailsDto"
+      tags:
+        - tenancy
+  /v1/tenancy/service-requests/{id}/resolve:
+    patch:
+      operationId: ServiceRequestsController_resolve
+      parameters: []
+      responses:
+        "403":
           description: ""
           content:
             application/json:
@@ -1617,6 +1706,25 @@ paths:
                 $ref: "#/components/schemas/OrderResponseDto"
       tags:
         - ordering
+  /v1/orders/{id}/feedback:
+    post:
+      operationId: OrdersController_review
+      parameters: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderFeedbackInputDto"
+      responses:
+        "201":
+          description: ""
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderFeedbackResponseDto"
+      tags:
+        - ordering
   /v1/orders/{id}/status:
     get:
       operationId: OrdersController_getStatus
@@ -1899,6 +2007,13 @@ components:
               format: uri
               nullable: true
               default: null
+            coverUrls:
+              type: array
+              maxItems: 8
+              items:
+                type: string
+                format: uri
+              default: []
             primaryColor:
               type: string
               pattern: ^#[0-9A-Fa-f]{6}$
@@ -1924,6 +2039,52 @@ components:
             minLength: 1
             maxLength: 2048
             format: uri
+        legalDocuments:
+          type: object
+          properties:
+            about:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            payment:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            returns:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            cookies:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            terms:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            privacy:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+          nullable: true
         contacts:
           type: object
           properties:
@@ -2018,6 +2179,7 @@ components:
         - theme
         - description
         - socials
+        - legalDocuments
         - contacts
         - legalName
         - legalForm
@@ -2125,6 +2287,59 @@ components:
           type: string
           minLength: 1
           maxLength: 1024
+          nullable: true
+        coverS3Keys:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            maxLength: 1024
+        legalDocuments:
+          type: object
+          properties:
+            about:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            payment:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            returns:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            cookies:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            terms:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
+            privacy:
+              type: object
+              additionalProperties:
+                type: string
+                minLength: 1
+              nullable: true
+              default: null
           nullable: true
     BrandLogoUploadUrlInputDto:
       type: object
@@ -2314,6 +2529,137 @@ components:
               format: email
               maxLength: 255
           nullable: true
+        openingHours:
+          type: object
+          properties:
+            mon:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            tue:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            wed:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            thu:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            fri:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sat:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sun:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+          nullable: true
+        wifi:
+          type: object
+          properties:
+            ssid:
+              type: string
+              minLength: 1
+              maxLength: 64
+            password:
+              type: string
+              maxLength: 128
+              nullable: true
+              default: null
+          required:
+            - ssid
+          nullable: true
         status:
           type: string
           enum:
@@ -2335,6 +2681,8 @@ components:
         - longitude
         - timezone
         - contacts
+        - openingHours
+        - wifi
         - status
         - createdAt
         - updatedAt
@@ -2377,6 +2725,137 @@ components:
               type: string
               format: email
               maxLength: 255
+          nullable: true
+        openingHours:
+          type: object
+          properties:
+            mon:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            tue:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            wed:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            thu:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            fri:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sat:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sun:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+          nullable: true
+        wifi:
+          type: object
+          properties:
+            ssid:
+              type: string
+              minLength: 1
+              maxLength: 64
+            password:
+              type: string
+              maxLength: 128
+              nullable: true
+              default: null
+          required:
+            - ssid
           nullable: true
     ArchiveLocationResponseDto:
       type: object
@@ -2537,6 +3016,20 @@ components:
           maxLength: 32
       required:
         - number
+    ServiceRequestResponseDto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - waiter
+            - bill
+      required:
+        - id
+        - kind
     TableResolutionDto:
       type: object
       properties:
@@ -2551,6 +3044,243 @@ components:
         - tableId
         - zoneName
         - number
+    VenueDto:
+      type: object
+      properties:
+        locationId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          nullable: true
+        address:
+          type: string
+          nullable: true
+        latitude:
+          type: number
+          nullable: true
+        longitude:
+          type: number
+          nullable: true
+        phone:
+          type: string
+          nullable: true
+        openingHours:
+          type: object
+          properties:
+            mon:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            tue:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            wed:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            thu:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            fri:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sat:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+            sun:
+              type: array
+              maxItems: 3
+              items:
+                type: object
+                properties:
+                  from:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                  to:
+                    type: string
+                    pattern: ^([01]\d|2[0-3]):[0-5]\d$
+                required:
+                  - from
+                  - to
+              default: []
+          nullable: true
+        wifi:
+          type: object
+          properties:
+            ssid:
+              type: string
+              minLength: 1
+              maxLength: 64
+            password:
+              type: string
+              maxLength: 128
+              nullable: true
+              default: null
+          required:
+            - ssid
+          nullable: true
+      required:
+        - locationId
+        - name
+        - address
+        - latitude
+        - longitude
+        - phone
+        - openingHours
+        - wifi
+    LegalDocumentsDto:
+      type: object
+      properties:
+        about:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        payment:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        returns:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        cookies:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        terms:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+        privacy:
+          type: object
+          additionalProperties:
+            type: string
+            minLength: 1
+          nullable: true
+          default: null
+    ServiceRequestListDto:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                format: uuid
+              kind:
+                type: string
+                enum:
+                  - waiter
+                  - bill
+              zoneName:
+                type: string
+              tableNumber:
+                type: string
+              createdAt:
+                type: string
+            required:
+              - id
+              - kind
+              - zoneName
+              - tableNumber
+              - createdAt
+      required:
+        - items
     MeTenantsResponseDto:
       type: object
       properties:
@@ -2772,6 +3502,11 @@ components:
                   type: string
                   format: uri
                   nullable: true
+                coverUrls:
+                  type: array
+                  items:
+                    type: string
+                    format: uri
                 primaryColor:
                   type: string
                   nullable: true
@@ -2780,6 +3515,7 @@ components:
                   nullable: true
               required:
                 - logoUrl
+                - coverUrls
                 - primaryColor
                 - font
               nullable: true
@@ -2925,6 +3661,10 @@ components:
                 type: array
                 items:
                   type: string
+              diets:
+                type: array
+                items:
+                  type: string
               sortOrder:
                 type: integer
                 minimum: 0
@@ -2986,6 +3726,7 @@ components:
               - imageUrl
               - photos
               - allergens
+              - diets
               - sortOrder
               - proteins
               - fats
@@ -3152,6 +3893,10 @@ components:
           type: array
           items:
             type: string
+        diets:
+          type: array
+          items:
+            type: string
         sortOrder:
           type: integer
           minimum: 0
@@ -3213,6 +3958,7 @@ components:
         - imageUrl
         - photos
         - allergens
+        - diets
         - sortOrder
         - proteins
         - fats
@@ -3375,6 +4121,20 @@ components:
             type: string
             minLength: 1
             maxLength: 100
+          nullable: true
+          default: null
+        diets:
+          type: array
+          maxItems: 6
+          items:
+            type: string
+            enum:
+              - vegetarian
+              - vegan
+              - gluten_free
+              - lactose_free
+              - spicy
+              - halal
           nullable: true
           default: null
         ingredients:
@@ -3875,6 +4635,11 @@ components:
           items:
             type: string
           nullable: true
+        diets:
+          type: array
+          items:
+            type: string
+          nullable: true
         ingredients:
           type: array
           items:
@@ -3963,6 +4728,7 @@ components:
         - currency
         - photos
         - allergens
+        - diets
         - ingredients
         - metaTitle
         - metaDescription
@@ -4363,6 +5129,32 @@ components:
         - currency
         - shortNumber
         - channel
+    OrderFeedbackInputDto:
+      type: object
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          exclusiveMinimum: false
+          maximum: 5
+          exclusiveMaximum: false
+        comment:
+          type: string
+          maxLength: 2000
+          nullable: true
+      required:
+        - rating
+    OrderFeedbackResponseDto:
+      type: object
+      properties:
+        rating:
+          type: integer
+        comment:
+          type: string
+          nullable: true
+      required:
+        - rating
+        - comment
     OrderStatusResponseDto:
       type: object
       properties:
@@ -4395,6 +5187,8 @@ components:
         canceledFromStatus:
           type: string
           nullable: true
+        reviewed:
+          type: boolean
       required:
         - status
         - paymentStatus
@@ -4406,6 +5200,7 @@ components:
         - orderType
         - cancelReason
         - canceledFromStatus
+        - reviewed
     OrderFeedListResponseDto:
       type: object
       properties:
@@ -4747,6 +5542,22 @@ components:
           type: string
         hasFailedRefund:
           type: boolean
+        review:
+          type: object
+          properties:
+            rating:
+              type: integer
+              minimum: 1
+              exclusiveMinimum: false
+              maximum: 5
+              exclusiveMaximum: false
+            comment:
+              type: string
+              nullable: true
+          required:
+            - rating
+            - comment
+          nullable: true
         failedRefundAmount:
           type: string
           nullable: true
@@ -4792,6 +5603,7 @@ components:
         - createdAt
         - updatedAt
         - hasFailedRefund
+        - review
         - failedRefundAmount
         - failedRefundReason
     AcceptOrderInputDto:

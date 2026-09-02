@@ -16,6 +16,7 @@ const dish = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
   imageUrl: null,
   photos: [],
   allergens: [],
+  diets: [],
   proteins: '9.1',
   fats: '7.5',
   carbs: '32.9',

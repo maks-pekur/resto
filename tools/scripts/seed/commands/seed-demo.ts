@@ -98,6 +98,8 @@ interface ItemDef {
   readonly name: Localized;
   readonly description?: Localized;
   readonly price: string;
+  readonly diets?: readonly string[];
+  readonly allergens?: readonly string[];
   /** Public photo pulled into our own S3 on first seed — see PIZZA_PHOTO. */
   readonly photoUrl?: string;
   readonly sizes?: readonly SizeDef[];
@@ -245,6 +247,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Томаты, моцарелла, итальянские травы, томатный соус',
           },
           price: '189.00',
+          diets: ['vegetarian'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('d48003cd-902c-420d-9f28-92d9dc5f73b4'),
           sizes: PIZZA_SIZES('189.00', '249.00', '309.00'),
         },
@@ -257,6 +261,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Пикантная пепперони, моцарелла, томатный соус',
           },
           price: '239.00',
+          diets: ['spicy'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('d2e337e9-e07a-4199-9cc1-501cc44cb8f8'),
           sizes: PIZZA_SIZES('239.00', '309.00', '379.00'),
         },
@@ -269,6 +275,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Моцарелла, чеддер, пармезан, сливочный соус',
           },
           price: '219.00',
+          diets: ['vegetarian'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('2ffc31bb-132c-4c99-b894-53f7107a1441'),
           sizes: PIZZA_SIZES('219.00', '289.00', '349.00'),
         },
@@ -367,6 +375,7 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
         },
         {
           slug: 'veggie-and-mushrooms',
+          diets: ['vegetarian'],
           name: { en: 'Veggie and Mushrooms', uk: 'Овочі та гриби', ru: 'Овощи и грибы' },
           description: {
             en: 'Mushrooms, sweet pepper, tomatoes, red onion, mozzarella, tomato sauce',
@@ -402,6 +411,7 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
         },
         {
           slug: 'chicken-nuggets',
+          allergens: ['gluten', 'eggs'],
           name: {
             en: 'Chicken nuggets, 5 pcs',
             uk: 'Курячі нагетси, 5 шт.',
@@ -419,6 +429,7 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
         },
         {
           slug: 'oven-potatoes',
+          diets: ['vegan', 'gluten_free'],
           name: { en: 'Oven potatoes', uk: 'Картопля з печі', ru: 'Картофель из печи' },
           description: {
             en: 'Baked to order, salted while hot',
@@ -432,6 +443,7 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
         },
         {
           slug: 'potato-wedges',
+          diets: ['vegan', 'gluten_free'],
           name: {
             en: 'Potato wedges',
             uk: 'Картопляні часточки з печі',
@@ -852,6 +864,8 @@ const ensureCatalog = async (
         slug: item.slug,
         name: item.name,
         description: item.description ?? null,
+        diets: item.diets ?? null,
+        allergens: item.allergens ?? null,
         basePrice: item.price,
         currency,
         photos: s3Key ? [{ s3Key, sortOrder: 0, isPrimary: true }] : [],

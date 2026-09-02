@@ -18,5 +18,7 @@ export {
   ExternalLink as ExternalIcon,
   Bell as BellIcon,
   ReceiptText as ReceiptIcon,
+  Search as SearchIcon,
+  X as XIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';

@@ -141,5 +141,35 @@
   "info": {
     "contacts": "Contacts",
     "socials": "Find us online"
+  },
+  "finder": {
+    "searchLabel": "Search the menu",
+    "searchPlaceholder": "Find a dish",
+    "clear": "Clear",
+    "nothingFound": "Nothing matched"
+  },
+  "diet": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "gluten_free": "Gluten free",
+    "lactose_free": "Lactose free",
+    "spicy": "Spicy",
+    "halal": "Halal"
+  },
+  "allergen": {
+    "gluten": "gluten",
+    "crustaceans": "crustaceans",
+    "eggs": "eggs",
+    "fish": "fish",
+    "peanuts": "peanuts",
+    "soy": "soy",
+    "milk": "milk",
+    "nuts": "nuts",
+    "celery": "celery",
+    "mustard": "mustard",
+    "sesame": "sesame",
+    "sulphites": "sulphites",
+    "lupin": "lupin",
+    "molluscs": "molluscs"
   }
 }

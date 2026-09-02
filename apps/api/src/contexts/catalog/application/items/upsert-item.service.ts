@@ -44,6 +44,7 @@ export class UpsertItemService {
       currency,
       photos,
       allergens: input.allergens,
+      diets: input.diets,
       ingredients: input.ingredients,
       metaTitle: input.metaTitle,
       metaDescription: input.metaDescription,

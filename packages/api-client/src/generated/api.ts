@@ -468,6 +468,22 @@ export interface paths {
         patch: operations["TableZonesController_archiveTable"];
         trace?: never;
     };
+    "/v1/tables/service-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicTableResolutionController_requestService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tables/session": {
         parameters: {
             query?: never;
@@ -498,6 +514,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/venue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicVenueController_venue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicLegalController_documents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/service-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ServiceRequestsController_listOpen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/service-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ServiceRequestsController_resolve"];
         trace?: never;
     };
     "/v1/me": {
@@ -1060,6 +1140,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/{id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OrdersController_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/orders/{id}/status": {
         parameters: {
             query?: never;
@@ -1314,6 +1410,8 @@ export interface components {
                  * @default null
                  */
                 logoUrl: string | null;
+                /** @default [] */
+                coverUrls: string[];
                 /** @default null */
                 primaryColor: string | null;
                 /** @default null */
@@ -1325,6 +1423,32 @@ export interface components {
             socials: {
                 [key: string]: string;
             };
+            legalDocuments: {
+                /** @default null */
+                about: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                payment: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                returns: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                cookies: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                terms: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                privacy: {
+                    [key: string]: string;
+                } | null;
+            } | null;
             contacts: {
                 /** @default null */
                 phone: string | null;
@@ -1400,6 +1524,33 @@ export interface components {
                 website: string | null;
             };
             logoS3Key?: string | null;
+            coverS3Keys?: string[];
+            legalDocuments?: {
+                /** @default null */
+                about: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                payment: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                returns: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                cookies: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                terms: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                privacy: {
+                    [key: string]: string;
+                } | null;
+            } | null;
         };
         BrandLogoUploadUrlInputDto: {
             /** @enum {string} */
@@ -1467,6 +1618,48 @@ export interface components {
                 /** Format: email */
                 email?: string;
             } | null;
+            openingHours: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
+            } | null;
             /** @enum {string} */
             status: "active" | "archived";
             createdAt: string;
@@ -1483,6 +1676,48 @@ export interface components {
                 phone?: string;
                 /** Format: email */
                 email?: string;
+            } | null;
+            openingHours?: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi?: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
             } | null;
         };
         ArchiveLocationResponseDto: {
@@ -1539,11 +1774,105 @@ export interface components {
         UpdateTableInputDto: {
             number: string;
         };
+        ServiceRequestResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "waiter" | "bill";
+        };
         TableResolutionDto: {
             /** Format: uuid */
             tableId: string;
             zoneName: string;
             number: string;
+        };
+        VenueDto: {
+            /** Format: uuid */
+            locationId: string | null;
+            name: string | null;
+            address: string | null;
+            latitude: number | null;
+            longitude: number | null;
+            phone: string | null;
+            openingHours: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
+            } | null;
+        };
+        LegalDocumentsDto: {
+            /** @default null */
+            about: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            payment: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            returns: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            cookies: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            terms: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            privacy: {
+                [key: string]: string;
+            } | null;
+        };
+        ServiceRequestListDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                kind: "waiter" | "bill";
+                zoneName: string;
+                tableNumber: string;
+                createdAt: string;
+            }[];
         };
         MeTenantsResponseDto: {
             tenants: {
@@ -1632,6 +1961,7 @@ export interface components {
                 theme: {
                     /** Format: uri */
                     logoUrl: string | null;
+                    coverUrls: string[];
                     primaryColor: string | null;
                     font: string | null;
                 } | null;
@@ -1686,6 +2016,7 @@ export interface components {
                     url: string;
                 }[];
                 allergens: string[];
+                diets: string[];
                 sortOrder: number;
                 proteins: string | null;
                 fats: string | null;
@@ -1757,6 +2088,7 @@ export interface components {
                 url: string;
             }[];
             allergens: string[];
+            diets: string[];
             sortOrder: number;
             proteins: string | null;
             fats: string | null;
@@ -1837,6 +2169,8 @@ export interface components {
             }[];
             /** @default null */
             allergens: string[] | null;
+            /** @default null */
+            diets: ("vegetarian" | "vegan" | "gluten_free" | "lactose_free" | "spicy" | "halal")[] | null;
             /** @default null */
             ingredients: string[] | null;
             /** @default null */
@@ -2026,6 +2360,7 @@ export interface components {
                 url: string;
             }[];
             allergens: string[] | null;
+            diets: string[] | null;
             ingredients: string[] | null;
             metaTitle: string | null;
             metaDescription: string | null;
@@ -2192,6 +2527,14 @@ export interface components {
             /** @enum {string} */
             channel: "site" | "qr-menu";
         };
+        OrderFeedbackInputDto: {
+            rating: number;
+            comment?: string | null;
+        };
+        OrderFeedbackResponseDto: {
+            rating: number;
+            comment: string | null;
+        };
         OrderStatusResponseDto: {
             status: string;
             paymentStatus: string;
@@ -2205,6 +2548,7 @@ export interface components {
             orderType: "dine_in" | "pickup" | "delivery";
             cancelReason: string | null;
             canceledFromStatus: string | null;
+            reviewed: boolean;
         };
         OrderFeedListResponseDto: {
             rows: {
@@ -2312,6 +2656,10 @@ export interface components {
             createdAt: string;
             updatedAt: string;
             hasFailedRefund: boolean;
+            review: {
+                rating: number;
+                comment: string | null;
+            } | null;
             failedRefundAmount: string | null;
             failedRefundReason: string | null;
         };
@@ -3508,6 +3856,33 @@ export interface operations {
             };
         };
     };
+    PublicTableResolutionController_requestService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestResponseDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     PublicTableResolutionController_currentSession: {
         parameters: {
             query?: never;
@@ -3580,6 +3955,106 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicVenueController_venue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VenueDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicLegalController_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ServiceRequestsController_listOpen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestListDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ServiceRequestsController_resolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -4716,6 +5191,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderResponseDto"];
+                };
+            };
+        };
+    };
+    OrdersController_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderFeedbackInputDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderFeedbackResponseDto"];
                 };
             };
         };

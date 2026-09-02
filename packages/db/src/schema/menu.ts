@@ -95,6 +95,8 @@ export const menuItems = pgTable(
       .notNull()
       .default(sql`'[]'::jsonb`),
     allergens: text('allergens').array(),
+    /** Vegan, gluten-free and the rest: what the dish *is*, next to what it contains. */
+    diets: text('diets').array(),
     ingredients: text('ingredients').array(),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),

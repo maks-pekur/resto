@@ -116,6 +116,7 @@ export interface UpsertItemRow {
   readonly currency: string;
   readonly photos: readonly MenuItemPhoto[];
   readonly allergens: readonly string[] | null;
+  readonly diets: readonly string[] | null;
   readonly ingredients: readonly string[] | null;
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;
@@ -219,6 +220,7 @@ export interface ItemDetailRow {
     isPrimary?: boolean;
   }[];
   readonly allergens: readonly string[] | null;
+  readonly diets: readonly string[] | null;
   readonly ingredients: readonly string[] | null;
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;

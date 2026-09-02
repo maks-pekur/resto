@@ -35,6 +35,7 @@ const menu: MenuDto = {
       imageUrl: null,
       photos: [],
       allergens: [],
+      diets: [],
       proteins: null,
       fats: null,
       carbs: null,

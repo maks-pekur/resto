@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CurrencyValue, LocalizedText, MoneyAmountValue, Slug } from '@resto/domain';
+import {
+  CurrencyValue,
+  LocalizedText,
+  MoneyAmountValue,
+  Slug,
+  DIETS,
+  DietSchema,
+} from '@resto/domain';
 
 const NonNegInt = z.number().int().nonnegative();
 
@@ -67,6 +74,7 @@ export const UpsertItemInputSchema = z.object({
   currency: CurrencyValue,
   photos: z.array(MenuItemPhotoSchema).max(20).default([]),
   allergens: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
+  diets: z.array(DietSchema).max(DIETS.length).nullable().default(null),
   ingredients: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
   metaTitle: z.string().max(70).nullable().default(null),
   metaDescription: z.string().max(160).nullable().default(null),
@@ -212,6 +220,7 @@ export const ItemDetailResponseSchema = z.object({
   currency: CurrencyValue,
   photos: z.array(MenuItemPhotoResponseSchema),
   allergens: z.array(z.string()).nullable(),
+  diets: z.array(z.string()).nullable(),
   ingredients: z.array(z.string()).nullable(),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),

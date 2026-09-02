@@ -49,4 +49,10 @@ export type GuestUiKey =
   | 'theme.light'
   | 'theme.dark'
   | 'footer.poweredBy'
-  | 'footer.socialsLabel';
+  | 'footer.socialsLabel'
+  | 'finder.searchLabel'
+  | 'finder.searchPlaceholder'
+  | 'finder.clear'
+  | 'finder.nothingFound'
+  | `diet.${string}`
+  | `allergen.${string}`;

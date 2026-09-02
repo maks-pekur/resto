@@ -98,9 +98,24 @@ export const ItemDetail = ({
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
               ) : null}
+              {item.diets.length > 0 ? (
+                <ul className="flex flex-wrap gap-1.5">
+                  {item.diets.map((diet) => (
+                    <li
+                      key={diet}
+                      className="bg-primary-tint text-primary rounded-full px-2 py-0.5 text-xs font-bold"
+                    >
+                      {t(`diet.${diet}`)}
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
               {item.allergens.length > 0 ? (
+                // Named through the same dictionary the filters use, so "milk" reads as one word
+                // in every language the menu speaks.
                 <p className="text-muted-foreground text-xs">
-                  {t('item.allergens')}: {item.allergens.join(', ')}
+                  {t('item.allergens')}:{' '}
+                  {item.allergens.map((allergen) => t(`allergen.${allergen}`)).join(', ')}
                 </p>
               ) : null}
             </div>

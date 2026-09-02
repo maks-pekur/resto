@@ -12,6 +12,7 @@ import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
 import { MenuItemCard } from './menu-item-card';
+import { MenuFinder } from './menu-finder';
 import { useGuestUi } from './guest-ui-provider';
 
 // Radix dialog + sheet are the two heaviest chunks and neither is needed for the
@@ -83,10 +84,32 @@ export const MenuScreen = ({
   const subtotal = useCartStore(selectSubtotal);
 
   const stopped = useMemo(() => new Set(stoppedItemIds), [stoppedItemIds]);
+  const [query, setQuery] = useState('');
+  const [activeDiets, setActiveDiets] = useState<readonly string[]>([]);
+
+  /** Every label the menu actually uses — a filter for something nobody cooks is noise. */
+  const diets = useMemo(() => {
+    const seen = new Set<string>();
+    for (const item of menu.items) for (const diet of item.diets) seen.add(diet);
+    return [...seen];
+  }, [menu]);
+
+  const matches = useMemo(() => {
+    const needle = query.trim().toLowerCase();
+    return (item: MenuItemDto): boolean => {
+      if (activeDiets.length > 0 && !activeDiets.every((diet) => item.diets.includes(diet))) {
+        return false;
+      }
+      if (needle.length === 0) return true;
+      const haystack = [...Object.values(item.name), ...Object.values(item.description ?? {})];
+      return haystack.some((text) => text.toLowerCase().includes(needle));
+    };
+  }, [query, activeDiets]);
 
   const sections = useMemo(() => {
     const byCategory = new Map<string, MenuItemDto[]>();
     for (const item of menu.items) {
+      if (!matches(item)) continue;
       const list = byCategory.get(item.categoryId);
       if (list) {
         list.push(item);
@@ -97,7 +120,7 @@ export const MenuScreen = ({
     return menu.categories
       .map((category) => ({ category, items: byCategory.get(category.id) ?? [] }))
       .filter((section) => section.items.length > 0);
-  }, [menu]);
+  }, [menu, matches]);
 
   const selectedItem = selectedItemId
     ? (menu.items.find((item) => item.id === selectedItemId) ?? null)
@@ -159,7 +182,22 @@ export const MenuScreen = ({
           }
         />
       }
-      banner={banner}
+      banner={
+        <>
+          <MenuFinder
+            query={query}
+            onQueryChange={setQuery}
+            diets={diets}
+            activeDiets={activeDiets}
+            onToggleDiet={(diet) => {
+              setActiveDiets((prev) =>
+                prev.includes(diet) ? prev.filter((entry) => entry !== diet) : [...prev, diet],
+              );
+            }}
+          />
+          {banner}
+        </>
+      }
       footer={
         <GuestFooter
           tenantName={tenantName}

@@ -34,6 +34,7 @@ const menuWithPhoto = (url: string): MenuDto => ({
       imageUrl: url,
       photos: [],
       allergens: [],
+      diets: [],
       proteins: null,
       fats: null,
       carbs: null,

@@ -49,6 +49,7 @@ export interface MenuItemDto {
   imageUrl: string | null;
   photos: readonly MenuPhotoDto[];
   allergens: readonly string[];
+  diets: readonly string[];
   proteins: string | null;
   fats: string | null;
   carbs: string | null;

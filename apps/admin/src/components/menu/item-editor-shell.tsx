@@ -27,6 +27,7 @@ const emptyValues = (currency: string): ItemEditorForm => ({
   basePrice: 0,
   currency,
   allergens: [],
+  diets: [],
   ingredients: [],
   metaTitle: null,
   metaDescription: null,
@@ -43,6 +44,7 @@ const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
   basePrice: Number.parseFloat(item.basePrice),
   currency: item.currency,
   allergens: [...(item.allergens ?? [])],
+  diets: [...(item.diets ?? [])],
   ingredients: [...(item.ingredients ?? [])],
   // Plain strings in the contract, unlike `name`/`description` — the api stores one SEO
   // string per item, not one per locale. They were being run through fromLocalizedText.

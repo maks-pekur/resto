@@ -184,7 +184,35 @@
       "techInfoSectionTitle": "Tech info",
       "slugLabel": "Slug",
       "newItemTitle": "New item",
-      "nameRequired": "Fill in the name in the primary language"
+      "nameRequired": "Fill in the name in the primary language",
+      "dietary": "Diet and allergens",
+      "diets": "Labels",
+      "dietsHint": "Shown to the guest as badges and used as menu filters",
+      "allergensHint": "The list from EU regulation 1169/2011 — the guest sees them on the dish",
+      "diet": {
+        "vegetarian": "Vegetarian",
+        "vegan": "Vegan",
+        "gluten_free": "Gluten free",
+        "lactose_free": "Lactose free",
+        "spicy": "Spicy",
+        "halal": "Halal"
+      },
+      "allergen": {
+        "gluten": "gluten",
+        "crustaceans": "crustaceans",
+        "eggs": "eggs",
+        "fish": "fish",
+        "peanuts": "peanuts",
+        "soy": "soy",
+        "milk": "milk",
+        "nuts": "nuts",
+        "celery": "celery",
+        "mustard": "mustard",
+        "sesame": "sesame",
+        "sulphites": "sulphites",
+        "lupin": "lupin",
+        "molluscs": "molluscs"
+      }
     },
     "sizes": {
       "title": "Sizes",

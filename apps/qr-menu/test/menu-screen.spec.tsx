@@ -17,6 +17,7 @@ const item = (overrides: Partial<MenuItemDto> = {}): MenuItemDto => ({
   imageUrl: 'https://cdn.example.test/margherita.jpg',
   photos: [],
   allergens: [],
+  diets: [],
   proteins: null,
   fats: null,
   carbs: null,

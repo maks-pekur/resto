@@ -22,6 +22,7 @@ const makeItem = (overrides: Partial<MenuItemDto>): MenuItemDto => ({
   imageUrl: null,
   photos: [],
   allergens: [],
+  diets: [],
   proteins: null,
   fats: null,
   carbs: null,

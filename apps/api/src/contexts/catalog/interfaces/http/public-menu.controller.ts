@@ -66,6 +66,7 @@ const PublishedMenuItemSchema = z.object({
   imageUrl: z.string().url().nullable(),
   photos: z.array(PublishedMenuItemPhotoSchema),
   allergens: z.array(z.string()),
+  diets: z.array(z.string()),
   sortOrder: z.number().int().nonnegative(),
   proteins: z.string().nullable(),
   fats: z.string().nullable(),

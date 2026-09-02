@@ -141,5 +141,35 @@
   "info": {
     "contacts": "Контакты",
     "socials": "Мы в соцсетях"
+  },
+  "finder": {
+    "searchLabel": "Поиск по меню",
+    "searchPlaceholder": "Найти блюдо",
+    "clear": "Очистить",
+    "nothingFound": "Ничего не нашлось"
+  },
+  "diet": {
+    "vegetarian": "Вегетарианское",
+    "vegan": "Веганское",
+    "gluten_free": "Без глютена",
+    "lactose_free": "Без лактозы",
+    "spicy": "Острое",
+    "halal": "Халяль"
+  },
+  "allergen": {
+    "gluten": "глютен",
+    "crustaceans": "ракообразные",
+    "eggs": "яйца",
+    "fish": "рыба",
+    "peanuts": "арахис",
+    "soy": "соя",
+    "milk": "молоко",
+    "nuts": "орехи",
+    "celery": "сельдерей",
+    "mustard": "горчица",
+    "sesame": "кунжут",
+    "sulphites": "сульфиты",
+    "lupin": "люпин",
+    "molluscs": "моллюски"
   }
 }

@@ -50,6 +50,7 @@ export const ItemEditorFormSchema = z.object({
   basePrice: z.number().min(0),
   currency: z.string().regex(/^[A-Z]{3}$/u),
   allergens: z.array(z.string().min(1).max(100)).max(50),
+  diets: z.array(z.string().min(1).max(50)).max(20),
   ingredients: z.array(z.string().min(1).max(100)).max(50),
   metaTitle: z.string().max(70).nullable(),
   metaDescription: z.string().max(160).nullable(),

@@ -30,6 +30,7 @@ export class GetItemService {
         ...(p.isPrimary !== undefined ? { isPrimary: p.isPrimary } : {}),
       })),
       allergens: row.allergens ? [...row.allergens] : null,
+      diets: row.diets ? [...row.diets] : null,
       ingredients: row.ingredients ? [...row.ingredients] : null,
       metaTitle: row.metaTitle,
       metaDescription: row.metaDescription,

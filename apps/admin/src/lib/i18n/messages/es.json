@@ -184,7 +184,35 @@
       "techInfoSectionTitle": "Información técnica",
       "slugLabel": "Slug",
       "newItemTitle": "Nuevo plato",
-      "nameRequired": "Rellena el nombre en el idioma principal"
+      "nameRequired": "Rellena el nombre en el idioma principal",
+      "dietary": "Dieta y alérgenos",
+      "diets": "Etiquetas",
+      "dietsHint": "Se muestran al cliente y funcionan como filtros del menú",
+      "allergensHint": "La lista del reglamento UE 1169/2011 — el cliente las ve en el plato",
+      "diet": {
+        "vegetarian": "Vegetariano",
+        "vegan": "Vegano",
+        "gluten_free": "Sin gluten",
+        "lactose_free": "Sin lactosa",
+        "spicy": "Picante",
+        "halal": "Halal"
+      },
+      "allergen": {
+        "gluten": "gluten",
+        "crustaceans": "crustáceos",
+        "eggs": "huevos",
+        "fish": "pescado",
+        "peanuts": "cacahuetes",
+        "soy": "soja",
+        "milk": "leche",
+        "nuts": "frutos secos",
+        "celery": "apio",
+        "mustard": "mostaza",
+        "sesame": "sésamo",
+        "sulphites": "sulfitos",
+        "lupin": "altramuces",
+        "molluscs": "moluscos"
+      }
     },
     "sizes": {
       "title": "Tamaños",

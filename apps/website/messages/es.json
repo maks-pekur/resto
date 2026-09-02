@@ -141,5 +141,35 @@
   "info": {
     "contacts": "Contacto",
     "socials": "Síguenos"
+  },
+  "finder": {
+    "searchLabel": "Buscar en el menú",
+    "searchPlaceholder": "Buscar un plato",
+    "clear": "Limpiar",
+    "nothingFound": "No se encontró nada"
+  },
+  "diet": {
+    "vegetarian": "Vegetariano",
+    "vegan": "Vegano",
+    "gluten_free": "Sin gluten",
+    "lactose_free": "Sin lactosa",
+    "spicy": "Picante",
+    "halal": "Halal"
+  },
+  "allergen": {
+    "gluten": "gluten",
+    "crustaceans": "crustáceos",
+    "eggs": "huevos",
+    "fish": "pescado",
+    "peanuts": "cacahuetes",
+    "soy": "soja",
+    "milk": "leche",
+    "nuts": "frutos secos",
+    "celery": "apio",
+    "mustard": "mostaza",
+    "sesame": "sésamo",
+    "sulphites": "sulfitos",
+    "lupin": "altramuces",
+    "molluscs": "moluscos"
   }
 }
