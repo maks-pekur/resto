@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState, type RefObject } from 'react';
 
-/** Past a quarter of its own height the sheet is on its way out. */
-const DISMISS_RATIO = 0.25;
+/** Past a fifth of its own height the sheet is on its way out. */
+const DISMISS_RATIO = 0.2;
 /** A flick beats the distance rule: px per ms, downwards. */
 const FLICK_VELOCITY = 0.5;
+/** Past this the pull starts to resist, so the gesture has an end a thumb can feel. */
+const RESIST_AFTER = 220;
 
 export interface DragToDismiss {
   readonly ref: RefObject<HTMLDivElement | null>;
@@ -73,9 +75,12 @@ export const useDragToDismiss = (open: boolean, onDismiss: () => void): DragToDi
       }
 
       if (event.cancelable) event.preventDefault();
-      latest.current = delta;
+      // Follows the thumb one to one downwards, then gives less and less: the sheet feels
+      // attached to the finger without being draggable off the screen.
+      const eased = delta > RESIST_AFTER ? RESIST_AFTER + (delta - RESIST_AFTER) * 0.4 : delta;
+      latest.current = eased;
       setDragging(true);
-      setOffset(delta);
+      setOffset(eased);
     };
 
     const onTouchEnd = (event: TouchEvent): void => {

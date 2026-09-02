@@ -21,6 +21,7 @@ function Harness({ onDismiss }: { onDismiss: () => void }) {
   return (
     <div
       data-testid="sheet"
+      style={{ transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined }}
       ref={(node) => {
         drag.ref.current = node;
         if (node) node.getBoundingClientRect = () => ({ height: SHEET_HEIGHT }) as DOMRect;
@@ -97,5 +98,30 @@ describe('useDragToDismiss', () => {
     drag(sheet, SHEET_HEIGHT / 2);
     expect(onDismiss).toHaveBeenCalledTimes(1);
     added.mockRestore();
+  });
+});
+
+describe('how far the pull goes', () => {
+  it('follows the thumb, then resists so the sheet cannot be dragged off the screen', () => {
+    const onDismiss = vi.fn();
+    const { getByTestId } = render(<Harness onDismiss={onDismiss} />);
+    const sheet = getByTestId('sheet');
+
+    act(() => {
+      sheet.dispatchEvent(touch('touchstart', 0, 0));
+    });
+    act(() => {
+      sheet.dispatchEvent(touch('touchmove', 100, 100));
+    });
+    const followed = sheet.style.transform;
+
+    act(() => {
+      sheet.dispatchEvent(touch('touchmove', 620, 200));
+    });
+    const resisted = sheet.style.transform;
+
+    expect(followed).toBe('translateY(100px)');
+    // 220 of travel at full speed, the remaining 400 at 40%.
+    expect(resisted).toBe('translateY(380px)');
   });
 });

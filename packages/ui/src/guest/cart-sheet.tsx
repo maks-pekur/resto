@@ -49,6 +49,7 @@ export const CartSheet = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
+        showCloseButton={!asSheet}
         ref={asSheet ? drag.ref : undefined}
         side={asSheet ? 'bottom' : 'right'}
         style={
@@ -62,12 +63,14 @@ export const CartSheet = ({
         className={cn(
           'flex w-full flex-col gap-0 p-0',
           asSheet
-            ? 'mx-auto max-h-dvh max-w-lg overflow-y-auto rounded-t-2xl pb-[env(safe-area-inset-bottom)] outline-none'
+            ? 'mx-auto max-h-dvh max-w-lg overflow-y-auto overscroll-contain rounded-t-2xl pb-[env(safe-area-inset-bottom)] outline-none'
             : 'sm:max-w-md',
         )}
       >
         {asSheet ? (
-          <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
+          <div aria-hidden className="flex shrink-0 justify-center py-3 touch-none">
+            <span className="bg-muted h-1.5 w-12 rounded-full" />
+          </div>
         ) : null}
         <SheetHeader className={cn('px-5 py-4', asSheet ? 'pb-2' : 'border-b')}>
           <SheetTitle className="text-xl font-extrabold">{t('cart.title')}</SheetTitle>

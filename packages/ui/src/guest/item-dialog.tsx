@@ -53,6 +53,9 @@ export const ItemDialog = ({
     return (
       <Sheet open={open} onOpenChange={onOpenChange}>
         <SheetContent
+          // On a phone the sheet is dismissed by pulling it down or tapping the page behind it;
+          // a close cross floating over the photo is a desktop habit and lands under nothing.
+          showCloseButton={false}
           ref={drag.ref}
           // Radix hands focus to the first control, which lands a focus ring on the first size
           // before the guest has touched anything. The panel itself takes it instead.
@@ -65,10 +68,13 @@ export const ItemDialog = ({
             transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
             transition: drag.dragging ? 'none' : undefined,
           }}
-          className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] outline-none"
+          className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto overscroll-contain rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] outline-none"
         >
-          {/* The grip says the sheet came from the bottom edge and goes back there. */}
-          <span aria-hidden className="bg-muted mx-auto mt-3 h-1.5 w-10 shrink-0 rounded-full" />
+          {/* The grip says the sheet came from the bottom edge and goes back there. It is a whole
+              row rather than the bar alone, so the pull starts wherever a thumb lands. */}
+          <div aria-hidden className="flex shrink-0 justify-center py-3 touch-none">
+            <span className="bg-muted h-1.5 w-12 rounded-full" />
+          </div>
           {detail(SheetTitle)}
         </SheetContent>
       </Sheet>
