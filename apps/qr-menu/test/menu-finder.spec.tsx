@@ -76,7 +76,7 @@ describe('diet marks', () => {
     const { container } = renderMenu();
 
     // Two dishes, one label each: a leaf on the margherita, a chilli on the pepperoni.
-    const marks = [...container.querySelectorAll('li[class*=bg-background]')].map(
+    const marks = [...container.querySelectorAll('li[class*=backdrop-blur]')].map(
       (li) => li.textContent,
     );
     expect(marks).toEqual([expect.stringContaining('🥗'), expect.stringContaining('🌶')]);

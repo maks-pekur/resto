@@ -38,8 +38,9 @@ export const DietMarks = ({ diets, withText = false, className }: DietMarksProps
           className={
             withText
               ? 'bg-primary-tint text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold'
-              : // Over a photo, so each mark carries its own ground.
-                'bg-background/85 grid size-6 place-items-center rounded-full text-[0.8125rem] leading-none shadow-sm'
+              : // The header's glass, over a photo: frosted where the browser can, plainly
+                // opaque where it cannot.
+                'bg-background/95 supports-[backdrop-filter]:bg-background/70 grid size-6 place-items-center rounded-full text-[0.8125rem] leading-none shadow-sm backdrop-blur'
           }
         >
           <span aria-hidden>{DIET_EMOJI[diet]}</span>
