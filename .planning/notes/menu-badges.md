@@ -15,6 +15,23 @@ allergens. Fixed, because:
   feature.
 - **Each label has a mark.** A preset gets a curated emoji; a custom string has none.
 
+## How a label is shown (decided 2026-09-02)
+
+- **On a menu card the mark joins the name** — "Маргарита 🥗" — rather than sitting on the photo.
+  Tried first as a chip over the top-left corner; it fought the photography, and paired glyphs
+  (`🚫🌾`) read as litter at that size.
+- **In the dish's detail no mark is drawn at all.** The card already said it, and the sheet has the
+  one thing that has to be there in writing: the allergen line.
+- **The emoji always carries the word behind it**, visually hidden. A leaf is meaningless to a
+  screen reader and ambiguous to a sighted guest who has never seen the convention; the sr-only
+  word makes the card read as "Маргарита, вегетарианское" while looking like the emoji alone. The
+  norm this follows lives in the wiki: `rules/guest-accessibility-floor.md`.
+- **"Free from" is the ingredient struck through** with a CSS bar, not an emoji pair — one shape,
+  and the strike follows the theme.
+- **Vegan implies vegetarian in code**, so a vegan dish appears under the vegetarian filter and
+  still shows one mark, the stronger one. Operators tick what is true; the implication is not
+  their job to remember.
+
 ## Marketing badges — per tenant, not built yet
 
 "Хит", "Новинка", "Фирменное", "Острое ×3" are not dietary information — they are the operator
