@@ -176,5 +176,6 @@
   "allergen.sesame": "кунжут",
   "allergen.sulphites": "сульфиты",
   "allergen.lupin": "люпин",
-  "allergen.molluscs": "моллюски"
+  "allergen.molluscs": "моллюски",
+  "finder.searchToggle": "Поиск"
 }

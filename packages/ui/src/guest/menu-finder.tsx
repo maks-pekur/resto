@@ -5,6 +5,8 @@ import { cn } from '../lib/utils';
 import { useGuestUi } from './guest-ui-provider';
 
 export interface MenuFinderProps {
+  /** The field is revealed by the magnifier in the header; the labels stay in sight. */
+  readonly searchOpen: boolean;
   readonly query: string;
   readonly onQueryChange: (next: string) => void;
   readonly diets: readonly string[];
@@ -17,6 +19,7 @@ export interface MenuFinderProps {
  * the whole menu is already in the page, and a round trip per keystroke over mobile data is not.
  */
 export const MenuFinder = ({
+  searchOpen,
   query,
   onQueryChange,
   diets,
@@ -27,34 +30,37 @@ export const MenuFinder = ({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="relative">
-        <SearchIcon
-          aria-hidden
-          className="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2"
-        />
-        <input
-          type="search"
-          value={query}
-          aria-label={t('finder.searchLabel')}
-          placeholder={t('finder.searchPlaceholder')}
-          onChange={(event) => {
-            onQueryChange(event.target.value);
-          }}
-          className="border-input focus-visible:ring-ring h-10 w-full rounded-full border ps-9 pe-9 text-base focus-visible:ring-2 focus-visible:outline-none"
-        />
-        {query.length > 0 ? (
-          <button
-            type="button"
-            aria-label={t('finder.clear')}
-            onClick={() => {
-              onQueryChange('');
+      {searchOpen ? (
+        <div className="relative">
+          <SearchIcon
+            aria-hidden
+            className="text-muted-foreground pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2"
+          />
+          <input
+            autoFocus
+            type="search"
+            value={query}
+            aria-label={t('finder.searchLabel')}
+            placeholder={t('finder.searchPlaceholder')}
+            onChange={(event) => {
+              onQueryChange(event.target.value);
             }}
-            className="text-muted-foreground hover:text-foreground absolute end-0.5 top-1/2 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full"
-          >
-            <XIcon className="size-4" />
-          </button>
-        ) : null}
-      </div>
+            className="border-input focus-visible:ring-ring h-10 w-full rounded-full border ps-9 pe-9 text-base focus-visible:ring-2 focus-visible:outline-none"
+          />
+          {query.length > 0 ? (
+            <button
+              type="button"
+              aria-label={t('finder.clear')}
+              onClick={() => {
+                onQueryChange('');
+              }}
+              className="text-muted-foreground hover:text-foreground absolute end-0.5 top-1/2 grid size-9 -translate-y-1/2 cursor-pointer place-items-center rounded-full"
+            >
+              <XIcon className="size-4" />
+            </button>
+          ) : null}
+        </div>
+      ) : null}
 
       {diets.length > 0 ? (
         <ul className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

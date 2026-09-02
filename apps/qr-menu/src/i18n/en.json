@@ -176,5 +176,6 @@
   "allergen.sesame": "sesame",
   "allergen.sulphites": "sulphites",
   "allergen.lupin": "lupin",
-  "allergen.molluscs": "molluscs"
+  "allergen.molluscs": "molluscs",
+  "finder.searchToggle": "Search"
 }

@@ -146,7 +146,8 @@
     "searchLabel": "Buscar en el menú",
     "searchPlaceholder": "Buscar un plato",
     "clear": "Limpiar",
-    "nothingFound": "No se encontró nada"
+    "nothingFound": "No se encontró nada",
+    "searchToggle": "Buscar"
   },
   "diet": {
     "vegetarian": "Vegetariano",

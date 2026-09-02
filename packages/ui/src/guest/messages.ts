@@ -51,6 +51,7 @@ export type GuestUiKey =
   | 'footer.poweredBy'
   | 'footer.socialsLabel'
   | 'finder.searchLabel'
+  | 'finder.searchToggle'
   | 'finder.searchPlaceholder'
   | 'finder.clear'
   | 'finder.nothingFound'

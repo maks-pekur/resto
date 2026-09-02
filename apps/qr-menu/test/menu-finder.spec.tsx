@@ -57,6 +57,8 @@ describe('finding a dish', () => {
     renderMenu();
     expect(screen.getByText('Пепперони')).toBeInTheDocument();
 
+    // The field lives behind the magnifier in the header.
+    fireEvent.click(screen.getByTestId('search-toggle'));
     fireEvent.change(screen.getByLabelText('finder.searchLabel'), {
       target: { value: 'марг' },
     });
@@ -83,6 +85,22 @@ describe('diet marks', () => {
     // One label per dish: a salad on the margherita, a chilli on the pepperoni, a sprout on
     // the potato.
     expect(cardMarks(container)).toEqual(['🥗diet.vegetarian', '🌶️diet.spicy', '🌱diet.vegan']);
+  });
+});
+
+describe('the search field', () => {
+  it('stays behind its icon until asked for, and forgets the query when closed', () => {
+    renderMenu();
+    expect(screen.queryByLabelText('finder.searchLabel')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('search-toggle'));
+    fireEvent.change(screen.getByLabelText('finder.searchLabel'), { target: { value: 'марг' } });
+    expect(screen.queryByText('Пепперони')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('search-toggle'));
+
+    expect(screen.queryByLabelText('finder.searchLabel')).not.toBeInTheDocument();
+    expect(screen.getByText('Пепперони')).toBeInTheDocument();
   });
 });
 

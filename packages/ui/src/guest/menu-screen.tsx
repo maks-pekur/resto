@@ -12,6 +12,8 @@ import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
 import { MenuItemCard } from './menu-item-card';
+import { SearchIcon } from '../icons';
+import { cn } from '../lib/utils';
 import { MenuFinder } from './menu-finder';
 import { dietsOf } from './diet-rules';
 import { useGuestUi } from './guest-ui-provider';
@@ -89,6 +91,7 @@ export const MenuScreen = ({
 
   const stopped = useMemo(() => new Set(stoppedItemIds), [stoppedItemIds]);
   const [query, setQuery] = useState('');
+  const [searchOpen, setSearchOpen] = useState(false);
   const [activeDiets, setActiveDiets] = useState<readonly string[]>([]);
 
   /** Every label the menu actually uses — a filter for something nobody cooks is noise. */
@@ -176,7 +179,41 @@ export const MenuScreen = ({
 
   return (
     <GuestShell
-      header={<GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={headerActions} />}
+      header={
+        <GuestHeader
+          tenantName={tenantName}
+          logoUrl={logoUrl}
+          actions={
+            <>
+              <button
+                type="button"
+                aria-label={t('finder.searchToggle')}
+                aria-expanded={searchOpen}
+                data-testid="search-toggle"
+                onClick={() => {
+                  setSearchOpen((open) => {
+                    // Closing throws the query away: a hidden filter is a menu with dishes
+                    // mysteriously missing.
+                    if (open) setQuery('');
+                    return !open;
+                  });
+                }}
+                className="focus-visible:ring-ring flex size-11 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none sm:size-10"
+              >
+                <span
+                  className={cn(
+                    'ring-border grid size-9 place-items-center rounded-full ring-1 transition-colors',
+                    searchOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
+                  )}
+                >
+                  <SearchIcon className="size-[1.125rem]" />
+                </span>
+              </button>
+              {headerActions}
+            </>
+          }
+        />
+      }
       rail={
         <CategoryRail
           categories={sections.map((section) => section.category)}
@@ -189,8 +226,14 @@ export const MenuScreen = ({
         <>
           {/* The page's own gutter, the same the rail and the grid use — the finder used to run
               edge to edge and its chip row pushed a scrollbar out of the side. */}
-          <div className="mx-auto w-full max-w-7xl px-4 pt-3 sm:px-6">
+          <div
+            className={cn(
+              'mx-auto w-full max-w-7xl px-4 sm:px-6',
+              searchOpen || diets.length > 0 ? 'pt-3' : '',
+            )}
+          >
             <MenuFinder
+              searchOpen={searchOpen}
               query={query}
               onQueryChange={setQuery}
               diets={diets}

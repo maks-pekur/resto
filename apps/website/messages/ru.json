@@ -146,7 +146,8 @@
     "searchLabel": "Поиск по меню",
     "searchPlaceholder": "Найти блюдо",
     "clear": "Очистить",
-    "nothingFound": "Ничего не нашлось"
+    "nothingFound": "Ничего не нашлось",
+    "searchToggle": "Поиск"
   },
   "diet": {
     "vegetarian": "Вегетарианское",

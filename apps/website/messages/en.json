@@ -146,7 +146,8 @@
     "searchLabel": "Search the menu",
     "searchPlaceholder": "Find a dish",
     "clear": "Clear",
-    "nothingFound": "Nothing matched"
+    "nothingFound": "Nothing matched",
+    "searchToggle": "Search"
   },
   "diet": {
     "vegetarian": "Vegetarian",
