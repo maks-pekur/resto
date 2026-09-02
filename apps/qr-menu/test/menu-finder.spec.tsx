@@ -76,8 +76,10 @@ describe('diet marks', () => {
     const { container } = renderMenu();
 
     // Two dishes, one label each: a leaf on the margherita, a chilli on the pepperoni.
-    const marks = [...container.querySelectorAll('h3 + ul li')].map((li) => li.textContent);
-    expect(marks).toEqual([expect.stringContaining('🌿'), expect.stringContaining('🌶')]);
+    const marks = [...container.querySelectorAll('li[class*=bg-background]')].map(
+      (li) => li.textContent,
+    );
+    expect(marks).toEqual([expect.stringContaining('🥗'), expect.stringContaining('🌶')]);
     expect(marks[0]).toContain('diet.vegetarian');
   });
 });

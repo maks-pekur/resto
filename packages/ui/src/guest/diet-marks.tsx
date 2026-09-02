@@ -8,7 +8,9 @@ import { useGuestUi } from './guest-ui-provider';
  * everywhere already use for "free from".
  */
 const DIET_EMOJI: Readonly<Record<string, string>> = {
-  vegetarian: '🌿',
+  // A salad reads as "no meat", a sprout as "nothing from an animal at all" — two marks a guest
+  // can tell apart at a glance, which two green leaves were not.
+  vegetarian: '🥗',
   vegan: '🌱',
   gluten_free: '🚫🌾',
   lactose_free: '🚫🥛',
@@ -36,7 +38,8 @@ export const DietMarks = ({ diets, withText = false, className }: DietMarksProps
           className={
             withText
               ? 'bg-primary-tint text-primary flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold'
-              : 'text-sm leading-none'
+              : // Over a photo, so each mark carries its own ground.
+                'bg-background/85 grid size-6 place-items-center rounded-full text-[0.8125rem] leading-none shadow-sm'
           }
         >
           <span aria-hidden>{DIET_EMOJI[diet]}</span>
