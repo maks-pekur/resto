@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 10.6 UI-SPEC approved
-last_updated: "2026-09-03T00:51:55.444Z"
-last_activity: 2026-09-03 -- Phase 10.6 planning complete
+last_updated: "2026-09-03T08:02:05.197Z"
+last_activity: 2026-09-03 -- Phase 10.6 execution started
 progress:
   total_phases: 32
   completed_phases: 15
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 10.3 — table-zones-tables-and-qr-codes
+**Current focus:** Phase 10.6 — ingredient-library-groups-and-how-they-reach-the-order
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -38,8 +38,8 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Next after the pause:** a working demo environment (seeded paid orders), then a `restos` namespace in llm-wiki for norms, then refresh the codebase map (stale since 13 June — predates 08.2–08.5 and 10), then the testing/UI cleanup pass.
 
-Phase: 10.3 (table-zones-tables-and-qr-codes) — EXECUTING
-Plan: 1 of 14
+Phase: 10.6 (ingredient-library-groups-and-how-they-reach-the-order) — EXECUTING
+Plan: 1 of 16
 
 **Do not start Phase 18 next.** It is MVP-2 (real-time SSE, split out of Phase 10 on 2026-08-11); `phase.complete` advanced to it mechanically as the next unchecked number, not by decision. MVP-1 still has Phase 10 (one Stripe step from done) and Phase 10.1 (pause ordering + weekly schedule) open.
 
@@ -51,8 +51,8 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Ready to execute
-Last activity: 2026-09-03 -- Phase 10.6 planning complete
+Status: Executing Phase 10.6
+Last activity: 2026-09-03 -- Phase 10.6 execution started
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
