@@ -77,3 +77,35 @@ change, `toggleMutation.mutate(item.id)` → `toggleMutation.mutate(item.itemId)
 
 **Recommendation:** trivial, one-line, high-severity (broken write path on a shipped screen) — good
 candidate for an immediate follow-up quick-fix, does not need a full plan.
+
+## Plan 16 — `order-lifecycle.e2e.spec.ts`'s `seedOrder` fixture inserts an invalid `status`, unrelated to ingredients
+
+**Found during:** 10.6-16, Task 1 (the named e2e sweep).
+
+**Issue:** `apps/api/test/e2e/order-lifecycle.e2e.spec.ts`'s `seedOrder` helper (line 57) always
+inserts `status: 'paid'`. That value has not been a legal `orders.status` since migration
+`0010_order_payment_status.sql` split the column into a fulfilment-stage `status`
+(`placed | accepted | preparing | ready | completed | canceled`) and an independent
+`payment_status`. Every one of the file's 11 `seedOrder('paid')` call sites now violates
+`orders_status_chk` (`23514`), so all 8 tests in the file fail identically.
+
+**Not caused by this plan or by any 10.6 plan.** Confirmed at the exact phase-10.6 branch point
+(`3ec7a96950643c99efe1193db2a475f7893e90e4`, before any 10.6 commit): `git show
+3ec7a969...:apps/api/test/e2e/order-lifecycle.e2e.spec.ts` already carries the identical
+`status: 'paid'` literal, and migration `0010_order_payment_status.sql` (and its
+`orders_status_chk` rewrite) is already present in the tree at that commit. `git log --
+apps/api/test/e2e/order-lifecycle.e2e.spec.ts` shows no 10.6-prefixed commit ever touched this
+file — the only post-BASE touch is an unrelated `fulfillmentMode` → `orderType` rename
+(`1a88a409`). The status/payment_status split itself (`8d148ffe`, `70d6bc03`, `7a105f1d`) is also
+not 10.6 work; it landed on this long-lived phase branch from stacked prior work and never
+updated this fixture.
+
+**Fix (not applied — outside every 10.6 plan's `files_modified`, and Task 2's own scope boundary
+excludes pre-existing failures in unrelated files):** in `seedOrder`, replace `status` with a
+value from the new enum (e.g. `'placed'`) and, where a test needs the order to read as paid, add
+`paymentStatus: 'paid', paidAt: new Date()` explicitly — `orders_paid_at_chk` requires the two to
+agree.
+
+**Recommendation:** small, mechanical, but touches all 11 call sites and needs a per-test decision
+about which `payment_status` each scenario actually wants — a quick-fix candidate, not a full
+plan.

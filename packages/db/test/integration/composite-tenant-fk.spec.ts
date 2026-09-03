@@ -44,10 +44,8 @@ interface FkCase {
 // the remaining cases below keep proving the tenant-dimension composite
 // FK still rejects a cross-tenant child insert.
 //
-// NOTE (10.6-01, D-01): the `menu_modifier_options.modifier_group_id` case
-// is removed — that column and its FK no longer exist. Plan 02 adds probes
-// for the new `menu_modifier_group_options` / `menu_item_modifier_options` /
-// `menu_option_stop_list` tables below.
+// NOTE (10.6-01, D-01): the `menu_modifier_options.modifier_group_id` case is removed —
+// that column and FK no longer exist; new probes for the three link tables are below.
 const CASES: FkCase[] = [
   {
     name: 'menu_items.category_id → menu_categories(id, tenant_id)',

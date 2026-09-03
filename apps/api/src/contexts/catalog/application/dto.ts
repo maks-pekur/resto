@@ -162,9 +162,8 @@ export class SetItemModifierOptionsInputDto extends createZodDto(
   SetItemModifierOptionsInputSchema,
 ) {}
 
-// createZodDto's class extension requires a single object type; a true discriminatedUnion
-// produces a union `z.infer` that TS cannot extend a class from (TS2509) — mode picks which
-// of the two always-present arrays is active, mirroring the repository's own dual-write shape.
+// createZodDto needs a single object type — a discriminatedUnion's `z.infer` cannot extend
+// a class (TS2509) — so mode picks which of the two always-present arrays is active.
 export const SetItemCompositionInputSchema = z.object({
   mode: z.enum(['text', 'assembled']),
   text: z.array(z.string().min(1).max(100)).max(50).default([]),

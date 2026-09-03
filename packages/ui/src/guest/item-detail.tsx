@@ -275,9 +275,8 @@ export const ItemDetail = ({
                 );
               }
 
-              // display === 'tabs' && behaviour === 'one' — the only remaining combination. One
-              // answer out of a few is the same question a size asks, so it wears the same control
-              // and, like the sizes, needs no heading above it.
+              // display === 'tabs' && behaviour === 'one' — the only remaining combination; wears
+              // the same single-answer control the sizes use, so it needs no heading above it.
               return (
                 <fieldset key={group.id}>
                   <legend className="sr-only">{groupName}</legend>

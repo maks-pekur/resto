@@ -774,9 +774,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         }
       }
 
-      // D-04: the union of the dish's assigned groups and its single ingredients must stay
-      // duplicate-free. Refuse before writing, naming the group the ingredient already reaches
-      // the dish through.
+      // D-04: refuse a duplicate single-ingredient attachment before writing, naming the
+      // group the ingredient already reaches the dish through.
       if (dedupedIds.length > 0) {
         const assignedGroupLinks = await scoped.selectFrom(
           schema.menuItemModifierGroups,

@@ -1238,8 +1238,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       .items.find((i) => i.id === optionId);
     expect(created?.imageS3Key).toBe('ingredients/bacon.webp');
 
-    // Mirrors the admin flow: the sheet reads the current imageS3Key back from the
-    // list and resubmits it unchanged alongside a price-only edit.
     const priceOnlyUpsertRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/modifier-options',

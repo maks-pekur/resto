@@ -21,11 +21,8 @@ vi.mock('react-i18next', async () => {
 
 const { ItemEditorShell } = await import('@/components/menu/item-editor-shell');
 
-// The exact shape `GET /v1/catalog/items/:id` returns for an item that never had
-// allergens or composition filled in — verified live against the dev api. The api
-// declares both `.nullable()` in ItemDetailResponseSchema, and a seeded drink really
-// does come back with null. A fixture using `[]` here proves nothing: the crash was
-// `[...null]` in valuesFromItem, and only a real null reaches it.
+// A real `null` (not `[]`) is what the api returns and what crashed valuesFromItem
+// as `[...null]` — a `[]` fixture here would prove nothing.
 const ITEM_WITH_NULL_FIELDS = {
   id: 'a27602f6-69ef-4f6a-afe7-4376f70a5e04',
   categoryId: 'aea186f2-be9e-418f-951f-4c6c9d60425e',
