@@ -18,6 +18,7 @@ const buildMenu = (version: number): PublishedMenu => ({
   categories: [],
   items: [],
   modifierGroups: [],
+  modifierOptions: [],
 });
 
 const buildRepo = (): CatalogRepository =>

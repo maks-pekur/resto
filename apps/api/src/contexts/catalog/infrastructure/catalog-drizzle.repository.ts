@@ -106,26 +106,51 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         scoped.selectFrom(schema.menuItems, eq(schema.menuItems.status, 'published')),
       ]);
 
-      const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
-        scoped.selectFrom(schema.menuItemSizes),
-        scoped.selectFrom(schema.menuItemModifierGroups),
-        scoped.selectFrom(schema.menuModifierGroups),
-      ]);
+      const [sizesRows, itemModifierRows, modifierGroupsRows, groupOptionsRows, itemOptionsRows] =
+        await Promise.all([
+          scoped.selectFrom(schema.menuItemSizes),
+          scoped.selectFrom(schema.menuItemModifierGroups),
+          scoped.selectFrom(schema.menuModifierGroups),
+          scoped.selectFrom(schema.menuModifierGroupOptions),
+          scoped.selectFrom(schema.menuItemModifierOptions),
+        ]);
 
-      const optionsRows =
-        modifierGroupsRows.length === 0
+      const unionOptionIds = new Set<string>();
+      for (const row of groupOptionsRows) unionOptionIds.add(row.optionId);
+      for (const row of itemOptionsRows) unionOptionIds.add(row.optionId);
+      for (const item of allItemsRows) {
+        for (const line of item.compositionAssembled) unionOptionIds.add(line.optionId);
+      }
+
+      const optionRows =
+        unionOptionIds.size === 0
           ? []
           : await scoped.selectFrom(
               schema.menuModifierOptions,
-              inArray(
-                schema.menuModifierOptions.modifierGroupId,
-                modifierGroupsRows.map((m) => m.id),
-              ),
+              inArray(schema.menuModifierOptions.id, [...unionOptionIds]),
             );
+      // A Map keyed by option id is what makes "one bacon in three groups is one payload
+      // entry and one price" true by construction (D-03).
+      const modifierOptionsById = new Map<string, PublishedMenuModifierOption>(
+        optionRows.map((o) => [
+          o.id,
+          {
+            id: o.id,
+            name: o.name,
+            description: o.description ?? null,
+            imageUrl: o.imageS3Key ? this.imageUrl.publicUrl(o.imageS3Key) : null,
+            priceDelta: MoneyAmount.parse(o.priceDelta),
+            freeAmount: o.freeAmount,
+            minAmount: o.minAmount ?? null,
+            maxAmount: o.maxAmount ?? null,
+          },
+        ]),
+      );
 
       const sizesByItem = groupBy(sizesRows, (r) => r.menuItemId);
       const modifierGroupsByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
-      const optionsByModifierGroup = groupBy(optionsRows, (r) => r.modifierGroupId);
+      const optionIdsByGroup = groupBy(groupOptionsRows, (r) => r.modifierGroupId);
+      const extraOptionIdsByItem = groupBy(itemOptionsRows, (r) => r.menuItemId);
 
       const items = allItemsRows.map<PublishedMenuItem>((r) => {
         const photos = this.publicPhotos(r.photos);
@@ -162,6 +187,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             .slice()
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((m) => MenuModifierId.parse(m.modifierGroupId)),
+          extraOptionIds: (extraOptionIdsByItem.get(r.id) ?? [])
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((o) => o.optionId),
+          compositionMode: r.compositionMode as 'text' | 'assembled',
+          composition: r.composition ?? [],
+          compositionLines: r.compositionAssembled,
         };
       });
 
@@ -177,19 +209,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const modifierGroups = modifierGroupsRows.map<PublishedMenuModifierGroup>((r) => ({
         id: MenuModifierId.parse(r.id),
         name: r.name,
-        minSelectable: r.minSelectable,
-        maxSelectable: r.maxSelectable,
+        display: r.display as 'tiles' | 'tabs',
+        behaviour: r.behaviour as 'one' | 'several',
         isRequired: r.isRequired,
-        options: (optionsByModifierGroup.get(r.id) ?? []).map<PublishedMenuModifierOption>((o) => ({
-          id: o.id,
-          name: o.name,
-          priceDelta: MoneyAmount.parse(o.priceDelta),
-          defaultAmount: o.defaultAmount,
-          freeAmount: o.freeAmount,
-          sortOrder: o.sortOrder,
-          minAmount: o.minAmount ?? null,
-          maxAmount: o.maxAmount ?? null,
-        })),
+        optionIds: (optionIdsByGroup.get(r.id) ?? [])
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((o) => o.optionId),
       }));
 
       const currency = items[0]?.currency ?? Currency.parse('USD');
@@ -201,6 +227,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
         items: items.sort((a, b) => a.sortOrder - b.sortOrder),
         modifierGroups,
+        modifierOptions: [...modifierOptionsById.values()],
       };
     });
   }
@@ -212,11 +239,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const row = items[0];
       if (!row) return null;
 
-      const [sizes, links] = await Promise.all([
+      const [sizes, links, itemOptions] = await Promise.all([
         scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
           eq(schema.menuItemModifierGroups.menuItemId, row.id),
+        ),
+        scoped.selectFrom(
+          schema.menuItemModifierOptions,
+          eq(schema.menuItemModifierOptions.menuItemId, row.id),
         ),
       ]);
       const photos = this.publicPhotos(row.photos);
@@ -248,6 +279,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: v.sortOrder,
         })),
         modifierGroupIds: links.map((m) => MenuModifierId.parse(m.modifierGroupId)),
+        extraOptionIds: itemOptions
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((o) => o.optionId),
+        compositionMode: row.compositionMode as 'text' | 'assembled',
+        composition: row.composition ?? [],
+        compositionLines: row.compositionAssembled,
       };
     });
   }
@@ -1043,6 +1081,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         ),
         allergens: r.allergens ?? null,
         diets: r.diets ?? null,
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- dropped column, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method)
         ingredients: r.ingredients ?? null,
         metaTitle: r.metaTitle ?? null,
         metaDescription: r.metaDescription ?? null,
@@ -1086,6 +1125,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       ]);
       const optionCount = new Map<string, number>();
       for (const o of options)
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- dropped column, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method)
         optionCount.set(o.modifierGroupId, (optionCount.get(o.modifierGroupId) ?? 0) + 1);
       const usageCount = new Map<string, number>();
       for (const l of links)
@@ -1093,8 +1133,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return groups.map<ModifierGroupListRow>((g) => ({
         id: g.id,
         name: g.name,
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment -- dropped columns, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method) */
         minSelectable: g.minSelectable,
         maxSelectable: g.maxSelectable,
+        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
         isRequired: g.isRequired,
         optionCount: optionCount.get(g.id) ?? 0,
         usageCount: usageCount.get(g.id) ?? 0,
@@ -1115,8 +1157,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return {
         id: g.id,
         name: g.name,
+        /* eslint-disable @typescript-eslint/no-unsafe-assignment -- dropped columns, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method) */
         minSelectable: g.minSelectable,
         maxSelectable: g.maxSelectable,
+        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
         isRequired: g.isRequired,
         options: options.map((o) => ({
           id: o.id,
@@ -1187,6 +1231,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         eq(schema.menuStopList.locationId, locationId),
       );
       return rows.map((r) => r.itemId);
+    });
+  }
+
+  // D-23: computed per read, never materialised at publish.
+  async listStoppedIngredientIds(locationId: string): Promise<string[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped.selectFrom(
+        schema.menuOptionStopList,
+        eq(schema.menuOptionStopList.locationId, locationId),
+      );
+      return rows.map((r) => r.optionId);
     });
   }
 

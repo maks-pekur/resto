@@ -52,6 +52,11 @@ const PublishedMenuItemPhotoSchema = z.object({
   url: z.string().url(),
 });
 
+const PublishedMenuCompositionLineSchema = z.object({
+  optionId: z.string().uuid(),
+  removable: z.boolean(),
+});
+
 const PublishedMenuItemSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -74,6 +79,10 @@ const PublishedMenuItemSchema = z.object({
   kcal: z.number().int().nullable(),
   sizes: z.array(PublishedMenuItemSizeSchema),
   modifierGroupIds: z.array(z.string().uuid()),
+  extraOptionIds: z.array(z.string().uuid()),
+  compositionMode: z.enum(['text', 'assembled']),
+  composition: z.array(z.string().max(100)).max(50),
+  compositionLines: z.array(PublishedMenuCompositionLineSchema).max(50),
 });
 
 const PublishedMenuCategorySchema = z.object({
@@ -88,10 +97,10 @@ const PublishedMenuCategorySchema = z.object({
 const PublishedMenuModifierOptionSchema = z.object({
   id: z.string(),
   name: LocalizedTextSchema,
+  description: LocalizedTextSchema.nullable(),
+  imageUrl: z.string().url().nullable(),
   priceDelta: z.string(),
-  defaultAmount: z.number().int().nonnegative(),
   freeAmount: z.number().int().nonnegative(),
-  sortOrder: z.number().int().nonnegative(),
   minAmount: z.number().int().nonnegative().nullable(),
   maxAmount: z.number().int().nonnegative().nullable(),
 });
@@ -99,14 +108,15 @@ const PublishedMenuModifierOptionSchema = z.object({
 const PublishedMenuModifierGroupSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedTextSchema,
-  minSelectable: z.number().int().nonnegative(),
-  maxSelectable: z.number().int().nonnegative(),
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
-  options: z.array(PublishedMenuModifierOptionSchema),
+  optionIds: z.array(z.string().uuid()),
 });
 
 const MenuAvailabilitySchema = z.object({
   stoppedItemIds: z.array(z.string().uuid()),
+  stoppedIngredientIds: z.array(z.string().uuid()),
 });
 
 const MenuTenantThemeSchema = z.object({
@@ -143,6 +153,7 @@ const PublishedMenuSchema = z.object({
   categories: z.array(PublishedMenuCategorySchema),
   items: z.array(PublishedMenuItemSchema),
   modifierGroups: z.array(PublishedMenuModifierGroupSchema),
+  modifierOptions: z.array(PublishedMenuModifierOptionSchema),
 });
 
 type GuestMenuTenant = z.infer<typeof MenuTenantSchema>;
@@ -210,11 +221,12 @@ export class PublicMenuController {
     @Res({ passthrough: true }) reply: FastifyReply,
     @Query('t') t?: string,
     @Headers('if-none-match') ifNoneMatch?: string,
-  ): Promise<{ stoppedItemIds: string[] } | undefined> {
+  ): Promise<{ stoppedItemIds: string[]; stoppedIngredientIds: string[] } | undefined> {
     await this.requireGuestTenantOr404(req);
     const locationId = await this.resolveTableLocationId(t);
     const {
       stoppedItemIds,
+      stoppedIngredientIds,
       stopVersion,
       locationId: answeringLocationId,
     } = await wrap(() => this.getAvailability.execute(locationId));
@@ -227,7 +239,7 @@ export class PublicMenuController {
     }
     reply.header('ETag', etag);
     reply.header('Cache-Control', MENU_AVAILABILITY_CACHE_CONTROL);
-    return { stoppedItemIds };
+    return { stoppedItemIds, stoppedIngredientIds };
   }
 
   /**
