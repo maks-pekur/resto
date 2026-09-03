@@ -30,6 +30,8 @@ import {
   type ModifierGroupListRow,
   type ModifierOptionListRow,
   type ModifierOptionUsageRow,
+  type OptionStopListEntryRow,
+  type OptionStopListInsertRow,
   type StopListEntryRow,
   type StopListInsertRow,
   type UpsertCategoryRow,
@@ -957,6 +959,68 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async addOptionToStopList(input: OptionStopListInsertRow): Promise<{ id: string }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const inserted = await scoped
+        .insertInto(schema.menuOptionStopList, {
+          locationId: input.locationId,
+          optionId: input.optionId,
+          reason: input.reason,
+          stoppedByUserId: input.stoppedByUserId,
+        })
+        .onConflictDoNothing({
+          target: [
+            schema.menuOptionStopList.tenantId,
+            schema.menuOptionStopList.locationId,
+            schema.menuOptionStopList.optionId,
+          ],
+        })
+        .returning({ id: schema.menuOptionStopList.id });
+      await this.#bumpStopVersion(scoped, input.locationId);
+      if (inserted[0]) {
+        return { id: inserted[0].id };
+      }
+      const existing = await scoped
+        .selectFrom(
+          schema.menuOptionStopList,
+          and(
+            eq(schema.menuOptionStopList.optionId, input.optionId),
+            eq(schema.menuOptionStopList.locationId, input.locationId),
+          ),
+        )
+        .limit(1);
+      const existingRow = existing[0];
+      if (!existingRow) {
+        throw new Error('addOptionToStopList: conflict path could not locate existing row');
+      }
+      return { id: existingRow.id };
+    });
+  }
+
+  async removeOptionFromStopList(input: {
+    optionId: string;
+    locationId: string;
+  }): Promise<{ removed: boolean }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      // Same sanctioned hard DELETE family as removeFromStopList — migration 0019 grants the privilege.
+      const ctx = requireTenantContext();
+      const result = await tx
+        .delete(schema.menuOptionStopList)
+        .where(
+          and(
+            eq(schema.menuOptionStopList.tenantId, ctx.tenantId),
+            eq(schema.menuOptionStopList.locationId, input.locationId),
+            eq(schema.menuOptionStopList.optionId, input.optionId),
+          ),
+        )
+        .returning({ id: schema.menuOptionStopList.id });
+
+      await this.#bumpStopVersion(scoped, input.locationId);
+
+      return { removed: result.length > 0 };
+    });
+  }
+
   async #bumpStopVersion(
     scoped: Parameters<Parameters<TenantAwareDb['withTenant']>[0]>[1],
     locationId: string,
@@ -1558,6 +1622,39 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         eq(schema.menuOptionStopList.locationId, locationId),
       );
       return rows.map((r) => r.optionId);
+    });
+  }
+
+  async listOptionStopListWithStoppedAt(locationId: string): Promise<OptionStopListEntryRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const stopRows = await scoped
+        .selectFrom(schema.menuOptionStopList, eq(schema.menuOptionStopList.locationId, locationId))
+        .orderBy(desc(schema.menuOptionStopList.stoppedAt));
+      if (stopRows.length === 0) return [];
+      const optionIds = stopRows.map((s) => s.optionId);
+      const options = await scoped.selectFrom(
+        schema.menuModifierOptions,
+        inArray(schema.menuModifierOptions.id, optionIds),
+      );
+      const optionById = new Map(options.map((o) => [o.id, o]));
+      return Promise.all(
+        stopRows.map<Promise<OptionStopListEntryRow>>(async (s) => {
+          const option = optionById.get(s.optionId);
+          return {
+            id: s.id,
+            optionId: s.optionId,
+            optionName: option?.name ?? null,
+            imageUrl: option?.imageS3Key
+              ? await this.imageUrl.presignGet(
+                  option.imageS3Key,
+                  CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                )
+              : null,
+            stoppedAt: s.stoppedAt.toISOString(),
+            reason: s.reason ?? null,
+          };
+        }),
+      );
     });
   }
 

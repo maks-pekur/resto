@@ -36,6 +36,11 @@ export interface CatalogRepository {
     itemId: string;
     locationId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
+  addOptionToStopList(input: OptionStopListInsertRow): Promise<{ id: string }>;
+  removeOptionFromStopList(input: {
+    optionId: string;
+    locationId: string;
+  }): Promise<{ removed: boolean }>;
 
   listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
   listItems(input: {
@@ -53,6 +58,7 @@ export interface CatalogRepository {
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
   listStoppedIngredientIds(locationId: string): Promise<string[]>;
+  listOptionStopListWithStoppedAt(locationId: string): Promise<OptionStopListEntryRow[]>;
   listStopListAggregateAcrossLocations(
     tenantId: TenantId,
     activeLocationIds: readonly string[],
@@ -197,6 +203,14 @@ export interface StopListInsertRow {
   readonly stoppedByUserId: string | null;
 }
 
+export interface OptionStopListInsertRow {
+  readonly optionId: string;
+  readonly tenantId: string;
+  readonly locationId: string;
+  readonly reason: string | null;
+  readonly stoppedByUserId: string | null;
+}
+
 export type ItemStatusFilter = 'all' | 'draft' | 'published' | 'archived' | 'active';
 
 export interface CategoryListRow {
@@ -322,6 +336,16 @@ export interface StopListEntryRow {
   readonly itemName: Record<string, string> | null;
   readonly categoryName: Record<string, string> | null;
   readonly photo: { s3Key: string; sortOrder: number; url: string } | null;
+  readonly stoppedAt: string;
+  readonly reason: string | null;
+}
+
+// Item version minus categoryName — an ingredient has no category (UI-SPEC item 8).
+export interface OptionStopListEntryRow {
+  readonly id: string;
+  readonly optionId: string;
+  readonly optionName: Record<string, string> | null;
+  readonly imageUrl: string | null;
   readonly stoppedAt: string;
   readonly reason: string | null;
 }
