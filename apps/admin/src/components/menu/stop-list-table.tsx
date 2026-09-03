@@ -79,7 +79,7 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
           const stoppedAtMs = new Date(item.stoppedAt).getTime();
           const msSince = now - stoppedAtMs;
           const isStale = msSince > STALE_THRESHOLD_MS;
-          const isPending = toggleMutation.isPending && toggleMutation.variables === item.id;
+          const isPending = toggleMutation.isPending && toggleMutation.variables === item.itemId;
           return (
             <DataTableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
               <DataTableCell>
@@ -110,7 +110,7 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
                   checked
                   disabled={isPending}
                   onCheckedChange={() => {
-                    toggleMutation.mutate(item.id);
+                    toggleMutation.mutate(item.itemId);
                   }}
                   aria-label={t('resumeAriaLabel', { name })}
                 />
