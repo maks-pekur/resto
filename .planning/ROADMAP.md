@@ -821,7 +821,7 @@ Plans:
 - [x] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
 - [x] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
 - [x] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
-- [ ] 10.6-15-PLAN.md — Admin stop list section, the D-22 dish offer, exclusions on the order detail
+- [x] 10.6-15-PLAN.md — Admin stop list section, the D-22 dish offer, exclusions on the order detail
 - [ ] 10.6-16-PLAN.md — Phase verification sweep and the founder's browser walk-through
 
 ### Phase 10.5: Location as a filter, not a mode (INSERTED)
