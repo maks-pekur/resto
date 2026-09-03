@@ -24,12 +24,12 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { IngredientPickerSheet } from '@/components/menu/ingredient-picker-sheet';
+import { ModifierPickerSheet } from '@/components/menu/modifier-picker-sheet';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import {
-  ingredientsQuery,
+  modifiersQuery,
   modifierGroupQuery,
-  setItemIngredients,
+  setItemModifiers,
   upsertItemModifierGroups,
   upsertModifierGroup,
 } from '@/lib/queries/catalog';
@@ -45,23 +45,23 @@ export interface AvailableGroup {
 export interface ItemModifierGroupsCardProps {
   readonly itemId: string;
   readonly initialModifierGroupIds: readonly string[];
-  readonly initialIngredientIds: readonly string[];
+  readonly initialModifierIds: readonly string[];
   readonly availableGroups: readonly AvailableGroup[];
 }
 
 export function ItemModifierGroupsCard({
   itemId,
   initialModifierGroupIds,
-  initialIngredientIds,
+  initialModifierIds,
   availableGroups,
 }: ItemModifierGroupsCardProps): React.ReactElement {
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifiers' });
-  const { t: tIngredients } = useTranslation('translation', { keyPrefix: 'menu.itemIngredients' });
+  const { t: tModifiers } = useTranslation('translation', { keyPrefix: 'menu.itemModifiers' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
-  const [singleIds, setSingleIds] = React.useState<readonly string[]>(initialIngredientIds);
+  const [singleIds, setSingleIds] = React.useState<readonly string[]>(initialModifierIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [singleSheetOpen, setSingleSheetOpen] = React.useState(false);
@@ -72,14 +72,14 @@ export function ItemModifierGroupsCard({
   const { defaultLocale } = useContentLocales();
   const isNewItem = itemId === 'new';
 
-  const { data: ingredientsData } = useQuery(ingredientsQuery());
-  const ingredientNameById = React.useMemo(() => {
+  const { data: modifiersData } = useQuery(modifiersQuery());
+  const modifierNameById = React.useMemo(() => {
     const map = new Map<string, string>();
-    for (const ingredient of ingredientsData?.data?.items ?? []) {
-      map.set(ingredient.id, fromLocalizedText(ingredient.name, defaultLocale));
+    for (const modifier of modifiersData?.data?.items ?? []) {
+      map.set(modifier.id, fromLocalizedText(modifier.name, defaultLocale));
     }
     return map;
-  }, [ingredientsData, defaultLocale]);
+  }, [modifiersData, defaultLocale]);
 
   const groupDetailQueries = useQueries({
     queries: assignedIds.map((groupId) => modifierGroupQuery(groupId)),
@@ -104,7 +104,7 @@ export function ItemModifierGroupsCard({
   });
 
   const singleMutation = useMutation({
-    mutationFn: (nextIds: readonly string[]) => setItemIngredients(itemId, nextIds),
+    mutationFn: (nextIds: readonly string[]) => setItemModifiers(itemId, nextIds),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', itemId] });
     },
@@ -237,7 +237,7 @@ export function ItemModifierGroupsCard({
       const newId = res.data?.id ?? '';
       setKnownGroups((prev) => [...prev, { id: newId, name: newName, optionCount: 0 }]);
       void navigate({
-        to: '/menu/ingredients/$id',
+        to: '/menu/modifiers/$id',
         params: { id: newId },
       });
     } catch {
@@ -277,7 +277,7 @@ export function ItemModifierGroupsCard({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <div className="flex flex-col gap-2">
-          <FieldTitle>{tIngredients('groupsRowLabel')}</FieldTitle>
+          <FieldTitle>{tModifiers('groupsRowLabel')}</FieldTitle>
           {assignedGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
           ) : (
@@ -345,16 +345,16 @@ export function ItemModifierGroupsCard({
         <hr className="border-border" />
 
         <div className="flex flex-col gap-2">
-          <FieldTitle>{tIngredients('singlesRowLabel')}</FieldTitle>
+          <FieldTitle>{tModifiers('singlesRowLabel')}</FieldTitle>
           {singleIds.length === 0 ? null : (
             <div className="flex flex-wrap gap-2">
               {singleIds.map((optionId) => {
-                const name = ingredientNameById.get(optionId) ?? '';
+                const name = modifierNameById.get(optionId) ?? '';
                 return (
                   <div
                     key={optionId}
                     className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm"
-                    data-testid={`ingredient-chip-${optionId}`}
+                    data-testid={`modifier-chip-${optionId}`}
                   >
                     <button
                       type="button"
@@ -405,7 +405,7 @@ export function ItemModifierGroupsCard({
               }}
               disabled={isPending}
             >
-              {tIngredients('addSingleBtn')}
+              {tModifiers('addSingleBtn')}
             </Button>
           </div>
         </div>
@@ -470,7 +470,7 @@ export function ItemModifierGroupsCard({
         </SheetContent>
       </Sheet>
 
-      <IngredientPickerSheet
+      <ModifierPickerSheet
         open={singleSheetOpen}
         onOpenChange={setSingleSheetOpen}
         onPick={(optionId) => {
@@ -479,8 +479,8 @@ export function ItemModifierGroupsCard({
         showPrice
         disabledIds={disabledSingleIds}
         disabledReason={(optionId) =>
-          tIngredients('duplicateError', {
-            name: ingredientNameById.get(optionId) ?? '',
+          tModifiers('duplicateError', {
+            name: modifierNameById.get(optionId) ?? '',
             groupName: groupNameByReachableOptionId.get(optionId) ?? '',
           })
         }

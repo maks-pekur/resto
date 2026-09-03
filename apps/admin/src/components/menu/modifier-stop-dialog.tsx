@@ -15,26 +15,22 @@ import {
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { showError } from '@/lib/ui/toast-helpers';
-import {
-  ingredientUsageQuery,
-  toggleIngredientStopList,
-  toggleStopList,
-} from '@/lib/queries/catalog';
-import type { IngredientApi } from '@/lib/queries/catalog';
+import { modifierUsageQuery, toggleModifierStopList, toggleStopList } from '@/lib/queries/catalog';
+import type { ModifierApi } from '@/lib/queries/catalog';
 
-export interface IngredientStopDialogProps {
-  readonly ingredient: IngredientApi | null;
+export interface ModifierStopDialogProps {
+  readonly modifier: ModifierApi | null;
   readonly locationId: string;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
 }
 
-export function IngredientStopDialog({
-  ingredient,
+export function ModifierStopDialog({
+  modifier,
   locationId,
   open,
   onOpenChange,
-}: IngredientStopDialogProps): React.ReactElement {
+}: ModifierStopDialogProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const { defaultLocale } = useContentLocales();
@@ -43,19 +39,19 @@ export function IngredientStopDialog({
   const autoStoppedRef = React.useRef(false);
 
   const { data } = useQuery({
-    ...ingredientUsageQuery(ingredient?.id ?? ''),
-    enabled: open && ingredient !== null,
+    ...modifierUsageQuery(modifier?.id ?? ''),
+    enabled: open && modifier !== null,
   });
   const dishes = data?.data?.dishesInComposition ?? [];
   const hasLoaded = data !== undefined;
 
   const invalidate = (): void => {
-    void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredient-stop-list'] });
+    void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-stop-list'] });
     void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
   };
 
   const stopOnlyMutation = useMutation({
-    mutationFn: () => toggleIngredientStopList(ingredient?.id ?? '', true, locationId),
+    mutationFn: () => toggleModifierStopList(modifier?.id ?? '', true, locationId),
     onSuccess: (res) => {
       if (res.ok) {
         invalidate();
@@ -71,7 +67,7 @@ export function IngredientStopDialog({
 
   const stopSelectedMutation = useMutation({
     mutationFn: async () => {
-      const optionRes = await toggleIngredientStopList(ingredient?.id ?? '', true, locationId);
+      const optionRes = await toggleModifierStopList(modifier?.id ?? '', true, locationId);
       if (!optionRes.ok) throw new Error('option stop failed');
       const dishResults = await Promise.all(
         Array.from(checkedIds, (dishId) => toggleStopList(dishId, 'paused', locationId)),
@@ -106,8 +102,8 @@ export function IngredientStopDialog({
     <Dialog open={showDialog} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t('stopIngredientDialogTitle')}</DialogTitle>
-          <DialogDescription>{t('stopIngredientDialogBody')}</DialogDescription>
+          <DialogTitle>{t('stopModifierDialogTitle')}</DialogTitle>
+          <DialogDescription>{t('stopModifierDialogBody')}</DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
           {dishes.map((dish) => {
@@ -143,7 +139,7 @@ export function IngredientStopDialog({
               stopOnlyMutation.mutate();
             }}
           >
-            {t('stopIngredientOnlyBtn')}
+            {t('stopModifierOnlyBtn')}
           </Button>
           <Button
             type="button"

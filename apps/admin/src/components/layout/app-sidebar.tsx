@@ -99,7 +99,7 @@ export function AppSidebar({ variant = 'inset', collapsible = 'icon', ...props }
             items: [
               { title: t('menuCategories'), url: '/menu/categories' },
               { title: t('menuItems'), url: '/menu/items' },
-              { title: t('menuModifiers'), url: '/menu/ingredients' },
+              { title: t('menuModifiers'), url: '/menu/modifiers' },
             ],
           },
         ]

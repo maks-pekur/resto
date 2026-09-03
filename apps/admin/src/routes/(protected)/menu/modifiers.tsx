@@ -6,9 +6,9 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as menuLayoutRoute } from './_layout';
 import {
-  ingredientStopListQuery,
+  modifierStopListQuery,
   modifierGroupsQuery,
-  toggleIngredientStopList,
+  toggleModifierStopList,
 } from '@/lib/queries/catalog';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { PageHeading } from '@/components/common/page-heading';
@@ -24,35 +24,35 @@ import {
   DataTableRow,
 } from '@/components/common/data-table';
 import { EmptyState } from '@/components/common/empty-state';
-import { IngredientCardGrid } from '@/components/menu/ingredient-card-grid';
-import { IngredientFormSheet } from '@/components/menu/ingredient-form-sheet';
-import { IngredientStopDialog } from '@/components/menu/ingredient-stop-dialog';
+import { ModifierCardGrid } from '@/components/menu/modifier-card-grid';
+import { ModifierFormSheet } from '@/components/menu/modifier-form-sheet';
+import { ModifierStopDialog } from '@/components/menu/modifier-stop-dialog';
 import { showError } from '@/lib/ui/toast-helpers';
-import type { IngredientApi } from '@/lib/queries/catalog';
+import type { ModifierApi } from '@/lib/queries/catalog';
 
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
-  path: '/ingredients',
+  path: '/modifiers',
   loader: ({ context: { queryClient } }) => queryClient.ensureQueryData(modifierGroupsQuery()),
-  component: IngredientsPage,
+  component: ModifiersPage,
 });
 
-function IngredientsPage() {
-  const { t } = useTranslation('translation', { keyPrefix: 'menu.ingredients' });
+function ModifiersPage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'menu.modifiers' });
   const { t: tGroups } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
   const { t: tStopList } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(modifierGroupsQuery());
   const groups = data.data?.items ?? [];
-  const [editing, setEditing] = React.useState<IngredientApi | 'new' | null>(null);
-  const [stopping, setStopping] = React.useState<IngredientApi | null>(null);
+  const [editing, setEditing] = React.useState<ModifierApi | 'new' | null>(null);
+  const [stopping, setStopping] = React.useState<ModifierApi | null>(null);
   const { locationId } = useEffectiveLocation();
   const canStop = locationId !== undefined && locationId !== 'all';
   const queryClient = useQueryClient();
 
   const { data: stopListResult } = useQuery({
-    ...ingredientStopListQuery(locationId ?? ''),
+    ...modifierStopListQuery(locationId ?? ''),
     enabled: canStop,
   });
   const stoppedOptionIds = React.useMemo(
@@ -61,43 +61,43 @@ function IngredientsPage() {
   );
 
   const resumeMutation = useMutation({
-    mutationFn: (optionId: string) => toggleIngredientStopList(optionId, false, locationId ?? ''),
+    mutationFn: (optionId: string) => toggleModifierStopList(optionId, false, locationId ?? ''),
     onSuccess: (res) => {
       if (res.ok) {
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredient-stop-list'] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-stop-list'] });
       } else {
         showError(null, tItems('stopListFailed'));
       }
     },
   });
 
-  const handleToggleStop = (ingredient: IngredientApi, next: boolean): void => {
+  const handleToggleStop = (modifier: ModifierApi, next: boolean): void => {
     if (!next) {
-      resumeMutation.mutate(ingredient.id);
+      resumeMutation.mutate(modifier.id);
       return;
     }
-    setStopping(ingredient);
+    setStopping(modifier);
   };
 
   const goToNewGroup = (): void => {
-    void navigate({ to: '/menu/ingredients/$id', params: { id: 'new' } });
+    void navigate({ to: '/menu/modifiers/$id', params: { id: 'new' } });
   };
 
   const goToGroup = (id: string): void => {
-    void navigate({ to: '/menu/ingredients/$id', params: { id } });
+    void navigate({ to: '/menu/modifiers/$id', params: { id } });
   };
 
   return (
     <>
-      <Tabs defaultValue="ingredients" className="gap-4">
+      <Tabs defaultValue="modifiers" className="gap-4">
         <div className="px-4 lg:px-6">
           <TabsList>
-            <TabsTrigger value="ingredients">{t('tabIngredients')}</TabsTrigger>
+            <TabsTrigger value="modifiers">{t('tabModifiers')}</TabsTrigger>
             <TabsTrigger value="groups">{t('tabGroups')}</TabsTrigger>
           </TabsList>
         </div>
 
-        <TabsContent value="ingredients" className="flex flex-col gap-4">
+        <TabsContent value="modifiers" className="flex flex-col gap-4">
           <div className="flex justify-end px-4 lg:px-6">
             <Button
               size="sm"
@@ -109,21 +109,21 @@ function IngredientsPage() {
             </Button>
           </div>
           <div className="px-4 lg:px-6">
-            <IngredientCardGrid
-              onSelect={(ingredient) => {
-                setEditing(ingredient);
+            <ModifierCardGrid
+              onSelect={(modifier) => {
+                setEditing(modifier);
               }}
               renderStopControl={
                 canStop
-                  ? (ingredient) => {
-                      const isStopped = stoppedOptionIds.has(ingredient.id);
-                      const name = fromLocalizedText(ingredient.name);
+                  ? (modifier) => {
+                      const isStopped = stoppedOptionIds.has(modifier.id);
+                      const name = fromLocalizedText(modifier.name);
                       return (
                         <Switch
                           checked={isStopped}
-                          disabled={resumeMutation.isPending || stopping?.id === ingredient.id}
+                          disabled={resumeMutation.isPending || stopping?.id === modifier.id}
                           onCheckedChange={(next) => {
-                            handleToggleStop(ingredient, next);
+                            handleToggleStop(modifier, next);
                           }}
                           aria-label={
                             isStopped
@@ -187,16 +187,16 @@ function IngredientsPage() {
         </TabsContent>
       </Tabs>
 
-      <IngredientFormSheet
+      <ModifierFormSheet
         open={editing !== null}
-        ingredient={editing === 'new' ? null : editing}
+        modifier={editing === 'new' ? null : editing}
         onOpenChange={(open) => {
           if (!open) setEditing(null);
         }}
       />
 
-      <IngredientStopDialog
-        ingredient={stopping}
+      <ModifierStopDialog
+        modifier={stopping}
         locationId={locationId ?? ''}
         open={stopping !== null}
         onOpenChange={(open) => {

@@ -2,7 +2,7 @@ import * as React from 'react';
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { IngredientApi, IngredientListResponse } from '@/lib/queries/catalog';
+import type { ModifierApi, ModifierListResponse } from '@/lib/queries/catalog';
 
 const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
@@ -33,7 +33,7 @@ vi.mock('react-i18next', async () => {
 
 const { ItemModifierGroupsCard } = await import('@/components/menu/item-modifier-groups-card');
 
-const bacon: IngredientApi = {
+const bacon: ModifierApi = {
   id: 'ing-1',
   name: { ru: 'Бекон', en: 'Bacon' },
   description: null,
@@ -44,7 +44,7 @@ const bacon: IngredientApi = {
   dishCount: 0,
 };
 
-const renderCard = (initialIngredientIds: readonly string[]): void => {
+const renderCard = (initialModifierIds: readonly string[]): void => {
   apiFetchMock.mockImplementation((path: string) => {
     if (path === '/v1/tenants/me') {
       return Promise.resolve({
@@ -54,7 +54,7 @@ const renderCard = (initialIngredientIds: readonly string[]): void => {
       });
     }
     if (path === '/v1/catalog/modifier-options') {
-      const body: IngredientListResponse = { items: [bacon] };
+      const body: ModifierListResponse = { items: [bacon] };
       return Promise.resolve({ status: 200, ok: true, data: body });
     }
     return Promise.resolve({ status: 200, ok: true, data: null });
@@ -66,7 +66,7 @@ const renderCard = (initialIngredientIds: readonly string[]): void => {
       <ItemModifierGroupsCard
         itemId="item-1"
         initialModifierGroupIds={[]}
-        initialIngredientIds={initialIngredientIds}
+        initialModifierIds={initialModifierIds}
         availableGroups={[]}
       />
     </QueryClientProvider>,
@@ -78,15 +78,15 @@ beforeEach(() => {
 });
 
 describe('ItemModifierGroupsCard', () => {
-  it('repopulates the singles chip row from initialIngredientIds on mount (GAP 2 fix)', async () => {
+  it('repopulates the singles chip row from initialModifierIds on mount (GAP 2 fix)', async () => {
     renderCard(['ing-1']);
 
-    expect(await screen.findByTestId('ingredient-chip-ing-1')).toBeInTheDocument();
+    expect(await screen.findByTestId('modifier-chip-ing-1')).toBeInTheDocument();
   });
 
-  it('renders no singles chips when initialIngredientIds is empty', () => {
+  it('renders no singles chips when initialModifierIds is empty', () => {
     renderCard([]);
 
-    expect(screen.queryByTestId('ingredient-chip-ing-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('modifier-chip-ing-1')).not.toBeInTheDocument();
   });
 });

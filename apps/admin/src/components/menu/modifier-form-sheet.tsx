@@ -23,27 +23,24 @@ import { LocalizedField } from '@/components/common/localized-field';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
-import { archiveIngredient, ingredientUsageQuery, upsertIngredient } from '@/lib/queries/catalog';
-import { ingredientFormSchema, type IngredientForm } from '@/lib/menu/zod-schemas';
-import type { IngredientApi, IngredientUsageApi } from '@/lib/queries/catalog';
+import { archiveModifier, modifierUsageQuery, upsertModifier } from '@/lib/queries/catalog';
+import { modifierFormSchema, type ModifierForm } from '@/lib/menu/zod-schemas';
+import type { ModifierApi, ModifierUsageApi } from '@/lib/queries/catalog';
 
-export interface IngredientFormSheetProps {
+export interface ModifierFormSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
-  readonly ingredient: IngredientApi | null;
+  readonly modifier: ModifierApi | null;
 }
 
-const buildDefaults = (
-  ingredient: IngredientApi | null,
-  defaultLocale: string,
-): IngredientForm => ({
-  name: ingredient ? { ...ingredient.name } : {},
-  description: ingredient ? fromLocalizedText(ingredient.description, defaultLocale) || null : null,
-  priceDelta: ingredient ? Number.parseFloat(ingredient.priceDelta) : 0,
-  imageS3Key: ingredient ? ingredient.imageS3Key : null,
+const buildDefaults = (modifier: ModifierApi | null, defaultLocale: string): ModifierForm => ({
+  name: modifier ? { ...modifier.name } : {},
+  description: modifier ? fromLocalizedText(modifier.description, defaultLocale) || null : null,
+  priceDelta: modifier ? Number.parseFloat(modifier.priceDelta) : 0,
+  imageS3Key: modifier ? modifier.imageS3Key : null,
 });
 
-const dishUnion = (usage: IngredientUsageApi | null, defaultLocale: string): readonly string[] => {
+const dishUnion = (usage: ModifierUsageApi | null, defaultLocale: string): readonly string[] => {
   if (!usage) return [];
   const byId = new Map<string, string>();
   for (const dish of [...usage.dishesAttached, ...usage.dishesInComposition]) {
@@ -52,18 +49,18 @@ const dishUnion = (usage: IngredientUsageApi | null, defaultLocale: string): rea
   return [...byId.values()];
 };
 
-export function IngredientFormSheet({
+export function ModifierFormSheet({
   open,
   onOpenChange,
-  ingredient,
-}: IngredientFormSheetProps): React.ReactElement {
+  modifier,
+}: ModifierFormSheetProps): React.ReactElement {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="right" className="flex flex-col gap-4 overflow-y-auto">
         {open ? (
-          <IngredientFormSheetBody
-            key={ingredient?.id ?? 'new'}
-            ingredient={ingredient}
+          <ModifierFormSheetBody
+            key={modifier?.id ?? 'new'}
+            modifier={modifier}
             onClose={() => {
               onOpenChange(false);
             }}
@@ -74,40 +71,40 @@ export function IngredientFormSheet({
   );
 }
 
-interface IngredientFormSheetBodyProps {
-  readonly ingredient: IngredientApi | null;
+interface ModifierFormSheetBodyProps {
+  readonly modifier: ModifierApi | null;
   readonly onClose: () => void;
 }
 
-function IngredientFormSheetBody({
-  ingredient,
+function ModifierFormSheetBody({
+  modifier,
   onClose,
-}: IngredientFormSheetBodyProps): React.ReactElement {
-  const { t } = useTranslation('translation', { keyPrefix: 'menu.ingredients' });
+}: ModifierFormSheetBodyProps): React.ReactElement {
+  const { t } = useTranslation('translation', { keyPrefix: 'menu.modifiers' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { defaultLocale, locales } = useContentLocales();
   const queryClient = useQueryClient();
-  const isNew = ingredient === null;
+  const isNew = modifier === null;
   const [archiveOpen, setArchiveOpen] = React.useState(false);
 
-  const form = useForm<IngredientForm>({
-    resolver: zodResolver(ingredientFormSchema(defaultLocale)),
-    defaultValues: buildDefaults(ingredient, defaultLocale),
+  const form = useForm<ModifierForm>({
+    resolver: zodResolver(modifierFormSchema(defaultLocale)),
+    defaultValues: buildDefaults(modifier, defaultLocale),
   });
 
   const usageQuery = useQuery({
-    ...ingredientUsageQuery(ingredient?.id ?? ''),
+    ...modifierUsageQuery(modifier?.id ?? ''),
     enabled: !isNew,
   });
   const usage = usageQuery.data?.data ?? null;
 
   const saveMutation = useMutation({
-    mutationFn: (values: IngredientForm) => {
+    mutationFn: (values: ModifierForm) => {
       const description =
         values.description && values.description.trim().length > 0
           ? { [defaultLocale]: values.description.trim() }
           : null;
-      return upsertIngredient(ingredient === null ? null : ingredient.id, {
+      return upsertModifier(modifier === null ? null : modifier.id, {
         name: values.name,
         description,
         priceDelta: values.priceDelta,
@@ -119,7 +116,7 @@ function IngredientFormSheetBody({
         showError(null, t('saveFailed'));
         return;
       }
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifiers'] });
       showSuccess(tCommon('saved'), { duration: 1500 });
       onClose();
     },
@@ -129,13 +126,13 @@ function IngredientFormSheetBody({
   });
 
   const archiveMutation = useMutation({
-    mutationFn: (id: string) => archiveIngredient(id),
+    mutationFn: (id: string) => archiveModifier(id),
     onSuccess: (res) => {
       if (!res.ok) {
         showError(null, t('saveFailed'));
         return;
       }
-      void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredients'] });
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifiers'] });
       setArchiveOpen(false);
       onClose();
     },
@@ -145,7 +142,7 @@ function IngredientFormSheetBody({
     saveMutation.mutate(values);
   });
 
-  const ingredientName = ingredient ? fromLocalizedText(ingredient.name, defaultLocale) : '';
+  const modifierName = modifier ? fromLocalizedText(modifier.name, defaultLocale) : '';
   const groupNames = (usage?.groups ?? []).map((g) => fromLocalizedText(g.name, defaultLocale));
   const dishNames = dishUnion(usage, defaultLocale);
 
@@ -155,7 +152,7 @@ function IngredientFormSheetBody({
         <SheetTitle>{isNew ? t('editorTitleNew') : t('editorTitleEdit')}</SheetTitle>
       </SheetHeader>
       <form
-        id="ingredient-form"
+        id="modifier-form"
         onSubmit={(e) => {
           void onSubmit(e);
         }}
@@ -163,9 +160,9 @@ function IngredientFormSheetBody({
       >
         <FieldGroup>
           <PhotoUpload
-            itemId={ingredient?.id ?? 'new'}
-            currentS3Key={ingredient?.imageS3Key ?? null}
-            currentPhotoUrl={ingredient?.imageUrl ?? null}
+            itemId={modifier?.id ?? 'new'}
+            currentS3Key={modifier?.imageS3Key ?? null}
+            currentPhotoUrl={modifier?.imageUrl ?? null}
             kind="ingredient"
             onUploaded={(s3Key) => {
               form.setValue('imageS3Key', s3Key, { shouldDirty: true });
@@ -176,7 +173,7 @@ function IngredientFormSheetBody({
             name="name"
             render={({ field, fieldState }) => (
               <LocalizedField
-                id="ingredient-name"
+                id="modifier-name"
                 label={t('nameLabel')}
                 value={field.value}
                 onChange={(next) => {
@@ -195,9 +192,9 @@ function IngredientFormSheetBody({
             name="description"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor="ingredient-description">{t('descriptionLabel')}</FieldLabel>
+                <FieldLabel htmlFor="modifier-description">{t('descriptionLabel')}</FieldLabel>
                 <Input
-                  id="ingredient-description"
+                  id="modifier-description"
                   placeholder={t('descriptionPlaceholder')}
                   maxLength={140}
                   name={field.name}
@@ -217,9 +214,9 @@ function IngredientFormSheetBody({
             name="priceDelta"
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor="ingredient-price">{t('priceLabel')}</FieldLabel>
+                <FieldLabel htmlFor="modifier-price">{t('priceLabel')}</FieldLabel>
                 <Input
-                  id="ingredient-price"
+                  id="modifier-price"
                   type="number"
                   step="0.01"
                   inputMode="decimal"
@@ -258,12 +255,12 @@ function IngredientFormSheetBody({
         <Button type="button" variant="ghost" onClick={onClose}>
           {tCommon('cancel')}
         </Button>
-        <Button type="submit" form="ingredient-form" disabled={saveMutation.isPending}>
+        <Button type="submit" form="modifier-form" disabled={saveMutation.isPending}>
           {isNew ? t('createBtn') : t('saveBtn')}
         </Button>
       </SheetFooter>
 
-      {ingredient !== null ? (
+      {modifier !== null ? (
         <AlertDialog open={archiveOpen} onOpenChange={setArchiveOpen}>
           <AlertDialogContent>
             <AlertDialogHeader>
@@ -272,7 +269,7 @@ function IngredientFormSheetBody({
                 <div className="flex flex-col gap-2 text-left">
                   <p>
                     {t('archiveDialogDescription', {
-                      name: ingredientName,
+                      name: modifierName,
                       groupCount: groupNames.length,
                       dishCount: dishNames.length,
                     })}
@@ -295,7 +292,7 @@ function IngredientFormSheetBody({
               <AlertDialogAction
                 variant="destructive"
                 onClick={() => {
-                  archiveMutation.mutate(ingredient.id);
+                  archiveMutation.mutate(modifier.id);
                 }}
               >
                 {t('archiveBtn')}

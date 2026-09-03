@@ -15,11 +15,11 @@ import {
 } from '@/components/ui/item';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { ingredientsQuery } from '@/lib/queries/catalog';
+import { modifiersQuery } from '@/lib/queries/catalog';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
 
-export interface IngredientPickerSheetProps {
+export interface ModifierPickerSheetProps {
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
   readonly onPick: (optionId: string) => void;
@@ -34,26 +34,26 @@ const trimPrice = (value: string): string => {
   return value;
 };
 
-export function IngredientPickerSheet({
+export function ModifierPickerSheet({
   open,
   onOpenChange,
   onPick,
   showPrice,
   disabledIds,
   disabledReason,
-}: IngredientPickerSheetProps): React.ReactElement {
+}: ModifierPickerSheetProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifiers' });
   const { defaultLocale } = useContentLocales();
-  const { data } = useQuery(ingredientsQuery());
+  const { data } = useQuery(modifiersQuery());
   const [search, setSearch] = React.useState('');
 
-  const ingredients = data?.data?.items ?? [];
+  const modifiers = data?.data?.items ?? [];
   const query = search.trim().toLowerCase();
   const filtered = query
-    ? ingredients.filter((ingredient) =>
-        fromLocalizedText(ingredient.name, defaultLocale).toLowerCase().includes(query),
+    ? modifiers.filter((modifier) =>
+        fromLocalizedText(modifier.name, defaultLocale).toLowerCase().includes(query),
       )
-    : ingredients;
+    : modifiers;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -73,12 +73,12 @@ export function IngredientPickerSheet({
             <p className="text-sm text-muted-foreground">{t('sheetEmpty')}</p>
           ) : (
             <ItemGroup>
-              {filtered.map((ingredient) => {
-                const isDisabled = disabledIds.has(ingredient.id);
-                const name = fromLocalizedText(ingredient.name, defaultLocale);
+              {filtered.map((modifier) => {
+                const isDisabled = disabledIds.has(modifier.id);
+                const name = fromLocalizedText(modifier.name, defaultLocale);
                 const priceText =
-                  showPrice && Number(ingredient.priceDelta) !== 0
-                    ? `+${trimPrice(ingredient.priceDelta)}`
+                  showPrice && Number(modifier.priceDelta) !== 0
+                    ? `+${trimPrice(modifier.priceDelta)}`
                     : null;
                 const pickButton = (
                   <Button
@@ -87,17 +87,17 @@ export function IngredientPickerSheet({
                     size="sm"
                     disabled={isDisabled}
                     onClick={() => {
-                      onPick(ingredient.id);
+                      onPick(modifier.id);
                     }}
                   >
                     {isDisabled ? t('alreadyAdded') : t('addToItem')}
                   </Button>
                 );
                 return (
-                  <Item key={ingredient.id} variant="outline">
-                    <ItemMedia variant={ingredient.imageUrl ? 'image' : 'icon'}>
-                      {ingredient.imageUrl ? (
-                        <img src={ingredient.imageUrl} alt="" />
+                  <Item key={modifier.id} variant="outline">
+                    <ItemMedia variant={modifier.imageUrl ? 'image' : 'icon'}>
+                      {modifier.imageUrl ? (
+                        <img src={modifier.imageUrl} alt="" />
                       ) : (
                         <ImageIcon className="text-muted-foreground" aria-hidden="true" />
                       )}
@@ -111,7 +111,7 @@ export function IngredientPickerSheet({
                         <TooltipProvider delayDuration={300}>
                           <Tooltip>
                             <TooltipTrigger asChild>{pickButton}</TooltipTrigger>
-                            <TooltipContent>{disabledReason(ingredient.id)}</TooltipContent>
+                            <TooltipContent>{disabledReason(modifier.id)}</TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
                       ) : (

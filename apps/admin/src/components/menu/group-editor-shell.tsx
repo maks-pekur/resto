@@ -8,9 +8,9 @@ import {
   type ModifierGroupFormState,
 } from '@/components/menu/modifier-group-form';
 import {
-  GroupIngredientsPicker,
-  type GroupIngredientRow,
-} from '@/components/menu/group-ingredients-picker';
+  GroupModifiersPicker,
+  type GroupModifierRow,
+} from '@/components/menu/group-modifiers-picker';
 import type { ModifierGroupDetailApi, ModifierOptionApi } from '@/lib/queries/catalog';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
 
@@ -36,7 +36,7 @@ const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
   isRequired: g.isRequired,
 });
 
-const rowFromOption = (option: ModifierOptionApi): GroupIngredientRow => ({
+const rowFromOption = (option: ModifierOptionApi): GroupModifierRow => ({
   id: option.id,
   name: option.name,
   imageUrl: option.imageUrl,
@@ -51,7 +51,7 @@ export function GroupEditorShell({
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
-  const [currentOptions, setCurrentOptions] = React.useState<readonly GroupIngredientRow[]>(
+  const [currentOptions, setCurrentOptions] = React.useState<readonly GroupModifierRow[]>(
     (initialGroup?.options ?? []).map(rowFromOption),
   );
   const [formState, setFormState] = React.useState<ModifierGroupFormState>({
@@ -108,7 +108,7 @@ export function GroupEditorShell({
             <CardDescription>{t('groupVariantsDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <GroupIngredientsPicker
+            <GroupModifiersPicker
               groupId={currentGroupId}
               options={currentOptions}
               onOptionsChange={setCurrentOptions}

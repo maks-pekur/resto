@@ -3,7 +3,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { IngredientApi } from '@/lib/queries/catalog';
+import type { ModifierApi } from '@/lib/queries/catalog';
 
 const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
@@ -24,15 +24,15 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { IngredientFormSheet } = await import('@/components/menu/ingredient-form-sheet');
+const { ModifierFormSheet } = await import('@/components/menu/modifier-form-sheet');
 
-const bacon: IngredientApi = {
+const bacon: ModifierApi = {
   id: 'ing-1',
   name: { ru: 'Бекон', en: 'Bacon' },
   description: null,
   priceDelta: '80.00',
   imageUrl: 'https://cdn.example.com/bacon.jpg',
-  imageS3Key: 'ingredients/bacon.jpg',
+  imageS3Key: 'modifiers/bacon.jpg',
   groupCount: 0,
   dishCount: 0,
 };
@@ -63,7 +63,7 @@ const renderSheet = (): void => {
 
   render(
     <QueryClientProvider client={makeQueryClient()}>
-      <IngredientFormSheet open onOpenChange={vi.fn()} ingredient={bacon} />
+      <ModifierFormSheet open onOpenChange={vi.fn()} modifier={bacon} />
     </QueryClientProvider>,
   );
 };
@@ -72,11 +72,11 @@ beforeEach(() => {
   apiFetchMock.mockReset();
 });
 
-describe('IngredientFormSheet', () => {
+describe('ModifierFormSheet', () => {
   it('saving without touching the photo control preserves the existing imageS3Key (GAP 1 fix)', async () => {
     renderSheet();
 
-    await userEvent.click(await screen.findByRole('button', { name: 'menu.ingredients.saveBtn' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'menu.modifiers.saveBtn' }));
 
     await waitFor(() => {
       expect(apiFetchMock).toHaveBeenCalledWith(
@@ -87,7 +87,7 @@ describe('IngredientFormSheet', () => {
             name: { ru: 'Бекон', en: 'Bacon' },
             description: null,
             priceDelta: '80.00',
-            imageS3Key: 'ingredients/bacon.jpg',
+            imageS3Key: 'modifiers/bacon.jpg',
             id: 'ing-1',
           },
         }),

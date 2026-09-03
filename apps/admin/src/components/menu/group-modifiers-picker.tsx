@@ -27,23 +27,23 @@ import {
   ItemMedia,
   ItemTitle,
 } from '@/components/ui/item';
-import { IngredientPickerSheet } from '@/components/menu/ingredient-picker-sheet';
-import { ingredientsQuery, setGroupIngredients } from '@/lib/queries/catalog';
+import { ModifierPickerSheet } from '@/components/menu/modifier-picker-sheet';
+import { modifiersQuery, setGroupModifiers } from '@/lib/queries/catalog';
 import { fromLocalizedText, type LocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { showError } from '@/lib/ui/toast-helpers';
 
-export interface GroupIngredientRow {
+export interface GroupModifierRow {
   readonly id: string;
   readonly name: LocalizedText;
   readonly imageUrl: string | null;
   readonly priceDelta: string;
 }
 
-export interface GroupIngredientsPickerProps {
+export interface GroupModifiersPickerProps {
   readonly groupId: string;
-  readonly options: readonly GroupIngredientRow[];
-  readonly onOptionsChange: (options: readonly GroupIngredientRow[]) => void;
+  readonly options: readonly GroupModifierRow[];
+  readonly onOptionsChange: (options: readonly GroupModifierRow[]) => void;
 }
 
 const EMPTY_DISABLED_IDS: ReadonlySet<string> = new Set();
@@ -54,21 +54,21 @@ const trimPrice = (value: string): string => {
   return value;
 };
 
-interface SortableIngredientRowProps {
-  readonly row: GroupIngredientRow;
+interface SortableModifierRowProps {
+  readonly row: GroupModifierRow;
   readonly name: string;
   readonly priceText: string | null;
   readonly removeAriaLabel: string;
   readonly onRemove: () => void;
 }
 
-function SortableIngredientRow({
+function SortableModifierRow({
   row,
   name,
   priceText,
   removeAriaLabel,
   onRemove,
-}: SortableIngredientRowProps): React.ReactElement {
+}: SortableModifierRowProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
   });
@@ -112,16 +112,16 @@ function SortableIngredientRow({
   );
 }
 
-export function GroupIngredientsPicker({
+export function GroupModifiersPicker({
   groupId,
   options,
   onOptionsChange,
-}: GroupIngredientsPickerProps): React.ReactElement {
+}: GroupModifiersPickerProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { defaultLocale } = useContentLocales();
   const queryClient = useQueryClient();
-  const [rows, setRows] = React.useState<readonly GroupIngredientRow[]>(options);
+  const [rows, setRows] = React.useState<readonly GroupModifierRow[]>(options);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const isNewGroup = groupId === 'new';
 
@@ -129,19 +129,19 @@ export function GroupIngredientsPicker({
     setRows(options);
   }, [options]);
 
-  const { data: ingredientsData } = useQuery(ingredientsQuery());
-  const availableIngredients = ingredientsData?.data?.items ?? [];
+  const { data: modifiersData } = useQuery(modifiersQuery());
+  const availableModifiers = modifiersData?.data?.items ?? [];
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const writeMutation = useMutation({
-    mutationFn: (ids: readonly string[]) => setGroupIngredients(groupId, ids),
+    mutationFn: (ids: readonly string[]) => setGroupModifiers(groupId, ids),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-group', groupId] });
     },
   });
 
-  const persist = async (next: readonly GroupIngredientRow[]): Promise<void> => {
+  const persist = async (next: readonly GroupModifierRow[]): Promise<void> => {
     const previous = rows;
     setRows(next);
     onOptionsChange(next);
@@ -166,7 +166,7 @@ export function GroupIngredientsPicker({
   const onPick = (optionId: string): void => {
     setSheetOpen(false);
     if (rows.some((row) => row.id === optionId)) return;
-    const picked = availableIngredients.find((ingredient) => ingredient.id === optionId);
+    const picked = availableModifiers.find((modifier) => modifier.id === optionId);
     if (!picked) return;
     void persist([
       ...rows,
@@ -201,7 +201,7 @@ export function GroupIngredientsPicker({
                 const priceText =
                   Number(row.priceDelta) !== 0 ? `+${trimPrice(row.priceDelta)}` : null;
                 return (
-                  <SortableIngredientRow
+                  <SortableModifierRow
                     key={row.id}
                     row={row}
                     name={name}
@@ -229,7 +229,7 @@ export function GroupIngredientsPicker({
       >
         {t('addOption')}
       </Button>
-      <IngredientPickerSheet
+      <ModifierPickerSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onPick={onPick}

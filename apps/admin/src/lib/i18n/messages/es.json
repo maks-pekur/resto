@@ -58,7 +58,7 @@
     "menu": "Menú",
     "menuItems": "Platos",
     "menuCategories": "Categorías",
-    "menuModifiers": "Ingredientes",
+    "menuModifiers": "Modificadores",
     "menuStopList": "Lista de pausados",
     "team": "Equipo",
     "settings": "Configuración",
@@ -171,10 +171,10 @@
       "compositionSectionTitle": "Composición",
       "compositionSectionHint": "Los grupos de modificadores se guardan automáticamente",
       "compositionModeText": "Como texto",
-      "compositionModeAssembled": "Desde ingredientes",
+      "compositionModeAssembled": "Desde modificadores",
       "compositionTextPlaceholder": "Pollo, tomate, salsa teriyaki",
       "compositionTextHint": "Separado por comas. Se muestra en la tarjeta del plato.",
-      "compositionAddLineBtn": "+ Añadir ingrediente",
+      "compositionAddLineBtn": "+ Añadir modificador",
       "compositionRemovableLabel": "Se puede quitar",
       "compositionRemoveLineAriaLabel": "Quitar «{{name}}» de la composición",
       "seoSectionTitle": "SEO",
@@ -238,7 +238,7 @@
     },
     "modifiers": {
       "newItemHint": "Guarda primero el plato — los modificadores se pueden añadir después del primer guardado.",
-      "cardTitle": "Ingredientes y grupos",
+      "cardTitle": "Modificadores y grupos",
       "cardDescription": "Añade grupos desde la biblioteca o crea uno nuevo — las opciones se pueden editar dentro del grupo.",
       "emptyHint": "No hay grupos añadidos — toca «+ Añadir grupo».",
       "chipRemoveAriaLabel": "Quitar grupo {{name}}",
@@ -261,23 +261,23 @@
       "chipMoveEarlierAriaLabel": "Mover el grupo {{name}} antes",
       "chipMoveLaterAriaLabel": "Mover el grupo {{name}} después"
     },
-    "ingredients": {
-      "tabIngredients": "Ingredientes",
+    "modifiers": {
+      "tabModifiers": "Modificadores",
       "tabGroups": "Grupos",
-      "emptyTitle": "Aún no hay ingredientes",
+      "emptyTitle": "Aún no hay modificadores",
       "emptyDescription": "Añade el primero — aparecerá aquí y podrás reutilizarlo en cualquier grupo o plato.",
-      "addBtn": "+ Añadir ingrediente",
-      "editorTitleNew": "Nuevo ingrediente",
-      "editorTitleEdit": "Ingrediente",
-      "createBtn": "Crear ingrediente",
+      "addBtn": "+ Añadir modificador",
+      "editorTitleNew": "Nuevo modificador",
+      "editorTitleEdit": "Modificador",
+      "createBtn": "Crear modificador",
       "saveBtn": "Guardar cambios",
       "nameLabel": "Nombre",
       "descriptionLabel": "Descripción",
       "descriptionPlaceholder": "Línea corta bajo la foto",
       "priceLabel": "Precio",
-      "saveFailed": "No se pudo guardar el ingrediente.",
+      "saveFailed": "No se pudo guardar el modificador.",
       "archiveBtn": "Archivar",
-      "archiveDialogTitle": "¿Archivar este ingrediente?",
+      "archiveDialogTitle": "¿Archivar este modificador?",
       "archiveDialogDescription": "«{{name}}» se ocultará del menú y se eliminará de {{groupCount}} grupos y {{dishCount}} platos. Es reversible — quita el filtro de archivados para deshacerlo.",
       "usedInGroups": "Grupos: {{names}}",
       "usedInDishes": "Platos: {{names}}"
@@ -291,10 +291,10 @@
       "behaviourSeveral": "Varias",
       "requiredLabel": "Grupo obligatorio"
     },
-    "itemIngredients": {
+    "itemModifiers": {
       "groupsRowLabel": "Grupos",
-      "singlesRowLabel": "Ingredientes individuales",
-      "addSingleBtn": "+ Ingrediente",
+      "singlesRowLabel": "Modificadores individuales",
+      "addSingleBtn": "+ Modificador",
       "duplicateError": "«{{name}}» ya está añadido mediante «{{groupName}}»."
     },
     "categories": {
@@ -393,11 +393,11 @@
       "aggregateBadge": "{{count}}/{{total}} locales",
       "aggregateBadgeAria": "Pausado en {{count}} de {{total}} locales",
       "aggregateTruncatedNote": "Mostrando los primeros {{shown}} de {{total}} platos pausados",
-      "ingredientsHeading": "Ingredientes",
-      "stopIngredientDialogTitle": "Hay platos con este ingrediente",
-      "stopIngredientDialogBody": "Marca los platos que también quieras pausar, para que un cliente no pida algo que no se puede preparar.",
+      "modifiersHeading": "Modificadores",
+      "stopModifierDialogTitle": "Hay platos con este modificador",
+      "stopModifierDialogBody": "Marca los platos que también quieras pausar, para que un cliente no pida algo que no se puede preparar.",
       "stopSelectedDishesBtn": "Pausar los marcados",
-      "stopIngredientOnlyBtn": "Solo el ingrediente",
+      "stopModifierOnlyBtn": "Solo el modificador",
       "stopAriaLabel": "Pausar {{name}}"
     },
     "status": {

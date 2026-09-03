@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { IngredientApi, IngredientListResponse } from '@/lib/queries/catalog';
+import type { ModifierApi, ModifierListResponse } from '@/lib/queries/catalog';
 
 const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
@@ -18,20 +18,20 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { IngredientCardGrid } = await import('@/components/menu/ingredient-card-grid');
+const { ModifierCardGrid } = await import('@/components/menu/modifier-card-grid');
 
-const bacon: IngredientApi = {
+const bacon: ModifierApi = {
   id: 'ing-1',
   name: { ru: 'Бекон', en: 'Bacon' },
   description: null,
   priceDelta: '80.00',
   imageUrl: 'https://cdn.example.com/bacon.jpg',
-  imageS3Key: 'ingredients/bacon.jpg',
+  imageS3Key: 'modifiers/bacon.jpg',
   groupCount: 2,
   dishCount: 3,
 };
 
-const onion: IngredientApi = {
+const onion: ModifierApi = {
   id: 'ing-2',
   name: { ru: 'Лук', en: 'Onion' },
   description: null,
@@ -42,7 +42,7 @@ const onion: IngredientApi = {
   dishCount: 0,
 };
 
-const renderGrid = (ingredients: readonly IngredientApi[]) => {
+const renderGrid = (modifiers: readonly ModifierApi[]) => {
   apiFetchMock.mockImplementation((path: string) => {
     if (path.startsWith('/v1/tenants/me')) {
       return Promise.resolve({
@@ -51,13 +51,13 @@ const renderGrid = (ingredients: readonly IngredientApi[]) => {
         data: { locale: 'ru', contentLocales: ['ru'], defaultCurrency: 'RUB' },
       });
     }
-    const body: IngredientListResponse = { items: ingredients };
+    const body: ModifierListResponse = { items: modifiers };
     return Promise.resolve({ status: 200, ok: true, data: body });
   });
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <IngredientCardGrid onSelect={vi.fn()} />
+      <ModifierCardGrid onSelect={vi.fn()} />
     </QueryClientProvider>,
   );
 };
@@ -66,26 +66,26 @@ beforeEach(() => {
   apiFetchMock.mockReset();
 });
 
-describe('IngredientCardGrid', () => {
-  it('renders one card per ingredient in the library', async () => {
+describe('ModifierCardGrid', () => {
+  it('renders one card per modifier in the library', async () => {
     renderGrid([bacon, onion]);
 
-    expect(await screen.findByTestId('ingredient-card-ing-1')).toBeInTheDocument();
-    expect(screen.getByTestId('ingredient-card-ing-2')).toBeInTheDocument();
+    expect(await screen.findByTestId('modifier-card-ing-1')).toBeInTheDocument();
+    expect(screen.getByTestId('modifier-card-ing-2')).toBeInTheDocument();
   });
 
   it('renders the placeholder icon, not a broken image, when imageUrl is null', async () => {
     renderGrid([onion]);
 
-    const card = await screen.findByTestId('ingredient-card-ing-2');
-    expect(screen.getByTestId('ingredient-photo-placeholder-ing-2')).toBeInTheDocument();
+    const card = await screen.findByTestId('modifier-card-ing-2');
+    expect(screen.getByTestId('modifier-photo-placeholder-ing-2')).toBeInTheDocument();
     expect(card.querySelector('img')).toBeNull();
   });
 
-  it('renders the empty state when the library has no ingredients', async () => {
+  it('renders the empty state when the library has no modifiers', async () => {
     renderGrid([]);
 
-    expect(await screen.findByText('menu.ingredients.emptyTitle')).toBeInTheDocument();
-    expect(screen.getByText('menu.ingredients.emptyDescription')).toBeInTheDocument();
+    expect(await screen.findByText('menu.modifiers.emptyTitle')).toBeInTheDocument();
+    expect(screen.getByText('menu.modifiers.emptyDescription')).toBeInTheDocument();
   });
 });

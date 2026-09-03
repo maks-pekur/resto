@@ -15,7 +15,7 @@ const FORM = {
   basePrice: 45,
   currency: 'UAH',
   allergens: [],
-  ingredients: [],
+  modifiers: [],
   metaTitle: null,
   metaDescription: null,
   proteins: null,

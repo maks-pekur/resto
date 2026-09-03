@@ -107,17 +107,17 @@ export const ModifierOptionFormSchema = z.object({
 
 export type ModifierOptionForm = z.infer<typeof ModifierOptionFormSchema>;
 
-export const IngredientFormSchema = z.object({
+export const ModifierFormSchema = z.object({
   name: LocalizedTextFormSchema,
   description: z.string().max(140).nullable(),
   priceDelta: z.number().min(0),
   imageS3Key: z.string().nullable(),
 });
 
-export type IngredientForm = z.infer<typeof IngredientFormSchema>;
+export type ModifierForm = z.infer<typeof ModifierFormSchema>;
 
-export const ingredientFormSchema = (defaultLocale: string) =>
-  IngredientFormSchema.refine(
+export const modifierFormSchema = (defaultLocale: string) =>
+  ModifierFormSchema.refine(
     (values) => (values.name[defaultLocale] ?? '').trim().length > 0,
     'nameRequired',
   );

@@ -133,7 +133,7 @@ export function ItemEditorShell({
               onSizesChange={setCurrentSizes}
               availableModifierGroups={availableModifierGroups}
               initialModifierGroupIds={initialItem?.modifierGroupIds ?? []}
-              initialIngredientIds={initialItem?.modifierOptionIds ?? []}
+              initialModifierIds={initialItem?.modifierOptionIds ?? []}
               onSaved={(savedId) => {
                 setCurrentItemId(savedId);
               }}

@@ -76,7 +76,7 @@ export function ModifierGroupFormComponent({
       onSaved(savedId);
       if (isNew) {
         void navigate({
-          to: '/menu/ingredients/$id',
+          to: '/menu/modifiers/$id',
           params: { id: savedId },
           replace: true,
         });

@@ -3,12 +3,12 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { Route as locationLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
-import { ingredientStopListQuery, stopListQuery } from '@/lib/queries/catalog';
+import { modifierStopListQuery, stopListQuery } from '@/lib/queries/catalog';
 import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { PageHeading } from '@/components/common/page-heading';
 import { Separator } from '@/components/ui/separator';
 import { StopListTable } from '@/components/menu/stop-list-table';
-import { IngredientStopListTable } from '@/components/menu/ingredient-stop-list-table';
+import { ModifierStopListTable } from '@/components/menu/modifier-stop-list-table';
 import { TodaysWidget } from '@/components/menu/todays-86-widget';
 import { TodaysWidgetResetButton } from '@/components/menu/todays-86-reset-button';
 
@@ -27,7 +27,7 @@ export const Route = createRoute({
   loader: ({ context: { queryClient, activeLocation } }) =>
     Promise.all([
       queryClient.ensureQueryData(stopListQuery(activeLocation.id)),
-      queryClient.ensureQueryData(ingredientStopListQuery(activeLocation.id)),
+      queryClient.ensureQueryData(modifierStopListQuery(activeLocation.id)),
     ]),
   component: StopListPage,
 });
@@ -42,13 +42,13 @@ function StopListPage() {
     enabled: isSingleLocation,
   });
 
-  const { data: ingredientResult } = useQuery({
-    ...ingredientStopListQuery(locationId ?? ''),
+  const { data: modifierResult } = useQuery({
+    ...modifierStopListQuery(locationId ?? ''),
     enabled: isSingleLocation,
   });
 
   const items = singleResult?.data?.items ?? [];
-  const ingredients = ingredientResult?.data?.items ?? [];
+  const modifiers = modifierResult?.data?.items ?? [];
 
   return (
     <>
@@ -57,13 +57,13 @@ function StopListPage() {
         action={isSingleLocation ? <TodaysWidgetResetButton locationId={locationId} /> : undefined}
       />
       <div className="flex flex-col gap-6 px-4 lg:px-6">
-        <TodaysWidget count={items.length + ingredients.length} />
+        <TodaysWidget count={items.length + modifiers.length} />
         <StopListTable items={items} locationId={locationId ?? ''} />
-        {ingredients.length > 0 ? (
+        {modifiers.length > 0 ? (
           <>
             <Separator />
-            <h2 className="text-base font-semibold">{t('ingredientsHeading')}</h2>
-            <IngredientStopListTable items={ingredients} locationId={locationId ?? ''} />
+            <h2 className="text-base font-semibold">{t('modifiersHeading')}</h2>
+            <ModifierStopListTable items={modifiers} locationId={locationId ?? ''} />
           </>
         ) : null}
       </div>

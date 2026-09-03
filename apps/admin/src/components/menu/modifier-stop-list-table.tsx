@@ -14,27 +14,27 @@ import { Switch } from '@/components/ui/switch';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { formatAge, formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { toggleIngredientStopList } from '@/lib/queries/catalog';
+import { toggleModifierStopList } from '@/lib/queries/catalog';
 import type { OptionStopListItemApi } from '@/lib/queries/catalog';
 
-export interface IngredientStopListTableProps {
+export interface ModifierStopListTableProps {
   readonly items: readonly OptionStopListItemApi[];
   readonly locationId: string;
 }
 
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
 
-export function IngredientStopListTable({
+export function ModifierStopListTable({
   items,
   locationId,
-}: IngredientStopListTableProps): React.ReactElement | null {
+}: ModifierStopListTableProps): React.ReactElement | null {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
   const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const queryClient = useQueryClient();
   const [removedIds, setRemovedIds] = React.useState<ReadonlySet<string>>(new Set());
 
   const toggleMutation = useMutation({
-    mutationFn: (optionId: string) => toggleIngredientStopList(optionId, false, locationId),
+    mutationFn: (optionId: string) => toggleModifierStopList(optionId, false, locationId),
     onSuccess: (res, optionId) => {
       if (res.ok) {
         setRemovedIds((prev) => {
@@ -43,7 +43,7 @@ export function IngredientStopListTable({
           return copy;
         });
         showSuccess(tItems('removedFromStopList'), { duration: 1500 });
-        void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredient-stop-list'] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-stop-list'] });
       } else {
         showError(null, tItems('stopListFailed'));
       }
@@ -78,7 +78,7 @@ export function IngredientStopListTable({
             <DataTableRow
               key={item.id}
               className="h-12"
-              data-testid={`ingredient-stop-row-${item.optionId}`}
+              data-testid={`modifier-stop-row-${item.optionId}`}
             >
               <DataTableCell>
                 {item.imageUrl ? (

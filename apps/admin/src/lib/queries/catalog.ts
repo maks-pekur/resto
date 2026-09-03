@@ -14,7 +14,7 @@ import type {
   SizeForm,
   ModifierGroupForm,
   ModifierOptionForm,
-  IngredientForm,
+  ModifierForm,
 } from '@/lib/menu/zod-schemas';
 
 const STALE_STABLE = 30_000;
@@ -56,13 +56,13 @@ export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
 }
 
-export type IngredientApi = Schemas['ModifierOptionListResponseDto']['items'][number];
+export type ModifierApi = Schemas['ModifierOptionListResponseDto']['items'][number];
 
-export interface IngredientListResponse {
-  readonly items: readonly IngredientApi[];
+export interface ModifierListResponse {
+  readonly items: readonly ModifierApi[];
 }
 
-export type IngredientUsageApi = Schemas['ModifierOptionUsageResponseDto'];
+export type ModifierUsageApi = Schemas['ModifierOptionUsageResponseDto'];
 
 export type OptionStopListItemApi = Schemas['OptionStopListResponseDto']['items'][number];
 
@@ -156,20 +156,20 @@ export const modifierGroupQuery = (id: string) => ({
   staleTime: STALE_STABLE,
 });
 
-export const ingredientsQuery = () => ({
-  queryKey: ['catalog', 'ingredients'] as const,
-  queryFn: () => apiFetch<IngredientListResponse>('/v1/catalog/modifier-options'),
+export const modifiersQuery = () => ({
+  queryKey: ['catalog', 'modifiers'] as const,
+  queryFn: () => apiFetch<ModifierListResponse>('/v1/catalog/modifier-options'),
   staleTime: STALE_STABLE,
 });
 
-export const ingredientUsageQuery = (id: string) => ({
-  queryKey: ['catalog', 'ingredient-usage', id] as const,
-  queryFn: () => apiFetch<IngredientUsageApi>(`/v1/catalog/modifier-options/${id}/usage`),
+export const modifierUsageQuery = (id: string) => ({
+  queryKey: ['catalog', 'modifier-usage', id] as const,
+  queryFn: () => apiFetch<ModifierUsageApi>(`/v1/catalog/modifier-options/${id}/usage`),
   staleTime: STALE_STABLE,
 });
 
-export const ingredientStopListQuery = (locationId: string) => ({
-  queryKey: ['catalog', 'ingredient-stop-list', locationId] as const,
+export const modifierStopListQuery = (locationId: string) => ({
+  queryKey: ['catalog', 'modifier-stop-list', locationId] as const,
   queryFn: () => apiFetch<OptionStopListResponse>('/v1/catalog/stop-list/options', { locationId }),
   staleTime: STALE_STABLE,
 });
@@ -334,10 +334,10 @@ export const upsertModifierOption = (
   });
 
 // UpsertModifierOptionInputDto.description is LocalizedText on the wire (apps/api dto.ts) —
-// IngredientFormSchema.description is a plain string for the sheet's single, unlocalized field.
-export const upsertIngredient = (
+// ModifierFormSchema.description is a plain string for the sheet's single, unlocalized field.
+export const upsertModifier = (
   id: string | null,
-  data: Omit<IngredientForm, 'name' | 'description'> & {
+  data: Omit<ModifierForm, 'name' | 'description'> & {
     readonly name: LocalizedText;
     readonly description: LocalizedText | null;
   },
@@ -347,18 +347,18 @@ export const upsertIngredient = (
     body: { ...data, priceDelta: toMoney(data.priceDelta), id: id ?? undefined },
   });
 
-export const archiveIngredient = (id: string) =>
-  apiFetch<IngredientUsageApi>(`/v1/catalog/modifier-options/${id}/archive`, {
+export const archiveModifier = (id: string) =>
+  apiFetch<ModifierUsageApi>(`/v1/catalog/modifier-options/${id}/archive`, {
     method: 'PATCH',
   });
 
-export const setGroupIngredients = (groupId: string, optionIds: readonly string[]) =>
+export const setGroupModifiers = (groupId: string, optionIds: readonly string[]) =>
   apiFetch<IdResponseApi>(`/v1/catalog/modifier-groups/${groupId}/options`, {
     method: 'PUT',
     body: { optionIds },
   });
 
-export const setItemIngredients = (itemId: string, optionIds: readonly string[]) =>
+export const setItemModifiers = (itemId: string, optionIds: readonly string[]) =>
   apiFetch<IdResponseApi>(`/v1/catalog/items/${itemId}/modifier-options`, {
     method: 'PUT',
     body: { optionIds },
@@ -376,13 +376,9 @@ export const setItemComposition = (itemId: string, payload: ItemCompositionPaylo
     body: payload,
   });
 
-// D-20: only the operator stops an ingredient — locationId is required (never
+// D-20: only the operator stops an modifier — locationId is required (never
 // 'all') and is the operator's currently selected location, same as toggleStopList.
-export const toggleIngredientStopList = (
-  optionId: string,
-  stopped: boolean,
-  locationId: string,
-) => {
+export const toggleModifierStopList = (optionId: string, stopped: boolean, locationId: string) => {
   if (stopped) {
     return apiFetch<IdResponseApi>('/v1/catalog/stop-list/options', {
       method: 'POST',

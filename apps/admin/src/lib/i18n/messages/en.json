@@ -58,7 +58,7 @@
     "menu": "Menu",
     "menuItems": "Items",
     "menuCategories": "Categories",
-    "menuModifiers": "Ingredients",
+    "menuModifiers": "Modifiers",
     "menuStopList": "Stop list",
     "team": "Team",
     "settings": "Settings",
@@ -171,10 +171,10 @@
       "compositionSectionTitle": "Composition",
       "compositionSectionHint": "Modifier groups save automatically",
       "compositionModeText": "Free text",
-      "compositionModeAssembled": "From ingredients",
+      "compositionModeAssembled": "From modifiers",
       "compositionTextPlaceholder": "Chicken, tomato, teriyaki sauce",
       "compositionTextHint": "Comma-separated. Shown on the item card.",
-      "compositionAddLineBtn": "+ Add ingredient",
+      "compositionAddLineBtn": "+ Add modifier",
       "compositionRemovableLabel": "Removable",
       "compositionRemoveLineAriaLabel": "Remove \"{{name}}\" from the composition",
       "seoSectionTitle": "SEO",
@@ -238,7 +238,7 @@
     },
     "modifiers": {
       "newItemHint": "Save the item first — modifiers can be attached after the first save.",
-      "cardTitle": "Ingredients and groups",
+      "cardTitle": "Modifiers and groups",
       "cardDescription": "Attach groups from the library or create a new one — options can be edited inside the group.",
       "emptyHint": "No attached groups — tap «+ Add group».",
       "chipRemoveAriaLabel": "Remove group {{name}}",
@@ -261,23 +261,23 @@
       "chipMoveEarlierAriaLabel": "Move group {{name}} earlier",
       "chipMoveLaterAriaLabel": "Move group {{name}} later"
     },
-    "ingredients": {
-      "tabIngredients": "Ingredients",
+    "modifiers": {
+      "tabModifiers": "Modifiers",
       "tabGroups": "Groups",
-      "emptyTitle": "No ingredients yet",
+      "emptyTitle": "No modifiers yet",
       "emptyDescription": "Add your first one — it will show up here and can be reused across any group or dish.",
-      "addBtn": "+ Add ingredient",
-      "editorTitleNew": "New ingredient",
-      "editorTitleEdit": "Ingredient",
-      "createBtn": "Create ingredient",
+      "addBtn": "+ Add modifier",
+      "editorTitleNew": "New modifier",
+      "editorTitleEdit": "Modifier",
+      "createBtn": "Create modifier",
       "saveBtn": "Save changes",
       "nameLabel": "Name",
       "descriptionLabel": "Description",
       "descriptionPlaceholder": "Short line under the photo",
       "priceLabel": "Price",
-      "saveFailed": "Couldn't save the ingredient.",
+      "saveFailed": "Couldn't save the modifier.",
       "archiveBtn": "Archive",
-      "archiveDialogTitle": "Archive this ingredient?",
+      "archiveDialogTitle": "Archive this modifier?",
       "archiveDialogDescription": "\"{{name}}\" will be hidden from the menu and removed from {{groupCount}} groups and {{dishCount}} dishes. This is reversible — clear the archive filter to undo it.",
       "usedInGroups": "Groups: {{names}}",
       "usedInDishes": "Dishes: {{names}}"
@@ -291,10 +291,10 @@
       "behaviourSeveral": "Several",
       "requiredLabel": "Required group"
     },
-    "itemIngredients": {
+    "itemModifiers": {
       "groupsRowLabel": "Groups",
-      "singlesRowLabel": "Single ingredients",
-      "addSingleBtn": "+ Ingredient",
+      "singlesRowLabel": "Single modifiers",
+      "addSingleBtn": "+ Modifier",
       "duplicateError": "\"{{name}}\" is already attached via \"{{groupName}}\"."
     },
     "categories": {
@@ -393,11 +393,11 @@
       "aggregateBadge": "{{count}}/{{total}} locations",
       "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations",
       "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items",
-      "ingredientsHeading": "Ingredients",
-      "stopIngredientDialogTitle": "Dishes use this ingredient",
-      "stopIngredientDialogBody": "Check the dishes you also want to stop, so a guest can't order something that can't be assembled.",
+      "modifiersHeading": "Modifiers",
+      "stopModifierDialogTitle": "Dishes use this modifier",
+      "stopModifierDialogBody": "Check the dishes you also want to stop, so a guest can't order something that can't be assembled.",
       "stopSelectedDishesBtn": "Stop the checked ones",
-      "stopIngredientOnlyBtn": "Ingredient only",
+      "stopModifierOnlyBtn": "Modifier only",
       "stopAriaLabel": "Stop {{name}}"
     },
     "status": {

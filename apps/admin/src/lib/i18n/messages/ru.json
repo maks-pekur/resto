@@ -58,7 +58,7 @@
     "menu": "Меню",
     "menuItems": "Блюда",
     "menuCategories": "Категории",
-    "menuModifiers": "Ингредиенты",
+    "menuModifiers": "Модификаторы",
     "menuStopList": "Стоп-лист",
     "team": "Команда",
     "settings": "Настройки",
@@ -171,10 +171,10 @@
       "compositionSectionTitle": "Состав",
       "compositionSectionHint": "Группы модификаторов сохраняются автоматически",
       "compositionModeText": "Текстом",
-      "compositionModeAssembled": "Из ингредиентов",
+      "compositionModeAssembled": "Из модификаторов",
       "compositionTextPlaceholder": "Курица, помидоры, соус терияки",
       "compositionTextHint": "Через запятую. Отображается в карточке блюда.",
-      "compositionAddLineBtn": "+ Добавить ингредиент",
+      "compositionAddLineBtn": "+ Добавить модификатор",
       "compositionRemovableLabel": "Можно убрать",
       "compositionRemoveLineAriaLabel": "Убрать «{{name}}» из состава",
       "seoSectionTitle": "SEO",
@@ -238,7 +238,7 @@
     },
     "modifiers": {
       "newItemHint": "Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.",
-      "cardTitle": "Ингредиенты и группы",
+      "cardTitle": "Модификаторы и группы",
       "cardDescription": "Прикрепите группы из библиотеки или создайте новую — варианты можно отредактировать в самой группе.",
       "emptyHint": "Нет прикреплённых групп — нажмите «+ Добавить группу».",
       "chipRemoveAriaLabel": "Убрать группу {{name}}",
@@ -261,23 +261,23 @@
       "chipMoveEarlierAriaLabel": "Переместить группу {{name}} выше",
       "chipMoveLaterAriaLabel": "Переместить группу {{name}} ниже"
     },
-    "ingredients": {
-      "tabIngredients": "Ингредиенты",
+    "modifiers": {
+      "tabModifiers": "Модификаторы",
       "tabGroups": "Группы",
-      "emptyTitle": "Пока нет ингредиентов",
+      "emptyTitle": "Пока нет модификаторов",
       "emptyDescription": "Добавьте первый — он появится здесь и будет доступен для любой группы или блюда.",
-      "addBtn": "+ Добавить ингредиент",
-      "editorTitleNew": "Новый ингредиент",
-      "editorTitleEdit": "Ингредиент",
-      "createBtn": "Создать ингредиент",
+      "addBtn": "+ Добавить модификатор",
+      "editorTitleNew": "Новый модификатор",
+      "editorTitleEdit": "Модификатор",
+      "createBtn": "Создать модификатор",
       "saveBtn": "Сохранить изменения",
       "nameLabel": "Название",
       "descriptionLabel": "Описание",
       "descriptionPlaceholder": "Короткая строка под фото",
       "priceLabel": "Цена",
-      "saveFailed": "Не удалось сохранить ингредиент.",
+      "saveFailed": "Не удалось сохранить модификатор.",
       "archiveBtn": "Архивировать",
-      "archiveDialogTitle": "Архивировать ингредиент?",
+      "archiveDialogTitle": "Архивировать модификатор?",
       "archiveDialogDescription": "«{{name}}» будет скрыт из меню и удалён из {{groupCount}} групп и {{dishCount}} блюд. Действие обратимо — снимите архивацию в фильтре.",
       "usedInGroups": "Группы: {{names}}",
       "usedInDishes": "Блюда: {{names}}"
@@ -291,10 +291,10 @@
       "behaviourSeveral": "Несколько",
       "requiredLabel": "Обязательная группа"
     },
-    "itemIngredients": {
+    "itemModifiers": {
       "groupsRowLabel": "Группы",
-      "singlesRowLabel": "Отдельные ингредиенты",
-      "addSingleBtn": "+ Ингредиент",
+      "singlesRowLabel": "Отдельные модификаторы",
+      "addSingleBtn": "+ Модификатор",
       "duplicateError": "«{{name}}» уже добавлен через «{{groupName}}»."
     },
     "categories": {
@@ -393,11 +393,11 @@
       "aggregateBadge": "{{count}}/{{total}} точек",
       "aggregateBadgeAria": "Остановлено в {{count}} из {{total}} точек",
       "aggregateTruncatedNote": "Показаны первые {{shown}} из {{total}} остановленных позиций",
-      "ingredientsHeading": "Ингредиенты",
-      "stopIngredientDialogTitle": "Есть блюда с этим ингредиентом",
-      "stopIngredientDialogBody": "Отметьте блюда, которые тоже стоит остановить, чтобы гость не заказал то, что нельзя собрать.",
+      "modifiersHeading": "Модификаторы",
+      "stopModifierDialogTitle": "Есть блюда с этим модификатором",
+      "stopModifierDialogBody": "Отметьте блюда, которые тоже стоит остановить, чтобы гость не заказал то, что нельзя собрать.",
       "stopSelectedDishesBtn": "Остановить отмеченное",
-      "stopIngredientOnlyBtn": "Только ингредиент",
+      "stopModifierOnlyBtn": "Только модификатор",
       "stopAriaLabel": "Остановить {{name}}"
     },
     "status": {

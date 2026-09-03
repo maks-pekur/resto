@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import type { IngredientApi, IngredientUsageApi } from '@/lib/queries/catalog';
+import type { ModifierApi, ModifierUsageApi } from '@/lib/queries/catalog';
 
 const { apiFetchMock } = vi.hoisted(() => ({ apiFetchMock: vi.fn() }));
 
@@ -23,9 +23,9 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { IngredientStopDialog } = await import('@/components/menu/ingredient-stop-dialog');
+const { ModifierStopDialog } = await import('@/components/menu/modifier-stop-dialog');
 
-const bacon: IngredientApi = {
+const bacon: ModifierApi = {
   id: 'ing-1',
   name: { ru: 'Бекон', en: 'Bacon' },
   description: null,
@@ -36,7 +36,7 @@ const bacon: IngredientApi = {
   dishCount: 2,
 };
 
-const usage: IngredientUsageApi = {
+const usage: ModifierUsageApi = {
   groups: [],
   dishesAttached: [{ id: 'dish-attached', name: { ru: 'Пицца' } }],
   dishesInComposition: [{ id: 'dish-comp', name: { ru: 'Бургер' } }],
@@ -59,12 +59,7 @@ const renderDialog = (onOpenChange = vi.fn()) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <IngredientStopDialog
-        ingredient={bacon}
-        locationId="loc-1"
-        open
-        onOpenChange={onOpenChange}
-      />
+      <ModifierStopDialog modifier={bacon} locationId="loc-1" open onOpenChange={onOpenChange} />
     </QueryClientProvider>,
   );
 };
@@ -73,7 +68,7 @@ beforeEach(() => {
   apiFetchMock.mockReset();
 });
 
-describe('IngredientStopDialog', () => {
+describe('ModifierStopDialog', () => {
   it('renders only dishesInComposition entries, never dishesAttached', async () => {
     renderDialog();
 
@@ -88,12 +83,12 @@ describe('IngredientStopDialog', () => {
     expect(checkbox).toHaveAttribute('aria-checked', 'false');
   });
 
-  it('stopIngredientOnlyBtn fires exactly one stop mutation with no dish ids', async () => {
+  it('stopModifierOnlyBtn fires exactly one stop mutation with no dish ids', async () => {
     const user = userEvent.setup();
     renderDialog();
 
     await screen.findByText('Бургер');
-    await user.click(screen.getByText('menu.stopList.stopIngredientOnlyBtn'));
+    await user.click(screen.getByText('menu.stopList.stopModifierOnlyBtn'));
 
     await waitFor(() => {
       const stopCalls = apiFetchMock.mock.calls.filter(

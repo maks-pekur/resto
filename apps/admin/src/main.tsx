@@ -45,8 +45,8 @@ import {
 import { Route as menuCategoriesRoute } from './routes/(protected)/menu/categories';
 import { Route as menuItemsRoute } from './routes/(protected)/menu/items';
 import { Route as menuItemDetailRoute } from './routes/(protected)/menu/items.$id';
-import { Route as menuIngredientsRoute } from './routes/(protected)/menu/ingredients';
-import { Route as menuIngredientDetailRoute } from './routes/(protected)/menu/ingredients.$id';
+import { Route as menuModifiersRoute } from './routes/(protected)/menu/modifiers';
+import { Route as menuModifierDetailRoute } from './routes/(protected)/menu/modifiers.$id';
 import { Route as tenantDomainsRoute } from './routes/(protected)/tenant.domains';
 import { Route as tenantThemeRoute } from './routes/(protected)/tenant.theme';
 import { Route as tenantPayoutsRoute } from './routes/(protected)/tenant.payouts';
@@ -81,8 +81,8 @@ const menuRouteTree = menuLayoutRoute.addChildren([
   menuCategoriesRoute,
   menuItemsRoute,
   menuItemDetailRoute,
-  menuIngredientsRoute,
-  menuIngredientDetailRoute,
+  menuModifiersRoute,
+  menuModifierDetailRoute,
   StopListRedirectRoute,
 ]);
 

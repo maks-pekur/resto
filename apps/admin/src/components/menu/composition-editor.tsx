@@ -25,8 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Item, ItemContent, ItemGroup, ItemTitle } from '@/components/ui/item';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
-import { IngredientPickerSheet } from '@/components/menu/ingredient-picker-sheet';
-import { ingredientsQuery } from '@/lib/queries/catalog';
+import { ModifierPickerSheet } from '@/components/menu/modifier-picker-sheet';
+import { modifiersQuery } from '@/lib/queries/catalog';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { useContentLocales } from '@/hooks/use-content-locales';
 import { cn } from '@/lib/utils';
@@ -100,11 +100,11 @@ export function CompositionEditor(): React.ReactElement {
   const assembled = form.watch('compositionAssembled');
   const [textInput, setTextInput] = React.useState(textLines.join(', '));
 
-  const { data } = useQuery(ingredientsQuery());
-  const ingredientNameById = React.useMemo(() => {
+  const { data } = useQuery(modifiersQuery());
+  const modifierNameById = React.useMemo(() => {
     const map = new Map<string, string>();
-    for (const ingredient of data?.data?.items ?? []) {
-      map.set(ingredient.id, fromLocalizedText(ingredient.name, defaultLocale));
+    for (const modifier of data?.data?.items ?? []) {
+      map.set(modifier.id, fromLocalizedText(modifier.name, defaultLocale));
     }
     return map;
   }, [data, defaultLocale]);
@@ -182,7 +182,7 @@ export function CompositionEditor(): React.ReactElement {
                       key={line.optionId}
                       optionId={line.optionId}
                       removable={line.removable}
-                      name={ingredientNameById.get(line.optionId) ?? ''}
+                      name={modifierNameById.get(line.optionId) ?? ''}
                       onToggleRemovable={(next) => {
                         form.setValue(
                           'compositionAssembled',
@@ -220,7 +220,7 @@ export function CompositionEditor(): React.ReactElement {
         )}
       </CardContent>
 
-      <IngredientPickerSheet
+      <ModifierPickerSheet
         open={sheetOpen}
         onOpenChange={setSheetOpen}
         onPick={(optionId) => {
