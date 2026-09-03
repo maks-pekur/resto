@@ -237,31 +237,6 @@
       "validateSize": "Проверьте поля размера."
     },
     "modifiers": {
-      "newItemHint": "Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.",
-      "cardTitle": "Модификаторы и группы",
-      "cardDescription": "Прикрепите группы из библиотеки или создайте новую — варианты можно отредактировать в самой группе.",
-      "emptyHint": "Нет прикреплённых групп — нажмите «+ Добавить группу».",
-      "chipRemoveAriaLabel": "Убрать группу {{name}}",
-      "addGroupBtn": "+ Добавить группу",
-      "sheetTitle": "Добавить группу модификаторов",
-      "searchPlaceholder": "Поиск",
-      "sheetEmpty": "Ничего не найдено.",
-      "optionCount": "{{count}} вариантов",
-      "addToItem": "+ Добавить",
-      "alreadyAdded": "Добавлено",
-      "createNewLink": "+ Создать новую группу",
-      "createDialogTitle": "Создать группу модификаторов",
-      "createDialogDescription": "Эта группа сразу появится в библиотеке и будет доступна для прикрепления.",
-      "nameLabel": "Название",
-      "nameRequired": "Заполните название на основном языке",
-      "createFailed": "Не удалось создать группу.",
-      "updateFailed": "Не удалось обновить модификаторы.",
-      "validateGroup": "Проверьте поля группы.",
-      "validateOption": "Проверьте поля варианта.",
-      "chipMoveEarlierAriaLabel": "Переместить группу {{name}} выше",
-      "chipMoveLaterAriaLabel": "Переместить группу {{name}} ниже"
-    },
-    "modifiers": {
       "tabModifiers": "Модификаторы",
       "tabGroups": "Группы",
       "emptyTitle": "Пока нет модификаторов",
@@ -280,7 +255,12 @@
       "archiveDialogTitle": "Архивировать модификатор?",
       "archiveDialogDescription": "«{{name}}» будет скрыт из меню и удалён из {{groupCount}} групп и {{dishCount}} блюд. Действие обратимо — снимите архивацию в фильтре.",
       "usedInGroups": "Группы: {{names}}",
-      "usedInDishes": "Блюда: {{names}}"
+      "usedInDishes": "Блюда: {{names}}",
+      "tableNameHeader": "Название",
+      "tablePriceHeader": "Цена",
+      "tableGroupsHeader": "Группы",
+      "tableDishesHeader": "Блюда",
+      "rowOpenAriaLabel": "Открыть модификатор {{name}}"
     },
     "groups": {
       "displayLabel": "Отображение",

@@ -18,7 +18,7 @@ vi.mock('react-i18next', async () => {
   };
 });
 
-const { ModifierCardGrid } = await import('@/components/menu/modifier-card-grid');
+const { ModifierTable } = await import('@/components/menu/modifier-table');
 
 const bacon: ModifierApi = {
   id: 'ing-1',
@@ -42,7 +42,7 @@ const onion: ModifierApi = {
   dishCount: 0,
 };
 
-const renderGrid = (modifiers: readonly ModifierApi[]) => {
+const renderTable = (modifiers: readonly ModifierApi[]) => {
   apiFetchMock.mockImplementation((path: string) => {
     if (path.startsWith('/v1/tenants/me')) {
       return Promise.resolve({
@@ -57,7 +57,7 @@ const renderGrid = (modifiers: readonly ModifierApi[]) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={client}>
-      <ModifierCardGrid onSelect={vi.fn()} />
+      <ModifierTable onSelect={vi.fn()} />
     </QueryClientProvider>,
   );
 };
@@ -66,24 +66,24 @@ beforeEach(() => {
   apiFetchMock.mockReset();
 });
 
-describe('ModifierCardGrid', () => {
-  it('renders one card per modifier in the library', async () => {
-    renderGrid([bacon, onion]);
+describe('ModifierTable', () => {
+  it('renders one row per modifier in the library', async () => {
+    renderTable([bacon, onion]);
 
-    expect(await screen.findByTestId('modifier-card-ing-1')).toBeInTheDocument();
-    expect(screen.getByTestId('modifier-card-ing-2')).toBeInTheDocument();
+    expect(await screen.findByTestId('modifier-row-ing-1')).toBeInTheDocument();
+    expect(screen.getByTestId('modifier-row-ing-2')).toBeInTheDocument();
   });
 
   it('renders the placeholder icon, not a broken image, when imageUrl is null', async () => {
-    renderGrid([onion]);
+    renderTable([onion]);
 
-    const card = await screen.findByTestId('modifier-card-ing-2');
+    const row = await screen.findByTestId('modifier-row-ing-2');
     expect(screen.getByTestId('modifier-photo-placeholder-ing-2')).toBeInTheDocument();
-    expect(card.querySelector('img')).toBeNull();
+    expect(row.querySelector('img')).toBeNull();
   });
 
   it('renders the empty state when the library has no modifiers', async () => {
-    renderGrid([]);
+    renderTable([]);
 
     expect(await screen.findByText('menu.modifiers.emptyTitle')).toBeInTheDocument();
     expect(screen.getByText('menu.modifiers.emptyDescription')).toBeInTheDocument();

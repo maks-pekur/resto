@@ -24,7 +24,7 @@ import {
   DataTableRow,
 } from '@/components/common/data-table';
 import { EmptyState } from '@/components/common/empty-state';
-import { ModifierCardGrid } from '@/components/menu/modifier-card-grid';
+import { ModifierTable } from '@/components/menu/modifier-table';
 import { ModifierFormSheet } from '@/components/menu/modifier-form-sheet';
 import { ModifierStopDialog } from '@/components/menu/modifier-stop-dialog';
 import { showError } from '@/lib/ui/toast-helpers';
@@ -109,7 +109,7 @@ function ModifiersPage() {
             </Button>
           </div>
           <div className="px-4 lg:px-6">
-            <ModifierCardGrid
+            <ModifierTable
               onSelect={(modifier) => {
                 setEditing(modifier);
               }}

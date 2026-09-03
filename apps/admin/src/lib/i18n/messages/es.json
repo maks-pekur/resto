@@ -237,31 +237,6 @@
       "validateSize": "Revisa los campos del tamaño."
     },
     "modifiers": {
-      "newItemHint": "Guarda primero el plato — los modificadores se pueden añadir después del primer guardado.",
-      "cardTitle": "Modificadores y grupos",
-      "cardDescription": "Añade grupos desde la biblioteca o crea uno nuevo — las opciones se pueden editar dentro del grupo.",
-      "emptyHint": "No hay grupos añadidos — toca «+ Añadir grupo».",
-      "chipRemoveAriaLabel": "Quitar grupo {{name}}",
-      "addGroupBtn": "+ Añadir grupo",
-      "sheetTitle": "Añadir un grupo de modificadores",
-      "searchPlaceholder": "Buscar",
-      "sheetEmpty": "No se encontró nada.",
-      "optionCount": "{{count}} opciones",
-      "addToItem": "+ Añadir",
-      "alreadyAdded": "Añadido",
-      "createNewLink": "+ Crear nuevo grupo",
-      "createDialogTitle": "Crear grupo de modificadores",
-      "createDialogDescription": "El grupo se añade a la biblioteca y queda disponible para asociarlo.",
-      "nameLabel": "Nombre",
-      "nameRequired": "Rellena el nombre en el idioma principal",
-      "createFailed": "No se pudo crear el grupo.",
-      "updateFailed": "No se pudieron actualizar los modificadores.",
-      "validateGroup": "Revisa los campos del grupo.",
-      "validateOption": "Revisa los campos de la opción.",
-      "chipMoveEarlierAriaLabel": "Mover el grupo {{name}} antes",
-      "chipMoveLaterAriaLabel": "Mover el grupo {{name}} después"
-    },
-    "modifiers": {
       "tabModifiers": "Modificadores",
       "tabGroups": "Grupos",
       "emptyTitle": "Aún no hay modificadores",
@@ -280,7 +255,12 @@
       "archiveDialogTitle": "¿Archivar este modificador?",
       "archiveDialogDescription": "«{{name}}» se ocultará del menú y se eliminará de {{groupCount}} grupos y {{dishCount}} platos. Es reversible — quita el filtro de archivados para deshacerlo.",
       "usedInGroups": "Grupos: {{names}}",
-      "usedInDishes": "Platos: {{names}}"
+      "usedInDishes": "Platos: {{names}}",
+      "tableNameHeader": "Nombre",
+      "tablePriceHeader": "Precio",
+      "tableGroupsHeader": "Grupos",
+      "tableDishesHeader": "Platos",
+      "rowOpenAriaLabel": "Abrir modificador {{name}}"
     },
     "groups": {
       "displayLabel": "Visualización",

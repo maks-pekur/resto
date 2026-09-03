@@ -237,31 +237,6 @@
       "validateSize": "Please check the size fields."
     },
     "modifiers": {
-      "newItemHint": "Save the item first — modifiers can be attached after the first save.",
-      "cardTitle": "Modifiers and groups",
-      "cardDescription": "Attach groups from the library or create a new one — options can be edited inside the group.",
-      "emptyHint": "No attached groups — tap «+ Add group».",
-      "chipRemoveAriaLabel": "Remove group {{name}}",
-      "addGroupBtn": "+ Add group",
-      "sheetTitle": "Add a modifier group",
-      "searchPlaceholder": "Search",
-      "sheetEmpty": "Nothing found.",
-      "optionCount": "{{count}} options",
-      "addToItem": "+ Add",
-      "alreadyAdded": "Added",
-      "createNewLink": "+ Create new group",
-      "createDialogTitle": "Create modifier group",
-      "createDialogDescription": "The group is added to the library and available to attach.",
-      "nameLabel": "Name",
-      "nameRequired": "Fill in the name in the primary language",
-      "createFailed": "Couldn't create the group.",
-      "updateFailed": "Couldn't update modifiers.",
-      "validateGroup": "Please check the group fields.",
-      "validateOption": "Please check the option fields.",
-      "chipMoveEarlierAriaLabel": "Move group {{name}} earlier",
-      "chipMoveLaterAriaLabel": "Move group {{name}} later"
-    },
-    "modifiers": {
       "tabModifiers": "Modifiers",
       "tabGroups": "Groups",
       "emptyTitle": "No modifiers yet",
@@ -280,7 +255,12 @@
       "archiveDialogTitle": "Archive this modifier?",
       "archiveDialogDescription": "\"{{name}}\" will be hidden from the menu and removed from {{groupCount}} groups and {{dishCount}} dishes. This is reversible — clear the archive filter to undo it.",
       "usedInGroups": "Groups: {{names}}",
-      "usedInDishes": "Dishes: {{names}}"
+      "usedInDishes": "Dishes: {{names}}",
+      "tableNameHeader": "Name",
+      "tablePriceHeader": "Price",
+      "tableGroupsHeader": "Groups",
+      "tableDishesHeader": "Dishes",
+      "rowOpenAriaLabel": "Open modifier {{name}}"
     },
     "groups": {
       "displayLabel": "Display",
