@@ -4,7 +4,7 @@ import { TenantTheme } from '../src/tenant-theme';
 describe('TenantTheme', () => {
   it('parses an empty object as a fully-null theme', () => {
     const result = TenantTheme.parse({});
-    expect(result).toEqual({ logoUrl: null, primaryColor: null, font: null });
+    expect(result).toEqual({ logoUrl: null, primaryColor: null, font: null, coverUrls: [] });
   });
 
   it('accepts a fully-populated theme', () => {
@@ -20,7 +20,7 @@ describe('TenantTheme', () => {
 
   it('coerces missing fields to null (not undefined)', () => {
     const result = TenantTheme.parse({ primaryColor: '#000000' });
-    expect(result).toEqual({ logoUrl: null, primaryColor: '#000000', font: null });
+    expect(result).toEqual({ logoUrl: null, primaryColor: '#000000', font: null, coverUrls: [] });
   });
 
   it('rejects a non-string logoUrl', () => {
