@@ -118,7 +118,9 @@ export interface UpsertItemRow {
   readonly photos: readonly MenuItemPhoto[];
   readonly allergens: readonly string[] | null;
   readonly diets: readonly string[] | null;
-  readonly ingredients: readonly string[] | null;
+  readonly composition: readonly string[] | null;
+  readonly compositionMode: 'text' | 'assembled';
+  readonly compositionAssembled: readonly { optionId: string; removable: boolean }[];
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;
   readonly proteins: number | null;
@@ -139,22 +141,25 @@ export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
 }
 
 export interface UpsertModifierOptionRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly modifierGroupId: string;
   readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly imageS3Key: string | null;
   readonly priceDelta: string;
   readonly defaultAmount: number;
   readonly freeAmount: number;
   readonly sortOrder: number;
   readonly minAmount: number | null;
   readonly maxAmount: number | null;
+  readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
+  readonly sourceExternalId: string | null;
 }
 
 export interface UpsertItemSizeRow {
@@ -222,7 +227,9 @@ export interface ItemDetailRow {
   }[];
   readonly allergens: readonly string[] | null;
   readonly diets: readonly string[] | null;
-  readonly ingredients: readonly string[] | null;
+  readonly composition: readonly string[] | null;
+  readonly compositionMode: 'text' | 'assembled';
+  readonly compositionAssembled: readonly { optionId: string; removable: boolean }[];
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;
   readonly proteins: number | null;
@@ -247,8 +254,8 @@ export interface ItemDetailRow {
 export interface ModifierGroupListRow {
   readonly id: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
   readonly optionCount: number;
   readonly usageCount: number;
@@ -257,17 +264,31 @@ export interface ModifierGroupListRow {
 export interface ModifierGroupDetailRow {
   readonly id: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
   readonly options: readonly {
     id: string;
     name: Record<string, string>;
+    description: Record<string, string> | null;
+    imageUrl: string | null;
     priceDelta: string;
     defaultAmount: number;
     freeAmount: number;
     sortOrder: number;
   }[];
+}
+
+// The ingredients-library grid row (D-26/D-27); groupCount/dishCount feed the
+// archive warning (D-28) without a second round trip.
+export interface ModifierOptionListRow {
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly priceDelta: string;
+  readonly imageUrl: string | null;
+  readonly groupCount: number;
+  readonly dishCount: number;
 }
 
 export interface StopListEntryRow {
