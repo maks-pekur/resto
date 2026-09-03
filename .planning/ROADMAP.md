@@ -809,7 +809,7 @@ Plans:
 
 - [x] 10.6-01-PLAN.md — Drizzle schema: ingredient identity, two link tables, ingredient stop table, group enums, two-mode composition, `order_modifiers.kind`
 - [x] 10.6-02-PLAN.md — Hand-written migration 0019 + journal + grants, applied against a reset dev database, with cross-tenant regression tests
-- [ ] 10.6-03-PLAN.md — Published menu read model: ingredients travel once, groups carry display/behaviour, availability answers a second list
+- [x] 10.6-03-PLAN.md — Published menu read model: ingredients travel once, groups carry display/behaviour, availability answers a second list
 - [ ] 10.6-04-PLAN.md — Ordering: union allowed-set, behaviour validation, stopped-ingredient refusal, exclusions as their own rows
 - [ ] 10.6-05-PLAN.md — Catalog contracts and every existing write/list path moved onto the new columns
 - [ ] 10.6-06-PLAN.md — Catalog writes: library list/archive/usage, group and dish membership with the duplicate refusal, composition write
