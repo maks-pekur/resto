@@ -11,6 +11,7 @@ import {
 
 export interface MenuAvailabilityResult {
   readonly stoppedItemIds: string[];
+  readonly stoppedIngredientIds: string[];
   readonly stopVersion: number;
   readonly locationId: string;
 }
@@ -31,12 +32,13 @@ export class GetMenuAvailabilityService {
       locationId ?? (await this.defaultLocation.resolveForTenant(tenantId));
 
     return withLocation(answeringLocationId, async () => {
-      const [stoppedItemIds, stopVersion] = await Promise.all([
+      const [stoppedItemIds, stoppedIngredientIds, stopVersion] = await Promise.all([
         this.repo.listStoppedItemIds(answeringLocationId),
+        this.repo.listStoppedIngredientIds(answeringLocationId),
         this.stopVersions.currentStop(answeringLocationId),
       ]);
 
-      return { stoppedItemIds, stopVersion, locationId: answeringLocationId };
+      return { stoppedItemIds, stoppedIngredientIds, stopVersion, locationId: answeringLocationId };
     });
   }
 }
