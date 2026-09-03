@@ -24,6 +24,10 @@ const dish = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...over,
 });
 

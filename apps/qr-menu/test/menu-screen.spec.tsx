@@ -25,6 +25,10 @@ const item = (overrides: Partial<MenuItemDto> = {}): MenuItemDto => ({
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...overrides,
 });
 
@@ -47,13 +51,22 @@ const buildMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
   ],
   items: [item()],
   modifierGroups: [],
+  modifierOptions: [],
   ...overrides,
 });
 
-const renderMenu = (menu: MenuDto, stoppedItemIds: readonly string[] = []) =>
+const renderMenu = (
+  menu: MenuDto,
+  stoppedItemIds: readonly string[] = [],
+  stoppedIngredientIds: readonly string[] = [],
+) =>
   render(
     <GuestUiProvider locale="en" t={t}>
-      <MenuScreen menu={menu} stoppedItemIds={stoppedItemIds} />
+      <MenuScreen
+        menu={menu}
+        stoppedItemIds={stoppedItemIds}
+        stoppedIngredientIds={stoppedIngredientIds}
+      />
     </GuestUiProvider>,
   );
 

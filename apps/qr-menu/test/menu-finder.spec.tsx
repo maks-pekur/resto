@@ -44,7 +44,7 @@ const menu = {
 const renderMenu = () =>
   render(
     <GuestUiProvider locale="ru" t={(key) => key}>
-      <MenuScreen menu={menu} stoppedItemIds={[]} />
+      <MenuScreen menu={menu} stoppedItemIds={[]} stoppedIngredientIds={[]} />
     </GuestUiProvider>,
   );
 
