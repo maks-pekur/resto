@@ -73,7 +73,7 @@ export const IngredientTile = ({
         ) : null}
       </div>
       <div className="flex flex-col items-center gap-0.5 px-0.5 pb-0.5 text-center">
-        <span className="line-clamp-1 text-sm leading-tight font-extrabold">{label}</span>
+        <span className="line-clamp-1 text-xs leading-tight font-extrabold">{label}</span>
         {description ? (
           <span className="text-muted-foreground line-clamp-1 text-xs leading-tight font-normal">
             {description}
