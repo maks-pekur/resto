@@ -36,7 +36,7 @@ export const IngredientTile = ({
   return (
     <label
       className={cn(
-        'focus-within:ring-ring flex flex-col gap-1.5 rounded-2xl border-2 p-1.5 transition-colors focus-within:ring-2',
+        'focus-within:ring-ring flex flex-col gap-1 rounded-2xl border-2 p-1.5 transition-colors focus-within:ring-2',
         selected ? 'border-primary bg-primary-tint' : 'bg-muted border-transparent',
         unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
       )}
@@ -72,7 +72,7 @@ export const IngredientTile = ({
           </span>
         ) : null}
       </div>
-      <div className="flex flex-col items-center gap-0.5 px-0.5 pb-0.5 text-center">
+      <div className="mt-auto flex flex-col items-center gap-0.5 px-0.5 pb-0.5 text-center">
         <span className="line-clamp-1 text-xs leading-tight font-extrabold">{label}</span>
         {description ? (
           <span className="text-muted-foreground line-clamp-1 text-xs leading-tight font-normal">
