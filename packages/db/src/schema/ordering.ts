@@ -195,6 +195,7 @@ export const orderModifiers = pgTable(
     priceDelta: money('price_delta').notNull(),
     amount: smallint('amount').notNull().default(1),
     modifierGroupId: uuid('modifier_group_id'),
+    kind: text('kind').notNull().default('added'),
   },
   (table) => [
     foreignKey({
@@ -207,6 +208,7 @@ export const orderModifiers = pgTable(
       child: { id: table.orderItemId, tenantId: table.tenantId },
       parent: { id: orderItems.id, tenantId: orderItems.tenantId },
     }).onDelete('cascade'),
+    check('order_modifiers_kind_chk', sql`${table.kind} IN ('added', 'excluded')`),
   ],
 );
 
