@@ -9,6 +9,7 @@ const CartModifierSchema = z.object({
   optionId: z.string().uuid(),
   name: z.string().min(1).max(200),
   amount: z.number().int().positive().optional(),
+  kind: z.enum(['added', 'excluded']).optional().default('added'),
 });
 
 const CartLineItemSchema = z.object({
