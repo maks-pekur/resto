@@ -818,9 +818,9 @@ Plans:
 - [x] 10.6-09-PLAN.md — Guest wire types in all three hand-written files, availability threading, selection hook rewrite with exclusion state
 - [x] 10.6-10-PLAN.md — Guest rendering: ingredient tiles, the tabs+several pill strip, the composition line, guest copy
 - [x] 10.6-11-PLAN.md — Admin foundation: radio-group, every copy string, typed queries, both form schemas, the shared picker
-- [ ] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
-- [ ] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
-- [ ] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
+- [x] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
+- [x] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
+- [x] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
 - [ ] 10.6-15-PLAN.md — Admin stop list section, the D-22 dish offer, exclusions on the order detail
 - [ ] 10.6-16-PLAN.md — Phase verification sweep and the founder's browser walk-through
 
