@@ -22,7 +22,7 @@ vi.mock('react-i18next', async () => {
 const { ItemEditorShell } = await import('@/components/menu/item-editor-shell');
 
 // The exact shape `GET /v1/catalog/items/:id` returns for an item that never had
-// allergens or ingredients filled in — verified live against the dev api. The api
+// allergens or composition filled in — verified live against the dev api. The api
 // declares both `.nullable()` in ItemDetailResponseSchema, and a seeded drink really
 // does come back with null. A fixture using `[]` here proves nothing: the crash was
 // `[...null]` in valuesFromItem, and only a real null reaches it.
@@ -36,7 +36,9 @@ const ITEM_WITH_NULL_FIELDS = {
   currency: 'UAH',
   status: 'published',
   allergens: null,
-  ingredients: null,
+  composition: null,
+  compositionMode: 'text',
+  compositionAssembled: [],
   metaTitle: null,
   metaDescription: null,
   proteins: null,
@@ -69,7 +71,7 @@ const renderShell = (item: ItemDetailApi): void => {
 };
 
 describe('ItemEditorShell with the api’s real null fields', () => {
-  it('renders an item whose allergens and ingredients are null', () => {
+  it('renders an item whose allergens and composition are null', () => {
     expect(() => {
       renderShell(ITEM_WITH_NULL_FIELDS);
     }).not.toThrow();
@@ -109,7 +111,7 @@ describe('ItemEditorShell with the api’s real null fields', () => {
       renderShell({
         ...ITEM_WITH_NULL_FIELDS,
         allergens: ['gluten'],
-        ingredients: ['water'],
+        composition: ['water'],
       });
     }).not.toThrow();
   });

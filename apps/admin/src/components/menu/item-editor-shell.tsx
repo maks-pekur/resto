@@ -28,7 +28,9 @@ const emptyValues = (currency: string): ItemEditorForm => ({
   currency,
   allergens: [],
   diets: [],
-  ingredients: [],
+  compositionMode: 'text',
+  compositionText: [],
+  compositionAssembled: [],
   metaTitle: null,
   metaDescription: null,
   proteins: null,
@@ -45,7 +47,9 @@ const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
   currency: item.currency,
   allergens: [...(item.allergens ?? [])],
   diets: [...(item.diets ?? [])],
-  ingredients: [...(item.ingredients ?? [])],
+  compositionMode: item.compositionMode,
+  compositionText: [...(item.composition ?? [])],
+  compositionAssembled: item.compositionAssembled.map((line) => ({ ...line })),
   // Plain strings in the contract, unlike `name`/`description` — the api stores one SEO
   // string per item, not one per locale. They were being run through fromLocalizedText.
   metaTitle: item.metaTitle,

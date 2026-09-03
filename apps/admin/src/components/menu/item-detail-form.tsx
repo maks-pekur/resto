@@ -25,8 +25,9 @@ import {
   ItemModifierGroupsCard,
   type AvailableGroup,
 } from '@/components/menu/item-modifier-groups-card';
+import { CompositionEditor } from '@/components/menu/composition-editor';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { upsertItem } from '@/lib/queries/catalog';
+import { upsertItem, setItemComposition, type ItemCompositionPayload } from '@/lib/queries/catalog';
 import { itemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { LocalizedField } from '@/components/common/localized-field';
@@ -104,6 +105,11 @@ export function ItemDetailForm({
     },
   });
 
+  const compositionMutation = useMutation({
+    mutationFn: (input: { itemId: string; payload: ItemCompositionPayload }) =>
+      setItemComposition(input.itemId, input.payload),
+  });
+
   const onSubmit = form.handleSubmit(async (values) => {
     setPending(true);
     try {
@@ -112,8 +118,20 @@ export function ItemDetailForm({
         showError(null, t('saveFailed'));
         return;
       }
-      showSuccess(isNew ? t('itemCreated') : tCommon('saved'), { duration: 1500 });
       const savedId = res.data?.id ?? '';
+      const compositionRes = await compositionMutation.mutateAsync({
+        itemId: savedId,
+        payload: {
+          mode: values.compositionMode,
+          text: values.compositionText,
+          lines: values.compositionAssembled,
+        },
+      });
+      if (!compositionRes.ok) {
+        showError(null, t('saveFailed'));
+        return;
+      }
+      showSuccess(isNew ? t('itemCreated') : tCommon('saved'), { duration: 1500 });
       onSaved(savedId);
       if (isNew) {
         void navigate({
@@ -139,6 +157,7 @@ export function ItemDetailForm({
         className="flex flex-col gap-6"
       >
         <ItemBasicsCard categories={categories} slug={slug} />
+        <CompositionEditor />
         <ItemSizesCard
           itemId={currentItemId}
           sizes={initialItemSizes}
