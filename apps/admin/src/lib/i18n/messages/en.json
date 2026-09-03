@@ -58,7 +58,7 @@
     "menu": "Menu",
     "menuItems": "Items",
     "menuCategories": "Categories",
-    "menuModifiers": "Modifiers",
+    "menuModifiers": "Ingredients",
     "menuStopList": "Stop list",
     "team": "Team",
     "settings": "Settings",
@@ -170,9 +170,13 @@
       "priceSectionHint": "Sizes save separately",
       "compositionSectionTitle": "Composition",
       "compositionSectionHint": "Modifier groups save automatically",
-      "ingredientsLabel": "Ingredients",
-      "ingredientsPlaceholder": "Chicken, tomato, teriyaki sauce",
-      "ingredientsHint": "Comma-separated. Shown on the item card.",
+      "compositionModeText": "Free text",
+      "compositionModeAssembled": "From ingredients",
+      "compositionTextPlaceholder": "Chicken, tomato, teriyaki sauce",
+      "compositionTextHint": "Comma-separated. Shown on the item card.",
+      "compositionAddLineBtn": "+ Add ingredient",
+      "compositionRemovableLabel": "Removable",
+      "compositionRemoveLineAriaLabel": "Remove \"{{name}}\" from the composition",
       "seoSectionTitle": "SEO",
       "seoSectionHint": "Affects search engine results",
       "metaTitleLabel": "Meta title",
@@ -234,7 +238,7 @@
     },
     "modifiers": {
       "newItemHint": "Save the item first — modifiers can be attached after the first save.",
-      "cardTitle": "Modifier groups",
+      "cardTitle": "Ingredients and groups",
       "cardDescription": "Attach groups from the library or create a new one — options can be edited inside the group.",
       "emptyHint": "No attached groups — tap «+ Add group».",
       "chipRemoveAriaLabel": "Remove group {{name}}",
@@ -249,8 +253,6 @@
       "createDialogTitle": "Create modifier group",
       "createDialogDescription": "The group is added to the library and available to attach.",
       "nameLabel": "Name",
-      "minLabel": "Min",
-      "maxLabel": "Max",
       "nameRequired": "Fill in the name in the primary language",
       "createFailed": "Couldn't create the group.",
       "updateFailed": "Couldn't update modifiers.",
@@ -258,6 +260,42 @@
       "validateOption": "Please check the option fields.",
       "chipMoveEarlierAriaLabel": "Move group {{name}} earlier",
       "chipMoveLaterAriaLabel": "Move group {{name}} later"
+    },
+    "ingredients": {
+      "tabIngredients": "Ingredients",
+      "tabGroups": "Groups",
+      "emptyTitle": "No ingredients yet",
+      "emptyDescription": "Add your first one — it will show up here and can be reused across any group or dish.",
+      "addBtn": "+ Add ingredient",
+      "editorTitleNew": "New ingredient",
+      "editorTitleEdit": "Ingredient",
+      "createBtn": "Create ingredient",
+      "saveBtn": "Save changes",
+      "nameLabel": "Name",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short line under the photo",
+      "priceLabel": "Price",
+      "saveFailed": "Couldn't save the ingredient.",
+      "archiveBtn": "Archive",
+      "archiveDialogTitle": "Archive this ingredient?",
+      "archiveDialogDescription": "\"{{name}}\" will be hidden from the menu and removed from {{groupCount}} groups and {{dishCount}} dishes. This is reversible — clear the archive filter to undo it.",
+      "usedInGroups": "Groups: {{names}}",
+      "usedInDishes": "Dishes: {{names}}"
+    },
+    "groups": {
+      "displayLabel": "Display",
+      "displayTiles": "Tiles",
+      "displayTabs": "Tabs",
+      "behaviourLabel": "Choice",
+      "behaviourOne": "One",
+      "behaviourSeveral": "Several",
+      "requiredLabel": "Required group"
+    },
+    "itemIngredients": {
+      "groupsRowLabel": "Groups",
+      "singlesRowLabel": "Single ingredients",
+      "addSingleBtn": "+ Ingredient",
+      "duplicateError": "\"{{name}}\" is already attached via \"{{groupName}}\"."
     },
     "categories": {
       "addCategory": "+ Add category",
@@ -354,7 +392,12 @@
       "aggregateReadOnlyHint": "Showing all locations. Select a location to stop or resume items.",
       "aggregateBadge": "{{count}}/{{total}} locations",
       "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations",
-      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items"
+      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items",
+      "ingredientsHeading": "Ingredients",
+      "stopIngredientDialogTitle": "Dishes use this ingredient",
+      "stopIngredientDialogBody": "Check the dishes you also want to stop, so a guest can't order something that can't be assembled.",
+      "stopSelectedDishesBtn": "Stop the checked ones",
+      "stopIngredientOnlyBtn": "Ingredient only"
     },
     "status": {
       "draft": "Draft",
@@ -482,7 +525,8 @@
       "totalsSubtotal": "Subtotal",
       "totalsService": "Service fee",
       "totalsDiscount": "Discount",
-      "totalsTotal": "Total"
+      "totalsTotal": "Total",
+      "excludedLabel": "Without"
     },
     "refund": {
       "title": "Refund",

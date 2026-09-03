@@ -58,7 +58,7 @@
     "menu": "Menú",
     "menuItems": "Platos",
     "menuCategories": "Categorías",
-    "menuModifiers": "Modificadores",
+    "menuModifiers": "Ingredientes",
     "menuStopList": "Lista de pausados",
     "team": "Equipo",
     "settings": "Configuración",
@@ -170,9 +170,13 @@
       "priceSectionHint": "Los tamaños se guardan por separado",
       "compositionSectionTitle": "Composición",
       "compositionSectionHint": "Los grupos de modificadores se guardan automáticamente",
-      "ingredientsLabel": "Ingredientes",
-      "ingredientsPlaceholder": "Pollo, tomate, salsa teriyaki",
-      "ingredientsHint": "Separado por comas. Se muestra en la tarjeta del plato.",
+      "compositionModeText": "Como texto",
+      "compositionModeAssembled": "Desde ingredientes",
+      "compositionTextPlaceholder": "Pollo, tomate, salsa teriyaki",
+      "compositionTextHint": "Separado por comas. Se muestra en la tarjeta del plato.",
+      "compositionAddLineBtn": "+ Añadir ingrediente",
+      "compositionRemovableLabel": "Se puede quitar",
+      "compositionRemoveLineAriaLabel": "Quitar «{{name}}» de la composición",
       "seoSectionTitle": "SEO",
       "seoSectionHint": "Afecta a los resultados del motor de búsqueda",
       "metaTitleLabel": "Meta título",
@@ -234,7 +238,7 @@
     },
     "modifiers": {
       "newItemHint": "Guarda primero el plato — los modificadores se pueden añadir después del primer guardado.",
-      "cardTitle": "Grupos de modificadores",
+      "cardTitle": "Ingredientes y grupos",
       "cardDescription": "Añade grupos desde la biblioteca o crea uno nuevo — las opciones se pueden editar dentro del grupo.",
       "emptyHint": "No hay grupos añadidos — toca «+ Añadir grupo».",
       "chipRemoveAriaLabel": "Quitar grupo {{name}}",
@@ -249,8 +253,6 @@
       "createDialogTitle": "Crear grupo de modificadores",
       "createDialogDescription": "El grupo se añade a la biblioteca y queda disponible para asociarlo.",
       "nameLabel": "Nombre",
-      "minLabel": "Mín",
-      "maxLabel": "Máx",
       "nameRequired": "Rellena el nombre en el idioma principal",
       "createFailed": "No se pudo crear el grupo.",
       "updateFailed": "No se pudieron actualizar los modificadores.",
@@ -258,6 +260,42 @@
       "validateOption": "Revisa los campos de la opción.",
       "chipMoveEarlierAriaLabel": "Mover el grupo {{name}} antes",
       "chipMoveLaterAriaLabel": "Mover el grupo {{name}} después"
+    },
+    "ingredients": {
+      "tabIngredients": "Ingredientes",
+      "tabGroups": "Grupos",
+      "emptyTitle": "Aún no hay ingredientes",
+      "emptyDescription": "Añade el primero — aparecerá aquí y podrás reutilizarlo en cualquier grupo o plato.",
+      "addBtn": "+ Añadir ingrediente",
+      "editorTitleNew": "Nuevo ingrediente",
+      "editorTitleEdit": "Ingrediente",
+      "createBtn": "Crear ingrediente",
+      "saveBtn": "Guardar cambios",
+      "nameLabel": "Nombre",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Línea corta bajo la foto",
+      "priceLabel": "Precio",
+      "saveFailed": "No se pudo guardar el ingrediente.",
+      "archiveBtn": "Archivar",
+      "archiveDialogTitle": "¿Archivar este ingrediente?",
+      "archiveDialogDescription": "«{{name}}» se ocultará del menú y se eliminará de {{groupCount}} grupos y {{dishCount}} platos. Es reversible — quita el filtro de archivados para deshacerlo.",
+      "usedInGroups": "Grupos: {{names}}",
+      "usedInDishes": "Platos: {{names}}"
+    },
+    "groups": {
+      "displayLabel": "Visualización",
+      "displayTiles": "En tarjetas",
+      "displayTabs": "En pestañas",
+      "behaviourLabel": "Elección",
+      "behaviourOne": "Una opción",
+      "behaviourSeveral": "Varias",
+      "requiredLabel": "Grupo obligatorio"
+    },
+    "itemIngredients": {
+      "groupsRowLabel": "Grupos",
+      "singlesRowLabel": "Ingredientes individuales",
+      "addSingleBtn": "+ Ingrediente",
+      "duplicateError": "«{{name}}» ya está añadido mediante «{{groupName}}»."
     },
     "categories": {
       "addCategory": "+ Añadir categoría",
@@ -354,7 +392,12 @@
       "aggregateReadOnlyHint": "Mostrando todos los locales. Selecciona un local para pausar o reanudar platos.",
       "aggregateBadge": "{{count}}/{{total}} locales",
       "aggregateBadgeAria": "Pausado en {{count}} de {{total}} locales",
-      "aggregateTruncatedNote": "Mostrando los primeros {{shown}} de {{total}} platos pausados"
+      "aggregateTruncatedNote": "Mostrando los primeros {{shown}} de {{total}} platos pausados",
+      "ingredientsHeading": "Ingredientes",
+      "stopIngredientDialogTitle": "Hay platos con este ingrediente",
+      "stopIngredientDialogBody": "Marca los platos que también quieras pausar, para que un cliente no pida algo que no se puede preparar.",
+      "stopSelectedDishesBtn": "Pausar los marcados",
+      "stopIngredientOnlyBtn": "Solo el ingrediente"
     },
     "status": {
       "draft": "Borrador",
@@ -482,7 +525,8 @@
       "totalsSubtotal": "Subtotal",
       "totalsService": "Cargo por servicio",
       "totalsDiscount": "Descuento",
-      "totalsTotal": "Total"
+      "totalsTotal": "Total",
+      "excludedLabel": "Sin"
     },
     "refund": {
       "title": "Reembolso",
