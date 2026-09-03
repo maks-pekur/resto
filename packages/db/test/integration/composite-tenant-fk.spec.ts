@@ -18,6 +18,8 @@ interface FixtureBundle {
   itemB: string;
   modifierA: string;
   modifierB: string;
+  optionA: string;
+  optionB: string;
   memberId: string;
   memberBId: string;
   locationA: string;
@@ -43,8 +45,9 @@ interface FkCase {
 // FK still rejects a cross-tenant child insert.
 //
 // NOTE (10.6-01, D-01): the `menu_modifier_options.modifier_group_id` case
-// is removed — that column and its FK no longer exist. Plan 02 adds
-// probes for the new `menu_modifier_group_options` / `menu_item_modifier_options` link tables.
+// is removed — that column and its FK no longer exist. Plan 02 adds probes
+// for the new `menu_modifier_group_options` / `menu_item_modifier_options` /
+// `menu_option_stop_list` tables below.
 const CASES: FkCase[] = [
   {
     name: 'menu_items.category_id → menu_categories(id, tenant_id)',
@@ -106,6 +109,39 @@ const CASES: FkCase[] = [
           tenantId: fx.tenantA,
           memberId: fx.memberBId,
           locationId: fx.locationA,
+        }),
+      ),
+  },
+  {
+    name: 'menu_modifier_group_options.option_id → menu_modifier_options(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: menu_modifier_group_options.option_id', async (tx) =>
+        tx.insert(schema.menuModifierGroupOptions).values({
+          tenantId: fx.tenantA,
+          modifierGroupId: fx.modifierA,
+          optionId: fx.optionB,
+        }),
+      ),
+  },
+  {
+    name: 'menu_item_modifier_options.menu_item_id → menu_items(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: menu_item_modifier_options.menu_item_id', async (tx) =>
+        tx.insert(schema.menuItemModifierOptions).values({
+          tenantId: fx.tenantA,
+          menuItemId: fx.itemB,
+          optionId: fx.optionA,
+        }),
+      ),
+  },
+  {
+    name: 'menu_option_stop_list.option_id → menu_modifier_options(id, tenant_id)',
+    probe: async (pg, fx) =>
+      pg.db.withoutTenant('I-2 probe: menu_option_stop_list.option_id', async (tx) =>
+        tx.insert(schema.menuOptionStopList).values({
+          tenantId: fx.tenantA,
+          locationId: fx.locationA,
+          optionId: fx.optionB,
         }),
       ),
   },
@@ -233,6 +269,16 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         .returning({ id: schema.menuModifierGroups.id });
       if (!modifierA || !modifierB) throw new Error('seed modifiers failed');
 
+      const [optionA] = await tx
+        .insert(schema.menuModifierOptions)
+        .values({ tenantId: tenantA.id, name: { en: 'Option A' } })
+        .returning({ id: schema.menuModifierOptions.id });
+      const [optionB] = await tx
+        .insert(schema.menuModifierOptions)
+        .values({ tenantId: tenantB.id, name: { en: 'Option B' } })
+        .returning({ id: schema.menuModifierOptions.id });
+      if (!optionA || !optionB) throw new Error('seed options failed');
+
       return {
         tenantA: tenantA.id,
         tenantB: tenantB.id,
@@ -242,6 +288,8 @@ suite('ADR-0020 I-2: composite tenant FK rejects cross-tenant child insert', () 
         itemB: itemB.id,
         modifierA: modifierA.id,
         modifierB: modifierB.id,
+        optionA: optionA.id,
+        optionB: optionB.id,
         memberId: memberRow.id,
         memberBId: memberRowB.id,
         locationA: locationA.id,
