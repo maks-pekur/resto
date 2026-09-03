@@ -40,9 +40,13 @@ ALTER TABLE ONLY public.menu_option_stop_list FORCE ROW LEVEL SECURITY;
 -- Indexes before FKs — Postgres requires the referenced (id, tenant_id) unique
 -- index to exist before a composite FK can point at it (mirrors 0003's own
 -- ordering). The two link tables have no surrogate id (composite PK only, no
--- other table references them), so only menu_option_stop_list gets the
--- `_id_tenant_uq` pattern (ADR-0020 I-2).
+-- other table references them), so only menu_option_stop_list gets the new
+-- `_id_tenant_uq` pattern (ADR-0020 I-2). menu_modifier_options is an existing
+-- table becoming a composite-FK parent for the first time here — it needs the
+-- same index even though its own CREATE TABLE predates this migration.
 
+CREATE UNIQUE INDEX menu_modifier_options_id_tenant_uq ON public.menu_modifier_options (id, tenant_id);
+--> statement-breakpoint
 CREATE UNIQUE INDEX menu_option_stop_list_id_tenant_uq ON public.menu_option_stop_list (id, tenant_id);
 --> statement-breakpoint
 CREATE UNIQUE INDEX menu_option_stop_list_location_option_tenant_uq ON public.menu_option_stop_list (tenant_id, location_id, option_id);
