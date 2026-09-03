@@ -813,7 +813,7 @@ Plans:
 - [x] 10.6-04-PLAN.md — Ordering: union allowed-set, behaviour validation, stopped-ingredient refusal, exclusions as their own rows
 - [x] 10.6-05-PLAN.md — Catalog contracts and every existing write/list path moved onto the new columns
 - [x] 10.6-06-PLAN.md — Catalog writes: library list/archive/usage, group and dish membership with the duplicate refusal, composition write
-- [ ] 10.6-07-PLAN.md — Ingredient stop list, the eight application services, module wiring, ingredient photo prefix
+- [x] 10.6-07-PLAN.md — Ingredient stop list, the eight application services, module wiring, ingredient photo prefix
 - [ ] 10.6-08-PLAN.md — Nine catalog routes, OpenAPI + client regeneration, e2e for the refusals, the stop and the dedupe
 - [x] 10.6-09-PLAN.md — Guest wire types in all three hand-written files, availability threading, selection hook rewrite with exclusion state
 - [x] 10.6-10-PLAN.md — Guest rendering: ingredient tiles, the tabs+several pill strip, the composition line, guest copy
