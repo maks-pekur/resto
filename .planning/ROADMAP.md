@@ -817,7 +817,7 @@ Plans:
 - [x] 10.6-08-PLAN.md — Nine catalog routes, OpenAPI + client regeneration, e2e for the refusals, the stop and the dedupe
 - [x] 10.6-09-PLAN.md — Guest wire types in all three hand-written files, availability threading, selection hook rewrite with exclusion state
 - [x] 10.6-10-PLAN.md — Guest rendering: ingredient tiles, the tabs+several pill strip, the composition line, guest copy
-- [ ] 10.6-11-PLAN.md — Admin foundation: radio-group, every copy string, typed queries, both form schemas, the shared picker
+- [x] 10.6-11-PLAN.md — Admin foundation: radio-group, every copy string, typed queries, both form schemas, the shared picker
 - [ ] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
 - [ ] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
 - [ ] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
