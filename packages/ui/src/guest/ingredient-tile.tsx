@@ -36,7 +36,7 @@ export const IngredientTile = ({
   return (
     <label
       className={cn(
-        'focus-within:ring-ring flex flex-col gap-1 rounded-2xl border-2 p-1.5 transition-colors focus-within:ring-2',
+        'focus-within:ring-ring flex flex-col gap-1 rounded-2xl border-4 p-1 transition-colors focus-within:ring-2',
         selected ? 'border-primary bg-primary-tint' : 'bg-muted border-transparent',
         unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
       )}
