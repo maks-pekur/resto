@@ -21,19 +21,24 @@ export interface MenuItemSizeDto {
 export interface MenuModifierOptionDto {
   readonly id: string;
   readonly name: LocalizedText;
+  readonly description: LocalizedText | null;
+  readonly imageUrl: string | null;
   readonly priceDelta: string;
-  readonly defaultAmount: number;
   readonly freeAmount: number;
-  readonly sortOrder: number;
 }
 
 export interface MenuModifierGroupDto {
   readonly id: string;
   readonly name: LocalizedText;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
-  readonly options: readonly MenuModifierOptionDto[];
+  readonly optionIds: readonly string[];
+}
+
+export interface MenuCompositionLineDto {
+  readonly optionId: string;
+  readonly removable: boolean;
 }
 
 export interface MenuItemDto {
@@ -57,6 +62,10 @@ export interface MenuItemDto {
   sortOrder: number;
   sizes: readonly MenuItemSizeDto[];
   modifierGroupIds: readonly string[];
+  extraOptionIds: readonly string[];
+  compositionMode: 'text' | 'assembled';
+  composition: readonly string[];
+  compositionLines: readonly MenuCompositionLineDto[];
 }
 
 export interface MenuCategoryDto {
@@ -133,4 +142,5 @@ export interface MenuDto {
   categories: readonly MenuCategoryDto[];
   items: readonly MenuItemDto[];
   modifierGroups: readonly MenuModifierGroupDto[];
+  modifierOptions: readonly MenuModifierOptionDto[];
 }

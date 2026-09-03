@@ -41,6 +41,7 @@ export const requestService = async (kind: 'waiter' | 'bill'): Promise<boolean> 
 
 export interface MenuAvailability {
   stoppedItemIds: string[];
+  stoppedIngredientIds: string[];
 }
 
 export const fetchAvailability = async (
@@ -54,7 +55,7 @@ export const fetchAvailability = async (
   const query = params.toString();
   const url = query ? `/v1/menu/availability?${query}` : '/v1/menu/availability';
   const res = await fetch(url, init);
-  if (res.status === 404) return { stoppedItemIds: [] };
+  if (res.status === 404) return { stoppedItemIds: [], stoppedIngredientIds: [] };
   if (!res.ok) throw new Error(`fetchAvailability failed: ${res.status.toString()}`);
   return res.json() as Promise<MenuAvailability>;
 };

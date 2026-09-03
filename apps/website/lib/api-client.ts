@@ -33,6 +33,7 @@ export const fetchMenuPublic = async (): Promise<MenuDto> => {
 
 export interface MenuAvailability {
   stoppedItemIds: string[];
+  stoppedIngredientIds: string[];
 }
 
 export const fetchAvailabilityPublic = async (): Promise<MenuAvailability> => {
@@ -43,7 +44,7 @@ export const fetchAvailabilityPublic = async (): Promise<MenuAvailability> => {
     next: { revalidate: 5 },
     signal: AbortSignal.timeout(10_000),
   });
-  if (res.status === 404) return { stoppedItemIds: [] };
+  if (res.status === 404) return { stoppedItemIds: [], stoppedIngredientIds: [] };
   if (!res.ok) throw new Error(`fetchAvailabilityPublic failed: ${res.status.toString()}`);
   return res.json() as Promise<MenuAvailability>;
 };
