@@ -429,8 +429,6 @@ suite('Row-Level Security — tenant isolation', () => {
           .values({
             tenantId: tenantA,
             name: { en: 'IsoAGroup' },
-            minSelectable: 0,
-            maxSelectable: 1,
             isRequired: false,
           })
           .returning({ id: schema.menuModifierGroups.id });
@@ -618,8 +616,6 @@ suite('Row-Level Security — tenant isolation', () => {
             id: aModifierGroupId,
             tenantId: tenantB,
             name: { en: 'sneaky' },
-            minSelectable: 0,
-            maxSelectable: 1,
             isRequired: false,
           }),
         ),

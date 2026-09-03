@@ -78,6 +78,12 @@ export interface MenuItemPhoto {
   isPrimary?: boolean;
 }
 
+// D-15: an assembled composition line is order-position only — no sortOrder field, no grams/unit/cost.
+export interface MenuItemCompositionLine {
+  readonly optionId: string;
+  readonly removable: boolean;
+}
+
 // `status = 'published'` is the only state visible to the public read endpoints.
 export const menuItems = pgTable(
   'menu_items',
@@ -97,7 +103,12 @@ export const menuItems = pgTable(
     allergens: text('allergens').array(),
     /** Vegan, gluten-free and the rest: what the dish *is*, next to what it contains. */
     diets: text('diets').array(),
-    ingredients: text('ingredients').array(),
+    composition: text('composition').array(),
+    compositionMode: text('composition_mode').notNull().default('text'),
+    compositionAssembled: jsonb('composition_assembled')
+      .$type<MenuItemCompositionLine[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
     metaTitle: text('meta_title'),
     metaDescription: text('meta_description'),
     // Per 100g, all nullable until a recipe lands.
@@ -138,6 +149,7 @@ export const menuItems = pgTable(
       table.status,
     ),
     index('menu_items_tenant_status_sort_idx').on(table.tenantId, table.status, table.sortOrder),
+    index('menu_items_composition_assembled_gin_idx').using('gin', table.compositionAssembled),
     check('menu_items_status_chk', sql`${table.status} IN ('draft', 'published', 'archived')`),
     check('menu_items_currency_format_chk', sql`${table.currency} ~ '^[A-Z]{3}$'`),
     check('menu_items_base_price_nonneg_chk', sql`${table.basePrice}::numeric >= 0`),
@@ -150,6 +162,10 @@ export const menuItems = pgTable(
     check(
       'menu_items_measure_unit_chk',
       sql`${table.measureUnit} IS NULL OR ${table.measureUnit} IN ('g','kg','ml','l','pcs')`,
+    ),
+    check(
+      'menu_items_composition_mode_chk',
+      sql`${table.compositionMode} IN ('text', 'assembled')`,
     ),
     tenantParentUniqueIndex('menu_items', { id: table.id, tenantId: table.tenantId }),
   ],
@@ -195,8 +211,8 @@ export const menuModifierGroups = pgTable(
     id: pkUuid(),
     tenantId: tenantIdColumn(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
-    minSelectable: integer('min_selectable').notNull().default(0),
-    maxSelectable: integer('max_selectable').notNull().default(1),
+    display: text('display').notNull().default('tiles'),
+    behaviour: text('behaviour').notNull().default('several'),
     isRequired: boolean('is_required').notNull().default(false),
     ...timestampsColumns(),
   },
@@ -207,29 +223,32 @@ export const menuModifierGroups = pgTable(
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
     // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
-    check(
-      'menu_modifier_groups_selectable_range_chk',
-      sql`${table.minSelectable} >= 0 AND ${table.maxSelectable} >= ${table.minSelectable}`,
-    ),
+    check('menu_modifier_groups_display_chk', sql`${table.display} IN ('tiles', 'tabs')`),
+    check('menu_modifier_groups_behaviour_chk', sql`${table.behaviour} IN ('one', 'several')`),
     tenantParentUniqueIndex('menu_modifier_groups', { id: table.id, tenantId: table.tenantId }),
   ],
 );
 
 // `priceDelta` is added to the item base price when selected.
 // `defaultAmount` / `freeAmount` mirror iiko NPModifierModel.{default_amount,free_of_charge_amount}.
+// D-01/D-03: an option (ingredient) is a tenant-level entity with its own identity and price —
+// it belongs to no group; membership lives in the two link tables below.
 export const menuModifierOptions = pgTable(
   'menu_modifier_options',
   {
     id: pkUuid(),
     tenantId: tenantIdColumn(),
-    modifierGroupId: uuid('modifier_group_id').notNull(),
     name: jsonb('name').$type<LocalizedText>().notNull(),
+    description: jsonb('description').$type<LocalizedText>(),
+    imageS3Key: text('image_s3_key'),
     priceDelta: money('price_delta').notNull().default('0'),
     defaultAmount: smallint('default_amount').notNull().default(0),
     freeAmount: smallint('free_amount').notNull().default(0),
     sortOrder: integer('sort_order').notNull().default(0),
     minAmount: smallint('min_amount'),
     maxAmount: smallint('max_amount'),
+    source: text('source').notNull().default('manual'),
+    sourceExternalId: text('source_external_id'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -238,17 +257,8 @@ export const menuModifierOptions = pgTable(
       columns: [table.tenantId],
       foreignColumns: [tenants.id],
     }).onDelete('cascade'),
-    compositeTenantFk({
-      name: 'menu_modifier_options_group_fk',
-      child: { id: table.modifierGroupId, tenantId: table.tenantId },
-      parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
-    }).onDelete('cascade'),
     // NOTE (D-04/plan 04): the second scoping column + its composite FK dropped.
-    index('menu_modifier_options_tenant_group_idx').on(
-      table.tenantId,
-      table.modifierGroupId,
-      table.sortOrder,
-    ),
+    index('menu_modifier_options_tenant_sort_idx').on(table.tenantId, table.sortOrder),
     check(
       'menu_modifier_options_amount_nonneg_chk',
       sql`${table.minAmount} IS NULL OR ${table.minAmount} >= 0`,
@@ -256,6 +266,10 @@ export const menuModifierOptions = pgTable(
     check(
       'menu_modifier_options_amount_order_chk',
       sql`${table.minAmount} IS NULL OR ${table.maxAmount} IS NULL OR ${table.maxAmount} >= ${table.minAmount}`,
+    ),
+    check(
+      'menu_modifier_options_source_chk',
+      sql`${table.source} IN ('manual', 'ai_generated', 'imported_iiko', 'imported_csv')`,
     ),
     tenantParentUniqueIndex('menu_modifier_options', { id: table.id, tenantId: table.tenantId }),
   ],

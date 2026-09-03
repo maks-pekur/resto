@@ -41,6 +41,10 @@ interface FkCase {
 // these tables. ADR-0020 I-2 is reduced by one dimension, not removed:
 // the remaining cases below keep proving the tenant-dimension composite
 // FK still rejects a cross-tenant child insert.
+//
+// NOTE (10.6-01, D-01): the `menu_modifier_options.modifier_group_id` case
+// is removed — that column and its FK no longer exist. Plan 02 adds
+// probes for the new `menu_modifier_group_options` / `menu_item_modifier_options` link tables.
 const CASES: FkCase[] = [
   {
     name: 'menu_items.category_id → menu_categories(id, tenant_id)',
@@ -64,17 +68,6 @@ const CASES: FkCase[] = [
           tenantId: fx.tenantA,
           menuItemId: fx.itemB,
           price: '1.00',
-          name: { en: 'Probe' },
-        }),
-      ),
-  },
-  {
-    name: 'menu_modifier_options.modifier_group_id → menu_modifier_groups(id, tenant_id)',
-    probe: async (pg, fx) =>
-      pg.db.withoutTenant('I-2 probe: menu_modifier_options', async (tx) =>
-        tx.insert(schema.menuModifierOptions).values({
-          tenantId: fx.tenantA,
-          modifierGroupId: fx.modifierB,
           name: { en: 'Probe' },
         }),
       ),
