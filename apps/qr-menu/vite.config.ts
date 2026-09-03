@@ -62,6 +62,14 @@ export default defineConfig({
         target: MEDIA_TARGET,
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/media/u, ''),
+        // MinIO sends HSTS with includeSubDomains. Served over this https origin the
+        // browser honours it and pins the whole host tree — `localhost` included — to
+        // https for a year, which silently breaks the http-only admin dev server.
+        configure: (proxy) => {
+          proxy.on('proxyRes', (proxyRes) => {
+            delete proxyRes.headers['strict-transport-security'];
+          });
+        },
       },
     },
   },
