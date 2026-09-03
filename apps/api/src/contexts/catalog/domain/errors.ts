@@ -114,6 +114,14 @@ export class MenuIngredientAlreadyAttachedError extends Error {
   }
 }
 
+export class TooManyGroupDefaultsError extends Error {
+  readonly kind = 'TooManyGroupDefaultsError' as const;
+  constructor(public readonly modifierGroupId: string) {
+    super(`Group "${modifierGroupId}" allows one choice, so it cannot pre-select two.`);
+    this.name = 'TooManyGroupDefaultsError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
@@ -127,4 +135,5 @@ export type CatalogDomainError =
   | CategoryNestingDepthError
   | CatalogCodeConflictError
   | NoLocationForTenantError
-  | MenuIngredientAlreadyAttachedError;
+  | MenuIngredientAlreadyAttachedError
+  | TooManyGroupDefaultsError;

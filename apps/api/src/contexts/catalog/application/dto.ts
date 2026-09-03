@@ -99,13 +99,19 @@ export const UpsertItemInputSchema = z.object({
 export type UpsertItemInput = z.infer<typeof UpsertItemInputSchema>;
 export class UpsertItemInputDto extends createZodDto(UpsertItemInputSchema) {}
 
-export const UpsertModifierGroupInputSchema = z.object({
-  id: z.string().uuid().optional(),
-  name: LocalizedText,
-  display: z.enum(['tiles', 'tabs']),
-  behaviour: z.enum(['one', 'several']),
-  isRequired: z.boolean().default(false),
-});
+export const UpsertModifierGroupInputSchema = z
+  .object({
+    id: z.string().uuid().optional(),
+    name: LocalizedText,
+    display: z.enum(['tiles', 'tabs']),
+    behaviour: z.enum(['one', 'several']),
+    isRequired: z.boolean().default(false),
+    maxSelectable: z.number().int().positive().max(50).nullable().default(null),
+  })
+  .refine((g) => g.behaviour !== 'one' || g.maxSelectable === null, {
+    message: 'maxSelectable is meaningless for a one-choice group',
+    path: ['maxSelectable'],
+  });
 export type UpsertModifierGroupInput = z.infer<typeof UpsertModifierGroupInputSchema>;
 export class UpsertModifierGroupInputDto extends createZodDto(UpsertModifierGroupInputSchema) {}
 
@@ -148,6 +154,7 @@ export class SetItemModifierGroupsInputDto extends createZodDto(SetItemModifierG
 
 export const SetGroupModifierOptionsInputSchema = z.object({
   optionIds: z.array(z.string().uuid()).max(200),
+  defaultOptionIds: z.array(z.string().uuid()).max(200).default([]),
 });
 export type SetGroupModifierOptionsInput = z.infer<typeof SetGroupModifierOptionsInputSchema>;
 export class SetGroupModifierOptionsInputDto extends createZodDto(
@@ -285,6 +292,7 @@ export const ModifierGroupListItemSchema = z.object({
   display: z.enum(['tiles', 'tabs']),
   behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
+  maxSelectable: NonNegInt.nullable(),
   optionCount: NonNegInt,
   usageCount: NonNegInt,
 });
@@ -311,6 +319,8 @@ export const ModifierGroupDetailResponseSchema = z.object({
   display: z.enum(['tiles', 'tabs']),
   behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
+  maxSelectable: NonNegInt.nullable(),
+  defaultOptionIds: z.array(z.string().uuid()),
   options: z.array(ModifierOptionDetailSchema),
 });
 export type ModifierGroupDetailResponse = z.infer<typeof ModifierGroupDetailResponseSchema>;

@@ -44,10 +44,36 @@ describe('UpsertModifierGroupService', () => {
       display: 'tiles',
       behaviour: 'several',
       isRequired: false,
+      maxSelectable: null,
     });
   });
 
-  it('forwards a group created with behaviour "one" and no numeric field', async () => {
+  it('forwards a cap on a several group and refuses one on a one-choice group', async () => {
+    const repo = buildRepo();
+    const service = new UpsertModifierGroupService(repo);
+    const capped = UpsertModifierGroupInputSchema.parse({
+      name: { en: 'Toppings' },
+      display: 'tiles',
+      behaviour: 'several',
+      isRequired: false,
+      maxSelectable: 3,
+    });
+
+    await runInTenantContext({ tenantId: TENANT_ID }, () => service.execute(capped));
+    expect(vi.mocked(repo.upsertModifierGroup).mock.calls[0]?.[0]?.maxSelectable).toBe(3);
+
+    expect(() =>
+      UpsertModifierGroupInputSchema.parse({
+        name: { en: 'Dough' },
+        display: 'tabs',
+        behaviour: 'one',
+        isRequired: true,
+        maxSelectable: 2,
+      }),
+    ).toThrow();
+  });
+
+  it('leaves the cap null on a one-choice group', async () => {
     const repo = buildRepo();
     const service = new UpsertModifierGroupService(repo);
     const input = UpsertModifierGroupInputSchema.parse({
@@ -61,8 +87,8 @@ describe('UpsertModifierGroupService', () => {
 
     const call = vi.mocked(repo.upsertModifierGroup).mock.calls[0]?.[0];
     expect(call?.behaviour).toBe('one');
+    expect(call?.maxSelectable).toBeNull();
     expect(call && 'minSelectable' in call).toBe(false);
-    expect(call && 'maxSelectable' in call).toBe(false);
   });
 
   it('throws when no tenant context is bound', async () => {

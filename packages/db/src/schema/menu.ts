@@ -214,6 +214,7 @@ export const menuModifierGroups = pgTable(
     display: text('display').notNull().default('tiles'),
     behaviour: text('behaviour').notNull().default('several'),
     isRequired: boolean('is_required').notNull().default(false),
+    maxSelectable: smallint('max_selectable'),
     ...timestampsColumns(),
   },
   (table) => [
@@ -316,6 +317,7 @@ export const menuModifierGroupOptions = pgTable(
     modifierGroupId: uuid('modifier_group_id').notNull(),
     optionId: uuid('option_id').notNull(),
     sortOrder: integer('sort_order').notNull().default(0),
+    isDefault: boolean('is_default').notNull().default(false),
   },
   (table) => [
     primaryKey({

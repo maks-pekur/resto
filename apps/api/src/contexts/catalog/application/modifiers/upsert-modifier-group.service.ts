@@ -16,6 +16,7 @@ export class UpsertModifierGroupService {
       display: input.display,
       behaviour: input.behaviour,
       isRequired: input.isRequired,
+      maxSelectable: input.maxSelectable,
     });
   }
 }

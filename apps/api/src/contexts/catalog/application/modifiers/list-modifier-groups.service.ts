@@ -17,6 +17,7 @@ export class ListModifierGroupsService {
         display: r.display,
         behaviour: r.behaviour,
         isRequired: r.isRequired,
+        maxSelectable: r.maxSelectable,
         optionCount: r.optionCount,
         usageCount: r.usageCount,
       })),

@@ -49,6 +49,7 @@ import {
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
   MenuModifierOptionNotFoundError,
+  TooManyGroupDefaultsError,
 } from '../domain/errors';
 import type {
   PublishedMenu,
@@ -155,6 +156,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const sizesByItem = groupBy(sizesRows, (r) => r.menuItemId);
       const modifierGroupsByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
       const optionIdsByGroup = groupBy(groupOptionsRows, (r) => r.modifierGroupId);
+      const defaultOptionIdsByGroup = new Map<string, string[]>();
+      for (const r of groupOptionsRows) {
+        if (!r.isDefault) continue;
+        const acc = defaultOptionIdsByGroup.get(r.modifierGroupId) ?? [];
+        acc.push(r.optionId);
+        defaultOptionIdsByGroup.set(r.modifierGroupId, acc);
+      }
       const extraOptionIdsByItem = groupBy(itemOptionsRows, (r) => r.menuItemId);
 
       const items = allItemsRows.map<PublishedMenuItem>((r) => {
@@ -217,6 +225,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         display: r.display as 'tiles' | 'tabs',
         behaviour: r.behaviour as 'one' | 'several',
         isRequired: r.isRequired,
+        maxSelectable: r.maxSelectable ?? null,
+        defaultOptionIds: defaultOptionIdsByGroup.get(r.id) ?? [],
         optionIds: (optionIdsByGroup.get(r.id) ?? [])
           .slice()
           .sort((a, b) => a.sortOrder - b.sortOrder)
@@ -535,6 +545,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               display: input.display,
               behaviour: input.behaviour,
               isRequired: input.isRequired,
+              maxSelectable: input.maxSelectable,
               updatedAt: new Date(),
             },
             eq(schema.menuModifierGroups.id, input.id),
@@ -549,6 +560,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           display: input.display,
           behaviour: input.behaviour,
           isRequired: input.isRequired,
+          maxSelectable: input.maxSelectable,
         })
         .returning({ id: schema.menuModifierGroups.id });
       if (!row) throw new Error('upsertModifierGroup: insert returned no row');
@@ -696,6 +708,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
   async replaceGroupModifierOptions(input: {
     modifierGroupId: string;
     optionIds: readonly string[];
+    defaultOptionIds: readonly string[];
   }): Promise<{ id: string }> {
     return this.db.withTenant(async (tx, scoped) => {
       const groupRows = await scoped
@@ -734,11 +747,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           ),
         );
 
+      const defaults = new Set(input.defaultOptionIds.filter((id) => dedupedIds.includes(id)));
+      if (groupRows[0].behaviour === 'one' && defaults.size > 1) {
+        throw new TooManyGroupDefaultsError(input.modifierGroupId);
+      }
+
       for (const [i, optionId] of dedupedIds.entries()) {
         await scoped.insertInto(schema.menuModifierGroupOptions, {
           modifierGroupId: input.modifierGroupId,
           optionId,
           sortOrder: i,
+          isDefault: defaults.has(optionId),
         });
       }
 
@@ -1399,6 +1418,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         display: g.display as 'tiles' | 'tabs',
         behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
+        maxSelectable: g.maxSelectable ?? null,
         optionCount: optionCount.get(g.id) ?? 0,
         usageCount: usageCount.get(g.id) ?? 0,
       }));
@@ -1458,6 +1478,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         display: g.display as 'tiles' | 'tabs',
         behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
+        maxSelectable: g.maxSelectable ?? null,
+        defaultOptionIds: links.filter((l) => l.isDefault).map((l) => l.optionId),
         options,
       };
     });

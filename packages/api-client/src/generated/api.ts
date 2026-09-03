@@ -2371,6 +2371,8 @@ export interface components {
             behaviour: "one" | "several";
             /** @default false */
             isRequired: boolean;
+            /** @default null */
+            maxSelectable: number | null;
         };
         UpsertModifierOptionInputDto: {
             /** Format: uuid */
@@ -2415,6 +2417,8 @@ export interface components {
         };
         SetGroupModifierOptionsInputDto: {
             optionIds: string[];
+            /** @default [] */
+            defaultOptionIds: string[];
         };
         SetItemModifierOptionsInputDto: {
             optionIds: string[];
@@ -2626,6 +2630,7 @@ export interface components {
                 /** @enum {string} */
                 behaviour: "one" | "several";
                 isRequired: boolean;
+                maxSelectable: number | null;
                 optionCount: number;
                 usageCount: number;
             }[];
@@ -2641,6 +2646,8 @@ export interface components {
             /** @enum {string} */
             behaviour: "one" | "several";
             isRequired: boolean;
+            maxSelectable: number | null;
+            defaultOptionIds: string[];
             options: {
                 /** Format: uuid */
                 id: string;

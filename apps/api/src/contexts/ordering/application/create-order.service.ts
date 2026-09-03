@@ -164,6 +164,12 @@ export class CreateOrderService {
         if (group.behaviour === 'one' && count > 1) {
           throw new OrderModifierSelectionInvalidError(groupId, 'only one selection allowed');
         }
+        if (group.maxSelectable !== null && count > group.maxSelectable) {
+          throw new OrderModifierSelectionInvalidError(
+            groupId,
+            `at most ${String(group.maxSelectable)} selections allowed`,
+          );
+        }
       }
 
       return {

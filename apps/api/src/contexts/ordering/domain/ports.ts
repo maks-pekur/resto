@@ -43,6 +43,7 @@ export interface PricedModifierGroup {
   readonly groupId: string;
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
 }
 
 export interface OrderingMenuSnapshot {

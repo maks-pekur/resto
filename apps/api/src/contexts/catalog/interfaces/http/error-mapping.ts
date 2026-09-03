@@ -12,6 +12,7 @@ import {
   MenuCategoryNotFoundError,
   MenuItemAlreadyArchivedError,
   MenuIngredientAlreadyAttachedError,
+  TooManyGroupDefaultsError,
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
@@ -34,7 +35,8 @@ const isCatalogDomainError = (err: unknown): err is CatalogDomainError =>
   err instanceof CategoryNestingDepthError ||
   err instanceof CatalogCodeConflictError ||
   err instanceof NoLocationForTenantError ||
-  err instanceof MenuIngredientAlreadyAttachedError;
+  err instanceof MenuIngredientAlreadyAttachedError ||
+  err instanceof TooManyGroupDefaultsError;
 
 const mapKnown = (err: CatalogDomainError): HttpException => {
   switch (err.kind) {
@@ -101,6 +103,11 @@ const mapKnown = (err: CatalogDomainError): HttpException => {
     case 'MenuIngredientAlreadyAttachedError':
       return new ConflictException({
         code: 'catalog.ingredient_already_attached',
+        message: err.message,
+      });
+    case 'TooManyGroupDefaultsError':
+      return new ConflictException({
+        code: 'catalog.too_many_group_defaults',
         message: err.message,
       });
     default: {

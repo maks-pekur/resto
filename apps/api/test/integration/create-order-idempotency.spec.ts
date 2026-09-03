@@ -48,7 +48,9 @@ const pricing: MenuPricingPort = {
           removableOptionIds: [],
         },
       ],
-      modifierGroups: [{ groupId: cheeseGroupId, behaviour: 'one', isRequired: false }],
+      modifierGroups: [
+        { groupId: cheeseGroupId, behaviour: 'one', isRequired: false, maxSelectable: null },
+      ],
       modifierOptions: [
         {
           optionId: cheeseOptionId,

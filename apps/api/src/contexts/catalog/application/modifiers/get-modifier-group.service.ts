@@ -18,6 +18,8 @@ export class GetModifierGroupService {
       display: row.display,
       behaviour: row.behaviour,
       isRequired: row.isRequired,
+      maxSelectable: row.maxSelectable,
+      defaultOptionIds: [...row.defaultOptionIds],
       options: row.options.map((o) => ({
         id: o.id,
         name: o.name,

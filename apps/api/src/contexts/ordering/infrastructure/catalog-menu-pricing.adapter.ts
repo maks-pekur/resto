@@ -43,6 +43,7 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
       groupId: group.id,
       behaviour: group.behaviour,
       isRequired: group.isRequired,
+      maxSelectable: group.maxSelectable,
     }));
 
     const groupIdsByOptionId = new Map<string, string[]>();

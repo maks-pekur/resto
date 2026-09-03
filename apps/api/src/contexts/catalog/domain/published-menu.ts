@@ -28,7 +28,7 @@ export interface PublishedMenuModifierOption {
   readonly maxAmount: number | null;
 }
 
-// D-07: a group is display + behaviour + isRequired, never a number. D-03: options are
+// A group is display + behaviour + isRequired, plus an optional cap and pre-selected ids. D-03: options are
 // tenant-level entities referenced by id — optionIds is the operator's link order.
 export interface PublishedMenuModifierGroup {
   readonly id: MenuModifierId;
@@ -36,7 +36,9 @@ export interface PublishedMenuModifierGroup {
   readonly display: 'tiles' | 'tabs';
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
   readonly optionIds: readonly string[];
+  readonly defaultOptionIds: readonly string[];
 }
 
 export interface PublishedMenuItemPhoto {

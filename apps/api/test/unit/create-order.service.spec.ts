@@ -80,9 +80,9 @@ const snapshot: OrderingMenuSnapshot = {
     },
   ],
   modifierGroups: [
-    { groupId: cheeseGroupId, behaviour: 'one', isRequired: false },
-    { groupId: sauceGroupId, behaviour: 'several', isRequired: false },
-    { groupId: reqGroupId, behaviour: 'one', isRequired: true },
+    { groupId: cheeseGroupId, behaviour: 'one', isRequired: false, maxSelectable: null },
+    { groupId: sauceGroupId, behaviour: 'several', isRequired: false, maxSelectable: null },
+    { groupId: reqGroupId, behaviour: 'one', isRequired: true, maxSelectable: null },
   ],
   modifierOptions: [
     {
@@ -204,14 +204,16 @@ interface PricingCall {
 // SHAPE of the calls (which tenantId/locationId is passed) — it CANNOT catch a real
 // location-mismatch defect (pricing/stop-list answering for the wrong location).
 // The real proof is the two-location e2e in plan 10.3-12.
-const createPricing = (): { port: MenuPricingPort; calls: PricingCall[] } => {
+const createPricing = (
+  overrides: Partial<OrderingMenuSnapshot> = {},
+): { port: MenuPricingPort; calls: PricingCall[] } => {
   const calls: PricingCall[] = [];
   return {
     calls,
     port: {
       loadSnapshot: (tid: TenantId, locId: string) => {
         calls.push({ tenantId: tid, locationId: locId });
-        return Promise.resolve(snapshot);
+        return Promise.resolve({ ...snapshot, ...overrides });
       },
     },
   };
@@ -238,14 +240,16 @@ const createTableLookup = (): { port: OrderTableLookupPort; calls: string[] } =>
   };
 };
 
-const makeService = (): {
+const makeService = (
+  snapshotOverrides: Partial<OrderingMenuSnapshot> = {},
+): {
   service: CreateOrderService;
   repo: FakeOrderRepository;
   pricingCalls: PricingCall[];
   tableLookupCalls: string[];
 } => {
   const repo = new FakeOrderRepository();
-  const pricing = createPricing();
+  const pricing = createPricing(snapshotOverrides);
   const tableLookup = createTableLookup();
   return {
     service: new CreateOrderService(
@@ -581,6 +585,56 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
       ),
     );
     expect(repo.saved[0]?.toSnapshot().items[0]?.modifiers).toHaveLength(3);
+  });
+
+  it("refuses more selections than a several group's cap and accepts exactly the cap", async () => {
+    const capped = snapshot.modifierGroups.map((g) =>
+      g.groupId === sauceGroupId ? { ...g, maxSelectable: 2 } : g,
+    );
+
+    const { service: overService } = makeService({ modifierGroups: capped });
+    await expect(
+      run(() =>
+        overService.execute(
+          baseInput({
+            items: [
+              {
+                itemId: pizzaId,
+                sizeId: null,
+                name: 'Pizza',
+                modifiers: [
+                  { optionId: freeSauceOptionId, name: 'Sauce 1', amount: 1, kind: 'added' },
+                  { optionId: sauceOptionId2, name: 'Sauce 2', amount: 1, kind: 'added' },
+                  { optionId: sauceOptionId3, name: 'Sauce 3', amount: 1, kind: 'added' },
+                ],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierSelectionInvalidError);
+
+    const { service: atCapService, repo } = makeService({ modifierGroups: capped });
+    await run(() =>
+      atCapService.execute(
+        baseInput({
+          items: [
+            {
+              itemId: pizzaId,
+              sizeId: null,
+              name: 'Pizza',
+              modifiers: [
+                { optionId: freeSauceOptionId, name: 'Sauce 1', amount: 1, kind: 'added' },
+                { optionId: sauceOptionId2, name: 'Sauce 2', amount: 1, kind: 'added' },
+              ],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    expect(repo.saved[0]?.toSnapshot().items[0]?.modifiers).toHaveLength(2);
   });
 
   it('accepts an excluded row for a removable ingredient and refuses it for a non-removable one (D-16/D-18/ING-15)', async () => {

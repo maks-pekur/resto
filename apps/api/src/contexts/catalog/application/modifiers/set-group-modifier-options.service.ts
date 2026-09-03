@@ -14,6 +14,7 @@ export class SetGroupModifierOptionsService {
     return this.repo.replaceGroupModifierOptions({
       modifierGroupId: input.modifierGroupId,
       optionIds: input.optionIds,
+      defaultOptionIds: input.defaultOptionIds,
     });
   }
 }

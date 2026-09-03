@@ -265,6 +265,7 @@ export class CatalogController {
       this.setGroupModifierOptionsService.execute({
         modifierGroupId: id,
         optionIds: input.optionIds,
+        defaultOptionIds: input.defaultOptionIds,
       }),
     );
   }

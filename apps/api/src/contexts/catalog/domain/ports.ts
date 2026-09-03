@@ -20,6 +20,7 @@ export interface CatalogRepository {
   replaceGroupModifierOptions(input: {
     modifierGroupId: string;
     optionIds: readonly string[];
+    defaultOptionIds: readonly string[];
   }): Promise<{ id: string }>;
   replaceItemModifierOptions(input: {
     itemId: string;
@@ -167,6 +168,7 @@ export interface UpsertModifierGroupRow {
   readonly display: 'tiles' | 'tabs';
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
 }
 
 export interface UpsertModifierOptionRow {
@@ -289,6 +291,7 @@ export interface ModifierGroupListRow {
   readonly display: 'tiles' | 'tabs';
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
   readonly optionCount: number;
   readonly usageCount: number;
 }
@@ -299,6 +302,8 @@ export interface ModifierGroupDetailRow {
   readonly display: 'tiles' | 'tabs';
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
+  readonly defaultOptionIds: readonly string[];
   readonly options: readonly {
     id: string;
     name: Record<string, string>;
