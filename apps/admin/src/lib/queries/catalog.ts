@@ -14,6 +14,7 @@ import type {
   SizeForm,
   ModifierGroupForm,
   ModifierOptionForm,
+  IngredientForm,
 } from '@/lib/menu/zod-schemas';
 
 const STALE_STABLE = 30_000;
@@ -54,6 +55,22 @@ export type StopListItemApi = Schemas['StopListResponseDto']['items'][number];
 export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
 }
+
+export type IngredientApi = Schemas['ModifierOptionListResponseDto']['items'][number];
+
+export interface IngredientListResponse {
+  readonly items: readonly IngredientApi[];
+}
+
+export type IngredientUsageApi = Schemas['ModifierOptionUsageResponseDto'];
+
+export type OptionStopListItemApi = Schemas['OptionStopListResponseDto']['items'][number];
+
+export interface OptionStopListResponse {
+  readonly items: readonly OptionStopListItemApi[];
+}
+
+export type IdResponseApi = Schemas['IdResponseDto'];
 
 export interface AggregateStopListItemApi {
   readonly itemId: string;
@@ -136,6 +153,24 @@ export const modifierGroupsQuery = () => ({
 export const modifierGroupQuery = (id: string) => ({
   queryKey: ['catalog', 'modifier-group', id] as const,
   queryFn: () => apiFetch<ModifierGroupDetailApi>(`/v1/catalog/modifier-groups/${id}`),
+  staleTime: STALE_STABLE,
+});
+
+export const ingredientsQuery = () => ({
+  queryKey: ['catalog', 'ingredients'] as const,
+  queryFn: () => apiFetch<IngredientListResponse>('/v1/catalog/modifier-options'),
+  staleTime: STALE_STABLE,
+});
+
+export const ingredientUsageQuery = (id: string) => ({
+  queryKey: ['catalog', 'ingredient-usage', id] as const,
+  queryFn: () => apiFetch<IngredientUsageApi>(`/v1/catalog/modifier-options/${id}/usage`),
+  staleTime: STALE_STABLE,
+});
+
+export const ingredientStopListQuery = (locationId: string) => ({
+  queryKey: ['catalog', 'ingredient-stop-list', locationId] as const,
+  queryFn: () => apiFetch<OptionStopListResponse>('/v1/catalog/stop-list/options', { locationId }),
   staleTime: STALE_STABLE,
 });
 
@@ -286,6 +321,64 @@ export const upsertModifierOption = (
       modifierGroupId: groupId,
     },
   });
+
+export const upsertIngredient = (
+  id: string | null,
+  data: Omit<IngredientForm, 'name'> & { readonly name: LocalizedText },
+) =>
+  apiFetch<IdResponseApi>('/v1/catalog/modifier-options', {
+    method: 'POST',
+    body: { ...data, priceDelta: toMoney(data.priceDelta), id: id ?? undefined },
+  });
+
+export const archiveIngredient = (id: string) =>
+  apiFetch<IngredientUsageApi>(`/v1/catalog/modifier-options/${id}/archive`, {
+    method: 'PATCH',
+  });
+
+export const setGroupIngredients = (groupId: string, optionIds: readonly string[]) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/modifier-groups/${groupId}/options`, {
+    method: 'PUT',
+    body: { optionIds },
+  });
+
+export const setItemIngredients = (itemId: string, optionIds: readonly string[]) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/items/${itemId}/modifier-options`, {
+    method: 'PUT',
+    body: { optionIds },
+  });
+
+export interface ItemCompositionPayload {
+  readonly mode: 'text' | 'assembled';
+  readonly text: readonly string[];
+  readonly lines: readonly { optionId: string; removable: boolean }[];
+}
+
+export const setItemComposition = (itemId: string, payload: ItemCompositionPayload) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/items/${itemId}/composition`, {
+    method: 'PUT',
+    body: payload,
+  });
+
+// D-20: only the operator stops an ingredient — locationId is required (never
+// 'all') and is the operator's currently selected location, same as toggleStopList.
+export const toggleIngredientStopList = (
+  optionId: string,
+  stopped: boolean,
+  locationId: string,
+) => {
+  if (stopped) {
+    return apiFetch<IdResponseApi>('/v1/catalog/stop-list/options', {
+      method: 'POST',
+      body: { optionId },
+      locationId,
+    });
+  }
+  return apiFetch(`/v1/catalog/stop-list/options/${optionId}`, {
+    method: 'DELETE',
+    locationId,
+  });
+};
 
 export const getPhotoUploadUrl = (input: { contentType: string; sizeBytes: number }) =>
   apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {

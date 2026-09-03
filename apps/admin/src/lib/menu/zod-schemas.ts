@@ -51,7 +51,11 @@ export const ItemEditorFormSchema = z.object({
   currency: z.string().regex(/^[A-Z]{3}$/u),
   allergens: z.array(z.string().min(1).max(100)).max(50),
   diets: z.array(z.string().min(1).max(50)).max(20),
-  ingredients: z.array(z.string().min(1).max(100)).max(50),
+  compositionMode: z.enum(['text', 'assembled']),
+  compositionText: z.array(z.string().min(1).max(100)).max(50),
+  compositionAssembled: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50),
   metaTitle: z.string().max(70).nullable(),
   metaDescription: z.string().max(160).nullable(),
   proteins: z.number().min(0).max(999.99).nullable(),
@@ -79,16 +83,12 @@ export const SizeFormSchema = z.object({
 
 export type SizeForm = z.infer<typeof SizeFormSchema>;
 
-export const ModifierGroupFormSchema = z
-  .object({
-    name: LocalizedTextFormSchema,
-    minSelectable: z.number().int().min(0).max(99),
-    maxSelectable: z.number().int().min(0).max(99),
-  })
-  .refine((m) => m.maxSelectable === 0 || m.maxSelectable >= m.minSelectable, {
-    message: 'Максимум должен быть больше или равен минимуму, либо 0 (без ограничений).',
-    path: ['maxSelectable'],
-  });
+export const ModifierGroupFormSchema = z.object({
+  name: LocalizedTextFormSchema,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
+  isRequired: z.boolean(),
+});
 
 export type ModifierGroupForm = z.infer<typeof ModifierGroupFormSchema>;
 
@@ -106,3 +106,18 @@ export const ModifierOptionFormSchema = z.object({
 });
 
 export type ModifierOptionForm = z.infer<typeof ModifierOptionFormSchema>;
+
+export const IngredientFormSchema = z.object({
+  name: LocalizedTextFormSchema,
+  description: z.string().max(140).nullable(),
+  priceDelta: z.number().min(0),
+  imageS3Key: z.string().nullable(),
+});
+
+export type IngredientForm = z.infer<typeof IngredientFormSchema>;
+
+export const ingredientFormSchema = (defaultLocale: string) =>
+  IngredientFormSchema.refine(
+    (values) => (values.name[defaultLocale] ?? '').trim().length > 0,
+    'nameRequired',
+  );
