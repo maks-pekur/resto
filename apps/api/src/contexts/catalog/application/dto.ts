@@ -146,6 +146,36 @@ export const SetItemModifierGroupsInputSchema = z.object({
 export type SetItemModifierGroupsInput = z.infer<typeof SetItemModifierGroupsInputSchema>;
 export class SetItemModifierGroupsInputDto extends createZodDto(SetItemModifierGroupsInputSchema) {}
 
+export const SetGroupModifierOptionsInputSchema = z.object({
+  optionIds: z.array(z.string().uuid()).max(200),
+});
+export type SetGroupModifierOptionsInput = z.infer<typeof SetGroupModifierOptionsInputSchema>;
+export class SetGroupModifierOptionsInputDto extends createZodDto(
+  SetGroupModifierOptionsInputSchema,
+) {}
+
+export const SetItemModifierOptionsInputSchema = z.object({
+  optionIds: z.array(z.string().uuid()).max(200),
+});
+export type SetItemModifierOptionsInput = z.infer<typeof SetItemModifierOptionsInputSchema>;
+export class SetItemModifierOptionsInputDto extends createZodDto(
+  SetItemModifierOptionsInputSchema,
+) {}
+
+// createZodDto's class extension requires a single object type; a true discriminatedUnion
+// produces a union `z.infer` that TS cannot extend a class from (TS2509) — mode picks which
+// of the two always-present arrays is active, mirroring the repository's own dual-write shape.
+export const SetItemCompositionInputSchema = z.object({
+  mode: z.enum(['text', 'assembled']),
+  text: z.array(z.string().min(1).max(100)).max(50).default([]),
+  lines: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50)
+    .default([]),
+});
+export type SetItemCompositionInput = z.infer<typeof SetItemCompositionInputSchema>;
+export class SetItemCompositionInputDto extends createZodDto(SetItemCompositionInputSchema) {}
+
 export const StopItemInputSchema = z.object({
   itemId: z.string().uuid(),
   reason: z.string().max(500).nullable().default(null),
@@ -402,6 +432,7 @@ const MAX_PHOTO_BYTES = 5_242_880;
 export const PhotoUploadUrlInputSchema = z.object({
   contentType: PhotoUploadContentTypeSchema,
   sizeBytes: z.number().int().positive().max(MAX_PHOTO_BYTES),
+  kind: z.enum(['item', 'ingredient']).default('item'),
 });
 export type PhotoUploadUrlInput = z.infer<typeof PhotoUploadUrlInputSchema>;
 export class PhotoUploadUrlInputDto extends createZodDto(PhotoUploadUrlInputSchema) {}
