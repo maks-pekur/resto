@@ -9,7 +9,7 @@ import { GroupEditorShell } from '@/components/menu/group-editor-shell';
 
 export const Route = createRoute({
   getParentRoute: () => menuLayoutRoute,
-  path: '/modifier-groups/$id',
+  path: '/ingredients/$id',
   loader: ({ context: { queryClient }, params: { id } }) => {
     if (id === 'new') return Promise.resolve();
     return queryClient.ensureQueryData(modifierGroupQuery(id));
