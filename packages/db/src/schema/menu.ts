@@ -308,6 +308,119 @@ export const menuItemModifierGroups = pgTable(
   ],
 );
 
+// D-02/D-32: group→ingredient membership, no behavioural column beyond sortOrder.
+export const menuModifierGroupOptions = pgTable(
+  'menu_modifier_group_options',
+  {
+    tenantId: tenantIdColumn(),
+    modifierGroupId: uuid('modifier_group_id').notNull(),
+    optionId: uuid('option_id').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({
+      name: 'menu_modifier_group_options_pk',
+      columns: [table.modifierGroupId, table.optionId],
+    }),
+    foreignKey({
+      name: 'menu_modifier_group_options_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_modifier_group_options_group_fk',
+      child: { id: table.modifierGroupId, tenantId: table.tenantId },
+      parent: { id: menuModifierGroups.id, tenantId: menuModifierGroups.tenantId },
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_modifier_group_options_option_fk',
+      child: { id: table.optionId, tenantId: table.tenantId },
+      parent: { id: menuModifierOptions.id, tenantId: menuModifierOptions.tenantId },
+    }).onDelete('cascade'),
+    index('menu_modifier_group_options_tenant_group_idx').on(
+      table.tenantId,
+      table.modifierGroupId,
+      table.sortOrder,
+    ),
+  ],
+);
+
+// D-02/D-32: dish→ingredient direct membership (a dish's single ingredients, outside any group).
+export const menuItemModifierOptions = pgTable(
+  'menu_item_modifier_options',
+  {
+    tenantId: tenantIdColumn(),
+    menuItemId: uuid('menu_item_id').notNull(),
+    optionId: uuid('option_id').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (table) => [
+    primaryKey({
+      name: 'menu_item_modifier_options_pk',
+      columns: [table.menuItemId, table.optionId],
+    }),
+    foreignKey({
+      name: 'menu_item_modifier_options_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_item_modifier_options_item_fk',
+      child: { id: table.menuItemId, tenantId: table.tenantId },
+      parent: { id: menuItems.id, tenantId: menuItems.tenantId },
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_item_modifier_options_option_fk',
+      child: { id: table.optionId, tenantId: table.tenantId },
+      parent: { id: menuModifierOptions.id, tenantId: menuModifierOptions.tenantId },
+    }).onDelete('cascade'),
+    index('menu_item_modifier_options_tenant_item_idx').on(
+      table.tenantId,
+      table.menuItemId,
+      table.sortOrder,
+    ),
+  ],
+);
+
+// D-20/D-21: ingredient-level stop list, mirrors menuStopList's location-scoped shape.
+export const menuOptionStopList = pgTable(
+  'menu_option_stop_list',
+  {
+    id: pkUuid(),
+    tenantId: tenantIdColumn(),
+    locationId: uuid('location_id').notNull(),
+    optionId: uuid('option_id').notNull(),
+    stoppedAt: timestamp('stopped_at', { withTimezone: true, mode: 'date' })
+      .notNull()
+      .default(sql`now()`),
+    reason: text('reason'),
+    stoppedByUserId: text('stopped_by_user_id'),
+  },
+  (table) => [
+    foreignKey({
+      name: 'menu_option_stop_list_tenant_fk',
+      columns: [table.tenantId],
+      foreignColumns: [tenants.id],
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_option_stop_list_option_fk',
+      child: { id: table.optionId, tenantId: table.tenantId },
+      parent: { id: menuModifierOptions.id, tenantId: menuModifierOptions.tenantId },
+    }).onDelete('cascade'),
+    compositeTenantFk({
+      name: 'menu_option_stop_list_location_fk',
+      child: { id: table.locationId, tenantId: table.tenantId },
+      parent: { id: locations.id, tenantId: locations.tenantId },
+    }).onDelete('restrict'),
+    uniqueIndex('menu_option_stop_list_location_option_tenant_uq').on(
+      table.tenantId,
+      table.locationId,
+      table.optionId,
+    ),
+    tenantParentUniqueIndex('menu_option_stop_list', { id: table.id, tenantId: table.tenantId }),
+  ],
+);
+
 // D-4a-10: stop-list overlay is a separate table to keep the audit trail and stay multi-replica consistent.
 // Read-time filtering happens in `loadPublishedMenu`.
 export const menuStopList = pgTable(
