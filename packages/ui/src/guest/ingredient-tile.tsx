@@ -36,8 +36,8 @@ export const IngredientTile = ({
   return (
     <label
       className={cn(
-        'focus-within:ring-ring flex flex-col gap-1.5 rounded-2xl border-2 p-1 transition-colors focus-within:ring-2',
-        selected ? 'border-primary bg-primary-tint' : 'border-transparent',
+        'focus-within:ring-ring flex flex-col gap-1.5 rounded-2xl border-2 p-1.5 transition-colors focus-within:ring-2',
+        selected ? 'border-primary bg-primary-tint' : 'bg-muted border-transparent',
         unavailable ? 'cursor-not-allowed opacity-45' : 'cursor-pointer',
       )}
     >
@@ -52,7 +52,7 @@ export const IngredientTile = ({
           onToggle();
         }}
       />
-      <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-2xl">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl">
         {imageUrl ? (
           <Image src={imageUrl} alt="" sizes={IMAGE_SIZES} className="size-full object-cover" />
         ) : (
