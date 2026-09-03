@@ -30,6 +30,10 @@ const makeItem = (overrides: Partial<MenuItemDto>): MenuItemDto => ({
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...overrides,
 });
 
@@ -62,13 +66,23 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
     }),
   ],
   modifierGroups: [],
+  modifierOptions: [],
   ...overrides,
 });
 
-const renderMenu = (menu: MenuDto, stoppedItemIds: readonly string[] = []) =>
+const renderMenu = (
+  menu: MenuDto,
+  stoppedItemIds: readonly string[] = [],
+  stoppedIngredientIds: readonly string[] = [],
+) =>
   render(
     <GuestUi>
-      <MenuPageClient menu={menu} stoppedItemIds={stoppedItemIds} footerLinks={[]} />
+      <MenuPageClient
+        menu={menu}
+        stoppedItemIds={stoppedItemIds}
+        stoppedIngredientIds={stoppedIngredientIds}
+        footerLinks={[]}
+      />
     </GuestUi>,
   );
 

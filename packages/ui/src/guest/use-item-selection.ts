@@ -1,53 +1,47 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
+import type {
+  MenuItemDto,
+  MenuModifierGroupDto,
+  MenuModifierOptionDto,
+} from '@resto/api-client/public';
 import { formatMinorUnits, parseMinorUnits, type CartModifier } from '@resto/cart';
 import { localized } from '../lib/localized';
-
-export const isSingleChoiceGroup = (group: MenuModifierGroupDto): boolean =>
-  group.minSelectable === 1 && group.maxSelectable === 1 && group.isRequired;
 
 export interface ItemSelection {
   readonly sizeId: string | null;
   readonly selectSize: (sizeId: string) => void;
   readonly isOptionChosen: (groupId: string, optionId: string) => boolean;
   readonly toggleOption: (groupId: string, optionId: string, singleChoice: boolean) => void;
+  readonly excludedOptionIds: ReadonlySet<string>;
+  readonly toggleExclusion: (optionId: string) => void;
   /** Groups the guest still owes an answer to; the order cannot be placed until it is empty. */
   readonly unmetGroups: readonly MenuModifierGroupDto[];
   readonly livePrice: string;
   readonly chosenModifiers: readonly CartModifier[];
+  readonly excludedModifiers: readonly CartModifier[];
   readonly reset: () => void;
 }
 
-/** What the kitchen would put on the dish if nobody chose: iiko's `default_amount`. */
-const preselected = (groups: readonly MenuModifierGroupDto[]): Map<string, Set<string>> => {
-  const chosen = new Map<string, Set<string>>();
-  for (const group of groups) {
-    const defaults = group.options.filter((option) => option.defaultAmount > 0);
-    if (defaults.length === 0) continue;
-    const capped = group.maxSelectable > 0 ? defaults.slice(0, group.maxSelectable) : defaults;
-    chosen.set(group.id, new Set(capped.map((option) => option.id)));
-  }
-  return chosen;
-};
-
-const requiredCount = (group: MenuModifierGroupDto): number =>
-  Math.max(group.minSelectable, group.isRequired ? 1 : 0);
+const requiredCount = (group: MenuModifierGroupDto): number => (group.isRequired ? 1 : 0);
 
 export const useItemSelection = (
   item: MenuItemDto | null,
   groups: readonly MenuModifierGroupDto[],
   locale: string,
+  optionsById: ReadonlyMap<string, MenuModifierOptionDto>,
 ): ItemSelection => {
   const [sizeOverride, setSizeOverride] = useState<string | null>(null);
-  const [chosen, setChosen] = useState<Map<string, Set<string>>>(() => preselected(groups));
-  const [preselectedFor, setPreselectedFor] = useState(item?.id ?? null);
+  const [chosen, setChosen] = useState<Map<string, Set<string>>>(() => new Map());
+  const [excludedOptionIds, setExcludedOptionIds] = useState<ReadonlySet<string>>(() => new Set());
+  const [selectionFor, setSelectionFor] = useState(item?.id ?? null);
 
-  // A new dish arrives with its own defaults; the hook outlives the sheet it fills.
-  if (item !== null && item.id !== preselectedFor) {
-    setPreselectedFor(item.id);
-    setChosen(preselected(groups));
+  // A new dish arrives with an empty selection; the hook outlives the sheet it fills.
+  if (item !== null && item.id !== selectionFor) {
+    setSelectionFor(item.id);
+    setChosen(new Map());
+    setExcludedOptionIds(new Set());
     setSizeOverride(null);
   }
 
@@ -59,19 +53,40 @@ export const useItemSelection = (
     for (const group of groups) {
       const picked = chosen.get(group.id);
       if (!picked) continue;
-      for (const option of group.options) {
-        if (!picked.has(option.id)) continue;
+      for (const optionId of group.optionIds) {
+        if (!picked.has(optionId)) continue;
+        const option = optionsById.get(optionId);
+        if (!option) continue;
         modifiers.push({
-          optionId: option.id,
+          optionId,
           name: localized(option.name, locale),
           priceDelta: option.priceDelta,
           modifierGroupId: group.id,
           amount: 1,
+          kind: 'added',
         });
       }
     }
     return modifiers;
-  }, [groups, chosen, locale]);
+  }, [groups, chosen, locale, optionsById]);
+
+  const excludedModifiers = useMemo<readonly CartModifier[]>(() => {
+    if (!item) return [];
+    const modifiers: CartModifier[] = [];
+    for (const line of item.compositionLines) {
+      if (!line.removable || !excludedOptionIds.has(line.optionId)) continue;
+      const option = optionsById.get(line.optionId);
+      if (!option) continue;
+      modifiers.push({
+        optionId: line.optionId,
+        name: localized(option.name, locale),
+        priceDelta: '0',
+        amount: 1,
+        kind: 'excluded',
+      });
+    }
+    return modifiers;
+  }, [item, excludedOptionIds, optionsById, locale]);
 
   const livePrice = useMemo(() => {
     if (!item) return '0.00';
@@ -94,25 +109,36 @@ export const useItemSelection = (
           next.set(groupId, new Set([optionId]));
           return next;
         }
-        const group = groups.find((g) => g.id === groupId);
         const current = new Set(next.get(groupId) ?? []);
         if (current.has(optionId)) {
           current.delete(optionId);
         } else {
-          // The server refuses an order past `maxSelectable`; the sheet should never build one.
-          if (group !== undefined && current.size >= group.maxSelectable) return prev;
           current.add(optionId);
         }
         next.set(groupId, current);
         return next;
       });
     },
+    excludedOptionIds,
+    toggleExclusion: (optionId) => {
+      setExcludedOptionIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(optionId)) {
+          next.delete(optionId);
+        } else {
+          next.add(optionId);
+        }
+        return next;
+      });
+    },
     unmetGroups: groups.filter((group) => (chosen.get(group.id)?.size ?? 0) < requiredCount(group)),
     livePrice,
     chosenModifiers,
+    excludedModifiers,
     reset: () => {
       setSizeOverride(null);
-      setChosen(preselected(groups));
+      setChosen(new Map());
+      setExcludedOptionIds(new Set());
     },
   };
 };

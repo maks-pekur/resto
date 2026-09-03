@@ -1,7 +1,11 @@
 'use client';
 
 import { useCallback } from 'react';
-import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
+import type {
+  MenuItemDto,
+  MenuModifierGroupDto,
+  MenuModifierOptionDto,
+} from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
 import { Sheet, SheetContent, SheetTitle } from '../components/ui/sheet';
@@ -11,6 +15,8 @@ import { useDragToDismiss } from './use-drag-to-dismiss';
 export interface ItemDialogProps {
   readonly item: MenuItemDto | null;
   readonly modifierGroups: readonly MenuModifierGroupDto[];
+  readonly modifierOptions: readonly MenuModifierOptionDto[];
+  readonly stoppedIngredientIds: readonly string[];
   readonly currency: string;
   readonly open: boolean;
   readonly onOpenChange: (open: boolean) => void;
@@ -22,6 +28,7 @@ export interface ItemDialogProps {
 export const ItemDialog = ({
   item,
   modifierGroups,
+  modifierOptions,
   currency,
   open,
   onOpenChange,
@@ -41,6 +48,7 @@ export const ItemDialog = ({
       Heading={Heading}
       item={item}
       modifierGroups={modifierGroups}
+      modifierOptions={modifierOptions}
       currency={currency}
       onAddToCart={(line) => {
         onAddToCart(line);

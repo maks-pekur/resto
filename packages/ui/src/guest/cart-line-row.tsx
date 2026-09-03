@@ -22,9 +22,12 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
 
-  const details = [item.sizeName, ...item.modifiers.map((modifier) => modifier.name)].filter(
-    (part): part is string => typeof part === 'string' && part.length > 0,
-  );
+  const details = [
+    item.sizeName,
+    ...item.modifiers.map((modifier) =>
+      modifier.kind === 'excluded' ? `−${modifier.name}` : modifier.name,
+    ),
+  ].filter((part): part is string => typeof part === 'string' && part.length > 0);
 
   return (
     <div className="flex items-center gap-2.5 py-3">

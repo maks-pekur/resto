@@ -11,16 +11,23 @@ import { LocaleControl } from '@/components/locale-control';
 interface MenuPageClientProps {
   readonly menu: MenuDto;
   readonly stoppedItemIds: readonly string[];
+  readonly stoppedIngredientIds: readonly string[];
   readonly footerLinks: readonly GuestFooterLink[];
 }
 
-export function MenuPageClient({ menu, stoppedItemIds, footerLinks }: MenuPageClientProps) {
+export function MenuPageClient({
+  menu,
+  stoppedItemIds,
+  stoppedIngredientIds,
+  footerLinks,
+}: MenuPageClientProps) {
   const t = useTranslations('cart');
 
   return (
     <MenuScreen
       menu={menu}
       stoppedItemIds={stoppedItemIds}
+      stoppedIngredientIds={stoppedIngredientIds}
       banner={<DeliveryPickupBanner />}
       headerActions={<LocaleControl className="hidden sm:inline-flex" />}
       footerActions={<LocaleControl />}

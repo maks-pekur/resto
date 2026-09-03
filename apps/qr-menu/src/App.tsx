@@ -70,6 +70,7 @@ export const App = () => {
   const { resolvedTheme, setTheme } = useGuestTheme();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [stoppedItemIds, setStoppedItemIds] = useState<readonly string[]>([]);
+  const [stoppedIngredientIds, setStoppedIngredientIds] = useState<readonly string[]>([]);
   const [attempt, setAttempt] = useState(0);
   const [seatingFor, setSeatingFor] = useState<'unreadable' | 'ordering' | null>(null);
   const [openItemId, setOpenItemId] = useState<string | null>(() =>
@@ -111,6 +112,7 @@ export const App = () => {
     fetchAvailability(tableId, controller.signal)
       .then((availability) => {
         setStoppedItemIds(availability.stoppedItemIds);
+        setStoppedIngredientIds(availability.stoppedIngredientIds);
       })
       .catch(() => undefined);
     return () => {
@@ -164,6 +166,7 @@ export const App = () => {
       fetchAvailability(tableId, controller.signal)
         .then((availability) => {
           setStoppedItemIds(availability.stoppedItemIds);
+          setStoppedIngredientIds(availability.stoppedIngredientIds);
         })
         .catch(() => undefined);
 
@@ -288,6 +291,7 @@ export const App = () => {
         <MenuScreen
           menu={state.menu}
           stoppedItemIds={stoppedItemIds}
+          stoppedIngredientIds={stoppedIngredientIds}
           initialItemId={openItemId}
           onItemOpen={openItem}
           onItemClose={closeItem}

@@ -23,7 +23,7 @@ const menu = {
 
 vi.mock('../src/api/client', () => ({
   fetchMenu: vi.fn(() => Promise.resolve(menu)),
-  fetchAvailability: vi.fn(() => Promise.resolve({ stoppedItemIds: [] })),
+  fetchAvailability: vi.fn(() => Promise.resolve({ stoppedItemIds: [], stoppedIngredientIds: [] })),
   fetchVenue: vi.fn(() => Promise.resolve(null)),
   fetchLegalDocuments: vi.fn(() =>
     Promise.resolve({

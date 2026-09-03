@@ -9,6 +9,7 @@ export type {
   MenuItemSizeDto,
   MenuModifierOptionDto,
   MenuModifierGroupDto,
+  MenuCompositionLineDto,
   MenuItemDto,
   MenuCategoryDto,
   MenuTenantThemeDto,

@@ -43,9 +43,14 @@ const menu: MenuDto = {
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 };
 
 vi.mock('../src/api/client', () => ({
@@ -55,7 +60,7 @@ vi.mock('../src/api/client', () => ({
   fetchTableSession: () => Promise.resolve(null),
   openTableSession: () => Promise.reject(new Error('no session')),
   fetchMenu: () => Promise.resolve(menu),
-  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
+  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [], stoppedIngredientIds: [] }),
 }));
 
 // The choice lives in the drawer now, as one segmented control among three answers.

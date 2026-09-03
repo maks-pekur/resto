@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import type { MenuItemDto } from '@resto/api-client/public';
+import type {
+  MenuItemDto,
+  MenuModifierGroupDto,
+  MenuModifierOptionDto,
+} from '@resto/api-client/public';
 import { GuestUiProvider, MenuItemCard } from '@resto/ui';
 
 const item = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
@@ -24,6 +28,10 @@ const item = (over: Partial<MenuItemDto> = {}): MenuItemDto => ({
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...over,
 });
 
@@ -95,74 +103,33 @@ describe('MenuItemCard price button', () => {
 });
 
 describe('ItemDetail choices', () => {
-  it('opens with the option the kitchen would use anyway', async () => {
-    const { ItemDetail } = await import('@resto/ui');
-    const dough = {
-      id: 'g1',
-      name: { ru: 'Тесто' },
-      minSelectable: 1,
-      maxSelectable: 1,
-      isRequired: true,
-      options: [
-        {
-          id: 'o1',
-          name: { ru: 'Традиционное' },
-          priceDelta: '0.00',
-          defaultAmount: 1,
-          freeAmount: 0,
-          sortOrder: 0,
-        },
-        {
-          id: 'o2',
-          name: { ru: 'Тонкое' },
-          priceDelta: '0.00',
-          defaultAmount: 0,
-          freeAmount: 0,
-          sortOrder: 1,
-        },
-      ],
-    } as never;
-
-    render(
-      <GuestUiProvider locale="ru" t={(key) => key}>
-        <ItemDetail
-          item={item({ modifierGroupIds: ['g1'] })}
-          modifierGroups={[dough]}
-          currency="UAH"
-          onAddToCart={vi.fn()}
-        />
-      </GuestUiProvider>,
-    );
-
-    expect(screen.getByRole('radio', { name: 'Традиционное' })).toBeChecked();
-    expect(screen.getByRole('button', { name: /item.addToCart/u })).toBeEnabled();
-  });
-
   it('will not let a required question go unanswered', async () => {
     const { ItemDetail } = await import('@resto/ui');
-    const sauce = {
+    const sauce: MenuModifierGroupDto = {
       id: 'g2',
       name: { ru: 'Соус' },
-      minSelectable: 1,
-      maxSelectable: 1,
+      display: 'tabs',
+      behaviour: 'one',
       isRequired: true,
-      options: [
-        {
-          id: 'o3',
-          name: { ru: 'Кетчуп' },
-          priceDelta: '0.00',
-          defaultAmount: 0,
-          freeAmount: 0,
-          sortOrder: 0,
-        },
-      ],
-    } as never;
+      optionIds: ['o3'],
+    };
+    const sauceOptions: MenuModifierOptionDto[] = [
+      {
+        id: 'o3',
+        name: { ru: 'Кетчуп' },
+        description: null,
+        imageUrl: null,
+        priceDelta: '0.00',
+        freeAmount: 0,
+      },
+    ];
 
     render(
       <GuestUiProvider locale="ru" t={(key) => key}>
         <ItemDetail
           item={item({ modifierGroupIds: ['g2'] })}
           modifierGroups={[sauce]}
+          modifierOptions={sauceOptions}
           currency="UAH"
           onAddToCart={vi.fn()}
         />

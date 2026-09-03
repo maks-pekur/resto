@@ -42,9 +42,14 @@ const menuWithPhoto = (url: string): MenuDto => ({
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 });
 
 const SIGNED_FIRST = 'https://cdn.example.test/margherita.webp?sig=first';
@@ -59,7 +64,7 @@ vi.mock('../src/api/client', () => ({
   fetchTableSession: () => Promise.resolve(null),
   openTableSession: () => Promise.reject(new Error('no session')),
   fetchMenu: (signal?: AbortSignal) => fetchMenu(signal) as Promise<MenuDto>,
-  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
+  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [], stoppedIngredientIds: [] }),
 }));
 
 const photoSrc = (): string | null =>

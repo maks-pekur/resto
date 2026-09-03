@@ -7,6 +7,7 @@ export interface CartModifier {
   readonly priceDelta: string;
   readonly modifierGroupId?: string;
   readonly amount?: number;
+  readonly kind?: 'added' | 'excluded';
 }
 
 export interface CartLineItem {

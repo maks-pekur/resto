@@ -46,9 +46,14 @@ const menu: MenuDto = {
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 };
 
 const TABLE_UUID = '22222222-2222-4222-8222-222222222222';
@@ -57,7 +62,10 @@ const resolvedTable: ResolvedTable = { tableId: TABLE_UUID, zoneName: 'Terrace',
 const fetchMenuMock = vi.fn<(signal?: AbortSignal) => Promise<MenuDto>>();
 const fetchAvailabilityMock =
   vi.fn<
-    (tableId: string | undefined, signal?: AbortSignal) => Promise<{ stoppedItemIds: string[] }>
+    (
+      tableId: string | undefined,
+      signal?: AbortSignal,
+    ) => Promise<{ stoppedItemIds: string[]; stoppedIngredientIds: string[] }>
   >();
 const openTableSessionMock = vi.fn<(token: string) => Promise<ResolvedTable>>();
 const fetchTableSessionMock = vi.fn<(signal?: AbortSignal) => Promise<ResolvedTable | null>>();
@@ -81,7 +89,9 @@ beforeEach(() => {
   useCartStore.getState().setTable(null);
   window.history.replaceState({}, '', '/');
   fetchMenuMock.mockReset().mockResolvedValue(menu);
-  fetchAvailabilityMock.mockReset().mockResolvedValue({ stoppedItemIds: [] });
+  fetchAvailabilityMock
+    .mockReset()
+    .mockResolvedValue({ stoppedItemIds: [], stoppedIngredientIds: [] });
   openTableSessionMock.mockReset().mockRejectedValue(new Error('no session'));
   fetchTableSessionMock.mockReset().mockResolvedValue(null);
 });
