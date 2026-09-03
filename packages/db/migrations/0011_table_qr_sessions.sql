@@ -37,4 +37,13 @@ CREATE POLICY table_sessions_location_iso ON public.table_sessions AS RESTRICTIV
   USING ((public.is_system_session() OR (public.current_location_id() IS NULL) OR (location_id = public.current_location_id())))
   WITH CHECK ((public.is_system_session() OR (public.current_location_id() IS NULL) OR (location_id = public.current_location_id())));
 
-GRANT SELECT, INSERT ON public.table_sessions TO resto_app;
+-- Guarded so this file stays safe to run before resto_app exists (mirrors
+-- roles.sql's own guard shape, 10.6-02 fix — fresh testcontainer bootstrap
+-- runs migrate() before provisionAppRole()).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_app') THEN
+    GRANT SELECT, INSERT ON public.table_sessions TO resto_app;
+  END IF;
+END
+$$;

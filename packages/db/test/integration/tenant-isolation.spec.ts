@@ -364,6 +364,7 @@ suite('Row-Level Security — tenant isolation', () => {
   describe('Plan 04a-07: cross-tenant matrix for renamed + new tables', () => {
     let aItemId: string;
     let aModifierGroupId: string;
+    let aOptionId: string;
     let aLocationId: string;
     let bLocationId: string;
 
@@ -434,6 +435,13 @@ suite('Row-Level Security — tenant isolation', () => {
           .returning({ id: schema.menuModifierGroups.id });
         if (!aGroup) throw new Error('Cross-tenant seed: modifier group create failed.');
         aModifierGroupId = aGroup.id;
+
+        const [aOption] = await tx
+          .insert(schema.menuModifierOptions)
+          .values({ tenantId: tenantA, name: { en: 'IsoAOption' } })
+          .returning({ id: schema.menuModifierOptions.id });
+        if (!aOption) throw new Error('Cross-tenant seed: option create failed.');
+        aOptionId = aOption.id;
       });
 
       // Insert tenant-A rows into the 5 new tables via tenant-A context so
@@ -465,6 +473,25 @@ suite('Row-Level Security — tenant isolation', () => {
             menuItemId: aItemId,
             modifierGroupId: aModifierGroupId,
             sortOrder: 0,
+          });
+          await tx.insert(schema.menuModifierGroupOptions).values({
+            tenantId: tenantA,
+            modifierGroupId: aModifierGroupId,
+            optionId: aOptionId,
+            sortOrder: 0,
+          });
+          await tx.insert(schema.menuItemModifierOptions).values({
+            tenantId: tenantA,
+            menuItemId: aItemId,
+            optionId: aOptionId,
+            sortOrder: 0,
+          });
+          await tx.insert(schema.menuOptionStopList).values({
+            tenantId: tenantA,
+            locationId: aLocationId,
+            optionId: aOptionId,
+            reason: 'iso fixture',
+            stoppedByUserId: null,
           });
         }),
       );
@@ -649,6 +676,107 @@ suite('Row-Level Security — tenant isolation', () => {
       );
       expect(error).toBeInstanceOf(Error);
     });
+
+    it('menu_modifier_group_options: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuModifierGroupOptions)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_modifier_group_options: tenant B INSERT with tenant A ids is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuModifierGroupOptions).values({
+            tenantId: tenantB,
+            modifierGroupId: aModifierGroupId,
+            optionId: aOptionId,
+            sortOrder: 0,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_item_modifier_options: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuItemModifierOptions)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_item_modifier_options: tenant B INSERT with tenant A ids is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuItemModifierOptions).values({
+            tenantId: tenantB,
+            menuItemId: aItemId,
+            optionId: aOptionId,
+            sortOrder: 0,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_option_stop_list: tenant B sees zero of tenant A rows', async () => {
+      const fromB = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) => tx.select().from(schema.menuOptionStopList)),
+      );
+      expect(fromB).toHaveLength(0);
+    });
+
+    it('menu_option_stop_list: tenant B INSERT with tenant A option_id is rejected', async () => {
+      const error = await runInTenantContext({ tenantId: tenantB }, () =>
+        pg.db.withTenant(async (tx) =>
+          tx.insert(schema.menuOptionStopList).values({
+            tenantId: tenantB,
+            locationId: bLocationId,
+            optionId: aOptionId,
+            reason: null,
+            stoppedByUserId: null,
+          }),
+        ),
+      ).then(
+        () => null,
+        (e: unknown) => e,
+      );
+      expect(error).toBeInstanceOf(Error);
+    });
+
+    it('menu_option_stop_list: location-grain binding to A returns A row only, hidden when bound to B', async () => {
+      const boundToA = await runInTenantContext(
+        { tenantId: tenantA, locationId: aLocationId },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuOptionStopList)),
+      );
+      expect(boundToA.map((r) => r.optionId)).toContain(aOptionId);
+
+      const [otherLocation] = await pg.db.withoutTenant(
+        'seed sibling location for menu_option_stop_list location-grain check',
+        async (tx) =>
+          tx
+            .insert(schema.locations)
+            .values({
+              tenantId: tenantA,
+              name: 'Sibling Option Location',
+              slug: 'sibling-option-location',
+            })
+            .returning({ id: schema.locations.id }),
+      );
+      if (!otherLocation) throw new Error('sibling location seed failed');
+
+      const boundToSibling = await runInTenantContext(
+        { tenantId: tenantA, locationId: otherLocation.id },
+        () => pg.db.withTenant(async (tx) => tx.select().from(schema.menuOptionStopList)),
+      );
+      expect(boundToSibling.map((r) => r.optionId)).not.toContain(aOptionId);
+    });
   });
 
   // NOTE (phase 10.2, D-04/D-08): the "requires an explicit brand_id on
@@ -740,7 +868,7 @@ suite('Row-Level Security — tenant isolation', () => {
             locationId: aOrderLocationId,
             idempotencyKey: 'ord06-idem-key-a',
             orderNumber: '20260614-ORD06',
-            status: 'created',
+            status: 'placed',
             orderType: 'pickup',
             customerName: 'Iso Tester',
             customerPhone: '+10000000000',
@@ -796,7 +924,7 @@ suite('Row-Level Security — tenant isolation', () => {
             locationId: aOrderLocationId,
             idempotencyKey: 'ord06-idem-cross-location',
             orderNumber: '20260614-CROSS-LOC',
-            status: 'created',
+            status: 'placed',
             orderType: 'pickup',
             customerName: 'Cross Location Tester',
             customerPhone: '+10000000002',

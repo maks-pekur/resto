@@ -27,4 +27,14 @@ END;
 $$;
 
 REVOKE EXECUTE ON FUNCTION public.tenancy_delete_location(uuid, uuid) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.tenancy_delete_location(uuid, uuid) TO resto_app;
+
+-- Guarded so this file stays safe to run before resto_app exists (mirrors
+-- roles.sql's own guard shape, 10.6-02 fix — fresh testcontainer bootstrap
+-- runs migrate() before provisionAppRole()).
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'resto_app') THEN
+    GRANT EXECUTE ON FUNCTION public.tenancy_delete_location(uuid, uuid) TO resto_app;
+  END IF;
+END
+$$;
