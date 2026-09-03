@@ -1308,6 +1308,73 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(body.options.map((o) => o.id)).toEqual([o2, o1, o3]);
   });
 
+  it('PUT items/:id/modifier-options then GET the item returns the attached ingredient ids in written order (GAP 2 fix)', async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'singles-cat', name: { en: 'Singles cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'singles-item',
+        name: { en: 'Singles item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const createOption = async (label: string): Promise<string> => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/catalog/modifier-options',
+        headers: cafeA.authed,
+        payload: { name: { en: label }, priceDelta: '0.00' },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json<{ id: string }>().id;
+    };
+    const bacon = await createOption('Bacon');
+    const extraCheese = await createOption('Extra cheese');
+
+    const preAttachDetail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(preAttachDetail.statusCode).toBe(200);
+    expect(preAttachDetail.json<{ modifierOptionIds: string[] }>().modifierOptionIds).toEqual([]);
+
+    const attachRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [extraCheese, bacon] },
+    });
+    expect(attachRes.statusCode).toBe(200);
+
+    const postAttachDetail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(postAttachDetail.statusCode).toBe(200);
+    expect(postAttachDetail.json<{ modifierOptionIds: string[] }>().modifierOptionIds).toEqual([
+      extraCheese,
+      bacon,
+    ]);
+  });
+
   it("attaching an ingredient already reachable through one of the dish's groups answers 409 (D-04)", async () => {
     const catRes = await stack.app.inject({
       method: 'POST',

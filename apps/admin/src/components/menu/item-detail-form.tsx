@@ -48,6 +48,7 @@ export interface ItemDetailFormProps {
   readonly onSizesChange: (sizes: readonly ItemSizeApi[]) => void;
   readonly availableModifierGroups: readonly AvailableGroup[];
   readonly initialModifierGroupIds: readonly string[];
+  readonly initialIngredientIds: readonly string[];
   readonly onSaved: (savedId: string) => void;
   readonly slug: string;
   readonly formId: string;
@@ -64,6 +65,7 @@ export function ItemDetailForm({
   onSizesChange,
   availableModifierGroups,
   initialModifierGroupIds,
+  initialIngredientIds,
   onSaved,
   slug,
   formId,
@@ -166,6 +168,7 @@ export function ItemDetailForm({
         <ItemModifierGroupsCard
           itemId={currentItemId}
           initialModifierGroupIds={initialModifierGroupIds}
+          initialIngredientIds={initialIngredientIds}
           availableGroups={availableModifierGroups}
         />
         <ItemNutritionCard />

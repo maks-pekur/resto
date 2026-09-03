@@ -45,12 +45,14 @@ export interface AvailableGroup {
 export interface ItemModifierGroupsCardProps {
   readonly itemId: string;
   readonly initialModifierGroupIds: readonly string[];
+  readonly initialIngredientIds: readonly string[];
   readonly availableGroups: readonly AvailableGroup[];
 }
 
 export function ItemModifierGroupsCard({
   itemId,
   initialModifierGroupIds,
+  initialIngredientIds,
   availableGroups,
 }: ItemModifierGroupsCardProps): React.ReactElement {
   const navigate = useNavigate();
@@ -59,7 +61,7 @@ export function ItemModifierGroupsCard({
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
-  const [singleIds, setSingleIds] = React.useState<readonly string[]>([]);
+  const [singleIds, setSingleIds] = React.useState<readonly string[]>(initialIngredientIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
   const [sheetOpen, setSheetOpen] = React.useState(false);
   const [singleSheetOpen, setSingleSheetOpen] = React.useState(false);

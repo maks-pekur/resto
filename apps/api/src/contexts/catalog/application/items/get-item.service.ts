@@ -53,6 +53,7 @@ export class GetItemService {
         sortOrder: s.sortOrder,
       })),
       modifierGroupIds: [...row.modifierGroupIds],
+      modifierOptionIds: [...row.modifierOptionIds],
     };
   }
 }

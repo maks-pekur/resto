@@ -1310,7 +1310,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const rows = await scoped.selectFrom(schema.menuItems, eq(schema.menuItems.id, id)).limit(1);
       const r = rows[0];
       if (!r) return null;
-      const [sizes, links] = await Promise.all([
+      const [sizes, links, optionLinks] = await Promise.all([
         scoped
           .selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, id))
           .orderBy(asc(schema.menuItemSizes.sortOrder)),
@@ -1318,6 +1318,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           schema.menuItemModifierGroups,
           eq(schema.menuItemModifierGroups.menuItemId, id),
         ),
+        scoped
+          .selectFrom(
+            schema.menuItemModifierOptions,
+            eq(schema.menuItemModifierOptions.menuItemId, id),
+          )
+          .orderBy(asc(schema.menuItemModifierOptions.sortOrder)),
       ]);
       return {
         id: r.id,
@@ -1360,6 +1366,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: s.sortOrder,
         })),
         modifierGroupIds: links.map((m) => m.modifierGroupId),
+        modifierOptionIds: optionLinks.map((m) => m.optionId),
       };
     });
   }

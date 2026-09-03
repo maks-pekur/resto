@@ -280,6 +280,7 @@ export interface ItemDetailRow {
     sortOrder: number;
   }[];
   readonly modifierGroupIds: readonly string[];
+  readonly modifierOptionIds: readonly string[];
 }
 
 export interface ModifierGroupListRow {

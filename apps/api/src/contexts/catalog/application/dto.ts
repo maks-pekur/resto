@@ -275,6 +275,7 @@ export const ItemDetailResponseSchema = z.object({
   sortOrder: NonNegInt,
   sizes: z.array(ItemSizeDtoSchema),
   modifierGroupIds: z.array(z.string().uuid()),
+  modifierOptionIds: z.array(z.string().uuid()),
 });
 export type ItemDetailResponse = z.infer<typeof ItemDetailResponseSchema>;
 export class ItemDetailResponseDto extends createZodDto(ItemDetailResponseSchema) {}
