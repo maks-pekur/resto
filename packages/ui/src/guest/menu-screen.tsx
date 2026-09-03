@@ -34,6 +34,7 @@ export interface MenuScreenBarApi {
 export interface MenuScreenProps {
   readonly menu: MenuDto;
   readonly stoppedItemIds: readonly string[];
+  readonly stoppedIngredientIds: readonly string[];
   readonly initialItemId?: string | null;
   readonly onItemOpen?: (id: string) => void;
   readonly onItemClose?: () => void;
@@ -61,6 +62,7 @@ export interface MenuScreenProps {
 export const MenuScreen = ({
   menu,
   stoppedItemIds,
+  stoppedIngredientIds,
   initialItemId = null,
   onItemOpen,
   onItemClose,
@@ -313,6 +315,8 @@ export const MenuScreen = ({
           <ItemDialog
             item={dialogItem}
             modifierGroups={dialogGroups}
+            modifierOptions={menu.modifierOptions}
+            stoppedIngredientIds={stoppedIngredientIds}
             currency={menu.currency}
             presentation={itemPresentation}
             open={selectedItem != null}

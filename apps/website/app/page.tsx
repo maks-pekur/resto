@@ -44,13 +44,14 @@ export default async function MenuPage() {
   try {
     const [menu, availability, footerLinks] = await Promise.all([
       fetchMenuPublic(),
-      fetchAvailabilityPublic().catch(() => ({ stoppedItemIds: [] })),
+      fetchAvailabilityPublic().catch(() => ({ stoppedItemIds: [], stoppedIngredientIds: [] })),
       siteFooterLinks(),
     ]);
     return (
       <MenuPageClient
         menu={menu}
         stoppedItemIds={availability.stoppedItemIds}
+        stoppedIngredientIds={availability.stoppedIngredientIds}
         footerLinks={footerLinks}
       />
     );
