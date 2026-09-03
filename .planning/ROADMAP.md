@@ -808,7 +808,7 @@ stop cascade (D-20), the stop overlay is computed per read (D-23), `min_selectab
 Plans:
 
 - [x] 10.6-01-PLAN.md — Drizzle schema: ingredient identity, two link tables, ingredient stop table, group enums, two-mode composition, `order_modifiers.kind`
-- [ ] 10.6-02-PLAN.md — Hand-written migration 0019 + journal + grants, applied against a reset dev database, with cross-tenant regression tests
+- [x] 10.6-02-PLAN.md — Hand-written migration 0019 + journal + grants, applied against a reset dev database, with cross-tenant regression tests
 - [ ] 10.6-03-PLAN.md — Published menu read model: ingredients travel once, groups carry display/behaviour, availability answers a second list
 - [ ] 10.6-04-PLAN.md — Ordering: union allowed-set, behaviour validation, stopped-ingredient refusal, exclusions as their own rows
 - [ ] 10.6-05-PLAN.md — Catalog contracts and every existing write/list path moved onto the new columns
