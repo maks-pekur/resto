@@ -269,7 +269,9 @@
       "behaviourLabel": "Elección",
       "behaviourOne": "Una opción",
       "behaviourSeveral": "Varias",
-      "requiredLabel": "Grupo obligatorio"
+      "requiredLabel": "Grupo obligatorio",
+      "maxSelectableLabel": "No más de",
+      "maxSelectablePlaceholder": "sin límite"
     },
     "itemModifiers": {
       "groupsRowLabel": "Grupos",
@@ -345,7 +347,8 @@
       "pageTitle": "Grupos de modificadores",
       "addGroup": "+ Crear grupo",
       "newGroupTitle": "Nuevo grupo",
-      "tableStatus": "Estado"
+      "tableStatus": "Estado",
+      "defaultAriaLabel": "Preseleccionar:"
     },
     "stopList": {
       "title": "La lista de pausados está vacía",

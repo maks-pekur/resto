@@ -8,6 +8,7 @@ import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { FormField } from '@/components/ui/form';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
 import { upsertModifierGroup } from '@/lib/queries/catalog';
 import { modifierGroupFormSchema, type ModifierGroupForm } from '@/lib/menu/zod-schemas';
@@ -48,6 +49,13 @@ export function ModifierGroupFormComponent({
     defaultValues: initialValues,
     mode: 'onChange',
   });
+
+  const behaviour = form.watch('behaviour');
+  React.useEffect(() => {
+    if (behaviour === 'one' && form.getValues('maxSelectable') !== null) {
+      form.setValue('maxSelectable', null, { shouldDirty: true });
+    }
+  }, [behaviour, form]);
 
   const isNew = groupId === 'new';
   const isDirty = form.formState.isDirty;
@@ -200,6 +208,34 @@ export function ModifierGroupFormComponent({
             </Field>
           )}
         />
+        {behaviour === 'several' ? (
+          <FormField
+            control={form.control}
+            name="maxSelectable"
+            render={({ field }) => (
+              <Field orientation="horizontal" className="justify-between">
+                <FieldLabel htmlFor="group-max" className="font-normal">
+                  {tGroups('maxSelectableLabel')}
+                </FieldLabel>
+                <Input
+                  id="group-max"
+                  data-testid="group-max-input"
+                  type="number"
+                  min={1}
+                  max={50}
+                  inputMode="numeric"
+                  className="w-24"
+                  placeholder={tGroups('maxSelectablePlaceholder')}
+                  value={field.value ?? ''}
+                  onChange={(e) => {
+                    const raw = e.target.value.trim();
+                    field.onChange(raw === '' ? null : Number(raw));
+                  }}
+                />
+              </Field>
+            )}
+          />
+        ) : null}
       </FieldGroup>
     </form>
   );

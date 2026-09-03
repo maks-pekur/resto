@@ -88,6 +88,7 @@ export const ModifierGroupFormSchema = z.object({
   display: z.enum(['tiles', 'tabs']),
   behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
+  maxSelectable: z.number().int().positive().max(50).nullable(),
 });
 
 export type ModifierGroupForm = z.infer<typeof ModifierGroupFormSchema>;

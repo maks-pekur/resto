@@ -269,7 +269,9 @@
       "behaviourLabel": "Выбор",
       "behaviourOne": "Один вариант",
       "behaviourSeveral": "Несколько",
-      "requiredLabel": "Обязательная группа"
+      "requiredLabel": "Обязательная группа",
+      "maxSelectableLabel": "Не больше, чем",
+      "maxSelectablePlaceholder": "без ограничений"
     },
     "itemModifiers": {
       "groupsRowLabel": "Группы",
@@ -345,7 +347,8 @@
       "pageTitle": "Группы модификаторов",
       "addGroup": "+ Создать группу",
       "newGroupTitle": "Новая группа",
-      "tableStatus": "Статус"
+      "tableStatus": "Статус",
+      "defaultAriaLabel": "Выбрать по умолчанию:"
     },
     "stopList": {
       "title": "Стоп-лист пуст",

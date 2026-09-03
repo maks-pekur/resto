@@ -117,6 +117,7 @@ export function ItemModifierGroupsCard({
         display: 'tiles',
         behaviour: 'several',
         isRequired: false,
+        maxSelectable: null,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });

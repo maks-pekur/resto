@@ -27,6 +27,7 @@ const emptyValues = (): ModifierGroupForm => ({
   display: 'tiles',
   behaviour: 'several',
   isRequired: false,
+  maxSelectable: null,
 });
 
 const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
@@ -34,13 +35,18 @@ const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
   display: g.display,
   behaviour: g.behaviour,
   isRequired: g.isRequired,
+  maxSelectable: g.maxSelectable,
 });
 
-const rowFromOption = (option: ModifierOptionApi): GroupModifierRow => ({
+const rowFromOption = (
+  option: ModifierOptionApi,
+  defaultOptionIds: readonly string[],
+): GroupModifierRow => ({
   id: option.id,
   name: option.name,
   imageUrl: option.imageUrl,
   priceDelta: option.priceDelta,
+  isDefault: defaultOptionIds.includes(option.id),
 });
 
 export function GroupEditorShell({
@@ -52,7 +58,9 @@ export function GroupEditorShell({
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
   const [currentOptions, setCurrentOptions] = React.useState<readonly GroupModifierRow[]>(
-    (initialGroup?.options ?? []).map(rowFromOption),
+    (initialGroup?.options ?? []).map((o) =>
+      rowFromOption(o, initialGroup?.defaultOptionIds ?? []),
+    ),
   );
   const [formState, setFormState] = React.useState<ModifierGroupFormState>({
     isNew: groupId === 'new',
@@ -110,6 +118,7 @@ export function GroupEditorShell({
           <CardContent>
             <GroupModifiersPicker
               groupId={currentGroupId}
+              behaviour={initialValues.behaviour}
               options={currentOptions}
               onOptionsChange={setCurrentOptions}
             />

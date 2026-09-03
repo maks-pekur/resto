@@ -44,6 +44,7 @@ export type ItemDetailApi = Schemas['ItemDetailResponseDto'];
 
 export interface ModifierGroupDetailApi extends ModifierGroupApi {
   readonly options: readonly ModifierOptionApi[];
+  readonly defaultOptionIds: readonly string[];
 }
 
 export interface ModifierGroupListResponse {
@@ -352,10 +353,14 @@ export const archiveModifier = (id: string) =>
     method: 'PATCH',
   });
 
-export const setGroupModifiers = (groupId: string, optionIds: readonly string[]) =>
+export const setGroupModifiers = (
+  groupId: string,
+  optionIds: readonly string[],
+  defaultOptionIds: readonly string[] = [],
+) =>
   apiFetch<IdResponseApi>(`/v1/catalog/modifier-groups/${groupId}/options`, {
     method: 'PUT',
-    body: { optionIds },
+    body: { optionIds, defaultOptionIds },
   });
 
 export const setItemModifiers = (itemId: string, optionIds: readonly string[]) =>

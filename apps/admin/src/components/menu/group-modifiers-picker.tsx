@@ -1,7 +1,8 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { GripVertical, ImageIcon, X } from 'lucide-react';
+import { GripVertical, ImageIcon, Star, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import {
   DndContext,
   type DragEndEvent,
@@ -38,10 +39,12 @@ export interface GroupModifierRow {
   readonly name: LocalizedText;
   readonly imageUrl: string | null;
   readonly priceDelta: string;
+  readonly isDefault: boolean;
 }
 
 export interface GroupModifiersPickerProps {
   readonly groupId: string;
+  readonly behaviour: 'one' | 'several';
   readonly options: readonly GroupModifierRow[];
   readonly onOptionsChange: (options: readonly GroupModifierRow[]) => void;
 }
@@ -59,7 +62,9 @@ interface SortableModifierRowProps {
   readonly name: string;
   readonly priceText: string | null;
   readonly removeAriaLabel: string;
+  readonly defaultAriaLabel: string;
   readonly onRemove: () => void;
+  readonly onToggleDefault: () => void;
 }
 
 function SortableModifierRow({
@@ -67,7 +72,9 @@ function SortableModifierRow({
   name,
   priceText,
   removeAriaLabel,
+  defaultAriaLabel,
   onRemove,
+  onToggleDefault,
 }: SortableModifierRowProps): React.ReactElement {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: row.id,
@@ -102,6 +109,17 @@ function SortableModifierRow({
           type="button"
           variant="ghost"
           size="icon"
+          onClick={onToggleDefault}
+          aria-label={defaultAriaLabel}
+          aria-pressed={row.isDefault}
+          data-testid={`group-default-${row.id}`}
+        >
+          <Star className={cn('size-4', row.isDefault && 'fill-primary text-primary')} />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
           onClick={onRemove}
           aria-label={removeAriaLabel}
         >
@@ -114,6 +132,7 @@ function SortableModifierRow({
 
 export function GroupModifiersPicker({
   groupId,
+  behaviour,
   options,
   onOptionsChange,
 }: GroupModifiersPickerProps): React.ReactElement {
@@ -135,7 +154,12 @@ export function GroupModifiersPicker({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
   const writeMutation = useMutation({
-    mutationFn: (ids: readonly string[]) => setGroupModifiers(groupId, ids),
+    mutationFn: (next: readonly GroupModifierRow[]) =>
+      setGroupModifiers(
+        groupId,
+        next.map((row) => row.id),
+        next.filter((row) => row.isDefault).map((row) => row.id),
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-group', groupId] });
     },
@@ -146,7 +170,7 @@ export function GroupModifiersPicker({
     setRows(next);
     onOptionsChange(next);
     try {
-      const res = await writeMutation.mutateAsync(next.map((row) => row.id));
+      const res = await writeMutation.mutateAsync(next);
       if (!res.ok) {
         setRows(previous);
         onOptionsChange(previous);
@@ -157,6 +181,17 @@ export function GroupModifiersPicker({
       onOptionsChange(previous);
       showError(null, t('groupSaveFailed'));
     }
+  };
+
+  // A one-choice group answers itself with a single pre-selected option; picking a second
+  // must move the mark, not add to it.
+  const onToggleDefault = (id: string): void => {
+    void persist(
+      rows.map((row) => {
+        if (row.id === id) return { ...row, isDefault: !row.isDefault };
+        return behaviour === 'one' ? { ...row, isDefault: false } : row;
+      }),
+    );
   };
 
   const onRemove = (id: string): void => {
@@ -175,6 +210,7 @@ export function GroupModifiersPicker({
         name: picked.name,
         imageUrl: picked.imageUrl,
         priceDelta: picked.priceDelta,
+        isDefault: false,
       },
     ]);
   };
@@ -207,8 +243,12 @@ export function GroupModifiersPicker({
                     name={name}
                     priceText={priceText}
                     removeAriaLabel={`${tCommon('delete')} ${name}`}
+                    defaultAriaLabel={`${t('defaultAriaLabel')} ${name}`}
                     onRemove={() => {
                       onRemove(row.id);
+                    }}
+                    onToggleDefault={() => {
+                      onToggleDefault(row.id);
                     }}
                   />
                 );

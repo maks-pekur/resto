@@ -269,7 +269,9 @@
       "behaviourLabel": "Choice",
       "behaviourOne": "One",
       "behaviourSeveral": "Several",
-      "requiredLabel": "Required group"
+      "requiredLabel": "Required group",
+      "maxSelectableLabel": "No more than",
+      "maxSelectablePlaceholder": "unlimited"
     },
     "itemModifiers": {
       "groupsRowLabel": "Groups",
@@ -345,7 +347,8 @@
       "pageTitle": "Modifier groups",
       "addGroup": "+ Create group",
       "newGroupTitle": "New group",
-      "tableStatus": "Status"
+      "tableStatus": "Status",
+      "defaultAriaLabel": "Pre-select:"
     },
     "stopList": {
       "title": "Stop list is empty",

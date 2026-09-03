@@ -51,6 +51,7 @@ const initialValues: ModifierGroupForm = {
   display: 'tiles',
   behaviour: 'several',
   isRequired: false,
+  maxSelectable: null,
 };
 
 const renderForm = (): void => {
@@ -82,9 +83,14 @@ beforeEach(() => {
 });
 
 describe('ModifierGroupFormComponent', () => {
-  it('renders no numeric input', () => {
+  it('offers the cap only while the group allows several choices', async () => {
     renderForm();
-    expect(document.querySelector('input[type="number"]')).not.toBeInTheDocument();
+    expect(screen.getByTestId('group-max-input')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByTestId('group-behaviour-one'));
+    await waitFor(() => {
+      expect(screen.queryByTestId('group-max-input')).not.toBeInTheDocument();
+    });
   });
 
   it('submits display: tabs and behaviour: one after choosing Tabs + One', async () => {
@@ -104,6 +110,7 @@ describe('ModifierGroupFormComponent', () => {
             display: 'tabs',
             behaviour: 'one',
             isRequired: false,
+            maxSelectable: null,
             id: 'group-1',
           },
         }),
@@ -127,6 +134,7 @@ describe('ModifierGroupFormComponent', () => {
             display: 'tiles',
             behaviour: 'several',
             isRequired: true,
+            maxSelectable: null,
             id: 'group-1',
           },
         }),
