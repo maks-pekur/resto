@@ -16,6 +16,9 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     upsertModifierOption: vi.fn(),
     upsertItemSize: vi.fn(),
     replaceItemModifierGroups: vi.fn(),
+    replaceGroupModifierOptions: vi.fn(),
+    replaceItemModifierOptions: vi.fn(),
+    setItemComposition: vi.fn(),
     addToStopList: vi.fn(),
     removeFromStopList: vi.fn(),
     getMenuFirstPublishedAt: vi.fn(),
@@ -26,6 +29,8 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     getItemById: vi.fn(),
     listModifierGroups: vi.fn(),
     getModifierGroupById: vi.fn(),
+    listModifierOptions: vi.fn(),
+    getModifierOptionUsage: vi.fn(),
     listStopListWithStoppedAt: vi.fn(),
     listStoppedItemIds: vi.fn(),
     listStoppedIngredientIds: vi.fn(),
@@ -33,6 +38,7 @@ const buildRepo = (isFirstPublish: boolean, version: number): CatalogRepository 
     computeDraftDiff: vi.fn(),
     archiveCategory: vi.fn(),
     archiveItem: vi.fn(),
+    archiveModifierOption: vi.fn(),
     applyCategoryMoves: vi.fn(),
   }) satisfies CatalogRepository;
 
