@@ -16,6 +16,7 @@ export interface PhotoUploadProps {
   readonly currentS3Key: string | null;
   readonly currentPhotoUrl?: string | null;
   readonly onUploaded: (s3Key: string) => void;
+  readonly kind?: 'item' | 'ingredient';
 }
 
 type UploadState =
@@ -29,6 +30,7 @@ export function PhotoUpload({
   currentS3Key,
   currentPhotoUrl,
   onUploaded,
+  kind = 'item',
 }: PhotoUploadProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
   const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -57,6 +59,7 @@ export function PhotoUpload({
     const urlRes = await urlMutation.mutateAsync({
       contentType: file.type,
       sizeBytes: file.size,
+      kind,
     });
     if (!urlRes.ok || !urlRes.data) {
       setState({ kind: 'error', message: t('photoUploadFailed') });

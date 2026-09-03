@@ -322,9 +322,14 @@ export const upsertModifierOption = (
     },
   });
 
+// UpsertModifierOptionInputDto.description is LocalizedText on the wire (apps/api dto.ts) —
+// IngredientFormSchema.description is a plain string for the sheet's single, unlocalized field.
 export const upsertIngredient = (
   id: string | null,
-  data: Omit<IngredientForm, 'name'> & { readonly name: LocalizedText },
+  data: Omit<IngredientForm, 'name' | 'description'> & {
+    readonly name: LocalizedText;
+    readonly description: LocalizedText | null;
+  },
 ) =>
   apiFetch<IdResponseApi>('/v1/catalog/modifier-options', {
     method: 'POST',
@@ -380,7 +385,11 @@ export const toggleIngredientStopList = (
   });
 };
 
-export const getPhotoUploadUrl = (input: { contentType: string; sizeBytes: number }) =>
+export const getPhotoUploadUrl = (input: {
+  contentType: string;
+  sizeBytes: number;
+  kind?: 'item' | 'ingredient';
+}) =>
   apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {
     method: 'POST',
     body: input,
