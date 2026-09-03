@@ -36,6 +36,7 @@ export interface CatalogRepository {
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
+  listStoppedIngredientIds(locationId: string): Promise<string[]>;
   listStopListAggregateAcrossLocations(
     tenantId: TenantId,
     activeLocationIds: readonly string[],

@@ -31,6 +31,10 @@ const buildItem = (): PublishedMenuItem => ({
   kcal: null,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
 });
 
 const buildRepo = (): CatalogRepository =>
