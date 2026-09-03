@@ -104,7 +104,7 @@ export const ItemDetail = ({
         ) : null}
 
         <div className="grid gap-6 sm:grid-cols-2 sm:items-start">
-          <div className="bg-muted relative aspect-square w-full overflow-hidden rounded-2xl">
+          <div className="relative aspect-square w-full overflow-hidden rounded-2xl">
             {item.imageUrl ? (
               <Image
                 src={item.imageUrl}
