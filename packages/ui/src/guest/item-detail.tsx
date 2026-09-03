@@ -1,8 +1,12 @@
 'use client';
 
-import type { ElementType } from 'react';
+import { useMemo, type ElementType } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import type { MenuItemDto, MenuModifierGroupDto } from '@resto/api-client/public';
+import type {
+  MenuItemDto,
+  MenuModifierGroupDto,
+  MenuModifierOptionDto,
+} from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
 import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
@@ -10,11 +14,12 @@ import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
 import { SegmentedChoice } from './segmented-choice';
 import { hasNutrition, NutritionInfo } from './nutrition-info';
-import { isSingleChoiceGroup, useItemSelection } from './use-item-selection';
+import { useItemSelection } from './use-item-selection';
 
 export interface ItemDetailProps {
   readonly item: MenuItemDto;
   readonly modifierGroups: readonly MenuModifierGroupDto[];
+  readonly modifierOptions: readonly MenuModifierOptionDto[];
   readonly currency: string;
   readonly onAddToCart: (line: Omit<CartLineItem, 'quantity'>) => void;
   readonly onBack?: () => void;
@@ -27,6 +32,7 @@ export interface ItemDetailProps {
 export const ItemDetail = ({
   item,
   modifierGroups,
+  modifierOptions,
   currency,
   onAddToCart,
   onBack,
@@ -34,7 +40,11 @@ export const ItemDetail = ({
   className,
 }: ItemDetailProps) => {
   const { locale, t, Image, defaultContentLocale } = useGuestUi();
-  const selection = useItemSelection(item, modifierGroups, locale);
+  const optionsById = useMemo(
+    () => new Map(modifierOptions.map((option) => [option.id, option])),
+    [modifierOptions],
+  );
+  const selection = useItemSelection(item, modifierGroups, locale, optionsById);
 
   const name = localized(item.name, locale, defaultContentLocale);
   const description = item.description
@@ -53,7 +63,7 @@ export const ItemDetail = ({
       unitPrice: selection.livePrice,
       currency,
       imageUrl: item.imageUrl ?? item.photos[0]?.url ?? null,
-      modifiers: selection.chosenModifiers,
+      modifiers: [...selection.chosenModifiers, ...selection.excludedModifiers],
     });
   };
 
@@ -124,8 +134,11 @@ export const ItemDetail = ({
             ) : null}
 
             {modifierGroups.map((group) => {
-              const singleChoice = isSingleChoiceGroup(group);
+              const singleChoice = group.behaviour === 'one';
               const groupName = localized(group.name, locale, defaultContentLocale);
+              const groupOptions = group.optionIds
+                .map((optionId) => optionsById.get(optionId))
+                .filter((option): option is MenuModifierOptionDto => option !== undefined);
 
               // One answer out of a few is the same question a size asks, so it wears the same
               // control — and, like the sizes, needs no heading above it.
@@ -136,14 +149,13 @@ export const ItemDetail = ({
                     <SegmentedChoice
                       name={`modifier-${group.id}`}
                       selectedId={
-                        group.options.find((option) =>
-                          selection.isOptionChosen(group.id, option.id),
-                        )?.id ?? null
+                        groupOptions.find((option) => selection.isOptionChosen(group.id, option.id))
+                          ?.id ?? null
                       }
                       onSelect={(optionId) => {
                         selection.toggleOption(group.id, optionId, true);
                       }}
-                      options={group.options.map((option) => ({
+                      options={groupOptions.map((option) => ({
                         id: option.id,
                         label: localized(option.name, locale, defaultContentLocale),
                         note:
@@ -160,7 +172,7 @@ export const ItemDetail = ({
                 <fieldset key={group.id} className="flex flex-col gap-2">
                   <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
                   <div className="flex flex-col gap-2">
-                    {group.options.map((option) => (
+                    {groupOptions.map((option) => (
                       <label
                         key={option.id}
                         className="has-[:checked]:border-primary has-[:checked]:bg-primary-tint has-[:focus-visible]:ring-ring flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors has-[:focus-visible]:ring-2"
