@@ -318,6 +318,7 @@ export interface ModifierOptionListRow {
   readonly description: Record<string, string> | null;
   readonly priceDelta: string;
   readonly imageUrl: string | null;
+  readonly imageS3Key: string | null;
   readonly groupCount: number;
   readonly dishCount: number;
 }

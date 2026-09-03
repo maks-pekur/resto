@@ -324,6 +324,7 @@ export const ModifierOptionListItemSchema = z.object({
   description: LocalizedText.nullable(),
   priceDelta: MoneyAmountValue,
   imageUrl: z.string().nullable(),
+  imageS3Key: z.string().nullable(),
   groupCount: NonNegInt,
   dishCount: NonNegInt,
 });

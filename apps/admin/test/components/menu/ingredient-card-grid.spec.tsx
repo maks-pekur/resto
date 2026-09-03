@@ -26,6 +26,7 @@ const bacon: IngredientApi = {
   description: null,
   priceDelta: '80.00',
   imageUrl: 'https://cdn.example.com/bacon.jpg',
+  imageS3Key: 'ingredients/bacon.jpg',
   groupCount: 2,
   dishCount: 3,
 };
@@ -36,6 +37,7 @@ const onion: IngredientApi = {
   description: null,
   priceDelta: '0.00',
   imageUrl: null,
+  imageS3Key: null,
   groupCount: 0,
   dishCount: 0,
 };

@@ -1213,6 +1213,59 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     );
   });
 
+  it('GET modifier-options exposes imageS3Key, and a price-only upsert preserves it (GAP 1 fix)', async () => {
+    const createRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        name: { en: 'Bacon' },
+        priceDelta: '80.00',
+        imageS3Key: 'ingredients/bacon.webp',
+      },
+    });
+    expect(createRes.statusCode).toBe(200);
+    const optionId = createRes.json<{ id: string }>().id;
+
+    const listRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+    });
+    expect(listRes.statusCode).toBe(200);
+    const created = listRes
+      .json<{ items: { id: string; imageS3Key: string | null }[] }>()
+      .items.find((i) => i.id === optionId);
+    expect(created?.imageS3Key).toBe('ingredients/bacon.webp');
+
+    // Mirrors the admin flow: the sheet reads the current imageS3Key back from the
+    // list and resubmits it unchanged alongside a price-only edit.
+    const priceOnlyUpsertRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        id: optionId,
+        name: { en: 'Bacon' },
+        priceDelta: '95.00',
+        imageS3Key: created?.imageS3Key ?? null,
+      },
+    });
+    expect(priceOnlyUpsertRes.statusCode).toBe(200);
+
+    const listAfterRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+    });
+    expect(listAfterRes.statusCode).toBe(200);
+    const afterEdit = listAfterRes
+      .json<{ items: { id: string; imageS3Key: string | null; priceDelta: string }[] }>()
+      .items.find((i) => i.id === optionId);
+    expect(afterEdit?.imageS3Key).toBe('ingredients/bacon.webp');
+    expect(afterEdit?.priceDelta).toBe('95.00');
+  });
+
   it('PUT modifier-groups/:id/options then GET the group returns options in the written order', async () => {
     const createOption = async (label: string): Promise<string> => {
       const res = await stack.app.inject({

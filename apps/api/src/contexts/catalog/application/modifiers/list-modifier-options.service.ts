@@ -17,6 +17,7 @@ export class ListModifierOptionsService {
         description: r.description,
         priceDelta: r.priceDelta,
         imageUrl: r.imageUrl,
+        imageS3Key: r.imageS3Key,
         groupCount: r.groupCount,
         dishCount: r.dishCount,
       })),

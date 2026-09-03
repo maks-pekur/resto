@@ -40,7 +40,7 @@ const buildDefaults = (
   name: ingredient ? { ...ingredient.name } : {},
   description: ingredient ? fromLocalizedText(ingredient.description, defaultLocale) || null : null,
   priceDelta: ingredient ? Number.parseFloat(ingredient.priceDelta) : 0,
-  imageS3Key: null,
+  imageS3Key: ingredient ? ingredient.imageS3Key : null,
 });
 
 const dishUnion = (usage: IngredientUsageApi | null, defaultLocale: string): readonly string[] => {
@@ -164,7 +164,7 @@ function IngredientFormSheetBody({
         <FieldGroup>
           <PhotoUpload
             itemId={ingredient?.id ?? 'new'}
-            currentS3Key={null}
+            currentS3Key={ingredient?.imageS3Key ?? null}
             currentPhotoUrl={ingredient?.imageUrl ?? null}
             kind="ingredient"
             onUploaded={(s3Key) => {

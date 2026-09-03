@@ -1502,6 +1502,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
               )
             : null,
+          imageS3Key: o.imageS3Key,
           groupCount: groupCountByOption.get(o.id) ?? 0,
           dishCount: dishIdsByOption.get(o.id)?.size ?? 0,
         })),
