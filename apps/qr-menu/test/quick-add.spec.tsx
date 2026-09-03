@@ -111,7 +111,9 @@ describe('ItemDetail choices', () => {
       display: 'tabs',
       behaviour: 'one',
       isRequired: true,
+      maxSelectable: null,
       optionIds: ['o3'],
+      defaultOptionIds: [],
     };
     const sauceOptions: MenuModifierOptionDto[] = [
       {
@@ -141,6 +143,86 @@ describe('ItemDetail choices', () => {
     fireEvent.click(screen.getByRole('radio', { name: 'Кетчуп' }));
 
     expect(screen.getByRole('button', { name: /item.addToCart/u })).toBeEnabled();
+  });
+
+  it('answers a required question from the operator default and caps a several group', async () => {
+    const { ItemDetail } = await import('@resto/ui');
+    const dough: MenuModifierGroupDto = {
+      id: 'g3',
+      name: { ru: 'Тесто' },
+      display: 'tabs',
+      behaviour: 'one',
+      isRequired: true,
+      maxSelectable: null,
+      optionIds: ['d1', 'd2'],
+      defaultOptionIds: ['d1'],
+    };
+    const toppings: MenuModifierGroupDto = {
+      id: 'g4',
+      name: { ru: 'Топпинги' },
+      display: 'tiles',
+      behaviour: 'several',
+      isRequired: false,
+      maxSelectable: 1,
+      optionIds: ['t1', 't2'],
+      defaultOptionIds: [],
+    };
+    const opts: MenuModifierOptionDto[] = [
+      {
+        id: 'd1',
+        name: { ru: 'Традиционное' },
+        description: null,
+        imageUrl: null,
+        priceDelta: '0.00',
+        freeAmount: 0,
+      },
+      {
+        id: 'd2',
+        name: { ru: 'Тонкое' },
+        description: null,
+        imageUrl: null,
+        priceDelta: '0.00',
+        freeAmount: 0,
+      },
+      {
+        id: 't1',
+        name: { ru: 'Бекон' },
+        description: null,
+        imageUrl: null,
+        priceDelta: '10.00',
+        freeAmount: 0,
+      },
+      {
+        id: 't2',
+        name: { ru: 'Ананас' },
+        description: null,
+        imageUrl: null,
+        priceDelta: '10.00',
+        freeAmount: 0,
+      },
+    ];
+
+    render(
+      <GuestUiProvider locale="ru" t={(key) => key}>
+        <ItemDetail
+          item={item({ modifierGroupIds: ['g3', 'g4'] })}
+          modifierGroups={[dough, toppings]}
+          modifierOptions={opts}
+          currency="UAH"
+          onAddToCart={vi.fn()}
+        />
+      </GuestUiProvider>,
+    );
+
+    expect(screen.getByRole('radio', { name: 'Традиционное' })).toBeChecked();
+    expect(screen.getByRole('button', { name: /item.addToCart/u })).toBeEnabled();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Бекон/u }));
+    expect(screen.getByRole('checkbox', { name: /Бекон/u })).toBeChecked();
+
+    fireEvent.click(screen.getByRole('checkbox', { name: /Ананас/u }));
+    expect(screen.getByRole('checkbox', { name: /Ананас/u })).not.toBeChecked();
+    expect(screen.getByRole('checkbox', { name: /Бекон/u })).toBeChecked();
   });
 });
 

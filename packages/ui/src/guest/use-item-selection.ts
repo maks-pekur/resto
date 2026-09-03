@@ -26,6 +26,20 @@ export interface ItemSelection {
 
 const requiredCount = (group: MenuModifierGroupDto): number => (group.isRequired ? 1 : 0);
 
+const seedDefaults = (groups: readonly MenuModifierGroupDto[]): Map<string, Set<string>> =>
+  new Map(
+    groups
+      .filter((g) => g.defaultOptionIds.length > 0)
+      .map((g) => [
+        g.id,
+        new Set(
+          g.behaviour === 'one' && g.defaultOptionIds[0] !== undefined
+            ? [g.defaultOptionIds[0]]
+            : g.defaultOptionIds,
+        ),
+      ]),
+  );
+
 export const useItemSelection = (
   item: MenuItemDto | null,
   groups: readonly MenuModifierGroupDto[],
@@ -33,14 +47,15 @@ export const useItemSelection = (
   optionsById: ReadonlyMap<string, MenuModifierOptionDto>,
 ): ItemSelection => {
   const [sizeOverride, setSizeOverride] = useState<string | null>(null);
-  const [chosen, setChosen] = useState<Map<string, Set<string>>>(() => new Map());
+  const [chosen, setChosen] = useState<Map<string, Set<string>>>(() => seedDefaults(groups));
   const [excludedOptionIds, setExcludedOptionIds] = useState<ReadonlySet<string>>(() => new Set());
   const [selectionFor, setSelectionFor] = useState(item?.id ?? null);
 
-  // A new dish arrives with an empty selection; the hook outlives the sheet it fills.
+  // A new dish arrives pre-answered wherever the operator marked a default; the hook
+  // outlives the sheet it fills.
   if (item !== null && item.id !== selectionFor) {
     setSelectionFor(item.id);
-    setChosen(new Map());
+    setChosen(seedDefaults(groups));
     setExcludedOptionIds(new Set());
     setSizeOverride(null);
   }
@@ -113,6 +128,8 @@ export const useItemSelection = (
         if (current.has(optionId)) {
           current.delete(optionId);
         } else {
+          const cap = groups.find((g) => g.id === groupId)?.maxSelectable ?? null;
+          if (cap !== null && current.size >= cap) return prev;
           current.add(optionId);
         }
         next.set(groupId, current);

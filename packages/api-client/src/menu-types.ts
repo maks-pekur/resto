@@ -33,7 +33,9 @@ export interface MenuModifierGroupDto {
   readonly display: 'tiles' | 'tabs';
   readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
   readonly optionIds: readonly string[];
+  readonly defaultOptionIds: readonly string[];
 }
 
 export interface MenuCompositionLineDto {
