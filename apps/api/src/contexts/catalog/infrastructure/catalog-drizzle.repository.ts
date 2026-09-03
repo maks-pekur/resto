@@ -367,7 +367,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                   photos,
                   allergens: input.allergens ? [...input.allergens] : null,
                   diets: input.diets ? [...input.diets] : null,
-                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  composition: input.composition ? [...input.composition] : null,
+                  compositionMode: input.compositionMode,
+                  compositionAssembled: [...input.compositionAssembled],
                   metaTitle: input.metaTitle,
                   metaDescription: input.metaDescription,
                   proteins: input.proteins === null ? null : input.proteins.toString(),
@@ -406,7 +408,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                   photos,
                   allergens: input.allergens ? [...input.allergens] : null,
                   diets: input.diets ? [...input.diets] : null,
-                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  composition: input.composition ? [...input.composition] : null,
+                  compositionMode: input.compositionMode,
+                  compositionAssembled: [...input.compositionAssembled],
                   metaTitle: input.metaTitle,
                   metaDescription: input.metaDescription,
                   proteins: input.proteins === null ? null : input.proteins.toString(),
@@ -441,7 +445,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               photos,
               allergens: input.allergens ? [...input.allergens] : null,
               diets: input.diets ? [...input.diets] : null,
-              ingredients: input.ingredients ? [...input.ingredients] : null,
+              composition: input.composition ? [...input.composition] : null,
+              compositionMode: input.compositionMode,
+              compositionAssembled: [...input.compositionAssembled],
               metaTitle: input.metaTitle,
               metaDescription: input.metaDescription,
               proteins: input.proteins === null ? null : input.proteins.toString(),
@@ -468,7 +474,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 photos,
                 allergens: input.allergens ? [...input.allergens] : null,
                 diets: input.diets ? [...input.diets] : null,
-                ingredients: input.ingredients ? [...input.ingredients] : null,
+                composition: input.composition ? [...input.composition] : null,
+                compositionMode: input.compositionMode,
+                compositionAssembled: [...input.compositionAssembled],
                 metaTitle: input.metaTitle,
                 metaDescription: input.metaDescription,
                 proteins: input.proteins === null ? null : input.proteins.toString(),
@@ -519,8 +527,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             schema.menuModifierGroups,
             {
               name: input.name,
-              minSelectable: input.minSelectable,
-              maxSelectable: input.maxSelectable,
+              display: input.display,
+              behaviour: input.behaviour,
               isRequired: input.isRequired,
               updatedAt: new Date(),
             },
@@ -533,8 +541,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const [row] = await scoped
         .insertInto(schema.menuModifierGroups, {
           name: input.name,
-          minSelectable: input.minSelectable,
-          maxSelectable: input.maxSelectable,
+          display: input.display,
+          behaviour: input.behaviour,
           isRequired: input.isRequired,
         })
         .returning({ id: schema.menuModifierGroups.id });
@@ -545,29 +553,22 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const parentGroup = await scoped
-        .selectFrom(
-          schema.menuModifierGroups,
-          eq(schema.menuModifierGroups.id, input.modifierGroupId),
-        )
-        .limit(1);
-      if (!parentGroup[0]) {
-        throw new MenuModifierGroupNotFoundError(input.modifierGroupId);
-      }
-
       if (input.id) {
         const [row] = await scoped
           .updateTable(
             schema.menuModifierOptions,
             {
-              modifierGroupId: input.modifierGroupId,
               name: input.name,
+              description: input.description,
+              imageS3Key: input.imageS3Key,
               priceDelta: input.priceDelta,
               defaultAmount: input.defaultAmount,
               freeAmount: input.freeAmount,
               sortOrder: input.sortOrder,
               minAmount: input.minAmount,
               maxAmount: input.maxAmount,
+              source: input.source,
+              sourceExternalId: input.sourceExternalId,
               updatedAt: new Date(),
             },
             eq(schema.menuModifierOptions.id, input.id),
@@ -578,14 +579,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierOptions, {
-          modifierGroupId: input.modifierGroupId,
           name: input.name,
+          description: input.description,
+          imageS3Key: input.imageS3Key,
           priceDelta: input.priceDelta,
           defaultAmount: input.defaultAmount,
           freeAmount: input.freeAmount,
           sortOrder: input.sortOrder,
           minAmount: input.minAmount,
           maxAmount: input.maxAmount,
+          source: input.source,
+          sourceExternalId: input.sourceExternalId,
         })
         .returning({ id: schema.menuModifierOptions.id });
       if (!row) throw new Error('upsertModifierOption: insert returned no row');
@@ -1081,8 +1085,9 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         ),
         allergens: r.allergens ?? null,
         diets: r.diets ?? null,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- dropped column, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method)
-        ingredients: r.ingredients ?? null,
+        composition: r.composition ?? null,
+        compositionMode: r.compositionMode as 'text' | 'assembled',
+        compositionAssembled: r.compositionAssembled,
         metaTitle: r.metaTitle ?? null,
         metaDescription: r.metaDescription ?? null,
         proteins: r.proteins === null ? null : Number(r.proteins),
@@ -1113,10 +1118,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .orderBy(asc(schema.menuModifierGroups.id));
       if (groups.length === 0) return [];
       const groupIds = groups.map((g) => g.id);
-      const [options, links] = await Promise.all([
+      const [groupOptions, links] = await Promise.all([
         scoped.selectFrom(
-          schema.menuModifierOptions,
-          inArray(schema.menuModifierOptions.modifierGroupId, groupIds),
+          schema.menuModifierGroupOptions,
+          inArray(schema.menuModifierGroupOptions.modifierGroupId, groupIds),
         ),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
@@ -1124,8 +1129,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         ),
       ]);
       const optionCount = new Map<string, number>();
-      for (const o of options)
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- dropped column, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method)
+      for (const o of groupOptions)
         optionCount.set(o.modifierGroupId, (optionCount.get(o.modifierGroupId) ?? 0) + 1);
       const usageCount = new Map<string, number>();
       for (const l of links)
@@ -1133,10 +1137,8 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return groups.map<ModifierGroupListRow>((g) => ({
         id: g.id,
         name: g.name,
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment -- dropped columns, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method) */
-        minSelectable: g.minSelectable,
-        maxSelectable: g.maxSelectable,
-        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+        display: g.display as 'tiles' | 'tabs',
+        behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
         optionCount: optionCount.get(g.id) ?? 0,
         usageCount: usageCount.get(g.id) ?? 0,
@@ -1151,25 +1153,53 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const g = rows[0];
       if (!g) return null;
-      const options = await scoped
-        .selectFrom(schema.menuModifierOptions, eq(schema.menuModifierOptions.modifierGroupId, id))
-        .orderBy(asc(schema.menuModifierOptions.sortOrder));
+      const links = await scoped
+        .selectFrom(
+          schema.menuModifierGroupOptions,
+          eq(schema.menuModifierGroupOptions.modifierGroupId, id),
+        )
+        .orderBy(asc(schema.menuModifierGroupOptions.sortOrder));
+      const optionRows =
+        links.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuModifierOptions,
+              inArray(
+                schema.menuModifierOptions.id,
+                links.map((l) => l.optionId),
+              ),
+            );
+      const optionById = new Map(optionRows.map((o) => [o.id, o]));
+      const options = (
+        await Promise.all(
+          links.map(async (l) => {
+            const o = optionById.get(l.optionId);
+            if (!o) return null;
+            return {
+              id: o.id,
+              name: o.name,
+              description: o.description ?? null,
+              imageUrl: o.imageS3Key
+                ? await this.imageUrl.presignGet(
+                    o.imageS3Key,
+                    CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                  )
+                : null,
+              priceDelta: o.priceDelta,
+              defaultAmount: o.defaultAmount,
+              freeAmount: o.freeAmount,
+              sortOrder: l.sortOrder,
+            };
+          }),
+        )
+      ).filter((o): o is NonNullable<typeof o> => o !== null);
       return {
         id: g.id,
         name: g.name,
-        /* eslint-disable @typescript-eslint/no-unsafe-assignment -- dropped columns, deferred to 10.6 plan 05 (read model plan 03's scope excludes this method) */
-        minSelectable: g.minSelectable,
-        maxSelectable: g.maxSelectable,
-        /* eslint-enable @typescript-eslint/no-unsafe-assignment */
+        display: g.display as 'tiles' | 'tabs',
+        behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
-        options: options.map((o) => ({
-          id: o.id,
-          name: o.name,
-          priceDelta: o.priceDelta,
-          defaultAmount: o.defaultAmount,
-          freeAmount: o.freeAmount,
-          sortOrder: o.sortOrder,
-        })),
+        options,
       };
     });
   }
