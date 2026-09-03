@@ -75,7 +75,12 @@ export const UpsertItemInputSchema = z.object({
   photos: z.array(MenuItemPhotoSchema).max(20).default([]),
   allergens: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
   diets: z.array(DietSchema).max(DIETS.length).nullable().default(null),
-  ingredients: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
+  composition: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
+  compositionMode: z.enum(['text', 'assembled']).default('text'),
+  compositionAssembled: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50)
+    .default([]),
   metaTitle: z.string().max(70).nullable().default(null),
   metaDescription: z.string().max(160).nullable().default(null),
   proteins: z.number().min(0).max(999.99).nullable().default(null),
@@ -94,26 +99,22 @@ export const UpsertItemInputSchema = z.object({
 export type UpsertItemInput = z.infer<typeof UpsertItemInputSchema>;
 export class UpsertItemInputDto extends createZodDto(UpsertItemInputSchema) {}
 
-export const UpsertModifierGroupInputSchema = z
-  .object({
-    id: z.string().uuid().optional(),
-    name: LocalizedText,
-    minSelectable: NonNegInt.default(0),
-    maxSelectable: NonNegInt.default(1),
-    isRequired: z.boolean().default(false),
-  })
-  .refine((m) => m.maxSelectable >= m.minSelectable, {
-    message: 'maxSelectable must be greater than or equal to minSelectable',
-    path: ['maxSelectable'],
-  });
+export const UpsertModifierGroupInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  name: LocalizedText,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
+  isRequired: z.boolean().default(false),
+});
 export type UpsertModifierGroupInput = z.infer<typeof UpsertModifierGroupInputSchema>;
 export class UpsertModifierGroupInputDto extends createZodDto(UpsertModifierGroupInputSchema) {}
 
 export const UpsertModifierOptionInputSchema = z
   .object({
     id: z.string().uuid().optional(),
-    modifierGroupId: z.string().uuid(),
     name: LocalizedText,
+    description: LocalizedText.nullable().default(null),
+    imageS3Key: z.string().max(1024).nullable().default(null),
     priceDelta: MoneyAmountValue,
     defaultAmount: NonNegInt.default(0),
     freeAmount: NonNegInt.default(0),
@@ -221,7 +222,9 @@ export const ItemDetailResponseSchema = z.object({
   photos: z.array(MenuItemPhotoResponseSchema),
   allergens: z.array(z.string()).nullable(),
   diets: z.array(z.string()).nullable(),
-  ingredients: z.array(z.string()).nullable(),
+  composition: z.array(z.string()).nullable(),
+  compositionMode: z.enum(['text', 'assembled']),
+  compositionAssembled: z.array(z.object({ optionId: z.string().uuid(), removable: z.boolean() })),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),
   proteins: z.number().nullable(),
@@ -242,8 +245,8 @@ export class ItemDetailResponseDto extends createZodDto(ItemDetailResponseSchema
 export const ModifierGroupListItemSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
-  minSelectable: NonNegInt,
-  maxSelectable: NonNegInt,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
   optionCount: NonNegInt,
   usageCount: NonNegInt,
@@ -258,6 +261,8 @@ export class ModifierGroupListResponseDto extends createZodDto(ModifierGroupList
 export const ModifierOptionDetailSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
+  description: LocalizedText.nullable(),
+  imageUrl: z.string().nullable(),
   priceDelta: MoneyAmountValue,
   defaultAmount: NonNegInt,
   freeAmount: NonNegInt,
@@ -266,14 +271,46 @@ export const ModifierOptionDetailSchema = z.object({
 export const ModifierGroupDetailResponseSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
-  minSelectable: NonNegInt,
-  maxSelectable: NonNegInt,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
   options: z.array(ModifierOptionDetailSchema),
 });
 export type ModifierGroupDetailResponse = z.infer<typeof ModifierGroupDetailResponseSchema>;
 export class ModifierGroupDetailResponseDto extends createZodDto(
   ModifierGroupDetailResponseSchema,
+) {}
+
+export const ModifierOptionListItemSchema = z.object({
+  id: z.string().uuid(),
+  name: LocalizedText,
+  description: LocalizedText.nullable(),
+  priceDelta: MoneyAmountValue,
+  imageUrl: z.string().nullable(),
+  groupCount: NonNegInt,
+  dishCount: NonNegInt,
+});
+export type ModifierOptionListItem = z.infer<typeof ModifierOptionListItemSchema>;
+export const ModifierOptionListResponseSchema = z.object({
+  items: z.array(ModifierOptionListItemSchema),
+});
+export type ModifierOptionListResponse = z.infer<typeof ModifierOptionListResponseSchema>;
+export class ModifierOptionListResponseDto extends createZodDto(ModifierOptionListResponseSchema) {}
+
+const ModifierOptionUsageRefSchema = z.object({
+  id: z.string().uuid(),
+  name: LocalizedText,
+});
+// D-28: the archive warning shows the union of all three; the stop dialog shows
+// dishesInComposition only — being an add-on is not being part of the dish (D-22).
+export const ModifierOptionUsageResponseSchema = z.object({
+  groups: z.array(ModifierOptionUsageRefSchema),
+  dishesAttached: z.array(ModifierOptionUsageRefSchema),
+  dishesInComposition: z.array(ModifierOptionUsageRefSchema),
+});
+export type ModifierOptionUsageResponse = z.infer<typeof ModifierOptionUsageResponseSchema>;
+export class ModifierOptionUsageResponseDto extends createZodDto(
+  ModifierOptionUsageResponseSchema,
 ) {}
 
 export const StopListEntrySchema = z.object({
