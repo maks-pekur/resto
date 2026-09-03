@@ -220,7 +220,7 @@ export const ItemDetail = ({
                 return (
                   <fieldset key={group.id} className="flex flex-col gap-2">
                     <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
-                    <div className="grid grid-cols-2 gap-3 xs:grid-cols-3">
+                    <div className="grid grid-cols-3 gap-2 xs:gap-3">
                       {groupOptions.map((option) => (
                         <IngredientTile
                           key={option.id}
