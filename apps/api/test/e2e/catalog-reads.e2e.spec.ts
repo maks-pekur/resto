@@ -263,8 +263,8 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
       headers: readsA.authed,
       payload: {
         name: { en: 'Group A' },
-        minSelectable: 0,
-        maxSelectable: 1,
+        display: 'tabs',
+        behaviour: 'one',
         isRequired: false,
       },
     });
@@ -329,18 +329,23 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: readsA.authed,
-      payload: { name: { en: 'Counted' }, minSelectable: 0, maxSelectable: 2 },
+      payload: { name: { en: 'Counted' }, display: 'tiles', behaviour: 'several' },
     });
     const groupId = groupRes.json<{ id: string }>().id;
-    await stack.app.inject({
+    const optionRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/modifier-options',
       headers: readsA.authed,
       payload: {
-        modifierGroupId: groupId,
         name: { en: 'Opt 1' },
         priceDelta: '0.50',
       },
+    });
+    await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: readsA.authed,
+      payload: { optionIds: [optionRes.json<{ id: string }>().id] },
     });
 
     const listRes = await stack.app.inject({
@@ -362,18 +367,23 @@ suite('Catalog — operator-guarded reads on v1/catalog (D-08)', () => {
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: readsA.authed,
-      payload: { name: { en: 'WithOpts' }, minSelectable: 0, maxSelectable: 1 },
+      payload: { name: { en: 'WithOpts' }, display: 'tabs', behaviour: 'one' },
     });
     const groupId = groupRes.json<{ id: string }>().id;
-    await stack.app.inject({
+    const optionRes = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/modifier-options',
       headers: readsA.authed,
       payload: {
-        modifierGroupId: groupId,
         name: { en: 'Embedded opt' },
         priceDelta: '1.00',
       },
+    });
+    await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: readsA.authed,
+      payload: { optionIds: [optionRes.json<{ id: string }>().id] },
     });
 
     const detail = await stack.app.inject({

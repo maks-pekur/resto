@@ -72,8 +72,8 @@ suite('Catalog — cross-tenant read-path isolation (AUDIT #7/#8/#9)', () => {
       headers,
       payload: {
         name: { en: `g-${randomUUID().slice(0, 6)}` },
-        minSelectable: 0,
-        maxSelectable: 1,
+        display: 'tabs',
+        behaviour: 'one',
         isRequired: false,
       },
     });

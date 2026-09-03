@@ -118,4 +118,62 @@ suite('Catalog RBAC — menu mutations require menu permission (AUDIT #1)', () =
     expect(res.statusCode).toBe(200);
     expect(res.json<{ id: string }>().id).toBeTruthy();
   });
+
+  it("forbids a staff operator from setting a group's ingredients (403)", async () => {
+    const res = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${randomUUID()}/options`,
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+      payload: { optionIds: [] },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it("forbids a staff operator from setting a dish's single ingredients (403)", async () => {
+    const res = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${randomUUID()}/modifier-options`,
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+      payload: { optionIds: [] },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('forbids a staff operator from setting a dish composition (403)', async () => {
+    const res = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${randomUUID()}/composition`,
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+      payload: { mode: 'text', text: [] },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('forbids a staff operator from stopping an ingredient (403)', async () => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/stop-list/options',
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+      payload: { optionId: randomUUID() },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('forbids a staff operator from resuming a stopped ingredient (403)', async () => {
+    const res = await stack.app.inject({
+      method: 'DELETE',
+      url: `/v1/catalog/stop-list/options/${randomUUID()}`,
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+    });
+    expect(res.statusCode).toBe(403);
+  });
+
+  it('forbids a staff operator from archiving an ingredient (403)', async () => {
+    const res = await stack.app.inject({
+      method: 'PATCH',
+      url: `/v1/catalog/modifier-options/${randomUUID()}/archive`,
+      headers: { cookie: staffCookie, 'x-tenant-id': tenantId },
+    });
+    expect(res.statusCode).toBe(403);
+  });
 });
