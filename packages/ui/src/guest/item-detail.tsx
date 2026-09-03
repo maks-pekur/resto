@@ -11,6 +11,7 @@ import type { CartLineItem } from '@resto/cart';
 import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
+import { XIcon } from '../icons';
 import { useGuestUi } from './guest-ui-provider';
 import { SegmentedChoice } from './segmented-choice';
 import { hasNutrition, NutritionInfo } from './nutrition-info';
@@ -55,6 +56,22 @@ export const ItemDetail = ({
   const description = item.description
     ? localized(item.description, locale, defaultContentLocale)
     : null;
+
+  const compositionLines = useMemo(
+    () =>
+      item.compositionLines
+        .map((line) => {
+          const option = optionsById.get(line.optionId);
+          if (!option) return null;
+          return {
+            optionId: line.optionId,
+            removable: line.removable,
+            name: localized(option.name, locale, defaultContentLocale),
+          };
+        })
+        .filter((line): line is NonNullable<typeof line> => line !== null),
+    [item.compositionLines, optionsById, locale, defaultContentLocale],
+  );
 
   const [firstUnmet] = selection.unmetGroups;
 
@@ -112,6 +129,57 @@ export const ItemDetail = ({
               </div>
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
+              ) : null}
+              {item.compositionMode === 'assembled' && compositionLines.length > 0 ? (
+                <p className="text-muted-foreground flex flex-wrap items-baseline gap-x-1 text-sm">
+                  <span className="font-semibold">{t('item.composition')}:</span>
+                  {compositionLines.map((line, index) => {
+                    const excluded = selection.excludedOptionIds.has(line.optionId);
+                    return (
+                      <span key={line.optionId} className="inline-flex items-baseline">
+                        {line.removable ? (
+                          <button
+                            type="button"
+                            aria-pressed={excluded}
+                            aria-label={t(
+                              excluded
+                                ? 'item.compositionIncludeAriaLabel'
+                                : 'item.compositionExcludeAriaLabel',
+                              { name: line.name },
+                            )}
+                            onClick={() => {
+                              selection.toggleExclusion(line.optionId);
+                            }}
+                            className={cn(
+                              'focus-visible:ring-ring inline-flex cursor-pointer items-center gap-0.5 rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                              excluded
+                                ? 'text-muted-foreground/70 line-through'
+                                : 'text-foreground',
+                            )}
+                          >
+                            <XIcon
+                              aria-hidden
+                              className={cn(
+                                'size-3',
+                                excluded ? 'text-foreground' : 'text-muted-foreground',
+                              )}
+                            />
+                            {line.name}
+                          </button>
+                        ) : (
+                          <span>{line.name}</span>
+                        )}
+                        {index < compositionLines.length - 1 ? <span aria-hidden>,</span> : null}
+                      </span>
+                    );
+                  })}
+                </p>
+              ) : null}
+              {item.compositionMode === 'text' && item.composition.length > 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-semibold">{t('item.composition')}:</span>{' '}
+                  {item.composition.join(', ')}
+                </p>
               ) : null}
               {item.allergens.length > 0 ? (
                 // Named through the same dictionary the filters use, so "milk" reads as one word
