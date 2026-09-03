@@ -44,15 +44,15 @@ const pricing: MenuPricingPort = {
           basePrice: '12.00',
           sizes: [],
           modifierGroupIds: [cheeseGroupId],
+          extraOptionIds: [],
+          removableOptionIds: [],
         },
       ],
-      modifierGroups: [
-        { groupId: cheeseGroupId, minSelectable: 0, maxSelectable: 1, isRequired: false },
-      ],
+      modifierGroups: [{ groupId: cheeseGroupId, behaviour: 'one', isRequired: false }],
       modifierOptions: [
         {
           optionId: cheeseOptionId,
-          groupId: cheeseGroupId,
+          groupIds: [cheeseGroupId],
           priceDelta: '1.50',
           freeAmount: 0,
           minAmount: null,
@@ -60,6 +60,7 @@ const pricing: MenuPricingPort = {
         },
       ],
       stoppedItemIds: [],
+      stoppedIngredientIds: [],
     }),
 };
 
@@ -253,6 +254,7 @@ suite('CreateOrderService — idempotency', () => {
               optionId: cheeseOptionId,
               name: 'Extra cheese',
               amount: 1,
+              kind: 'added',
             },
           ],
           quantity: 1,

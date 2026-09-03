@@ -114,6 +114,7 @@ const OrderModifierResponseSchema = z.object({
   priceDelta: z.string(),
   amount: z.number().int(),
   modifierGroupId: z.string().nullable(),
+  kind: z.enum(['added', 'excluded']),
 });
 
 const OrderItemResponseSchema = z.object({
@@ -207,6 +208,7 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
       priceDelta: m.priceDelta,
       amount: m.amount,
       modifierGroupId: m.modifierGroupId,
+      kind: m.kind,
     })),
     quantity: item.quantity,
     lineTotal: item.lineTotal,

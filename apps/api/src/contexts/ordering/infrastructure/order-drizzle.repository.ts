@@ -120,6 +120,7 @@ export class OrderDrizzleRepository implements OrderRepository {
             priceDelta: mod.priceDelta,
             amount: mod.amount,
             modifierGroupId: mod.modifierGroupId ?? null,
+            kind: mod.kind,
           });
         }
       }
@@ -238,6 +239,7 @@ export class OrderDrizzleRepository implements OrderRepository {
         priceDelta: m.priceDelta,
         amount: m.amount,
         modifierGroupId: m.modifierGroupId ?? null,
+        kind: m.kind as OrderModifierSnapshot['kind'],
       }));
 
       items.push({
