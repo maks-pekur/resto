@@ -2612,6 +2612,7 @@ export interface components {
                 sortOrder: number;
             }[];
             modifierGroupIds: string[];
+            modifierOptionIds: string[];
         };
         ModifierGroupListResponseDto: {
             items: {
@@ -2668,6 +2669,7 @@ export interface components {
                 } | null;
                 priceDelta: string;
                 imageUrl: string | null;
+                imageS3Key: string | null;
                 groupCount: number;
                 dishCount: number;
             }[];

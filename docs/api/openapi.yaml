@@ -5204,6 +5204,11 @@ components:
           items:
             type: string
             format: uuid
+        modifierOptionIds:
+          type: array
+          items:
+            type: string
+            format: uuid
       required:
         - id
         - categoryId
@@ -5231,6 +5236,7 @@ components:
         - sortOrder
         - sizes
         - modifierGroupIds
+        - modifierOptionIds
     ModifierGroupListResponseDto:
       type: object
       properties:
@@ -5381,6 +5387,9 @@ components:
               imageUrl:
                 type: string
                 nullable: true
+              imageS3Key:
+                type: string
+                nullable: true
               groupCount:
                 type: integer
                 minimum: 0
@@ -5395,6 +5404,7 @@ components:
               - description
               - priceDelta
               - imageUrl
+              - imageS3Key
               - groupCount
               - dishCount
       required:
