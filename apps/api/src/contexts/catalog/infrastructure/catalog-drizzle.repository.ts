@@ -42,6 +42,7 @@ import {
   CatalogCodeConflictError,
   CategoryNestingDepthError,
   MenuCategoryNotFoundError,
+  MenuIngredientAlreadyAttachedError,
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
@@ -682,6 +683,145 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         await scoped.insertInto(schema.menuItemModifierGroups, {
           menuItemId: input.itemId,
           modifierGroupId,
+          sortOrder: i,
+        });
+      }
+
+      return { id: input.itemId };
+    });
+  }
+
+  async replaceGroupModifierOptions(input: {
+    modifierGroupId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const groupRows = await scoped
+        .selectFrom(
+          schema.menuModifierGroups,
+          eq(schema.menuModifierGroups.id, input.modifierGroupId),
+        )
+        .limit(1);
+      if (!groupRows[0]) {
+        throw new MenuModifierGroupNotFoundError(input.modifierGroupId);
+      }
+
+      const dedupedIds = [...new Set(input.optionIds)];
+      if (dedupedIds.length > 0) {
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, dedupedIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuModifierGroupOptions)
+        .where(
+          and(
+            eq(schema.menuModifierGroupOptions.tenantId, ctx.tenantId),
+            eq(schema.menuModifierGroupOptions.modifierGroupId, input.modifierGroupId),
+          ),
+        );
+
+      for (const [i, optionId] of dedupedIds.entries()) {
+        await scoped.insertInto(schema.menuModifierGroupOptions, {
+          modifierGroupId: input.modifierGroupId,
+          optionId,
+          sortOrder: i,
+        });
+      }
+
+      return { id: input.modifierGroupId };
+    });
+  }
+
+  async replaceItemModifierOptions(input: {
+    itemId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const itemRows = await scoped
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
+        .limit(1);
+      if (!itemRows[0]) {
+        throw new MenuItemNotFoundError(input.itemId);
+      }
+
+      const dedupedIds = [...new Set(input.optionIds)];
+      if (dedupedIds.length > 0) {
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, dedupedIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      // D-04: the union of the dish's assigned groups and its single ingredients must stay
+      // duplicate-free. Refuse before writing, naming the group the ingredient already reaches
+      // the dish through.
+      if (dedupedIds.length > 0) {
+        const assignedGroupLinks = await scoped.selectFrom(
+          schema.menuItemModifierGroups,
+          eq(schema.menuItemModifierGroups.menuItemId, input.itemId),
+        );
+        if (assignedGroupLinks.length > 0) {
+          const assignedGroupIds = assignedGroupLinks.map((l) => l.modifierGroupId);
+          const [groupOptionLinks, groupRows] = await Promise.all([
+            scoped.selectFrom(
+              schema.menuModifierGroupOptions,
+              inArray(schema.menuModifierGroupOptions.modifierGroupId, assignedGroupIds),
+            ),
+            scoped.selectFrom(
+              schema.menuModifierGroups,
+              inArray(schema.menuModifierGroups.id, assignedGroupIds),
+            ),
+          ]);
+          const groupIdByOptionId = new Map(
+            groupOptionLinks.map((l) => [l.optionId, l.modifierGroupId]),
+          );
+          const groupNameById = new Map(groupRows.map((g) => [g.id, g.name]));
+          for (const optionId of dedupedIds) {
+            const groupId = groupIdByOptionId.get(optionId);
+            if (groupId === undefined) continue;
+            const groupName = groupNameById.get(groupId);
+            throw new MenuIngredientAlreadyAttachedError(
+              optionId,
+              groupName ? pickLocaleName(groupName) : groupId,
+            );
+          }
+        }
+      }
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuItemModifierOptions)
+        .where(
+          and(
+            eq(schema.menuItemModifierOptions.tenantId, ctx.tenantId),
+            eq(schema.menuItemModifierOptions.menuItemId, input.itemId),
+          ),
+        );
+
+      for (const [i, optionId] of dedupedIds.entries()) {
+        await scoped.insertInto(schema.menuItemModifierOptions, {
+          menuItemId: input.itemId,
+          optionId,
           sortOrder: i,
         });
       }

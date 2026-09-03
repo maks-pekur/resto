@@ -17,6 +17,14 @@ export interface CatalogRepository {
     itemId: string;
     modifierGroupIds: readonly string[];
   }): Promise<{ id: string }>;
+  replaceGroupModifierOptions(input: {
+    modifierGroupId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }>;
+  replaceItemModifierOptions(input: {
+    itemId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
