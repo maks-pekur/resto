@@ -1,13 +1,19 @@
 import * as React from 'react';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { createRoute } from '@tanstack/react-router';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
 import { Route as menuLayoutRoute } from './_layout';
-import { modifierGroupsQuery } from '@/lib/queries/catalog';
+import {
+  ingredientStopListQuery,
+  modifierGroupsQuery,
+  toggleIngredientStopList,
+} from '@/lib/queries/catalog';
+import { useEffectiveLocation } from '@/hooks/use-effective-location';
 import { PageHeading } from '@/components/common/page-heading';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DataTable,
@@ -20,6 +26,8 @@ import {
 import { EmptyState } from '@/components/common/empty-state';
 import { IngredientCardGrid } from '@/components/menu/ingredient-card-grid';
 import { IngredientFormSheet } from '@/components/menu/ingredient-form-sheet';
+import { IngredientStopDialog } from '@/components/menu/ingredient-stop-dialog';
+import { showError } from '@/lib/ui/toast-helpers';
 import type { IngredientApi } from '@/lib/queries/catalog';
 
 export const Route = createRoute({
@@ -32,10 +40,44 @@ export const Route = createRoute({
 function IngredientsPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.ingredients' });
   const { t: tGroups } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
+  const { t: tStopList } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
+  const { t: tItems } = useTranslation('translation', { keyPrefix: 'menu.items' });
   const navigate = useNavigate();
   const { data } = useSuspenseQuery(modifierGroupsQuery());
   const groups = data.data?.items ?? [];
   const [editing, setEditing] = React.useState<IngredientApi | 'new' | null>(null);
+  const [stopping, setStopping] = React.useState<IngredientApi | null>(null);
+  const { locationId } = useEffectiveLocation();
+  const canStop = locationId !== undefined && locationId !== 'all';
+  const queryClient = useQueryClient();
+
+  const { data: stopListResult } = useQuery({
+    ...ingredientStopListQuery(locationId ?? ''),
+    enabled: canStop,
+  });
+  const stoppedOptionIds = React.useMemo(
+    () => new Set((stopListResult?.data?.items ?? []).map((item) => item.optionId)),
+    [stopListResult],
+  );
+
+  const resumeMutation = useMutation({
+    mutationFn: (optionId: string) => toggleIngredientStopList(optionId, false, locationId ?? ''),
+    onSuccess: (res) => {
+      if (res.ok) {
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredient-stop-list'] });
+      } else {
+        showError(null, tItems('stopListFailed'));
+      }
+    },
+  });
+
+  const handleToggleStop = (ingredient: IngredientApi, next: boolean): void => {
+    if (!next) {
+      resumeMutation.mutate(ingredient.id);
+      return;
+    }
+    setStopping(ingredient);
+  };
 
   const goToNewGroup = (): void => {
     void navigate({ to: '/menu/ingredients/$id', params: { id: 'new' } });
@@ -71,6 +113,28 @@ function IngredientsPage() {
               onSelect={(ingredient) => {
                 setEditing(ingredient);
               }}
+              renderStopControl={
+                canStop
+                  ? (ingredient) => {
+                      const isStopped = stoppedOptionIds.has(ingredient.id);
+                      const name = fromLocalizedText(ingredient.name);
+                      return (
+                        <Switch
+                          checked={isStopped}
+                          disabled={resumeMutation.isPending || stopping?.id === ingredient.id}
+                          onCheckedChange={(next) => {
+                            handleToggleStop(ingredient, next);
+                          }}
+                          aria-label={
+                            isStopped
+                              ? tStopList('resumeAriaLabel', { name })
+                              : tStopList('stopAriaLabel', { name })
+                          }
+                        />
+                      );
+                    }
+                  : undefined
+              }
             />
           </div>
         </TabsContent>
@@ -128,6 +192,15 @@ function IngredientsPage() {
         ingredient={editing === 'new' ? null : editing}
         onOpenChange={(open) => {
           if (!open) setEditing(null);
+        }}
+      />
+
+      <IngredientStopDialog
+        ingredient={stopping}
+        locationId={locationId ?? ''}
+        open={stopping !== null}
+        onOpenChange={(open) => {
+          if (!open) setStopping(null);
         }}
       />
     </>
