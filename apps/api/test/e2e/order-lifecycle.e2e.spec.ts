@@ -64,6 +64,8 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-LIFECYCLE-${orderId.slice(0, 8)}`,
         status,
+        paymentStatus: 'paid',
+        paidAt: new Date(),
         orderType: 'dine_in',
         subtotal: '15.00',
         total: '15.00',
@@ -111,7 +113,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   };
 
   it('drives paid -> accepted -> preparing -> ready -> completed, each transition stamping only its own column', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
     const advanceService = new AdvanceOrderStatusService(orderRepo);
@@ -182,7 +184,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('eta_at is server-computed from now + prepMinutes, never from a caller-supplied timestamp', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
 
@@ -208,7 +210,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
 
-    const order4 = await seedOrder('paid');
+    const order4 = await seedOrder('placed');
     await expect(
       runInTenantContext({ tenantId }, () =>
         acceptService.execute({
@@ -220,7 +222,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
       ),
     ).rejects.toBeInstanceOf(InvalidPrepMinutesError);
 
-    const order181 = await seedOrder('paid');
+    const order181 = await seedOrder('placed');
     await expect(
       runInTenantContext({ tenantId }, () =>
         acceptService.execute({
@@ -232,7 +234,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
       ),
     ).rejects.toBeInstanceOf(InvalidPrepMinutesError);
 
-    const order5 = await seedOrder('paid');
+    const order5 = await seedOrder('placed');
     await runInTenantContext({ tenantId }, () =>
       acceptService.execute({
         orderId: OrderId.parse(order5),
@@ -243,7 +245,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
     );
     expect((await readOrderRow(order5))?.status).toBe('accepted');
 
-    const order180 = await seedOrder('paid');
+    const order180 = await seedOrder('placed');
     await runInTenantContext({ tenantId }, () =>
       acceptService.execute({
         orderId: OrderId.parse(order180),
@@ -256,7 +258,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('a second accept on an already-accepted order is a no-op preserving eta_at/accepted_at/accepted_by_user_id', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
 
@@ -287,7 +289,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('a second markReady on an already-ready order is a no-op (Product MED-17)', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
     const advanceService = new AdvanceOrderStatusService(orderRepo);
@@ -333,7 +335,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('complete on an accepted order throws InvalidOrderTransitionError and the row is unchanged', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
     const advanceService = new AdvanceOrderStatusService(orderRepo);
@@ -366,7 +368,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('every transition appends ordering.order_status_changed.v1 with the real locationId and actorUserId', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const acceptService = new AcceptOrderService(orderRepo);
     const advanceService = new AdvanceOrderStatusService(orderRepo);
@@ -419,7 +421,7 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
   });
 
   it('a transition invoked under tenant B for tenant A order raises OrderNotFoundError and leaves the row unchanged', async () => {
-    const orderId = await seedOrder('paid');
+    const orderId = await seedOrder('placed');
     const otherTenantId = randomUUID();
     await stack.db.withoutTenant(
       'seed second tenant for cross-tenant lifecycle e2e',
@@ -450,6 +452,6 @@ suite('Order lifecycle e2e — forward transitions, ETA capture, idempotency, ou
     ).rejects.toBeInstanceOf(OrderNotFoundError);
 
     const row = await readOrderRow(orderId);
-    expect(row?.status).toBe('paid');
+    expect(row?.status).toBe('placed');
   });
 });
