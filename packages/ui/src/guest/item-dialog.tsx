@@ -29,6 +29,7 @@ export const ItemDialog = ({
   item,
   modifierGroups,
   modifierOptions,
+  stoppedIngredientIds,
   currency,
   open,
   onOpenChange,
@@ -49,6 +50,7 @@ export const ItemDialog = ({
       item={item}
       modifierGroups={modifierGroups}
       modifierOptions={modifierOptions}
+      stoppedIngredientIds={stoppedIngredientIds}
       currency={currency}
       onAddToCart={(line) => {
         onAddToCart(line);
