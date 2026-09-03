@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Minus } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -309,24 +309,40 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">{t('detail.itemsTitle')}</h3>
           <div className="flex flex-col gap-2">
-            {detail.items.map((item) => (
-              <div key={item.id} className="flex flex-col gap-0.5 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span>
-                    {item.nameSnapshot} × {item.quantity}
-                  </span>
-                  <span>{money(item.lineTotal, item.currency)}</span>
+            {detail.items.map((item) => {
+              const addedModifiers = item.modifiers.filter((modifier) => modifier.kind === 'added');
+              const excludedModifiers = item.modifiers.filter(
+                (modifier) => modifier.kind === 'excluded',
+              );
+              return (
+                <div key={item.id} className="flex flex-col gap-0.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {item.nameSnapshot} × {item.quantity}
+                    </span>
+                    <span>{money(item.lineTotal, item.currency)}</span>
+                  </div>
+                  {addedModifiers.map((modifier, index) => (
+                    <span
+                      key={`${item.id}-${index.toString()}`}
+                      className="pl-4 text-xs text-muted-foreground"
+                    >
+                      {modifier.nameSnapshot}
+                    </span>
+                  ))}
+                  {excludedModifiers.length > 0 ? (
+                    <span
+                      data-testid={`order-item-excluded-${item.id}`}
+                      className="flex items-center gap-1 pl-4 text-xs text-muted-foreground"
+                    >
+                      <Minus className="size-3" aria-hidden="true" />
+                      {t('detail.excludedLabel')}{' '}
+                      {excludedModifiers.map((modifier) => modifier.nameSnapshot).join(', ')}
+                    </span>
+                  ) : null}
                 </div>
-                {item.modifiers.map((modifier, index) => (
-                  <span
-                    key={`${item.id}-${index.toString()}`}
-                    className="pl-4 text-xs text-muted-foreground"
-                  >
-                    {modifier.nameSnapshot}
-                  </span>
-                ))}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <Separator />
           <div className="flex flex-col gap-1 text-sm">

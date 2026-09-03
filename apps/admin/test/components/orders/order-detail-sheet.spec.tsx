@@ -302,4 +302,98 @@ describe('OrderDetailSheet', () => {
     expect(timelineIndex).toBeGreaterThanOrEqual(0);
     expect(cancelIndex).toBeGreaterThan(timelineIndex);
   });
+
+  it('renders the two added modifiers as today, plus exactly one exclusion line for the excluded one', async () => {
+    canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ...detail,
+        items: [
+          {
+            ...detail.items[0],
+            modifiers: [
+              {
+                optionId: 'opt-cheese',
+                nameSnapshot: 'Сыр',
+                priceDelta: '50.00',
+                amount: 1,
+                modifierGroupId: 'group-1',
+                kind: 'added',
+              },
+              {
+                optionId: 'opt-olives',
+                nameSnapshot: 'Оливки',
+                priceDelta: '30.00',
+                amount: 1,
+                modifierGroupId: 'group-1',
+                kind: 'added',
+              },
+              {
+                optionId: 'opt-onion',
+                nameSnapshot: 'Лук',
+                priceDelta: '0.00',
+                amount: 1,
+                modifierGroupId: null,
+                kind: 'excluded',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    render(
+      <Wrap>
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
+      </Wrap>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Сыр')).not.toBeNull();
+    });
+    expect(screen.getByText('Оливки')).toBeInTheDocument();
+
+    const exclusionLine = screen.getByTestId('order-item-excluded-item-1');
+    expect(exclusionLine).toHaveTextContent('orders.detail.excludedLabel');
+    expect(exclusionLine).toHaveTextContent('Лук');
+    expect(screen.queryAllByTestId(/^order-item-excluded-/)).toHaveLength(1);
+  });
+
+  it('renders no exclusion line for an item with no exclusions', async () => {
+    canMock.mockReturnValue(true);
+    apiFetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: {
+        ...detail,
+        items: [
+          {
+            ...detail.items[0],
+            modifiers: [
+              {
+                optionId: 'opt-cheese',
+                nameSnapshot: 'Сыр',
+                priceDelta: '50.00',
+                amount: 1,
+                modifierGroupId: 'group-1',
+                kind: 'added',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    render(
+      <Wrap>
+        <OrderDetailSheet order={feedRow} onOpenChange={vi.fn()} />
+      </Wrap>,
+    );
+
+    await waitFor(() => {
+      expect(screen.queryByText('Сыр')).not.toBeNull();
+    });
+    expect(screen.queryAllByTestId(/^order-item-excluded-/)).toHaveLength(0);
+    expect(screen.queryByText(/excludedLabel/)).toBeNull();
+  });
 });
