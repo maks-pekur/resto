@@ -27,7 +27,7 @@
 
   --secondary: #f4f4f5;
   --secondary-foreground: #1f1f1f;
-  --muted: #f6f6f7;
+  --muted: #fafafa;
   --muted-foreground: #5c5c5c;
   --accent: var(--primary-tint);
   --accent-foreground: var(--primary-strong);
@@ -77,7 +77,7 @@ html[data-theme='dark'] {
 
   --secondary: #232323;
   --secondary-foreground: #f2f2f2;
-  --muted: #1f1f1f;
+  --muted: #1a1a1a;
   --muted-foreground: #a1a1a1;
 
   --destructive: #ff6b6b;
@@ -102,7 +102,7 @@ html[data-theme='dark'] {
 
     --secondary: #232323;
     --secondary-foreground: #f2f2f2;
-    --muted: #1f1f1f;
+    --muted: #1a1a1a;
     --muted-foreground: #a1a1a1;
 
     --destructive: #ff6b6b;
