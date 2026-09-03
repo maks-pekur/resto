@@ -25,6 +25,12 @@ export interface CatalogRepository {
     itemId: string;
     optionIds: readonly string[];
   }): Promise<{ id: string }>;
+  setItemComposition(input: {
+    itemId: string;
+    mode: 'text' | 'assembled';
+    text: readonly string[];
+    lines: readonly { optionId: string; removable: boolean }[];
+  }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;

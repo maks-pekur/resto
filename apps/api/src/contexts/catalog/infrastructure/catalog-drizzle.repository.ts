@@ -830,6 +830,53 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async setItemComposition(input: {
+    itemId: string;
+    mode: 'text' | 'assembled';
+    text: readonly string[];
+    lines: readonly { optionId: string; removable: boolean }[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const itemRows = await scoped
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
+        .limit(1);
+      if (!itemRows[0]) {
+        throw new MenuItemNotFoundError(input.itemId);
+      }
+
+      if (input.lines.length > 0) {
+        const optionIds = [...new Set(input.lines.map((l) => l.optionId))];
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, optionIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = optionIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      // D-15/D-16: both payloads are always written together, so a mode switch
+      // can never leave the other one stale. Array position is the line order.
+      await scoped.updateTable(
+        schema.menuItems,
+        {
+          compositionMode: input.mode,
+          composition: [...input.text],
+          compositionAssembled: [...input.lines],
+          updatedAt: new Date(),
+        },
+        eq(schema.menuItems.id, input.itemId),
+      );
+
+      return { id: input.itemId };
+    });
+  }
+
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
