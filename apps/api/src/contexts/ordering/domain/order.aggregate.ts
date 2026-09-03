@@ -38,6 +38,7 @@ export interface OrderModifierSnapshot {
   readonly priceDelta: string;
   readonly amount: number;
   readonly modifierGroupId: string | null;
+  readonly kind: 'added' | 'excluded';
 }
 
 export interface OrderItemSnapshot {
@@ -123,6 +124,7 @@ export interface CreateOrderInput {
       readonly amount: number;
       readonly freeAmount?: number;
       readonly modifierGroupId: string | null;
+      readonly kind: 'added' | 'excluded';
     }[];
     readonly quantity: number;
     readonly categoryId: string;
@@ -169,6 +171,7 @@ function computeTotals(
         priceDelta: m.priceDelta,
         amount: m.amount,
         modifierGroupId: m.modifierGroupId,
+        kind: m.kind,
       })),
       quantity: item.quantity,
       lineTotal: fromMinorUnits(lineCostMinor),

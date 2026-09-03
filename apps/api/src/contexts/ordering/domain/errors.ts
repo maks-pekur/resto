@@ -50,6 +50,14 @@ export class OrderModifierNotAvailableError extends Error {
   }
 }
 
+export class OrderIngredientUnavailableError extends Error {
+  readonly kind = 'OrderIngredientUnavailableError' as const;
+  constructor(public readonly optionId: string) {
+    super(`Ingredient "${optionId}" is on the stop-list and cannot be ordered.`);
+    this.name = 'OrderIngredientUnavailableError';
+  }
+}
+
 export class OrderModifierSelectionInvalidError extends Error {
   readonly kind = 'OrderModifierSelectionInvalidError' as const;
   constructor(
@@ -108,6 +116,7 @@ export type OrderDomainError =
   | OrderItemUnavailableError
   | OrderItemNotOrderableError
   | OrderModifierNotAvailableError
+  | OrderIngredientUnavailableError
   | OrderModifierSelectionInvalidError
   | InvalidCancelReasonError
   | InvalidPrepMinutesError

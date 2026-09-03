@@ -14,6 +14,7 @@ import type {
   ResolvedOrderTable,
 } from '../../src/contexts/ordering/domain/ports';
 import {
+  OrderIngredientUnavailableError,
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
@@ -37,10 +38,15 @@ const cheeseOptionId = randomUUID();
 const cheeseOptionId2 = randomUUID();
 const sauceGroupId = randomUUID();
 const freeSauceOptionId = randomUUID();
+const sauceOptionId2 = randomUUID();
+const sauceOptionId3 = randomUUID();
 const stoppedItemId = randomUUID();
 const requiredItemId = randomUUID();
 const reqGroupId = randomUUID();
 const reqOptionId = randomUUID();
+const baconOptionId = randomUUID();
+const onionOptionId = randomUUID();
+const stoppedIngredientId = randomUUID();
 
 const snapshot: OrderingMenuSnapshot = {
   currency: 'USD',
@@ -51,6 +57,8 @@ const snapshot: OrderingMenuSnapshot = {
       basePrice: '12.00',
       sizes: [{ sizeId: largeSizeId, price: '15.00' }],
       modifierGroupIds: [cheeseGroupId, sauceGroupId],
+      extraOptionIds: [baconOptionId, stoppedIngredientId],
+      removableOptionIds: [onionOptionId],
     },
     {
       itemId: stoppedItemId,
@@ -58,6 +66,8 @@ const snapshot: OrderingMenuSnapshot = {
       basePrice: '9.00',
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      removableOptionIds: [],
     },
     {
       itemId: requiredItemId,
@@ -65,17 +75,19 @@ const snapshot: OrderingMenuSnapshot = {
       basePrice: '8.00',
       sizes: [],
       modifierGroupIds: [reqGroupId],
+      extraOptionIds: [],
+      removableOptionIds: [],
     },
   ],
   modifierGroups: [
-    { groupId: cheeseGroupId, minSelectable: 0, maxSelectable: 1, isRequired: false },
-    { groupId: sauceGroupId, minSelectable: 0, maxSelectable: 1, isRequired: false },
-    { groupId: reqGroupId, minSelectable: 1, maxSelectable: 1, isRequired: true },
+    { groupId: cheeseGroupId, behaviour: 'one', isRequired: false },
+    { groupId: sauceGroupId, behaviour: 'several', isRequired: false },
+    { groupId: reqGroupId, behaviour: 'one', isRequired: true },
   ],
   modifierOptions: [
     {
       optionId: cheeseOptionId,
-      groupId: cheeseGroupId,
+      groupIds: [cheeseGroupId],
       priceDelta: '1.50',
       freeAmount: 0,
       minAmount: null,
@@ -83,7 +95,7 @@ const snapshot: OrderingMenuSnapshot = {
     },
     {
       optionId: cheeseOptionId2,
-      groupId: cheeseGroupId,
+      groupIds: [cheeseGroupId],
       priceDelta: '1.50',
       freeAmount: 0,
       minAmount: null,
@@ -91,22 +103,63 @@ const snapshot: OrderingMenuSnapshot = {
     },
     {
       optionId: freeSauceOptionId,
-      groupId: sauceGroupId,
+      groupIds: [sauceGroupId],
       priceDelta: '0.50',
       freeAmount: 1,
       minAmount: null,
       maxAmount: null,
     },
     {
+      optionId: sauceOptionId2,
+      groupIds: [sauceGroupId],
+      priceDelta: '0.50',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: null,
+    },
+    {
+      optionId: sauceOptionId3,
+      groupIds: [sauceGroupId],
+      priceDelta: '0.50',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: null,
+    },
+    {
       optionId: reqOptionId,
-      groupId: reqGroupId,
+      groupIds: [reqGroupId],
       priceDelta: '2.00',
       freeAmount: 0,
       minAmount: 2,
       maxAmount: null,
     },
+    {
+      optionId: baconOptionId,
+      groupIds: [],
+      priceDelta: '1.00',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: null,
+    },
+    {
+      optionId: onionOptionId,
+      groupIds: [],
+      priceDelta: '0.50',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: null,
+    },
+    {
+      optionId: stoppedIngredientId,
+      groupIds: [],
+      priceDelta: '0.75',
+      freeAmount: 0,
+      minAmount: null,
+      maxAmount: null,
+    },
   ],
   stoppedItemIds: [stoppedItemId],
+  stoppedIngredientIds: [stoppedIngredientId],
 };
 
 class FakeOrderRepository implements OrderRepository {
@@ -277,7 +330,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
               itemId: pizzaId,
               sizeId: null,
               name: 'Pizza',
-              modifiers: [{ optionId: freeSauceOptionId, name: 'Sauce', amount: 1 }],
+              modifiers: [{ optionId: freeSauceOptionId, name: 'Sauce', amount: 1, kind: 'added' }],
               quantity: 1,
             },
           ],
@@ -297,7 +350,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
               itemId: pizzaId,
               sizeId: null,
               name: 'Pizza',
-              modifiers: [{ optionId: cheeseOptionId, name: 'Cheese', amount: 2 }],
+              modifiers: [{ optionId: cheeseOptionId, name: 'Cheese', amount: 2, kind: 'added' }],
               quantity: 1,
             },
           ],
@@ -363,7 +416,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
                 itemId: pizzaId,
                 sizeId: null,
                 name: 'Pizza',
-                modifiers: [{ optionId: randomUUID(), name: 'Ghost', amount: 1 }],
+                modifiers: [{ optionId: randomUUID(), name: 'Ghost', amount: 1, kind: 'added' }],
                 quantity: 1,
               },
             ],
@@ -384,7 +437,9 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
                 itemId: pizzaId,
                 sizeId: null,
                 name: 'Pizza',
-                modifiers: [{ optionId: cheeseOptionId, name: 'Cheese', amount: 99 }],
+                modifiers: [
+                  { optionId: cheeseOptionId, name: 'Cheese', amount: 99, kind: 'added' },
+                ],
                 quantity: 1,
               },
             ],
@@ -410,7 +465,51 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
     expect(repo.saved).toHaveLength(0);
   });
 
-  it('rejects when a group exceeds its maxSelectable (HIGH-5)', async () => {
+  it('accepts an ingredient attached directly to the dish and persists it with a null group id (ING-04)', async () => {
+    const { service, repo } = makeService();
+    await run(() =>
+      service.execute(
+        baseInput({
+          items: [
+            {
+              itemId: pizzaId,
+              sizeId: null,
+              name: 'Pizza',
+              modifiers: [{ optionId: baconOptionId, name: 'Bacon', amount: 1, kind: 'added' }],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    const modifier = repo.saved[0]?.toSnapshot().items[0]?.modifiers[0];
+    expect(modifier?.optionId).toBe(baconOptionId);
+    expect(modifier?.modifierGroupId).toBeNull();
+    expect(modifier?.kind).toBe('added');
+  });
+
+  it("rejects an option that belongs to neither the dish's groups nor its extraOptionIds", async () => {
+    const { service } = makeService();
+    await expect(
+      run(() =>
+        service.execute(
+          baseInput({
+            items: [
+              {
+                itemId: pizzaId,
+                sizeId: null,
+                name: 'Pizza',
+                modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 1, kind: 'added' }],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierNotAvailableError);
+  });
+
+  it('rejects a stopped ingredient with its own error code (D-24)', async () => {
     const { service } = makeService();
     await expect(
       run(() =>
@@ -422,8 +521,36 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
                 sizeId: null,
                 name: 'Pizza',
                 modifiers: [
-                  { optionId: cheeseOptionId, name: 'Cheese', amount: 1 },
-                  { optionId: cheeseOptionId2, name: 'Cheese 2', amount: 1 },
+                  {
+                    optionId: stoppedIngredientId,
+                    name: 'Stopped ingredient',
+                    amount: 1,
+                    kind: 'added',
+                  },
+                ],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderIngredientUnavailableError);
+  });
+
+  it('enforces at-most-one on a "one" group and no cap on a "several" group (D-33)', async () => {
+    const { service: oneGroupService } = makeService();
+    await expect(
+      run(() =>
+        oneGroupService.execute(
+          baseInput({
+            items: [
+              {
+                itemId: pizzaId,
+                sizeId: null,
+                name: 'Pizza',
+                modifiers: [
+                  { optionId: cheeseOptionId, name: 'Cheese', amount: 1, kind: 'added' },
+                  { optionId: cheeseOptionId2, name: 'Cheese 2', amount: 1, kind: 'added' },
                 ],
                 quantity: 1,
               },
@@ -432,6 +559,72 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
         ),
       ),
     ).rejects.toBeInstanceOf(OrderModifierSelectionInvalidError);
+
+    const { service: severalGroupService, repo } = makeService();
+    await run(() =>
+      severalGroupService.execute(
+        baseInput({
+          items: [
+            {
+              itemId: pizzaId,
+              sizeId: null,
+              name: 'Pizza',
+              modifiers: [
+                { optionId: freeSauceOptionId, name: 'Sauce 1', amount: 1, kind: 'added' },
+                { optionId: sauceOptionId2, name: 'Sauce 2', amount: 1, kind: 'added' },
+                { optionId: sauceOptionId3, name: 'Sauce 3', amount: 1, kind: 'added' },
+              ],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    expect(repo.saved[0]?.toSnapshot().items[0]?.modifiers).toHaveLength(3);
+  });
+
+  it('accepts an excluded row for a removable ingredient and refuses it for a non-removable one (D-16/D-18/ING-15)', async () => {
+    const { service, repo } = makeService();
+    await run(() =>
+      service.execute(
+        baseInput({
+          items: [
+            {
+              itemId: pizzaId,
+              sizeId: null,
+              name: 'Pizza',
+              modifiers: [{ optionId: onionOptionId, name: 'Onion', kind: 'excluded' }],
+              quantity: 1,
+            },
+          ],
+        }),
+      ),
+    );
+    const snap = repo.saved[0]?.toSnapshot();
+    const modifier = snap?.items[0]?.modifiers[0];
+    expect(modifier?.kind).toBe('excluded');
+    expect(modifier?.priceDelta).toBe('0');
+    expect(modifier?.amount).toBe(1);
+    expect(snap?.total).toBe('12.00');
+
+    const { service: refusedService } = makeService();
+    await expect(
+      run(() =>
+        refusedService.execute(
+          baseInput({
+            items: [
+              {
+                itemId: pizzaId,
+                sizeId: null,
+                name: 'Pizza',
+                modifiers: [{ optionId: cheeseOptionId, name: 'Cheese', kind: 'excluded' }],
+                quantity: 1,
+              },
+            ],
+          }),
+        ),
+      ),
+    ).rejects.toBeInstanceOf(OrderModifierNotAvailableError);
   });
 
   it('rejects an option whose amount is below its minAmount (HIGH-5)', async () => {
@@ -445,7 +638,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
                 itemId: requiredItemId,
                 sizeId: null,
                 name: 'Combo',
-                modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 1 }],
+                modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 1, kind: 'added' }],
                 quantity: 1,
               },
             ],
@@ -465,7 +658,7 @@ describe('CreateOrderService — server-authoritative pricing (BLOCK-1)', () => 
               itemId: requiredItemId,
               sizeId: null,
               name: 'Combo',
-              modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 2 }],
+              modifiers: [{ optionId: reqOptionId, name: 'Req', amount: 2, kind: 'added' }],
               quantity: 1,
             },
           ],

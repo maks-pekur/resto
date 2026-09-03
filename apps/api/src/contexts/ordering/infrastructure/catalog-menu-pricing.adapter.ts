@@ -23,9 +23,10 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
 
   async loadSnapshot(tenantId: TenantId, locationId: string): Promise<OrderingMenuSnapshot> {
     const version = await this.versions.current(tenantId);
-    const [menu, stoppedItemIds] = await Promise.all([
+    const [menu, stoppedItemIds, stoppedIngredientIds] = await Promise.all([
       this.catalog.loadPublishedMenu(tenantId, version),
       this.catalog.listStoppedItemIds(locationId),
+      this.catalog.listStoppedIngredientIds(locationId),
     ]);
 
     const items: PricedMenuItem[] = menu.items.map((item) => ({
@@ -34,26 +35,44 @@ export class CatalogMenuPricingAdapter implements MenuPricingPort {
       basePrice: item.basePrice,
       sizes: item.sizes.map((s) => ({ sizeId: s.id, price: s.price })),
       modifierGroupIds: [...item.modifierGroupIds],
+      extraOptionIds: [...item.extraOptionIds],
+      removableOptionIds: item.compositionLines.filter((l) => l.removable).map((l) => l.optionId),
     }));
 
     const modifierGroups: PricedModifierGroup[] = menu.modifierGroups.map((group) => ({
       groupId: group.id,
-      minSelectable: group.minSelectable,
-      maxSelectable: group.maxSelectable,
+      behaviour: group.behaviour,
       isRequired: group.isRequired,
     }));
 
-    const modifierOptions: PricedModifierOption[] = menu.modifierGroups.flatMap((group) =>
-      group.options.map<PricedModifierOption>((opt) => ({
-        optionId: opt.id,
-        groupId: group.id,
-        priceDelta: opt.priceDelta,
-        freeAmount: opt.freeAmount,
-        minAmount: opt.minAmount,
-        maxAmount: opt.maxAmount,
-      })),
-    );
+    const groupIdsByOptionId = new Map<string, string[]>();
+    for (const group of menu.modifierGroups) {
+      for (const optionId of group.optionIds) {
+        const groupIds = groupIdsByOptionId.get(optionId);
+        if (groupIds) {
+          groupIds.push(group.id);
+        } else {
+          groupIdsByOptionId.set(optionId, [group.id]);
+        }
+      }
+    }
 
-    return { currency: menu.currency, items, modifierGroups, modifierOptions, stoppedItemIds };
+    const modifierOptions: PricedModifierOption[] = menu.modifierOptions.map((opt) => ({
+      optionId: opt.id,
+      groupIds: groupIdsByOptionId.get(opt.id) ?? [],
+      priceDelta: opt.priceDelta,
+      freeAmount: opt.freeAmount,
+      minAmount: opt.minAmount,
+      maxAmount: opt.maxAmount,
+    }));
+
+    return {
+      currency: menu.currency,
+      items,
+      modifierGroups,
+      modifierOptions,
+      stoppedItemIds,
+      stoppedIngredientIds,
+    };
   }
 }

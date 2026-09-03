@@ -26,11 +26,13 @@ export interface PricedMenuItem {
   readonly basePrice: string;
   readonly sizes: readonly PricedMenuItemSize[];
   readonly modifierGroupIds: readonly string[];
+  readonly extraOptionIds: readonly string[];
+  readonly removableOptionIds: readonly string[];
 }
 
 export interface PricedModifierOption {
   readonly optionId: string;
-  readonly groupId: string;
+  readonly groupIds: readonly string[];
   readonly priceDelta: string;
   readonly freeAmount: number;
   readonly minAmount: number | null;
@@ -39,8 +41,7 @@ export interface PricedModifierOption {
 
 export interface PricedModifierGroup {
   readonly groupId: string;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
 }
 
@@ -50,6 +51,7 @@ export interface OrderingMenuSnapshot {
   readonly modifierGroups: readonly PricedModifierGroup[];
   readonly modifierOptions: readonly PricedModifierOption[];
   readonly stoppedItemIds: readonly string[];
+  readonly stoppedIngredientIds: readonly string[];
 }
 
 // Server-authoritative pricing for the order path: the create-order service must
