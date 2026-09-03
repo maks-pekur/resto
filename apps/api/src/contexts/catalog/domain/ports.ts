@@ -34,6 +34,8 @@ export interface CatalogRepository {
   getItemById(id: string): Promise<ItemDetailRow | null>;
   listModifierGroups(): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
+  listModifierOptions(): Promise<ModifierOptionListRow[]>;
+  getModifierOptionUsage(optionId: string): Promise<ModifierOptionUsageRow>;
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
   listStoppedIngredientIds(locationId: string): Promise<string[]>;
@@ -48,6 +50,7 @@ export interface CatalogRepository {
 
   archiveCategory(id: string): Promise<{ found: boolean }>;
   archiveItem(id: string): Promise<{ found: boolean }>;
+  archiveModifierOption(id: string): Promise<{ found: boolean }>;
 
   applyCategoryMoves(input: {
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
@@ -289,6 +292,14 @@ export interface ModifierOptionListRow {
   readonly imageUrl: string | null;
   readonly groupCount: number;
   readonly dishCount: number;
+}
+
+// D-28: the archive warning unions all three; the D-22 stop dialog reads
+// dishesInComposition alone — being an add-on is not being part of the dish.
+export interface ModifierOptionUsageRow {
+  readonly groups: readonly { id: string; name: Record<string, string> }[];
+  readonly dishesAttached: readonly { id: string; name: Record<string, string> }[];
+  readonly dishesInComposition: readonly { id: string; name: Record<string, string> }[];
 }
 
 export interface StopListEntryRow {

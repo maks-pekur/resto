@@ -28,6 +28,8 @@ import {
   type ItemStatusFilter,
   type ModifierGroupDetailRow,
   type ModifierGroupListRow,
+  type ModifierOptionListRow,
+  type ModifierOptionUsageRow,
   type StopListEntryRow,
   type StopListInsertRow,
   type UpsertCategoryRow,
@@ -1204,6 +1206,103 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  // D-27: no search, no paging — a restaurant has tens of ingredients.
+  async listModifierOptions(): Promise<ModifierOptionListRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const options = await scoped.selectFrom(
+        schema.menuModifierOptions,
+        isNull(schema.menuModifierOptions.archivedAt),
+      );
+      if (options.length === 0) return [];
+
+      const [groupOptionsRows, itemOptionsRows, itemsRows] = await Promise.all([
+        scoped.selectFrom(schema.menuModifierGroupOptions),
+        scoped.selectFrom(schema.menuItemModifierOptions),
+        scoped.selectFrom(schema.menuItems),
+      ]);
+
+      const groupCountByOption = new Map<string, number>();
+      for (const row of groupOptionsRows) {
+        groupCountByOption.set(row.optionId, (groupCountByOption.get(row.optionId) ?? 0) + 1);
+      }
+
+      // D-22: dishCount is the union of direct attachment and composition
+      // membership — being reachable through a group is not being "in" the dish.
+      const dishIdsByOption = new Map<string, Set<string>>();
+      const addDish = (optionId: string, dishId: string): void => {
+        const set = dishIdsByOption.get(optionId);
+        if (set) set.add(dishId);
+        else dishIdsByOption.set(optionId, new Set([dishId]));
+      };
+      for (const row of itemOptionsRows) addDish(row.optionId, row.menuItemId);
+      for (const item of itemsRows) {
+        for (const line of item.compositionAssembled) addDish(line.optionId, item.id);
+      }
+
+      const rows = await Promise.all(
+        options.map(async (o) => ({
+          id: o.id,
+          name: o.name,
+          description: o.description ?? null,
+          priceDelta: o.priceDelta,
+          imageUrl: o.imageS3Key
+            ? await this.imageUrl.presignGet(
+                o.imageS3Key,
+                CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+              )
+            : null,
+          groupCount: groupCountByOption.get(o.id) ?? 0,
+          dishCount: dishIdsByOption.get(o.id)?.size ?? 0,
+        })),
+      );
+
+      return rows.sort((a, b) => pickLocaleName(a.name).localeCompare(pickLocaleName(b.name)));
+    });
+  }
+
+  async getModifierOptionUsage(optionId: string): Promise<ModifierOptionUsageRow> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const groupLinks = await scoped.selectFrom(
+        schema.menuModifierGroupOptions,
+        eq(schema.menuModifierGroupOptions.optionId, optionId),
+      );
+      const groupIds = [...new Set(groupLinks.map((l) => l.modifierGroupId))];
+      const groupRows =
+        groupIds.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuModifierGroups,
+              inArray(schema.menuModifierGroups.id, groupIds),
+            );
+
+      const itemLinks = await scoped.selectFrom(
+        schema.menuItemModifierOptions,
+        eq(schema.menuItemModifierOptions.optionId, optionId),
+      );
+      const attachedItemIds = [...new Set(itemLinks.map((l) => l.menuItemId))];
+      const attachedItemRows =
+        attachedItemIds.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuItems,
+              inArray(schema.menuItems.id, attachedItemIds),
+            );
+
+      // D-22: composition membership, expressed as jsonb containment against a
+      // one-element array — the same `sql` fragment shape listItems uses for ILIKE.
+      const compositionItemRows = await scoped.selectFrom(
+        schema.menuItems,
+        sql`${schema.menuItems.compositionAssembled} @> ${JSON.stringify([{ optionId }])}::jsonb`,
+      );
+
+      return {
+        groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
+        dishesAttached: attachedItemRows.map((i) => ({ id: i.id, name: i.name })),
+        dishesInComposition: compositionItemRows.map((i) => ({ id: i.id, name: i.name })),
+      };
+    });
+  }
+
   async listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]> {
     return this.db.withTenant(async (_tx, scoped) => {
       const stopRows = await scoped
@@ -1416,6 +1515,56 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return { found: rows.length > 0 };
     });
   }
+
+  // D-28: archive strips the ingredient from every group, every dish attachment
+  // and every composition line, in the same tenant-bound transaction.
+  async archiveModifierOption(id: string): Promise<{ found: boolean }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const rows = await scoped
+        .updateTable(
+          schema.menuModifierOptions,
+          { archivedAt: new Date(), updatedAt: new Date() },
+          eq(schema.menuModifierOptions.id, id),
+        )
+        .returning({ id: schema.menuModifierOptions.id });
+      if (rows.length === 0) return { found: false };
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuModifierGroupOptions)
+        .where(
+          and(
+            eq(schema.menuModifierGroupOptions.tenantId, ctx.tenantId),
+            eq(schema.menuModifierGroupOptions.optionId, id),
+          ),
+        );
+      await tx
+        .delete(schema.menuItemModifierOptions)
+        .where(
+          and(
+            eq(schema.menuItemModifierOptions.tenantId, ctx.tenantId),
+            eq(schema.menuItemModifierOptions.optionId, id),
+          ),
+        );
+
+      const composedItems = await scoped.selectFrom(
+        schema.menuItems,
+        sql`${schema.menuItems.compositionAssembled} @> ${JSON.stringify([{ optionId: id }])}::jsonb`,
+      );
+      for (const item of composedItems) {
+        await scoped.updateTable(
+          schema.menuItems,
+          {
+            compositionAssembled: item.compositionAssembled.filter((line) => line.optionId !== id),
+            updatedAt: new Date(),
+          },
+          eq(schema.menuItems.id, item.id),
+        );
+      }
+
+      return { found: true };
+    });
+  }
 }
 
 const isCodeUniqueViolation = (err: unknown, constraintName: string): boolean => {
@@ -1436,6 +1585,17 @@ const isCodeUniqueViolation = (err: unknown, constraintName: string): boolean =>
     cur = e.cause;
   }
   return false;
+};
+
+// Mirrors application/slug-util.ts's pickDefaultLocaleValue — kept local here so
+// infrastructure does not reach into the application layer for a one-line pick.
+const pickLocaleName = (name: Record<string, string>): string => {
+  if (typeof name.ru === 'string' && name.ru.length > 0) return name.ru;
+  if (typeof name.en === 'string' && name.en.length > 0) return name.en;
+  for (const value of Object.values(name)) {
+    if (typeof value === 'string' && value.length > 0) return value;
+  }
+  return '';
 };
 
 const groupBy = <T, K>(items: readonly T[], keyOf: (item: T) => K): Map<K, T[]> => {
