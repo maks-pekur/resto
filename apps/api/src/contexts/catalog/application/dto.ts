@@ -153,6 +153,13 @@ export const StopItemInputSchema = z.object({
 export type StopItemInput = z.infer<typeof StopItemInputSchema>;
 export class StopItemInputDto extends createZodDto(StopItemInputSchema) {}
 
+export const StopOptionInputSchema = z.object({
+  optionId: z.string().uuid(),
+  reason: z.string().max(500).nullable().default(null),
+});
+export type StopOptionInput = z.infer<typeof StopOptionInputSchema>;
+export class StopOptionInputDto extends createZodDto(StopOptionInputSchema) {}
+
 const CategoryStatusSchema = z.enum(['draft', 'published', 'archived']);
 const ItemStatusSchema = z.enum(['draft', 'published', 'archived']);
 
@@ -336,6 +343,22 @@ export const StopListResponseSchema = z.object({
 });
 export type StopListResponse = z.infer<typeof StopListResponseSchema>;
 export class StopListResponseDto extends createZodDto(StopListResponseSchema) {}
+
+// Item version minus categoryName — an ingredient has no category (UI-SPEC item 8).
+export const OptionStopListEntrySchema = z.object({
+  id: z.string().uuid(),
+  optionId: z.string().uuid(),
+  optionName: LocalizedText.nullable(),
+  imageUrl: z.string().nullable(),
+  stoppedAt: z.string().datetime(),
+  reason: z.string().nullable(),
+});
+export type OptionStopListEntry = z.infer<typeof OptionStopListEntrySchema>;
+export const OptionStopListResponseSchema = z.object({
+  items: z.array(OptionStopListEntrySchema),
+});
+export type OptionStopListResponse = z.infer<typeof OptionStopListResponseSchema>;
+export class OptionStopListResponseDto extends createZodDto(OptionStopListResponseSchema) {}
 
 export const AggregateStopListEntrySchema = z.object({
   itemId: z.string().uuid(),
