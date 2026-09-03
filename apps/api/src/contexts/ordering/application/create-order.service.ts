@@ -16,6 +16,7 @@ import {
   type ResolvedOrderTable,
 } from '../domain/ports';
 import {
+  OrderIngredientUnavailableError,
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
@@ -82,6 +83,7 @@ export class CreateOrderService {
     const groupsById = new Map(snapshot.modifierGroups.map((g) => [g.groupId, g]));
     const optionsById = new Map(snapshot.modifierOptions.map((o) => [o.optionId, o]));
     const stopped = new Set(snapshot.stoppedItemIds);
+    const stoppedIngredients = new Set(snapshot.stoppedIngredientIds);
 
     const orderNumber = generateOrderNumber();
 
@@ -98,8 +100,34 @@ export class CreateOrderService {
 
       const modifiers = line.modifiers.map((m) => {
         const option = optionsById.get(m.optionId);
-        if (!option || !published.modifierGroupIds.includes(option.groupId)) {
+        if (!option) {
           throw new OrderModifierNotAvailableError(m.optionId);
+        }
+        const kind = m.kind;
+
+        if (kind === 'excluded') {
+          if (!published.removableOptionIds.includes(option.optionId)) {
+            throw new OrderModifierNotAvailableError(m.optionId);
+          }
+          return {
+            optionId: option.optionId,
+            nameSnapshot: m.name,
+            priceDelta: '0',
+            amount: 1,
+            freeAmount: 0,
+            modifierGroupId: null,
+            kind: 'excluded' as const,
+          };
+        }
+
+        const isAllowed =
+          option.groupIds.some((g) => published.modifierGroupIds.includes(g)) ||
+          published.extraOptionIds.includes(option.optionId);
+        if (!isAllowed) {
+          throw new OrderModifierNotAvailableError(m.optionId);
+        }
+        if (stoppedIngredients.has(option.optionId)) {
+          throw new OrderIngredientUnavailableError(option.optionId);
         }
         const amount = m.amount ?? 1;
         if (option.maxAmount !== null && amount > option.maxAmount) {
@@ -108,18 +136,22 @@ export class CreateOrderService {
         if (option.minAmount !== null && amount < option.minAmount) {
           throw new OrderModifierNotAvailableError(m.optionId);
         }
+        const modifierGroupId =
+          option.groupIds.find((g) => published.modifierGroupIds.includes(g)) ?? null;
         return {
           optionId: option.optionId,
           nameSnapshot: m.name,
           priceDelta: option.priceDelta,
           amount,
           freeAmount: option.freeAmount,
-          modifierGroupId: option.groupId,
+          modifierGroupId,
+          kind: 'added' as const,
         };
       });
 
       const countByGroup = new Map<string, number>();
       for (const m of modifiers) {
+        if (m.kind !== 'added' || m.modifierGroupId === null) continue;
         countByGroup.set(m.modifierGroupId, (countByGroup.get(m.modifierGroupId) ?? 0) + 1);
       }
       for (const groupId of published.modifierGroupIds) {
@@ -129,17 +161,8 @@ export class CreateOrderService {
         if (group.isRequired && count === 0) {
           throw new OrderModifierSelectionInvalidError(groupId, 'a selection is required');
         }
-        if (count < group.minSelectable) {
-          throw new OrderModifierSelectionInvalidError(
-            groupId,
-            `at least ${group.minSelectable} required`,
-          );
-        }
-        if (count > group.maxSelectable) {
-          throw new OrderModifierSelectionInvalidError(
-            groupId,
-            `at most ${group.maxSelectable} allowed`,
-          );
+        if (group.behaviour === 'one' && count > 1) {
+          throw new OrderModifierSelectionInvalidError(groupId, 'only one selection allowed');
         }
       }
 

@@ -10,6 +10,7 @@ import {
   InvalidCancelReasonError,
   InvalidOrderTransitionError,
   InvalidPrepMinutesError,
+  OrderIngredientUnavailableError,
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
@@ -59,6 +60,12 @@ export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof OrderModifierNotAvailableError) {
     return new UnprocessableEntityException({
       code: 'ordering.modifier_not_available',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderIngredientUnavailableError) {
+    return new UnprocessableEntityException({
+      code: 'ordering.modifier_unavailable',
       message: err.message,
     });
   }
