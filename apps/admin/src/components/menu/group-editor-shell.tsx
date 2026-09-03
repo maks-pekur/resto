@@ -8,10 +8,10 @@ import {
   type ModifierGroupFormState,
 } from '@/components/menu/modifier-group-form';
 import {
-  ModifierOptionsList,
-  type ModifierOptionApi,
-} from '@/components/menu/modifier-options-list';
-import type { ModifierGroupDetailApi } from '@/lib/queries/catalog';
+  GroupIngredientsPicker,
+  type GroupIngredientRow,
+} from '@/components/menu/group-ingredients-picker';
+import type { ModifierGroupDetailApi, ModifierOptionApi } from '@/lib/queries/catalog';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
 
 export interface GroupEditorShellProps {
@@ -24,14 +24,23 @@ const FORM_ID = 'modifier-group-form';
 
 const emptyValues = (): ModifierGroupForm => ({
   name: {},
-  minSelectable: 0,
-  maxSelectable: 1,
+  display: 'tiles',
+  behaviour: 'several',
+  isRequired: false,
 });
 
 const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
   name: { ...g.name },
-  minSelectable: g.minSelectable,
-  maxSelectable: g.maxSelectable,
+  display: g.display,
+  behaviour: g.behaviour,
+  isRequired: g.isRequired,
+});
+
+const rowFromOption = (option: ModifierOptionApi): GroupIngredientRow => ({
+  id: option.id,
+  name: option.name,
+  imageUrl: option.imageUrl,
+  priceDelta: option.priceDelta,
 });
 
 export function GroupEditorShell({
@@ -42,8 +51,8 @@ export function GroupEditorShell({
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
-  const [currentOptions, setCurrentOptions] = React.useState<readonly ModifierOptionApi[]>(
-    initialGroup?.options ?? [],
+  const [currentOptions, setCurrentOptions] = React.useState<readonly GroupIngredientRow[]>(
+    (initialGroup?.options ?? []).map(rowFromOption),
   );
   const [formState, setFormState] = React.useState<ModifierGroupFormState>({
     isNew: groupId === 'new',
@@ -99,7 +108,7 @@ export function GroupEditorShell({
             <CardDescription>{t('groupVariantsDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <ModifierOptionsList
+            <GroupIngredientsPicker
               groupId={currentGroupId}
               options={currentOptions}
               onOptionsChange={setCurrentOptions}
