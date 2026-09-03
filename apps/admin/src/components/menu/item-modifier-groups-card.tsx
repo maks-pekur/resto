@@ -281,11 +281,11 @@ export function ItemModifierGroupsCard({
           {assignedGroups.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
           ) : (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {assignedGroups.map((g) => (
                 <div
                   key={g.id}
-                  className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm"
+                  className="bg-secondary flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
                   data-testid={`mg-chip-${g.id}`}
                 >
                   <button
@@ -299,7 +299,7 @@ export function ItemModifierGroupsCard({
                   >
                     <ChevronLeft className="size-3" aria-hidden="true" />
                   </button>
-                  <span>{g.name}</span>
+                  <span className="min-w-0 flex-1 truncate">{g.name}</span>
                   <button
                     type="button"
                     aria-label={t('chipMoveLaterAriaLabel', { name: g.name })}
@@ -347,13 +347,13 @@ export function ItemModifierGroupsCard({
         <div className="flex flex-col gap-2">
           <FieldTitle>{tModifiers('singlesRowLabel')}</FieldTitle>
           {singleIds.length === 0 ? null : (
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
               {singleIds.map((optionId) => {
                 const name = modifierNameById.get(optionId) ?? '';
                 return (
                   <div
                     key={optionId}
-                    className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm"
+                    className="bg-secondary flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
                     data-testid={`modifier-chip-${optionId}`}
                   >
                     <button
@@ -367,7 +367,7 @@ export function ItemModifierGroupsCard({
                     >
                       <ChevronLeft className="size-3" aria-hidden="true" />
                     </button>
-                    <span>{name}</span>
+                    <span className="min-w-0 flex-1 truncate">{name}</span>
                     <button
                       type="button"
                       aria-label={t('chipMoveLaterAriaLabel', { name })}
