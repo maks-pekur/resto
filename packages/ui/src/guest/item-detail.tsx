@@ -11,15 +11,19 @@ import type { CartLineItem } from '@resto/cart';
 import { cn } from '../lib/utils';
 import { localized } from '../lib/localized';
 import { formatPrice } from '../lib/format-price';
+import { XIcon } from '../icons';
 import { useGuestUi } from './guest-ui-provider';
 import { SegmentedChoice } from './segmented-choice';
 import { hasNutrition, NutritionInfo } from './nutrition-info';
 import { useItemSelection } from './use-item-selection';
+import { IngredientTile } from './ingredient-tile';
+import { PillMultiChoice } from './pill-multi-choice';
 
 export interface ItemDetailProps {
   readonly item: MenuItemDto;
   readonly modifierGroups: readonly MenuModifierGroupDto[];
   readonly modifierOptions: readonly MenuModifierOptionDto[];
+  readonly stoppedIngredientIds?: readonly string[];
   readonly currency: string;
   readonly onAddToCart: (line: Omit<CartLineItem, 'quantity'>) => void;
   readonly onBack?: () => void;
@@ -33,6 +37,7 @@ export const ItemDetail = ({
   item,
   modifierGroups,
   modifierOptions,
+  stoppedIngredientIds = [],
   currency,
   onAddToCart,
   onBack,
@@ -44,12 +49,29 @@ export const ItemDetail = ({
     () => new Map(modifierOptions.map((option) => [option.id, option])),
     [modifierOptions],
   );
+  const stoppedIds = useMemo(() => new Set(stoppedIngredientIds), [stoppedIngredientIds]);
   const selection = useItemSelection(item, modifierGroups, locale, optionsById);
 
   const name = localized(item.name, locale, defaultContentLocale);
   const description = item.description
     ? localized(item.description, locale, defaultContentLocale)
     : null;
+
+  const compositionLines = useMemo(
+    () =>
+      item.compositionLines
+        .map((line) => {
+          const option = optionsById.get(line.optionId);
+          if (!option) return null;
+          return {
+            optionId: line.optionId,
+            removable: line.removable,
+            name: localized(option.name, locale, defaultContentLocale),
+          };
+        })
+        .filter((line): line is NonNullable<typeof line> => line !== null),
+    [item.compositionLines, optionsById, locale, defaultContentLocale],
+  );
 
   const [firstUnmet] = selection.unmetGroups;
 
@@ -108,6 +130,57 @@ export const ItemDetail = ({
               {description ? (
                 <p className="text-muted-foreground text-sm leading-relaxed">{description}</p>
               ) : null}
+              {item.compositionMode === 'assembled' && compositionLines.length > 0 ? (
+                <p className="text-muted-foreground flex flex-wrap items-baseline gap-x-1 text-sm">
+                  <span className="font-semibold">{t('item.composition')}:</span>
+                  {compositionLines.map((line, index) => {
+                    const excluded = selection.excludedOptionIds.has(line.optionId);
+                    return (
+                      <span key={line.optionId} className="inline-flex items-baseline">
+                        {line.removable ? (
+                          <button
+                            type="button"
+                            aria-pressed={excluded}
+                            aria-label={t(
+                              excluded
+                                ? 'item.compositionIncludeAriaLabel'
+                                : 'item.compositionExcludeAriaLabel',
+                              { name: line.name },
+                            )}
+                            onClick={() => {
+                              selection.toggleExclusion(line.optionId);
+                            }}
+                            className={cn(
+                              'focus-visible:ring-ring inline-flex cursor-pointer items-center gap-0.5 rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                              excluded
+                                ? 'text-muted-foreground/70 line-through'
+                                : 'text-foreground',
+                            )}
+                          >
+                            <XIcon
+                              aria-hidden
+                              className={cn(
+                                'size-3',
+                                excluded ? 'text-foreground' : 'text-muted-foreground',
+                              )}
+                            />
+                            {line.name}
+                          </button>
+                        ) : (
+                          <span>{line.name}</span>
+                        )}
+                        {index < compositionLines.length - 1 ? <span aria-hidden>,</span> : null}
+                      </span>
+                    );
+                  })}
+                </p>
+              ) : null}
+              {item.compositionMode === 'text' && item.composition.length > 0 ? (
+                <p className="text-muted-foreground text-sm">
+                  <span className="font-semibold">{t('item.composition')}:</span>{' '}
+                  {item.composition.join(', ')}
+                </p>
+              ) : null}
               {item.allergens.length > 0 ? (
                 // Named through the same dictionary the filters use, so "milk" reads as one word
                 // in every language the menu speaks.
@@ -134,69 +207,95 @@ export const ItemDetail = ({
             ) : null}
 
             {modifierGroups.map((group) => {
-              const singleChoice = group.behaviour === 'one';
               const groupName = localized(group.name, locale, defaultContentLocale);
               const groupOptions = group.optionIds
                 .map((optionId) => optionsById.get(optionId))
                 .filter((option): option is MenuModifierOptionDto => option !== undefined);
+              const priceNoteFor = (option: MenuModifierOptionDto): string | null =>
+                Number(option.priceDelta) === 0
+                  ? null
+                  : `+${formatPrice(option.priceDelta, currency, locale)}`;
 
-              // One answer out of a few is the same question a size asks, so it wears the same
-              // control — and, like the sizes, needs no heading above it.
-              if (singleChoice) {
+              if (group.display === 'tiles') {
                 return (
-                  <fieldset key={group.id}>
-                    <legend className="sr-only">{groupName}</legend>
-                    <SegmentedChoice
+                  <fieldset key={group.id} className="flex flex-col gap-2">
+                    <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
+                    <div className="grid grid-cols-2 gap-3 xs:grid-cols-3">
+                      {groupOptions.map((option) => (
+                        <IngredientTile
+                          key={option.id}
+                          type={group.behaviour === 'one' ? 'radio' : 'checkbox'}
+                          name={`modifier-${group.id}`}
+                          id={option.id}
+                          label={localized(option.name, locale, defaultContentLocale)}
+                          description={
+                            option.description
+                              ? localized(option.description, locale, defaultContentLocale)
+                              : null
+                          }
+                          imageUrl={option.imageUrl}
+                          priceLabel={priceNoteFor(option)}
+                          selected={selection.isOptionChosen(group.id, option.id)}
+                          unavailable={stoppedIds.has(option.id)}
+                          onToggle={() => {
+                            selection.toggleOption(group.id, option.id, group.behaviour === 'one');
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </fieldset>
+                );
+              }
+
+              // display === 'tabs' here — the 'tiles' branch above already returned.
+              if (group.behaviour === 'several') {
+                return (
+                  <fieldset key={group.id} className="flex flex-col gap-2">
+                    <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
+                    <PillMultiChoice
                       name={`modifier-${group.id}`}
-                      selectedId={
-                        groupOptions.find((option) => selection.isOptionChosen(group.id, option.id))
-                          ?.id ?? null
-                      }
-                      onSelect={(optionId) => {
-                        selection.toggleOption(group.id, optionId, true);
-                      }}
                       options={groupOptions.map((option) => ({
                         id: option.id,
                         label: localized(option.name, locale, defaultContentLocale),
-                        note:
-                          Number(option.priceDelta) === 0
-                            ? null
-                            : `+${formatPrice(option.priceDelta, currency, locale)}`,
+                        note: priceNoteFor(option),
                       }))}
+                      selectedIds={
+                        new Set(
+                          groupOptions
+                            .filter((option) => selection.isOptionChosen(group.id, option.id))
+                            .map((option) => option.id),
+                        )
+                      }
+                      unavailableIds={stoppedIds}
+                      onToggle={(optionId) => {
+                        selection.toggleOption(group.id, optionId, false);
+                      }}
                     />
                   </fieldset>
                 );
               }
 
+              // display === 'tabs' && behaviour === 'one' — the only remaining combination. One
+              // answer out of a few is the same question a size asks, so it wears the same control
+              // and, like the sizes, needs no heading above it.
               return (
-                <fieldset key={group.id} className="flex flex-col gap-2">
-                  <legend className="pb-1 text-sm font-extrabold">{groupName}</legend>
-                  <div className="flex flex-col gap-2">
-                    {groupOptions.map((option) => (
-                      <label
-                        key={option.id}
-                        className="has-[:checked]:border-primary has-[:checked]:bg-primary-tint has-[:focus-visible]:ring-ring flex cursor-pointer items-center justify-between gap-3 rounded-xl border px-4 py-3 transition-colors has-[:focus-visible]:ring-2"
-                      >
-                        <span className="flex items-center gap-3 text-sm font-semibold">
-                          <input
-                            type="checkbox"
-                            className="accent-primary size-4"
-                            value={option.id}
-                            checked={selection.isOptionChosen(group.id, option.id)}
-                            onChange={() => {
-                              selection.toggleOption(group.id, option.id, false);
-                            }}
-                          />
-                          {localized(option.name, locale, defaultContentLocale)}
-                        </span>
-                        {Number(option.priceDelta) !== 0 ? (
-                          <span className="text-muted-foreground text-sm tabular-nums">
-                            +{formatPrice(option.priceDelta, currency, locale)}
-                          </span>
-                        ) : null}
-                      </label>
-                    ))}
-                  </div>
+                <fieldset key={group.id}>
+                  <legend className="sr-only">{groupName}</legend>
+                  <SegmentedChoice
+                    name={`modifier-${group.id}`}
+                    selectedId={
+                      groupOptions.find((option) => selection.isOptionChosen(group.id, option.id))
+                        ?.id ?? null
+                    }
+                    onSelect={(optionId) => {
+                      selection.toggleOption(group.id, optionId, true);
+                    }}
+                    options={groupOptions.map((option) => ({
+                      id: option.id,
+                      label: localized(option.name, locale, defaultContentLocale),
+                      note: priceNoteFor(option),
+                    }))}
+                  />
                 </fieldset>
               );
             })}

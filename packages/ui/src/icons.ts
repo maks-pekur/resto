@@ -21,5 +21,6 @@ export {
   Search as SearchIcon,
   X as XIcon,
   Check as CheckIcon,
+  ImageOff as NoPhotoIcon,
   type LucideIcon as GuestIcon,
 } from 'lucide-react';
