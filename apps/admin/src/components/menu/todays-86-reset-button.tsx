@@ -21,6 +21,7 @@ export function TodaysWidgetResetButton({
       if (res.ok) {
         showSuccess(t('resetSuccess'));
         void queryClient.invalidateQueries({ queryKey: ['catalog', 'stop-list'] });
+        void queryClient.invalidateQueries({ queryKey: ['catalog', 'ingredient-stop-list'] });
       } else {
         showError(null, t('resetFailed'));
       }

@@ -397,7 +397,8 @@
       "stopIngredientDialogTitle": "Dishes use this ingredient",
       "stopIngredientDialogBody": "Check the dishes you also want to stop, so a guest can't order something that can't be assembled.",
       "stopSelectedDishesBtn": "Stop the checked ones",
-      "stopIngredientOnlyBtn": "Ingredient only"
+      "stopIngredientOnlyBtn": "Ingredient only",
+      "stopAriaLabel": "Stop {{name}}"
     },
     "status": {
       "draft": "Draft",

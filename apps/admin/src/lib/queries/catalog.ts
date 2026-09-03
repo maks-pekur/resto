@@ -291,7 +291,18 @@ export const resetStopList = async (locationId: string): Promise<{ ok: boolean }
   const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { locationId });
   if (!res.ok) return { ok: false };
   for (const item of res.data?.items ?? []) {
-    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, {
+    const del = await apiFetch(`/v1/catalog/stop-list/${item.itemId}`, {
+      method: 'DELETE',
+      locationId,
+    });
+    if (!del.ok) return { ok: false };
+  }
+  const optionsRes = await apiFetch<OptionStopListResponse>('/v1/catalog/stop-list/options', {
+    locationId,
+  });
+  if (!optionsRes.ok) return { ok: false };
+  for (const item of optionsRes.data?.items ?? []) {
+    const del = await apiFetch(`/v1/catalog/stop-list/options/${item.optionId}`, {
       method: 'DELETE',
       locationId,
     });

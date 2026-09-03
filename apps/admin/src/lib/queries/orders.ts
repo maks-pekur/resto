@@ -146,6 +146,7 @@ export interface OrderModifierApi {
   readonly priceDelta: string;
   readonly amount: number;
   readonly modifierGroupId: string | null;
+  readonly kind: 'added' | 'excluded';
 }
 
 export interface OrderItemApi {

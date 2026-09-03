@@ -397,7 +397,8 @@
       "stopIngredientDialogTitle": "Есть блюда с этим ингредиентом",
       "stopIngredientDialogBody": "Отметьте блюда, которые тоже стоит остановить, чтобы гость не заказал то, что нельзя собрать.",
       "stopSelectedDishesBtn": "Остановить отмеченное",
-      "stopIngredientOnlyBtn": "Только ингредиент"
+      "stopIngredientOnlyBtn": "Только ингредиент",
+      "stopAriaLabel": "Остановить {{name}}"
     },
     "status": {
       "draft": "Черновик",

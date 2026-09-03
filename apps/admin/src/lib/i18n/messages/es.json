@@ -397,7 +397,8 @@
       "stopIngredientDialogTitle": "Hay platos con este ingrediente",
       "stopIngredientDialogBody": "Marca los platos que también quieras pausar, para que un cliente no pida algo que no se puede preparar.",
       "stopSelectedDishesBtn": "Pausar los marcados",
-      "stopIngredientOnlyBtn": "Solo el ingrediente"
+      "stopIngredientOnlyBtn": "Solo el ingrediente",
+      "stopAriaLabel": "Pausar {{name}}"
     },
     "status": {
       "draft": "Borrador",

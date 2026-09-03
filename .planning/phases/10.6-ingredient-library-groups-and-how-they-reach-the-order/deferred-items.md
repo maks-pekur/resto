@@ -50,3 +50,30 @@ attachment is persisted correctly server-side and reaches the guest-facing order
 **Recommendation:** small, contained, single-plan fix — a good candidate for the first plan in a
 follow-up wave, or folded into plan 15's wave-10 cleanup if the reviewer prefers not to open a new
 phase plan for a five-file change.
+
+## Plan 15 — `stop-list-table.tsx`'s resume `Switch` sends the wrong id (pre-existing, item stop-list only)
+
+**Found during:** 10.6-15, Task 1, while extending `resetStopList` for ingredients.
+
+**Issue:** `menu_stop_list` (and `menu_option_stop_list`) rows have their own primary key (`id`,
+`pkUuid()`) distinct from the FK to the stopped entity (`itemId`/`optionId`) —
+`catalog-drizzle.repository.ts:1593` returns both on the same row (`id: s.id, itemId: s.itemId`).
+The DELETE routes (`DELETE stop-list/:itemId`, `DELETE stop-list/options/:optionId`) filter by the
+FK column (`removeFromStopList`/`removeOptionFromStopList` both `eq(..., input.itemId/optionId)`),
+confirmed by `apps/api/test/e2e/ingredient-stop.e2e.spec.ts:224-228` (`DELETE
+/v1/catalog/stop-list/options/${optionId}` — the option's own id, not the row id).
+
+`apps/admin/src/components/menu/stop-list-table.tsx`'s resume `Switch` calls
+`toggleMutation.mutate(item.id)`, i.e. it sends the stop-list ROW's own PK as the URL param, not
+`item.itemId`. Every DELETE this control fires therefore filters on a column that never contains
+that value, so `removeFromStopList` returns `removed: false` and `StopListService.unstop` throws
+`StopListItemNotFoundError` — resuming a single item via this Switch fails with an error toast
+every time, in production, today. (`resetStopList` had the identical bug — fixed in this plan's own
+Task 1, in scope, since that function is on this plan's `files_modified` list.)
+
+**Fix (not applied — `stop-list-table.tsx` is not on this plan's `files_modified` list):** one-line
+change, `toggleMutation.mutate(item.id)` → `toggleMutation.mutate(item.itemId)` in
+`stop-list-table.tsx`'s `onCheckedChange`.
+
+**Recommendation:** trivial, one-line, high-severity (broken write path on a shipped screen) — good
+candidate for an immediate follow-up quick-fix, does not need a full plan.

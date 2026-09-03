@@ -64,7 +64,17 @@ export function IngredientCardGrid({
                 </div>
               )}
               {renderStopControl ? (
-                <div className="absolute top-2 right-2">{renderStopControl(ingredient)}</div>
+                <div
+                  className="absolute top-2 right-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  onKeyDown={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {renderStopControl(ingredient)}
+                </div>
               ) : null}
             </div>
             <div className="flex flex-col gap-0.5 px-3 pt-2 pb-3">
