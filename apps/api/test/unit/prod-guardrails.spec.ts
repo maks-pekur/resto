@@ -240,3 +240,34 @@ describe('assertProdGuardrails', () => {
     });
   });
 });
+
+describe('hosts that only exist while developing', () => {
+  it('refuses a tunnel the phone was pointed at, which no exact-value check would catch', () => {
+    expect(() =>
+      assertProdGuardrails(
+        buildEnv({ MEDIA_PUBLIC_BASE_URL: 'https://99sq77jd-3003.brs.devtunnels.ms/media/x' }),
+      ),
+    ).toThrow(/devtunnels\.ms/u);
+  });
+
+  it('refuses loopback and the wildcard-DNS helpers on any guarded url', () => {
+    for (const url of [
+      'http://localhost:9000/bucket',
+      'https://pizza.menu.172.20.10.5.nip.io:3003/media',
+      'https://admin.lvh.me/stripe/return',
+      'http://127.0.0.1:4000',
+    ]) {
+      expect(() => assertProdGuardrails(buildEnv({ MEDIA_PUBLIC_BASE_URL: url }))).toThrow();
+    }
+  });
+
+  it('refuses an apex domain that would be printed onto every QR sticker', () => {
+    expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'localhost' }))).toThrow(
+      /QR sticker/u,
+    );
+  });
+
+  it('lets a real production host through', () => {
+    expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'resto.app' }))).not.toThrow();
+  });
+});
