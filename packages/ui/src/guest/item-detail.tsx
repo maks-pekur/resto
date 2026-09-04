@@ -303,7 +303,7 @@ export const ItemDetail = ({
       </div>
 
       {/* Glass, so the dish keeps scrolling under the one control that ends the visit. */}
-      <div className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky bottom-0 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
+      <div className="bg-background/80 supports-[backdrop-filter]:bg-background/60 sticky bottom-0 z-10 border-t p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur sm:px-6">
         {/* The server refuses an order with an unanswered required group; better to say so here
             than at checkout. */}
         {firstUnmet === undefined ? null : (
