@@ -298,6 +298,12 @@ export const envSchema = z
      * prod-rejection layer — it throws if the value is empty OR equals
      * the documented dummy literal in staging/production.
      */
+    /**
+     * Guest sign-in with Google. Both or neither: the provider is only registered when the pair
+     * is present, so a deploy that forgets one gets no social login rather than a half-wired one.
+     */
+    GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+    GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
     RESEND_API_KEY: z.string().min(1).optional(),
     /**
      * Sender identity used by the Resend adapter. Must be a verified

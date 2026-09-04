@@ -267,6 +267,10 @@ export const buildAuthFromEnv = (
     // shape as identity-event-emitter.adapter.ts — no new per-event
     // callback abstraction added to BuildOpts (W-2 2026-05-30).
     emitter,
+    // Both or neither: a half-configured provider fails at the redirect, not at boot.
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
+      : {}),
     secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
     baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
     trustedOrigins,
