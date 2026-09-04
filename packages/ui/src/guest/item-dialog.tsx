@@ -1,6 +1,5 @@
 'use client';
 
-import { useCallback } from 'react';
 import type {
   MenuItemDto,
   MenuModifierGroupDto,
@@ -8,9 +7,8 @@ import type {
 } from '@resto/api-client/public';
 import type { CartLineItem } from '@resto/cart';
 import { Dialog, DialogContent, DialogTitle } from '../components/ui/dialog';
-import { Sheet, SheetContent, SheetTitle } from '../components/ui/sheet';
+import { Drawer, DrawerContent, DrawerTitle } from '../components/ui/drawer';
 import { ItemDetail } from './item-detail';
-import { useDragToDismiss } from './use-drag-to-dismiss';
 
 export interface ItemDialogProps {
   readonly item: MenuItemDto | null;
@@ -36,14 +34,9 @@ export const ItemDialog = ({
   onAddToCart,
   presentation = 'dialog',
 }: ItemDialogProps) => {
-  const dismiss = useCallback(() => {
-    onOpenChange(false);
-  }, [onOpenChange]);
-  const drag = useDragToDismiss(open && presentation === 'sheet', dismiss);
-
   if (!item) return null;
 
-  const detail = (Heading: typeof DialogTitle | typeof SheetTitle) => (
+  const detail = (Heading: typeof DialogTitle | typeof DrawerTitle) => (
     <ItemDetail
       key={item.id}
       Heading={Heading}
@@ -61,33 +54,19 @@ export const ItemDialog = ({
 
   if (presentation === 'sheet') {
     return (
-      <Sheet open={open} onOpenChange={onOpenChange}>
-        <SheetContent
-          // On a phone the sheet is dismissed by pulling it down or tapping the page behind it;
-          // a close cross floating over the photo is a desktop habit and lands under nothing.
-          showCloseButton={false}
-          ref={drag.ref}
+      <Drawer open={open} onOpenChange={onOpenChange} repositionInputs={false}>
+        <DrawerContent
           // Radix hands focus to the first control, which lands a focus ring on the first size
           // before the guest has touched anything. The panel itself takes it instead.
           onOpenAutoFocus={(event) => {
             event.preventDefault();
             (event.currentTarget as HTMLElement | null)?.focus();
           }}
-          side="bottom"
-          style={{
-            transform: drag.offset > 0 ? `translateY(${String(drag.offset)}px)` : undefined,
-            transition: drag.dragging ? 'none' : undefined,
-          }}
-          className="mx-auto max-h-dvh w-full max-w-lg gap-0 overflow-y-auto overscroll-contain rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)] outline-none"
+          className="mx-auto w-full max-w-lg pb-[env(safe-area-inset-bottom)] outline-none"
         >
-          {/* The grip says the sheet came from the bottom edge and goes back there. It is a whole
-              row rather than the bar alone, so the pull starts wherever a thumb lands. */}
-          <div aria-hidden className="flex shrink-0 justify-center py-3 touch-none">
-            <span className="bg-muted h-1.5 w-12 rounded-full" />
-          </div>
-          {detail(SheetTitle)}
-        </SheetContent>
-      </Sheet>
+          <div className="overflow-y-auto overscroll-contain">{detail(DrawerTitle)}</div>
+        </DrawerContent>
+      </Drawer>
     );
   }
 
