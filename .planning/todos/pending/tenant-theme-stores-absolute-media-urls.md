@@ -2,10 +2,17 @@
 title: Tenant logo and covers are stored as absolute URLs, so they break when the media host changes
 date: 2026-09-04
 priority: high
-status: pending
+status: partially-fixed
 ---
 
 # `tenants.theme` persists absolute media URLs instead of object keys
+
+> **Partly fixed 2026-09-04.** New writes now store the object key and every reader
+> (guest menu, guest e-mail) prefixes it with the configured media host, so branding
+> follows the host from here on. `resolveThemeMedia` accepts both shapes, so historic
+> rows holding an absolute URL still render — they are simply still frozen to their old
+> host. **What remains:** a migration that rewrites those historic rows to keys, after
+> which the URL branch of `resolveThemeMedia` and its test can be deleted.
 
 Found 2026-09-04 while exposing the dev QR menu through a VS Code tunnel. Changing
 `MEDIA_PUBLIC_BASE_URL` fixed every dish photo and left the venue logo and all three
