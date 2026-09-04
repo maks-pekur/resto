@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render } from '@testing-library/react';
 import { DietMarks, GuestUiProvider, MenuScreen } from '@resto/ui';
 import type { MenuDto } from '@resto/api-client/public';
 
@@ -52,18 +52,6 @@ const renderMenu = () =>
 const cardNames = (container: HTMLElement): string[] =>
   [...container.querySelectorAll('h3')].map((heading) => heading.textContent);
 
-describe('finding a dish', () => {
-  it('filters by what the guest can eat, and offers only labels the menu uses', () => {
-    renderMenu();
-    expect(screen.queryByTestId('diet-halal')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId('diet-vegetarian'));
-
-    expect(screen.getByText('Маргарита')).toBeInTheDocument();
-    expect(screen.queryByText('Пепперони')).not.toBeInTheDocument();
-  });
-});
-
 describe('diet marks', () => {
   it('are emoji on a card, and stay readable to a screen reader', () => {
     const { container } = renderMenu();
@@ -78,15 +66,6 @@ describe('diet marks', () => {
 });
 
 describe('what vegan implies', () => {
-  it('shows a vegan dish to someone filtering for vegetarian', () => {
-    renderMenu();
-
-    fireEvent.click(screen.getByTestId('diet-vegetarian'));
-
-    expect(screen.getByText('Маргарита')).toBeInTheDocument();
-    expect(screen.getByText('Картофель')).toBeInTheDocument();
-  });
-
   it('marks a vegan dish once, with the stronger claim', () => {
     const { container } = renderMenu();
 

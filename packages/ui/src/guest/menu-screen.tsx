@@ -12,9 +12,6 @@ import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
 import { MenuItemCard } from './menu-item-card';
-import { cn } from '../lib/utils';
-import { MenuFinder } from './menu-finder';
-import { dietsOf } from './diet-rules';
 import { useGuestUi } from './guest-ui-provider';
 
 // Radix dialog + sheet are the two heaviest chunks and neither is needed for the
@@ -91,29 +88,9 @@ export const MenuScreen = ({
   const subtotal = useCartStore(selectSubtotal);
 
   const stopped = useMemo(() => new Set(stoppedItemIds), [stoppedItemIds]);
-  const [activeDiets, setActiveDiets] = useState<readonly string[]>([]);
-
-  /** Every label the menu actually uses — a filter for something nobody cooks is noise. */
-  const diets = useMemo(() => {
-    const seen = new Set<string>();
-    for (const item of menu.items) for (const diet of dietsOf(item.diets)) seen.add(diet);
-    return [...seen];
-  }, [menu]);
-
-  const matches = useMemo(
-    () =>
-      (item: MenuItemDto): boolean => {
-        if (activeDiets.length === 0) return true;
-        const has = dietsOf(item.diets);
-        return activeDiets.every((diet) => has.has(diet));
-      },
-    [activeDiets],
-  );
-
   const sections = useMemo(() => {
     const byCategory = new Map<string, MenuItemDto[]>();
     for (const item of menu.items) {
-      if (!matches(item)) continue;
       const list = byCategory.get(item.categoryId);
       if (list) {
         list.push(item);
@@ -124,7 +101,7 @@ export const MenuScreen = ({
     return menu.categories
       .map((category) => ({ category, items: byCategory.get(category.id) ?? [] }))
       .filter((section) => section.items.length > 0);
-  }, [menu, matches]);
+  }, [menu]);
 
   const selectedItem = selectedItemId
     ? (menu.items.find((item) => item.id === selectedItemId) ?? null)
@@ -188,30 +165,7 @@ export const MenuScreen = ({
           }
         />
       }
-      banner={
-        <>
-          {/* The page's own gutter, the same the rail and the grid use — the finder used to run
-              edge to edge and its chip row pushed a scrollbar out of the side. */}
-          <div
-            className={cn(
-              'mx-auto w-full max-w-7xl px-4 sm:px-6',
-              // Clear of the category rail above it, and of the first row of dishes below.
-              diets.length > 0 ? 'pt-4 pb-1' : '',
-            )}
-          >
-            <MenuFinder
-              diets={diets}
-              activeDiets={activeDiets}
-              onToggleDiet={(diet) => {
-                setActiveDiets((prev) =>
-                  prev.includes(diet) ? prev.filter((entry) => entry !== diet) : [...prev, diet],
-                );
-              }}
-            />
-          </div>
-          {banner}
-        </>
-      }
+      banner={<>{banner}</>}
       footer={
         <GuestFooter
           tenantName={tenantName}
