@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { useCartStore, selectSubtotal, selectItemCount } from '@resto/cart';
+import { cartLineKey, useCartStore, selectSubtotal, selectItemCount } from '@resto/cart';
 import type { CartLineItem } from '@resto/cart';
 
 function makeItem(
@@ -86,17 +86,62 @@ describe('cart store', () => {
     });
   });
 
+  describe('the same dish with a different composition', () => {
+    const bacon = { optionId: 'bacon', name: 'Бекон', priceDelta: '75.00' };
+    const onion = { optionId: 'onion', name: 'Лук', priceDelta: '39.00' };
+
+    it('keeps a pizza with bacon apart from the same pizza without it', () => {
+      useCartStore.getState().addItem(makeItem());
+      useCartStore.getState().addItem(makeItem({ modifiers: [bacon] }));
+
+      const items = useCartStore.getState().items;
+      expect(items).toHaveLength(2);
+      expect(items.every((i) => i.quantity === 1)).toBe(true);
+    });
+
+    it('still merges when the composition matches, whatever the order', () => {
+      useCartStore.getState().addItem(makeItem({ modifiers: [bacon, onion] }));
+      useCartStore.getState().addItem(makeItem({ modifiers: [onion, bacon] }));
+
+      const items = useCartStore.getState().items;
+      expect(items).toHaveLength(1);
+      expect(items[0]?.quantity).toBe(2);
+    });
+
+    it('treats an exclusion as part of the composition', () => {
+      useCartStore.getState().addItem(makeItem({ modifiers: [] }));
+      useCartStore
+        .getState()
+        .addItem(makeItem({ modifiers: [{ ...onion, kind: 'excluded' as const }] }));
+
+      expect(useCartStore.getState().items).toHaveLength(2);
+    });
+
+    it('changes the quantity of one composition without touching the other', () => {
+      useCartStore.getState().addItem(makeItem());
+      useCartStore.getState().addItem(makeItem({ modifiers: [bacon] }));
+      useCartStore.getState().addItem(makeItem({ modifiers: [bacon] }));
+
+      useCartStore.getState().updateQuantity(cartLineKey(makeItem({ modifiers: [bacon] })), -1);
+
+      const items = useCartStore.getState().items;
+      expect(items).toHaveLength(2);
+      expect(items.find((i) => i.modifiers.length === 0)?.quantity).toBe(1);
+      expect(items.find((i) => i.modifiers.length === 1)?.quantity).toBe(1);
+    });
+  });
+
   describe('updateQuantity', () => {
     it('decrements quantity with delta -1', () => {
       useCartStore.getState().addItem(makeItem());
       useCartStore.getState().addItem(makeItem());
-      useCartStore.getState().updateQuantity('item-1', null, -1);
+      useCartStore.getState().updateQuantity(cartLineKey(makeItem()), -1);
       expect(useCartStore.getState().items[0]?.quantity).toBe(1);
     });
 
     it('drops the line when quantity reaches 0', () => {
       useCartStore.getState().addItem(makeItem());
-      useCartStore.getState().updateQuantity('item-1', null, -1);
+      useCartStore.getState().updateQuantity(cartLineKey(makeItem()), -1);
       expect(useCartStore.getState().items).toHaveLength(0);
     });
   });
@@ -105,7 +150,7 @@ describe('cart store', () => {
     it('deletes the matching line regardless of quantity', () => {
       useCartStore.getState().addItem(makeItem());
       useCartStore.getState().addItem(makeItem());
-      useCartStore.getState().removeItem('item-1', null);
+      useCartStore.getState().removeItem(cartLineKey(makeItem()));
       expect(useCartStore.getState().items).toHaveLength(0);
     });
   });

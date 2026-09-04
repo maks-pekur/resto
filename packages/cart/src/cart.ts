@@ -10,6 +10,24 @@ export interface CartModifier {
   readonly kind?: 'added' | 'excluded';
 }
 
+/**
+ * Two lines are the same line only when the guest would receive the same thing: a pizza with
+ * bacon and one without are different dishes to the kitchen, and merging them loses a choice
+ * the guest made. Modifier order is not part of the identity, so it is sorted away.
+ */
+export const cartLineKey = (line: {
+  readonly itemId: string;
+  readonly sizeId: string | null;
+  readonly modifiers: readonly CartModifier[];
+}): string =>
+  [
+    line.itemId,
+    line.sizeId ?? '',
+    ...line.modifiers
+      .map((m) => `${m.kind ?? 'added'}:${m.optionId}:${String(m.amount ?? 1)}`)
+      .sort(),
+  ].join('|');
+
 export interface CartLineItem {
   readonly itemId: string;
   readonly sizeId: string | null;
@@ -39,8 +57,8 @@ interface CartState {
   setMode: (mode: 'delivery' | 'pickup') => void;
   setTable: (table: ResolvedCartTable | null) => void;
   addItem: (item: Omit<CartLineItem, 'quantity'>) => void;
-  updateQuantity: (itemId: string, sizeId: string | null, delta: number) => void;
-  removeItem: (itemId: string, sizeId: string | null) => void;
+  updateQuantity: (lineKey: string, delta: number) => void;
+  removeItem: (lineKey: string) => void;
   clearCart: () => void;
 }
 
@@ -95,9 +113,8 @@ export const useCartStore = create<CartState>()(
         ),
       addItem: (newItem) =>
         set((state) => {
-          const existing = state.items.find(
-            (i) => i.itemId === newItem.itemId && i.sizeId === newItem.sizeId,
-          );
+          const key = cartLineKey(newItem);
+          const existing = state.items.find((i) => cartLineKey(i) === key);
           if (existing) {
             return {
               items: state.items.map((i) =>
@@ -117,19 +134,15 @@ export const useCartStore = create<CartState>()(
           }
           return { items: [...state.items, { ...newItem, quantity: 1 }] };
         }),
-      updateQuantity: (itemId, sizeId, delta) =>
+      updateQuantity: (lineKey, delta) =>
         set((state) => ({
           items: state.items
-            .map((i) =>
-              i.itemId === itemId && i.sizeId === sizeId
-                ? { ...i, quantity: i.quantity + delta }
-                : i,
-            )
+            .map((i) => (cartLineKey(i) === lineKey ? { ...i, quantity: i.quantity + delta } : i))
             .filter((i) => i.quantity > 0),
         })),
-      removeItem: (itemId, sizeId) =>
+      removeItem: (lineKey) =>
         set((state) => ({
-          items: state.items.filter((i) => !(i.itemId === itemId && i.sizeId === sizeId)),
+          items: state.items.filter((i) => cartLineKey(i) !== lineKey),
         })),
       clearCart: () => set({ items: [] }),
     }),

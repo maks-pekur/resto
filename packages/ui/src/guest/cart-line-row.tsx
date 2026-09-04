@@ -1,7 +1,13 @@
 'use client';
 
 import { Minus, Plus, X } from 'lucide-react';
-import { formatMinorUnits, parseMinorUnits, useCartStore, type CartLineItem } from '@resto/cart';
+import {
+  cartLineKey,
+  formatMinorUnits,
+  parseMinorUnits,
+  useCartStore,
+  type CartLineItem,
+} from '@resto/cart';
 import { formatPrice } from '../lib/format-price';
 import { useGuestUi } from './guest-ui-provider';
 
@@ -52,7 +58,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
         <button
           type="button"
           onClick={() => {
-            updateQuantity(item.itemId, item.sizeId, -1);
+            updateQuantity(cartLineKey(item), -1);
           }}
           aria-label={t('item.qtyDecrease', { name: item.name })}
           className="hover:bg-background focus-visible:ring-ring flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
@@ -63,7 +69,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
         <button
           type="button"
           onClick={() => {
-            updateQuantity(item.itemId, item.sizeId, 1);
+            updateQuantity(cartLineKey(item), 1);
           }}
           aria-label={t('item.qtyIncrease', { name: item.name })}
           className="hover:bg-background focus-visible:ring-ring flex size-8 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
@@ -75,7 +81,7 @@ export const CartLineRow = ({ item }: CartLineRowProps) => {
       <button
         type="button"
         onClick={() => {
-          removeItem(item.itemId, item.sizeId);
+          removeItem(cartLineKey(item));
         }}
         aria-label={t('item.remove', { name: item.name })}
         className="text-muted-foreground hover:text-destructive focus-visible:ring-ring -mr-1 flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors focus-visible:ring-2 focus-visible:outline-none"
