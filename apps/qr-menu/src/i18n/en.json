@@ -156,9 +156,6 @@
   "service.waiterAsked": "A waiter is coming",
   "service.bill": "The bill",
   "service.billAsked": "The bill is coming",
-  "finder.searchLabel": "Search the menu",
-  "finder.searchPlaceholder": "Find a dish",
-  "finder.clear": "Clear",
   "finder.nothingFound": "Nothing matched",
   "diet.vegetarian": "Vegetarian",
   "diet.vegan": "Vegan",
@@ -180,6 +177,5 @@
   "allergen.sulphites": "sulphites",
   "allergen.lupin": "lupin",
   "allergen.molluscs": "molluscs",
-  "finder.searchToggle": "Search",
   "item.added": "Added"
 }

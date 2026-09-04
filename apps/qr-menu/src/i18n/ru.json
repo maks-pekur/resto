@@ -156,9 +156,6 @@
   "service.waiterAsked": "Официант идёт",
   "service.bill": "Счёт",
   "service.billAsked": "Счёт несут",
-  "finder.searchLabel": "Поиск по меню",
-  "finder.searchPlaceholder": "Найти блюдо",
-  "finder.clear": "Очистить",
   "finder.nothingFound": "Ничего не нашлось",
   "diet.vegetarian": "Вегетарианское",
   "diet.vegan": "Веганское",
@@ -180,6 +177,5 @@
   "allergen.sulphites": "сульфиты",
   "allergen.lupin": "люпин",
   "allergen.molluscs": "моллюски",
-  "finder.searchToggle": "Поиск",
   "item.added": "В корзине"
 }

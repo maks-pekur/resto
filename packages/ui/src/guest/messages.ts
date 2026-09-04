@@ -54,10 +54,6 @@ export type GuestUiKey =
   | 'footer.poweredBy'
   | 'footer.socialsLabel'
   | 'item.added'
-  | 'finder.searchLabel'
-  | 'finder.searchToggle'
-  | 'finder.searchPlaceholder'
-  | 'finder.clear'
   | 'finder.nothingFound'
   | `diet.${string}`
   | `allergen.${string}`;

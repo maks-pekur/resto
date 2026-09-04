@@ -156,9 +156,6 @@
   "service.waiterAsked": "El camarero viene",
   "service.bill": "La cuenta",
   "service.billAsked": "Traen la cuenta",
-  "finder.searchLabel": "Buscar en el menú",
-  "finder.searchPlaceholder": "Buscar un plato",
-  "finder.clear": "Limpiar",
   "finder.nothingFound": "No se encontró nada",
   "diet.vegetarian": "Vegetariano",
   "diet.vegan": "Vegano",
@@ -180,6 +177,5 @@
   "allergen.sulphites": "sulfitos",
   "allergen.lupin": "altramuces",
   "allergen.molluscs": "moluscos",
-  "finder.searchToggle": "Buscar",
   "item.added": "Añadido"
 }

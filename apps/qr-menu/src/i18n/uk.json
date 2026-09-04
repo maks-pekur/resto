@@ -156,9 +156,6 @@
   "service.waiterAsked": "Офіціант іде",
   "service.bill": "Рахунок",
   "service.billAsked": "Рахунок несуть",
-  "finder.searchLabel": "Пошук у меню",
-  "finder.searchPlaceholder": "Знайти страву",
-  "finder.clear": "Очистити",
   "finder.nothingFound": "Нічого не знайшлося",
   "diet.vegetarian": "Вегетаріанське",
   "diet.vegan": "Веганське",
@@ -180,6 +177,5 @@
   "allergen.sulphites": "сульфіти",
   "allergen.lupin": "люпин",
   "allergen.molluscs": "молюски",
-  "finder.searchToggle": "Пошук",
   "item.added": "У кошику"
 }

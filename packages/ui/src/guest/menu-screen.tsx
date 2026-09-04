@@ -12,7 +12,6 @@ import { GuestFooter, type GuestFooterLink } from './guest-footer';
 import { GuestHeader } from './guest-header';
 import { GuestShell } from './guest-shell';
 import { MenuItemCard } from './menu-item-card';
-import { SearchIcon } from '../icons';
 import { cn } from '../lib/utils';
 import { MenuFinder } from './menu-finder';
 import { dietsOf } from './diet-rules';
@@ -92,8 +91,6 @@ export const MenuScreen = ({
   const subtotal = useCartStore(selectSubtotal);
 
   const stopped = useMemo(() => new Set(stoppedItemIds), [stoppedItemIds]);
-  const [query, setQuery] = useState('');
-  const [searchOpen, setSearchOpen] = useState(false);
   const [activeDiets, setActiveDiets] = useState<readonly string[]>([]);
 
   /** Every label the menu actually uses — a filter for something nobody cooks is noise. */
@@ -103,16 +100,15 @@ export const MenuScreen = ({
     return [...seen];
   }, [menu]);
 
-  const matches = useMemo(() => {
-    const needle = query.trim().toLowerCase();
-    return (item: MenuItemDto): boolean => {
-      const has = dietsOf(item.diets);
-      if (activeDiets.length > 0 && !activeDiets.every((diet) => has.has(diet))) return false;
-      if (needle.length === 0) return true;
-      const haystack = [...Object.values(item.name), ...Object.values(item.description ?? {})];
-      return haystack.some((text) => text.toLowerCase().includes(needle));
-    };
-  }, [query, activeDiets]);
+  const matches = useMemo(
+    () =>
+      (item: MenuItemDto): boolean => {
+        if (activeDiets.length === 0) return true;
+        const has = dietsOf(item.diets);
+        return activeDiets.every((diet) => has.has(diet));
+      },
+    [activeDiets],
+  );
 
   const sections = useMemo(() => {
     const byCategory = new Map<string, MenuItemDto[]>();
@@ -182,39 +178,7 @@ export const MenuScreen = ({
   return (
     <GuestShell
       header={
-        <GuestHeader
-          tenantName={tenantName}
-          logoUrl={logoUrl}
-          actions={
-            <>
-              <button
-                type="button"
-                aria-label={t('finder.searchToggle')}
-                aria-expanded={searchOpen}
-                data-testid="search-toggle"
-                onClick={() => {
-                  setSearchOpen((open) => {
-                    // Closing throws the query away: a hidden filter is a menu with dishes
-                    // mysteriously missing.
-                    if (open) setQuery('');
-                    return !open;
-                  });
-                }}
-                className="focus-visible:ring-ring flex size-10 cursor-pointer items-center justify-center rounded-full transition focus-visible:ring-2 focus-visible:outline-none xs:size-11 sm:size-10"
-              >
-                <span
-                  className={cn(
-                    'ring-border grid size-8 place-items-center rounded-full ring-1 transition-colors xs:size-9',
-                    searchOpen ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground',
-                  )}
-                >
-                  <SearchIcon className="size-4 xs:size-[1.125rem]" />
-                </span>
-              </button>
-              {headerActions}
-            </>
-          }
-        />
+        <GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={<>{headerActions}</>} />
       }
       rail={
         <CategoryRail
@@ -232,13 +196,10 @@ export const MenuScreen = ({
             className={cn(
               'mx-auto w-full max-w-7xl px-4 sm:px-6',
               // Clear of the category rail above it, and of the first row of dishes below.
-              searchOpen || diets.length > 0 ? 'pt-4 pb-1' : '',
+              diets.length > 0 ? 'pt-4 pb-1' : '',
             )}
           >
             <MenuFinder
-              searchOpen={searchOpen}
-              query={query}
-              onQueryChange={setQuery}
               diets={diets}
               activeDiets={activeDiets}
               onToggleDiet={(diet) => {
