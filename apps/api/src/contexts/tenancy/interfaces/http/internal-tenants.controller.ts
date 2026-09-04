@@ -1,3 +1,5 @@
+import { ENV_TOKEN } from '../../../../config/config.module';
+import type { Env } from '../../../../config/env.schema';
 import {
   Body,
   Controller,
@@ -60,6 +62,7 @@ export class InternalTenantsController {
     @Inject(ArchiveTenantService) private readonly archiving: ArchiveTenantService,
     @Inject(OffboardTenantService) private readonly offboarding: OffboardTenantService,
     @Inject(SuspendTenantService) private readonly suspending: SuspendTenantService,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   @Post()
@@ -72,7 +75,7 @@ export class InternalTenantsController {
     @Body(new RestoZodValidationPipe(ProvisionTenantInputDto)) input: ProvisionTenantInputDto,
   ): Promise<TenantResponseDto> {
     const snapshot = await wrap(() => this.provisioning.execute(input));
-    return toResponse(snapshot);
+    return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
   }
 
   @Post(':id/archive')
@@ -90,7 +93,7 @@ export class InternalTenantsController {
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async listScheduledOffboarding(): Promise<TenantResponseDto[]> {
     const snapshots = await wrap(() => this.offboarding.listScheduled());
-    return snapshots.map(toResponse);
+    return snapshots.map((s) => toResponse(s, this.env.MEDIA_PUBLIC_BASE_URL));
   }
 
   @Post(':id/offboard')
@@ -110,7 +113,7 @@ export class InternalTenantsController {
         requestedBy: input.requestedBy,
       }),
     );
-    return toResponse(snapshot);
+    return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
   }
 
   @Delete(':id/offboard')
@@ -122,7 +125,7 @@ export class InternalTenantsController {
     const snapshot = await wrap(() =>
       this.offboarding.cancel({ tenantId: parseTenantIdOr404(id) }),
     );
-    return toResponse(snapshot);
+    return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
   }
 
   @Post(':id/suspend')
@@ -142,7 +145,7 @@ export class InternalTenantsController {
         requestedBy: input.requestedBy,
       }),
     );
-    return toResponse(snapshot);
+    return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
   }
 
   @Post(':id/resume')
@@ -153,6 +156,6 @@ export class InternalTenantsController {
   @ApiUnauthorizedResponse({ type: ProblemDetailsDto })
   async resume(@Param('id') id: string): Promise<TenantResponseDto> {
     const snapshot = await wrap(() => this.suspending.resume({ tenantId: parseTenantIdOr404(id) }));
-    return toResponse(snapshot);
+    return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
   }
 }

@@ -1,3 +1,5 @@
+import { ENV_TOKEN } from '../../../../config/config.module';
+import type { Env } from '../../../../config/env.schema';
 import {
   Body,
   Controller,
@@ -71,6 +73,7 @@ export class TenantsController {
     @Inject(UpdateBrandService) private readonly updateBrand: UpdateBrandService,
     @Inject(GetBrandLogoUploadUrlService)
     private readonly brandLogoUploadUrl: GetBrandLogoUploadUrlService,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   @Get('me')
@@ -81,7 +84,7 @@ export class TenantsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   async getMe(): Promise<TenantResponseDto> {
     try {
-      return toResponse(await this.queries.getCurrentTenant());
+      return toResponse(await this.queries.getCurrentTenant(), this.env.MEDIA_PUBLIC_BASE_URL);
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -96,7 +99,10 @@ export class TenantsController {
     @Body(new RestoZodValidationPipe(SetContentLocalesInputDto)) input: SetContentLocalesInputDto,
   ): Promise<TenantResponseDto> {
     try {
-      return toResponse(await this.setContentLocales.execute(input));
+      return toResponse(
+        await this.setContentLocales.execute(input),
+        this.env.MEDIA_PUBLIC_BASE_URL,
+      );
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -112,7 +118,7 @@ export class TenantsController {
     @Body(new RestoZodValidationPipe(UpdateBrandInputDto)) input: UpdateBrandInputDto,
   ): Promise<TenantResponseDto> {
     try {
-      return toResponse(await this.updateBrand.execute(input));
+      return toResponse(await this.updateBrand.execute(input), this.env.MEDIA_PUBLIC_BASE_URL);
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -173,7 +179,7 @@ export class TenantsController {
         tenantId,
         requestedBy: input.requestedBy,
       });
-      return toResponse(snapshot);
+      return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
     } catch (err) {
       throw mapDomainError(err);
     }
@@ -193,7 +199,7 @@ export class TenantsController {
     try {
       const { tenantId } = requireTenantContext();
       const snapshot = await this.offboarding.cancel({ tenantId });
-      return toResponse(snapshot);
+      return toResponse(snapshot, this.env.MEDIA_PUBLIC_BASE_URL);
     } catch (err) {
       throw mapDomainError(err);
     }
