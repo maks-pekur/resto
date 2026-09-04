@@ -13,7 +13,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { MenuItemId, TenantId } from '@resto/domain';
+import { MenuItemId, TenantId, resolveThemeMedia } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/availability/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
@@ -166,7 +166,7 @@ const wrap = wrapWith(mapCatalogError);
 
 /** The subset of a tenant the guest surfaces render as chrome — name, logo,
  * brand colour. Deliberately narrow: this response is edge-cached and public. */
-const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
+const guestTenant = (tenant: TenantSnapshot, mediaBaseUrl: string): GuestMenuTenant => ({
   id: tenant.id,
   slug: tenant.slug,
   displayName: tenant.displayName,
@@ -175,8 +175,11 @@ const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
   contacts: tenant.contacts,
   theme: tenant.theme
     ? {
-        logoUrl: tenant.theme.logoUrl,
-        coverUrls: tenant.theme.coverUrls,
+        logoUrl:
+          tenant.theme.logoUrl === null
+            ? null
+            : resolveThemeMedia(tenant.theme.logoUrl, mediaBaseUrl),
+        coverUrls: tenant.theme.coverUrls.map((c) => resolveThemeMedia(c, mediaBaseUrl)),
         primaryColor: tenant.theme.primaryColor,
         font: tenant.theme.font,
       }
@@ -277,7 +280,7 @@ export class PublicMenuController {
     // The ETag is the menu version, so a rename or a new logo is only picked up
     // after s-maxage expires. Guest chrome tolerates that; menu content does not,
     // which is why the tenant block is attached here and not versioned separately.
-    return { ...menu, tenant: guestTenant(ctx) };
+    return { ...menu, tenant: guestTenant(ctx, this.env.MEDIA_PUBLIC_BASE_URL) };
   }
 
   @Get('items/:id')

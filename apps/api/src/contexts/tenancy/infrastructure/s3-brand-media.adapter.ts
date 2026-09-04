@@ -66,7 +66,9 @@ export class S3BrandMediaAdapter implements BrandMediaPort {
         CacheControl: 'public, max-age=31536000, immutable',
       }),
     );
-    return `${this.publicBaseUrl}/${publicKey}`;
+    // The key, not a URL: a URL here would freeze this tenant's branding to whatever host
+    // was configured at upload time. `resolveThemeMedia` prefixes it on read.
+    return publicKey;
   }
 }
 
