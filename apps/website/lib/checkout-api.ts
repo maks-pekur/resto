@@ -1,13 +1,5 @@
 import type { CartLineItem } from '@resto/cart';
 
-const getApiOrigin = (): string => {
-  const origin = process.env.NEXT_PUBLIC_API_ORIGIN;
-  if (!origin) {
-    throw new Error('NEXT_PUBLIC_API_ORIGIN is not set');
-  }
-  return origin;
-};
-
 export interface CreateOrderInput {
   items: {
     itemId: string;
@@ -64,20 +56,13 @@ export class CheckoutApiError extends Error {
   }
 }
 
-async function apiFetch<T>(
-  path: string,
-  init: RequestInit,
-  signal?: AbortSignal,
-  host?: string,
-): Promise<T> {
-  const resolvedHost = host ?? (typeof window !== 'undefined' ? window.location.host : '');
+async function apiFetch<T>(path: string, init: RequestInit, signal?: AbortSignal): Promise<T> {
   const { headers: _ignored, ...rest } = init;
-  const res = await fetch(`${getApiOrigin()}${path}`, {
+  const res = await fetch(path, {
     ...rest,
     signal: signal ?? AbortSignal.timeout(30_000),
     headers: {
       'Content-Type': 'application/json',
-      'x-forwarded-host': resolvedHost,
     },
   });
 
@@ -134,6 +119,5 @@ export const createPaymentIntent = (
 export const getOrderStatus = (
   orderId: string,
   signal?: AbortSignal,
-  host?: string,
 ): Promise<OrderStatusResponse> =>
-  apiFetch<OrderStatusResponse>(`/v1/orders/${orderId}/status`, { method: 'GET' }, signal, host);
+  apiFetch<OrderStatusResponse>(`/v1/orders/${orderId}/status`, { method: 'GET' }, signal);

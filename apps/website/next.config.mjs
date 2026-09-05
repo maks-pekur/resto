@@ -14,6 +14,14 @@ const nextConfig = {
   turbopack: {
     root: resolve(__dirname, '../..'),
   },
+  async rewrites() {
+    // Caddy owns /v1/* in production; a prod rewrite would hairpin instead
+    // of surfacing a missing Caddy route as a 404.
+    if (process.env.NODE_ENV === 'production') return [];
+    return [
+      { source: '/v1/:path*', destination: `${process.env.NEXT_PUBLIC_API_ORIGIN}/v1/:path*` },
+    ];
+  },
 };
 
 export default withNextIntl(nextConfig);

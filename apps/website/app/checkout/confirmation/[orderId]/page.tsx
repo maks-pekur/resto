@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation';
-import { headers } from 'next/headers';
 import type { Metadata } from 'next';
-import { getOrderStatus } from '@/lib/checkout-api';
+import { fetchOrderStatus } from '@/lib/api-client';
 import { OrderStatusPoller } from '@/components/checkout/order-status-poller';
 
 export const metadata: Metadata = {
@@ -15,12 +14,10 @@ interface Props {
 
 export default async function ConfirmationPage({ params }: Props) {
   const { orderId } = await params;
-  const h = await headers();
-  const host = h.get('host') ?? '';
 
   let initialStatus;
   try {
-    initialStatus = await getOrderStatus(orderId, undefined, host);
+    initialStatus = await fetchOrderStatus(orderId);
   } catch {
     notFound();
   }
