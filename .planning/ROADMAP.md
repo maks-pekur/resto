@@ -30,6 +30,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_ (completed 2026-06-12)
 - [x] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding) (completed 2026-06-13)
 - [x] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11) (completed 2026-06-14)
+- [ ] **Phase 7.4: Admin Tenant in Path** - Move the operator's tenant out of the hostname and into the Better Auth session: `<apex>/admin` replaces `<slug>.admin.<apex>`, `AuthGuard` starts requiring positive agreement instead of absence of disagreement, the browser stops sending `x-forwarded-host`, and tenant switching stays a full document load enforced by lint _(added 2026-09-05 after the single-apex URL decision — `.planning/notes/url-scheme-single-apex.md`; application code on a trust boundary, so it is its own phase and a prerequisite for the remaining 7.5 deploy plans)_
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
@@ -344,6 +345,54 @@ Plans:
 - [x] 07-05-PLAN.md — HTTP surface + audit loop: anonymous POST /v1/orders + OrderingModule + app.module + ordering.> audit wiring + isolation net (ORD-01/03/07/09)
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
+
+### Phase 7.4: Admin Tenant in Path
+
+**Goal**: The operator's tenant stops being carried by the URL. `<apex>/admin` replaces `<slug>.admin.<apex>`, and the Better Auth session's `activeOrganizationId` becomes the sole tenant selector — validated by a guard that requires agreement rather than merely the absence of disagreement.
+
+> **Why a phase and not a plan inside 7.5 (2026-09-05):** every other plan in 7.5 changes infrastructure, configuration or CI. This one changes which input the server trusts to select a tenant. 7.5's four review rounds are calibrated for deployment risk ("does the box come up", "does the certificate cover the host"), not for reviewing a tenancy change — and the reviewers observed that each round's defects clustered in whichever subsystem the plans treated as incidental. It is also a prerequisite, not a peer: 7.5 plan 08's `verify-prod-origin.sh --stage full` has a mandatory tenant assertion that cannot pass until the admin and the API agree on where the tenant comes from. And it has its own rollback story — a revert of an application commit with no infrastructure implication.
+
+**Depends on**: Phase 7.6 (the Vite admin), Phase 10.2 (brand-pinned sessions — this phase re-closes T-10.2-14-02 / T-10.2-16-02 under a scheme where the origin no longer changes)
+
+**Requirements**: [TP-01, TP-02, TP-03, TP-04, TP-05, TP-06]
+
+| ID | Requirement |
+|----|-------------|
+| TP-01 | `AuthGuard` requires positive agreement between the operator principal's tenant and the request-bound tenant; a session with no active organization can bind no tenant, and an operator with no `member` row for the bound tenant is rejected |
+| TP-02 | The set of routes carrying `@RequiresTenantContext` without `@Permissions` is enumerated, committed and drift-gated |
+| TP-03 | No browser-executed module sends `x-forwarded-host`; guest checkout calls the API same-origin |
+| TP-04 | The admin carries no tenant in its URL; tenant switching is a single helper performing a full document load, confined by an ESLint rule |
+| TP-05 | The admin serves from the `/admin` base path with working deep links and base-path-aware absolute navigation |
+| TP-06 | Server env reflects the single apex: `ADMIN_WEB_ORIGIN_WILDCARD` deleted, `AUTH_COOKIE_DOMAIN` unset (host-only cookie), `ADMIN_WEB_URL` carries `/admin` while Better Auth receives its origin only |
+
+**Success Criteria**:
+
+1. An operator whose session names tenant A cannot reach tenant B's data by a forged `x-tenant-id`, a forged `x-forwarded-host`, a tenant-B resource id in the path, a session outliving its membership, or a session with no active organization at all — proven by six assertions against a real stack, five negative and one positive control
+2. `grep -rl '/api/auth/switch-organization' apps/admin/src` returns exactly one module, and ESLint has been observed rejecting an attempt from elsewhere
+3. Deep links under `/admin/...` resolve against the real route tree, proven by a test that fails when `basepath` is absent
+4. The API boots in production with `AUTH_COOKIE_DOMAIN` unset; no dangling reference to a deleted env var remains in code, env examples or infra scripts
+5. Every assertion added by this phase has been shown failing before it was shown passing, with the transcript in its plan's SUMMARY
+
+   **Plans**: 6 plans in 3 waves
+
+Plans:
+**Wave 1** _(the trust boundary and the browser's tenant selector — file-disjoint, parallel)_
+
+- [ ] 07.4-01-PLAN.md — `AuthGuard` requires agreement and membership, not absence of disagreement; plus the `@RequiresTenantContext`-without-`@Permissions` route census and its drift gate (TP-01, TP-02)
+- [ ] 07.4-02-PLAN.md — delete the browser's `x-forwarded-host` from `apps/website` checkout; move the confirmation page's read into the `server-only` client; pin the property with a source-tree test (TP-03)
+
+**Wave 2** _(the proof, and the admin's tenant removal — file-disjoint, parallel)_
+
+- [ ] 07.4-03-PLAN.md — six-assertion cross-tenant e2e: forged header, forged host, no active organization, revoked membership, tenant-B resource id, and a positive control (TP-01)
+- [ ] 07.4-04-PLAN.md — delete `admin-host.ts` / `VITE_ADMIN_HOST_SUFFIX` / `reconcileHostWithSession`; one `switchTenant()` helper doing a full document load; ESLint rule confining the switch endpoint; `adminPath` helper (TP-04)
+
+**Wave 3** _(mounting and the env collapse — file-disjoint, parallel)_
+
+- [ ] 07.4-05-PLAN.md — `base: '/admin/'` + router `basepath` + extracted route tree + deep-link tests; base-path-aware 401 redirect and password-reset link (TP-05)
+- [ ] 07.4-06-PLAN.md — `AUTH_COOKIE_DOMAIN` host-only, `ADMIN_WEB_ORIGIN_WILDCARD` deleted, `ADMIN_WEB_URL` origin-vs-path split (M-12), one module owning every API-emitted admin deep link (TP-06)
+
+      **UI hint**: no — no new operator-facing surface; the admin's existing screens move to a new path
+      **Persona reviewers**: persona-cto, persona-skeptic
 
 ### Phase 7.5: Production Deploy
 
