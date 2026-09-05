@@ -12,7 +12,6 @@ const fetchMock = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
-  process.env.NEXT_PUBLIC_API_ORIGIN = 'http://localhost:3000';
 });
 
 afterEach(() => {
@@ -86,12 +85,36 @@ describe('createOrder', () => {
 
     expect(fetchMock).toHaveBeenCalledOnce();
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:3000/v1/orders');
+    expect(url).toBe('/v1/orders');
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.customerEmail).toBe('ann@example.com');
     expect(body).not.toHaveProperty('unitPrice');
     expect(result.orderId).toBe('order-123');
+  });
+
+  it('calls a root-absolute same-origin path', async () => {
+    fetchMock.mockReturnValueOnce(
+      okJson({
+        orderId: 'order-123',
+        orderNumber: '20260627-ABC',
+        status: 'created',
+        total: '12.00',
+        currency: 'USD',
+      }),
+    );
+
+    await createOrder({
+      items: [{ itemId: 'item-1', sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],
+      orderType: 'pickup',
+      customerName: 'Ann',
+      customerPhone: '+1 555 0000',
+      customerEmail: 'ann@example.com',
+      idempotencyKey: '00000000-0000-0000-0000-000000000001',
+    });
+
+    const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/v1/orders');
   });
 });
 
@@ -108,7 +131,7 @@ describe('createPaymentIntent', () => {
     const result = await createPaymentIntent('order-123');
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:3000/v1/checkout/payment-intent');
+    expect(url).toBe('/v1/checkout/payment-intent');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({ orderId: 'order-123' });
     expect(result.clientSecret).toBe('pi_test_secret');
@@ -139,8 +162,66 @@ describe('getOrderStatus', () => {
     const result = await getOrderStatus('order-123');
 
     const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect(url).toBe('http://localhost:3000/v1/orders/order-123/status');
+    expect(url).toBe('/v1/orders/order-123/status');
     expect(result.status).toBe('requires_action');
     expect(result.total).toBe('12.00');
+  });
+});
+
+describe('no request carries a tenant-selecting header', () => {
+  it('createOrder sends no x-forwarded-host', async () => {
+    fetchMock.mockReturnValueOnce(
+      okJson({
+        orderId: 'order-123',
+        orderNumber: '20260627-ABC',
+        status: 'created',
+        total: '12.00',
+        currency: 'USD',
+      }),
+    );
+
+    await createOrder({
+      items: [{ itemId: 'item-1', sizeId: null, name: 'Pizza', modifiers: [], quantity: 1 }],
+      orderType: 'pickup',
+      idempotencyKey: '00000000-0000-0000-0000-000000000002',
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: object }];
+    const headerKeys = Object.keys(init.headers);
+    expect(headerKeys.some((key) => /^x-forwarded-host$/i.test(key))).toBe(false);
+  });
+
+  it('createPaymentIntent sends no x-forwarded-host', async () => {
+    fetchMock.mockReturnValueOnce(
+      okJson({
+        clientSecret: 'pi_test_secret',
+        connectedAccountId: 'acct_test',
+        orderId: 'order-123',
+      }),
+    );
+
+    await createPaymentIntent('order-123');
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: object }];
+    const headerKeys = Object.keys(init.headers);
+    expect(headerKeys.some((key) => /^x-forwarded-host$/i.test(key))).toBe(false);
+  });
+
+  it('getOrderStatus sends no x-forwarded-host', async () => {
+    fetchMock.mockReturnValueOnce(
+      okJson({
+        status: 'requires_action',
+        total: '12.00',
+        currency: 'USD',
+        orderNumber: '20260627-ABC',
+        eta: null,
+      }),
+    );
+
+    await getOrderStatus('order-123');
+
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit & { headers: object }];
+    const headerKeys = Object.keys(init.headers);
+    expect(headerKeys.some((key) => /^x-forwarded-host$/i.test(key))).toBe(false);
   });
 });
