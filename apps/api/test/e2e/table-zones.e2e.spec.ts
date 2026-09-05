@@ -128,10 +128,6 @@ suite('Table zones and tables e2e (Plan 10.3-07)', () => {
     // GuestMenuUrlService (plan 10.3-05) throws building qrUrl without this, for any tenant with
     // no verified custom domain — matches the apex host-resolution.e2e.spec.ts already seeds against.
     process.env.PUBLIC_APEX_DOMAIN = 'resto.app';
-    // Same guest apex host-resolution.e2e.spec.ts and table-location-availability.e2e.spec.ts
-    // already seed against — GuestMenuUrlService reads GUEST_APEX_DOMAIN, not PUBLIC_APEX_DOMAIN
-    // (07.5-07: the guest label is configuration, not a hardcoded "menu" segment).
-    process.env.GUEST_APEX_DOMAIN = 'menu.resto.app';
     stack = await startRealStack({ natsEnabledInApp: false });
 
     tenantSlug = `table-zones-${randomUUID().slice(0, 8)}`;
@@ -186,7 +182,9 @@ suite('Table zones and tables e2e (Plan 10.3-07)', () => {
       Array.from({ length: 20 }, (_, i) => String(i + 1)),
     );
     for (const table of body.tables) {
-      expect(table.qrUrl).toBe(`https://${tenantSlug}.menu.resto.app/?t=${table.id}`);
+      expect(table.qrUrl).toMatch(
+        new RegExp(`^https://${tenantSlug}\\.resto\\.app/qr/t/[0-9a-f]{32}$`),
+      );
     }
   });
 

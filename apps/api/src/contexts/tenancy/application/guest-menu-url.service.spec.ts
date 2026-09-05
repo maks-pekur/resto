@@ -44,11 +44,11 @@ describe('GuestMenuUrlService', () => {
       eraseTenant: vi.fn(),
       listScheduledForErasure: vi.fn(),
     };
-    env = { GUEST_APEX_DOMAIN: 'menu.resto.app' } as unknown as Env;
+    env = { PUBLIC_APEX_DOMAIN: 'resto.app' } as unknown as Env;
     service = new GuestMenuUrlService(tenantRepo, env);
   });
 
-  it('returns the primary verified custom domain host', async () => {
+  it('returns the primary verified custom domain host, with the /qr base', async () => {
     tenantRepo.listDomains.mockResolvedValue([
       makeDomain({
         kind: 'custom',
@@ -60,7 +60,7 @@ describe('GuestMenuUrlService', () => {
 
     const url = await service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN });
 
-    expect(url).toBe(`https://labella.example.com/t/${QR_TOKEN}`);
+    expect(url).toBe(`https://labella.example.com/qr/t/${QR_TOKEN}`);
   });
 
   it('falls back to the slug formula when the custom domain is not primary or not verified', async () => {
@@ -81,14 +81,14 @@ describe('GuestMenuUrlService', () => {
 
     const url = await service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN });
 
-    expect(url).toBe(`https://la-bella.menu.resto.app/t/${QR_TOKEN}`);
+    expect(url).toBe(`https://la-bella.resto.app/qr/t/${QR_TOKEN}`);
   });
 
   it('falls back to the slug formula for a tenant with only a subdomain row', async () => {
     tenantRepo.listDomains.mockResolvedValue([
       makeDomain({
         kind: 'subdomain',
-        domain: 'la-bella.menu.resto.app',
+        domain: 'la-bella.resto.app',
         isPrimary: true,
         verifiedAt: new Date(),
       }),
@@ -96,22 +96,22 @@ describe('GuestMenuUrlService', () => {
 
     const url = await service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN });
 
-    expect(url).toBe(`https://la-bella.menu.resto.app/t/${QR_TOKEN}`);
+    expect(url).toBe(`https://la-bella.resto.app/qr/t/${QR_TOKEN}`);
   });
 
-  it('builds the path as exactly /t/<token>', async () => {
+  it('builds the path as exactly /qr/t/<token>', async () => {
     tenantRepo.listDomains.mockResolvedValue([]);
 
     const url = await service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN });
     const parsed = new URL(url);
 
-    expect(parsed.pathname).toBe(`/t/${QR_TOKEN}`);
+    expect(parsed.pathname).toBe(`/qr/t/${QR_TOKEN}`);
     // Nothing in the query: a copied address must not name a table.
     expect(parsed.search).toBe('');
   });
 
-  it('throws when GUEST_APEX_DOMAIN is missing and there is no custom domain', async () => {
-    env.GUEST_APEX_DOMAIN = undefined;
+  it('throws when PUBLIC_APEX_DOMAIN is missing and there is no custom domain', async () => {
+    env.PUBLIC_APEX_DOMAIN = undefined;
     tenantRepo.listDomains.mockResolvedValue([]);
 
     await expect(service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN })).rejects.toThrow();

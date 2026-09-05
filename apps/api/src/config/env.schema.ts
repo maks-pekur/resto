@@ -120,23 +120,6 @@ export const envSchema = z
       }),
 
     /**
-     * The guest menu's own apex, without scheme or port — `<guest-apex>` in production
-     * (free Universal SSL covers an apex and its first-level subdomains only, so the guest
-     * menu sits on its own zone rather than a `menu.` label under PUBLIC_APEX_DOMAIN).
-     * Gates `<slug>.<guest-apex>` in `tenant-resolver.service.ts`'s guest branch. Unset means
-     * only a verified custom domain or the `<slug>.<PUBLIC_APEX_DOMAIN>` website host resolves
-     * on the guest path.
-     */
-    GUEST_APEX_DOMAIN: z
-      .string()
-      .trim()
-      .toLowerCase()
-      .optional()
-      .refine((v) => v === undefined || /^[a-z0-9-]+(\.[a-z0-9-]+)*$/.test(v), {
-        message: 'GUEST_APEX_DOMAIN must be a bare hostname (no scheme, no port, no path)',
-      }),
-
-    /**
      * Salt used by the audit_log PII anonymisation step on tenant erasure
      * (RES-138). Required outside dev/test (enforced by superRefine);
      * minimum 32 chars and immutable post-deploy — rotating it severs the

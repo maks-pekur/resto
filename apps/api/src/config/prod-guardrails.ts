@@ -165,12 +165,6 @@ export const assertProdGuardrails = (
       `PUBLIC_APEX_DOMAIN is "${env.PUBLIC_APEX_DOMAIN}" — every QR sticker would carry it`,
     );
   }
-  if (env.GUEST_APEX_DOMAIN !== undefined && EPHEMERAL_HOST_RE.test(env.GUEST_APEX_DOMAIN)) {
-    violations.push(
-      `GUEST_APEX_DOMAIN is "${env.GUEST_APEX_DOMAIN}" — every QR sticker would carry it`,
-    );
-  }
-
   // D-01 / Skeptic HIGH-2.
   if (env.RESEND_API_KEY === undefined || env.RESEND_API_KEY.trim().length === 0) {
     violations.push(`RESEND_API_KEY is required in NODE_ENV=${env.NODE_ENV}`);

@@ -284,16 +284,4 @@ describe('hosts that only exist while developing', () => {
   it('lets a real production host through', () => {
     expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'resto.app' }))).not.toThrow();
   });
-
-  it('refuses a guest apex domain that would be printed onto every QR sticker', () => {
-    expect(() => assertProdGuardrails(buildEnv({ GUEST_APEX_DOMAIN: 'localhost' }))).toThrow(
-      /QR sticker/u,
-    );
-  });
-
-  it('lets a real guest apex domain through', () => {
-    expect(() =>
-      assertProdGuardrails(buildEnv({ GUEST_APEX_DOMAIN: 'guest.invalid' })),
-    ).not.toThrow();
-  });
 });

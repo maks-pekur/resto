@@ -105,11 +105,8 @@ describe('TenantResolverService.resolveBySlug', () => {
   });
 });
 
-const GUEST_APEX = 'guest.invalid';
-
-const envWithApexes = (opts: { guestApex?: string; publicApex?: string } = {}) =>
+const envWithApexes = (opts: { publicApex?: string } = {}) =>
   ({
-    ...(opts.guestApex !== undefined ? { GUEST_APEX_DOMAIN: opts.guestApex } : {}),
     ...(opts.publicApex !== undefined ? { PUBLIC_APEX_DOMAIN: opts.publicApex } : {}),
   }) as ConstructorParameters<typeof TenantResolverService>[1];
 
@@ -119,10 +116,7 @@ describe('TenantResolverService.resolveByCustomerHost', () => {
 
   beforeEach(() => {
     repo = buildRepo();
-    service = new TenantResolverService(
-      repo,
-      envWithApexes({ guestApex: GUEST_APEX, publicApex: 'resto.app' }),
-    );
+    service = new TenantResolverService(repo, envWithApexes({ publicApex: 'resto.app' }));
   });
 
   it('returns null for empty host', async () => {
@@ -136,24 +130,15 @@ describe('TenantResolverService.resolveByCustomerHost', () => {
     expect(result?.slug).toBe('cafe-roma');
   });
 
-  it('parses tenant slug from <slug>.<guest-apex> — the QR menu', async () => {
-    repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
-    const result = await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}`);
-    expect(result?.slug).toBe('cafe-roma');
-  });
-
-  it('parses tenant slug from <slug>.<apex> — the restaurant website', async () => {
+  it('parses tenant slug from <slug>.<PUBLIC_APEX_DOMAIN> — the only guest shape under one apex (07.5-13)', async () => {
     repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
     const result = await service.resolveByCustomerHost('cafe-roma.resto.app');
     expect(result?.slug).toBe('cafe-roma');
   });
 
-  it('the two guest branches stay distinguishable by which apex the remainder equals', async () => {
+  it('the surviving guest branch is an apex equality test, not a shape match (T-07.5-13-01)', async () => {
     repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
 
-    expect((await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}`))?.slug).toBe(
-      'cafe-roma',
-    );
     expect((await service.resolveByCustomerHost('cafe-roma.resto.app'))?.slug).toBe('cafe-roma');
     expect(await service.resolveByCustomerHost('cafe-roma.admin.invalid')).toBeNull();
     expect(await service.resolveByCustomerHost('cafe-roma.unconfigured.invalid')).toBeNull();
@@ -174,21 +159,21 @@ describe('TenantResolverService.resolveByCustomerHost', () => {
 
   it('returns null when tenant is not publicly servable (slug path)', async () => {
     repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma', 'archived'));
-    expect(await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}`)).toBeNull();
+    expect(await service.resolveByCustomerHost('cafe-roma.resto.app')).toBeNull();
   });
 
   it('resolves from host with a trailing FQDN dot', async () => {
     repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
-    const result = await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}.`);
+    const result = await service.resolveByCustomerHost('cafe-roma.resto.app.');
     expect(result?.slug).toBe('cafe-roma');
   });
 
   it('returns null when slug is malformed', async () => {
-    expect(await service.resolveByCustomerHost(`BAD!.${GUEST_APEX}`)).toBeNull();
+    expect(await service.resolveByCustomerHost('BAD!.resto.app')).toBeNull();
     expect(repo.findBySlug).not.toHaveBeenCalled();
   });
 
-  // Both guest branches are gated on a configured apex precisely so a stranger's domain cannot
+  // The guest branch is gated on a configured apex precisely so a stranger's domain cannot
   // resolve just because its first label collides with a tenant slug. findByDomainHost above is
   // the only way a custom domain serves.
   it('refuses a foreign domain whose first label happens to match a slug', async () => {
@@ -201,7 +186,6 @@ describe('TenantResolverService.resolveByCustomerHost', () => {
     service = new TenantResolverService(repo, envWithApexes({}));
     repo.findBySlug = vi.fn().mockResolvedValue(tenantFor('cafe-roma'));
     expect(await service.resolveByCustomerHost('cafe-roma.resto.app')).toBeNull();
-    expect(await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}`)).toBeNull();
   });
 
   it.each([
@@ -224,7 +208,6 @@ describe('TenantResolverService.resolveByCustomerHost — the dev tunnel fallbac
   const envFor = (nodeEnv: string, slug?: string) =>
     ({
       PUBLIC_APEX_DOMAIN: 'resto.app',
-      GUEST_APEX_DOMAIN: GUEST_APEX,
       NODE_ENV: nodeEnv,
       ...(slug === undefined ? {} : { TENANT_DEV_FALLBACK_SLUG: slug }),
     }) as ConstructorParameters<typeof TenantResolverService>[1];
@@ -262,7 +245,7 @@ describe('TenantResolverService.resolveByCustomerHost — the dev tunnel fallbac
     );
     const service = new TenantResolverService(repo, envFor('development', 'pizza'));
 
-    const result = await service.resolveByCustomerHost(`cafe-roma.${GUEST_APEX}`);
+    const result = await service.resolveByCustomerHost('cafe-roma.resto.app');
 
     expect(result?.slug).toBe('cafe-roma');
   });
