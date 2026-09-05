@@ -378,8 +378,8 @@ Plans:
 Plans:
 **Wave 1** _(the trust boundary and the browser's tenant selector — file-disjoint, parallel)_
 
-- [ ] 07.4-01-PLAN.md — `AuthGuard` requires agreement and membership, not absence of disagreement; plus the `@RequiresTenantContext`-without-`@Permissions` route census and its drift gate (TP-01, TP-02)
-- [ ] 07.4-02-PLAN.md — delete the browser's `x-forwarded-host` from `apps/website` checkout; move the confirmation page's read into the `server-only` client; pin the property with a source-tree test (TP-03)
+- [x] 07.4-01-PLAN.md — `AuthGuard` requires agreement and membership, not absence of disagreement; plus the `@RequiresTenantContext`-without-`@Permissions` route census and its drift gate (TP-01, TP-02)
+- [x] 07.4-02-PLAN.md — delete the browser's `x-forwarded-host` from `apps/website` checkout; move the confirmation page's read into the `server-only` client; pin the property with a source-tree test (TP-03)
 
 **Wave 2** _(the proof, and the admin's tenant removal — file-disjoint, parallel)_
 
