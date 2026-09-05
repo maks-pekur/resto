@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Route as authLayoutRoute } from './_layout';
+import { adminPath } from '@/lib/admin-path';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +41,7 @@ function ForgotPasswordPage() {
         credentials: 'include',
         body: JSON.stringify({
           email: data.email,
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${window.location.origin}${adminPath('/reset-password')}`,
         }),
         signal: AbortSignal.timeout(10_000),
       });
