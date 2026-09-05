@@ -1,3 +1,33 @@
+// 07.4-03 / D-02 — an operator session naming tenant A must not reach tenant
+// B's data by a forged x-tenant-id, a forged x-forwarded-host, a session with
+// no active organization, a stale membership row, or a tenant-B id in the
+// path. Five rejections plus one positive control (A5, written and run
+// first) against a real stack — AuthGuard, TenantContextMiddleware,
+// ScopedTx/RLS all exercised together, not a mocked guard.
+//
+// Stack: startRealStack() (testcontainer Postgres 16-alpine + fresh
+// migration replay), tried first per plan constraint and kept because it
+// replayed clean — `pnpm --filter api exec vitest run
+// test/e2e/operator-tenant-binding.e2e.spec.ts` against a brand-new
+// container passed all 7 assertions with no migration error. This differs
+// from organization-switch.e2e.spec.ts's documented 0079 idempotency
+// failure; that spec's own header names the bug as pre-existing, and this
+// file did not reproduce it — recorded here rather than assumed away.
+//
+// Red-then-green record (all four transcripts reproduced by re-running this
+// exact file, not summarized from memory):
+//   1. Pre-plan-01 guard (commit 4da7d5d7, scratch `git worktree add`): A5
+//      and A1 PASS; A2 and A4 FAIL — both resolve 403 `auth.forbidden` from
+//      PermissionsGuard (no baseRole was ever attached), not the
+//      auth.tenant_mismatch / auth.tenant_membership_missing this file
+//      requires. This is the exact "403 for the wrong reason" shape the
+//      plan calls out — status alone would have made this file pass
+//      against the hole it exists to catch.
+//   2. Current guard (commit 6ef29dbe onward): all 7 assertions pass.
+//   3. A3-pre negative control: with `PUBLIC_APEX_DOMAIN` unset, A3-pre
+//      fails (`expected 404 to be 200`) — the forged host resolves to no
+//      tenant at all, so A3's 403 would fire for an unrelated reason. With
+//      `PUBLIC_APEX_DOMAIN` restored, A3-pre and A3 both pass.
 import 'reflect-metadata';
 import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -33,6 +63,10 @@ interface ProblemBody {
 }
 
 interface ItemsListBody {
+  readonly items: readonly { readonly slug: string }[];
+}
+
+interface PublicMenuBody {
   readonly items: readonly { readonly slug: string }[];
 }
 
@@ -94,6 +128,7 @@ suite(
     let cookieB: string;
     let slugAItem: string;
     let slugBItem: string;
+    let bItemId: string;
 
     beforeAll(async () => {
       process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
@@ -140,7 +175,7 @@ suite(
         tenantId: tenantA.id,
         itemSlug: slugAItem,
       });
-      await seedPublishedItem(stack, {
+      bItemId = await seedPublishedItem(stack, {
         cookie: cookieB,
         tenantId: tenantB.id,
         itemSlug: slugBItem,
@@ -214,5 +249,37 @@ suite(
       expect(after.statusCode).toBe(403);
       expect(after.json<ProblemBody>().code).toBe('auth.tenant_membership_missing');
     }, 60_000);
+
+    it('A3-pre: the forged host really does resolve to tenant B', async () => {
+      const res = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/menu',
+        headers: { 'x-forwarded-host': `${tenantB.slug}.${PUBLIC_APEX}` },
+      });
+      expect(res.statusCode).toBe(200);
+      const slugs = res.json<PublicMenuBody>().items.map((i) => i.slug);
+      expect(slugs).toContain(slugBItem);
+    });
+
+    it('A3: a forged x-forwarded-host cannot cross tenants', async () => {
+      const res = await stack.app.inject({
+        method: 'GET',
+        url: '/v1/catalog/items',
+        headers: { cookie: cookieA, 'x-forwarded-host': `${tenantB.slug}.${PUBLIC_APEX}` },
+      });
+      expect(res.statusCode).toBe(403);
+      expect(res.json<ProblemBody>().code).toBe('auth.tenant_mismatch');
+    });
+
+    it('A6: a tenant-B resource id addressed directly in the path is not readable', async () => {
+      const res = await stack.app.inject({
+        method: 'GET',
+        url: `/v1/catalog/items/${bItemId}`,
+        headers: { cookie: cookieA, 'x-tenant-id': tenantA.id },
+      });
+      expect(res.statusCode).toBe(404);
+      expect(res.json<ProblemBody>().code).toBe('catalog.menu_item_not_found');
+      expect(res.body).not.toContain(slugBItem);
+    });
   },
 );
