@@ -388,7 +388,7 @@ Plans:
 
 **Wave 3** _(mounting and the env collapse — file-disjoint, parallel)_
 
-- [ ] 07.4-05-PLAN.md — `base: '/admin/'` + router `basepath` + extracted route tree + deep-link tests; base-path-aware 401 redirect and password-reset link (TP-05)
+- [x] 07.4-05-PLAN.md — `base: '/admin/'` + router `basepath` + extracted route tree + deep-link tests; base-path-aware 401 redirect and password-reset link (TP-05)
 - [ ] 07.4-06-PLAN.md — `AUTH_COOKIE_DOMAIN` host-only, `ADMIN_WEB_ORIGIN_WILDCARD` deleted, `ADMIN_WEB_URL` origin-vs-path split (M-12), one module owning every API-emitted admin deep link (TP-06)
 
       **UI hint**: no — no new operator-facing surface; the admin's existing screens move to a new path
