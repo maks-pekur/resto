@@ -1,0 +1,44 @@
+{
+	admin off
+	servers {
+		# WHY: without this, reverse_proxy overwrites X-Forwarded-Host with
+		# this block's own Host (api.<apex>), effectiveHost() returns that,
+		# and tenant-resolver.service.ts's NON_GUEST_SECOND_LABELS rejects
+		# it — every guest menu request dies. The blanket range is safe only
+		# because ufw (plan 08) admits 80/443 from Cloudflare's published
+		# ranges alone, so no other peer can ever reach Caddy. This is void
+		# the moment that firewall rule changes.
+		trusted_proxies static 0.0.0.0/0 ::/0
+
+		# WHY: (1) above is what makes this necessary, not the other way
+		# round. With every peer trusted, Caddy's right-to-left X-Forwarded-For
+		# walk finds nothing untrusted and returns the leftmost (client-
+		# supplied) entry — Cloudflare appends to XFF rather than replacing
+		# it, so a forged value stays leftmost and wins. Cloudflare does
+		# overwrite CF-Connecting-IP, so client_ip must read that instead.
+		client_ip_headers CF-Connecting-IP
+	}
+}
+
+{$API_HOST} {
+	tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
+
+	# Defense in depth only — InternalTokenGuard (constant-time compare,
+	# throws outside development) is the control that actually protects
+	# /internal/v1/*. This narrows who can reach it at all. The default
+	# matches nothing (TEST-NET-1, RFC 5737): a missing compose override
+	# fails closed instead of leaving `not client_ip` with no argument,
+	# which is a Caddyfile parse error that would take the whole origin down.
+	@internal_blocked {
+		path /internal*
+		not client_ip {$INTERNAL_ALLOWED_IPS:192.0.2.1/32}
+	}
+	respond @internal_blocked 404
+
+	reverse_proxy api:3000
+}
+
+{$WEBSITE_HOST}, *.{$WEBSITE_HOST} {
+	tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
+	reverse_proxy website:3002
+}

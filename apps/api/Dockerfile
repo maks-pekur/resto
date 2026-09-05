@@ -37,6 +37,17 @@ COPY --from=deps /workspace/packages/events/node_modules ./packages/events/node_
 
 RUN pnpm --filter @resto/api exec node build.mjs
 
+FROM node:22-alpine AS migrate
+WORKDIR /workspace
+
+COPY --from=deps /workspace/node_modules ./node_modules
+COPY --from=deps /workspace/packages/db/node_modules ./packages/db/node_modules
+COPY tsconfig.base.json ./
+COPY --from=build /workspace/packages ./packages
+
+WORKDIR /workspace/packages/db
+CMD ["/workspace/node_modules/.bin/tsx", "src/cli/migrate.ts"]
+
 FROM node:22-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
