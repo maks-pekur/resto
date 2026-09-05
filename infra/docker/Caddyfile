@@ -1,7 +1,7 @@
 {
 	admin off
 	servers {
-		# WHY: without this, reverse_proxy overwrites X-Forwarded-Host with
+		# WHY: without this, the proxy overwrites X-Forwarded-Host with
 		# this block's own Host (api.<apex>), effectiveHost() returns that,
 		# and tenant-resolver.service.ts's NON_GUEST_SECOND_LABELS rejects
 		# it — every guest menu request dies. The blanket range is safe only
@@ -35,10 +35,42 @@
 	}
 	respond @internal_blocked 404
 
-	reverse_proxy api:3000
+	# WHY: a client-supplied X-Forwarded-Host reaches the upstream verbatim
+	# without this (measured M-07), and effectiveHost() trusts it whenever
+	# TRUST_PROXY is set, which it always is in production.
+	reverse_proxy api:3000 {
+		header_up X-Forwarded-Host {host}
+	}
 }
 
 {$WEBSITE_HOST}, *.{$WEBSITE_HOST} {
 	tls /etc/caddy/certs/origin.crt /etc/caddy/certs/origin.key
-	reverse_proxy website:3002
+
+	# WHY: the client_ip gate above exists only in the {$API_HOST} block —
+	# without this handle running first, <apex>/internal/v1/* and
+	# <slug>.<apex>/internal/v1/* would reach the api past no gate at all.
+	# InternalTokenGuard remains the actual control either way.
+	handle /internal* {
+		respond 404
+	}
+
+	# WHY: 07.4 made guest checkout and operator auth same-origin on these
+	# two paths; the dev-only Next rewrite covering them locally is
+	# NODE_ENV!=='production'-gated on purpose, so production needs a real
+	# route here or they 404 loudly instead of silently hairpinning.
+	handle /v1/* {
+		reverse_proxy api:3000 {
+			header_up X-Forwarded-Host {host}
+		}
+	}
+	handle /api/* {
+		reverse_proxy api:3000 {
+			header_up X-Forwarded-Host {host}
+		}
+	}
+	handle {
+		reverse_proxy website:3002 {
+			header_up X-Forwarded-Host {host}
+		}
+	}
 }

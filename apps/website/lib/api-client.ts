@@ -1,7 +1,7 @@
 import 'server-only';
 import { headers } from 'next/headers';
 import type { MenuDto } from '@resto/api-client/public';
-import { apiOrigin } from './env';
+import { internalApiOrigin } from './env';
 import { type OrderStatusResponse } from './checkout-api';
 
 export class TenantNotFoundError extends Error {
@@ -21,7 +21,7 @@ export class TenantSuspendedError extends Error {
 export const fetchMenuPublic = async (): Promise<MenuDto> => {
   const h = await headers();
   const host = h.get('host') ?? '';
-  const res = await fetch(`${apiOrigin()}/v1/menu`, {
+  const res = await fetch(`${internalApiOrigin()}/v1/menu`, {
     headers: { 'x-forwarded-host': host },
     next: { revalidate: 300 },
     signal: AbortSignal.timeout(10_000),
@@ -40,7 +40,7 @@ export interface MenuAvailability {
 export const fetchAvailabilityPublic = async (): Promise<MenuAvailability> => {
   const h = await headers();
   const host = h.get('host') ?? '';
-  const res = await fetch(`${apiOrigin()}/v1/menu/availability`, {
+  const res = await fetch(`${internalApiOrigin()}/v1/menu/availability`, {
     headers: { 'x-forwarded-host': host },
     next: { revalidate: 5 },
     signal: AbortSignal.timeout(10_000),
@@ -53,7 +53,7 @@ export const fetchAvailabilityPublic = async (): Promise<MenuAvailability> => {
 export const fetchOrderStatus = async (orderId: string): Promise<OrderStatusResponse> => {
   const h = await headers();
   const host = h.get('host') ?? '';
-  const res = await fetch(`${apiOrigin()}/v1/orders/${orderId}/status`, {
+  const res = await fetch(`${internalApiOrigin()}/v1/orders/${orderId}/status`, {
     headers: { 'x-forwarded-host': host },
     cache: 'no-store',
     signal: AbortSignal.timeout(10_000),
