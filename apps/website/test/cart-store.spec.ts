@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { cartLineKey, useCartStore, selectSubtotal, selectItemCount } from '@resto/cart';
 import type { CartLineItem } from '@resto/cart';
 
@@ -217,6 +217,36 @@ describe('cart store', () => {
 
     it('returns 0 for an empty cart', () => {
       expect(selectItemCount(useCartStore.getState())).toBe(0);
+    });
+  });
+
+  describe('cart storage key — one per guest surface (07.5-12)', () => {
+    afterEach(() => {
+      sessionStorage.clear();
+      window.history.replaceState(null, '', '/');
+    });
+
+    it('keys the qr-menu cart apart from the storefront cart, which keeps its old key', async () => {
+      window.history.replaceState(null, '', '/qr/t/abc123');
+      vi.resetModules();
+      const { useCartStore: qrCartStore } = await import('@resto/cart');
+      qrCartStore.getState().setMode('pickup');
+
+      window.history.replaceState(null, '', '/');
+      vi.resetModules();
+      const { useCartStore: storefrontCartStore } = await import('@resto/cart');
+      storefrontCartStore.getState().setMode('delivery');
+
+      const qrRaw = sessionStorage.getItem('resto-cart-qr');
+      const storefrontRaw = sessionStorage.getItem('resto-cart');
+
+      expect(qrRaw).not.toBeNull();
+      expect(storefrontRaw).not.toBeNull();
+      expect(qrRaw).not.toBe(storefrontRaw);
+      expect((JSON.parse(qrRaw ?? '{}') as { state: { mode: string } }).state.mode).toBe('pickup');
+      expect((JSON.parse(storefrontRaw ?? '{}') as { state: { mode: string } }).state.mode).toBe(
+        'delivery',
+      );
     });
   });
 });

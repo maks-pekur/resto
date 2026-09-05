@@ -96,6 +96,20 @@ export function selectItemCount(state: CartState): number {
   return state.items.reduce((sum, item) => sum + item.quantity, 0);
 }
 
+const QR_BASE = '/qr';
+
+const isQrDocument = (pathname: string): boolean =>
+  pathname === QR_BASE || pathname.startsWith(`${QR_BASE}/`);
+
+// Storefront and QR menu share one origin under the single-apex scheme (07.5-12); without a
+// distinct key here a guest's table cart and delivery cart would silently merge.
+export const CART_STORAGE_NAME =
+  typeof document === 'undefined'
+    ? 'resto-cart'
+    : isQrDocument(document.location.pathname)
+      ? 'resto-cart-qr'
+      : 'resto-cart';
+
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
@@ -147,7 +161,7 @@ export const useCartStore = create<CartState>()(
       clearCart: () => set({ items: [] }),
     }),
     {
-      name: 'resto-cart',
+      name: CART_STORAGE_NAME,
       storage: createJSONStorage(() => sessionStorage),
     },
   ),

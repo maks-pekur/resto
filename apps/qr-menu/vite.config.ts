@@ -22,8 +22,10 @@ const devTls =
     : {};
 
 export default defineConfig({
+  base: '/qr/',
   plugins: [react(), tailwindcss()],
   build: {
+    outDir: 'dist/qr',
     target: 'es2022',
     sourcemap: 'hidden',
     rollupOptions: {

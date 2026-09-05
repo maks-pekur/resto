@@ -35,15 +35,18 @@ import { StatusScreen } from './components/StatusScreen';
 import { TableProblemSheet } from './components/TableProblemSheet';
 import type { LegalDocumentKeyDto, LegalDocumentsDto, VenueDto } from '@resto/api-client/public';
 import { adoptTenantLocales, getActiveLocale, localized, t } from './i18n';
+import { BASE_PATH } from './lib/base-path';
 
-const ITEM_PATH = /^\/items\/([^/]+)\/?$/;
-const INFO_PATH = /^\/info\/([a-z]+)\/?$/;
-const TABLE_PATH = /^\/t\/([^/]+)\/?$/;
+const ITEM_PATH = new RegExp(`^${BASE_PATH}/items/([^/]+)/?$`);
+const INFO_PATH = new RegExp(`^${BASE_PATH}/info/([a-z]+)/?$`);
+const TABLE_PATH = new RegExp(`^${BASE_PATH}/t/([^/]+)/?$`);
+const MENU_ROOT = `${BASE_PATH}/`;
 
-const parseItemId = (pathname: string): string | null => ITEM_PATH.exec(pathname)?.[1] ?? null;
+export const parseItemId = (pathname: string): string | null =>
+  ITEM_PATH.exec(pathname)?.[1] ?? null;
 
 /** A document the venue publishes. In the address bar so back closes it and a link can be sent. */
-const parseDocumentKey = (pathname: string): LegalDocumentKeyDto | null => {
+export const parseDocumentKey = (pathname: string): LegalDocumentKeyDto | null => {
   const key = INFO_PATH.exec(pathname)?.[1];
   return key !== undefined && LEGAL_KEYS.has(key) ? (key as LegalDocumentKeyDto) : null;
 };
@@ -51,7 +54,8 @@ const parseDocumentKey = (pathname: string): LegalDocumentKeyDto | null => {
 const LEGAL_KEYS = new Set(['about', 'payment', 'returns', 'cookies', 'terms', 'privacy']);
 
 /** The code's secret, which the app trades for a session and then wipes from the address bar. */
-const parseQrToken = (pathname: string): string | null => TABLE_PATH.exec(pathname)?.[1] ?? null;
+export const parseQrToken = (pathname: string): string | null =>
+  TABLE_PATH.exec(pathname)?.[1] ?? null;
 
 type State =
   | { kind: 'loading' }
@@ -136,11 +140,11 @@ export const App = () => {
       openTableSession(token)
         .then((resolved) => {
           seat(resolved);
-          window.history.replaceState(null, '', '/');
+          window.history.replaceState(null, '', MENU_ROOT);
         })
         .catch(() => {
           setSeatingFor('unreadable');
-          window.history.replaceState(null, '', '/');
+          window.history.replaceState(null, '', MENU_ROOT);
         });
       return () => {
         controller.abort();
@@ -223,17 +227,17 @@ export const App = () => {
   }, [menuLocales.default, menuLocales.supported]);
 
   const openItem = useCallback((id: string) => {
-    window.history.pushState(null, '', `/items/${id}`);
+    window.history.pushState(null, '', `${BASE_PATH}/items/${id}`);
     setOpenItemId(id);
   }, []);
 
   const closeItem = useCallback(() => {
-    window.history.pushState(null, '', '/');
+    window.history.pushState(null, '', MENU_ROOT);
     setOpenItemId(null);
   }, []);
 
   const openDocument = useCallback((key: LegalDocumentKeyDto) => {
-    window.history.pushState(null, '', `/info/${key}`);
+    window.history.pushState(null, '', `${BASE_PATH}/info/${key}`);
     setDocKey(key);
   }, []);
 

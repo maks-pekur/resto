@@ -2,20 +2,23 @@ import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useCartStore } from '@resto/cart';
 import { openTableSession, type ResolvedTable } from '../api/client';
 import { t } from '../i18n';
+import { BASE_PATH } from '../lib/base-path';
 import { canScanInPage } from './TableScanner';
 
 const Scanner = lazy(async () => ({ default: (await import('./TableScanner')).TableScanner }));
 
 const SEATED_PAUSE_MS = 1400;
 
-/** Our codes carry the secret as `/t/<token>` — nothing else in them is worth reading. */
+const SCANNED_TABLE_PATH = new RegExp(`^${BASE_PATH}/t/([^/]+)/?$`);
+
+/** Our codes carry the secret as `<base>/t/<token>` — nothing else in them is worth reading. */
 export const qrTokenFromScan = (raw: string): string | null => {
   try {
     const url = new URL(raw, window.location.origin);
     // A phone on the LAN browses a different host than the one printed on the code, and the
     // token is validated server-side anyway — so in dev the host is not the gate.
     if (!import.meta.env.DEV && url.host !== window.location.host) return null;
-    return /^\/t\/([^/]+)\/?$/.exec(url.pathname)?.[1] ?? null;
+    return SCANNED_TABLE_PATH.exec(url.pathname)?.[1] ?? null;
   } catch {
     return null;
   }
