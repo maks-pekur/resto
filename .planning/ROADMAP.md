@@ -383,7 +383,7 @@ Plans:
 
 **Wave 2** _(the proof, and the admin's tenant removal — file-disjoint, parallel)_
 
-- [ ] 07.4-03-PLAN.md — six-assertion cross-tenant e2e: forged header, forged host, no active organization, revoked membership, tenant-B resource id, and a positive control (TP-01)
+- [x] 07.4-03-PLAN.md — six-assertion cross-tenant e2e: forged header, forged host, no active organization, revoked membership, tenant-B resource id, and a positive control (TP-01)
 - [ ] 07.4-04-PLAN.md — delete `admin-host.ts` / `VITE_ADMIN_HOST_SUFFIX` / `reconcileHostWithSession`; one `switchTenant()` helper doing a full document load; ESLint rule confining the switch endpoint; `adminPath` helper (TP-04)
 
 **Wave 3** _(mounting and the env collapse — file-disjoint, parallel)_
