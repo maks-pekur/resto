@@ -77,3 +77,8 @@ SPEC.md
 
 # Local TLS pair for device testing (mkcert) — never committed
 infra/dev-certs/
+
+# Production Caddy's Origin CA pair (plan 08 places the real cert here on
+# the box) and the local-prod-rehearsal.sh self-signed stand-in — neither
+# is ever committed.
+infra/docker/certs/
