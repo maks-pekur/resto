@@ -438,7 +438,7 @@ Plans:
 
 - [x] 07.5-06-PLAN.md — `docker-compose.prod.yml` + Caddyfile + apex-parameterized env templates + `-v` guard + `migrate` image stage + backup/restore-drill scripts, all proven by a local end-to-end rehearsal; names the founder prerequisites (apex domain, Hetzner, Stripe/Resend — the two `assertProdGuardrails` refuses to boot without)
 - [x] 07.5-07-PLAN.md — the two Cloudflare Workers (admin + qr-menu): same-origin `/v1/*` (+`/api/*`) proxy, `X-Forwarded-Host` tenant preservation, and per-tenant edge cache keys with cross-tenant isolation proven by test; retires the admin Dockerfile — **the Worker half is undone by 07.5-12 under the single-apex scheme; the `GUEST_APEX_DOMAIN` half by 07.5-13**
-- [ ] 07.5-12-PLAN.md — both Worker proxies deleted (~250 lines of source, 440 of tests), both projects assets-only, admin bundle nested under `dist/admin/` and qr-menu under `dist/qr/` with the root-index copy Cloudflare's SPA fallback needs, qr-menu route regexes and `pushState` targets prefixed `/qr`, the two guest apps given distinct cart namespaces now that they share an origin, and the bare apex serving a deliberate marketing placeholder instead of "Restaurant not found" (SC#1/#5; NEW-2; OQ-4)
+- [x] 07.5-12-PLAN.md — both Worker proxies deleted (~250 lines of source, 440 of tests), both projects assets-only, admin bundle nested under `dist/admin/` and qr-menu under `dist/qr/` with the root-index copy Cloudflare's SPA fallback needs, qr-menu route regexes and `pushState` targets prefixed `/qr`, the two guest apps given distinct cart namespaces now that they share an origin, and the bare apex serving a deliberate marketing placeholder instead of "Restaurant not found" (SC#1/#5; NEW-2; OQ-4)
 - [ ] 07.5-13-PLAN.md — the API collapses to one apex: `GUEST_APEX_DOMAIN` deleted from schema, guardrails, resolver and six test files; one `guest-links.ts` composing every guest-facing URL, so the QR sticker carries the `/qr` base and opens the menu instead of the storefront; both tenancy writers stop hardcoding `menu.resto.app`; the guest order-confirmation link becomes per-tenant (APEX-1; OQ-5)
 - [ ] 07.5-14-PLAN.md — Caddy routes by path (`/internal*` 404, `/v1/*` and `/api/*` to the api, everything else to the website) with `header_up X-Forwarded-Host {host}` on every block, closing the measured client-forgeable-host defect; `API_INTERNAL_ORIGIN` takes the website's SSR call off the public internet; templates, both guards and the local rehearsal collapse to one apex; the rehearsal seeds rows so its restore drill stops comparing zero to zero; G-07 retirement of the AWS-era `infra/CLAUDE.md`, `infra/terraform` and `infra/k8s` (NEW-3; APEX-1; G-07)
 
@@ -1308,7 +1308,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 8/11 | In Progress|  |
+| 7.5. Production Deploy                        | 9/14 | In Progress|  |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
 | 10. Admin Order Intake                        | 12/13          | In Progress   |            |
