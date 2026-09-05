@@ -10,7 +10,7 @@ set -uo pipefail
 # covers a host (that is the live handshake in plan 08's --stage full).
 
 HOST_KEYS=(
-  API_HOST WEBSITE_HOST ADMIN_WEB_URL ADMIN_WEB_ORIGIN_WILDCARD
+  API_HOST WEBSITE_HOST ADMIN_WEB_URL
   WEBSITE_PUBLIC_URL MEDIA_PUBLIC_BASE_URL STRIPE_CONNECT_RETURN_URL
   STRIPE_CONNECT_REFRESH_URL AUTH_COOKIE_DOMAIN CORS_ALLOWED_ORIGINS
 )
@@ -84,7 +84,6 @@ run_self_test() {
   {
     echo "API_HOST=api.$pub"
     echo "ADMIN_WEB_URL=https://$admin"
-    echo "ADMIN_WEB_ORIGIN_WILDCARD=https://*.$admin"
     echo "AUTH_COOKIE_DOMAIN=.$admin"
     echo "CORS_ALLOWED_ORIGINS=https://$pub,https://*.$pub"
   } >"$tmp"

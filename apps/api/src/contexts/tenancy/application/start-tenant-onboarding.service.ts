@@ -1,3 +1,4 @@
+import { ADMIN_PAYOUTS_PATH, adminLink } from '../../../shared/admin-links';
 import { BadRequestException, Inject, Injectable, Logger } from '@nestjs/common';
 import { requireTenantContext } from '@resto/db';
 import { TenantId } from '@resto/domain';
@@ -208,8 +209,7 @@ export class StartTenantOnboardingService {
       'Tenant linked via Connect Standard OAuth.',
     );
 
-    const adminWebUrl = this.env.ADMIN_WEB_URL ?? '';
-    const redirectUrl = `${adminWebUrl}/payouts`;
+    const redirectUrl = adminLink(this.env, ADMIN_PAYOUTS_PATH);
 
     return { redirectUrl };
   }

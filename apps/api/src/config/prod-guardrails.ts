@@ -18,8 +18,8 @@ const DEV_DEFAULTS = {
   S3_ENDPOINT: 'http://localhost:9000',
   MEDIA_PUBLIC_BASE_URL: 'http://localhost:9000/resto-dev',
   INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
-  STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
-  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
+  STRIPE_CONNECT_RETURN_URL: 'http://localhost:4000/admin/tenant/payouts?stripe=return',
+  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:4000/admin/tenant/payouts?stripe=refresh',
   RESEND_FROM: 'RestOS <noreply@resto.app>',
   RESEND_REPLY_TO: 'support@resto.app',
 } as const;

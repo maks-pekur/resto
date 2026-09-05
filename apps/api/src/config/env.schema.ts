@@ -1,29 +1,6 @@
 import { z } from 'zod';
 
 /**
- * D-21/D-24: the wildcard's `*` must occupy the ENTIRE leftmost hostname
- * label, with at least two literal labels after it. Rejects a wildcard
- * that can swallow a label boundary (`https://*resto.app` matches any
- * `*resto.app`-suffixed host; `https://*.app` has nothing anchoring it to
- * `resto.app` at all) — the origin-spoofing hazard this field exists to
- * prevent.
- */
-const isValidAdminOriginWildcard = (value: string): boolean => {
-  let hostname: string;
-  try {
-    hostname = new URL(value).hostname;
-  } catch {
-    return false;
-  }
-  const [first, ...rest] = hostname.split('.');
-  return (
-    first === '*' &&
-    rest.length >= 2 &&
-    rest.every((label) => label.length > 0 && !label.includes('*'))
-  );
-};
-
-/**
  * Environment schema for `apps/api`.
  *
  * Every value the app reads at boot lives here. Anything the app needs
@@ -110,37 +87,19 @@ export const envSchema = z
 
     /**
      * Public URL of the admin web app — used as link target in invitation
-     * and password-reset emails. Required outside dev. This is the apex
-     * host (pre-tenant sign-in/signup); per-tenant traffic is
-     * ADMIN_WEB_ORIGIN_WILDCARD below (D-21).
+     * and password-reset emails. Required outside dev.
      */
     ADMIN_WEB_URL: z.string().url().optional(),
-
-    /**
-     * Wildcard trusted origin for per-tenant admin hosts (D-21,
-     * D-24). Optional — absent means only the apex ADMIN_WEB_URL is
-     * trusted. e.g. `https://*.admin.resto.app`; local dev
-     * `http://*.admin.localhost:4000`.
-     */
-    ADMIN_WEB_ORIGIN_WILDCARD: z
-      .string()
-      .url()
-      .optional()
-      .refine((value) => value === undefined || isValidAdminOriginWildcard(value), {
-        message:
-          'ADMIN_WEB_ORIGIN_WILDCARD must have "*" as the entire leftmost hostname label, followed by at least two literal labels (e.g. https://*.admin.resto.app)',
-      }),
 
     WEBSITE_PUBLIC_URL: z.string().url().optional(),
 
     /**
-     * Cookie domain for BA sessions. `.admin.resto.app` in production,
-     * `.admin.localhost` in dev (D-21/D-24) — scoping to the bare apex would
-     * deliver the operator session cookie to the guest menu
-     * (`<slug>.menu.resto.app`) and the public site (`<slug>.resto.app`) too.
-     * Dev needs the leading-dot value for the same reason production does:
-     * every sign-in hops from `admin.<domain>` to `<slug>.admin.<domain>`, and
-     * a host-only cookie does not survive that hop.
+     * Cookie domain for BA sessions. Leave unset — the admin lives on a path
+     * of the apex, so the session cookie is host-only (`Domain` omitted
+     * entirely) and reaches `<apex>` and nothing else, narrower than any
+     * dotted value. Set it only for a deployment that genuinely needs
+     * cross-subdomain cookies, and never to the bare apex, which would
+     * deliver the operator session to every tenant storefront (07.4 D-05).
      */
     AUTH_COOKIE_DOMAIN: z.string().optional(),
 
@@ -340,8 +299,14 @@ export const envSchema = z
     STRIPE_SECRET_KEY: z.string().min(1).optional(),
     STRIPE_APPLICATION_FEE_AMOUNT: z.coerce.number().int().nonnegative().default(0),
     STRIPE_CONNECT_CLIENT_ID: z.string().optional(),
-    STRIPE_CONNECT_RETURN_URL: z.string().url().default('http://localhost:3001/stripe/return'),
-    STRIPE_CONNECT_REFRESH_URL: z.string().url().default('http://localhost:3001/stripe/refresh'),
+    STRIPE_CONNECT_RETURN_URL: z
+      .string()
+      .url()
+      .default('http://localhost:4000/admin/tenant/payouts?stripe=return'),
+    STRIPE_CONNECT_REFRESH_URL: z
+      .string()
+      .url()
+      .default('http://localhost:4000/admin/tenant/payouts?stripe=refresh'),
     STRIPE_WEBHOOK_SECRET: z.string().min(1).optional(),
     STRIPE_CONNECT_OAUTH_REDIRECT_URL: z.string().url().optional(),
   })
@@ -358,7 +323,6 @@ export const envSchema = z
         'BETTER_AUTH_DATABASE_URL',
         'ADMIN_WEB_URL',
         'WEBSITE_PUBLIC_URL',
-        'AUTH_COOKIE_DOMAIN',
         'AUDIT_ERASURE_SALT',
         'TRUST_PROXY',
         'INTERNAL_API_TOKEN',
@@ -391,7 +355,8 @@ export const envSchema = z
         code: z.ZodIssueCode.custom,
         path: ['AUTH_COOKIE_DOMAIN'],
         message:
-          'AUTH_COOKIE_DOMAIN must start with "." to enable cross-subdomain cookies (e.g. ".admin.resto.app").',
+          'AUTH_COOKIE_DOMAIN, when set at all, must start with "." — a dotless value is a ' +
+          'host-only cookie, which is what leaving it unset already gives you (07.4 D-05).',
       });
     }
   });

@@ -36,8 +36,11 @@ const buildProdEnv = (overrides: Partial<Env> = {}): Env =>
     STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
     STRIPE_CONNECT_RETURN_URL: 'https://admin.resto.app/stripe/return',
     STRIPE_CONNECT_REFRESH_URL: 'https://admin.resto.app/stripe/refresh',
-    RESEND_FROM: 'RestOS <noreply@resto.app>',
-    RESEND_REPLY_TO: 'support@resto.app',
+    // Not the documented dev defaults: 07.5-06 added both keys to the
+    // prod-guardrail dev-default set, so the literals this fixture used to
+    // carry are now exactly what a production boot must refuse.
+    RESEND_FROM: 'RestOS <noreply@fixture.example>',
+    RESEND_REPLY_TO: 'support@fixture.example',
     MAILHOG_HOST: 'localhost',
     MAILHOG_PORT: 1025,
     ...overrides,
