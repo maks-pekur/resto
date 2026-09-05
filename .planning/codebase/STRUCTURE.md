@@ -77,10 +77,9 @@ RestOS/                              # Monorepo root (pnpm workspace + Nx)
 ├── scripts/                         # Ad-hoc dev scripts NOT wired into Nx (check-brand-slug-collisions.ts, reset-2fa.ts, ...)
 │
 ├── infra/
-│   ├── docker/                      # Dockerfiles per app + docker-compose.dev.yml (Postgres, NATS, MinIO, MailHog, Jaeger — no Redis)
-│   ├── k8s/                         # Helm charts / manifests (stub)
-│   ├── terraform/                   # AWS IaC (stub)
-│   └── runbooks/                    # Operational runbooks
+│   ├── docker/                      # Dockerfiles per app, docker-compose.dev.yml, docker-compose.prod.yml, Caddyfile, env/*.env.example
+│   ├── scripts/                     # render-env.sh, backup-nightly.sh, restore-drill.sh, local-prod-rehearsal.sh, assert-* guards (07.5-14: infra/k8s and infra/terraform stubs deleted, AWS EKS direction abandoned)
+│   └── runbooks/                    # Operational runbooks (2FA recovery, SPF/DKIM/DMARC)
 │
 ├── docs/
 │   ├── api/openapi.yaml             # Committed OpenAPI spec — source for @resto/api-client codegen

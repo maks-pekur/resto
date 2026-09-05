@@ -28,3 +28,36 @@ three turned out to be **mine**, introduced hours earlier while finishing `07.4-
 **The lesson, since it recurred twice in one day:** a change to an env key or a route must sweep
 every spec that names it, not only the spec the plan happens to list. Both of mine would have been
 caught by `grep -rl AUTH_COOKIE_DOMAIN apps/api/test` before claiming done.
+
+## From 07.5-14 — pre-existing findings, not fixed, out of this plan's scope
+
+Running the plan's own literal verify command,
+`PUBLIC_APEX_DOMAIN=example.invalid bash infra/scripts/assert-no-domain-literals.sh infra
+docs/runbooks .planning/codebase/STACK.md`, surfaces findings unrelated to this plan's own
+changes (confirmed by re-running with a non-colliding dummy apex,
+`zzz-plan14-verify.invalid`, which makes them the only survivors):
+
+- **`infra/runbooks/2fa-recovery.md`** and **`infra/runbooks/spf-dkim-dmarc-checklist.md`** —
+  pre-existing operational runbooks (2FA recovery, SPF/DKIM/DMARC), never touched by any plan in
+  this phase, naming `resto.app`/`amazonses.com`/`mail-tester.com` as illustrative examples. Not
+  in this plan's file list; genuinely unrelated content.
+- **`docs/runbooks/spa-workers.md:59`** — an `example.com` literal, pre-existing from phase
+  07.5-12's rewrite of that file (not touched by this plan).
+- **The `docker-compose.dev`/`docker-compose.test` filename family trips the TLD net's `.dev`
+  entry repo-wide** (`infra/CLAUDE.md`, `.planning/codebase/STACK.md`, and almost certainly other
+  files this scan didn't cover) — a `.dev`-suffixed filename is not a domain literal, but the
+  regex can't tell the difference. This predates every plan in this phase and is a guard-tuning
+  question (narrow the regex, or extend `domain-literal-allowlist.txt`), not a per-plan fix.
+
+**Also pre-existing, not caused by this plan:** `assert-no-domain-literals.sh`'s own
+self-test fallback (`local pub="${PUBLIC_APEX_DOMAIN:-example.invalid}"`) and
+`assert-hostname-depth.sh`'s identical fallback, plus `local-prod-rehearsal.sh`'s own
+`PUBLIC_APEX_DOMAIN="example.invalid"` assignment, all legitimately contain the literal
+`example.invalid` — the exact same value the plan's own verify command chooses as its demo scan
+target. Running the scan with `PUBLIC_APEX_DOMAIN=example.invalid` therefore always self-flags
+these three lines, in every one of these files, regardless of what any plan does — confirmed by
+checking the pre-Task-2 committed version of `assert-no-domain-literals.sh`, which already
+contained this exact self-referential default. A verify command choosing a demo value that
+collides with the codebase's own standing test fixture is a verify-tooling gap, not a domain-leak
+finding; the adjusted-but-equivalent command above (a non-colliding dummy apex) is the correct way
+to exercise the real invariant.

@@ -13,36 +13,38 @@ defines the runtime is committed:
 No hand-typed server state defines what runs. A redeploy is: pull the
 committed files, render the env templates, `docker compose up -d`.
 
-## The three-apex map
+## The one-apex map
 
-Three parameters — `PUBLIC_APEX_DOMAIN`, `ADMIN_APEX_DOMAIN`,
-`GUEST_APEX_DOMAIN` — not one, because Cloudflare's free Universal SSL
-covers the root domain and its first-level subdomains only, not deeper
-subdomains. A single apex would put `<slug>.menu.<apex>` and
-`<slug>.admin.<apex>` at depth 2 with no certificate. `infra/scripts/
-assert-hostname-depth.sh` computes every configured hostname's depth
-relative to its apex in CI; it does not itself prove the certificate
-covers a host — that is the live handshake in plan 08's
-`verify-prod-origin.sh --stage full`.
+A single parameter — `PUBLIC_APEX_DOMAIN` — because Cloudflare's free
+Universal SSL covers the root domain and its first-level subdomains only,
+not deeper subdomains. Every hostname this stack serves must stay at
+depth ≤ 1 above that one apex: `<apex>` itself (depth 0), `api.<apex>`
+and `<slug>.<apex>` (depth 1) all carry a certificate; `<slug>.menu.<apex>`
+(depth 2) would not, which is why there is no `.menu.` label anywhere in
+this stack. `infra/scripts/assert-hostname-depth.sh` computes every
+configured hostname's depth relative to the one apex in CI; it does not
+itself prove the certificate covers a host — that is the live handshake
+in plan 08's `verify-prod-origin.sh --stage full`.
 
-**Three apexes, not three certificates.** Caddy only ever serves
-`{$API_HOST}` and `{$WEBSITE_HOST}` — the admin and guest zones have no
-origin at all, because their Cloudflare Workers _are_ the origin from
-Cloudflare's perspective. The Origin CA certificate is issued on the
-**main zone only**, with SANs `<apex>`, `*.<apex>`, `api.<apex>`. A reader
-who assumes "three zones, three certificates" will go looking for two
-that should not exist.
+**One apex, one zone, one certificate.** Caddy serves `{$API_HOST}`
+(`api.<apex>`) and `{$WEBSITE_HOST}, *.{$WEBSITE_HOST}` (`<apex>` and
+every tenant subdomain) — the second block's `handle` path split (see
+`infra/docker/Caddyfile`) is what makes `/v1/*` and `/api/*` reach the
+api same-origin on a tenant host, `/internal*` 404 before it reaches
+either upstream, and everything else fall through to the website. The
+admin and qr-menu SPAs are served by their own Cloudflare Workers
+(assets-only, no Worker script) bound to Worker Routes on
+`<apex>/admin*` and `*.<apex>/qr*` — those requests are answered at
+Cloudflare's edge and never reach this origin at all. The Origin CA
+certificate is issued once, with SANs `<apex>`, `*.<apex>`, `api.<apex>`,
+covering both what Caddy serves and what the Workers intercept ahead of
+it.
 
-**Cookie scoping gets stronger, not weaker.**
-`AUTH_COOKIE_DOMAIN=.${ADMIN_APEX_DOMAIN}` is now a different registrable
-domain from the guest and website surfaces, so the operator session
-cookie cannot reach a guest host even in principle. The rule the
-single-apex map stated — surfaces sharing a session must share a parent
-domain — still holds, but per family: the `<admin-apex>` ->
-`<slug>.<admin-apex>` hop at sign-in stays inside one registrable domain.
-A future guest sign-in issues its cookie on the guest apex and will not be
-shared with the website on the main apex — a design question for that
-feature, not a defect here.
+**The operator session cookie is host-only.** `AUTH_COOKIE_DOMAIN` is
+absent from the rendered production env (07.4-06) — Better Auth's default
+scopes the cookie to the exact host that issued it, so it cannot leak to
+a guest tenant host even in principle. `assert-hostname-depth.sh` still
+checks it in `HOST_KEYS` for the day a future deployment sets one.
 
 ## Postgres tuning (unmeasured)
 

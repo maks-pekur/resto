@@ -176,10 +176,11 @@
 
 **Production:**
 
-- Target: AWS EKS (ADR-0011); Terraform in `infra/terraform/` (stub), Helm charts in `infra/k8s/` (stub)
-- Migrations run as a Kubernetes Job before app rollout (`pnpm db:migrate`)
-- Secrets injected at runtime via Vault / AWS Secrets Manager — never in image or env files
-- `apps/admin` and `apps/qr-menu` are static-build SPAs (Vite `build` → `dist/`) deployable to any static host/CDN — no Node runtime required in production for either, a change from the Next.js-era admin which needed an app server
+- Target: a single VPS behind Cloudflare, running Docker Compose (`infra/docker/docker-compose.prod.yml`) — `postgres` + `nats` + `api` + `website` + `caddy`, plus a profile-gated `migrate` service; images are built and pushed to GHCR by CI, pulled by tag on the box
+- Caddy terminates TLS (Origin CA certificate) and routes by Host/path — see `infra/docker/Caddyfile` and `docs/runbooks/production-stack.md`
+- Migrations run as a `docker compose run --rm migrate` step, gated behind the `tools` profile so a bare `up -d` never triggers them — never inline at app startup
+- Secrets are mode-600 `.env` files rendered onto the box by `infra/scripts/render-env.sh` — never committed, never baked into an image
+- `apps/admin` and `apps/qr-menu` are static-build SPAs (Vite `build` → `dist/`) served by Cloudflare Workers (assets-only, no Worker script) under path prefixes on the single apex — no Node runtime required in production for either, a change from the Next.js-era admin which needed an app server
 
 ---
 

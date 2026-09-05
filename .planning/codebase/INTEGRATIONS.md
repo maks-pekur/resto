@@ -152,10 +152,10 @@
 
 **Hosting:**
 
-- Production target: AWS EKS (ADR-0011)
-- IaC: Terraform in `infra/terraform/` (stub), Helm charts in `infra/k8s/` (stub)
-- Image tags are immutable SHA-based; migrations run as a Kubernetes Job before rollout
-- `apps/admin` and `apps/qr-menu` deploy as static build output (no app server needed); `apps/website` and `apps/api` need a running Node process
+- Production target: a single VPS behind Cloudflare, Docker Compose (`infra/docker/docker-compose.prod.yml`) — `postgres` + `nats` + `api` + `website` + `caddy`, plus a profile-gated `migrate` service
+- Images built and pushed to GHCR by CI; `docker-compose.prod.yml` pulls by tag
+- Image tags are immutable SHA-based; migrations run as a `docker compose run --rm migrate` step, gated behind the `tools` profile, before rollout
+- `apps/admin` and `apps/qr-menu` deploy as static build output served by Cloudflare Workers (assets-only) under path prefixes on the single apex; `apps/website` and `apps/api` need a running Node process
 
 ## Webhooks & Callbacks
 
@@ -202,7 +202,7 @@
 **Secrets location:**
 
 - Dev: injected via Docker Compose environment or `.env` file (not committed); `.env.example` documents shape but has some stale default values (see STACK.md) — verify against `env.schema.ts` before trusting a default in that file
-- Production: Vault / AWS Secrets Manager; injected at pod startup
+- Production: mode-600 `.env` files rendered onto the box by `infra/scripts/render-env.sh`, never committed
 
 ---
 
