@@ -44,7 +44,7 @@ describe('GuestMenuUrlService', () => {
       eraseTenant: vi.fn(),
       listScheduledForErasure: vi.fn(),
     };
-    env = { PUBLIC_APEX_DOMAIN: 'resto.app' } as unknown as Env;
+    env = { GUEST_APEX_DOMAIN: 'menu.resto.app' } as unknown as Env;
     service = new GuestMenuUrlService(tenantRepo, env);
   });
 
@@ -110,8 +110,8 @@ describe('GuestMenuUrlService', () => {
     expect(parsed.search).toBe('');
   });
 
-  it('throws when PUBLIC_APEX_DOMAIN is missing and there is no custom domain', async () => {
-    env.PUBLIC_APEX_DOMAIN = undefined;
+  it('throws when GUEST_APEX_DOMAIN is missing and there is no custom domain', async () => {
+    env.GUEST_APEX_DOMAIN = undefined;
     tenantRepo.listDomains.mockResolvedValue([]);
 
     await expect(service.execute({ tenant: makeTenant(), qrToken: QR_TOKEN })).rejects.toThrow();

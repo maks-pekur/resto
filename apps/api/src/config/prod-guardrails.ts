@@ -20,6 +20,8 @@ const DEV_DEFAULTS = {
   INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
   STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
   STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
+  RESEND_FROM: 'RestOS <noreply@resto.app>',
+  RESEND_REPLY_TO: 'support@resto.app',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
@@ -161,6 +163,11 @@ export const assertProdGuardrails = (
   if (env.PUBLIC_APEX_DOMAIN !== undefined && EPHEMERAL_HOST_RE.test(env.PUBLIC_APEX_DOMAIN)) {
     violations.push(
       `PUBLIC_APEX_DOMAIN is "${env.PUBLIC_APEX_DOMAIN}" — every QR sticker would carry it`,
+    );
+  }
+  if (env.GUEST_APEX_DOMAIN !== undefined && EPHEMERAL_HOST_RE.test(env.GUEST_APEX_DOMAIN)) {
+    violations.push(
+      `GUEST_APEX_DOMAIN is "${env.GUEST_APEX_DOMAIN}" — every QR sticker would carry it`,
     );
   }
 

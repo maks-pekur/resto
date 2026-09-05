@@ -27,6 +27,10 @@ suite('D-22 guest-menu host resolution', () => {
   let tenantSlug: string;
 
   beforeAll(async () => {
+    // 07.5-07: the guest-menu label is GUEST_APEX_DOMAIN (configuration), not a hardcoded
+    // "menu" segment — PUBLIC_APEX_DOMAIN is deliberately left unset here so branch 2 keeps
+    // exercising the website-host branch's own apex gate, unaffected by this change.
+    process.env.GUEST_APEX_DOMAIN = 'menu.resto.app';
     stack = await startRealStack({ natsEnabledInApp: false });
     tenantId = randomUUID();
     tenantSlug = 'res151-tenant';

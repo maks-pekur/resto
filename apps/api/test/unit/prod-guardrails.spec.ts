@@ -15,6 +15,8 @@ const okProdValues = {
   BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
   INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
   RESEND_API_KEY: 're_real_production_key_xyz',
+  RESEND_FROM: 'RestOS <noreply@resto-real.app>',
+  RESEND_REPLY_TO: 'support@resto-real.app',
   STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
   STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
   STRIPE_CONNECT_RETURN_URL: 'https://admin.resto.app/stripe/return',
@@ -126,6 +128,18 @@ describe('assertProdGuardrails', () => {
     expect(() =>
       assertProdGuardrails(buildEnv({ INTERNAL_API_TOKEN: 'internal_dev_token_change_me' })),
     ).toThrow(/INTERNAL_API_TOKEN/);
+  });
+
+  it('throws when RESEND_FROM is the dev-default sender in production', () => {
+    expect(() =>
+      assertProdGuardrails(buildEnv({ RESEND_FROM: 'RestOS <noreply@resto.app>' })),
+    ).toThrow(/RESEND_FROM/);
+  });
+
+  it('throws when RESEND_REPLY_TO is the dev-default sender in production', () => {
+    expect(() => assertProdGuardrails(buildEnv({ RESEND_REPLY_TO: 'support@resto.app' }))).toThrow(
+      /RESEND_REPLY_TO/,
+    );
   });
 
   describe('API review 2026-06-15 BLOCK-4: critical-secret value checks', () => {
@@ -269,5 +283,17 @@ describe('hosts that only exist while developing', () => {
 
   it('lets a real production host through', () => {
     expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'resto.app' }))).not.toThrow();
+  });
+
+  it('refuses a guest apex domain that would be printed onto every QR sticker', () => {
+    expect(() => assertProdGuardrails(buildEnv({ GUEST_APEX_DOMAIN: 'localhost' }))).toThrow(
+      /QR sticker/u,
+    );
+  });
+
+  it('lets a real guest apex domain through', () => {
+    expect(() =>
+      assertProdGuardrails(buildEnv({ GUEST_APEX_DOMAIN: 'guest.invalid' })),
+    ).not.toThrow();
   });
 });

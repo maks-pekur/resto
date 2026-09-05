@@ -171,6 +171,10 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
     // GuestMenuUrlService throws building a table's qrUrl without this (10.3-07/08 precedent) —
     // this plan's own case 12 renumbers a table through the admin route, which renders one.
     process.env.PUBLIC_APEX_DOMAIN = 'resto.app';
+    // GuestMenuUrlService reads GUEST_APEX_DOMAIN, not PUBLIC_APEX_DOMAIN (07.5-07: the guest
+    // label is configuration, not a hardcoded "menu" segment) — same value as tenantHost below,
+    // so /v1/menu/availability keeps resolving this fixture's tenant.
+    process.env.GUEST_APEX_DOMAIN = 'menu.resto.app';
     stack = await startRealStack({ natsEnabledInApp: false });
 
     tenantSlug = `tbl-avail-${randomUUID().slice(0, 8)}`;
