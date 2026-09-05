@@ -385,7 +385,7 @@ Plans:
 
 **Wave 1** _(repo artifacts — no server needed; 06 and 07 share no files and run in parallel)_
 
-- [ ] 07.5-06-PLAN.md — `docker-compose.prod.yml` + Caddyfile + apex-parameterized env templates + `-v` guard + `migrate` image stage + backup/restore-drill scripts, all proven by a local end-to-end rehearsal; names the founder prerequisites (apex domain, Hetzner, Stripe/Resend — the two `assertProdGuardrails` refuses to boot without)
+- [x] 07.5-06-PLAN.md — `docker-compose.prod.yml` + Caddyfile + apex-parameterized env templates + `-v` guard + `migrate` image stage + backup/restore-drill scripts, all proven by a local end-to-end rehearsal; names the founder prerequisites (apex domain, Hetzner, Stripe/Resend — the two `assertProdGuardrails` refuses to boot without)
 - [ ] 07.5-07-PLAN.md — the two Cloudflare Workers (admin + qr-menu): same-origin `/v1/*` (+`/api/*`) proxy, `X-Forwarded-Host` tenant preservation, and per-tenant edge cache keys with cross-tenant isolation proven by test; retires the admin Dockerfile
 
 **Wave 2** _(the live box — depends on 06's compose files and 07's Workers)_
@@ -1254,7 +1254,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 6/11           | In Progress   |            |
+| 7.5. Production Deploy                        | 7/11 | In Progress|  |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
 | 10. Admin Order Intake                        | 12/13          | In Progress   |            |
