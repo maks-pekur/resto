@@ -29,7 +29,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "vite build",
+        "command": "vite build && cp dist/qr/index.html dist/index.html",
         "cwd": "apps/qr-menu"
       },
       "outputs": ["{projectRoot}/dist"]

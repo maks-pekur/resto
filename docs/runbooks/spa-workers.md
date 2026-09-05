@@ -1,74 +1,108 @@
 # SPA Workers — admin and qr-menu on Cloudflare
 
 `apps/admin` and `apps/qr-menu` are Vite SPAs served by Cloudflare Workers with
-Static Assets, each bundling its own same-origin `/v1/*` (`/api/*` too, for
-admin) proxy to the API. Neither Worker's own source or config names a
-hostname — every apex is supplied at deploy time.
+Static Assets. Neither project has a Worker script — both are assets-only.
+Under the single-apex scheme (`.planning/notes/url-scheme-single-apex.md`)
+their hostnames are ordinary hostnames Caddy already serves, so there is
+nothing for a Worker script to proxy.
 
-## Why Workers, not classic Pages
+## One zone, one apex
 
-Classic Cloudflare Pages custom domains do not support wildcard subdomains,
-and never have. The app already requires wildcard per-tenant hosts for both
-surfaces (`<slug>.<admin-apex>`, `<slug>.<guest-apex>`) — a Pages project
-would work for the apex/demo case and hard-block the moment a second tenant
-needs its own subdomain. Cloudflare Workers with Static Assets serve the
-identical SPA bundle and additionally let the same Worker script implement
-the same-origin proxy, which Pages cannot do at all.
+Every surface lives at depth ≤ 1 of a single zone (`<apex>`), which is what
+the free Universal SSL certificate covers — SANs `DNS:<apex>, DNS:*.<apex>`,
+measured live 2026-09-05 (`07.5-RESEARCH.md` M-03):
 
-## The three-apex map
+| Hostname            | Serves                                     |
+| ------------------- | ------------------------------------------ |
+| `<apex>`            | marketing landing (website, via Caddy)     |
+| `<apex>/admin*`     | admin SPA (Worker Route → Static Assets)   |
+| `<slug>.<apex>`     | tenant storefront (website, via Caddy)     |
+| `<slug>.<apex>/qr*` | QR menu SPA (Worker Route → Static Assets) |
+| `api.<apex>`        | API (Caddy → `api:3000`)                   |
 
-Cloudflare's free Universal SSL covers a zone's root domain and its
-first-level subdomains only, not deeper subdomains
-(`[CITED: developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/]`).
-A `<slug>.menu.<apex>`-shaped host sits at depth 2 under a single apex and
-would fail the TLS handshake. The fix is three apexes, one per surface
-family, so every host is at depth ≤ 1 of its own zone:
+## Why assets-only, not a Worker script
 
-| Env parameter        | Hostnames                          | Serves                      |
-| -------------------- | ---------------------------------- | --------------------------- |
-| `PUBLIC_APEX_DOMAIN` | `<apex>`, `*.<apex>`, `api.<apex>` | website + API (Caddy → VPS) |
-| `ADMIN_APEX_DOMAIN`  | `<admin-apex>`, `*.<admin-apex>`   | admin Worker                |
-| `GUEST_APEX_DOMAIN`  | `*.<guest-apex>`                   | qr-menu Worker              |
+The two SPAs used to carry a Worker script that reverse-proxied `/v1/*` (and
+`/api/*` for admin) to the API's own hostname, because under the three-apex
+scheme the SPA hostnames (`<admin-apex>`, `*.<guest-apex>`) had no origin
+behind them — same-origin API access required a proxy. Under one apex,
+`<apex>/admin` and `<slug>.<apex>/qr` are paths on hostnames Caddy already
+serves; the SPA's own `/v1/*` and `/api/*` calls simply miss the Worker Route
+and fall through to Caddy. There is nothing left to proxy, so the Worker
+scripts, their cross-origin cache options, their forwarded-host handling and
+their 440 lines of tests were deleted rather than rewritten.
 
-`GUEST_APEX_DOMAIN` is also `apps/api`'s own env var (`env.schema.ts`) — the
-resolver's guest branch (`tenant-resolver.service.ts`) matches
-`<slug>.<GUEST_APEX_DOMAIN>` exactly, the same way the website branch matches
-`<slug>.<PUBLIC_APEX_DOMAIN>`. Neither branch is a shape test any more: under
-this map both hosts have the identical shape `<slug>.<apex>`, so what
-separates them is only which configured apex the remainder equals.
-`<slug>.<ADMIN_APEX_DOMAIN>` is not a value either branch's apex can equal
-(a different zone), so it falls through both and resolves to no tenant.
+## Billing — why assets-only matters operationally
+
+(`[CITED: developers.cloudflare.com/workers/static-assets/billing-and-limitations/]`)
+Cloudflare documents that requests to static assets are free and unlimited,
+while requests that reach a Worker's own script are billed under ordinary
+Workers pricing — and for a free-tier project, a config option exists that
+forces every matching request through the script regardless of asset
+availability, falling back to a rate-limited response once the free-tier
+request budget is exhausted rather than serving the asset.
+
+Both Worker configs previously set that option on `/v1/*` (and `/api/*` for
+admin), putting every JS/CSS asset of both SPAs behind the free tier's
+100k/day request budget — a menu that goes white at a busy restaurant once
+the budget is hit. Neither config declares a Worker script any more, so
+every request to either SPA is a static-asset request: free and unlimited,
+no such cliff to hit.
+
+## The subdirectory trap (measured, not read from the docs)
+
+(`[CITED: developers.cloudflare.com/workers/static-assets/routing/advanced/serving-a-subdirectory/]`,
+requires Wrangler ≥ 3.98.0; this repo is on 4.129.0)
+
+> "Assets defined for a Worker must be nested in a directory structure that
+> mirrors the desired path. For example, to serve assets from
+> `example.com/blog/*`, create a `blog` directory in your asset directory."
+
+Measured under `wrangler 4.129.0 dev --local` (research M-09): the
+single-page-application fallback serves `/index.html` at the asset **root**,
+not the subdirectory's index. With assets nested under `dist/admin/` or
+`dist/qr/` and nothing at `dist/index.html`, the SPA's own root loads
+(`/admin/`, `/qr/`) but every deep link 404s — for `qr-menu` this means a
+scanned sticker path (`/qr/t/<token>`) dies silently.
+
+The fix, measured working: both `build` scripts run `vite build` and then
+copy the subdirectory's `index.html` to the asset root —
+`cp dist/admin/index.html dist/index.html` (admin),
+`cp dist/qr/index.html dist/index.html` (qr-menu). Both `package.json` `build`
+scripts and both Nx `project.json` `build` targets run the copy, so a build
+triggered through either path produces the same two files.
+
+## Target config shape
+
+```jsonc
+{
+  "name": "resto-qr-menu",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application",
+  },
+}
+```
+
+Neither `wrangler.jsonc` declares a Worker script entry point, an assets
+binding, the free-tier request-forcing option, `routes`, or `vars` — the apex
+stays a deploy-time argument, enforced by `assert-no-domain-literals.sh`.
 
 ## Deploy invocations
 
-Neither `wrangler.jsonc` carries `routes` or `vars` — those are the two
-fields that would otherwise bake an apex into committed config. They are
-supplied on the CLI at deploy time; each Worker's routes now live on a single
-zone, so no invocation needs a per-route `zone_name`.
-
 ```bash
-# qr-menu
-wrangler deploy --var API_ORIGIN:"https://api.$PUBLIC_APEX_DOMAIN" \
-  --routes "*.$GUEST_APEX_DOMAIN/*"
-
 # admin
-wrangler deploy --var API_ORIGIN:"https://api.$PUBLIC_APEX_DOMAIN" \
-  --routes "$ADMIN_APEX_DOMAIN/*" \
-  --routes "*.$ADMIN_APEX_DOMAIN/*"
+wrangler deploy --routes "$PUBLIC_APEX_DOMAIN/admin*"
+
+# qr-menu
+wrangler deploy --routes "*.$PUBLIC_APEX_DOMAIN/qr*"
 ```
 
-`--routes`/`--route` and `--var` are both present in `wrangler@4.129.0`
-(confirmed via `wrangler deploy --help`), so the direct-CLI-flags path is the
-one this phase uses — no rendered-`wrangler.generated.jsonc`/`envsubst`
-fallback was needed. Plans 08 and 09 invoke the commands above verbatim.
-
-Each app also has a `worker:dry-run` script (`vite build && wrangler deploy
---dry-run` with the flags above) confirmed to succeed with all three apexes
-supplied from the environment. **`--dry-run` needs no Cloudflare credentials
-and therefore validates only that the invocation parses and the bundle
-builds — it does not contact Cloudflare and cannot prove a route binds or
-that a wildcard pattern is accepted for the zone.** Route binding is proven
-for the first time in plan 08 Task 3, against the real zones.
+No origin variable to pass — there is no Worker script left to read one.
+Route binding is proven against the real zone in plan 07.5-08, not by
+`--dry-run` (`wrangler deploy --dry-run` never contacts Cloudflare and cannot
+prove a route binds).
 
 ## Build-time env each bundle needs
 
@@ -78,57 +112,40 @@ for the first time in plan 08 Task 3, against the real zones.
 | admin   | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe Connect onboarding UI                                                    |
 | qr-menu | `VITE_STRIPE_PUBLISHABLE_KEY` | guest checkout Payment Element                                                  |
 
-Neither app reads `VITE_API_ORIGIN` — it was deleted in phase 10.2 (D-39)
-because admin talking cross-origin loses the session cookie. Both apps talk
-to the API same-origin, through their own Worker's proxy.
+Neither app reads a build-time API origin var. `/v1/*` calls are
+root-absolute and same-origin; Caddy owns `/v1/*` (and `/api/*` for admin) on
+the hostname the browser is actually on.
 
 ## DNS records the routes need
 
-One proxied record per Worker-bound wildcard host — Cloudflare requires some
-DNS record to exist for a Worker Route to trigger, even though the Worker
-never contacts whatever IP the record points at. Plan 08 creates these on the
-real zones:
+Cloudflare requires some DNS record to exist for a Worker Route to trigger,
+even though a Worker Route with no script never contacts whatever IP the
+record points at:
 
-| Host             | Type | Target              | Proxied |
-| ---------------- | ---- | ------------------- | ------- |
-| `<admin-apex>`   | A    | dummy (`192.0.2.1`) | Yes     |
-| `*.<admin-apex>` | A    | dummy               | Yes     |
-| `*.<guest-apex>` | A    | dummy               | Yes     |
+| Host       | Type | Target          | Proxied |
+| ---------- | ---- | --------------- | ------- |
+| `<apex>`   | A    | the VPS (Caddy) | Yes     |
+| `*.<apex>` | A    | the VPS (Caddy) | Yes     |
 
-## Cache-key rule
+Both records already exist for Caddy's own routing — no new record is created
+for the Worker Routes; a Worker Route on an existing proxied hostname is
+enough.
 
-The qr-menu Worker's cache key is built from the **incoming** request URL,
-never the rewritten origin URL — `apps/qr-menu/test/worker.spec.ts` (`keys
-the cache on the incoming request URL, not the rewritten origin URL`, and the
-cross-tenant isolation test) is the test that enforces it. Keying on the
-rewritten URL collapses every tenant's `/v1/menu` request onto one cache
-entry.
+## The edge cache — the platform's default, not a Worker's
 
-## The `X-Resto-Cache` contract
+The qr-menu Worker used to hold a hand-rolled cache entry of its own, keyed
+deliberately on the incoming request URL rather than the rewritten origin
+URL, because the rewrite it performed (`<slug>.<apex>` → the API's own
+hostname) would otherwise have collapsed every tenant's `/v1/menu` onto one
+shared cache entry. With no rewrite, `<slug>.<apex>/v1/menu` is served
+directly by Caddy and the Cloudflare **zone** cache keys on the full request
+URL — which already carries the tenant in its host. The property the
+Worker's own cache existed to guarantee is Cloudflare's default behaviour for
+this request shape; there is no Worker-side cache left to test. The live
+two-tenant body comparison in plans 07.5-08/07.5-10's smoke is the
+replacement evidence, run against the real edge rather than a stubbed
+`fetch`.
 
-Both Workers set `X-Resto-Cache` on every response they return from a
-proxied path — a Worker serving from `caches.default` does not produce
-Cloudflare's own `cf-cache-status` header, so this is the signal a live smoke
-can assert instead of guessing:
-
-- qr-menu: `MISS` (first request), `HIT` (served from the Worker cache),
-  `BYPASS` (any non-cacheable `/v1/` path — mutating routes, `Set-Cookie`
-  responses, non-`ok` responses).
-- admin: always `BYPASS` — the admin Worker never touches the Cache API at
-  all; every proxied response is `BYPASS` by construction.
-
-## The zone cache — Workers replace it, they do not sit beside it
-
-Every subrequest either Worker issues to `api.<PUBLIC_APEX_DOMAIN>` carries
-`cf: { cacheTtl: 0, cacheEverything: false }` — asserted on the recorded
-`fetch` call in both Worker test suites. That subrequest is tenant-blind (the
-URL is identical for every tenant); if the `api.<apex>` zone ever cached it
-via a Cache Rule, "Cache Everything", or the CDN cache-rules D-08 originally
-contemplated, tenant B's Worker would receive tenant A's menu before its own
-correctly-keyed cache entry is ever consulted. **These Workers' own
-tenant-keyed cache replaces the CDN cache rules D-08 contemplated for
-`/v1/menu*` — the zone must not cache `api.<apex>/v1/*` at all.** Plan 08's
-Cloudflare runbook sets a Bypass rule on that path as a second, independent
-layer (belt-and-braces): the `cf` opt-out on the subrequest is the primary
-guarantee and does not depend on the Bypass rule also being correctly
-configured.
+`cf-cache-status` — Cloudflare's own response header — is the cache signal to
+read at the edge now; the Worker-produced cache-status header this system
+used to set no longer exists, because there is no Worker producing it.

@@ -12,6 +12,7 @@ export default defineConfig({
   base: '/admin/',
   plugins: [tailwindcss(), react()],
   build: {
+    outDir: 'dist/admin',
     target: 'es2022',
     sourcemap: 'hidden',
     rollupOptions: {

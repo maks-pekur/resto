@@ -6,8 +6,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "build": "vite build",
-    "worker:dry-run": "vite build && wrangler deploy --dry-run --var API_ORIGIN:\"https://api.$PUBLIC_APEX_DOMAIN\" --routes \"*.$GUEST_APEX_DOMAIN/*\""
+    "build": "vite build && cp dist/qr/index.html dist/index.html"
   },
   "dependencies": {
     "@fontsource-variable/nunito": "^5.2.5",
@@ -22,7 +21,6 @@
     "sonner": "^2.0.7"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "5.20260904.1",
     "@resto/config-eslint": "workspace:*",
     "@resto/config-typescript": "workspace:*",
     "@tailwindcss/vite": "^4.3.1",

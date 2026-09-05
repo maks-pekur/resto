@@ -160,9 +160,6 @@ importers:
         specifier: ^3.25.76
         version: 3.25.76
     devDependencies:
-      '@cloudflare/workers-types':
-        specifier: 5.20260904.1
-        version: 5.20260904.1
       '@resto/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -402,9 +399,6 @@ importers:
         specifier: ^2.0.7
         version: 2.0.7(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
     devDependencies:
-      '@cloudflare/workers-types':
-        specifier: 5.20260904.1
-        version: 5.20260904.1
       '@resto/config-eslint':
         specifier: workspace:*
         version: link:../../packages/config-eslint
@@ -10681,7 +10675,8 @@ snapshots:
   '@cloudflare/workerd-windows-64@1.20260903.1':
     optional: true
 
-  '@cloudflare/workers-types@5.20260904.1': {}
+  '@cloudflare/workers-types@5.20260904.1':
+    optional: true
 
   '@commitlint/cli@21.0.1(@types/node@25.8.0)(conventional-commits-parser@6.4.0)(typescript@6.0.3)':
     dependencies:
