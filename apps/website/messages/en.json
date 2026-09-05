@@ -77,6 +77,11 @@
     "contactHeading": "Contact Us",
     "faqHeading": "Frequently Asked Questions"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "The digital home for your restaurant — menu, orders and more, all in one place.",
+    "adminCta": "Operator sign in"
+  },
   "errors": {
     "tenantNotFound": "Restaurant not found",
     "tenantNotFoundBody": "This restaurant isn't on RestOS yet. If you followed a link, it may have changed.",

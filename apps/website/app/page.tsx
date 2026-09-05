@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import type { Metadata } from 'next';
@@ -7,6 +8,8 @@ import {
   TenantNotFoundError,
   TenantSuspendedError,
 } from '@/lib/api-client';
+import { isApexHost } from '@/lib/apex-host';
+import { ApexLanding } from '@/components/marketing/apex-landing';
 import { MenuPageClient } from '@/components/menu/menu-page-client';
 import { siteFooterLinks } from '@/components/layout/site-chrome';
 
@@ -20,6 +23,11 @@ async function SuspendedState() {
 }
 
 export async function generateMetadata(): Promise<Metadata> {
+  const h = await headers();
+  if (isApexHost(h.get('host') ?? '')) {
+    return { title: 'RestOS', robots: { index: false } };
+  }
+
   try {
     const menu = await fetchMenuPublic();
     const tenantName = menu.tenant?.displayName ?? 'Restaurant';
@@ -41,6 +49,11 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function MenuPage() {
+  const h = await headers();
+  if (isApexHost(h.get('host') ?? '')) {
+    return <ApexLanding />;
+  }
+
   try {
     const [menu, availability, footerLinks] = await Promise.all([
       fetchMenuPublic(),

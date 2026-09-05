@@ -77,6 +77,11 @@
     "contactHeading": "Contacto",
     "faqHeading": "Preguntas frecuentes"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "El hogar digital de tu restaurante — menú, pedidos y más, todo en un solo lugar.",
+    "adminCta": "Acceso para operadores"
+  },
   "errors": {
     "tenantNotFound": "Restaurante no encontrado",
     "tenantNotFoundBody": "Este restaurante todavía no está en RestOS. Si seguiste un enlace, puede que haya cambiado.",
