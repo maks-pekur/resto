@@ -43,14 +43,10 @@ MOCK_CADDYFILE="$MOCK_DIR/Caddyfile"
 MOCK_COMPOSE_FILE="$MOCK_DIR/resend-mock.compose.yml"
 RESULT_FILE="$(mktemp)"
 
-# Three distinct reserved apexes (RFC 2606 .invalid — unroutable, and unlike
-# `localhost` not matched by EPHEMERAL_HOST_RE, confirmed by hand:
-# `node -e "...EPHEMERAL_HOST_RE.test('example.invalid')"` -> false, same
-# for admin.invalid / guest.invalid) so the rehearsal exercises the same
-# three-parameter shape production uses.
+# RFC 2606 .invalid — unroutable, and unlike `localhost` not matched by
+# EPHEMERAL_HOST_RE, confirmed by hand:
+# `node -e "...EPHEMERAL_HOST_RE.test('example.invalid')"` -> false.
 PUBLIC_APEX_DOMAIN="example.invalid"
-ADMIN_APEX_DOMAIN="admin.invalid"
-GUEST_APEX_DOMAIN="guest.invalid"
 
 POSTGRES_ADMIN_USER="resto_admin"
 POSTGRES_ADMIN_PASSWORD="rehearsal_admin_pwd_local_only"
@@ -93,8 +89,6 @@ openssl req -x509 -newkey rsa:2048 -keyout "$CERT_DIR/origin.key" -out "$CERT_DI
 
 cat >"$COMPOSE_ENV_FILE" <<ENV
 PUBLIC_APEX_DOMAIN=${PUBLIC_APEX_DOMAIN}
-ADMIN_APEX_DOMAIN=${ADMIN_APEX_DOMAIN}
-GUEST_APEX_DOMAIN=${GUEST_APEX_DOMAIN}
 GHCR_OWNER=local
 API_IMAGE_TAG=rehearsal
 WEBSITE_IMAGE_TAG=rehearsal
@@ -150,19 +144,17 @@ RESEND_REPLY_TO=support@${PUBLIC_APEX_DOMAIN}
 STRIPE_SECRET_KEY=sk_test_rehearsal_local_only
 STRIPE_WEBHOOK_SECRET=whsec_rehearsal_local_only
 STRIPE_CONNECT_CLIENT_ID=ca_rehearsal_local_only
-STRIPE_CONNECT_RETURN_URL=https://${ADMIN_APEX_DOMAIN}/stripe/return
-STRIPE_CONNECT_REFRESH_URL=https://${ADMIN_APEX_DOMAIN}/stripe/refresh
+STRIPE_CONNECT_RETURN_URL=https://${PUBLIC_APEX_DOMAIN}/admin/tenant/payouts?stripe=return
+STRIPE_CONNECT_REFRESH_URL=https://${PUBLIC_APEX_DOMAIN}/admin/tenant/payouts?stripe=refresh
 
 # Docker bridge only — there is no Cloudflare hop locally. Production
 # additionally needs Cloudflare's ranges (api.env.example); do not copy
 # this narrower value onto the box.
 TRUST_PROXY=172.16.0.0/12
 
-AUTH_COOKIE_DOMAIN=.${ADMIN_APEX_DOMAIN}
-ADMIN_WEB_URL=https://${ADMIN_APEX_DOMAIN}
+ADMIN_WEB_URL=https://${PUBLIC_APEX_DOMAIN}/admin
 WEBSITE_PUBLIC_URL=https://${PUBLIC_APEX_DOMAIN}
 PUBLIC_APEX_DOMAIN=${PUBLIC_APEX_DOMAIN}
-GUEST_APEX_DOMAIN=${GUEST_APEX_DOMAIN}
 
 CORS_ALLOWED_ORIGINS=https://${PUBLIC_APEX_DOMAIN},https://*.${PUBLIC_APEX_DOMAIN}
 ENV
@@ -173,11 +165,12 @@ NODE_ENV=production
 DEPLOYMENT_ENVIRONMENT=production
 NEXT_PUBLIC_API_ORIGIN=https://api.${PUBLIC_APEX_DOMAIN}
 WEBSITE_URL=https://${PUBLIC_APEX_DOMAIN}
+API_INTERNAL_ORIGIN=http://api:3000
 ENV
 chmod 600 "$ENV_WEBSITE_FILE"
 
 echo "=== local-prod-rehearsal.sh: hostname-depth check on the rendered env ===" | tee -a "$RESULT_FILE"
-PUBLIC_APEX_DOMAIN="$PUBLIC_APEX_DOMAIN" ADMIN_APEX_DOMAIN="$ADMIN_APEX_DOMAIN" GUEST_APEX_DOMAIN="$GUEST_APEX_DOMAIN" \
+PUBLIC_APEX_DOMAIN="$PUBLIC_APEX_DOMAIN" \
   bash "$REPO_ROOT/infra/scripts/assert-hostname-depth.sh" "$ENV_API_FILE" | tee -a "$RESULT_FILE"
 
 cat >"$MOCK_CADDYFILE" <<'CADDY'
@@ -224,6 +217,83 @@ docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" -f "$MOCK_COMPOSE_FILE" --e
   -e "AUTH_ROLE_PASSWORD=${AUTH_ROLE_PASSWORD}" \
   migrate /workspace/node_modules/.bin/tsx src/cli/provision-roles-ci.ts
 
+echo "=== local-prod-rehearsal.sh: seeding rows so the restore drill can fail (07.5-14) ===" | tee -a "$RESULT_FILE"
+POSTGRES_CID="$(docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" -f "$MOCK_COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" ps -q postgres)"
+
+PIZZA_TENANT_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_LOCATION_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_CATEGORY_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_ITEM1_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_ITEM2_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_ORDER1_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_ORDER2_ID="$(node -e 'console.log(crypto.randomUUID())')"
+PIZZA_DOMAIN_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_TENANT_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_LOCATION_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_CATEGORY_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_ITEM_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_ORDER_ID="$(node -e 'console.log(crypto.randomUUID())')"
+SUSHI_DOMAIN_ID="$(node -e 'console.log(crypto.randomUUID())')"
+
+# Direct INSERTs, not seed-demo: seed-demo refuses outside NODE_ENV=development
+# (tools/scripts/seed/commands/seed-demo.ts:991) and this rehearsal is
+# deliberately NODE_ENV=production. Composite FKs on every tenant-scoped
+# child table (ADR-0020 I-2) reject a lazy insert — the schema doing its
+# job — so parent rows are inserted before children, as the admin role over
+# the compose-internal Postgres (the same hop migrate uses).
+docker exec -i "$POSTGRES_CID" psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -v ON_ERROR_STOP=1 <<SQL
+INSERT INTO tenants (id, slug, display_name, status, locale, content_locales, timezone, default_currency, country)
+VALUES
+  ('$PIZZA_TENANT_ID', 'pizza', 'Pizza Palace', 'active', 'en', ARRAY['en'], 'UTC', 'USD', 'GB'),
+  ('$SUSHI_TENANT_ID', 'sushi', 'Sushi Spot', 'active', 'en', ARRAY['en'], 'UTC', 'USD', 'GB');
+
+INSERT INTO tenant_domains (id, tenant_id, domain, kind, is_primary, verified_at)
+VALUES
+  ('$PIZZA_DOMAIN_ID', '$PIZZA_TENANT_ID', 'pizza.${PUBLIC_APEX_DOMAIN}', 'subdomain', true, now()),
+  ('$SUSHI_DOMAIN_ID', '$SUSHI_TENANT_ID', 'sushi.${PUBLIC_APEX_DOMAIN}', 'subdomain', true, now());
+
+INSERT INTO locations (id, tenant_id, name, slug, status)
+VALUES
+  ('$PIZZA_LOCATION_ID', '$PIZZA_TENANT_ID', 'Pizza Palace Downtown', 'downtown', 'active'),
+  ('$SUSHI_LOCATION_ID', '$SUSHI_TENANT_ID', 'Sushi Spot Downtown', 'downtown', 'active');
+
+INSERT INTO menu_categories (id, tenant_id, slug, name, status)
+VALUES
+  ('$PIZZA_CATEGORY_ID', '$PIZZA_TENANT_ID', 'pizzas', '{"en":"Pizzas"}'::jsonb, 'published'),
+  ('$SUSHI_CATEGORY_ID', '$SUSHI_TENANT_ID', 'rolls', '{"en":"Rolls"}'::jsonb, 'published');
+
+INSERT INTO menu_items (id, tenant_id, category_id, slug, name, base_price, currency, status)
+VALUES
+  ('$PIZZA_ITEM1_ID', '$PIZZA_TENANT_ID', '$PIZZA_CATEGORY_ID', 'margherita', '{"en":"Margherita"}'::jsonb, '9.99', 'USD', 'published'),
+  ('$PIZZA_ITEM2_ID', '$PIZZA_TENANT_ID', '$PIZZA_CATEGORY_ID', 'pepperoni', '{"en":"Pepperoni"}'::jsonb, '11.99', 'USD', 'published'),
+  ('$SUSHI_ITEM_ID', '$SUSHI_TENANT_ID', '$SUSHI_CATEGORY_ID', 'california-roll', '{"en":"California Roll"}'::jsonb, '7.99', 'USD', 'published');
+
+INSERT INTO orders (id, tenant_id, location_id, idempotency_key, order_number, status, order_type, subtotal, total, currency, short_number)
+VALUES
+  ('$PIZZA_ORDER1_ID', '$PIZZA_TENANT_ID', '$PIZZA_LOCATION_ID', 'rehearsal-pizza-order-1', 'PZ-0001', 'placed', 'pickup', '9.99', '9.99', 'USD', 1),
+  ('$PIZZA_ORDER2_ID', '$PIZZA_TENANT_ID', '$PIZZA_LOCATION_ID', 'rehearsal-pizza-order-2', 'PZ-0002', 'completed', 'delivery', '11.99', '11.99', 'USD', 2),
+  ('$SUSHI_ORDER_ID', '$SUSHI_TENANT_ID', '$SUSHI_LOCATION_ID', 'rehearsal-sushi-order-1', 'SU-0001', 'placed', 'dine_in', '7.99', '7.99', 'USD', 1);
+SQL
+
+# A drill comparing 0 == 0 always passes — that is the defect this fixes.
+# Fail loudly here, before backup-nightly.sh ever runs, if seeding silently
+# produced a zero count in any of the four manifest-tracked tables.
+SEED_COUNTS="$(docker exec -i "$POSTGRES_CID" psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -t -A -v ON_ERROR_STOP=1 <<'SQL'
+SELECT 'tenants=' || (SELECT count(*) FROM tenants) ||
+       ' orders=' || (SELECT count(*) FROM orders) ||
+       ' menu_items=' || (SELECT count(*) FROM menu_items) ||
+       ' tenant_domains=' || (SELECT count(*) FROM tenant_domains);
+SQL
+)"
+echo "seeded: $SEED_COUNTS" | tee -a "$RESULT_FILE"
+for name in tenants orders menu_items tenant_domains; do
+  actual="$(printf '%s' "$SEED_COUNTS" | grep -oE "${name}=[0-9]+" | cut -d= -f2)"
+  if [ -z "$actual" ] || [ "$actual" -eq 0 ]; then
+    echo "local-prod-rehearsal.sh: FAILED — seeded $name count is zero; the restore drill would prove nothing" >&2
+    exit 1
+  fi
+done
+
 echo "=== local-prod-rehearsal.sh: up -d --no-deps api caddy (website image is not built by this plan) ===" | tee -a "$RESULT_FILE"
 docker compose -p "$PROJECT_NAME" -f "$COMPOSE_FILE" -f "$MOCK_COMPOSE_FILE" --env-file "$COMPOSE_ENV_FILE" up -d --no-deps api caddy
 
@@ -255,6 +325,17 @@ echo "$READYZ_BODY" | grep -q 'outbox_leader' || {
   exit 1
 }
 echo "/readyz reports outbox_leader state: $READYZ_BODY" | tee -a "$RESULT_FILE"
+
+# The single mechanism the whole Worker unwind rests on: Caddy routing
+# /v1/* to the api on a WILDCARD tenant host, not just the api's own host
+# above. If this is wrong, the guest menu has no origin at all.
+echo "=== local-prod-rehearsal.sh: /v1/menu on a wildcard tenant host through Caddy ===" | tee -a "$RESULT_FILE"
+MENU_BODY="$(curl -sk --resolve "pizza.${PUBLIC_APEX_DOMAIN}:443:127.0.0.1" "https://pizza.${PUBLIC_APEX_DOMAIN}/v1/menu")"
+echo "$MENU_BODY" | grep -q '"slug":"pizza"' || {
+  echo "local-prod-rehearsal.sh: FAILED — /v1/menu on pizza.${PUBLIC_APEX_DOMAIN} through Caddy did not return the pizza tenant's menu: $MENU_BODY" >&2
+  exit 1
+}
+echo "/v1/menu via Caddy's wildcard tenant host routing: pizza tenant's menu returned" | tee -a "$RESULT_FILE"
 
 echo "=== local-prod-rehearsal.sh: backup (BACKUP_LOCAL_ONLY=1) ===" | tee -a "$RESULT_FILE"
 BACKUP_DIR="$(mktemp -d)"

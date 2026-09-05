@@ -2,8 +2,8 @@
 set -uo pipefail
 
 # The apex-parameterization guarantee, enforced once instead of per-plan.
-# Primary net: exact `grep -F` for each of the three real apex values —
-# exact and TLD-agnostic, so any apex is caught regardless of its TLD.
+# Primary net: exact `grep -F` for the one real apex value — exact and
+# TLD-agnostic, so any apex is caught regardless of its TLD.
 # Secondary net: a TLD-shaped regex, kept only as a backstop — it is not
 # the guarantee.
 
@@ -109,29 +109,21 @@ run_self_test() {
   local tmp failures=0
   tmp="$(mktemp -d)"
   local pub="${PUBLIC_APEX_DOMAIN:-example.invalid}"
-  local admin="${ADMIN_APEX_DOMAIN:-admin.invalid}"
-  local guest="${GUEST_APEX_DOMAIN:-guest.invalid}"
 
   echo "nothing interesting here" >"$tmp/clean.txt"
   echo "literal $pub appears here" >"$tmp/pub.txt"
-  echo "literal $admin appears here" >"$tmp/admin.txt"
-  echo "literal $guest appears here" >"$tmp/guest.txt"
   echo "https://ghcr.io/owner/image and https://stripe.com/x" >"$tmp/thirdparty.txt"
   # "!" stands in for the dot so this fixture's domain-shaped text never
   # appears literally in this file's own source — otherwise this guard's
   # real scan (which walks infra/scripts/*) would flag its own fixture.
   printf '%s\n' "unexpected-domain!de here" | tr '!' '.' >"$tmp/tldhit.txt"
+  # A second-level-ccTLD-shaped fixture ("!" stands in for "." same as
+  # above) — confirms the TLD_REGEX's ua entry catches a real second-
+  # level TLD, not just the historical app one.
+  printf '%s\n' "restos!pp!ua here" | tr '!' '.' >"$tmp/pp-ua.txt"
 
   if scan_exact "$pub" "$tmp/pub.txt"; then
     echo "SELF-TEST FAIL: pub.txt should have been rejected" >&2
-    failures=1
-  fi
-  if scan_exact "$admin" "$tmp/admin.txt"; then
-    echo "SELF-TEST FAIL: admin.txt should have been rejected" >&2
-    failures=1
-  fi
-  if scan_exact "$guest" "$tmp/guest.txt"; then
-    echo "SELF-TEST FAIL: guest.txt should have been rejected" >&2
     failures=1
   fi
   if ! scan_exact "$pub" "$tmp/clean.txt"; then
@@ -144,6 +136,10 @@ run_self_test() {
   fi
   if scan_tld "$tmp/tldhit.txt"; then
     echo "SELF-TEST FAIL: tldhit.txt should have been rejected by TLD net" >&2
+    failures=1
+  fi
+  if scan_tld "$tmp/pp-ua.txt"; then
+    echo "SELF-TEST FAIL: pp-ua.txt (second-level ccTLD fixture) should have been rejected by TLD net" >&2
     failures=1
   fi
 
@@ -162,12 +158,10 @@ main() {
     paths=(.)
   fi
 
-  local public admin guest mode failures=0
+  local public mode failures=0
   public="$(resolve_apex PUBLIC_APEX_DOMAIN)"
-  admin="$(resolve_apex ADMIN_APEX_DOMAIN)"
-  guest="$(resolve_apex GUEST_APEX_DOMAIN)"
 
-  if [ -n "$public" ] && [ -n "$admin" ] && [ -n "$guest" ]; then
+  if [ -n "$public" ]; then
     mode="exact+tld"
   else
     mode="degraded-tld-only"
@@ -176,10 +170,8 @@ main() {
 
   if [ "$mode" = "exact+tld" ]; then
     scan_exact "$public" "${paths[@]}" || failures=1
-    scan_exact "$admin" "${paths[@]}" || failures=1
-    scan_exact "$guest" "${paths[@]}" || failures=1
   else
-    echo "assert-no-domain-literals.sh: apex variables unavailable — running TLD-regex net only" >&2
+    echo "assert-no-domain-literals.sh: apex variable unavailable — running TLD-regex net only" >&2
   fi
 
   scan_tld "${paths[@]}" || failures=1

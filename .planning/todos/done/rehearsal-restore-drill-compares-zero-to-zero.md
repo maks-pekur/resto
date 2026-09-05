@@ -2,7 +2,8 @@
 title: The rehearsal's restore drill compares zero to zero on every run
 date: 2026-09-05
 priority: low
-status: pending
+status: done
+closed: 2026-09-06
 ---
 
 # `PASSED tenants=0 orders=0 menu_items=0 tenant_domains=0` reads as proof and is not
@@ -38,3 +39,20 @@ about the local rehearsal's own repeatable value.
 - The phase's own standing rule, which this is an instance of: a verifier that cannot fail is
   not a verifier. See [[universal-ssl-does-not-cover-our-hostnames]] for the defect that rule
   was written after.
+
+## Closed 2026-09-06 (07.5-14 Task 2)
+
+`local-prod-rehearsal.sh` now inserts two tenants, two locations, two tenant_domains rows, two
+menu_categories, three menu_items and three orders directly via `psql` (as the Postgres admin
+role, after `provision-roles-ci.ts` and before `backup-nightly.sh`), and asserts all four
+manifest-tracked counts are non-zero before calling `backup-nightly.sh`, failing loudly
+otherwise. Observed counts on both sides of a real restore, from a live rehearsal run:
+
+- Seeded (pre-backup): `tenants=2 orders=3 menu_items=3 tenant_domains=2`
+- `backup-nightly.sh` manifest: `{"tenants":2,"orders":3,"menu_items":3,"tenant_domains":2}`
+- `restore-drill.sh: PASSED elapsed=7s tenants=2 orders=3 menu_items=3 tenant_domains=2 observed_rto=7s`
+
+The drill was also watched failing: the same dump's manifest was copied and hand-tampered
+(`tenants: 2 -> 3`), and `restore-drill.sh` run again against the tampered copy reported
+`restore-drill.sh: FAILED — tenants expected=3 actual(resto_app)=2`, then correctly exited
+non-zero. A green `PASSED` now means something.

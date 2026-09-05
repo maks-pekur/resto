@@ -31,17 +31,13 @@ label_count() {
 }
 
 check_host() {
-  local host="$1" key="$2" apex matched="" hc ac depth
+  local host="$1" key="$2" apex="$PUBLIC_APEX_DOMAIN" matched="" hc ac depth
   [ -z "$host" ] && return 0
-  for apex in "$PUBLIC_APEX_DOMAIN" "$ADMIN_APEX_DOMAIN" "$GUEST_APEX_DOMAIN"; do
-    [ -z "$apex" ] && continue
-    if [ "$host" = "$apex" ] || [[ "$host" == *".$apex" ]]; then
-      matched="$apex"
-      break
-    fi
-  done
+  if [ -n "$apex" ] && { [ "$host" = "$apex" ] || [[ "$host" == *".$apex" ]]; }; then
+    matched="$apex"
+  fi
   if [ -z "$matched" ]; then
-    echo "FAIL: $key=$host does not end with any configured apex" >&2
+    echo "FAIL: $key=$host does not end with the configured apex" >&2
     return 1
   fi
   hc="$(label_count "$host")"
@@ -79,12 +75,10 @@ run_self_test() {
   local tmp failures=0
   tmp="$(mktemp -d)/env"
   local pub="${PUBLIC_APEX_DOMAIN:-example.invalid}"
-  local admin="${ADMIN_APEX_DOMAIN:-admin.invalid}"
 
   {
     echo "API_HOST=api.$pub"
-    echo "ADMIN_WEB_URL=https://$admin"
-    echo "AUTH_COOKIE_DOMAIN=.$admin"
+    echo "ADMIN_WEB_URL=https://$pub/admin"
     echo "CORS_ALLOWED_ORIGINS=https://$pub,https://*.$pub"
   } >"$tmp"
   if ! scan_env_file "$tmp"; then
