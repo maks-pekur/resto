@@ -39,6 +39,7 @@ suite('AnalyticsDrizzleReader', () => {
     tenantId: string;
     locationId: string;
     status: string;
+    paymentStatus?: string;
     total: string;
     createdAt: Date;
     customerPhone?: string | null;
@@ -50,6 +51,8 @@ suite('AnalyticsDrizzleReader', () => {
     idempotencyKey: input.id,
     orderNumber: `A-${String(input.shortNumber)}`,
     status: input.status,
+    paymentStatus: input.paymentStatus ?? 'paid',
+    paidAt: (input.paymentStatus ?? 'paid') === 'paid' ? input.createdAt : null,
     orderType: 'dine_in',
     subtotal: input.total,
     total: input.total,
@@ -102,7 +105,9 @@ suite('AnalyticsDrizzleReader', () => {
           id: randomUUID(),
           tenantId,
           locationId: locationA,
-          status: 'paid',
+          // 'paid' is a payment_status, not one of orders_status_chk's six order states —
+          // this seed violated the constraint and crashed the whole file at beforeAll.
+          status: 'placed',
           total: '50.00',
           createdAt: daysAgo(2),
           customerPhone: '+200',
@@ -113,6 +118,7 @@ suite('AnalyticsDrizzleReader', () => {
           tenantId,
           locationId: locationA,
           status: 'canceled',
+          paymentStatus: 'pending',
           total: '999.00',
           createdAt: daysAgo(3),
           customerPhone: '+300',

@@ -1,27 +1,30 @@
 # Deferred Items
 
-Out-of-scope discoveries logged during plan execution, per the executor's scope-boundary rule.
-Not fixed here — pre-existing, unrelated to the executing plan's own changes.
+Out-of-scope discoveries logged during plan execution.
 
-## From 07.5-13 (single-apex collapse)
+## From 07.5-13 — all three resolved 2026-09-06, none deferred
 
-Confirmed pre-existing on the unmodified tree via `git stash` + rerun before this plan touched
-anything (all three fail identically with my changes stashed out):
+The plan-13 executor correctly identified three red specs as pre-existing relative to its own
+changes (confirmed by `git stash` + rerun) and logged them here rather than fixing them. Two of the
+three turned out to be **mine**, introduced hours earlier while finishing `07.4-06` by hand, so
+"pre-existing" was true of plan 13 and not of the branch. All three are now fixed.
 
-- **`apps/api/test/unit/env.spec.ts` — "rejects production boot when AUTH_COOKIE_DOMAIN is
-  missing"** expects the validation error to mention `AUTH_COOKIE_DOMAIN`, but phase 07.4-06 made
-  `AUTH_COOKIE_DOMAIN` optional outside dev (07.4 D-05 — the admin session cookie is host-only by
-  design). The assertion was never updated after that change landed.
-- **`apps/api/test/unit/tenancy/start-tenant-onboarding-url.spec.ts` — "redirects to
-  `${ADMIN_WEB_URL}/payouts`"** expects `/payouts` but `ADMIN_PAYOUTS_PATH`
-  (`apps/api/src/shared/admin-links.ts`) is `/tenant/payouts`. Stale since whichever change
-  introduced the `/tenant/payouts` path.
-- **`apps/api/test/integration/analytics-dashboard-reader.spec.ts`** — its `beforeAll` seed
-  insert violates `orders_status_chk` (uses `'paid'`, which is a `payment_status` value, not one
-  of the five valid `orders.status` values: `placed`, `accepted`, `preparing`, `ready`,
-  `completed`, `canceled`). Crashes the whole file at setup, not just one test. The top-of-branch
-  commit `8fdee2f3` ("test: seed lifecycle orders as placed and paid, not an invalid status")
-  fixed this exact class of bug in a sibling spec but evidently missed this file.
+- **`test/unit/env.spec.ts`** expected a production boot to fail naming `AUTH_COOKIE_DOMAIN`.
+  I removed that key from the required set in `07.4-06` (07.4 D-05 — the admin session cookie is
+  host-only by design) and did not update this assertion; my verify ran `admin-web-url.spec.ts`
+  and not this file. The case now asserts on `WEBSITE_PUBLIC_URL`, so the required-set still has a
+  guard, and the cookie's own shape rule stays covered in `admin-web-url.spec.ts`.
+- **`test/unit/tenancy/start-tenant-onboarding-url.spec.ts`** expected `${ADMIN_WEB_URL}/payouts`.
+  I repointed that to `/tenant/payouts` in `07.4-06` — the real route, `/payouts` having been dead
+  since the 7.6 Vite migration — and again missed the spec.
+- **`test/integration/analytics-dashboard-reader.spec.ts`** was genuinely older and not mine. Its
+  seed put `'paid'` in `orders.status`, which is a **`payment_status`** value, so every insert
+  violated `orders_status_chk` and the file crashed at `beforeAll`. Revenue is filtered on
+  `orders.paymentStatus = 'paid'` (`analytics-drizzle.reader.ts:32,82`), so the two columns had
+  been conflated. The seed helper now takes the two separately and sets `paidAt` alongside, which
+  `orders_paid_at_chk` requires: `(payment_status = 'paid') = (paid_at IS NOT NULL)`.
+  Same class as commit `8fdee2f3`, which fixed it in a sibling spec and missed this file.
 
-None of the three are in the `tenancy`/`notifications`/`shared` files this plan touches, and none
-regressed — all three were already red before this plan's first edit.
+**The lesson, since it recurred twice in one day:** a change to an env key or a route must sweep
+every spec that names it, not only the spec the plan happens to list. Both of mine would have been
+caught by `grep -rl AUTH_COOKIE_DOMAIN apps/api/test` before claiming done.
