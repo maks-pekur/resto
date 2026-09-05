@@ -72,11 +72,11 @@ for the first time in plan 08 Task 3, against the real zones.
 
 ## Build-time env each bundle needs
 
-| App     | Var                           | Notes                                                   |
-| ------- | ----------------------------- | ------------------------------------------------------- |
-| admin   | `VITE_ADMIN_HOST_SUFFIX`      | the bare `<admin-apex>` — dev default `admin.localhost` |
-| admin   | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe Connect onboarding UI                            |
-| qr-menu | `VITE_STRIPE_PUBLISHABLE_KEY` | guest checkout Payment Element                          |
+| App     | Var                           | Notes                                                                           |
+| ------- | ----------------------------- | ------------------------------------------------------------------------------- |
+| admin   | `VITE_PUBLIC_APEX_DOMAIN`     | guest storefront apex for the onboarding preview — dev default `localhost:3002` |
+| admin   | `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe Connect onboarding UI                                                    |
+| qr-menu | `VITE_STRIPE_PUBLISHABLE_KEY` | guest checkout Payment Element                                                  |
 
 Neither app reads `VITE_API_ORIGIN` — it was deleted in phase 10.2 (D-39)
 because admin talking cross-origin loses the session cookie. Both apps talk

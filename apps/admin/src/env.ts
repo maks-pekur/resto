@@ -1,5 +1,5 @@
 const devDefaults: Partial<Record<string, string>> = {
-  VITE_ADMIN_HOST_SUFFIX: 'admin.localhost',
+  VITE_PUBLIC_APEX_DOMAIN: 'localhost:3002',
 };
 
 // G-05: reject localhost values in production (same family as ADR-0020 I-3).
@@ -18,4 +18,4 @@ export const getEnv = (key: string): string => {
 };
 
 export const VITE_STRIPE_PUBLISHABLE_KEY = getEnv('VITE_STRIPE_PUBLISHABLE_KEY');
-export const VITE_ADMIN_HOST_SUFFIX = getEnv('VITE_ADMIN_HOST_SUFFIX');
+export const VITE_PUBLIC_APEX_DOMAIN = getEnv('VITE_PUBLIC_APEX_DOMAIN');

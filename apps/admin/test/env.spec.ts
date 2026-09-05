@@ -17,14 +17,14 @@ describe('getEnv (G-05 fail-loud)', () => {
     restoreEnv(saved);
   });
 
-  it('returns dev default when VITE_ADMIN_HOST_SUFFIX is unset in DEV mode', async () => {
+  it('returns dev default when VITE_PUBLIC_APEX_DOMAIN is unset in DEV mode', async () => {
     saved = saveEnv();
     metaEnv.PROD = false;
     metaEnv.DEV = true;
-    delete metaEnv.VITE_ADMIN_HOST_SUFFIX;
+    delete metaEnv.VITE_PUBLIC_APEX_DOMAIN;
 
     const { getEnv } = await import('@/env');
-    expect(getEnv('VITE_ADMIN_HOST_SUFFIX')).toBe('admin.localhost');
+    expect(getEnv('VITE_PUBLIC_APEX_DOMAIN')).toBe('localhost:3002');
   });
 
   it('throws when a required var is empty in PROD mode', async () => {

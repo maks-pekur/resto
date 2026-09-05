@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createRoute } from '@tanstack/react-router';
-import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Route as protectedLayoutRoute } from '../_layout';
 import { apiFetch } from '@/lib/api-client';
 import { slugifyTenantName } from '@/lib/slugify-tenant';
-import { adminUrlForTenant } from '@/lib/admin-host';
+import { switchTenant } from '@/lib/switch-tenant';
+import { VITE_PUBLIC_APEX_DOMAIN } from '@/env';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,14 +36,11 @@ const MIN_NAME_LEN = 1;
 
 function OnboardingPage() {
   const { t } = useTranslation('translation', { keyPrefix: 'onboarding' });
-  const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const previewHost = adminUrlForTenant(
-    slugifyTenantName(displayName) || 'your-restaurant',
-  ).replace(/^https?:\/\//, '');
+  const previewHost = `${slugifyTenantName(displayName) || 'your-restaurant'}.${VITE_PUBLIC_APEX_DOMAIN}`;
 
   const onSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -64,11 +61,12 @@ function OnboardingPage() {
       return;
     }
     const tenant = res.data as OnboardingResponse;
-    await queryClient.invalidateQueries({ queryKey: ['identity'] });
     toast.success(t('createdToast', { name: tenant.displayName }));
-    // The server-returned slug wins, not the locally-previewed one — it may
-    // differ after collision resolution.
-    window.location.assign(adminUrlForTenant(tenant.slug, '/dashboard'));
+    try {
+      await switchTenant(tenant.id, '/dashboard');
+    } catch {
+      setError(t('errorGeneric'));
+    }
   };
 
   return (

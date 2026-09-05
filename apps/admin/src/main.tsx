@@ -7,10 +7,6 @@ import { isForbiddenRouteError } from '@/lib/auth/permissions';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/query-client';
 import { ThemeProvider } from '@/components/common/theme-provider';
-import { authClient } from './lib/auth-client';
-import { apiFetch } from './lib/api-client';
-import type { MeTenantsResponse } from './lib/queries/identity';
-import { parseTenantSlugFromHost, adminUrlForTenant } from './lib/admin-host';
 import { Route as rootRoute } from './routes/__root';
 import { Route as authLayoutRoute } from './routes/(auth)/_layout';
 import { Route as loginRoute } from './routes/(auth)/login';
@@ -132,30 +128,6 @@ declare module '@tanstack/react-router' {
     router: typeof router;
   }
 }
-
-// D-21: the single bootstrap host-vs-session reconciliation check. Runs once,
-// here only — not in a route file. The apex host (no tenant slug) is where
-// sign-in/signup live and is intentionally left alone; a session with no
-// bound tenant yet is also left alone (route guards handle that case).
-async function reconcileHostWithSession(): Promise<void> {
-  const hostSlug = parseTenantSlugFromHost(window.location.hostname);
-  if (hostSlug === null) return;
-  const session = await authClient.getSession();
-  const sessionData =
-    session.data !== null
-      ? (session.data as { session?: { activeOrganizationId?: string } }).session
-      : undefined;
-  const boundTenantId = sessionData?.activeOrganizationId;
-  if (boundTenantId === undefined) return;
-  const tenantsRes = await apiFetch<MeTenantsResponse>('/v1/me/tenants');
-  const boundTenant = tenantsRes.data?.tenants.find((tenant) => tenant.id === boundTenantId);
-  if (!boundTenant || boundTenant.slug === hostSlug) return;
-  window.location.replace(
-    adminUrlForTenant(boundTenant.slug, `${window.location.pathname}${window.location.search}`),
-  );
-}
-
-void reconcileHostWithSession();
 
 const container = document.getElementById('root');
 if (!container) throw new Error('Root element not found.');
