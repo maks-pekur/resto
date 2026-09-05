@@ -1,12 +1,13 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { currencyForCountry } from '@resto/domain';
+import { ENV_TOKEN } from '../../../config/config.module';
+import type { Env } from '../../../config/env.schema';
+import { guestHostForTenant } from '../../../shared/guest-links';
 import { Tenant, type TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantSlugArchivedError } from '../domain/errors';
 import type { ProvisionTenantInput } from './dto';
 import { SeedPresetRolesService } from '../../identity/application/roles/seed-preset-roles.service';
-
-const PRIMARY_DOMAIN_SUFFIX = 'menu.resto.app';
 
 @Injectable()
 export class ProvisionTenantService {
@@ -15,6 +16,7 @@ export class ProvisionTenantService {
   constructor(
     @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
     @Inject(SeedPresetRolesService) private readonly seedPresets: SeedPresetRolesService,
+    @Inject(ENV_TOKEN) private readonly env: Env,
   ) {}
 
   async execute(input: ProvisionTenantInput): Promise<TenantSnapshot> {
@@ -49,7 +51,7 @@ export class ProvisionTenantService {
       country: input.country,
       ...(input.locale !== undefined ? { locale: input.locale } : {}),
       ...(input.status !== undefined ? { status: input.status } : {}),
-      primaryDomainHostname: `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`,
+      primaryDomainHostname: guestHostForTenant(this.env, { slug: input.slug }, null),
     });
 
     await this.repo.save(tenant);

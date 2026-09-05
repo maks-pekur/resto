@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb } from '@resto/db';
 import { TenantId } from '@resto/domain';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, isNotNull } from 'drizzle-orm';
 
 export interface NotificationOrderRow {
   readonly id: string;
@@ -12,9 +12,12 @@ export interface NotificationOrderRow {
   readonly etaAt: Date | null;
   readonly shortNumber: number | null;
   readonly locationTimezone: string | null;
+  readonly tenantSlug: string;
   readonly tenantDisplayName: string;
   readonly tenantLocale: string;
   readonly tenantTheme: Record<string, unknown> | null;
+  /** The tenant's primary verified custom domain host, or null (07.5-13: guest-links.ts). */
+  readonly primaryCustomDomain: string | null;
 }
 
 export interface NotificationOrderItemRow {
@@ -45,9 +48,11 @@ export class NotificationOrderDrizzleRepository implements NotificationOrderRepo
           etaAt: schema.orders.etaAt,
           shortNumber: schema.orders.shortNumber,
           locationTimezone: schema.locations.timezone,
+          tenantSlug: schema.tenants.slug,
           tenantDisplayName: schema.tenants.displayName,
           tenantLocale: schema.tenants.locale,
           tenantTheme: schema.tenants.theme,
+          primaryCustomDomain: schema.tenantDomains.domain,
         })
         .from(schema.orders)
         .leftJoin(
@@ -58,6 +63,15 @@ export class NotificationOrderDrizzleRepository implements NotificationOrderRepo
           ),
         )
         .innerJoin(schema.tenants, eq(schema.tenants.id, schema.orders.tenantId))
+        .leftJoin(
+          schema.tenantDomains,
+          and(
+            eq(schema.tenantDomains.tenantId, schema.orders.tenantId),
+            eq(schema.tenantDomains.kind, 'custom'),
+            eq(schema.tenantDomains.isPrimary, true),
+            isNotNull(schema.tenantDomains.verifiedAt),
+          ),
+        )
         .where(and(eq(schema.orders.id, orderId), eq(schema.orders.tenantId, tenantId)))
         .limit(1);
       return rows[0] ?? null;

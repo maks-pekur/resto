@@ -5,9 +5,12 @@ import { TenantSlugArchivedError } from '../../../src/contexts/tenancy/domain/er
 import type { TenantRepository } from '../../../src/contexts/tenancy/domain/ports';
 import { Tenant } from '../../../src/contexts/tenancy/domain/tenant.aggregate';
 import type { SeedPresetRolesService } from '../../../src/contexts/identity/application/roles/seed-preset-roles.service';
+import type { Env } from '../../../src/config/env.schema';
 
 const makeSeedPresets = (): SeedPresetRolesService =>
   ({ execute: vi.fn().mockResolvedValue(undefined) }) as unknown as SeedPresetRolesService;
+
+const envWith = (apex: string | undefined): Env => ({ PUBLIC_APEX_DOMAIN: apex }) as unknown as Env;
 
 const NOW = new Date('2026-05-01T00:00:00.000Z');
 
@@ -37,7 +40,7 @@ describe('ProvisionTenantService', () => {
 
   beforeEach(() => {
     repo = buildRepo();
-    service = new ProvisionTenantService(repo, makeSeedPresets());
+    service = new ProvisionTenantService(repo, makeSeedPresets(), envWith('example.invalid'));
   });
 
   it('saves a new aggregate with a TenantProvisioned event in the outbox', async () => {
@@ -53,6 +56,20 @@ describe('ProvisionTenantService', () => {
     const events = tenantArg?.pullEvents() ?? [];
     expect(events).toHaveLength(1);
     expect(events[0]?.kind).toBe('TenantProvisioned');
+  });
+
+  it('writes the primary tenant_domains row as <slug>.<PUBLIC_APEX_DOMAIN>', async () => {
+    const snapshot = await service.execute(baseInput);
+
+    expect(snapshot.primaryDomain.domain).toBe('cafe-roma.example.invalid');
+    expect(snapshot.primaryDomain.kind).toBe('subdomain');
+  });
+
+  it('throws, naming the slug, when PUBLIC_APEX_DOMAIN is unset', async () => {
+    service = new ProvisionTenantService(repo, makeSeedPresets(), envWith(undefined));
+
+    await expect(service.execute(baseInput)).rejects.toThrow(/cafe-roma/);
+    expect(repo.save).not.toHaveBeenCalled();
   });
 
   it('returns the existing snapshot without saving when the slug is already active', async () => {

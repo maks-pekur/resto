@@ -113,7 +113,7 @@ export interface ProvisionInput {
   readonly timezone?: string;
   /** Defaults to `defaultLocaleForCountry(country)` (D-35) when omitted. */
   readonly locale?: string;
-  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  /** Hostname format `<slug>.<PUBLIC_APEX_DOMAIN>` (07.5-13) — passed by the application service. */
   readonly primaryDomainHostname: string;
   /**
    * D-25/D-30 (10.2 plan 13): defaults to `'active'`. Signup provisions
@@ -128,7 +128,7 @@ export interface ProvisionInput {
 export interface FinalizeSetupInput {
   readonly displayName: string;
   readonly slug: TenantSlug;
-  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  /** Hostname format `<slug>.<PUBLIC_APEX_DOMAIN>` (07.5-13) — passed by the application service. */
   readonly primaryDomainHostname: string;
 }
 

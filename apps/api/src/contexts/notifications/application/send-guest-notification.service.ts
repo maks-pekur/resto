@@ -2,6 +2,11 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TenantId, TenantTheme, resolveThemeMedia } from '@resto/domain';
 import { ENV_TOKEN } from '../../../config/config.module';
 import type { Env } from '../../../config/env.schema';
+import {
+  GUEST_ORDER_STATUS_PATH,
+  guestHostForTenant,
+  guestOrderStatusUrl,
+} from '../../../shared/guest-links';
 import { SUPPORTED_LOCALES, type EmailLocale } from '../../identity/domain/email-locale';
 import {
   NOTIFICATION_ORDER_REPOSITORY,
@@ -113,10 +118,20 @@ export class SendGuestNotificationService {
     const eta =
       order.etaAt !== null ? formatEtaClockTime(order.etaAt, order.locationTimezone) : undefined;
 
-    const statusUrl =
-      this.env.WEBSITE_PUBLIC_URL !== undefined
-        ? `${this.env.WEBSITE_PUBLIC_URL}/checkout/confirmation/${input.orderId}`
-        : `/checkout/confirmation/${input.orderId}`;
+    const statusUrl = ((): string => {
+      try {
+        const guestHost = guestHostForTenant(
+          this.env,
+          { slug: order.tenantSlug },
+          order.primaryCustomDomain,
+        );
+        return guestOrderStatusUrl(guestHost, input.orderId);
+      } catch {
+        // No absolute origin can be composed (no apex, no custom domain) — a relative link is
+        // better than shipping a broken absolute one.
+        return `${GUEST_ORDER_STATUS_PATH}/${input.orderId}`;
+      }
+    })();
 
     const idempotencyKey = `gnotif:${input.orderId}:${input.transition}`;
 

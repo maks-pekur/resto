@@ -2,7 +2,7 @@
 title: Tenant provisioning hardcodes `menu.resto.app`, ignoring PUBLIC_APEX_DOMAIN
 date: 2026-09-04
 priority: medium
-status: pending
+status: done
 ---
 
 # Every provisioned tenant gets a primary domain on an apex the platform may not own
@@ -52,3 +52,29 @@ that failed to provision.
 
 `GUEST_HOST_LABEL` (`'menu'`) is already a shared constant — reuse it rather than re-embedding the
 literal in a template string.
+
+## Resolved 2026-09-05 — phase 07.5-13, superseded by the single-apex collapse
+
+`GUEST_APEX_DOMAIN` is deleted in the same plan (07.5-13) that closes this todo — `menu.` as a
+guest-host label no longer exists at all, so the fix implemented is narrower and simpler than what
+this todo proposed above.
+
+**What the todo got wrong, so nobody re-derives it:** `GUEST_HOST_LABEL` was never a real constant
+in this codebase — grepping `apps/api/src` for it at close time returns nothing. The todo's
+proposed fix (`menu.${env.PUBLIC_APEX_DOMAIN}`) also predates the single-apex decision and would
+have been wrong to implement literally: under one apex, the guest host and the website host are
+the same host, so the primary domain row is `<slug>.<PUBLIC_APEX_DOMAIN>` with no `menu.` label at
+all, not `<slug>.menu.<PUBLIC_APEX_DOMAIN>`.
+
+**What actually shipped:** both writers (`provision-tenant.service.ts`,
+`finalize-tenant-onboarding.service.ts`) now inject `Env` and compose the primary domain through
+`guestHostForTenant` (`apps/api/src/shared/guest-links.ts`) — the same shared helper
+`GuestMenuUrlService` and the guest confirmation-email link use — passing `null` for the
+"no existing domains yet" case, so the formula is exactly `<slug>.<PUBLIC_APEX_DOMAIN>`. Both throw,
+naming the tenant slug, when `PUBLIC_APEX_DOMAIN` is unset, matching this todo's own precedent
+argument.
+
+**What this does NOT fix, and is not this plan's job:** rows already written by the old
+`menu.resto.app` constant exist in any database that has provisioned a tenant before this change.
+Clearing or migrating those pre-existing rows is plan 07.5-10's production data audit, not a
+migration shipped here.
