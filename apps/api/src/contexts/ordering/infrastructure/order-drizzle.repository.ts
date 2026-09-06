@@ -150,6 +150,10 @@ export class OrderDrizzleRepository implements OrderRepository {
       .update(schema.orders)
       .set({
         status: snapshot.status,
+        // markPaid / markRequiresAction / refund / markFailed all move these two together; the
+        // insert wrote them and this update did not, so every payment transition was lost.
+        paymentStatus: snapshot.paymentStatus,
+        paidAt: snapshot.paidAt,
         updatedAt: snapshot.updatedAt,
         scheduledFor: snapshot.scheduledFor,
         shortNumber: snapshot.shortNumber,
