@@ -20,4 +20,12 @@ regexes = [
   # string — and it appears in a dozen suites; without it here, every PR that touches one of them
   # trips `generic-api-key` on a `const password = ...` line.
   '''correct-horse-battery-staple''',
+  # A made-up 32-hex QR token in `guest-menu-url.service.spec.ts`. Nothing parses it — the service
+  # types `qrToken` as a plain string and only interpolates it into a URL path — but the hex shape
+  # matches a real sticker token, which is what makes the fixture worth keeping and what trips
+  # `generic-api-key`.
+  '''9f1c2b3a4d5e6f708192a3b4c5d6e7f8''',
+  # A reference to an env var carries no secret material; `generic-api-key` matches the property
+  # name, not a value. Kept to the `env.<KEY>` shape so a real literal in this position still fires.
+  '''secretAccessKey: env\.[A-Z0-9_]+''',
 ]
