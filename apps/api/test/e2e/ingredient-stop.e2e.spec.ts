@@ -64,7 +64,7 @@ const setupAuthedTenant = async (
   return {
     id: tenant.id,
     slug,
-    menuHost: `${slug}.menu.resto.app`,
+    menuHost: `${slug}.resto.app`,
     authed: {
       cookie: ownerCookie,
       'x-tenant-id': tenant.id,

@@ -142,12 +142,12 @@ suite('TEN-08 Fixture 1 — ALS frame does not leak across concurrent HTTP reque
         stack.app.inject({
           method: 'GET',
           url: '/v1/menu',
-          headers: { host: `${fixture.tenantA.slug}.menu.resto.app` },
+          headers: { host: `${fixture.tenantA.slug}.resto.app` },
         }),
         stack.app.inject({
           method: 'GET',
           url: '/v1/menu',
-          headers: { host: `${fixture.tenantB.slug}.menu.resto.app` },
+          headers: { host: `${fixture.tenantB.slug}.resto.app` },
         }),
       ]);
 
