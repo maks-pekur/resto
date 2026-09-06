@@ -4,6 +4,15 @@ import { LocationId, TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../domain/ports';
 import { LocationHasOrdersError, LocationNotFoundError } from '../domain/errors';
 
+// Drizzle wraps a Postgres error in DrizzleQueryError, whose own message is the failed SQL —
+// the RAISE'd name survives only on the cause chain.
+const namesRefusal = (err: unknown, refusal: string): boolean => {
+  for (let e: unknown = err; e instanceof Error; e = (e as { cause?: unknown }).cause) {
+    if (e.message.includes(refusal)) return true;
+  }
+  return false;
+};
+
 @Injectable()
 export class DeleteLocationService {
   private readonly logger = new Logger(DeleteLocationService.name);
@@ -22,7 +31,7 @@ export class DeleteLocationService {
       await this.locations.deleteEmpty(id, tenantId);
     } catch (err) {
       // The database is the authority on whether this location is history; it refuses by name.
-      if (err instanceof Error && err.message.includes('location_has_orders')) {
+      if (namesRefusal(err, 'location_has_orders')) {
         throw new LocationHasOrdersError(rawId);
       }
       throw err;

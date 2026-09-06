@@ -9,6 +9,8 @@ import {
   type DbStack,
 } from './helpers/with-db-stack';
 import { LocationDrizzleRepository } from '../../src/contexts/tenancy/infrastructure/location-drizzle.repository';
+import { DeleteLocationService } from '../../src/contexts/tenancy/application/delete-location.service';
+import { LocationHasOrdersError } from '../../src/contexts/tenancy/domain/errors';
 
 const dockerOk = isDockerAvailable();
 const suite = dockerOk ? describe : describe.skip;
@@ -72,12 +74,11 @@ suite('Deleting a location', () => {
     expect(remaining).toBeNull();
   });
 
-  it('refuses to delete a location that has orders', async () => {
+  it('refuses to delete a location that has orders, as a domain error the API can map', async () => {
+    const service = new DeleteLocationService(repo);
     await expect(
-      runInTenantContext({ tenantId }, () =>
-        repo.deleteEmpty(LocationId.parse(usedLocation), TenantId.parse(tenantId)),
-      ),
-    ).rejects.toThrow(/location_has_orders/);
+      runInTenantContext({ tenantId }, () => service.execute(usedLocation)),
+    ).rejects.toBeInstanceOf(LocationHasOrdersError);
   });
 
   it('leaves the location with orders in place after the refusal', async () => {
