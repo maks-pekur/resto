@@ -121,7 +121,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         locationId: location.id,
         idempotencyKey: randomUUID(),
         orderNumber: 'ORD-LIFECYCLE-001',
-        status: 'created',
+        status: 'placed',
         orderType: 'dine_in',
         subtotal: '15.00',
         total: '15.00',
@@ -137,7 +137,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
   let seedOrderShortNumberCounter = 2; // beforeAll's fixed fixture order used 1.
 
-  const seedOrder = async (status: string, total = '15.00'): Promise<string> => {
+  const seedOrder = async (
+    status: 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled',
+    paid = false,
+    total = '15.00',
+  ): Promise<string> => {
     const newOrderId = randomUUID();
     await stack.db.withoutTenant('seed order for status persistence e2e', async (tx) => {
       await tx.insert(schema.orders).values({
@@ -147,6 +151,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-PERSIST-${newOrderId.slice(0, 8)}`,
         status,
+        ...(paid ? { paymentStatus: 'paid' as const, paidAt: new Date() } : {}),
         orderType: 'dine_in',
         subtotal: total,
         total,
@@ -245,11 +250,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const [orderRow] = await stack.db.withoutTenant('verify order after checkout', async (tx) =>
       tx
-        .select({ status: schema.orders.status })
+        .select({ paymentStatus: schema.orders.paymentStatus })
         .from(schema.orders)
         .where(sql`${schema.orders.id} = ${orderId}`),
     );
-    expect(orderRow?.status).toBe('requires_action');
+    expect(orderRow?.paymentStatus).toBe('requires_action');
 
     const [paymentRow] = await stack.db.withoutTenant('verify payment after checkout', async (tx) =>
       tx
@@ -322,11 +327,11 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const [orderRow] = await stack.db.withoutTenant('verify order paid', async (tx) =>
       tx
-        .select({ status: schema.orders.status })
+        .select({ paymentStatus: schema.orders.paymentStatus })
         .from(schema.orders)
         .where(sql`${schema.orders.id} = ${orderId}`),
     );
-    expect(orderRow?.status).toBe('paid');
+    expect(orderRow?.paymentStatus).toBe('paid');
 
     const [paymentRow] = await stack.db.withoutTenant('verify payment succeeded', async (tx) =>
       tx
@@ -458,7 +463,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
   });
 
   it('operator cancel of an unpaid order persists status=canceled and emits ordering.order_canceled.v1', async () => {
-    const seededOrderId = await seedOrder('created');
+    const seededOrderId = await seedOrder('placed');
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
 
@@ -494,8 +499,8 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     expect(providerMock.createRefund).not.toHaveBeenCalled();
   });
 
-  it('operator full refund of a paid order leaves order status paid and emits ordering.order_refunded.v1', async () => {
-    const seededOrderId = await seedOrder('paid');
+  it('operator full refund of a paid order leaves the fulfilment stage untouched and emits ordering.order_refunded.v1', async () => {
+    const seededOrderId = await seedOrder('placed', true);
     await seedPayment(seededOrderId);
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
@@ -524,7 +529,7 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
       }),
     );
 
-    expect(await readOrderStatus(seededOrderId)).toBe('paid');
+    expect(await readOrderStatus(seededOrderId)).toBe('placed');
     const outboxTypes = await readOutboxTypes(seededOrderId);
     expect(outboxTypes).toContain('ordering.order_refunded.v1');
     expect(outboxTypes).toContain('payments.order_refunded.v1');
@@ -538,8 +543,8 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
     expect(paymentRow?.status).toBe('refunded');
   });
 
-  it('operator cancel of a paid order persists the auto-refund transition (row no longer stuck at paid)', async () => {
-    const seededOrderId = await seedOrder('paid');
+  it('operator cancel of a paid order persists the cancellation and emits ordering.order_refunded.v1', async () => {
+    const seededOrderId = await seedOrder('placed', true);
     await seedPayment(seededOrderId);
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
@@ -573,7 +578,6 @@ suite('Payment lifecycle e2e — order created→requires_action→paid→refund
 
     const status = await readOrderStatus(seededOrderId);
     expect(status).toBe('canceled');
-    expect(status).not.toBe('paid');
     expect(await readOutboxTypes(seededOrderId)).toContain('ordering.order_refunded.v1');
   });
 });
