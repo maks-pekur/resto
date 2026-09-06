@@ -14,6 +14,7 @@ export default defineConfig({
   plugins: [sqlTextLoader()],
   test: {
     globals: false,
+    setupFiles: ['./test/setup-env.ts'],
     include: ['test/**/*.{spec,test}.ts', 'src/**/*.{spec,test}.ts'],
     testTimeout: 30_000,
     hookTimeout: 30_000,
