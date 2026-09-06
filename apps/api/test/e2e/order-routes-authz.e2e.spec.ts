@@ -68,7 +68,10 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       return res.json<{ id: string }>().id;
     };
 
-    const seedOrder = async (locationId: string, status = 'paid'): Promise<string> => {
+    const seedOrder = async (
+      locationId: string,
+      status: 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled' = 'placed',
+    ): Promise<string> => {
       const orderId = randomUUID();
       const db = stack.app.get(TenantAwareDb);
       await db.withoutTenant('seed order for authz e2e', async (tx) => {
@@ -79,6 +82,8 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
           idempotencyKey: randomUUID(),
           orderNumber: `ORD-AUTHZ-${orderId.slice(0, 8)}`,
           status,
+          paymentStatus: 'paid',
+          paidAt: new Date(),
           orderType: 'dine_in',
           subtotal: '10.00',
           total: '10.00',
@@ -266,7 +271,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       });
       expect(res.statusCode).toBe(403);
       expect(res.json<{ code?: string }>().code).toBe('location.context_required');
-      expect(await readOrderStatus(orderMutateWithoutLocationId)).toBe('paid');
+      expect(await readOrderStatus(orderMutateWithoutLocationId)).toBe('placed');
     });
 
     it('case 4 — non-owner scoped to L1 forging x-location-id L2 to accept the L2 order is denied, row unchanged', async () => {
@@ -327,7 +332,7 @@ suite('Order routes authorization + rate-limit e2e (Plan 10-08)', () => {
       });
       expect(advanceRes.statusCode).toBe(404);
 
-      expect(await readOrderStatus(crossTenantOrderId)).toBe('paid');
+      expect(await readOrderStatus(crossTenantOrderId)).toBe('placed');
     });
   });
 

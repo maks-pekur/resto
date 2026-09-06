@@ -113,6 +113,8 @@ suite('Analytics dashboard e2e', () => {
           idempotencyKey: randomUUID(),
           orderNumber: 'K-1',
           status: 'completed',
+          paymentStatus: 'paid',
+          paidAt: new Date(Date.now() - 86_400_000),
           orderType: 'dine_in',
           subtotal: '100.00',
           total: '100.00',
