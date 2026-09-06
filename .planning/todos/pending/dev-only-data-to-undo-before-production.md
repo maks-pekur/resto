@@ -125,3 +125,25 @@ tunnel is up should know what it does to the apex.
   public one before trusting the status code.
 
 Restore points for the two local files were left at `/tmp/env.backup` and `/tmp/web-env.backup`.
+
+---
+
+## Update 2026-09-06 — a Google OAuth client secret must be rotated
+
+Google was wired as a Better Auth social provider on 2026-09-05 (`bf8a5a45`), and real credentials
+are set in the local `.env` — which is gitignored, so nothing leaked through the repository.
+
+**But the client secret was pasted into a session transcript.** Transcripts are summarised, stored
+and re-read; treat the value as disclosed.
+
+- **Rotate before any production deploy.** Google Cloud Console → the OAuth 2.0 client → add a new
+  secret, update `.env` and whatever renders `infra/docker/env/api.env`, then delete the old one.
+- Nothing fails loudly if this is skipped: the old secret keeps working. This file is the only
+  record.
+- No guardrail can help here — the value is a real credential, not a dev default, so
+  `assertProdGuardrails` has nothing to match on.
+- The provider is optional-gated (`identity-core.module.ts:265`): clearing both `GOOGLE_CLIENT_ID`
+  and `GOOGLE_CLIENT_SECRET` turns Google off rather than breaking boot, so an unrotated secret can
+  be removed under time pressure without a code change.
+
+See [[guest-sign-in-with-google]] for what the provider is still missing on the guest side.
