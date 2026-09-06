@@ -109,3 +109,22 @@ agree.
 **Recommendation:** small, mechanical, but touches all 11 call sites and needs a per-test decision
 about which `payment_status` each scenario actually wants — a quick-fix candidate, not a full
 plan.
+
+---
+
+## Status at phase close (2026-09-06)
+
+Four of the five items above were closed before the phase ended. Verified against the working tree,
+not against memory:
+
+| Item | State | Evidence |
+|---|---|---|
+| Plan 12 — ingredient photo erased on upsert | **closed** | `4a30eb53`; `imageS3Key` on `ModifierOptionListItemSchema` (dto.ts:337), populated by `list-modifier-options.service.ts:20`, round-tripped by `modifier-form-sheet.tsx:40,111` |
+| Plan 14 — `ItemDetailResponseDto` missing singles | **closed** | `7eb70be0`; `modifierOptionIds` on `ItemDetailResponseSchema` |
+| Plan 15 — `stop-list-table.tsx` sends the row PK | **closed** | now `toggleMutation.mutate(item.itemId)` at `stop-list-table.tsx:113` |
+| Plan 16 — `seedOrder` inserts an invalid `status` | **closed** | `8fdee2f3`; `seedOrder` now takes the status as a parameter |
+| Plan 13 — stale `groupMainDescription` copy | **OPEN** | `apps/admin/src/lib/i18n/messages/ru.json:326` still describes `max 0 = unlimited` |
+
+The one open item is copy, not behaviour: the string still explains the `minSelectable`/`maxSelectable`
+fields that plan 08 removed from the contract and plan 13 removed from the form. It needs rewriting
+to describe `display` / `behaviour` / `isRequired` instead, in all three locale catalogs.

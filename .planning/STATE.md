@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 10.6 UI-SPEC approved
-last_updated: "2026-09-05T09:50:57.160Z"
-last_activity: 2026-09-03 -- Phase 10.6 execution started
+last_updated: "2026-09-06T14:51:06.409Z"
+last_activity: 2026-09-06
 progress:
   total_phases: 32
   completed_phases: 16
@@ -57,7 +57,7 @@ Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CL
 **07.5-07 (Cloudflare Workers for admin + qr-menu, three-apex hostname scheme) — COMPLETE (2026-09-05).** Two Worker modules (admin, qr-menu) each serving a SPA plus a same-origin `/v1/*`(+`/api/*`) proxy; qr-menu's cache key is built from the incoming request URL (cross-tenant leak test observed red against an origin-URL-keyed baseline, then green) and every subrequest opts out of the zone cache. `GUEST_APEX_DOMAIN` replaces a hardcoded "menu" label in `env.schema.ts`/`tenant-resolver.service.ts`/`guest-menu-url.service.ts` — `GUEST_HOST_LABEL` no longer exists anywhere in `apps/api/src`. `apps/admin/Dockerfile` (Next/ECS-era, baked `admin.resto.app` default) deleted. `wrangler.jsonc` for both apps carries no hostname; both `worker:dry-run` scripts succeed with all three real apexes (`resto.pp.ua`/`restos.pp.ua`/`qmenu.pp.ua`) from `gh variable get`. Two pre-existing, unrelated plan-verify defects found and reported rather than silently patched (a `.env.example` doc-comment false positive in Task 2's `VITE_API_ORIGIN` grep; Task 3's domain-literal-guard verify scanning `apps/api/src/contexts/tenancy` broadly hits ~19 pre-existing doc-comment/fixture literals the guard's own Round-2 remediation already scoped around differently for CI) — see `07.5-07-SUMMARY.md`.
 
 Status (Phase 10.6, unrelated — see the `Phase: 10.6` line above): Executing Phase 10.6
-Last activity: 2026-09-03 -- Phase 10.6 execution started
+Last activity: 2026-09-06
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
