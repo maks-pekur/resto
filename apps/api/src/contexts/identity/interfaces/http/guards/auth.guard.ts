@@ -28,6 +28,7 @@ import {
 import {
   ALLOW_ARCHIVED_TENANT_KEY,
   IS_PUBLIC_KEY,
+  OPTIONAL_AUTH_KEY,
   REQUIRES_TENANT_CONTEXT_KEY,
 } from '../../../../../shared/auth';
 
@@ -86,7 +87,33 @@ export class AuthGuard implements CanActivate {
       }
     }
 
-    if (isPublic) return true;
+    if (isPublic) {
+      const wantsPrincipal =
+        this.reflector.getAllAndOverride<boolean | undefined>(OPTIONAL_AUTH_KEY, [
+          ctx.getHandler(),
+          ctx.getClass(),
+        ]) === true;
+      if (!wantsPrincipal) return true;
+
+      // Never refuses. A lapsed or malformed session must still be able to place an order, so
+      // every failure path here ends in an anonymous principal rather than a 401.
+      const openReq = ctx.switchToHttp().getRequest<FastifyRequest>();
+      openReq.principal = { kind: 'anonymous' };
+      try {
+        const open = await this.auth.api.getSession({ headers: toWebHeaders(openReq.headers) });
+        if (open?.user) {
+          const data = open as SessionData;
+          const membership = alsTenantId
+            ? await this.lookupMembership(data.user.id, alsTenantId)
+            : null;
+          openReq.principal = buildPrincipal(data, alsTenantId, membership);
+          openReq.sessionToken = data.session.token;
+        }
+      } catch {
+        openReq.principal = { kind: 'anonymous' };
+      }
+      return true;
+    }
 
     const req = ctx.switchToHttp().getRequest<FastifyRequest>();
     const headers = toWebHeaders(req.headers);
@@ -103,20 +130,16 @@ export class AuthGuard implements CanActivate {
     // plugin augments the session object with activeOrganizationId at runtime
     // but the cast above (`as unknown as BetterAuthPlugin`) in auth.config.ts
     // loses that type information. Cast to the narrower shape we depend on.
-    const sessionData = session as {
-      user: {
-        id: string;
-        email: string;
-        phoneNumber?: string | null;
-        twoFactorEnabled?: boolean | null;
-      };
-      session: {
-        activeOrganizationId?: string | null;
-        activeLocationId?: string | null;
-        token: string;
-      };
-    };
-    const principal = buildPrincipal(sessionData, alsTenantId);
+    const sessionData = session as SessionData;
+    // One lookup, against the tenant this request is about: the host's when it resolved one,
+    // otherwise the session's active organization (07.4 moved the operator's tenant there).
+    const requestTenantId = alsTenantId ?? sessionData.session.activeOrganizationId ?? undefined;
+    const membership =
+      requestTenantId !== undefined
+        ? await this.lookupMembership(sessionData.user.id, requestTenantId)
+        : null;
+
+    const principal = buildPrincipal(sessionData, alsTenantId, membership);
 
     const principalTenantId =
       principal.kind !== 'anonymous' && 'tenantId' in principal ? principal.tenantId : undefined;
@@ -154,18 +177,15 @@ export class AuthGuard implements CanActivate {
       });
     }
 
-    if (principal.kind === 'operator' && alsTenantId !== undefined) {
-      const membership = await this.lookupMembership(principal.userId, alsTenantId);
-      if (membership === null) {
-        throw new ForbiddenException({
-          code: 'auth.tenant_membership_missing',
-          message: 'Principal is not a member of the request tenant.',
-        });
-      }
-      if (membership.role) principal.baseRole = membership.role;
-    } else if (principal.kind === 'operator' && principal.tenantId) {
-      const membership = await this.lookupMembership(principal.userId, principal.tenantId);
-      if (membership?.role) principal.baseRole = membership.role;
+    // 07.4 D-02, restored deliberately: a session claiming a tenant it holds no member row in must
+    // be refused — that is what stops a stale activeOrganizationId from outliving a revoked
+    // membership. Under 10.7's rule this is reachable only when the session carries an
+    // activeOrganizationId; a guest with none became a customer above and never arrives here.
+    if (principal.kind === 'operator' && alsTenantId !== undefined && membership === null) {
+      throw new ForbiddenException({
+        code: 'auth.tenant_membership_missing',
+        message: 'Principal is not a member of the request tenant.',
+      });
     }
 
     req.principal = principal;
@@ -220,7 +240,23 @@ const toWebHeaders = (raw: FastifyRequest['headers']): Headers => {
   return headers;
 };
 
-const buildPrincipal = (
+type MembershipRow = { role: 'owner' | 'admin' | 'staff' | undefined } | null;
+
+interface SessionData {
+  user: {
+    id: string;
+    email: string;
+    phoneNumber?: string | null;
+    twoFactorEnabled?: boolean | null;
+  };
+  session: {
+    activeOrganizationId?: string | null;
+    activeLocationId?: string | null;
+    token: string;
+  };
+}
+
+export const buildPrincipal = (
   session: {
     user: {
       id: string;
@@ -234,7 +270,10 @@ const buildPrincipal = (
     };
   },
   alsTenantId: string | undefined,
+  membership: MembershipRow,
 ): Principal => {
+  // 07.4's phone branch is untouched and stays FIRST: it is the settled customer signal and the
+  // deferred OTP login needs it. 10.7 adds only the phoneless guest below it.
   if (session.user.phoneNumber) {
     if (!alsTenantId) {
       const anonymous: AnonymousPrincipal = { kind: 'anonymous' };
@@ -249,6 +288,20 @@ const buildPrincipal = (
     return customer;
   }
 
+  // 10.7 D-10: a Google guest has an email, no phone, no member row and no chosen organization.
+  // Before this branch they were classified as an operator. Only a session carrying no operator
+  // identity at all takes it — an operator bound elsewhere stays an operator and still meets
+  // 07.4 D-02's mismatch refusal below.
+  if (alsTenantId !== undefined && membership === null && !session.session.activeOrganizationId) {
+    const guest: CustomerPrincipal = {
+      kind: 'customer',
+      userId: session.user.id,
+      phone: null,
+      tenantId: alsTenantId,
+    };
+    return guest;
+  }
+
   const operator: OperatorPrincipal = {
     kind: 'operator',
     userId: session.user.id,
@@ -256,6 +309,7 @@ const buildPrincipal = (
     ...(session.session.activeOrganizationId
       ? { tenantId: session.session.activeOrganizationId }
       : {}),
+    ...(membership?.role ? { baseRole: membership.role } : {}),
     // AUTH-07: BA's twoFactor plugin schema adds `user.twoFactorEnabled`
     // (defaultValue:false). When the plugin is loaded BA always returns a
     // boolean; the optional-chain handles older fixtures that pre-date the

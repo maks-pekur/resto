@@ -1,4 +1,5 @@
 export { IS_PUBLIC_KEY, Public } from './public.decorator';
+export { OPTIONAL_AUTH_KEY, OptionalAuth } from './optional-auth.decorator';
 export { PERMISSIONS_KEY, Permissions } from './permissions.decorator';
 export {
   REQUIRES_TENANT_CONTEXT_KEY,

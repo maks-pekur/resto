@@ -26,7 +26,8 @@ export interface OperatorPrincipal {
 export interface CustomerPrincipal {
   kind: 'customer';
   userId: string;
-  phone: string;
+  /** null for a customer who signed in with a provider that carries no phone (10.7 D-10). */
+  phone: string | null;
   tenantId: string;
   /** Populated in Phase E by the BA verify hook; undefined in Phase B. */
   customerProfileId?: string;
