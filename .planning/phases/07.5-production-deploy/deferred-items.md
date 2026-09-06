@@ -116,3 +116,47 @@ their own env, so it is a plan, not a one-liner.
 the local rehearsal exercises the production compose stack rather than the test harness. The
 phase's own verification gate should require the e2e job before 7.5 closes — otherwise plans 08-10
 will be built on a branch whose regression surface has still never been measured.
+
+---
+
+## 2026-09-06 — what the e2e repair actually uncovered
+
+Fixing the suite was not bookkeeping. Two shipped defects were hiding behind the stale fixtures,
+and both were invisible for the same reason: the tests that should have caught them asserted the
+wrong column.
+
+### 1. Every payment transition was lost on write (money path)
+
+`OrderDrizzleRepository`'s INSERT wrote `payment_status` and `paid_at`; its UPDATE
+(`#runUpdate`) did not. `Order.markPaid`, `markRequiresAction`, `refund` and `markFailed` all move
+those two fields on the aggregate snapshot, and nothing else in `apps/api/src` writes those columns
+— confirmed by grep. So an order created `pending` stayed `pending` forever, whatever happened to
+the money.
+
+Consequences: `AnalyticsDrizzleReader` sums `orders.total` filtered on `payment_status = 'paid'`,
+so **revenue reads zero**; the operator order feed projects `paymentStatus`, so every order shows
+unpaid.
+
+Never caught because `payment-lifecycle.e2e.spec.ts` read `orders.status` while asserting
+`'requires_action'` and `'paid'` — values that column has not accepted since migration 0010. The
+assertion could only ever compare the wrong column. Fixed in `0d97ed5b`; the spec now reads
+`payment_status`, and it fails without the fix (observed: `Expected "paid", Received "pending"`).
+
+### 2. Deleting a location with orders returned 500, not 409
+
+`DeleteLocationService` matched the database's `RAISE 'location_has_orders'` with
+`err.message.includes(...)`. Drizzle wraps a Postgres error in `DrizzleQueryError` whose own
+message is the failed SQL — the raised name survives only on `.cause`. The branch never fired, so
+`LocationHasOrdersError` was never thrown and the mapping to a 409 was unreachable.
+
+Proven with a temporary probe: the database does raise `location_has_orders`. Fixed in `963651d7`
+by walking the cause chain; the spec now exercises the service and asserts the domain error, and
+fails against the old check (observed: 1 of 3).
+
+### The pattern worth keeping
+
+Both defects sat behind fixtures that wrote a payment value into the fulfilment column. A fixture
+that lies does not merely fail — it can pass, and hide the thing it was meant to prove. The
+`orders.status` / `payment_status` split needed a fixture sweep in the same commit; it did not get
+one, and two production defects lived in the gap for as long as the suite stayed red for
+"unrelated" reasons.
