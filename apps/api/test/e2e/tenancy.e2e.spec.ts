@@ -89,7 +89,7 @@ suite('Tenancy — provision via HTTP → DB → outbox → NATS', () => {
     expect(res.statusCode).toBe(201);
     const body = res.json<{ id: string; slug: string; primaryDomain: string }>();
     expect(body.slug).toBe(slug);
-    expect(body.primaryDomain).toBe(`${slug}.menu.resto.app`);
+    expect(body.primaryDomain).toBe(`${slug}.resto.app`);
 
     const db = stack.app.get(TenantAwareDb);
     const tenants = await db.withoutTenant('inspect tenants', (tx) =>
