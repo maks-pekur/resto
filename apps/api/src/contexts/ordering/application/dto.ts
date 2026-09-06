@@ -95,3 +95,21 @@ export function generateOrderNumber(): string {
     .join('');
   return `${y}${m}${d}-${suffix}`;
 }
+
+/** 10.7 D-15: only what a guest needs to recognise their own order. No composition, no snapshot
+ * of the name and phone they typed, no internal ids. */
+export const MyOrderSummarySchema = z.object({
+  id: z.string().uuid(),
+  orderNumber: z.string(),
+  shortNumber: z.number().int(),
+  status: z.string(),
+  paymentStatus: z.string(),
+  total: z.string(),
+  currency: z.string(),
+  createdAt: z.string(),
+});
+export type MyOrderSummary = z.infer<typeof MyOrderSummarySchema>;
+
+export const MyOrdersResponseSchema = z.object({ orders: z.array(MyOrderSummarySchema) });
+export type MyOrdersResponse = z.infer<typeof MyOrdersResponseSchema>;
+export class MyOrdersResponseDto extends createZodDto(MyOrdersResponseSchema) {}

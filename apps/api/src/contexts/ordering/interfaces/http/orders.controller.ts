@@ -13,16 +13,26 @@ import { ApiBody, ApiCreatedResponse, ApiOkResponse, ApiTags } from '@nestjs/swa
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
-import { LocationNeutral, Public, RequireActiveTenant } from '../../../../shared/auth';
+import {
+  LocationNeutral,
+  OptionalAuth,
+  Public,
+  RequireActiveTenant,
+} from '../../../../shared/auth';
+import { CurrentPrincipal } from '../../../identity/interfaces/http/decorators/current-principal.decorator';
+import type { Principal } from '../../../identity/domain/principal';
 import type { FastifyRequest } from 'fastify';
 import { readTableSessionCookie } from '../../../../shared/table-session';
 import { TableSessionService } from '../../../tenancy/application/table-session.service';
 import { wrapWith } from '../../../../shared/api/wrap';
 import {
   CreateOrderInputDto,
+  MyOrdersResponseDto,
   OrderResponseSchema,
+  type MyOrdersResponse,
   type OrderResponse,
 } from '../../application/dto';
+import { ListMyOrdersService } from '../../application/list-my-orders.service';
 import { CreateOrderService } from '../../application/create-order.service';
 import { GetOrderService } from '../../application/get-order.service';
 import { SubmitOrderFeedbackService } from '../../application/submit-order-feedback.service';
@@ -65,12 +75,16 @@ class OrderFeedbackResponseDto extends createZodDto(OrderFeedbackResponseSchema)
 
 @ApiTags('ordering')
 @Public()
+// 10.7 D-13: still open to an anonymous guest; a signed-in one is recognised so the order can
+// carry who placed it. Never refuses — see the decorator.
+@OptionalAuth()
 @LocationNeutral()
 @Controller('v1/orders')
 export class OrdersController {
   constructor(
     @Inject(CreateOrderService) private readonly createOrder: CreateOrderService,
     @Inject(GetOrderService) private readonly getOrder: GetOrderService,
+    @Inject(ListMyOrdersService) private readonly listMyOrders: ListMyOrdersService,
     @Inject(TableSessionService) private readonly tableSessions: TableSessionService,
     @Inject(SubmitOrderFeedbackService) private readonly submitFeedback: SubmitOrderFeedbackService,
     @Inject(ORDER_FEEDBACK_REPOSITORY) private readonly feedback: OrderFeedbackRepository,
@@ -84,6 +98,7 @@ export class OrdersController {
   async create(
     @Body(new RestoZodValidationPipe(CreateOrderInputDto)) input: CreateOrderInputDto,
     @Req() req: FastifyRequest,
+    @CurrentPrincipal() principal: Principal,
   ): Promise<OrderResponse> {
     // A guest never names their own table: it comes from the session their scan opened, so a
     // copied link cannot order to someone else's table.
@@ -91,7 +106,33 @@ export class OrdersController {
     const session = sessionId === undefined ? null : await this.tableSessions.resolve(sessionId);
     const tableId = session?.tableId;
 
-    return wrap(() => this.createOrder.execute(input, tableId));
+    // The owner comes from the session the server resolved, never from the body: a client-supplied
+    // id would let anyone attach their order to a stranger's history.
+    const customerUserId = principal.kind === 'customer' ? principal.userId : null;
+
+    return wrap(() => this.createOrder.execute(input, tableId, customerUserId));
+  }
+
+  @Get('mine')
+  @RequireActiveTenant()
+  @ApiOkResponse({ type: MyOrdersResponseDto })
+  async mine(@CurrentPrincipal() principal: Principal): Promise<MyOrdersResponse> {
+    // A guest who is not signed in has no history — an empty list, not a refusal. The account is
+    // what finds an order (D-14/D-19), and this route never says whether a stranger has any.
+    if (principal.kind !== 'customer') return { orders: [] };
+    const rows = await this.listMyOrders.execute(principal.userId);
+    return {
+      orders: rows.map((r) => ({
+        id: r.id,
+        orderNumber: r.orderNumber,
+        shortNumber: r.shortNumber,
+        status: r.status,
+        paymentStatus: r.paymentStatus,
+        total: r.total,
+        currency: r.currency,
+        createdAt: r.createdAt.toISOString(),
+      })),
+    };
   }
 
   @Post(':id/feedback')

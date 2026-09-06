@@ -61,6 +61,7 @@ const makeOrderSnap = (
   customerName: null,
   customerPhone: null,
   customerEmail: 'guest@example.com',
+  customerUserId: null,
   items: [],
   subtotal: '10.00',
   deliveryFee: '0.00',
@@ -105,6 +106,7 @@ const buildSut = (tenantSnapOverrides: Parameters<typeof makeTenantSnap>[0] = {}
     findById: vi.fn().mockResolvedValue(order),
     findByIdInTx: vi.fn().mockResolvedValue(null),
     findByIdempotencyKey: vi.fn().mockResolvedValue(null),
+    listForCustomer: vi.fn().mockResolvedValue([]),
   };
 
   const tenantRepo: TenantRepository = {

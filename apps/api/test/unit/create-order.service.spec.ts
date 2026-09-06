@@ -180,6 +180,10 @@ class FakeOrderRepository implements OrderRepository {
   findByIdempotencyKey(): Promise<Order | null> {
     return Promise.resolve(this.saved.at(-1) ?? null);
   }
+
+  listForCustomer(): Promise<never[]> {
+    return Promise.resolve([]);
+  }
 }
 
 const defaultLocation = {

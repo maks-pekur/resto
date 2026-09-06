@@ -46,6 +46,9 @@ export const orders = pgTable(
     customerName: text('customer_name'),
     customerPhone: text('customer_phone'),
     customerEmail: text('customer_email'),
+    // 10.7 D-13: the Better Auth user who placed it, when they were signed in. Not tenant-scoped,
+    // so it takes no composite FK (ADR-0020 I-2 does not apply).
+    customerUserId: text('customer_user_id'),
     subtotal: money('subtotal').notNull(),
     deliveryFee: money('delivery_fee').notNull().default('0.00'),
     serviceFee: money('service_fee').notNull().default('0.00'),

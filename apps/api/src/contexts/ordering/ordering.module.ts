@@ -21,6 +21,7 @@ import { TenancyTableLookupAdapter } from './infrastructure/tenancy-table-lookup
 import { PaymentDrizzleRepository } from '../payments/infrastructure/payment-drizzle.repository';
 import { CreateOrderService } from './application/create-order.service';
 import { GetOrderService } from './application/get-order.service';
+import { ListMyOrdersService } from './application/list-my-orders.service';
 import { AcceptOrderService } from './application/accept-order.service';
 import { AdvanceOrderStatusService } from './application/advance-order-status.service';
 import { ListOrdersService } from './application/list-orders.service';
@@ -43,6 +44,7 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
     { provide: PAYMENT_REPOSITORY, useClass: PaymentDrizzleRepository },
     CreateOrderService,
     GetOrderService,
+    ListMyOrdersService,
     AcceptOrderService,
     AdvanceOrderStatusService,
     ListOrdersService,
@@ -53,6 +55,7 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
   exports: [
     ORDER_REPOSITORY,
     GetOrderService,
+    ListMyOrdersService,
     AcceptOrderService,
     AdvanceOrderStatusService,
     ListOrdersService,

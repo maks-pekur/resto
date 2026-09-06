@@ -44,6 +44,7 @@ const makeOrder = (
     customerName: null,
     customerPhone: null,
     customerEmail: 'guest@example.com',
+    customerUserId: null,
     items: [],
     subtotal: '10.00',
     deliveryFee: '0.00',
@@ -155,6 +156,7 @@ describe('HandleStripeEventService', () => {
       findById: vi.fn(),
       findByIdInTx: vi.fn(),
       findByIdempotencyKey: vi.fn(),
+      listForCustomer: vi.fn().mockResolvedValue([]),
     };
 
     paymentRepo = {

@@ -10,7 +10,7 @@ import {
   OrderStatusChangedV1,
   type EventEnvelope,
 } from '@resto/events';
-import { and, eq } from 'drizzle-orm';
+import { and, desc, eq } from 'drizzle-orm';
 import { Currency, OrderId, TenantId } from '@resto/domain';
 import {
   Order,
@@ -20,7 +20,7 @@ import {
   type OrderStatus,
 } from '../domain/order.aggregate';
 import type { OrderDomainEvent } from '../domain/events';
-import type { OrderRepository } from '../domain/ports';
+import type { GuestOrderRow, OrderRepository } from '../domain/ports';
 import { toMinorUnits } from '../domain/money-utils';
 
 const ALLOWED_STATUSES = new Set<string>([
@@ -63,6 +63,7 @@ export class OrderDrizzleRepository implements OrderRepository {
           customerName: snapshot.customerName,
           customerPhone: snapshot.customerPhone,
           customerEmail: snapshot.customerEmail,
+          customerUserId: snapshot.customerUserId,
           subtotal: snapshot.subtotal,
           deliveryFee: snapshot.deliveryFee,
           serviceFee: snapshot.serviceFee,
@@ -154,6 +155,9 @@ export class OrderDrizzleRepository implements OrderRepository {
         // insert wrote them and this update did not, so every payment transition was lost.
         paymentStatus: snapshot.paymentStatus,
         paidAt: snapshot.paidAt,
+        // Written on every update even though nothing changes it after placement: an insert-only
+        // column is how payment_status was silently lost until 0d97ed5b.
+        customerUserId: snapshot.customerUserId,
         updatedAt: snapshot.updatedAt,
         scheduledFor: snapshot.scheduledFor,
         shortNumber: snapshot.shortNumber,
@@ -192,6 +196,32 @@ export class OrderDrizzleRepository implements OrderRepository {
   async findById(id: OrderId): Promise<Order | null> {
     const ctx = requireTenantContext();
     return this.db.withTenant(async (tx) => this.loadByIdWithTx(tx, id, ctx.tenantId));
+  }
+
+  async listForCustomer(customerUserId: string, limit: number): Promise<GuestOrderRow[]> {
+    const ctx = requireTenantContext();
+    return this.db.withTenant(async (tx) =>
+      tx
+        .select({
+          id: schema.orders.id,
+          orderNumber: schema.orders.orderNumber,
+          shortNumber: schema.orders.shortNumber,
+          status: schema.orders.status,
+          paymentStatus: schema.orders.paymentStatus,
+          total: schema.orders.total,
+          currency: schema.orders.currency,
+          createdAt: schema.orders.createdAt,
+        })
+        .from(schema.orders)
+        .where(
+          and(
+            eq(schema.orders.tenantId, ctx.tenantId),
+            eq(schema.orders.customerUserId, customerUserId),
+          ),
+        )
+        .orderBy(desc(schema.orders.createdAt))
+        .limit(limit),
+    );
   }
 
   async findByIdInTx(tx: RestoTx, id: OrderId, tenantId: string): Promise<Order | null> {
@@ -274,6 +304,7 @@ export class OrderDrizzleRepository implements OrderRepository {
       customerName: row.customerName ?? null,
       customerPhone: row.customerPhone ?? null,
       customerEmail: row.customerEmail ?? null,
+      customerUserId: row.customerUserId ?? null,
       items,
       subtotal: row.subtotal,
       deliveryFee: row.deliveryFee,

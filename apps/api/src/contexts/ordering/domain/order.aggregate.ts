@@ -70,6 +70,7 @@ export interface OrderSnapshot {
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly customerEmail: string | null;
+  readonly customerUserId: string | null;
   readonly items: readonly OrderItemSnapshot[];
   readonly subtotal: string;
   readonly deliveryFee: string;
@@ -112,6 +113,7 @@ export interface CreateOrderInput {
   readonly customerName?: string | null;
   readonly customerPhone?: string | null;
   readonly customerEmail?: string | null;
+  readonly customerUserId?: string | null;
   readonly items: readonly {
     readonly menuItemId: string;
     readonly nameSnapshot: string;
@@ -228,6 +230,7 @@ export class Order {
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
       customerEmail: input.customerEmail ?? null,
+      customerUserId: input.customerUserId ?? null,
       items: Object.freeze(itemSnapshots),
       subtotal: fromMinorUnits(subtotalMinor),
       deliveryFee: '0.00',

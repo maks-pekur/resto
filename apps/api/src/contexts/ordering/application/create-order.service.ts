@@ -44,7 +44,11 @@ export class CreateOrderService {
    * `tableFromSession` is how a guest names their table: they cannot put one in the request, so
    * the controller passes what their scanned session resolved to.
    */
-  async execute(input: CreateOrderInput, tableFromSession?: string): Promise<OrderResponse> {
+  async execute(
+    input: CreateOrderInput,
+    tableFromSession?: string,
+    customerUserId: string | null = null,
+  ): Promise<OrderResponse> {
     const ctx = requireTenantContext();
     const tenantId = TenantId.parse(ctx.tenantId);
 
@@ -67,7 +71,7 @@ export class CreateOrderService {
     }
 
     return withLocation(locationId, () =>
-      this.#createUnderLocation(input, tenantId, locationId, resolvedTable),
+      this.#createUnderLocation(input, tenantId, locationId, resolvedTable, customerUserId),
     );
   }
 
@@ -76,6 +80,7 @@ export class CreateOrderService {
     tenantId: TenantId,
     locationId: string,
     resolvedTable: ResolvedOrderTable | null,
+    customerUserId: string | null,
   ): Promise<OrderResponse> {
     const snapshot = await this.pricing.loadSnapshot(tenantId, locationId);
     const currency = Currency.parse(snapshot.currency);
@@ -200,6 +205,7 @@ export class CreateOrderService {
       tableId: resolvedTable?.tableId ?? null,
       tableZoneName: resolvedTable?.zoneName ?? null,
       tableNumber: resolvedTable?.number ?? null,
+      customerUserId,
       customerName: input.customerName ?? null,
       customerPhone: input.customerPhone ?? null,
       customerEmail: input.customerEmail ?? null,

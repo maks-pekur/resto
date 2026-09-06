@@ -50,6 +50,7 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     customerName: null,
     customerPhone: null,
     customerEmail: null,
+    customerUserId: null,
     items: [],
     subtotal: '12.50',
     deliveryFee: '0.00',

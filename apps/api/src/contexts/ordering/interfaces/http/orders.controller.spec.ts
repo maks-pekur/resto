@@ -26,6 +26,7 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   customerName: null,
   customerPhone: null,
   customerEmail: null,
+  customerUserId: null,
   items: [],
   subtotal: '25.00',
   deliveryFee: '0.00',
@@ -79,9 +80,12 @@ const buildController = () => {
     submit: vi.fn(),
   } as unknown as OrderFeedbackRepository;
 
+  const listMyOrders = { execute: vi.fn().mockResolvedValue([]) } as never;
+
   const controller = new OrdersController(
     createOrderService,
     getOrderService,
+    listMyOrders,
     tableSessions,
     submitFeedback,
     feedback,
@@ -206,6 +210,7 @@ describe('OrdersController GET /:id/status', () => {
       customerName: 'Guest Name',
       customerPhone: '+15555550100',
       customerEmail: 'guest@example.com',
+      customerUserId: null,
       cancelNote: 'internal operator note',
       acceptedByUserId: 'user-1',
       canceledByUserId: 'user-2',

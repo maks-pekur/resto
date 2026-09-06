@@ -3,6 +3,17 @@ import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
 import type { Order, OrderPaymentStatus, OrderStatus } from './order.aggregate';
 
+export interface GuestOrderRow {
+  readonly id: string;
+  readonly orderNumber: string;
+  readonly shortNumber: number;
+  readonly status: string;
+  readonly paymentStatus: string;
+  readonly total: string;
+  readonly currency: string;
+  readonly createdAt: Date;
+}
+
 export interface OrderRepository {
   save(order: Order): Promise<void>;
   update(order: Order, tx?: RestoTx): Promise<void>;
@@ -11,6 +22,8 @@ export interface OrderRepository {
   // callers must supply tx + tenantId explicitly instead of using findById.
   findByIdInTx(tx: RestoTx, id: OrderId, tenantId: string): Promise<Order | null>;
   findByIdempotencyKey(tenantId: TenantId, key: string): Promise<Order | null>;
+  /** 10.7 D-15: one guest's own orders, inside the tenant the request resolved. */
+  listForCustomer(customerUserId: string, limit: number): Promise<GuestOrderRow[]>;
 }
 
 export const ORDER_REPOSITORY = Symbol('ORDER_REPOSITORY');

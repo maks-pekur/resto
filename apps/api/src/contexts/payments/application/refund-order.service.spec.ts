@@ -43,6 +43,7 @@ const makeOrder = (status: string, total = '20.00') =>
     customerName: null,
     customerPhone: null,
     customerEmail: 'guest@example.com',
+    customerUserId: null,
     items: [],
     subtotal: total,
     deliveryFee: '0.00',
@@ -103,6 +104,7 @@ describe('RefundOrderService', () => {
       findById: vi.fn(),
       findByIdInTx: vi.fn(),
       findByIdempotencyKey: vi.fn(),
+      listForCustomer: vi.fn().mockResolvedValue([]),
     };
 
     paymentRepo = {
