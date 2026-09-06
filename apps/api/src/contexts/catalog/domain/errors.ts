@@ -103,6 +103,25 @@ export class NoLocationForTenantError extends Error {
   }
 }
 
+export class MenuIngredientAlreadyAttachedError extends Error {
+  readonly kind = 'MenuIngredientAlreadyAttachedError' as const;
+  constructor(
+    public readonly optionId: string,
+    public readonly attachedVia: string,
+  ) {
+    super(`Ingredient "${optionId}" is already attached to "${attachedVia}".`);
+    this.name = 'MenuIngredientAlreadyAttachedError';
+  }
+}
+
+export class TooManyGroupDefaultsError extends Error {
+  readonly kind = 'TooManyGroupDefaultsError' as const;
+  constructor(public readonly modifierGroupId: string) {
+    super(`Group "${modifierGroupId}" allows one choice, so it cannot pre-select two.`);
+    this.name = 'TooManyGroupDefaultsError';
+  }
+}
+
 export type CatalogDomainError =
   | MenuItemNotFoundError
   | MenuCategoryNotFoundError
@@ -115,4 +134,6 @@ export type CatalogDomainError =
   | MenuItemAlreadyArchivedError
   | CategoryNestingDepthError
   | CatalogCodeConflictError
-  | NoLocationForTenantError;
+  | NoLocationForTenantError
+  | MenuIngredientAlreadyAttachedError
+  | TooManyGroupDefaultsError;

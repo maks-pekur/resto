@@ -25,9 +25,25 @@ export interface LocationRepository {
   listForTenant(tenantId: TenantId): Promise<readonly LocationSnapshot[]>;
   save(snapshot: LocationSnapshot): Promise<void>;
   countScopedMembers(locationId: LocationId): Promise<number>;
+  /** Removes a location that never took an order, along with its zones and tables. */
+  deleteEmpty(locationId: LocationId, tenantId: TenantId): Promise<void>;
 }
 
 export const LOCATION_REPOSITORY = Symbol('LOCATION_REPOSITORY');
+
+export interface BrandMediaPort {
+  /** SigV4 binds content type and length: the browser must send the same headers. */
+  presignPut(
+    s3Key: string,
+    contentType: string,
+    contentLength: number,
+    ttlSeconds: number,
+  ): Promise<string>;
+  /** Copies the uploaded object into the world-readable prefix and returns its stable address. */
+  publish(s3Key: string): Promise<string>;
+}
+
+export const BRAND_MEDIA_PORT = Symbol('BRAND_MEDIA_PORT');
 
 export interface TableZoneWithTables extends TableZoneSnapshot {
   readonly tables: readonly RestaurantTableSnapshot[];
@@ -73,6 +89,14 @@ export interface TableZoneRepository {
   findZoneById(zoneId: string, locationId: LocationId): Promise<TableZoneSnapshot | null>;
   findTableById(tableId: string, locationId: LocationId): Promise<RestaurantTableSnapshot | null>;
   findActiveTableForResolution(tableId: string): Promise<RestaurantTableResolution | null>;
+  /** The code's secret is all a scanning guest carries; the table id never leaves the server. */
+  findActiveTableByQrToken(token: string): Promise<RestaurantTableResolution | null>;
+  openTableSession(input: {
+    readonly tableId: string;
+    readonly locationId: string;
+    readonly expiresAt: Date;
+  }): Promise<string>;
+  findLiveTableSession(sessionId: string): Promise<RestaurantTableResolution | null>;
   createZoneWithTables(input: CreateZoneWithTablesInput): Promise<TableZoneWithTables>;
   addTables(input: AddTablesInput): Promise<readonly RestaurantTableSnapshot[]>;
   saveZone(snapshot: TableZoneSnapshot): Promise<void>;

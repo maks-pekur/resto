@@ -7,7 +7,7 @@ import {
   withoutLocation,
 } from '@resto/db';
 import { LocationId, TenantId } from '@resto/domain';
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, gt } from 'drizzle-orm';
 import type { RestaurantTableSnapshot } from '../domain/restaurant-table.aggregate';
 import type { TableZoneSnapshot } from '../domain/table-zone.aggregate';
 import type {
@@ -45,6 +45,7 @@ const ROW_TO_TABLE_SNAPSHOT = (row: {
   locationId: string;
   number: string;
   ordinal: number;
+  qrToken: string;
   status: string;
   createdAt: Date;
   updatedAt: Date;
@@ -56,6 +57,7 @@ const ROW_TO_TABLE_SNAPSHOT = (row: {
   locationId: LocationId.parse(row.locationId),
   number: row.number,
   ordinal: row.ordinal,
+  qrToken: row.qrToken,
   status: row.status as RestaurantTableSnapshot['status'],
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -192,6 +194,121 @@ export class TableZoneDrizzleRepository
     });
   }
 
+  /** The QR code's own secret, which is all a scanning guest has. */
+  async findActiveTableByQrToken(token: string): Promise<RestaurantTableResolution | null> {
+    return withoutLocation(async () => {
+      const tenantId = requireTenantContext().tenantId;
+      return this.withTenant(async (_scoped, tx) => {
+        const rows = await tx
+          .select({
+            tableId: schema.restaurantTables.id,
+            number: schema.restaurantTables.number,
+            locationId: schema.restaurantTables.locationId,
+            zoneName: schema.tableZones.name,
+            updatedAt: schema.restaurantTables.updatedAt,
+          })
+          .from(schema.restaurantTables)
+          .innerJoin(
+            schema.tableZones,
+            and(
+              eq(schema.restaurantTables.zoneId, schema.tableZones.id),
+              eq(schema.restaurantTables.tenantId, schema.tableZones.tenantId),
+            ),
+          )
+          .where(
+            and(
+              eq(schema.restaurantTables.qrToken, token),
+              eq(schema.restaurantTables.tenantId, tenantId),
+              eq(schema.restaurantTables.status, 'active'),
+              eq(schema.tableZones.status, 'active'),
+            ),
+          )
+          .limit(1);
+        const row = rows[0];
+        if (!row) return null;
+        return {
+          tableId: row.tableId,
+          zoneName: row.zoneName,
+          number: row.number,
+          locationId: LocationId.parse(row.locationId),
+          updatedAt: row.updatedAt,
+        };
+      });
+    });
+  }
+
+  async openTableSession(input: {
+    readonly tableId: string;
+    readonly locationId: string;
+    readonly expiresAt: Date;
+  }): Promise<string> {
+    return withoutLocation(async () => {
+      const tenantId = requireTenantContext().tenantId;
+      return this.withTenant(async (_scoped, tx) => {
+        const [row] = await tx
+          .insert(schema.tableSessions)
+          .values({
+            tenantId,
+            tableId: input.tableId,
+            locationId: input.locationId,
+            expiresAt: input.expiresAt,
+          })
+          .returning({ id: schema.tableSessions.id });
+        if (!row) throw new Error('table session insert returned no row');
+        return row.id;
+      });
+    });
+  }
+
+  async findLiveTableSession(sessionId: string): Promise<RestaurantTableResolution | null> {
+    return withoutLocation(async () => {
+      const tenantId = requireTenantContext().tenantId;
+      return this.withTenant(async (_scoped, tx) => {
+        const rows = await tx
+          .select({
+            tableId: schema.restaurantTables.id,
+            number: schema.restaurantTables.number,
+            locationId: schema.restaurantTables.locationId,
+            zoneName: schema.tableZones.name,
+            updatedAt: schema.restaurantTables.updatedAt,
+          })
+          .from(schema.tableSessions)
+          .innerJoin(
+            schema.restaurantTables,
+            and(
+              eq(schema.tableSessions.tableId, schema.restaurantTables.id),
+              eq(schema.tableSessions.tenantId, schema.restaurantTables.tenantId),
+            ),
+          )
+          .innerJoin(
+            schema.tableZones,
+            and(
+              eq(schema.restaurantTables.zoneId, schema.tableZones.id),
+              eq(schema.restaurantTables.tenantId, schema.tableZones.tenantId),
+            ),
+          )
+          .where(
+            and(
+              eq(schema.tableSessions.id, sessionId),
+              eq(schema.tableSessions.tenantId, tenantId),
+              gt(schema.tableSessions.expiresAt, new Date()),
+              eq(schema.restaurantTables.status, 'active'),
+            ),
+          )
+          .limit(1);
+        const row = rows[0];
+        if (!row) return null;
+        return {
+          tableId: row.tableId,
+          zoneName: row.zoneName,
+          number: row.number,
+          locationId: LocationId.parse(row.locationId),
+          updatedAt: row.updatedAt,
+        };
+      });
+    });
+  }
+
   async createZoneWithTables(input: CreateZoneWithTablesInput): Promise<TableZoneWithTables> {
     return this.withTenant(async (scoped, tx) => {
       const [zoneRow] = await scoped
@@ -235,6 +352,7 @@ export class TableZoneDrizzleRepository
                 locationId: schema.restaurantTables.locationId,
                 number: schema.restaurantTables.number,
                 ordinal: schema.restaurantTables.ordinal,
+                qrToken: schema.restaurantTables.qrToken,
                 status: schema.restaurantTables.status,
                 createdAt: schema.restaurantTables.createdAt,
                 updatedAt: schema.restaurantTables.updatedAt,
@@ -268,6 +386,7 @@ export class TableZoneDrizzleRepository
           locationId: schema.restaurantTables.locationId,
           number: schema.restaurantTables.number,
           ordinal: schema.restaurantTables.ordinal,
+          qrToken: schema.restaurantTables.qrToken,
           status: schema.restaurantTables.status,
           createdAt: schema.restaurantTables.createdAt,
           updatedAt: schema.restaurantTables.updatedAt,

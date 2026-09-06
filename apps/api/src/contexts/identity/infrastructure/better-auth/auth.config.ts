@@ -57,6 +57,8 @@ interface BuildOpts {
    * construct `buildAuth({...})` without the audit pipeline still work.
    */
   emitter?: IdentityEventEmitterPort;
+  /** Guest sign-in with Google. Absent in most fixtures — the provider is simply not registered. */
+  google?: { clientId: string; clientSecret: string };
   secret: string;
   baseUrl: string;
   cookieDomain?: string;
@@ -198,6 +200,9 @@ export const buildAuth = (opts: BuildOpts) =>
     secret: opts.secret,
     baseURL: opts.baseUrl,
     trustedOrigins: [...(opts.trustedOrigins ?? [])],
+    ...(opts.google
+      ? { socialProviders: { google: { ...opts.google, prompt: 'select_account' } } }
+      : {}),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: opts.requireEmailVerification ?? false,

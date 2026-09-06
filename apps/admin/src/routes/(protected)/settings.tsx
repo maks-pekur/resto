@@ -1,16 +1,32 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
+import { z } from 'zod';
+import { FileText, Globe, Languages, LayoutGrid, Plug, Store } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
-import { requirePermission } from '@/lib/auth/permissions';
+import { hasPermission, requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { tenancyQuery } from '@/lib/queries/tenancy';
-import { PageHeading } from '@/components/page-heading';
-import { DangerZoneCard } from '@/components/danger-zone-card';
-import { TwoFactorSection } from '@/components/settings/two-factor-section';
+import { PageHeading } from '@/components/common/page-heading';
+import { SettingsNav, type SettingsNavItem } from '@/components/settings/settings-nav';
+import { BrandForm } from '@/components/settings/brand-form';
+import { AppsSection } from '@/components/settings/apps-section';
+import { LegalForm } from '@/components/settings/legal-form';
+import { ContentLocalesSection } from '@/components/settings/content-locales-section';
+import { DomainsSection } from '@/components/settings/domains-section';
+import { PaymentsSection } from '@/components/settings/payments-section';
+import { DangerZoneCard } from '@/components/settings/danger-zone-card';
+
+const SETTINGS = ['general', 'apps', 'languages', 'legal', 'domains', 'integrations'] as const;
+
+const searchSchema = z.object({
+  setting: z.enum(SETTINGS).catch('general'),
+});
 
 export const Route = createRoute({
   getParentRoute: () => protectedLayoutRoute,
   path: '/settings',
+  validateSearch: searchSchema,
   beforeLoad: requirePermission('settings', 'update'),
   loader: ({ context: { queryClient } }) =>
     Promise.all([
@@ -21,6 +37,8 @@ export const Route = createRoute({
 });
 
 function SettingsPage() {
+  const { t } = useTranslation('translation', { keyPrefix: 'settings' });
+  const { setting } = Route.useSearch();
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: tenantResult } = useSuspenseQuery(tenancyQuery());
 
@@ -31,22 +49,53 @@ function SettingsPage() {
     return null;
   }
 
-  const isOwner = me.baseRole === 'owner';
+  const canSeeIntegrations = hasPermission(me, 'billing', 'read');
+  const items: SettingsNavItem[] = [
+    { value: 'general', label: t('tabGeneral'), icon: Store },
+    { value: 'apps', label: t('tabApps'), icon: LayoutGrid },
+    { value: 'languages', label: t('tabLanguages'), icon: Languages },
+    { value: 'legal', label: t('tabLegal'), icon: FileText },
+    { value: 'domains', label: t('tabDomains'), icon: Globe },
+    ...(canSeeIntegrations
+      ? [{ value: 'integrations', label: t('tabIntegrations'), icon: Plug }]
+      : []),
+  ];
+
+  const active = setting === 'integrations' && !canSeeIntegrations ? 'general' : setting;
 
   return (
     <>
-      <PageHeading title="Settings" />
-      <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
-        <TwoFactorSection twoFactorEnabled={me.twoFactorEnabled === true} />
-        <DangerZoneCard
-          tenant={{
-            slug: tenant.slug,
-            status: tenant.status,
-            offboardingScheduledAt: tenant.offboardingScheduledAt,
-          }}
-          isOwner={isOwner}
-          userId={me.userId ?? ''}
-        />
+      <PageHeading title={t('pageTitle')} description={t('pageDescription')} />
+      <div className="flex flex-1 flex-col gap-6 px-4 md:flex-row lg:px-6">
+        <SettingsNav items={items} active={active} ariaLabel={t('navLabel')} />
+
+        <div className="flex min-w-0 flex-1 flex-col gap-4">
+          {active === 'general' ? (
+            <>
+              <BrandForm tenant={tenant} />
+              {/* Last, and last for a reason: everything above is routine, this is not. */}
+              <DangerZoneCard
+                tenant={{
+                  slug: tenant.slug,
+                  status: tenant.status,
+                  offboardingScheduledAt: tenant.offboardingScheduledAt,
+                }}
+                isOwner={me.baseRole === 'owner'}
+                userId={me.userId ?? ''}
+              />
+            </>
+          ) : null}
+          {active === 'apps' ? <AppsSection tenant={tenant} /> : null}
+          {active === 'languages' ? (
+            <ContentLocalesSection
+              defaultLocale={tenant.locale}
+              contentLocales={tenant.contentLocales}
+            />
+          ) : null}
+          {active === 'legal' ? <LegalForm tenant={tenant} /> : null}
+          {active === 'domains' ? <DomainsSection /> : null}
+          {active === 'integrations' ? <PaymentsSection /> : null}
+        </div>
       </div>
     </>
   );

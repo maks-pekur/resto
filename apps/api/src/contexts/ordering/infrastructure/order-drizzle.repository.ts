@@ -24,16 +24,12 @@ import type { OrderRepository } from '../domain/ports';
 import { toMinorUnits } from '../domain/money-utils';
 
 const ALLOWED_STATUSES = new Set<string>([
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
-  'failed',
 ]);
 
 const parseStatus = (raw: string): OrderStatus => {
@@ -59,7 +55,7 @@ export class OrderDrizzleRepository implements OrderRepository {
           idempotencyKey: snapshot.idempotencyKey,
           orderNumber: snapshot.orderNumber,
           status: snapshot.status,
-          fulfillmentMode: snapshot.fulfillmentMode,
+          orderType: snapshot.orderType,
           tableIdentifier: snapshot.tableIdentifier,
           tableId: snapshot.tableId,
           tableZoneName: snapshot.tableZoneName,
@@ -76,6 +72,9 @@ export class OrderDrizzleRepository implements OrderRepository {
           scheduledFor: snapshot.scheduledFor,
           shortNumber: snapshot.shortNumber,
           channel: snapshot.channel,
+          paymentType: snapshot.paymentType,
+          paymentStatus: snapshot.paymentStatus,
+          paidAt: snapshot.paidAt,
           acceptedAt: snapshot.acceptedAt,
           preparingAt: snapshot.preparingAt,
           readyAt: snapshot.readyAt,
@@ -121,6 +120,7 @@ export class OrderDrizzleRepository implements OrderRepository {
             priceDelta: mod.priceDelta,
             amount: mod.amount,
             modifierGroupId: mod.modifierGroupId ?? null,
+            kind: mod.kind,
           });
         }
       }
@@ -150,6 +150,10 @@ export class OrderDrizzleRepository implements OrderRepository {
       .update(schema.orders)
       .set({
         status: snapshot.status,
+        // markPaid / markRequiresAction / refund / markFailed all move these two together; the
+        // insert wrote them and this update did not, so every payment transition was lost.
+        paymentStatus: snapshot.paymentStatus,
+        paidAt: snapshot.paidAt,
         updatedAt: snapshot.updatedAt,
         scheduledFor: snapshot.scheduledFor,
         shortNumber: snapshot.shortNumber,
@@ -239,6 +243,7 @@ export class OrderDrizzleRepository implements OrderRepository {
         priceDelta: m.priceDelta,
         amount: m.amount,
         modifierGroupId: m.modifierGroupId ?? null,
+        kind: m.kind as OrderModifierSnapshot['kind'],
       }));
 
       items.push({
@@ -261,7 +266,7 @@ export class OrderDrizzleRepository implements OrderRepository {
       idempotencyKey: row.idempotencyKey,
       orderNumber: row.orderNumber,
       status: parseStatus(row.status),
-      fulfillmentMode: row.fulfillmentMode as OrderSnapshot['fulfillmentMode'],
+      orderType: row.orderType as OrderSnapshot['orderType'],
       tableIdentifier: row.tableIdentifier ?? null,
       tableId: row.tableId ?? null,
       tableZoneName: row.tableZoneName ?? null,
@@ -279,6 +284,9 @@ export class OrderDrizzleRepository implements OrderRepository {
       scheduledFor: row.scheduledFor ?? null,
       shortNumber: row.shortNumber,
       channel: row.channel as OrderSnapshot['channel'],
+      paymentType: row.paymentType as OrderSnapshot['paymentType'],
+      paymentStatus: row.paymentStatus as OrderSnapshot['paymentStatus'],
+      paidAt: row.paidAt ?? null,
       acceptedAt: row.acceptedAt ?? null,
       preparingAt: row.preparingAt ?? null,
       readyAt: row.readyAt ?? null,
@@ -309,7 +317,7 @@ const domainEventToEnvelope = (event: OrderDomainEvent): EventEnvelope => {
           tenantId: event.tenantId,
           locationId: event.locationId,
           orderNumber: event.orderNumber,
-          fulfillmentMode: event.fulfillmentMode,
+          orderType: event.orderType,
           total: event.totalMinorUnits,
           currency: event.currency,
           itemCount: event.itemCount,

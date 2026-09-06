@@ -1,9 +1,16 @@
 'use client';
 
-import { useCallback, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import Image from 'next/image';
 import { useLocale, useMessages } from 'next-intl';
-import { GuestUiProvider, type GuestImageComponent, type GuestTranslate } from '@resto/ui';
+import {
+  GuestUiProvider,
+  useGuestTheme,
+  type GuestImageComponent,
+  type GuestThemeState,
+  type GuestTranslate,
+} from '@resto/ui';
+import { isLocale, LOCALES, type Locale } from '@/lib/i18n/locales';
 
 /** `unoptimized`: menu photos are tenant-supplied URLs on arbitrary hosts, and the
  * only way to serve them through Next's optimizer is a wildcard remotePatterns —
@@ -35,18 +42,68 @@ const interpolate = (text: string, values?: Record<string, string | number>): st
     values && name in values ? String(values[name]) : `{${name}}`,
   );
 
-export function GuestUi({ children }: { children: ReactNode }) {
+const SiteThemeContext = createContext<GuestThemeState | null>(null);
+
+export interface ContentLocales {
+  readonly default: string;
+  readonly supported: readonly string[];
+}
+
+const ContentLocalesContext = createContext<ContentLocales | null>(null);
+
+/** The restaurant declares which languages its menu exists in; the site can only
+ * render the ones it also has chrome translations for. */
+export const useContentLocales = (): readonly Locale[] => {
+  const value = useContext(ContentLocalesContext);
+  const offered = (value?.supported ?? []).filter(isLocale);
+  return offered.length > 0 ? offered : LOCALES;
+};
+
+export const useSiteTheme = (): GuestThemeState => {
+  const value = useContext(SiteThemeContext);
+  if (value === null) throw new Error('useSiteTheme must be used within GuestUi');
+  return value;
+};
+
+export function GuestUi({
+  contentLocales,
+  children,
+}: {
+  contentLocales?: ContentLocales;
+  children: ReactNode;
+}) {
   const locale = useLocale();
   const messages = useMessages() as Record<string, unknown>;
+  const theme = useGuestTheme();
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
 
   const translate = useCallback<GuestTranslate>(
     (key, values) => interpolate(lookup(messages, key), values),
     [messages],
   );
 
+  // The stored preference is only readable in the browser, so the first client
+  // render has to repeat the server's light markup or React throws the tree away.
+  const themeValue: GuestThemeState = hydrated ? theme : { ...theme, resolvedTheme: 'light' };
+
   return (
-    <GuestUiProvider locale={locale} t={translate} Image={NextGuestImage}>
-      {children}
-    </GuestUiProvider>
+    <SiteThemeContext.Provider value={themeValue}>
+      <ContentLocalesContext.Provider value={contentLocales ?? null}>
+        <GuestUiProvider
+          locale={locale}
+          t={translate}
+          Image={NextGuestImage}
+          {...(contentLocales === undefined
+            ? {}
+            : { defaultContentLocale: contentLocales.default })}
+        >
+          {children}
+        </GuestUiProvider>
+      </ContentLocalesContext.Provider>
+    </SiteThemeContext.Provider>
   );
 }

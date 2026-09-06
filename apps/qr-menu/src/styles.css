@@ -36,3 +36,10 @@
     }
   }
 }
+
+/* One layout, phone-shaped. The menu is reached by scanning a code with a phone; a wide screen
+   gets the same column centred rather than a second design to keep in step. */
+#root {
+  margin-inline: auto;
+  max-width: 32rem;
+}

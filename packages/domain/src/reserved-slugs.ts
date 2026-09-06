@@ -17,6 +17,7 @@ export const ADMIN_ROOT_ROUTE_SEGMENTS: readonly string[] = [
   // (protected) — became root segments when phase 10.2 plan 15 deleted the
   // `/$brandSlug` path segment and flattened the dashboard tree beneath it.
   'onboarding',
+  'account',
   'locations',
   'menu',
   'orders',
@@ -74,6 +75,7 @@ export const RESERVED_SLUGS: readonly string[] = [
   // Reserved as defence in depth: the tenant slug now lives in the hostname
   // (D-21), so a path collision is no longer reachable — but the invariant is
   // cheap to keep and the slug has lived in a path before.
+  'account',
   'dashboard-redirect',
   'locations',
   'orders',

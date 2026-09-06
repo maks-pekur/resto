@@ -1,7 +1,7 @@
 /**
  * A domain mapped to a tenant — either the auto-assigned subdomain
- * (`<slug>.menu.resto.app`) created on provisioning, or a verified
- * custom domain attached later.
+ * (`<slug>.<PUBLIC_APEX_DOMAIN>`, 07.5-13) created on provisioning, or a
+ * verified custom domain attached later.
  *
  * Pure value/entity — persistence concerns live in the repository.
  */

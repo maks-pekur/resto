@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 10.3 context gathered; persona reviews (CTO + skeptic) running
-last_updated: "2026-08-29T16:39:37.689Z"
-last_activity: 2026-08-29 -- Phase 10.3 execution started
+stopped_at: Phase 10.6 UI-SPEC approved
+last_updated: "2026-09-06T14:51:06.409Z"
+last_activity: 2026-09-06
 progress:
-  total_phases: 31
-  completed_phases: 15
-  total_plans: 157
-  completed_plans: 134
-  percent: 48
+  total_phases: 32
+  completed_phases: 16
+  total_plans: 173
+  completed_plans: 165
+  percent: 50
 ---
 
 # Project State
@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Core value:** A restaurant can publish its digital presence and accept paid orders from guests via web — without integrating any external POS or hiring a developer. AI tier (admin assistant, guest chat, onboarding constructor) layers on top in MVP-2.
-**Current focus:** Phase 10.3 — table-zones-tables-and-qr-codes
+**Current focus:** Phase 10.6 — ingredient-library-groups-and-how-they-reach-the-order
 **Milestone structure (2026-05-27, rescoped 2026-06-12):** MVP-1 = revenue spine only (5→6→7→7.5 deploy→8→10), Q1 2027 → MVP-2 = operational completeness (9,11-16) + AI tier (Q2-Q3 2027) → MVP-3 Telegram + iiko (Q4 2027+). See ROADMAP.md scope-rebalance note, `.planning/notes/ai-driven-pivot.md`, seeds.
 
 ## Current Position
@@ -38,8 +38,8 @@ See: .planning/PROJECT.md (updated 2026-05-24)
 
 **Next after the pause:** a working demo environment (seeded paid orders), then a `restos` namespace in llm-wiki for norms, then refresh the codebase map (stale since 13 June — predates 08.2–08.5 and 10), then the testing/UI cleanup pass.
 
-Phase: 10.3 (table-zones-tables-and-qr-codes) — EXECUTING
-Plan: 1 of 14
+Phase: 10.6 (ingredient-library-groups-and-how-they-reach-the-order) — EXECUTING
+Plan: 1 of 16
 
 **Do not start Phase 18 next.** It is MVP-2 (real-time SSE, split out of Phase 10 on 2026-08-11); `phase.complete` advanced to it mechanically as the next unchecked number, not by decision. MVP-1 still has Phase 10 (one Stripe step from done) and Phase 10.1 (pause ordering + weekly schedule) open.
 
@@ -51,8 +51,13 @@ CR-04 SPLIT DECISION (founder, 2026-06-26):
 Phase 7.5 (Production Deploy) is ACTIVE — re-planned 2026-06-26 as a four-surface stand-up (api+website ECS, admin+qr-menu static on Cloudflare Pages; admin folded in, supersedes 07.6-07). 9 stale admin-as-ECS plans archived under \_superseded-2026-06-21/. 8 fresh plans + 2 done anchors. Hosting = single VPS + Docker Compose + Cloudflare (VPS pivot 2026-06-26; AWS/RDS/Neon all dropped — self-managed Postgres on the VPS = superuser, so BYPASSRLS works natively). **Wave 0 COMPLETE**: 01 (RDS decision) + 02 (boot fix) + 03 (D-05 direct-conn outbox + G-03 leader /readyz + G-04 Sentry + G-05 fail-loud env; 449/449 api tests) + 04 (NATS-decouple e2e + PRE-DEPLOY-VERIFY) + 11 (website Dockerfile).
 DEFERRED (founder, 2026-06-26): the live prod stand-up (plans 06–10) waits until the FIRST PAYING CUSTOMER — no boxed infra months before revenue (first-customer target Q1 2027). Target stack at go-live = single VPS + Docker Compose (api+postgres+nats) + Cloudflare (DNS/TLS/CDN) + R2 + Pages (admin/qr-menu) + pg_dump/WAL-G→R2 backups + restore drill (G-02); re-plan 06–10 for VPS then. Interim during MVP build: everything runs LOCALLY (pnpm dev:up); the only public-URL need (Stripe webhooks, Phase 8) uses Stripe CLI / Cloudflare Tunnel (free). AWS fully torn down + leaked deploy key deleted.
 Next build target: Phase 8 (Payments) — fully buildable locally with Stripe CLI; 07.6-07 admin static deploy also folds into the deferred go-live (or onto free Cloudflare Pages anytime).
-Status: Executing Phase 10.3
-Last activity: 2026-08-29 -- Phase 10.3 execution started
+
+**07.5-06 (production compose stack, guards, proven rehearsal) — COMPLETE (2026-09-05).** Committed `docker-compose.prod.yml` + `Caddyfile` + three-apex env templates, three self-testing guard scripts, an `apps/api/Dockerfile` `migrate` stage that resolves `drizzle-orm` for real, and a snapshot-consistent backup/restore drill. `local-prod-rehearsal.sh` boots the full stack under `NODE_ENV=production` on synthetic credentials end to end — found and fixed two pre-existing production-boot bugs in the process (`apps/api` missing a direct `pino` dependency; the Docker `HEALTHCHECK` resolving `localhost` to `::1` and always failing) that would otherwise have first surfaced on the paid box in plan 08. See `07.5-06-SUMMARY.md`.
+
+**07.5-07 (Cloudflare Workers for admin + qr-menu, three-apex hostname scheme) — COMPLETE (2026-09-05).** Two Worker modules (admin, qr-menu) each serving a SPA plus a same-origin `/v1/*`(+`/api/*`) proxy; qr-menu's cache key is built from the incoming request URL (cross-tenant leak test observed red against an origin-URL-keyed baseline, then green) and every subrequest opts out of the zone cache. `GUEST_APEX_DOMAIN` replaces a hardcoded "menu" label in `env.schema.ts`/`tenant-resolver.service.ts`/`guest-menu-url.service.ts` — `GUEST_HOST_LABEL` no longer exists anywhere in `apps/api/src`. `apps/admin/Dockerfile` (Next/ECS-era, baked `admin.resto.app` default) deleted. `wrangler.jsonc` for both apps carries no hostname; both `worker:dry-run` scripts succeed with all three real apexes (`resto.pp.ua`/`restos.pp.ua`/`qmenu.pp.ua`) from `gh variable get`. Two pre-existing, unrelated plan-verify defects found and reported rather than silently patched (a `.env.example` doc-comment false positive in Task 2's `VITE_API_ORIGIN` grep; Task 3's domain-literal-guard verify scanning `apps/api/src/contexts/tenancy` broadly hits ~19 pre-existing doc-comment/fixture literals the guard's own Round-2 remediation already scoped around differently for CI) — see `07.5-07-SUMMARY.md`.
+
+Status (Phase 10.6, unrelated — see the `Phase: 10.6` line above): Executing Phase 10.6
+Last activity: 2026-09-06
 
 ### Out-of-band work shipped between Phase 6 and Phase 7 (NOT GSD phases — direct hardening + a brainstorm→plan→execute feature)
 
@@ -60,7 +65,7 @@ Last activity: 2026-08-29 -- Phase 10.3 execution started
 - **Public menu caching feature (HTTP/CDN ETag) — Phases 1-5 complete** (spec+plan docs/superpowers/{specs,plans}/2026-06-14-public-menu-caching\*; PRs #226-231). menu/stop versions → Postgres (atomic bump); new GET /v1/menu/availability; /v1/menu drops isStopListed (publish-versioned ETag + Cache-Control/304); qr-menu & website fetch availability + merge; Redis fully removed. CDN ops (Cloudflare cache rule + staging verify) pending on the founder's side — docs/runbooks/menu-edge-caching.md.
 - **SUPERSEDES Phase 6's isStopListed-in-/v1/menu mechanism:** Phase 6 shipped stopped items flagged inline in the menu doc; the caching feature moved availability to its own endpoint. The qr-menu still shows sold-out (now derived from /v1/menu/availability), so the Phase 6 customer-facing goal holds — only the wire mechanism changed.
 
-Progress: [█████████░] 93%
+Progress: [██████████] 95%
 
 ## ✓ Phase 01 follow-up — pre-existing e2e regressions RESOLVED (2026-05-26)
 
@@ -161,6 +166,8 @@ _Updated after each plan completion_
 | Phase 08.5 P03 | 18min | 3 tasks | 8 files |
 | Phase 08.5 P04 | 25min | 3 tasks | 7 files |
 | Phase 08.5 P05 | 55min | 3 tasks | 16 files |
+| Phase 07.5 P06 | 9h | 3 tasks | 19 files |
+| Phase 07.5-production-deploy P07 | 65min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -177,6 +184,7 @@ _Updated after each plan completion_
 - Phase 10.2 scope grew (founder, 2026-08-19): signup + multi-step onboarding folded in, because the sign-in brand picker it already owned is the same screen the new-account flow needs. Confirmed model: `owner` is a TENANT role, not a brand role; a user creates their company, owns it, creates brands inside; staff never self-register. Live finding that motivated it — the admin signup form calls Better Auth directly and produces a user with ZERO memberships (stranded, cannot create a brand); its currency field is collected and never sent; its "Restaurant name" label actually feeds the person's name.
 - Phase 10 edited: goal, requirements (ORDINT-02/09 out), and all success criteria rewritten to match 10-CONTEXT.md; criterion 6 added (single migration + read-back-from-DB test fidelity); pre-requisite quick task noted
 - Phase 10.3 inserted after Phase 10: Table zones, tables and QR codes
+- Phase 10.6 inserted after Phase 10: Ingredient library, groups and how they reach the order (design: .planning/notes/ingredients.md)
 
 ### Decisions
 
@@ -292,6 +300,11 @@ Recent decisions affecting current work:
 - [Phase 08.5-05]: fixed a real navigate-to-wrong-page bug found by the browser smoke: useNavigate({from: staticRoute}) + navigate({search}) with no 'to' resolves relative to 'from', not the current page; fixed via explicit to: useRouterState(...).pathname in location-switcher.tsx and use-effective-location.ts's D-18 fallback
 - [Phase 08.5-05]: toggleStopList/resetStopList require an explicit locationId now that apiFetch has no session fallback; threaded through StopListTable/TodaysWidgetResetButton/ItemsTable (08.5-04-flagged follow-up)
 - [Phase 08.5-05]: playwright.config.ts corrected to the real dev topology (admin :4000 / api :5001) — prior :3001 + Next.js-era env vars predated the Vite SPA migration and could not boot the app
+- [Phase 07.5]: pino added as direct apps/api dependency (esbuild leaves it external; pnpm never hoists a transitive dep into apps/api/node_modules)
+- [Phase 07.5]: apps/api Dockerfile HEALTHCHECK targets 127.0.0.1 not localhost (musl resolves localhost to ::1 first; Node binds IPv4-only, so healthcheck always failed regardless of app health)
+- [Phase 07.5-production-deploy]: 07.5-07: Worker cache key built from the incoming request URL (never the rewritten origin URL) — cross-tenant leak test observed red against an origin-URL-keyed baseline, then green
+- [Phase 07.5-production-deploy]: 07.5-07: guest hostname promoted from a hardcoded 'menu' label to GUEST_APEX_DOMAIN configuration; tenant-resolver's guestSlugLabel now an apex-equality test on both guest branches, not a shape test
+- [Phase 07.5-production-deploy]: 07.5-07: both Worker unit-test suites run under @vitest-environment node (existing repo precedent) because jsdom's own AbortController collides with Node's native fetch/Request internals that the plan-mandated new Request(url, request) construction relies on
 
 ### Pending Todos
 
@@ -346,6 +359,8 @@ None yet.
 | 260828-sls | Staff move between the locations they hold instead of signing out; the immutable session pin is gone, scope still refuses the rest. Found and fixed 11 e2e fixtures that PR #261's required coordinates had broken across eight suites                                                                                                | 2026-08-28 | 4bf4a72d | Verified | [260828-staff-location-switching](./quick/260828-staff-location-switching/)                                         |
 | 260828-qii | Repair the 6 rotted api e2e specs found by the 2026-08-28 audit (country payload, erasure salt, signup route, currency fixture)                                                                                                                                                                                                       | 2026-08-28 | 3d9f6c59 | complete | [260828-qii-fix-rotted-api-e2e-specs](./quick/260828-qii-fix-rotted-api-e2e-specs/)                                 |
 | 260828-r9z | Role-change refusals return 403 not 500; replaced the inline-replica hook test with one against the real guard                                                                                                                                                                                                                        | 2026-08-28 | cb3f9888 | complete | [260828-r9z-role-refusal-returns-403-not-500](./quick/260828-r9z-role-refusal-returns-403-not-500/)                 |
+| 260830-z4m | One theme toggle shared by admin, website and qr-menu: a sun/moon button that flips light ⇄ dark; the website gained a theme control (and a dark theme) for the first time                                                                                                                                                    | 2026-08-30 | 766532a8 | complete | [260830-z4m-one-theme-toggle-across-clients](./quick/260830-z4m-one-theme-toggle-across-clients/)                   |
+| 260830-k1p | Dashboard KPI row: new `analytics` context behind `GET /v1/analytics/dashboard`, four cards (revenue, completed orders, new guests, refunds) against the previous window. A slice of Phase 13 pulled forward                                                                                    | 2026-08-30 | be520e72 | complete | [260830-k1p-dashboard-kpi-row](./quick/260830-k1p-dashboard-kpi-row/)                                               |
 
 ## Deferred Items
 
@@ -371,6 +386,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-08-29T08:46:45.299Z
-Stopped at: Phase 10.3 context gathered; persona reviews (CTO + skeptic) running
-Resume file: .planning/phases/10.3-table-zones-tables-and-qr-codes/10.3-CONTEXT.md
+Last session: 2026-09-05T08:56:08.158Z
+Stopped at: Phase 10.6 UI-SPEC approved
+Resume file: .planning/phases/10.6-ingredient-library-groups-and-how-they-reach-the-order/10.6-UI-SPEC.md

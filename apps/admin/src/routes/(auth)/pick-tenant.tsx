@@ -3,16 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { createRoute } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 import { Route as authLayoutRoute } from './_layout';
-import { apiFetch } from '@/lib/api-client';
+import { switchTenant } from '@/lib/switch-tenant';
 import { meTenantsQuery } from '@/lib/queries/identity';
-import { adminUrlForTenant } from '@/lib/admin-host';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-
-interface SwitchTenantResponse {
-  readonly organizationId: string;
-  readonly slug: string;
-}
 
 export const Route = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -31,19 +25,12 @@ function PickTenantPage() {
   const pick = async (tenantId: string) => {
     setPendingId(tenantId);
     setError(null);
-    // D-15/D-16/D-21: revoke-and-reissue, then a HARD navigation — the
-    // tenant lives in the host, and a client-side route push cannot
-    // cross origins.
-    const res = await apiFetch<SwitchTenantResponse>('/api/auth/switch-organization', {
-      method: 'POST',
-      body: { organizationId: tenantId },
-    });
-    if (!res.ok || !res.data) {
+    try {
+      await switchTenant(tenantId);
+    } catch {
       setError(t('error'));
       setPendingId(null);
-      return;
     }
-    window.location.assign(adminUrlForTenant(res.data.slug, '/dashboard'));
   };
 
   return (

@@ -1,10 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import type { TenantId, TenantSlug } from '@resto/domain';
+import { ENV_TOKEN } from '../../../config/config.module';
+import type { Env } from '../../../config/env.schema';
+import { guestHostForTenant } from '../../../shared/guest-links';
 import { Tenant, type TenantSnapshot } from '../domain/tenant.aggregate';
 import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { TenantNotFoundError } from '../domain/errors';
-
-const PRIMARY_DOMAIN_SUFFIX = 'menu.resto.app';
 
 export interface FinalizeTenantOnboardingInput {
   readonly tenantId: TenantId;
@@ -21,7 +22,10 @@ export interface FinalizeTenantOnboardingInput {
  */
 @Injectable()
 export class FinalizeTenantOnboardingService {
-  constructor(@Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository) {}
+  constructor(
+    @Inject(TENANT_REPOSITORY) private readonly repo: TenantRepository,
+    @Inject(ENV_TOKEN) private readonly env: Env,
+  ) {}
 
   async execute(input: FinalizeTenantOnboardingInput): Promise<TenantSnapshot> {
     const snapshot = await this.repo.findById(input.tenantId);
@@ -32,7 +36,7 @@ export class FinalizeTenantOnboardingService {
     tenant.finalizeSetup({
       displayName: input.displayName,
       slug: input.slug,
-      primaryDomainHostname: `${input.slug}.${PRIMARY_DOMAIN_SUFFIX}`,
+      primaryDomainHostname: guestHostForTenant(this.env, { slug: input.slug }, null),
     });
     await this.repo.save(tenant);
     return tenant.toSnapshot();

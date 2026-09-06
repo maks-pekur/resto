@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getMessages } from 'next-intl/server';
 import { buildTenantThemeVars } from '@resto/config-tailwind';
-import { Toaster } from '@resto/ui';
 import { GuestUi } from '@/components/guest-ui';
+import { SiteToaster } from '@/components/site-toaster';
 import { fetchMenuPublic } from '@/lib/api-client';
 import '@fontsource-variable/nunito';
 import './globals.css';
@@ -24,9 +24,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const messages = await getMessages();
 
   let theme: { primaryColor?: string | null } | null = null;
+  let contentLocales: { default: string; supported: readonly string[] } | undefined;
   try {
     const menu = await fetchMenuPublic();
     theme = menu.tenant?.theme ?? null;
+    contentLocales = menu.tenant?.locales;
   } catch {
     // unresolved host / cold cache / suspended — render default theme
   }
@@ -35,12 +37,21 @@ export default async function RootLayout({ children }: { children: React.ReactNo
 
   return (
     <html lang={locale} suppressHydrationWarning style={themeStyle}>
-      <head />
+      <head>
+        {/* The stored preference has to reach <html> before the first paint —
+            the hook that owns it runs a full flash of the wrong palette later. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{var t=localStorage.getItem('resto.theme');document.documentElement.setAttribute('data-theme',t==='light'||t==='dark'?t:'system')}catch(e){}",
+          }}
+        />
+      </head>
       <body className="bg-background text-foreground min-h-dvh antialiased">
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <GuestUi>
+          <GuestUi {...(contentLocales === undefined ? {} : { contentLocales })}>
             {children}
-            <Toaster position="bottom-center" theme="light" />
+            <SiteToaster />
           </GuestUi>
         </NextIntlClientProvider>
       </body>

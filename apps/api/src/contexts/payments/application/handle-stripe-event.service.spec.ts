@@ -25,7 +25,10 @@ const makeTx = (): RestoTx => {
   return { insert } as unknown as RestoTx;
 };
 
-const makeOrder = (status: string): Order => {
+const makeOrder = (
+  status: string,
+  payment: { paymentStatus?: string; paidAt?: Date } = {},
+): Order => {
   const snap = {
     id: OrderId.parse(ORDER_ID),
     tenantId: TENANT_ID,
@@ -33,7 +36,7 @@ const makeOrder = (status: string): Order => {
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status,
-    fulfillmentMode: 'dine_in' as const,
+    orderType: 'dine_in' as const,
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,
@@ -50,6 +53,9 @@ const makeOrder = (status: string): Order => {
     currency: Currency.parse('EUR'),
     scheduledFor: null,
     shortNumber: 1,
+    paymentType: 'online',
+    paymentStatus: payment.paymentStatus ?? 'pending',
+    paidAt: payment.paidAt ?? null,
     channel: 'site' as const,
     acceptedAt: null,
     preparingAt: null,
@@ -214,7 +220,7 @@ describe('HandleStripeEventService', () => {
       metadata: { orderId: ORDER_ID, tenantId: TENANT_ID },
     };
 
-    it('transitions order to paid when status is created', async () => {
+    it('transitions order to paid when payment is pending', async () => {
       const order = makeOrder('created');
       orderRepo.findByIdInTx.mockResolvedValue(order);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
@@ -227,7 +233,7 @@ describe('HandleStripeEventService', () => {
 
       expect(orderRepo.update).toHaveBeenCalled();
       const updatedOrder = (orderRepo.update.mock.calls[0] as [Order])[0];
-      expect(updatedOrder.toSnapshot().status).toBe('paid');
+      expect(updatedOrder.toSnapshot().paymentStatus).toBe('paid');
       expect(paymentRepo.upsertByPaymentIntentId).toHaveBeenCalledWith(
         expect.objectContaining({ status: 'succeeded', latestChargeId: CHARGE_ID }),
         expect.anything(),
@@ -244,7 +250,7 @@ describe('HandleStripeEventService', () => {
     });
 
     it('double-charge guard: orphan PI on already-paid order triggers auto-refund', async () => {
-      const paidOrder = makeOrder('paid');
+      const paidOrder = makeOrder('placed', { paymentStatus: 'paid', paidAt: new Date() });
       orderRepo.findByIdInTx.mockResolvedValue(paidOrder);
       paymentRepo.findByPaymentIntentId.mockResolvedValue(null);
       paymentRepo.findByOrderId.mockResolvedValue(
@@ -270,7 +276,7 @@ describe('HandleStripeEventService', () => {
 
   describe('payment_intent.payment_failed', () => {
     it('records failure without clobbering a paid order', async () => {
-      const paidOrder = makeOrder('paid');
+      const paidOrder = makeOrder('placed', { paymentStatus: 'paid', paidAt: new Date() });
       orderRepo.findById.mockResolvedValue(paidOrder);
       paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow({ status: 'failed' }));
 

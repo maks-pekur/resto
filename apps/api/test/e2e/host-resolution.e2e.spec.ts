@@ -19,14 +19,19 @@ if (!dockerOk) {
 // 19). Host resolution collapses from two entities (tenant, per-restaurant
 // label) to one — the `.menu.` label now matches a tenant slug directly
 // (tenant-resolver.service.ts:resolveByCustomerHost) — and this file
-// becomes the natural home for D-22's three explicit branches, per the
-// plan's own instruction.
+// becomes the natural home for D-22's explicit branches.
+//
+// 07.5-13: the separate guest apex is deleted — PUBLIC_APEX_DOMAIN is the only apex, so the
+// `<slug>.<apex>` shape that used to be "reserved for the public site" now resolves the guest
+// menu directly (branch 2 below), collapsing what used to be three branches into two live ones
+// plus the unknown-host negative case.
 suite('D-22 guest-menu host resolution', () => {
   let stack: RealStack;
   let tenantId: string;
   let tenantSlug: string;
 
   beforeAll(async () => {
+    process.env.PUBLIC_APEX_DOMAIN = 'resto.app';
     stack = await startRealStack({ natsEnabledInApp: false });
     tenantId = randomUUID();
     tenantSlug = 'res151-tenant';
@@ -62,7 +67,7 @@ suite('D-22 guest-menu host resolution', () => {
     await stopRealStack(stack);
   });
 
-  it('branch 1: <slug>.menu.<domain> resolves the guest menu', async () => {
+  it('branch 1: an exact tenant_domains row resolves the guest menu regardless of shape', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
@@ -82,13 +87,14 @@ suite('D-22 guest-menu host resolution', () => {
     expect(res.json()).toMatchObject({ tenantId });
   });
 
-  it('branch 2: the bare <slug>.<domain> does NOT resolve as a guest menu host (reserved for the public site)', async () => {
+  it('branch 2: <slug>.<PUBLIC_APEX_DOMAIN> resolves the guest menu by slug — the single-apex shape (07.5-13)', async () => {
     const res = await stack.app.inject({
       method: 'GET',
       url: '/v1/menu',
       headers: { host: `${tenantSlug}.resto.app` },
     });
-    expect(res.statusCode).toBe(404);
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ tenantId });
   });
 
   it('branch 3: an unknown host resolves nothing', async () => {

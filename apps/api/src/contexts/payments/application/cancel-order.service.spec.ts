@@ -31,7 +31,7 @@ const makeOrder = (status: string, total = '20.00') =>
     idempotencyKey: 'idem-key',
     orderNumber: 'ORD-001',
     status: status as Parameters<typeof Order.fromSnapshot>[0]['status'],
-    fulfillmentMode: 'dine_in' as const,
+    orderType: 'dine_in' as const,
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,
@@ -48,6 +48,9 @@ const makeOrder = (status: string, total = '20.00') =>
     currency: Currency.parse('EUR'),
     scheduledFor: null,
     shortNumber: 1,
+    paymentType: 'online',
+    paymentStatus: 'pending',
+    paidAt: null,
     channel: 'site' as const,
     acceptedAt: null,
     preparingAt: null,
@@ -154,8 +157,8 @@ describe('CancelOrderService', () => {
     ).rejects.toBeInstanceOf(OrderNotFoundError);
   });
 
-  it('cancel of unpaid (created) order — no refund call', async () => {
-    orderRepo.findById.mockResolvedValue(makeOrder('created'));
+  it('cancel of an unpaid order — no refund call', async () => {
+    orderRepo.findById.mockResolvedValue(makeOrder('placed'));
     const result = await service.execute({
       orderId: ORDER_ID,
       tenantId: TENANT_ID,
@@ -174,7 +177,7 @@ describe('CancelOrderService', () => {
   });
 
   it('cancel of paid order — auto-refunds full remaining captured amount once', async () => {
-    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    orderRepo.findById.mockResolvedValue(makeOrder('placed', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
 
@@ -207,7 +210,7 @@ describe('CancelOrderService', () => {
   });
 
   it('cancel of paid order with partial prior refund — refunds remaining only', async () => {
-    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    orderRepo.findById.mockResolvedValue(makeOrder('placed', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('5.00'));
     paymentRepo.upsertByPaymentIntentId.mockResolvedValue(makePaymentRow('20.00'));
 
@@ -251,7 +254,7 @@ describe('CancelOrderService', () => {
   );
 
   it('cancel of an already fully refunded order reports success, not a 409 (CR-04)', async () => {
-    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    orderRepo.findById.mockResolvedValue(makeOrder('placed', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('20.00'));
 
     const result = await service.execute({
@@ -271,7 +274,7 @@ describe('CancelOrderService', () => {
   });
 
   it('cancel still commits when the refund provider call fails (D-11)', async () => {
-    orderRepo.findById.mockResolvedValue(makeOrder('paid', '20.00'));
+    orderRepo.findById.mockResolvedValue(makeOrder('placed', '20.00'));
     paymentRepo.findByOrderId.mockResolvedValue(makePaymentRow('0.00'));
     provider.createRefund.mockRejectedValue(new Error('stripe unavailable'));
 

@@ -5,7 +5,7 @@ import { join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const projectRoot = resolve(__dirname, '..');
-const distAssets = join(projectRoot, 'dist', 'assets');
+const distAssets = join(projectRoot, 'dist', 'qr', 'assets');
 
 const readBundleJs = (): string => {
   expect(existsSync(distAssets), `expected ${distAssets} after build`).toBe(true);

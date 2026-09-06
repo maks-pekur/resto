@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { ShieldCheck } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -12,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { authClient } from '@/lib/auth-client';
+import { SettingsSection } from '@/components/settings/settings-section';
 
 const TOTP_CODE_PATTERN = /^\d{6}$/u;
 
@@ -158,19 +158,14 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
     !phase.verifyPending;
 
   return (
-    <section className="bg-card space-y-4 rounded-lg border p-6 shadow-sm">
-      <div className="flex items-start gap-3">
-        <ShieldCheck className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">Two-factor authentication</h2>
-          <p className="text-muted-foreground text-sm">
-            {twoFactorEnabled
-              ? 'Two-factor authentication active. Your account requires a 6-digit code at sign-in.'
-              : 'Add an authenticator app to require a 6-digit code at sign-in. Strongly recommended for accounts that own a tenant.'}
-          </p>
-        </div>
-      </div>
-
+    <SettingsSection
+      title="Two-factor authentication"
+      description={
+        twoFactorEnabled
+          ? 'Two-factor authentication active. Your account requires a 6-digit code at sign-in.'
+          : 'Add an authenticator app to require a 6-digit code at sign-in. Strongly recommended for accounts that own a tenant.'
+      }
+    >
       {twoFactorEnabled ? (
         <div className="rounded-md border border-dashed bg-muted/30 p-4 text-sm space-y-2">
           <p className="font-medium">Two-factor authentication active</p>
@@ -387,6 +382,6 @@ export function TwoFactorSection({ twoFactorEnabled }: TwoFactorSectionProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </section>
+    </SettingsSection>
   );
 }

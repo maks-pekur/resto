@@ -1,9 +1,8 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from '@tanstack/react-router';
-import { useFormContext } from 'react-hook-form';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { X } from 'lucide-react';
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -14,7 +13,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Field, FieldDescription, FieldGroup, FieldLabel } from '@/components/ui/field';
+import { Field, FieldGroup, FieldLabel, FieldTitle } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import {
   Item,
@@ -25,9 +24,17 @@ import {
   ItemTitle,
 } from '@/components/ui/item';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { ModifierPickerSheet } from '@/components/menu/modifier-picker-sheet';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { upsertItemModifierGroups, upsertModifierGroup } from '@/lib/queries/catalog';
-import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
+import {
+  modifiersQuery,
+  modifierGroupQuery,
+  setItemModifiers,
+  upsertItemModifierGroups,
+  upsertModifierGroup,
+} from '@/lib/queries/catalog';
+import { fromLocalizedText, mergeLocalized } from '@/lib/menu/localized';
+import { useContentLocales } from '@/hooks/use-content-locales';
 
 export interface AvailableGroup {
   readonly id: string;
@@ -38,39 +45,56 @@ export interface AvailableGroup {
 export interface ItemModifierGroupsCardProps {
   readonly itemId: string;
   readonly initialModifierGroupIds: readonly string[];
+  readonly initialModifierIds: readonly string[];
   readonly availableGroups: readonly AvailableGroup[];
 }
-
-const commaListFromInput = (raw: string): string[] =>
-  raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
 
 export function ItemModifierGroupsCard({
   itemId,
   initialModifierGroupIds,
+  initialModifierIds,
   availableGroups,
 }: ItemModifierGroupsCardProps): React.ReactElement {
   const navigate = useNavigate();
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifiers' });
-  const { t: tEditor } = useTranslation('translation', { keyPrefix: 'menu.editor' });
+  const { t: tModifiers } = useTranslation('translation', { keyPrefix: 'menu.itemModifiers' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
-  const form = useFormContext<ItemEditorForm>();
   const queryClient = useQueryClient();
   const [assignedIds, setAssignedIds] = React.useState<readonly string[]>(initialModifierGroupIds);
+  const [singleIds, setSingleIds] = React.useState<readonly string[]>(initialModifierIds);
   const [knownGroups, setKnownGroups] = React.useState<readonly AvailableGroup[]>(availableGroups);
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const [singleSheetOpen, setSingleSheetOpen] = React.useState(false);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [search, setSearch] = React.useState('');
-  const [ingredientsText, setIngredientsText] = React.useState(
-    form.getValues('ingredients').join(', '),
-  );
   const [newName, setNewName] = React.useState('');
-  const [newMin, setNewMin] = React.useState(0);
-  const [newMax, setNewMax] = React.useState(1);
 
+  const { defaultLocale } = useContentLocales();
   const isNewItem = itemId === 'new';
+
+  const { data: modifiersData } = useQuery(modifiersQuery());
+  const modifierNameById = React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const modifier of modifiersData?.data?.items ?? []) {
+      map.set(modifier.id, fromLocalizedText(modifier.name, defaultLocale));
+    }
+    return map;
+  }, [modifiersData, defaultLocale]);
+
+  const groupDetailQueries = useQueries({
+    queries: assignedIds.map((groupId) => modifierGroupQuery(groupId)),
+  });
+  const groupNameByReachableOptionId = React.useMemo(() => {
+    const map = new Map<string, string>();
+    assignedIds.forEach((groupId, index) => {
+      const groupName = knownGroups.find((g) => g.id === groupId)?.name ?? '';
+      const options = groupDetailQueries[index]?.data?.data?.options ?? [];
+      for (const option of options) {
+        map.set(option.id, groupName);
+      }
+    });
+    return map;
+  }, [assignedIds, groupDetailQueries, knownGroups]);
 
   const assignMutation = useMutation({
     mutationFn: (nextIds: readonly string[]) => upsertItemModifierGroups(itemId, nextIds),
@@ -79,9 +103,22 @@ export function ItemModifierGroupsCard({
     },
   });
 
+  const singleMutation = useMutation({
+    mutationFn: (nextIds: readonly string[]) => setItemModifiers(itemId, nextIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['catalog', 'item', itemId] });
+    },
+  });
+
   const createMutation = useMutation({
-    mutationFn: (values: { name: string; minSelectable: number; maxSelectable: number }) =>
-      upsertModifierGroup(null, values),
+    mutationFn: (values: { name: string }) =>
+      upsertModifierGroup(null, {
+        name: mergeLocalized(null, defaultLocale, values.name),
+        display: 'tiles',
+        behaviour: 'several',
+        isRequired: false,
+        maxSelectable: null,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['catalog', 'modifier-groups'] });
     },
@@ -95,6 +132,27 @@ export function ItemModifierGroupsCard({
     try {
       await assignMutation.mutateAsync(next);
       showSuccess(tCommon('saved'), { duration: 1500 });
+    } catch {
+      setAssignedIds(previous);
+      showError(null, t('updateFailed'));
+    }
+  };
+
+  // The order of the chips is the order the guest meets the questions in — the api stores it
+  // from this list's own order.
+  const onMove = async (groupId: string, delta: -1 | 1): Promise<void> => {
+    if (isNewItem) return;
+    const index = assignedIds.indexOf(groupId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= assignedIds.length) return;
+    const next = [...assignedIds];
+    const [moved] = next.splice(index, 1);
+    if (moved === undefined) return;
+    next.splice(target, 0, moved);
+    const previous = assignedIds;
+    setAssignedIds(next);
+    try {
+      await assignMutation.mutateAsync(next);
     } catch {
       setAssignedIds(previous);
       showError(null, t('updateFailed'));
@@ -116,17 +174,61 @@ export function ItemModifierGroupsCard({
     }
   };
 
+  const onRemoveSingle = async (optionId: string): Promise<void> => {
+    if (isNewItem) return;
+    const next = singleIds.filter((id) => id !== optionId);
+    const previous = singleIds;
+    setSingleIds(next);
+    try {
+      await singleMutation.mutateAsync(next);
+      showSuccess(tCommon('saved'), { duration: 1500 });
+    } catch {
+      setSingleIds(previous);
+      showError(null, t('updateFailed'));
+    }
+  };
+
+  const onMoveSingle = async (optionId: string, delta: -1 | 1): Promise<void> => {
+    if (isNewItem) return;
+    const index = singleIds.indexOf(optionId);
+    const target = index + delta;
+    if (index < 0 || target < 0 || target >= singleIds.length) return;
+    const next = [...singleIds];
+    const [moved] = next.splice(index, 1);
+    if (moved === undefined) return;
+    next.splice(target, 0, moved);
+    const previous = singleIds;
+    setSingleIds(next);
+    try {
+      await singleMutation.mutateAsync(next);
+    } catch {
+      setSingleIds(previous);
+      showError(null, t('updateFailed'));
+    }
+  };
+
+  const onAddSingle = async (optionId: string): Promise<void> => {
+    if (isNewItem || singleIds.includes(optionId)) return;
+    const next = [...singleIds, optionId];
+    const previous = singleIds;
+    setSingleIds(next);
+    setSingleSheetOpen(false);
+    try {
+      await singleMutation.mutateAsync(next);
+      showSuccess(tCommon('saved'), { duration: 1500 });
+    } catch {
+      setSingleIds(previous);
+      showError(null, t('updateFailed'));
+    }
+  };
+
   const onSubmitNew = async (): Promise<void> => {
     if (!newName.trim()) {
       showError(t('nameRequired'), t('nameRequired'));
       return;
     }
     try {
-      const res = await createMutation.mutateAsync({
-        name: newName,
-        minSelectable: newMin,
-        maxSelectable: newMax,
-      });
+      const res = await createMutation.mutateAsync({ name: newName });
       if (!res.ok) {
         showError(null, t('createFailed'));
         return;
@@ -136,7 +238,7 @@ export function ItemModifierGroupsCard({
       const newId = res.data?.id ?? '';
       setKnownGroups((prev) => [...prev, { id: newId, name: newName, optionCount: 0 }]);
       void navigate({
-        to: '/menu/modifier-groups/$id',
+        to: '/menu/modifiers/$id',
         params: { id: newId },
       });
     } catch {
@@ -152,35 +254,18 @@ export function ItemModifierGroupsCard({
     g.name.toLowerCase().includes(search.trim().toLowerCase()),
   );
 
-  const isPending = assignMutation.isPending || createMutation.isPending;
+  const isPending =
+    assignMutation.isPending || createMutation.isPending || singleMutation.isPending;
 
-  const ingredientsField = (
-    <Field>
-      <FieldLabel htmlFor="ingredients">{tEditor('ingredientsLabel')}</FieldLabel>
-      <Input
-        id="ingredients"
-        value={ingredientsText}
-        placeholder={tEditor('ingredientsPlaceholder')}
-        onChange={(e) => {
-          setIngredientsText(e.target.value);
-          form.setValue('ingredients', commaListFromInput(e.target.value), {
-            shouldDirty: true,
-            shouldTouch: true,
-          });
-        }}
-      />
-      <FieldDescription>{tEditor('ingredientsHint')}</FieldDescription>
-    </Field>
-  );
+  const disabledSingleIds = new Set(groupNameByReachableOptionId.keys());
 
   if (isNewItem) {
     return (
       <Card>
         <CardHeader>
-          <CardTitle>{tEditor('compositionSectionTitle')}</CardTitle>
+          <CardTitle>{t('cardTitle')}</CardTitle>
           <CardDescription>{t('newItemHint')}</CardDescription>
         </CardHeader>
-        <CardContent>{ingredientsField}</CardContent>
       </Card>
     );
   }
@@ -188,52 +273,143 @@ export function ItemModifierGroupsCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{tEditor('compositionSectionTitle')}</CardTitle>
+        <CardTitle>{t('cardTitle')}</CardTitle>
         <CardDescription>{t('cardDescription')}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        {assignedGroups.length === 0 ? (
-          <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {assignedGroups.map((g) => (
-              <div
-                key={g.id}
-                className="inline-flex items-center gap-1 rounded-md border bg-secondary px-2 py-1 text-sm"
-                data-testid={`mg-chip-${g.id}`}
-              >
-                <span>{g.name}</span>
-                <button
-                  type="button"
-                  aria-label={t('chipRemoveAriaLabel', { name: g.name })}
-                  onClick={() => {
-                    void onRemove(g.id);
-                  }}
-                  className="text-muted-foreground hover:text-foreground"
-                  disabled={isPending}
+        <div className="flex flex-col gap-2">
+          <FieldTitle>{tModifiers('groupsRowLabel')}</FieldTitle>
+          {assignedGroups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t('emptyHint')}</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {assignedGroups.map((g) => (
+                <div
+                  key={g.id}
+                  className="bg-secondary flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                  data-testid={`mg-chip-${g.id}`}
                 >
-                  <X className="size-3" aria-hidden="true" />
-                </button>
-              </div>
-            ))}
+                  <button
+                    type="button"
+                    aria-label={t('chipMoveEarlierAriaLabel', { name: g.name })}
+                    onClick={() => {
+                      void onMove(g.id, -1);
+                    }}
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    disabled={isPending || assignedIds[0] === g.id}
+                  >
+                    <ChevronLeft className="size-3" aria-hidden="true" />
+                  </button>
+                  <span className="min-w-0 flex-1 truncate">{g.name}</span>
+                  <button
+                    type="button"
+                    aria-label={t('chipMoveLaterAriaLabel', { name: g.name })}
+                    onClick={() => {
+                      void onMove(g.id, 1);
+                    }}
+                    className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                    disabled={isPending || assignedIds[assignedIds.length - 1] === g.id}
+                  >
+                    <ChevronRight className="size-3" aria-hidden="true" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={t('chipRemoveAriaLabel', { name: g.name })}
+                    onClick={() => {
+                      void onRemove(g.id);
+                    }}
+                    className="text-muted-foreground hover:text-foreground"
+                    disabled={isPending}
+                  >
+                    <X className="size-3" aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSearch('');
+                setSheetOpen(true);
+              }}
+              disabled={isPending}
+            >
+              {t('addGroupBtn')}
+            </Button>
           </div>
-        )}
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSearch('');
-              setSheetOpen(true);
-            }}
-            disabled={isPending}
-          >
-            {t('addGroupBtn')}
-          </Button>
         </div>
+
         <hr className="border-border" />
-        {ingredientsField}
+
+        <div className="flex flex-col gap-2">
+          <FieldTitle>{tModifiers('singlesRowLabel')}</FieldTitle>
+          {singleIds.length === 0 ? null : (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {singleIds.map((optionId) => {
+                const name = modifierNameById.get(optionId) ?? '';
+                return (
+                  <div
+                    key={optionId}
+                    className="bg-secondary flex items-center gap-1 rounded-md border px-2 py-1 text-sm"
+                    data-testid={`modifier-chip-${optionId}`}
+                  >
+                    <button
+                      type="button"
+                      aria-label={t('chipMoveEarlierAriaLabel', { name })}
+                      onClick={() => {
+                        void onMoveSingle(optionId, -1);
+                      }}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      disabled={isPending || singleIds[0] === optionId}
+                    >
+                      <ChevronLeft className="size-3" aria-hidden="true" />
+                    </button>
+                    <span className="min-w-0 flex-1 truncate">{name}</span>
+                    <button
+                      type="button"
+                      aria-label={t('chipMoveLaterAriaLabel', { name })}
+                      onClick={() => {
+                        void onMoveSingle(optionId, 1);
+                      }}
+                      className="text-muted-foreground hover:text-foreground disabled:opacity-30"
+                      disabled={isPending || singleIds[singleIds.length - 1] === optionId}
+                    >
+                      <ChevronRight className="size-3" aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label={t('chipRemoveAriaLabel', { name })}
+                      onClick={() => {
+                        void onRemoveSingle(optionId);
+                      }}
+                      className="text-muted-foreground hover:text-foreground"
+                      disabled={isPending}
+                    >
+                      <X className="size-3" aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          <div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setSingleSheetOpen(true);
+              }}
+              disabled={isPending}
+            >
+              {tModifiers('addSingleBtn')}
+            </Button>
+          </div>
+        </div>
       </CardContent>
 
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
@@ -295,6 +471,22 @@ export function ItemModifierGroupsCard({
         </SheetContent>
       </Sheet>
 
+      <ModifierPickerSheet
+        open={singleSheetOpen}
+        onOpenChange={setSingleSheetOpen}
+        onPick={(optionId) => {
+          void onAddSingle(optionId);
+        }}
+        showPrice
+        disabledIds={disabledSingleIds}
+        disabledReason={(optionId) =>
+          tModifiers('duplicateError', {
+            name: modifierNameById.get(optionId) ?? '',
+            groupName: groupNameByReachableOptionId.get(optionId) ?? '',
+          })
+        }
+      />
+
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
@@ -313,38 +505,6 @@ export function ItemModifierGroupsCard({
                 maxLength={255}
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="new-mg-min">{t('minLabel')}</FieldLabel>
-                <Input
-                  id="new-mg-min"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={99}
-                  value={newMin}
-                  onChange={(e) => {
-                    const n = Number.parseInt(e.target.value, 10);
-                    setNewMin(Number.isFinite(n) ? n : 0);
-                  }}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="new-mg-max">{t('maxLabel')}</FieldLabel>
-                <Input
-                  id="new-mg-max"
-                  type="number"
-                  inputMode="numeric"
-                  min={0}
-                  max={99}
-                  value={newMax}
-                  onChange={(e) => {
-                    const n = Number.parseInt(e.target.value, 10);
-                    setNewMax(Number.isFinite(n) ? n : 0);
-                  }}
-                />
-              </Field>
-            </div>
           </FieldGroup>
           <DialogFooter>
             <Button

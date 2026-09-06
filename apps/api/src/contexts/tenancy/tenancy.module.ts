@@ -15,6 +15,13 @@ import { StartTenantOnboardingService } from './application/start-tenant-onboard
 import { ProvisionLocationService } from './application/provision-location.service';
 import { ListLocationsService } from './application/list-locations.service';
 import { ArchiveLocationService } from './application/archive-location.service';
+import { RestoreLocationService } from './application/restore-location.service';
+import { DeleteLocationService } from './application/delete-location.service';
+import { SetContentLocalesService } from './application/set-content-locales.service';
+import { UpdateBrandService } from './application/update-brand.service';
+import { GetBrandLogoUploadUrlService } from './application/get-brand-logo-upload-url.service';
+import { S3BrandMediaAdapter } from './infrastructure/s3-brand-media.adapter';
+import { BRAND_MEDIA_PORT } from './domain/ports';
 import { UpdateLocationService } from './application/update-location.service';
 import { CreateTableZoneService } from './application/create-table-zone.service';
 import { ListTableZonesService } from './application/list-table-zones.service';
@@ -23,6 +30,7 @@ import { RenameTableZoneService } from './application/rename-table-zone.service'
 import { RenameTableService } from './application/rename-table.service';
 import { ArchiveTableZoneService } from './application/archive-table-zone.service';
 import { ArchiveTableService } from './application/archive-table.service';
+import { TableSessionService } from './application/table-session.service';
 import { GuestMenuUrlService } from './application/guest-menu-url.service';
 import { ResolveTableService } from './application/resolve-table.service';
 import { LOCATION_REPOSITORY, TABLE_ZONE_REPOSITORY, TENANT_REPOSITORY } from './domain/ports';
@@ -36,6 +44,11 @@ import { TenantsController } from './interfaces/http/tenants.controller';
 import { LocationsController } from './interfaces/http/locations.controller';
 import { TableZonesController } from './interfaces/http/table-zones.controller';
 import { PublicTableResolutionController } from './interfaces/http/public-tables.controller';
+import { PublicVenueController } from './interfaces/http/public-venue.controller';
+import { PublicLegalController } from './interfaces/http/public-legal.controller';
+import { ServiceRequestsController } from './interfaces/http/service-requests.controller';
+import { ServiceRequestDrizzleRepository } from './infrastructure/service-request-drizzle.repository';
+import { SERVICE_REQUEST_REPOSITORY } from './domain/service-request';
 import {
   TenantOnboardingController,
   TenantOAuthCallbackController,
@@ -51,8 +64,12 @@ import {
     LocationsController,
     TableZonesController,
     PublicTableResolutionController,
+    PublicVenueController,
+    PublicLegalController,
+    ServiceRequestsController,
   ],
   providers: [
+    { provide: SERVICE_REQUEST_REPOSITORY, useClass: ServiceRequestDrizzleRepository },
     { provide: TENANT_REPOSITORY, useClass: TenantDrizzleRepository },
     { provide: LOCATION_REPOSITORY, useClass: LocationDrizzleRepository },
     { provide: TABLE_ZONE_REPOSITORY, useClass: TableZoneDrizzleRepository },
@@ -78,6 +95,12 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    RestoreLocationService,
+    DeleteLocationService,
+    SetContentLocalesService,
+    UpdateBrandService,
+    GetBrandLogoUploadUrlService,
+    { provide: BRAND_MEDIA_PORT, useClass: S3BrandMediaAdapter },
     UpdateLocationService,
     CreateTableZoneService,
     ListTableZonesService,
@@ -87,6 +110,7 @@ import {
     ArchiveTableZoneService,
     ArchiveTableService,
     GuestMenuUrlService,
+    TableSessionService,
     ResolveTableService,
     SeedPresetRolesService,
   ],
@@ -103,8 +127,13 @@ import {
     ProvisionLocationService,
     ListLocationsService,
     ArchiveLocationService,
+    RestoreLocationService,
+    DeleteLocationService,
+    SetContentLocalesService,
     UpdateLocationService,
     GuestMenuUrlService,
+    // The ordering controller reads a guest's table from their scanned session.
+    TableSessionService,
   ],
 })
 export class TenancyModule {}

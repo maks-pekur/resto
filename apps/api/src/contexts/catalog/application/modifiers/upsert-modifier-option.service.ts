@@ -14,14 +14,17 @@ export class UpsertModifierOptionService {
     return this.repo.upsertModifierOption({
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
-      modifierGroupId: input.modifierGroupId,
       name: input.name,
+      description: input.description,
+      imageS3Key: input.imageS3Key,
       priceDelta,
       defaultAmount: input.defaultAmount,
       freeAmount: input.freeAmount,
       sortOrder: input.sortOrder,
       minAmount: input.minAmount,
       maxAmount: input.maxAmount,
+      source: 'manual',
+      sourceExternalId: null,
     });
   }
 }

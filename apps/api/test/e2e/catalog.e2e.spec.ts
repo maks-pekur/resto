@@ -91,6 +91,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
           useValue: {
             presignGet: (key: string, ttl: number): Promise<string> =>
               Promise.resolve(`https://signed.test/${key}?expires=${ttl.toString()}`),
+            publicUrl: (key: string): string => `https://public.test/${key}`,
+            publishPublicCopy: (): Promise<void> => Promise.resolve(),
           },
         },
       ],
@@ -154,9 +156,9 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     }>();
     const item = menu.items.find((i) => i.id === itemId);
     expect(item?.slug).toBe('margherita');
-    expect(item?.imageUrl).toBe('https://signed.test/menu/margherita.webp?expires=300');
+    expect(item?.imageUrl).toBe('https://public.test/menu/margherita.webp');
     expect(item?.photos).toHaveLength(1);
-    expect(item?.photos[0]?.url).toBe('https://signed.test/menu/margherita.webp?expires=300');
+    expect(item?.photos[0]?.url).toBe('https://public.test/menu/margherita.webp');
     expect(item?.photos[0]?.s3Key).toBe('menu/margherita.webp');
     expect(JSON.stringify(menu)).not.toContain('imageS3Key');
   }, 60_000);
@@ -178,8 +180,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       headers: cafeA.authed,
       payload: {
         name: { en: 'Spice level' },
-        minSelectable: 0,
-        maxSelectable: 1,
+        display: 'tabs',
+        behaviour: 'one',
         isRequired: false,
       },
     });
@@ -193,19 +195,9 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: { 'x-tenant-id': cafeA.id },
-      payload: { name: { en: 'No auth' }, minSelectable: 0, maxSelectable: 1 },
+      payload: { name: { en: 'No auth' }, display: 'tabs', behaviour: 'one' },
     });
     expect(res.statusCode).toBe(401);
-  });
-
-  it('rejects an invalid modifier group (maxSelectable < minSelectable) at the DTO boundary', async () => {
-    const res = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/modifier-groups',
-      headers: cafeA.authed,
-      payload: { name: { en: 'Bad' }, minSelectable: 3, maxSelectable: 1 },
-    });
-    expect(res.statusCode).toBe(400);
   });
 
   it("tenant B sniffing tenant A's item id gets 404 (RLS-backed)", async () => {
@@ -379,7 +371,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
         fats: 18.2,
         carbs: 9.7,
         kcal: 410,
-        nutritionEstimated: true,
         source: 'ai_generated',
         needsReview: true,
         status: 'published',
@@ -401,7 +392,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
         fats: string | null;
         carbs: string | null;
         kcal: number | null;
-        nutritionEstimated: boolean;
       }[];
     }>();
     const item = menu.items.find((i) => i.slug === 'cobb');
@@ -413,7 +403,6 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     expect(item?.fats).toBe('18.20');
     expect(item?.carbs).toBe('9.70');
     expect(item?.kcal).toBe(410);
-    expect(item?.nutritionEstimated).toBe(true);
   }, 60_000);
 
   it('creates a modifier group then attaches an option; option fields round-trip on /v1/menu', async () => {
@@ -423,8 +412,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       headers: cafeA.authed,
       payload: {
         name: { en: 'Crust' },
-        minSelectable: 1,
-        maxSelectable: 1,
+        display: 'tabs',
+        behaviour: 'one',
         isRequired: true,
       },
     });
@@ -436,15 +425,22 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       url: '/v1/catalog/modifier-options',
       headers: cafeA.authed,
       payload: {
-        modifierGroupId: groupId,
         name: { en: 'Thin' },
         priceDelta: '0.00',
-        defaultAmount: 1,
         freeAmount: 1,
         sortOrder: 0,
       },
     });
     expect(optionRes.statusCode).toBe(200);
+    const optionId = optionRes.json<{ id: string }>().id;
+
+    const linkRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [optionId] },
+    });
+    expect(linkRes.statusCode).toBe(200);
 
     const menuRes = await stack.app.inject({
       method: 'GET',
@@ -456,24 +452,26 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       modifierGroups: {
         id: string;
         name: { en?: string };
-        minSelectable: number;
-        maxSelectable: number;
+        display: string;
+        behaviour: string;
         isRequired: boolean;
-        options: {
-          name: { en?: string };
-          priceDelta: string;
-          defaultAmount: number;
-          freeAmount: number;
-        }[];
+        optionIds: string[];
+      }[];
+      modifierOptions: {
+        id: string;
+        name: { en?: string };
+        priceDelta: string;
+        freeAmount: number;
       }[];
     }>();
     const grp = menu.modifierGroups.find((g) => g.id === groupId);
     expect(grp).toBeDefined();
     expect(grp?.isRequired).toBe(true);
-    expect(grp?.options).toHaveLength(1);
-    expect(grp?.options[0]?.priceDelta).toBe('0.00');
-    expect(grp?.options[0]?.defaultAmount).toBe(1);
-    expect(grp?.options[0]?.freeAmount).toBe(1);
+    expect(grp?.optionIds).toEqual([optionId]);
+    const opt = menu.modifierOptions.find((o) => o.id === optionId);
+    expect(opt).toBeDefined();
+    expect(opt?.priceDelta).toBe('0.00');
+    expect(opt?.freeAmount).toBe(1);
   }, 60_000);
 
   it('creates an item-size with an absolute price; round-trips on /v1/menu', async () => {
@@ -951,7 +949,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: cafeA.authed,
-      payload: { name: { en: 'Shots' }, minSelectable: 0, maxSelectable: 5, isRequired: false },
+      payload: { name: { en: 'Shots' }, display: 'tiles', behaviour: 'several', isRequired: false },
     });
     expect(groupRes.statusCode).toBe(200);
     const groupId = groupRes.json<{ id: string }>().id;
@@ -961,10 +959,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       url: '/v1/catalog/modifier-options',
       headers: cafeA.authed,
       payload: {
-        modifierGroupId: groupId,
         name: { en: 'Espresso Shot' },
         priceDelta: '0.50',
-        defaultAmount: 1,
         freeAmount: 0,
         sortOrder: 0,
         minAmount: 1,
@@ -972,6 +968,15 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       },
     });
     expect(optionRes.statusCode).toBe(200);
+    const optionId = optionRes.json<{ id: string }>().id;
+
+    const linkRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [optionId] },
+    });
+    expect(linkRes.statusCode).toBe(200);
 
     const menuRes = await stack.app.inject({
       method: 'GET',
@@ -980,14 +985,11 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
     });
     expect(menuRes.statusCode).toBe(200);
     const menu = menuRes.json<{
-      modifierGroups: {
-        id: string;
-        options: { minAmount: number | null; maxAmount: number | null }[];
-      }[];
+      modifierOptions: { id: string; minAmount: number | null; maxAmount: number | null }[];
     }>();
-    const grp = menu.modifierGroups.find((g) => g.id === groupId);
-    expect(grp?.options[0]?.minAmount).toBe(1);
-    expect(grp?.options[0]?.maxAmount).toBe(3);
+    const opt = menu.modifierOptions.find((o) => o.id === optionId);
+    expect(opt?.minAmount).toBe(1);
+    expect(opt?.maxAmount).toBe(3);
   }, 60_000);
 
   it('rejects measureUnit outside the allowed enum', async () => {
@@ -1017,24 +1019,13 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
   }, 60_000);
 
   it('rejects modifier option with maxAmount < minAmount', async () => {
-    const groupRes = await stack.app.inject({
-      method: 'POST',
-      url: '/v1/catalog/modifier-groups',
-      headers: cafeA.authed,
-      payload: { name: { en: 'Bad Range' }, minSelectable: 0, maxSelectable: 5, isRequired: false },
-    });
-    expect(groupRes.statusCode).toBe(200);
-    const groupId = groupRes.json<{ id: string }>().id;
-
     const res = await stack.app.inject({
       method: 'POST',
       url: '/v1/catalog/modifier-options',
       headers: cafeA.authed,
       payload: {
-        modifierGroupId: groupId,
         name: { en: 'Bad' },
         priceDelta: '0.00',
-        defaultAmount: 0,
         freeAmount: 0,
         sortOrder: 0,
         minAmount: 3,
@@ -1118,7 +1109,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: cafeA.authed,
-      payload: { name: { en: 'Size' }, minSelectable: 1, maxSelectable: 1, isRequired: true },
+      payload: { name: { en: 'Size' }, display: 'tabs', behaviour: 'one', isRequired: true },
     });
     expect(g1Res.statusCode).toBe(200);
     const g1 = g1Res.json<{ id: string }>().id;
@@ -1127,7 +1118,7 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: cafeA.authed,
-      payload: { name: { en: 'Sauce' }, minSelectable: 0, maxSelectable: 2, isRequired: false },
+      payload: { name: { en: 'Sauce' }, display: 'tiles', behaviour: 'several', isRequired: false },
     });
     expect(g2Res.statusCode).toBe(200);
     const g2 = g2Res.json<{ id: string }>().id;
@@ -1185,8 +1176,8 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       headers: cafeB.authed,
       payload: {
         name: { en: 'Cross-tenant' },
-        minSelectable: 0,
-        maxSelectable: 1,
+        display: 'tabs',
+        behaviour: 'one',
         isRequired: false,
       },
     });
@@ -1207,6 +1198,409 @@ suite('Catalog — authed write → public read → cross-tenant isolation', () 
       headers: cafeA.authed,
     });
     expect(get4.json<{ modifierGroupIds: string[] }>().modifierGroupIds).toEqual([]);
+  }, 60_000);
+
+  it('creates an ingredient with no group id', async () => {
+    const res = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Standalone ingredient' }, priceDelta: '0.50' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json<{ id: string }>().id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
+  });
+
+  it('GET modifier-options exposes imageS3Key, and a price-only upsert preserves it (GAP 1 fix)', async () => {
+    const createRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        name: { en: 'Bacon' },
+        priceDelta: '80.00',
+        imageS3Key: 'ingredients/bacon.webp',
+      },
+    });
+    expect(createRes.statusCode).toBe(200);
+    const optionId = createRes.json<{ id: string }>().id;
+
+    const listRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+    });
+    expect(listRes.statusCode).toBe(200);
+    const created = listRes
+      .json<{ items: { id: string; imageS3Key: string | null }[] }>()
+      .items.find((i) => i.id === optionId);
+    expect(created?.imageS3Key).toBe('ingredients/bacon.webp');
+
+    const priceOnlyUpsertRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: {
+        id: optionId,
+        name: { en: 'Bacon' },
+        priceDelta: '95.00',
+        imageS3Key: created?.imageS3Key ?? null,
+      },
+    });
+    expect(priceOnlyUpsertRes.statusCode).toBe(200);
+
+    const listAfterRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+    });
+    expect(listAfterRes.statusCode).toBe(200);
+    const afterEdit = listAfterRes
+      .json<{ items: { id: string; imageS3Key: string | null; priceDelta: string }[] }>()
+      .items.find((i) => i.id === optionId);
+    expect(afterEdit?.imageS3Key).toBe('ingredients/bacon.webp');
+    expect(afterEdit?.priceDelta).toBe('95.00');
+  });
+
+  it('PUT modifier-groups/:id/options then GET the group returns options in the written order', async () => {
+    const createOption = async (label: string): Promise<string> => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/catalog/modifier-options',
+        headers: cafeA.authed,
+        payload: { name: { en: label }, priceDelta: '0.00' },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json<{ id: string }>().id;
+    };
+    const o1 = await createOption('First');
+    const o2 = await createOption('Second');
+    const o3 = await createOption('Third');
+
+    const groupRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Order group' }, display: 'tiles', behaviour: 'several' },
+    });
+    expect(groupRes.statusCode).toBe(200);
+    const groupId = groupRes.json<{ id: string }>().id;
+
+    const linkRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [o2, o1, o3] },
+    });
+    expect(linkRes.statusCode).toBe(200);
+
+    const detail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/modifier-groups/${groupId}`,
+      headers: cafeA.authed,
+    });
+    expect(detail.statusCode).toBe(200);
+    const body = detail.json<{ options: { id: string }[] }>();
+    expect(body.options.map((o) => o.id)).toEqual([o2, o1, o3]);
+  });
+
+  it('PUT items/:id/modifier-options then GET the item returns the attached ingredient ids in written order (GAP 2 fix)', async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'singles-cat', name: { en: 'Singles cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'singles-item',
+        name: { en: 'Singles item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const createOption = async (label: string): Promise<string> => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/catalog/modifier-options',
+        headers: cafeA.authed,
+        payload: { name: { en: label }, priceDelta: '0.00' },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json<{ id: string }>().id;
+    };
+    const bacon = await createOption('Bacon');
+    const extraCheese = await createOption('Extra cheese');
+
+    const preAttachDetail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(preAttachDetail.statusCode).toBe(200);
+    expect(preAttachDetail.json<{ modifierOptionIds: string[] }>().modifierOptionIds).toEqual([]);
+
+    const attachRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [extraCheese, bacon] },
+    });
+    expect(attachRes.statusCode).toBe(200);
+
+    const postAttachDetail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(postAttachDetail.statusCode).toBe(200);
+    expect(postAttachDetail.json<{ modifierOptionIds: string[] }>().modifierOptionIds).toEqual([
+      extraCheese,
+      bacon,
+    ]);
+  });
+
+  it("attaching an ingredient already reachable through one of the dish's groups answers 409 (D-04)", async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'dedupe-cat', name: { en: 'Dedupe cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'dedupe-item',
+        name: { en: 'Dedupe item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const optionRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Onion' }, priceDelta: '0.00' },
+    });
+    expect(optionRes.statusCode).toBe(200);
+    const optionId = optionRes.json<{ id: string }>().id;
+
+    const groupRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-groups',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Toppings' }, display: 'tiles', behaviour: 'several' },
+    });
+    expect(groupRes.statusCode).toBe(200);
+    const groupId = groupRes.json<{ id: string }>().id;
+
+    const linkOptionRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/modifier-groups/${groupId}/options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [optionId] },
+    });
+    expect(linkOptionRes.statusCode).toBe(200);
+
+    const linkGroupRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [groupId] },
+    });
+    expect(linkGroupRes.statusCode).toBe(200);
+
+    const dupRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-options`,
+      headers: cafeA.authed,
+      payload: { optionIds: [optionId] },
+    });
+    expect(dupRes.statusCode).toBe(409);
+    expect(dupRes.json<{ code?: string }>().code).toBe('catalog.ingredient_already_attached');
+  });
+
+  it('PUT items/:id/composition round-trips assembled lines with removable flags in order (ING-13/ING-14)', async () => {
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'composition-cat', name: { en: 'Composition cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'composition-item',
+        name: { en: 'Composition item' },
+        basePrice: '9.00',
+        currency: 'USD',
+        status: 'draft',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const createOption = async (label: string): Promise<string> => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/catalog/modifier-options',
+        headers: cafeA.authed,
+        payload: { name: { en: label }, priceDelta: '0.00' },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json<{ id: string }>().id;
+    };
+    const bun = await createOption('Bun');
+    const pickle = await createOption('Pickle');
+
+    const compositionRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/composition`,
+      headers: cafeA.authed,
+      payload: {
+        mode: 'assembled',
+        lines: [
+          { optionId: bun, removable: false },
+          { optionId: pickle, removable: true },
+        ],
+      },
+    });
+    expect(compositionRes.statusCode).toBe(200);
+
+    const detail = await stack.app.inject({
+      method: 'GET',
+      url: `/v1/catalog/items/${itemId}`,
+      headers: cafeA.authed,
+    });
+    expect(detail.statusCode).toBe(200);
+    const body = detail.json<{
+      compositionMode: string;
+      compositionAssembled: { optionId: string; removable: boolean }[];
+    }>();
+    expect(body.compositionMode).toBe('assembled');
+    expect(body.compositionAssembled).toEqual([
+      { optionId: bun, removable: false },
+      { optionId: pickle, removable: true },
+    ]);
+  });
+
+  it('an ingredient in two groups appears once in /v1/menu modifierOptions (D-03, ING-09)', async () => {
+    const optionRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/modifier-options',
+      headers: cafeA.authed,
+      payload: { name: { en: 'Bacon' }, priceDelta: '1.50' },
+    });
+    expect(optionRes.statusCode).toBe(200);
+    const baconId = optionRes.json<{ id: string }>().id;
+
+    const makeGroup = async (label: string): Promise<string> => {
+      const res = await stack.app.inject({
+        method: 'POST',
+        url: '/v1/catalog/modifier-groups',
+        headers: cafeA.authed,
+        payload: { name: { en: label }, display: 'tiles', behaviour: 'several' },
+      });
+      expect(res.statusCode).toBe(200);
+      return res.json<{ id: string }>().id;
+    };
+    const g1 = await makeGroup('Bacon group one');
+    const g2 = await makeGroup('Bacon group two');
+
+    for (const groupId of [g1, g2]) {
+      const linkRes = await stack.app.inject({
+        method: 'PUT',
+        url: `/v1/catalog/modifier-groups/${groupId}/options`,
+        headers: cafeA.authed,
+        payload: { optionIds: [baconId] },
+      });
+      expect(linkRes.statusCode).toBe(200);
+    }
+
+    const catRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/categories',
+      headers: cafeA.authed,
+      payload: { slug: 'bacon-cat', name: { en: 'Bacon cat' }, sortOrder: 0 },
+    });
+    expect(catRes.statusCode).toBe(200);
+    const categoryId = catRes.json<{ id: string }>().id;
+
+    const itemRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/items',
+      headers: cafeA.authed,
+      payload: {
+        categoryId,
+        slug: 'bacon-item',
+        name: { en: 'Bacon item' },
+        basePrice: '11.00',
+        currency: 'USD',
+        status: 'published',
+      },
+    });
+    expect(itemRes.statusCode).toBe(200);
+    const itemId = itemRes.json<{ id: string }>().id;
+
+    const linkGroupsRes = await stack.app.inject({
+      method: 'PUT',
+      url: `/v1/catalog/items/${itemId}/modifier-groups`,
+      headers: cafeA.authed,
+      payload: { modifierGroupIds: [g1, g2] },
+    });
+    expect(linkGroupsRes.statusCode).toBe(200);
+
+    const publishRes = await stack.app.inject({
+      method: 'POST',
+      url: '/v1/catalog/publish',
+      headers: cafeA.authed,
+    });
+    expect(publishRes.statusCode).toBe(200);
+
+    const menuRes = await stack.app.inject({
+      method: 'GET',
+      url: '/v1/menu',
+      headers: { host: cafeA.menuHost },
+    });
+    expect(menuRes.statusCode).toBe(200);
+    const menu = menuRes.json<{
+      modifierGroups: { id: string; optionIds: string[] }[];
+      modifierOptions: { id: string }[];
+    }>();
+    expect(menu.modifierOptions.filter((o) => o.id === baconId)).toHaveLength(1);
+    const grp1 = menu.modifierGroups.find((g) => g.id === g1);
+    const grp2 = menu.modifierGroups.find((g) => g.id === g2);
+    expect(grp1?.optionIds).toContain(baconId);
+    expect(grp2?.optionIds).toContain(baconId);
   }, 60_000);
 
   // A pre-merge test asserted draft-diff / modifier-groups / stop-list

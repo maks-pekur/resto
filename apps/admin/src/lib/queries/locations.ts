@@ -6,6 +6,18 @@ export interface LocationContactsView {
   readonly email?: string;
 }
 
+export interface OpeningInterval {
+  readonly from: string;
+  readonly to: string;
+}
+
+export type OpeningHours = Readonly<Record<string, readonly OpeningInterval[]>>;
+
+export interface WifiAccess {
+  readonly ssid: string;
+  readonly password: string | null;
+}
+
 export interface LocationView {
   readonly id: string;
   readonly name: string;
@@ -15,6 +27,8 @@ export interface LocationView {
   readonly longitude: number | null;
   readonly timezone: string | null;
   readonly contacts: LocationContactsView | null;
+  readonly openingHours: OpeningHours | null;
+  readonly wifi: WifiAccess | null;
   readonly status: 'active' | 'archived';
   readonly createdAt: string;
   readonly updatedAt: string;
@@ -36,6 +50,8 @@ export interface CreateLocationInput {
   /** Omitted inherits the tenant's zone — the server decides. */
   readonly timezone?: string | null;
   readonly contacts: LocationContactsView | null;
+  readonly openingHours?: OpeningHours | null;
+  readonly wifi?: WifiAccess | null;
 }
 
 export type UpdateLocationInput = Partial<CreateLocationInput>;
@@ -61,15 +77,12 @@ export const meLocationsQuery = () => ({
   staleTime: 30_000,
 });
 
-/**
- * A staff member's location authority is this server-side pin, not the URL (D-12). It became
- * mutable on 2026-08-28 — a manager covering two points used to have to sign out to move.
- */
-export const setActiveLocationMutation = (locationId: string) =>
-  apiFetch<{ locationId: string | null }>('/v1/me/set-active-location', {
-    method: 'POST',
-    body: { locationId },
-  });
+// NOTE: the client-side call to `POST /v1/me/set-active-location` was removed on 2026-08-30
+// along with the location switcher. The endpoint and the server-side initial pin both remain —
+// a staff member's location authority is still that pin, not the URL (D-12) — but nothing in
+// the admin can change it any more. A manager covering two points is therefore fixed to
+// whichever location the initial pin chose. Phase 10.5 ("Location as a filter, not a mode") is
+// where staff stop depending on a pinned location at all.
 
 export const activeLocationIdQuery = () => ({
   queryKey: ['identity', 'active-location'] as const,
@@ -88,6 +101,14 @@ export const createLocationMutation = (input: CreateLocationInput) =>
   apiFetch<LocationView>('/v1/tenancy/locations', {
     method: 'POST',
     body: input,
+  });
+
+export const deleteLocationMutation = (id: string) =>
+  apiFetch<null>(`/v1/tenancy/locations/${id}`, { method: 'DELETE' });
+
+export const restoreLocationMutation = (id: string) =>
+  apiFetch<LocationView>(`/v1/tenancy/locations/${id}/restore`, {
+    method: 'PATCH',
   });
 
 export const archiveLocationMutation = (id: string) =>

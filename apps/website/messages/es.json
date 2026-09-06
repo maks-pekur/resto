@@ -13,7 +13,6 @@
     "itemCount": "Carrito · {n}",
     "open": "Carrito",
     "subtotal": "Subtotal",
-    "table": "Mesa {table}",
     "title": "Tu carrito"
   },
   "menu": {
@@ -78,6 +77,11 @@
     "contactHeading": "Contacto",
     "faqHeading": "Preguntas frecuentes"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "El hogar digital de tu restaurante — menú, pedidos y más, todo en un solo lugar.",
+    "adminCta": "Acceso para operadores"
+  },
   "errors": {
     "tenantNotFound": "Restaurante no encontrado",
     "tenantNotFoundBody": "Este restaurante todavía no está en RestOS. Si seguiste un enlace, puede que haya cambiado.",
@@ -94,7 +98,31 @@
     "qtyIncrease": "Aumentar la cantidad de {name}",
     "remove": "Eliminar {name} del carrito",
     "size": "Tamaño",
-    "unavailable": "No disponible hoy"
+    "unavailable": "No disponible hoy",
+    "composition": "Composición",
+    "compositionExcludeAriaLabel": "Quitar {name}",
+    "compositionIncludeAriaLabel": "Volver a añadir {name}",
+    "choose": "Elegir {name}",
+    "addNamed": "Añadir {name} por {price}",
+    "nutrition": "Información nutricional",
+    "nutritionOpen": "Información nutricional",
+    "nutritionPer100g": "Información nutricional (por 100 g)",
+    "calories": "Calorías",
+    "protein": "Proteínas",
+    "fat": "Grasas",
+    "carbs": "Carbohidratos",
+    "kcal": "kcal",
+    "gram": "g",
+    "unit": {
+      "g": "g",
+      "kg": "kg",
+      "ml": "ml",
+      "l": "l",
+      "pcs": "ud"
+    },
+    "chooseFirst": "Elige primero: {group}",
+    "weight": "Peso",
+    "added": "Añadido"
   },
   "locale": {
     "label": "Idioma"
@@ -104,12 +132,54 @@
     "contact": "Contacto",
     "delivery": "Envío",
     "faq": "Preguntas",
-    "poweredBy": "Funciona con RestOS"
+    "poweredBy": "Funciona con RestOS",
+    "socialsLabel": "Síguenos"
   },
   "theme": {
     "dark": "Oscuro",
     "label": "Tema de color",
     "light": "Claro",
     "system": "Sistema"
+  },
+  "nav": {
+    "label": "Navegación",
+    "menu": "Menú",
+    "cart": "Carrito",
+    "info": "Info"
+  },
+  "info": {
+    "contacts": "Contacto",
+    "socials": "Síguenos"
+  },
+  "finder": {
+    "searchLabel": "Buscar en el menú",
+    "searchPlaceholder": "Buscar un plato",
+    "clear": "Limpiar",
+    "nothingFound": "No se encontró nada",
+    "searchToggle": "Buscar"
+  },
+  "diet": {
+    "vegetarian": "Vegetariano",
+    "vegan": "Vegano",
+    "gluten_free": "Sin gluten",
+    "lactose_free": "Sin lactosa",
+    "spicy": "Picante",
+    "halal": "Halal"
+  },
+  "allergen": {
+    "gluten": "gluten",
+    "crustaceans": "crustáceos",
+    "eggs": "huevos",
+    "fish": "pescado",
+    "peanuts": "cacahuetes",
+    "soy": "soja",
+    "milk": "leche",
+    "nuts": "frutos secos",
+    "celery": "apio",
+    "mustard": "mostaza",
+    "sesame": "sésamo",
+    "sulphites": "sulfitos",
+    "lupin": "altramuces",
+    "molluscs": "moluscos"
   }
 }

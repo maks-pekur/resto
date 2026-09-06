@@ -138,8 +138,8 @@ describe('MenuModifier', () => {
     id: UUID_C,
     tenantId: UUID_A,
     name: { en: 'Toppings' },
-    minSelectable: 0,
-    maxSelectable: 3,
+    display: 'tiles' as const,
+    behaviour: 'several' as const,
     isRequired: false,
     ...baseTimestamps,
   };
@@ -148,11 +148,11 @@ describe('MenuModifier', () => {
     expect(MenuModifier.parse(valid)).toEqual(valid);
   });
 
-  it('rejects max < min', () => {
-    expect(() => MenuModifier.parse({ ...valid, minSelectable: 3, maxSelectable: 1 })).toThrow();
+  it('rejects an unknown display value', () => {
+    expect(() => MenuModifier.parse({ ...valid, display: 'grid' })).toThrow();
   });
 
-  it('rejects negative selectable bounds', () => {
-    expect(() => MenuModifier.parse({ ...valid, minSelectable: -1 })).toThrow();
+  it('rejects an unknown behaviour value', () => {
+    expect(() => MenuModifier.parse({ ...valid, behaviour: 'many' })).toThrow();
   });
 });

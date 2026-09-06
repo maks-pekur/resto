@@ -14,9 +14,10 @@ export class ListModifierGroupsService {
       items: rows.map((r) => ({
         id: r.id,
         name: r.name,
-        minSelectable: r.minSelectable,
-        maxSelectable: r.maxSelectable,
+        display: r.display,
+        behaviour: r.behaviour,
         isRequired: r.isRequired,
+        maxSelectable: r.maxSelectable,
         optionCount: r.optionCount,
         usageCount: r.usageCount,
       })),

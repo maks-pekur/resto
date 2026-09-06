@@ -43,6 +43,9 @@ describe('POST /v1/me/tenants/onboarding (D-30/D-31)', () => {
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_MIN = '1000';
     process.env.RATE_LIMIT_AUTH_SIGNIN_PER_EMAIL_PER_MIN = '1000';
     process.env.RATE_LIMIT_PUBLIC_PER_MIN = '10000';
+    // ProvisionTenantService/FinalizeTenantOnboardingService throw without this (07.5-13) —
+    // both writers compose the primary tenant_domains row from it.
+    process.env.PUBLIC_APEX_DOMAIN = 'resto.app';
 
     const moduleRef: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
@@ -140,7 +143,7 @@ describe('POST /v1/me/tenants/onboarding (D-30/D-31)', () => {
       tx.select().from(schema.tenantDomains).where(eq(schema.tenantDomains.tenantId, tenantId)),
     );
     expect(domains).toHaveLength(1);
-    expect(domains[0]?.domain).toBe(`${onboardBody.slug}.menu.resto.app`);
+    expect(domains[0]?.domain).toBe(`${onboardBody.slug}.resto.app`);
     expect(domains[0]?.isPrimary).toBe(true);
   }, 60_000);
 

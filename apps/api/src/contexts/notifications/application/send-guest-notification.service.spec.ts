@@ -9,7 +9,7 @@ import { SendGuestNotificationService } from './send-guest-notification.service'
 
 const TENANT_ID = '11111111-1111-1111-1111-111111111111';
 const ORDER_ID = '22222222-2222-2222-2222-222222222222';
-const WEBSITE_PUBLIC_URL = 'https://order.resto.app';
+const PUBLIC_APEX = 'resto.app';
 
 const baseOrder: NotificationOrderRow = {
   id: ORDER_ID,
@@ -20,13 +20,15 @@ const baseOrder: NotificationOrderRow = {
   etaAt: null,
   shortNumber: null,
   locationTimezone: null,
+  tenantSlug: 'acme',
   tenantDisplayName: 'Acme',
   tenantLocale: 'en',
   tenantTheme: { logoUrl: 'https://cdn.acme.com/logo.png', primaryColor: '#16a34a', font: null },
+  primaryCustomDomain: null,
 };
 
-const makeEnv = (websitePublicUrl: string | undefined): Env =>
-  ({ WEBSITE_PUBLIC_URL: websitePublicUrl }) as unknown as Env;
+const makeEnv = (publicApexDomain: string | undefined): Env =>
+  ({ PUBLIC_APEX_DOMAIN: publicApexDomain }) as unknown as Env;
 
 const makeOrderRepo = (
   order: NotificationOrderRow | null,
@@ -59,7 +61,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder, [{ nameSnapshot: 'Burger', quantity: 1 }]),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -82,7 +84,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -99,7 +101,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -116,7 +118,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo({ ...baseOrder, tenantLocale: 'ru' }),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -133,7 +135,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo({ ...baseOrder, tenantLocale: 'es' }),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -152,7 +154,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -173,7 +175,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo({ ...baseOrder, customerEmail: null }),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await expect(
@@ -188,7 +190,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(null),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await expect(
@@ -205,7 +207,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
@@ -224,7 +226,7 @@ describe('SendGuestNotificationService', () => {
           etaAt: new Date('2026-06-28T19:45:00Z'),
           locationTimezone: 'UTC',
         }),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({ orderId: ORDER_ID, tenantId: TENANT_ID, transition: 'order_accepted' });
@@ -237,7 +239,7 @@ describe('SendGuestNotificationService', () => {
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo({ ...baseOrder, etaAt: null }),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -251,12 +253,12 @@ describe('SendGuestNotificationService', () => {
   });
 
   describe('Growth HIGH-10: status-page link', () => {
-    it('vars.statusUrl contains the order id and the configured website origin', async () => {
+    it('vars.statusUrl is per-tenant: <slug>.<PUBLIC_APEX_DOMAIN>/checkout/confirmation/<orderId>', async () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,
         makeOrderRepo(baseOrder),
-        makeEnv(WEBSITE_PUBLIC_URL),
+        makeEnv(PUBLIC_APEX),
       );
 
       await svc.execute({
@@ -265,12 +267,31 @@ describe('SendGuestNotificationService', () => {
         transition: 'order_confirmation',
       });
 
-      const statusUrl = email.calls[0]?.vars.statusUrl;
-      expect(statusUrl).toContain(WEBSITE_PUBLIC_URL);
-      expect(statusUrl).toContain(ORDER_ID);
+      expect(email.calls[0]?.vars.statusUrl).toBe(
+        `https://acme.${PUBLIC_APEX}/checkout/confirmation/${ORDER_ID}`,
+      );
     });
 
-    it('falls back to a relative path when WEBSITE_PUBLIC_URL is unset', async () => {
+    it('uses the primary verified custom domain when the tenant has one', async () => {
+      const email = makeEmailAdapter();
+      const svc = new SendGuestNotificationService(
+        email,
+        makeOrderRepo({ ...baseOrder, primaryCustomDomain: 'order.acme-custom.example' }),
+        makeEnv(PUBLIC_APEX),
+      );
+
+      await svc.execute({
+        orderId: ORDER_ID,
+        tenantId: TENANT_ID,
+        transition: 'order_confirmation',
+      });
+
+      expect(email.calls[0]?.vars.statusUrl).toBe(
+        `https://order.acme-custom.example/checkout/confirmation/${ORDER_ID}`,
+      );
+    });
+
+    it('falls back to a relative path when PUBLIC_APEX_DOMAIN is unset and there is no custom domain', async () => {
       const email = makeEmailAdapter();
       const svc = new SendGuestNotificationService(
         email,

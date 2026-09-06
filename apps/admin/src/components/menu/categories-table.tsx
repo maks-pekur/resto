@@ -20,7 +20,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Button } from '@/components/ui/button';
+import { RowActions } from '@/components/common/row-actions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -31,7 +31,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import {
   Table,
   TableBody,
@@ -87,6 +87,7 @@ function SortableCategoryRow({
   isPendingNestTarget,
 }: SortableCategoryRowProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
+  const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: category.id,
   });
@@ -130,28 +131,28 @@ function SortableCategoryRow({
       </TableCell>
       <TableCell className="text-center">{parentName}</TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="min-h-11 min-w-11"
-            aria-label={t('editAriaLabel', { name: displayName })}
-            onClick={onEdit}
-          >
-            <Pencil className="size-4" />
-          </Button>
-          {category.status === 'archived' ? null : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="min-h-11 min-w-11"
-              aria-label={t('archiveAriaLabel', { name: displayName })}
-              onClick={onArchive}
-            >
-              <Archive className="size-4" />
-            </Button>
-          )}
-        </div>
+        <RowActions
+          label={t('rowActionsAriaLabel', { name: displayName })}
+          actions={[
+            {
+              key: 'edit',
+              label: tCommon('edit'),
+              icon: Pencil,
+              onSelect: onEdit,
+            },
+            ...(category.status === 'archived'
+              ? []
+              : [
+                  {
+                    key: 'archive',
+                    label: tCommon('archive'),
+                    icon: Archive,
+                    tone: 'destructive' as const,
+                    onSelect: onArchive,
+                  },
+                ]),
+          ]}
+        />
       </TableCell>
     </TableRow>
   );

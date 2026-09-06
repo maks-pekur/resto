@@ -36,6 +36,7 @@ export class GetStopListService {
         itemId: r.itemId,
         itemName: r.itemName,
         categoryName: r.categoryName,
+        photo: r.photo,
         stoppedAt: r.stoppedAt,
         reason: r.reason,
       })),

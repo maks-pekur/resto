@@ -33,7 +33,7 @@ const buildOrderCreatedEnvelope = (orderId: string, tenantId: string): EventEnve
     orderId,
     tenantId,
     orderNumber: '20260614-TEST1',
-    fulfillmentMode: 'pickup',
+    orderType: 'pickup',
     total: 1200,
     currency: 'USD',
     itemCount: 1,

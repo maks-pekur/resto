@@ -13,7 +13,6 @@
     "itemCount": "Cart · {n}",
     "open": "Cart",
     "subtotal": "Subtotal",
-    "table": "Table {table}",
     "title": "Your cart"
   },
   "menu": {
@@ -78,6 +77,11 @@
     "contactHeading": "Contact Us",
     "faqHeading": "Frequently Asked Questions"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "The digital home for your restaurant — menu, orders and more, all in one place.",
+    "adminCta": "Operator sign in"
+  },
   "errors": {
     "tenantNotFound": "Restaurant not found",
     "tenantNotFoundBody": "This restaurant isn't on RestOS yet. If you followed a link, it may have changed.",
@@ -94,7 +98,31 @@
     "qtyIncrease": "Increase quantity of {name}",
     "remove": "Remove {name} from cart",
     "size": "Size",
-    "unavailable": "Unavailable today"
+    "unavailable": "Unavailable today",
+    "composition": "Composition",
+    "compositionExcludeAriaLabel": "Leave out \"{name}\"",
+    "compositionIncludeAriaLabel": "Add \"{name}\" back",
+    "choose": "Choose {name}",
+    "addNamed": "Add {name} for {price}",
+    "nutrition": "Nutrition facts",
+    "nutritionOpen": "Nutrition facts",
+    "nutritionPer100g": "Nutrition facts (per 100 g)",
+    "calories": "Calories",
+    "protein": "Protein",
+    "fat": "Fat",
+    "carbs": "Carbohydrate",
+    "kcal": "kcal",
+    "gram": "g",
+    "unit": {
+      "g": "g",
+      "kg": "kg",
+      "ml": "ml",
+      "l": "l",
+      "pcs": "pcs"
+    },
+    "chooseFirst": "Choose {group} first",
+    "weight": "Weight",
+    "added": "Added"
   },
   "locale": {
     "label": "Language"
@@ -104,12 +132,54 @@
     "contact": "Contact",
     "delivery": "Delivery",
     "faq": "FAQ",
-    "poweredBy": "Powered by RestOS"
+    "poweredBy": "Powered by RestOS",
+    "socialsLabel": "Find us online"
   },
   "theme": {
     "dark": "Dark",
     "label": "Colour theme",
     "light": "Light",
     "system": "System"
+  },
+  "nav": {
+    "label": "Navigation",
+    "menu": "Menu",
+    "cart": "Cart",
+    "info": "Info"
+  },
+  "info": {
+    "contacts": "Contacts",
+    "socials": "Find us online"
+  },
+  "finder": {
+    "searchLabel": "Search the menu",
+    "searchPlaceholder": "Find a dish",
+    "clear": "Clear",
+    "nothingFound": "Nothing matched",
+    "searchToggle": "Search"
+  },
+  "diet": {
+    "vegetarian": "Vegetarian",
+    "vegan": "Vegan",
+    "gluten_free": "Gluten free",
+    "lactose_free": "Lactose free",
+    "spicy": "Spicy",
+    "halal": "Halal"
+  },
+  "allergen": {
+    "gluten": "gluten",
+    "crustaceans": "crustaceans",
+    "eggs": "eggs",
+    "fish": "fish",
+    "peanuts": "peanuts",
+    "soy": "soy",
+    "milk": "milk",
+    "nuts": "nuts",
+    "celery": "celery",
+    "mustard": "mustard",
+    "sesame": "sesame",
+    "sulphites": "sulphites",
+    "lupin": "lupin",
+    "molluscs": "molluscs"
   }
 }

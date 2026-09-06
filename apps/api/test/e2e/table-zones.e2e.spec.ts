@@ -182,7 +182,9 @@ suite('Table zones and tables e2e (Plan 10.3-07)', () => {
       Array.from({ length: 20 }, (_, i) => String(i + 1)),
     );
     for (const table of body.tables) {
-      expect(table.qrUrl).toBe(`https://${tenantSlug}.menu.resto.app/?t=${table.id}`);
+      expect(table.qrUrl).toMatch(
+        new RegExp(`^https://${tenantSlug}\\.resto\\.app/qr/t/[0-9a-f]{32}$`),
+      );
     }
   });
 

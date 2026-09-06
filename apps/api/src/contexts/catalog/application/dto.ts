@@ -1,6 +1,13 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CurrencyValue, LocalizedText, MoneyAmountValue, Slug } from '@resto/domain';
+import {
+  CurrencyValue,
+  LocalizedText,
+  MoneyAmountValue,
+  Slug,
+  DIETS,
+  DietSchema,
+} from '@resto/domain';
 
 const NonNegInt = z.number().int().nonnegative();
 
@@ -17,6 +24,14 @@ export const MenuItemPhotoSchema = z.object({
   isPrimary: z.boolean().optional(),
 });
 export type MenuItemPhoto = z.infer<typeof MenuItemPhotoSchema>;
+
+/** A photo as an operator surface reads it. The stored value is an S3 key in a private
+ * prefix, so a browser cannot render it directly — reads carry a short-lived presigned
+ * `url` alongside the key. The key stays in the payload because the editor sends it
+ * back on save; the url is never accepted as input. */
+export const MenuItemPhotoResponseSchema = MenuItemPhotoSchema.extend({
+  url: z.string(),
+});
 
 export const UpsertCategoryInputSchema = z.object({
   id: z.string().uuid().optional(),
@@ -59,14 +74,19 @@ export const UpsertItemInputSchema = z.object({
   currency: CurrencyValue,
   photos: z.array(MenuItemPhotoSchema).max(20).default([]),
   allergens: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
-  ingredients: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
+  diets: z.array(DietSchema).max(DIETS.length).nullable().default(null),
+  composition: z.array(z.string().min(1).max(100)).max(50).nullable().default(null),
+  compositionMode: z.enum(['text', 'assembled']).default('text'),
+  compositionAssembled: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50)
+    .default([]),
   metaTitle: z.string().max(70).nullable().default(null),
   metaDescription: z.string().max(160).nullable().default(null),
   proteins: z.number().min(0).max(999.99).nullable().default(null),
   fats: z.number().min(0).max(999.99).nullable().default(null),
   carbs: z.number().min(0).max(999.99).nullable().default(null),
   kcal: z.number().int().min(0).max(32000).nullable().default(null),
-  nutritionEstimated: z.boolean().default(false),
   source: z.enum(['manual', 'ai_generated', 'imported_iiko', 'imported_csv']).default('manual'),
   needsReview: z.boolean().default(false),
   sourceExternalId: z.string().max(255).nullable().default(null),
@@ -83,12 +103,13 @@ export const UpsertModifierGroupInputSchema = z
   .object({
     id: z.string().uuid().optional(),
     name: LocalizedText,
-    minSelectable: NonNegInt.default(0),
-    maxSelectable: NonNegInt.default(1),
+    display: z.enum(['tiles', 'tabs']),
+    behaviour: z.enum(['one', 'several']),
     isRequired: z.boolean().default(false),
+    maxSelectable: z.number().int().positive().max(50).nullable().default(null),
   })
-  .refine((m) => m.maxSelectable >= m.minSelectable, {
-    message: 'maxSelectable must be greater than or equal to minSelectable',
+  .refine((g) => g.behaviour !== 'one' || g.maxSelectable === null, {
+    message: 'maxSelectable is meaningless for a one-choice group',
     path: ['maxSelectable'],
   });
 export type UpsertModifierGroupInput = z.infer<typeof UpsertModifierGroupInputSchema>;
@@ -97,8 +118,9 @@ export class UpsertModifierGroupInputDto extends createZodDto(UpsertModifierGrou
 export const UpsertModifierOptionInputSchema = z
   .object({
     id: z.string().uuid().optional(),
-    modifierGroupId: z.string().uuid(),
     name: LocalizedText,
+    description: LocalizedText.nullable().default(null),
+    imageS3Key: z.string().max(1024).nullable().default(null),
     priceDelta: MoneyAmountValue,
     defaultAmount: NonNegInt.default(0),
     freeAmount: NonNegInt.default(0),
@@ -130,12 +152,49 @@ export const SetItemModifierGroupsInputSchema = z.object({
 export type SetItemModifierGroupsInput = z.infer<typeof SetItemModifierGroupsInputSchema>;
 export class SetItemModifierGroupsInputDto extends createZodDto(SetItemModifierGroupsInputSchema) {}
 
+export const SetGroupModifierOptionsInputSchema = z.object({
+  optionIds: z.array(z.string().uuid()).max(200),
+  defaultOptionIds: z.array(z.string().uuid()).max(200).default([]),
+});
+export type SetGroupModifierOptionsInput = z.infer<typeof SetGroupModifierOptionsInputSchema>;
+export class SetGroupModifierOptionsInputDto extends createZodDto(
+  SetGroupModifierOptionsInputSchema,
+) {}
+
+export const SetItemModifierOptionsInputSchema = z.object({
+  optionIds: z.array(z.string().uuid()).max(200),
+});
+export type SetItemModifierOptionsInput = z.infer<typeof SetItemModifierOptionsInputSchema>;
+export class SetItemModifierOptionsInputDto extends createZodDto(
+  SetItemModifierOptionsInputSchema,
+) {}
+
+// createZodDto needs a single object type — a discriminatedUnion's `z.infer` cannot extend
+// a class (TS2509) — so mode picks which of the two always-present arrays is active.
+export const SetItemCompositionInputSchema = z.object({
+  mode: z.enum(['text', 'assembled']),
+  text: z.array(z.string().min(1).max(100)).max(50).default([]),
+  lines: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50)
+    .default([]),
+});
+export type SetItemCompositionInput = z.infer<typeof SetItemCompositionInputSchema>;
+export class SetItemCompositionInputDto extends createZodDto(SetItemCompositionInputSchema) {}
+
 export const StopItemInputSchema = z.object({
   itemId: z.string().uuid(),
   reason: z.string().max(500).nullable().default(null),
 });
 export type StopItemInput = z.infer<typeof StopItemInputSchema>;
 export class StopItemInputDto extends createZodDto(StopItemInputSchema) {}
+
+export const StopOptionInputSchema = z.object({
+  optionId: z.string().uuid(),
+  reason: z.string().max(500).nullable().default(null),
+});
+export type StopOptionInput = z.infer<typeof StopOptionInputSchema>;
+export class StopOptionInputDto extends createZodDto(StopOptionInputSchema) {}
 
 const CategoryStatusSchema = z.enum(['draft', 'published', 'archived']);
 const ItemStatusSchema = z.enum(['draft', 'published', 'archived']);
@@ -167,6 +226,7 @@ export const ItemListItemSchema = z.object({
     .object({
       s3Key: z.string(),
       sortOrder: z.number().int().nonnegative(),
+      url: z.string(),
     })
     .nullable(),
   basePrice: MoneyAmountValue,
@@ -202,16 +262,18 @@ export const ItemDetailResponseSchema = z.object({
   description: LocalizedText.nullable(),
   basePrice: MoneyAmountValue,
   currency: CurrencyValue,
-  photos: z.array(MenuItemPhotoSchema),
+  photos: z.array(MenuItemPhotoResponseSchema),
   allergens: z.array(z.string()).nullable(),
-  ingredients: z.array(z.string()).nullable(),
+  diets: z.array(z.string()).nullable(),
+  composition: z.array(z.string()).nullable(),
+  compositionMode: z.enum(['text', 'assembled']),
+  compositionAssembled: z.array(z.object({ optionId: z.string().uuid(), removable: z.boolean() })),
   metaTitle: z.string().nullable(),
   metaDescription: z.string().nullable(),
   proteins: z.number().nullable(),
   fats: z.number().nullable(),
   carbs: z.number().nullable(),
   kcal: z.number().int().nullable(),
-  nutritionEstimated: z.boolean(),
   source: z.enum(['manual', 'ai_generated', 'imported_iiko', 'imported_csv']),
   needsReview: z.boolean(),
   sourceExternalId: z.string().nullable(),
@@ -219,6 +281,7 @@ export const ItemDetailResponseSchema = z.object({
   sortOrder: NonNegInt,
   sizes: z.array(ItemSizeDtoSchema),
   modifierGroupIds: z.array(z.string().uuid()),
+  modifierOptionIds: z.array(z.string().uuid()),
 });
 export type ItemDetailResponse = z.infer<typeof ItemDetailResponseSchema>;
 export class ItemDetailResponseDto extends createZodDto(ItemDetailResponseSchema) {}
@@ -226,9 +289,10 @@ export class ItemDetailResponseDto extends createZodDto(ItemDetailResponseSchema
 export const ModifierGroupListItemSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
-  minSelectable: NonNegInt,
-  maxSelectable: NonNegInt,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
+  maxSelectable: NonNegInt.nullable(),
   optionCount: NonNegInt,
   usageCount: NonNegInt,
 });
@@ -242,6 +306,8 @@ export class ModifierGroupListResponseDto extends createZodDto(ModifierGroupList
 export const ModifierOptionDetailSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
+  description: LocalizedText.nullable(),
+  imageUrl: z.string().nullable(),
   priceDelta: MoneyAmountValue,
   defaultAmount: NonNegInt,
   freeAmount: NonNegInt,
@@ -250,9 +316,11 @@ export const ModifierOptionDetailSchema = z.object({
 export const ModifierGroupDetailResponseSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedText,
-  minSelectable: NonNegInt,
-  maxSelectable: NonNegInt,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
+  maxSelectable: NonNegInt.nullable(),
+  defaultOptionIds: z.array(z.string().uuid()),
   options: z.array(ModifierOptionDetailSchema),
 });
 export type ModifierGroupDetailResponse = z.infer<typeof ModifierGroupDetailResponseSchema>;
@@ -260,11 +328,53 @@ export class ModifierGroupDetailResponseDto extends createZodDto(
   ModifierGroupDetailResponseSchema,
 ) {}
 
+export const ModifierOptionListItemSchema = z.object({
+  id: z.string().uuid(),
+  name: LocalizedText,
+  description: LocalizedText.nullable(),
+  priceDelta: MoneyAmountValue,
+  imageUrl: z.string().nullable(),
+  imageS3Key: z.string().nullable(),
+  groupCount: NonNegInt,
+  dishCount: NonNegInt,
+});
+export type ModifierOptionListItem = z.infer<typeof ModifierOptionListItemSchema>;
+export const ModifierOptionListResponseSchema = z.object({
+  items: z.array(ModifierOptionListItemSchema),
+});
+export type ModifierOptionListResponse = z.infer<typeof ModifierOptionListResponseSchema>;
+export class ModifierOptionListResponseDto extends createZodDto(ModifierOptionListResponseSchema) {}
+
+const ModifierOptionUsageRefSchema = z.object({
+  id: z.string().uuid(),
+  name: LocalizedText,
+});
+// D-28: the archive warning shows the union of all three; the stop dialog shows
+// dishesInComposition only — being an add-on is not being part of the dish (D-22).
+export const ModifierOptionUsageResponseSchema = z.object({
+  groups: z.array(ModifierOptionUsageRefSchema),
+  dishesAttached: z.array(ModifierOptionUsageRefSchema),
+  dishesInComposition: z.array(ModifierOptionUsageRefSchema),
+});
+export type ModifierOptionUsageResponse = z.infer<typeof ModifierOptionUsageResponseSchema>;
+export class ModifierOptionUsageResponseDto extends createZodDto(
+  ModifierOptionUsageResponseSchema,
+) {}
+
 export const StopListEntrySchema = z.object({
   id: z.string().uuid(),
   itemId: z.string().uuid(),
   itemName: LocalizedText.nullable(),
   categoryName: LocalizedText.nullable(),
+  // Same shape the item list uses: the stored value is a private S3 key, so a read
+  // carries a short-lived presigned url beside it.
+  photo: z
+    .object({
+      s3Key: z.string(),
+      sortOrder: z.number().int().nonnegative(),
+      url: z.string(),
+    })
+    .nullable(),
   stoppedAt: z.string().datetime(),
   reason: z.string().nullable(),
 });
@@ -274,6 +384,22 @@ export const StopListResponseSchema = z.object({
 });
 export type StopListResponse = z.infer<typeof StopListResponseSchema>;
 export class StopListResponseDto extends createZodDto(StopListResponseSchema) {}
+
+// Item version minus categoryName — an ingredient has no category (UI-SPEC item 8).
+export const OptionStopListEntrySchema = z.object({
+  id: z.string().uuid(),
+  optionId: z.string().uuid(),
+  optionName: LocalizedText.nullable(),
+  imageUrl: z.string().nullable(),
+  stoppedAt: z.string().datetime(),
+  reason: z.string().nullable(),
+});
+export type OptionStopListEntry = z.infer<typeof OptionStopListEntrySchema>;
+export const OptionStopListResponseSchema = z.object({
+  items: z.array(OptionStopListEntrySchema),
+});
+export type OptionStopListResponse = z.infer<typeof OptionStopListResponseSchema>;
+export class OptionStopListResponseDto extends createZodDto(OptionStopListResponseSchema) {}
 
 export const AggregateStopListEntrySchema = z.object({
   itemId: z.string().uuid(),
@@ -317,6 +443,7 @@ const MAX_PHOTO_BYTES = 5_242_880;
 export const PhotoUploadUrlInputSchema = z.object({
   contentType: PhotoUploadContentTypeSchema,
   sizeBytes: z.number().int().positive().max(MAX_PHOTO_BYTES),
+  kind: z.enum(['item', 'ingredient']).default('item'),
 });
 export type PhotoUploadUrlInput = z.infer<typeof PhotoUploadUrlInputSchema>;
 export class PhotoUploadUrlInputDto extends createZodDto(PhotoUploadUrlInputSchema) {}

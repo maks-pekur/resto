@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useCartStore } from '@resto/cart';
 import type { MenuDto } from '@resto/api-client/public';
@@ -11,7 +11,16 @@ const menu: MenuDto = {
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'UAH',
-  tenant: { id: 'tenant-1', slug: 'pizza', displayName: 'Pizza Palace', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'pizza',
+    displayName: 'Pizza Palace',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
   ],
@@ -24,20 +33,27 @@ const menu: MenuDto = {
       description: null,
       basePrice: '189.00',
       currency: 'UAH',
+      weight: null,
+      measureUnit: null,
       imageUrl: null,
       photos: [],
       allergens: [],
+      diets: [],
       proteins: null,
       fats: null,
       carbs: null,
       kcal: null,
-      nutritionEstimated: false,
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 };
 
 const TABLE_UUID = '22222222-2222-4222-8222-222222222222';
@@ -46,17 +62,24 @@ const resolvedTable: ResolvedTable = { tableId: TABLE_UUID, zoneName: 'Terrace',
 const fetchMenuMock = vi.fn<(signal?: AbortSignal) => Promise<MenuDto>>();
 const fetchAvailabilityMock =
   vi.fn<
-    (tableId: string | undefined, signal?: AbortSignal) => Promise<{ stoppedItemIds: string[] }>
+    (
+      tableId: string | undefined,
+      signal?: AbortSignal,
+    ) => Promise<{ stoppedItemIds: string[]; stoppedIngredientIds: string[] }>
   >();
-const fetchTableMock =
-  vi.fn<(tableId: string, signal?: AbortSignal) => Promise<ResolvedTable | null>>();
+const openTableSessionMock = vi.fn<(token: string) => Promise<ResolvedTable>>();
+const fetchTableSessionMock = vi.fn<(signal?: AbortSignal) => Promise<ResolvedTable | null>>();
 
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
+  OrderRequestError: class extends Error {},
   fetchMenu: (signal?: AbortSignal) => fetchMenuMock(signal),
   fetchAvailability: (tableId: string | undefined, signal?: AbortSignal) =>
     fetchAvailabilityMock(tableId, signal),
-  fetchTable: (tableId: string, signal?: AbortSignal) => fetchTableMock(tableId, signal),
+  openTableSession: (token: string) => openTableSessionMock(token),
+  fetchTableSession: (signal?: AbortSignal) => fetchTableSessionMock(signal),
 }));
 
 const bannerNode = (): Element | null => document.querySelector('.bg-muted.border-b');
@@ -66,8 +89,11 @@ beforeEach(() => {
   useCartStore.getState().setTable(null);
   window.history.replaceState({}, '', '/');
   fetchMenuMock.mockReset().mockResolvedValue(menu);
-  fetchAvailabilityMock.mockReset().mockResolvedValue({ stoppedItemIds: [] });
-  fetchTableMock.mockReset().mockResolvedValue(null);
+  fetchAvailabilityMock
+    .mockReset()
+    .mockResolvedValue({ stoppedItemIds: [], stoppedIngredientIds: [] });
+  openTableSessionMock.mockReset().mockRejectedValue(new Error('no session'));
+  fetchTableSessionMock.mockReset().mockResolvedValue(null);
 });
 
 afterEach(() => {
@@ -75,48 +101,51 @@ afterEach(() => {
 });
 
 describe('qr-menu table', () => {
-  it('resolves a scanned table id and renders the server-supplied label', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(resolvedTable);
+  it('trades a scanned code for a session and seats the guest without saying so', async () => {
+    window.history.replaceState({}, '', '/t/a-printed-secret');
+    openTableSessionMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(t('table.current', { table: 'Terrace · 12' }))).toBeInTheDocument();
+      expect(useCartStore.getState().tableId).toBe(TABLE_UUID);
     });
+    // The guest can see which table they are sitting at; the app does not tell them.
+    expect(bannerNode()).not.toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBe(TABLE_UUID);
     expect(useCartStore.getState().tableZoneName).toBe('Terrace');
     expect(useCartStore.getState().tableNumber).toBe('12');
   });
 
-  it('shows the not-recognised line but still renders the menu when the table is unknown', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(null);
+  it('opens a sheet offering another scan when the code is unknown', async () => {
+    window.history.replaceState({}, '', '/t/someone-elses-code');
+    openTableSessionMock.mockRejectedValue(new Error('unknown'));
     render(<App />);
 
     await waitFor(() => {
-      expect(screen.getByText(t('table.notRecognized'))).toBeInTheDocument();
+      expect(screen.getByText(t('table.unreadableTitle'))).toBeInTheDocument();
     });
-    expect(screen.getByRole('button', { name: 'Margherita' })).toBeInTheDocument();
+    // A sheet, not a line to read past: the way out is in it.
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBeNull();
   });
 
-  it('ignores the old free-text ?table= parameter entirely', async () => {
-    window.history.replaceState({}, '', '/?table=%D0%A1%D1%82%D0%BE%D0%BB%2099');
+  it('ignores a table named in the query — only a scanned code seats a guest', async () => {
+    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(openTableSessionMock).not.toHaveBeenCalled();
     expect(bannerNode()).not.toBeInTheDocument();
     expect(useCartStore.getState().tableId).toBeNull();
   });
 
-  it('renders no table strip and no not-recognised line with no ?t= at all', async () => {
+  it('renders no table strip and no not-recognised line without a code', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    expect(fetchTableMock).not.toHaveBeenCalled();
+    expect(openTableSessionMock).not.toHaveBeenCalled();
     expect(bannerNode()).not.toBeInTheDocument();
-    expect(screen.queryByText(t('table.notRecognized'))).not.toBeInTheDocument();
+    expect(screen.queryByText(t('table.unreadableTitle'))).not.toBeInTheDocument();
   });
 
   it('never asks the guest to type a table number', async () => {
@@ -127,8 +156,8 @@ describe('qr-menu table', () => {
   });
 
   it('carries the scanned table on the availability request', async () => {
-    window.history.replaceState({}, '', `/?t=${TABLE_UUID}`);
-    fetchTableMock.mockResolvedValue(resolvedTable);
+    window.history.replaceState({}, '', '/t/a-printed-secret');
+    openTableSessionMock.mockResolvedValue(resolvedTable);
     render(<App />);
 
     await waitFor(() => {
@@ -170,5 +199,29 @@ describe('qr-menu table', () => {
 
     expect(fetchSpy).toHaveBeenCalledTimes(1);
     expect(fetchSpy).toHaveBeenCalledWith('/v1/menu/availability', {});
+  });
+});
+
+describe('ordering without a table', () => {
+  it('asks for the code first, then carries the guest on to checkout', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    useCartStore.getState().addItem({
+      itemId: 'item-1',
+      sizeId: null,
+      name: 'Margherita',
+      unitPrice: '10.00',
+      currency: 'EUR',
+      modifiers: [],
+    });
+
+    fireEvent.click(await screen.findByRole('button', { name: t('nav.cart') }));
+    fireEvent.click(await screen.findByRole('button', { name: t('checkout.open') }));
+
+    // The scan sheet stands in for the checkout, and the cart is untouched.
+    expect(await screen.findByText(t('table.orderingTitle'))).toBeInTheDocument();
+    expect(screen.queryByText(t('checkout.paymentLabel'))).not.toBeInTheDocument();
+    expect(useCartStore.getState().items).toHaveLength(1);
   });
 });

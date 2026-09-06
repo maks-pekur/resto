@@ -21,9 +21,16 @@ const CartSheet = lazy(async () => ({ default: (await import('./cart-sheet')).Ca
 
 const PRIORITY_IMAGE_COUNT = 4;
 
+export interface MenuScreenBarApi {
+  readonly itemCount: number;
+  readonly total: string;
+  readonly openCart: () => void;
+}
+
 export interface MenuScreenProps {
   readonly menu: MenuDto;
   readonly stoppedItemIds: readonly string[];
+  readonly stoppedIngredientIds: readonly string[];
   readonly initialItemId?: string | null;
   readonly onItemOpen?: (id: string) => void;
   readonly onItemClose?: () => void;
@@ -31,13 +38,27 @@ export interface MenuScreenProps {
   readonly headerActions?: ReactNode;
   readonly footerActions?: ReactNode;
   readonly footerLinks?: readonly GuestFooterLink[];
+  /** `credit` leaves only the platform line — for a surface that shows its contacts elsewhere. */
+  readonly footerVariant?: 'full' | 'credit';
   readonly banner?: ReactNode;
+  /**
+   * Replaces the cart bar — a surface with its own bottom navigation supplies it instead. Given a
+   * function, it receives the cart handles the default bar uses.
+   */
+  readonly bar?: ReactNode | ((api: MenuScreenBarApi) => ReactNode);
+  /** The rail's cart button — off where the surface already carries a cart in its own nav. */
+  readonly showCartButton?: boolean;
+  /** How an item opens: centred for a desktop page, from the bottom edge on a phone. */
+  readonly itemPresentation?: 'dialog' | 'sheet';
+  /** How the cart arrives: from the side on a page, from the bottom edge on a phone. */
+  readonly cartPresentation?: 'drawer' | 'sheet';
   readonly cartPrimaryAction?: ReactNode;
 }
 
 export const MenuScreen = ({
   menu,
   stoppedItemIds,
+  stoppedIngredientIds,
   initialItemId = null,
   onItemOpen,
   onItemClose,
@@ -45,10 +66,15 @@ export const MenuScreen = ({
   headerActions,
   footerActions,
   footerLinks,
+  footerVariant = 'full',
   banner,
+  bar,
+  showCartButton = true,
+  itemPresentation = 'dialog',
+  cartPresentation = 'drawer',
   cartPrimaryAction,
 }: MenuScreenProps) => {
-  const { locale, t } = useGuestUi();
+  const { locale, t, defaultContentLocale } = useGuestUi();
   const [selectedItemId, setSelectedItemId] = useState<string | null>(initialItemId);
   const [cartOpen, setCartOpen] = useState(false);
   const [cartMounted, setCartMounted] = useState(false);
@@ -62,7 +88,6 @@ export const MenuScreen = ({
   const subtotal = useCartStore(selectSubtotal);
 
   const stopped = useMemo(() => new Set(stoppedItemIds), [stoppedItemIds]);
-
   const sections = useMemo(() => {
     const byCategory = new Map<string, MenuItemDto[]>();
     for (const item of menu.items) {
@@ -93,6 +118,7 @@ export const MenuScreen = ({
 
   const tenantName = menu.tenant?.displayName ?? t('menu.title');
   const logoUrl = menu.tenant?.theme?.logoUrl ?? null;
+  const tenantDescription = localized(menu.tenant?.description, locale, defaultContentLocale);
   const total = formatPrice(subtotal, menu.currency, locale);
 
   const openCart = (): void => {
@@ -110,27 +136,53 @@ export const MenuScreen = ({
     onItemClose?.();
   };
 
+  const quickAdd = (item: MenuDto['items'][number]): void => {
+    const line = {
+      itemId: item.id,
+      sizeId: null,
+      name: localized(item.name, locale, defaultContentLocale),
+      unitPrice: item.basePrice,
+      currency: item.currency,
+      imageUrl: item.imageUrl,
+      modifiers: [],
+    };
+    addItem(line);
+    onAddedToCart?.(line);
+  };
+
   let imageIndex = 0;
 
   return (
     <GuestShell
-      header={<GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={headerActions} />}
+      header={
+        <GuestHeader tenantName={tenantName} logoUrl={logoUrl} actions={<>{headerActions}</>} />
+      }
       rail={
         <CategoryRail
           categories={sections.map((section) => section.category)}
-          action={<CartButton itemCount={itemCount} onOpen={openCart} />}
+          action={
+            showCartButton ? <CartButton itemCount={itemCount} onOpen={openCart} /> : undefined
+          }
         />
       }
-      banner={banner}
+      banner={<>{banner}</>}
       footer={
         <GuestFooter
           tenantName={tenantName}
           logoUrl={logoUrl}
+          description={tenantDescription}
+          socials={menu.tenant?.socials ?? {}}
+          contacts={menu.tenant?.contacts ?? {}}
           links={footerLinks ?? []}
           actions={footerActions}
+          variant={footerVariant}
         />
       }
-      bar={<CartBar itemCount={itemCount} total={total} onOpen={openCart} />}
+      bar={
+        typeof bar === 'function'
+          ? bar({ itemCount, total, openCart })
+          : (bar ?? <CartBar itemCount={itemCount} total={total} onOpen={openCart} />)
+      }
     >
       {sections.length === 0 ? (
         <div className="mx-auto flex max-w-md flex-col items-center gap-2 px-4 py-24 text-center">
@@ -150,9 +202,9 @@ export const MenuScreen = ({
                 id={`menu-heading-${category.id}`}
                 className="mb-4 text-xl font-extrabold sm:mb-5 sm:text-3xl"
               >
-                {localized(category.name, locale)}
+                {localized(category.name, locale, defaultContentLocale)}
               </h2>
-              <div className="grid grid-cols-1 gap-x-5 gap-y-5 sm:grid-cols-2 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-x-2 gap-y-5 xs:gap-x-3 xs:gap-y-6 sm:gap-x-5 sm:gap-y-8 lg:grid-cols-3 xl:grid-cols-4">
                 {items.map((item) => {
                   const priority = imageIndex < PRIORITY_IMAGE_COUNT;
                   imageIndex += 1;
@@ -161,6 +213,7 @@ export const MenuScreen = ({
                       key={item.id}
                       item={item}
                       onSelect={openItem}
+                      onQuickAdd={quickAdd}
                       unavailable={stopped.has(item.id)}
                       priority={priority}
                     />
@@ -177,7 +230,10 @@ export const MenuScreen = ({
           <ItemDialog
             item={dialogItem}
             modifierGroups={dialogGroups}
+            modifierOptions={menu.modifierOptions}
+            stoppedIngredientIds={stoppedIngredientIds}
             currency={menu.currency}
+            presentation={itemPresentation}
             open={selectedItem != null}
             onOpenChange={(open) => {
               if (!open) closeItem();
@@ -196,6 +252,7 @@ export const MenuScreen = ({
             open={cartOpen}
             onOpenChange={setCartOpen}
             currency={menu.currency}
+            presentation={cartPresentation}
             primaryAction={cartPrimaryAction}
           />
         </Suspense>

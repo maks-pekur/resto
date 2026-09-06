@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { NotFoundException } from '@nestjs/common';
 import { OrdersController } from './orders.controller';
+import type { TableSessionService } from '../../../tenancy/application/table-session.service';
 import type { GetOrderService } from '../../application/get-order.service';
 import type { CreateOrderService } from '../../application/create-order.service';
+import type { SubmitOrderFeedbackService } from '../../application/submit-order-feedback.service';
+import type { OrderFeedbackRepository } from '../../domain/ports';
 import { OrderNotFoundError } from '../../domain/errors';
 import type { OrderSnapshot } from '../../domain/order.aggregate';
 import { Currency, OrderId, TenantId } from '@resto/domain';
@@ -14,8 +17,8 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   locationId: randomUUID(),
   idempotencyKey: randomUUID(),
   orderNumber: '20260627-ABCDE',
-  status: 'created',
-  fulfillmentMode: 'dine_in',
+  status: 'placed',
+  orderType: 'dine_in',
   tableIdentifier: 'A1',
   tableId: null,
   tableZoneName: null,
@@ -33,6 +36,9 @@ const makeOrderSnap = (overrides: Partial<OrderSnapshot> = {}): OrderSnapshot =>
   scheduledFor: null,
   shortNumber: 1,
   channel: 'site',
+  paymentType: 'online',
+  paymentStatus: 'pending',
+  paidAt: null,
   acceptedAt: null,
   preparingAt: null,
   readyAt: null,
@@ -60,53 +66,81 @@ const buildController = () => {
     execute: vi.fn(),
   } as unknown as GetOrderService;
 
-  const controller = new OrdersController(createOrderService, getOrderService);
+  const tableSessions = {
+    resolve: vi.fn().mockResolvedValue(null),
+  } as unknown as TableSessionService;
 
-  return { controller, getOrderService, createOrderService };
+  const submitFeedback = {
+    execute: vi.fn(),
+  } as unknown as SubmitOrderFeedbackService;
+
+  const feedback = {
+    findByOrderId: vi.fn().mockResolvedValue(null),
+    submit: vi.fn(),
+  } as unknown as OrderFeedbackRepository;
+
+  const controller = new OrdersController(
+    createOrderService,
+    getOrderService,
+    tableSessions,
+    submitFeedback,
+    feedback,
+  );
+
+  return { controller, getOrderService, createOrderService, submitFeedback, feedback };
 };
 
 const FROZEN_STATUS_RESPONSE_KEYS = [
   'status',
+  'paymentStatus',
   'shortNumber',
   'orderNumber',
   'total',
   'currency',
   'etaAt',
-  'fulfillmentMode',
+  'orderType',
   'cancelReason',
   'canceledFromStatus',
+  'reviewed',
 ].sort();
 
 describe('OrdersController GET /:id/status', () => {
-  it('returns exactly the frozen nine-field contract for a found order', async () => {
+  it('returns exactly the frozen contract for a found order', async () => {
     const { controller, getOrderService } = buildController();
-    const snap = makeOrderSnap({ status: 'requires_action' });
+    const snap = makeOrderSnap({ status: 'placed' });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
     expect(Object.keys(result).sort()).toEqual(FROZEN_STATUS_RESPONSE_KEYS);
     expect(result).toEqual({
-      status: 'requires_action',
+      status: 'placed',
+      paymentStatus: 'pending',
       shortNumber: 1,
       orderNumber: '20260627-ABCDE',
       total: '25.00',
       currency: 'EUR',
       etaAt: null,
-      fulfillmentMode: 'dine_in',
+      orderType: 'dine_in',
       cancelReason: null,
       canceledFromStatus: null,
+      reviewed: false,
     });
   });
 
-  it('returns paid status when order is paid', async () => {
+  it('reports the money separately from the kitchen stage', async () => {
     const { controller, getOrderService } = buildController();
-    const snap = makeOrderSnap({ status: 'paid' });
+    const snap = makeOrderSnap({
+      status: 'accepted',
+      paymentStatus: 'pending',
+      paidAt: null,
+    });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
-    expect(result.status).toBe('paid');
+    expect(result.status).toBe('accepted');
+    expect(result.paymentStatus).toBe('pending');
   });
 
   it('does NOT mutate order state (read-only)', async () => {
@@ -156,14 +190,14 @@ describe('OrdersController GET /:id/status', () => {
     const snap = makeOrderSnap({
       status: 'canceled',
       cancelReason: 'kitchen_out_of_stock',
-      canceledFromStatus: 'paid',
+      canceledFromStatus: 'placed',
     });
     vi.mocked(getOrderService.execute).mockResolvedValue(snap);
 
     const result = await controller.getStatus(snap.id);
 
     expect(result.cancelReason).toBe('kitchen_out_of_stock');
-    expect(result.canceledFromStatus).toBe('paid');
+    expect(result.canceledFromStatus).toBe('placed');
   });
 
   it('never leaks guest PII or internal operator identities', async () => {

@@ -15,7 +15,7 @@ export interface CategoryRailProps {
 }
 
 export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
-  const { locale, t } = useGuestUi();
+  const { locale, t, defaultContentLocale } = useGuestUi();
   const [activeId, setActiveId] = useState<string>(categories[0]?.id ?? '');
   const railRef = useRef<HTMLDivElement>(null);
 
@@ -84,13 +84,11 @@ export const CategoryRail = ({ categories, action }: CategoryRailProps) => {
                   goToCategory(category.id);
                 }}
                 className={cn(
-                  'focus-visible:ring-ring h-11 shrink-0 cursor-pointer rounded-full px-4 text-sm font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none sm:h-9',
-                  isActive
-                    ? 'bg-primary text-primary-foreground'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                  'focus-visible:ring-ring h-9 shrink-0 cursor-pointer rounded-full px-2.5 text-base font-bold whitespace-nowrap transition-colors focus-visible:ring-2 focus-visible:outline-none',
+                  isActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground',
                 )}
               >
-                {localized(category.name, locale)}
+                {localized(category.name, locale, defaultContentLocale)}
               </button>
             );
           })}

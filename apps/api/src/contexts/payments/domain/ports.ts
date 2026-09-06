@@ -195,3 +195,35 @@ export interface PaymentRepository {
 }
 
 export const PAYMENT_REPOSITORY = Symbol('PAYMENT_REPOSITORY');
+
+export interface TransactionRow {
+  readonly paymentId: string;
+  readonly orderId: string;
+  readonly orderShortNumber: number;
+  readonly locationId: string;
+  readonly status: string;
+  readonly amount: string;
+  readonly refundedAmount: string;
+  readonly currency: string;
+  readonly hasFailedRefund: boolean;
+  readonly createdAt: Date;
+}
+
+export type TransactionStatusFilter = 'all' | 'paid' | 'refunded' | 'refund_failed';
+
+export interface TransactionQuery {
+  readonly tenantId: TenantId;
+  readonly status: TransactionStatusFilter;
+  readonly createdFrom?: Date;
+  readonly createdTo?: Date;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+export interface TransactionReader {
+  list(query: TransactionQuery): Promise<{ rows: readonly TransactionRow[]; total: number }>;
+  /** Tenant-wide and date-less on purpose: the sidebar badge must not depend on what is on screen. */
+  countFailedRefunds(tenantId: TenantId): Promise<number>;
+}
+
+export const TRANSACTION_READER = Symbol('TRANSACTION_READER');

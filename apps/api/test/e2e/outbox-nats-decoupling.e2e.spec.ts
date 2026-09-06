@@ -55,11 +55,14 @@ const pricing: MenuPricingPort = {
           basePrice: '10.00',
           sizes: [],
           modifierGroupIds: [],
+          extraOptionIds: [],
+          removableOptionIds: [],
         },
       ],
       modifierGroups: [],
       modifierOptions: [],
       stoppedItemIds: [],
+      stoppedIngredientIds: [],
     }),
 };
 
@@ -69,11 +72,12 @@ const tableLookup: OrderTableLookupPort = {
 
 const makeOrderInput = (): CreateOrderInput => ({
   items: [{ itemId, sizeId: null, name: 'Test Item', modifiers: [], quantity: 1 }],
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   customerName: 'Alice',
   customerPhone: '+1234567890',
   idempotencyKey: randomUUID(),
   channel: 'site',
+  paymentType: 'online',
   marketingConsent: false,
 });
 
@@ -127,7 +131,7 @@ suite('D-06 — Outbox decouples order acceptance from NATS availability', () =>
     const response = await inContext(() => service.execute(input));
 
     expect(response.orderId).toBeTruthy();
-    expect(response.status).toBe('created');
+    expect(response.status).toBe('placed');
     expect(response.total).toBeTruthy();
 
     // Assert the outbox row exists and is NOT yet delivered.

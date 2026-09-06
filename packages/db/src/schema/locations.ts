@@ -43,6 +43,9 @@ export const locations = pgTable(
     // Defaults from tenants.timezone at creation, overridable — a chain can cross zones.
     timezone: text('timezone'),
     contacts: jsonb('contacts').$type<Record<string, unknown> | null>(),
+    openingHours: jsonb('opening_hours').$type<Record<string, unknown> | null>(),
+    wifiSsid: text('wifi_ssid'),
+    wifiPassword: text('wifi_password'),
     status: text('status').notNull().default('active'),
     ...timestampsColumns(),
   },

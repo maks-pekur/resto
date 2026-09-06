@@ -1,17 +1,17 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '@/components/empty-state';
+import {
+  DataTable,
+  DataTableBody,
+  DataTableCell,
+  DataTableHeadCell,
+  DataTableHeaderRow,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { EmptyState } from '@/components/common/empty-state';
 import { ImageIcon } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Switch } from '@/components/ui/switch';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { fromLocalizedText } from '@/lib/menu/localized';
 import { formatAge, formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
@@ -25,11 +25,11 @@ export interface StopListTableProps {
 
 const STALE_THRESHOLD_MS = 24 * 3_600_000;
 
-const buildCategoryPath = (item: StopListItemApi): string => {
-  const child = fromLocalizedText(item.categoryName);
-  const parent = item.parentCategoryName ? fromLocalizedText(item.parentCategoryName) : '';
-  return parent.length > 0 ? `${parent} → ${child}` : child;
-};
+// The stop-list contract carries only the item's own category, not its parent — unlike
+// the item list, which carries both. Rendering a parent segment here read a field the
+// response never had.
+const buildCategoryPath = (item: StopListItemApi): string =>
+  item.categoryName ? fromLocalizedText(item.categoryName) : '';
 
 export function StopListTable({ items, locationId }: StopListTableProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.stopList' });
@@ -62,29 +62,29 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
   }
 
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-[48px]">{t('tablePhotoHeader')}</TableHead>
-          <TableHead>{t('tableNameHeader')}</TableHead>
-          <TableHead>{t('tableCategoryHeader')}</TableHead>
-          <TableHead className="w-[160px]">{t('tableStoppedAtHeader')}</TableHead>
-          <TableHead className="w-[80px] text-right">{t('tableStopHeader')}</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
+    <DataTable>
+      <DataTableHeaderRow>
+        <DataTableHeadCell className="w-[48px]">{t('tablePhotoHeader')}</DataTableHeadCell>
+        <DataTableHeadCell>{t('tableNameHeader')}</DataTableHeadCell>
+        <DataTableHeadCell>{t('tableCategoryHeader')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-[160px]">{t('tableStoppedAtHeader')}</DataTableHeadCell>
+        <DataTableHeadCell className="w-[80px] text-right">
+          {t('tableStopHeader')}
+        </DataTableHeadCell>
+      </DataTableHeaderRow>
+      <DataTableBody>
         {visibleItems.map((item) => {
-          const name = fromLocalizedText(item.name);
+          const name = item.itemName ? fromLocalizedText(item.itemName) : '';
           const categoryPath = buildCategoryPath(item);
           const stoppedAtMs = new Date(item.stoppedAt).getTime();
           const msSince = now - stoppedAtMs;
           const isStale = msSince > STALE_THRESHOLD_MS;
-          const isPending = toggleMutation.isPending && toggleMutation.variables === item.id;
+          const isPending = toggleMutation.isPending && toggleMutation.variables === item.itemId;
           return (
-            <TableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
-              <TableCell>
-                {item.photoUrl ? (
-                  <img src={item.photoUrl} alt="" className="size-10 rounded object-cover" />
+            <DataTableRow key={item.id} className="h-12" data-testid={`stop-row-${item.id}`}>
+              <DataTableCell>
+                {item.photo ? (
+                  <img src={item.photo.url} alt="" className="size-10 rounded object-cover" />
                 ) : (
                   <div
                     className="flex size-10 items-center justify-center rounded bg-muted"
@@ -93,32 +93,32 @@ export function StopListTable({ items, locationId }: StopListTableProps): React.
                     <ImageIcon className="size-4 text-muted-foreground" />
                   </div>
                 )}
-              </TableCell>
-              <TableCell className="font-medium">{name}</TableCell>
-              <TableCell className="text-muted-foreground">{categoryPath}</TableCell>
-              <TableCell>
+              </DataTableCell>
+              <DataTableCell className="font-medium">{name}</DataTableCell>
+              <DataTableCell className="text-muted-foreground">{categoryPath}</DataTableCell>
+              <DataTableCell>
                 <span className="text-sm">{formatAge(stoppedAtMs, now)}</span>
                 {isStale ? (
                   <p className="mt-1 text-xs text-amber-700 dark:text-amber-400">
                     {t('staleWarning', { duration: formatDuration(msSince) })}
                   </p>
                 ) : null}
-              </TableCell>
-              <TableCell className="text-right">
+              </DataTableCell>
+              <DataTableCell className="text-right">
                 <Switch
                   className="relative after:absolute after:left-1/2 after:top-1/2 after:size-11 after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']"
                   checked
                   disabled={isPending}
                   onCheckedChange={() => {
-                    toggleMutation.mutate(item.id);
+                    toggleMutation.mutate(item.itemId);
                   }}
                   aria-label={t('resumeAriaLabel', { name })}
                 />
-              </TableCell>
-            </TableRow>
+              </DataTableCell>
+            </DataTableRow>
           );
         })}
-      </TableBody>
-    </Table>
+      </DataTableBody>
+    </DataTable>
   );
 }

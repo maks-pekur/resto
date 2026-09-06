@@ -3,7 +3,12 @@ import { getLocationId, requireTenantContext } from '@resto/db';
 import { OrderId, TenantId } from '@resto/domain';
 import { LOCATION_REPOSITORY, type LocationRepository } from '../../tenancy/domain/ports';
 import { PAYMENT_REPOSITORY, type PaymentRepository } from '../../payments/domain/ports';
-import { ORDER_REPOSITORY, type OrderRepository } from '../domain/ports';
+import {
+  ORDER_FEEDBACK_REPOSITORY,
+  ORDER_REPOSITORY,
+  type OrderFeedbackRepository,
+  type OrderRepository,
+} from '../domain/ports';
 import { OrderNotFoundError } from '../domain/errors';
 import type { OrderSnapshot } from '../domain/order.aggregate';
 
@@ -16,6 +21,7 @@ export interface OrderDetailResult {
   readonly hasFailedRefund: boolean;
   readonly failedRefundAmount: string | null;
   readonly failedRefundReason: string | null;
+  readonly review: { readonly rating: number; readonly comment: string | null } | null;
 }
 
 @Injectable()
@@ -24,6 +30,7 @@ export class GetOrderDetailService {
     @Inject(ORDER_REPOSITORY) private readonly orderRepo: OrderRepository,
     @Inject(LOCATION_REPOSITORY) private readonly locations: LocationRepository,
     @Inject(PAYMENT_REPOSITORY) private readonly payments: PaymentRepository,
+    @Inject(ORDER_FEEDBACK_REPOSITORY) private readonly feedback: OrderFeedbackRepository,
   ) {}
 
   async execute(input: GetOrderDetailInput): Promise<OrderDetailResult> {
@@ -57,6 +64,14 @@ export class GetOrderDetailService {
       hasFailedRefund: failedRefunds.length > 0,
       failedRefundAmount: failedRefund?.amount ?? null,
       failedRefundReason: failedRefund?.failureReason ?? null,
+      review: await this.reviewOf(snap.id),
     };
+  }
+
+  private async reviewOf(
+    orderId: string,
+  ): Promise<{ rating: number; comment: string | null } | null> {
+    const left = await this.feedback.findByOrderId(orderId);
+    return left === null ? null : { rating: left.rating, comment: left.comment };
   }
 }

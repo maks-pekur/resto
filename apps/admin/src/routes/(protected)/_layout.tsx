@@ -5,8 +5,8 @@ import { Route as rootRoute } from '../__root';
 import { authClient } from '@/lib/auth-client';
 import { safeNext } from '@/lib/auth/safe-next';
 import { meQuery, meTenantsQuery, toOperatorSummary } from '@/lib/queries/identity';
-import { AppSidebar } from '@/components/app-sidebar';
-import { SiteHeader } from '@/components/site-header';
+import { AppSidebar } from '@/components/layout/app-sidebar';
+import { SiteHeader } from '@/components/layout/site-header';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 
 const sidebarStyle: CSSProperties = {
@@ -63,7 +63,7 @@ function ProtectedLayout() {
 
   return (
     <SidebarProvider style={sidebarStyle}>
-      <AppSidebar operator={operator} />
+      <AppSidebar />
       <SidebarInset>
         <SiteHeader operator={operator} />
         <div className="@container/main flex flex-1 flex-col gap-4 py-4 md:gap-6 md:py-6">

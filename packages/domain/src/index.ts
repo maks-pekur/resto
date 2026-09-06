@@ -19,12 +19,15 @@ export {
 
 export { Currency, CurrencyValue, Money, MoneyAmount, MoneyAmountValue, PriceDelta } from './money';
 export { LocalizedText } from './localized-text';
+export { LegalDocuments, LEGAL_DOCUMENTS, type LegalDocumentKey } from './legal-documents';
+export { ALLERGENS, AllergenSchema, DIETS, DietSchema, type Allergen, type Diet } from './dietary';
 export { Slug } from './slug';
 export { slugifyName } from './slugify';
 export { LOCATION_RESERVED_SLUGS, LOCATION_RESERVED_SLUG_SET, LocationSlug } from './location-slug';
 export { ADMIN_ROOT_ROUTE_SEGMENTS, RESERVED_SLUGS, RESERVED_SLUG_SET } from './reserved-slugs';
 export { TENANT_RESERVED_SLUGS, TenantSlug, TenantSlugValue } from './tenant-slug';
-export { TenantTheme } from './tenant-theme';
+export { TenantTheme, COVER_MAX, resolveThemeMedia } from './tenant-theme';
+export { OpeningHours, OpeningInterval, WEEKDAYS, WifiAccess, type Weekday } from './venue-info';
 export {
   COUNTRY_REGISTRY,
   CountryCodeValue,
@@ -48,3 +51,6 @@ export {
 } from './schema';
 
 export * from './rbac';
+
+export * from './content-locales';
+export * from './brand';

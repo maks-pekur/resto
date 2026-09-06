@@ -15,7 +15,9 @@ export class GetPhotoUploadUrlService {
     const ctx = requireTenantContext();
     const ext = contentTypeToExtension(input.contentType);
     // Server-side tenant key prefix prevents cross-tenant overwrite via a leaked token (T-04b-03-02).
-    const s3Key = `tenant/${ctx.tenantId}/menu-items/${randomUUID()}.${ext}`;
+    // T-10.6-07-01: prefix is chosen from the validated `kind` enum, never a client-supplied string.
+    const prefix = input.kind === 'ingredient' ? 'ingredients' : 'menu-items';
+    const s3Key = `tenant/${ctx.tenantId}/${prefix}/${randomUUID()}.${ext}`;
     const uploadUrl = await this.images.presignPut(
       s3Key,
       input.contentType,

@@ -1,7 +1,24 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CountryCodeValue, CurrencyValue, TenantSlugValue, TenantTheme } from '@resto/domain';
+import {
+  BrandContactsSchema,
+  CountryCodeValue,
+  CurrencyValue,
+  LegalDocuments,
+  LocalizedText,
+  SocialLinksSchema,
+  TenantSlugValue,
+  COVER_MAX,
+  TenantTheme,
+  resolveThemeMedia,
+} from '@resto/domain';
 import type { TenantSnapshot } from '../../domain/tenant.aggregate';
+
+// Same theme, but the two media fields are already resolved to absolute URLs on the way out.
+const TenantThemeResponseSchema = TenantTheme.extend({
+  logoUrl: z.string().url().nullable().default(null),
+  coverUrls: z.array(z.string().url()).max(COVER_MAX).default([]),
+});
 
 const TenantResponseSchema = z.object({
   id: z.string().uuid(),
@@ -9,9 +26,15 @@ const TenantResponseSchema = z.object({
   displayName: z.string(),
   status: z.string(),
   locale: z.string(),
+  contentLocales: z.array(z.string()),
   country: CountryCodeValue,
   defaultCurrency: CurrencyValue,
-  theme: TenantTheme.nullable(),
+  // The wire always carries a resolved absolute URL, even though the row holds a media key.
+  theme: TenantThemeResponseSchema.nullable(),
+  description: LocalizedText.nullable(),
+  socials: SocialLinksSchema,
+  legalDocuments: LegalDocuments.nullable(),
+  contacts: BrandContactsSchema,
   legalName: z.string().nullable(),
   legalForm: z.enum(['IP', 'OOO', 'LLC', 'SOLE_PROP', 'OTHER']).nullable(),
   taxId: z.string().nullable(),
@@ -33,15 +56,30 @@ const TenantResponseSchema = z.object({
 export class TenantResponseDto extends createZodDto(TenantResponseSchema) {}
 export type TenantResponse = z.infer<typeof TenantResponseSchema>;
 
-export const toResponse = (s: TenantSnapshot): TenantResponse => ({
+// The row holds a media key so branding survives a host change; every reader turns it back
+// into an absolute URL with the host configured today.
+export const toResponse = (s: TenantSnapshot, mediaBaseUrl: string): TenantResponse => ({
   id: s.id,
   slug: s.slug,
   displayName: s.displayName,
   status: s.status,
   locale: s.locale,
+  contentLocales: [...s.contentLocales],
   country: s.country,
   defaultCurrency: s.defaultCurrency,
-  theme: s.theme,
+  theme:
+    s.theme === null
+      ? null
+      : {
+          ...s.theme,
+          logoUrl:
+            s.theme.logoUrl === null ? null : resolveThemeMedia(s.theme.logoUrl, mediaBaseUrl),
+          coverUrls: s.theme.coverUrls.map((c) => resolveThemeMedia(c, mediaBaseUrl)),
+        },
+  description: s.description,
+  socials: s.socials,
+  legalDocuments: s.legalDocuments,
+  contacts: s.contacts,
   legalName: s.legalName,
   legalForm: s.legalForm,
   taxId: s.taxId,

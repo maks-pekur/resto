@@ -159,9 +159,13 @@ export const registerSecurity = async (app: NestFastifyApplication, env: Env): P
   await fastify.register(helmet, {
     // Disable CSP — the api is not an HTML origin and Swagger UI under
     // /docs needs a permissive policy that's not worth maintaining
-    // until we deploy a public docs surface. HSTS, X-CTO, X-Frame-Options
+    // until we deploy a public docs surface. X-CTO, X-Frame-Options
     // and friends remain enabled.
     contentSecurityPolicy: false,
+    // HSTS off locally: the qr-menu dev server is https and proxies /v1 here,
+    // so the browser honours this header and pins `localhost` + every subdomain
+    // to https for a year — which then breaks the http-only admin dev server.
+    hsts: env.NODE_ENV === 'development' ? false : undefined,
   });
 
   const matchOrigin = buildOriginMatcher(env.CORS_ALLOWED_ORIGINS);

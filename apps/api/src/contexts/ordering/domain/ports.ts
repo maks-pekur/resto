@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { RestoTx } from '@resto/db';
 import type { OrderId, TenantId } from '@resto/domain';
-import type { Order, OrderStatus } from './order.aggregate';
+import type { Order, OrderPaymentStatus, OrderStatus } from './order.aggregate';
 
 export interface OrderRepository {
   save(order: Order): Promise<void>;
@@ -26,11 +26,13 @@ export interface PricedMenuItem {
   readonly basePrice: string;
   readonly sizes: readonly PricedMenuItemSize[];
   readonly modifierGroupIds: readonly string[];
+  readonly extraOptionIds: readonly string[];
+  readonly removableOptionIds: readonly string[];
 }
 
 export interface PricedModifierOption {
   readonly optionId: string;
-  readonly groupId: string;
+  readonly groupIds: readonly string[];
   readonly priceDelta: string;
   readonly freeAmount: number;
   readonly minAmount: number | null;
@@ -39,9 +41,9 @@ export interface PricedModifierOption {
 
 export interface PricedModifierGroup {
   readonly groupId: string;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
 }
 
 export interface OrderingMenuSnapshot {
@@ -50,6 +52,7 @@ export interface OrderingMenuSnapshot {
   readonly modifierGroups: readonly PricedModifierGroup[];
   readonly modifierOptions: readonly PricedModifierOption[];
   readonly stoppedItemIds: readonly string[];
+  readonly stoppedIngredientIds: readonly string[];
 }
 
 // Server-authoritative pricing for the order path: the create-order service must
@@ -89,16 +92,20 @@ export interface OrderSequencePort {
 export const ORDER_SEQUENCE_PORT = Symbol('ORDER_SEQUENCE_PORT');
 
 export const OrderStatusSchema: z.ZodType<OrderStatus> = z.enum([
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
+]);
+
+export const OrderPaymentStatusSchema: z.ZodType<OrderPaymentStatus> = z.enum([
+  'pending',
+  'requires_action',
+  'paid',
   'failed',
+  'refunded',
 ]);
 
 export const OrderFeedQuerySchema = z.object({
@@ -106,6 +113,7 @@ export const OrderFeedQuerySchema = z.object({
   locationIds: z.array(z.string().uuid()),
   statuses: z.array(OrderStatusSchema),
   channel: z.enum(['site', 'qr-menu']).optional(),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
   createdFrom: z.date(),
   createdTo: z.date(),
   since: z
@@ -114,19 +122,49 @@ export const OrderFeedQuerySchema = z.object({
       id: z.string().uuid(),
     })
     .optional(),
+  /** `paid` alone is not the whole answer: an accepted order keeps that status until it is started. */
+  unacceptedOnly: z.boolean().optional(),
+  /** Open work is queued by daily order number, the way an operator reads a floor. */
+  sort: z.enum(['oldest_first', 'newest_first']).optional(),
+  /** The zone the day is cut on, so a number from Monday never sorts inside Tuesday. */
+  timezone: z.string().optional(),
   limit: z.number().int().positive(),
   offset: z.number().int().nonnegative(),
 });
 export type OrderFeedQuery = z.infer<typeof OrderFeedQuerySchema>;
 
+export const OrderFeedCountsQuerySchema = z.object({
+  tenantId: z.string().uuid(),
+  locationIds: z.array(z.string().uuid()),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']).optional(),
+  createdFrom: z.date(),
+  createdTo: z.date(),
+});
+export type OrderFeedCountsQuery = z.infer<typeof OrderFeedCountsQuerySchema>;
+
+export interface OrderFeedCounts {
+  readonly unaccepted: number;
+  readonly accepted: number;
+  readonly preparing: number;
+  readonly ready: number;
+  readonly completed: number;
+  readonly canceled: number;
+}
+
 export const OrderFeedRowSchema = z.object({
   id: z.string().uuid(),
   shortNumber: z.number().int(),
   status: OrderStatusSchema,
+  paymentStatus: OrderPaymentStatusSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']),
   tableIdentifier: z.string().nullable(),
+  tableZoneName: z.string().nullable(),
+  tableNumber: z.string().nullable(),
+  customerName: z.string().nullable(),
+  customerPhone: z.string().nullable(),
+  paymentType: z.enum(['online', 'cash', 'card_on_delivery']),
   total: z.string(),
   currency: z.string(),
   itemCount: z.number().int(),
@@ -146,6 +184,27 @@ export type OrderFeedRow = z.infer<typeof OrderFeedRowSchema>;
 
 export interface OrderFeedRepository {
   list(input: OrderFeedQuery): Promise<{ rows: OrderFeedRow[]; total: number }>;
+  counts(input: OrderFeedCountsQuery): Promise<OrderFeedCounts>;
 }
 
 export const ORDER_FEED_REPOSITORY = Symbol('ORDER_FEED_REPOSITORY');
+
+export interface OrderFeedback {
+  readonly orderId: string;
+  readonly rating: number;
+  readonly comment: string | null;
+  readonly createdAt: Date;
+}
+
+export interface OrderFeedbackRepository {
+  findByOrderId(orderId: string): Promise<OrderFeedback | null>;
+  submit(input: {
+    readonly tenantId: string;
+    readonly orderId: string;
+    readonly locationId: string;
+    readonly rating: number;
+    readonly comment: string | null;
+  }): Promise<OrderFeedback>;
+}
+
+export const ORDER_FEEDBACK_REPOSITORY = Symbol('ORDER_FEEDBACK_REPOSITORY');

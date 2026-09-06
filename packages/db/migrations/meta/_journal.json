@@ -29,6 +29,125 @@
       "when": 1787846400000,
       "tag": "0003_table_zones_and_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1787932800000,
+      "tag": "0004_orders_order_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1787936400000,
+      "tag": "0005_orders_payment_type",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1787940000000,
+      "tag": "0006_delete_empty_location",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788022800000,
+      "tag": "0007_tenant_content_locales",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788109200000,
+      "tag": "0008_tenant_brand",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788195600000,
+      "tag": "0009_drop_nutrition_estimated",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788282000000,
+      "tag": "0010_order_payment_status",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788368400000,
+      "tag": "0011_table_qr_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788454800000,
+      "tag": "0012_tenant_venue_info",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788541200000,
+      "tag": "0013_location_hours_wifi",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788627600000,
+      "tag": "0014_tenant_legal_documents",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788714000000,
+      "tag": "0015_order_feedback",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788800400000,
+      "tag": "0016_tenant_cover_gallery",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788886800000,
+      "tag": "0017_service_requests",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788973200000,
+      "tag": "0018_menu_item_diets",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1789059600000,
+      "tag": "0019_ingredient_library",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1789146000000,
+      "tag": "0020_group_limit_and_default",
+      "breakpoints": true
     }
   ]
 }

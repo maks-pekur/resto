@@ -23,20 +23,23 @@ export class GetItemService {
       photos: row.photos.map((p) => ({
         s3Key: p.s3Key,
         sortOrder: p.sortOrder,
+        url: p.url,
         ...(p.alt !== undefined ? { alt: p.alt } : {}),
         ...(p.width !== undefined ? { width: p.width } : {}),
         ...(p.height !== undefined ? { height: p.height } : {}),
         ...(p.isPrimary !== undefined ? { isPrimary: p.isPrimary } : {}),
       })),
       allergens: row.allergens ? [...row.allergens] : null,
-      ingredients: row.ingredients ? [...row.ingredients] : null,
+      diets: row.diets ? [...row.diets] : null,
+      composition: row.composition ? [...row.composition] : null,
+      compositionMode: row.compositionMode,
+      compositionAssembled: [...row.compositionAssembled],
       metaTitle: row.metaTitle,
       metaDescription: row.metaDescription,
       proteins: row.proteins,
       fats: row.fats,
       carbs: row.carbs,
       kcal: row.kcal,
-      nutritionEstimated: row.nutritionEstimated,
       source: row.source,
       needsReview: row.needsReview,
       sourceExternalId: row.sourceExternalId,
@@ -50,6 +53,7 @@ export class GetItemService {
         sortOrder: s.sortOrder,
       })),
       modifierGroupIds: [...row.modifierGroupIds],
+      modifierOptionIds: [...row.modifierOptionIds],
     };
   }
 }

@@ -15,6 +15,8 @@ const okProdValues = {
   BETTER_AUTH_SECRET: 'production-better-auth-secret-32chars-min',
   INTERNAL_API_TOKEN: 'production-token-32-chars-padding-aaaaa',
   RESEND_API_KEY: 're_real_production_key_xyz',
+  RESEND_FROM: 'RestOS <noreply@resto-real.app>',
+  RESEND_REPLY_TO: 'support@resto-real.app',
   STRIPE_SECRET_KEY: 'sk_live_real_production_key_xyz',
   STRIPE_WEBHOOK_SECRET: 'whsec_real_production_key_xyz',
   STRIPE_CONNECT_RETURN_URL: 'https://admin.resto.app/stripe/return',
@@ -128,6 +130,18 @@ describe('assertProdGuardrails', () => {
     ).toThrow(/INTERNAL_API_TOKEN/);
   });
 
+  it('throws when RESEND_FROM is the dev-default sender in production', () => {
+    expect(() =>
+      assertProdGuardrails(buildEnv({ RESEND_FROM: 'RestOS <noreply@resto.app>' })),
+    ).toThrow(/RESEND_FROM/);
+  });
+
+  it('throws when RESEND_REPLY_TO is the dev-default sender in production', () => {
+    expect(() => assertProdGuardrails(buildEnv({ RESEND_REPLY_TO: 'support@resto.app' }))).toThrow(
+      /RESEND_REPLY_TO/,
+    );
+  });
+
   describe('API review 2026-06-15 BLOCK-4: critical-secret value checks', () => {
     it('throws when BETTER_AUTH_SECRET equals the in-code dev fallback', () => {
       expect(() =>
@@ -238,5 +252,36 @@ describe('assertProdGuardrails', () => {
         ),
       ).not.toThrow();
     });
+  });
+});
+
+describe('hosts that only exist while developing', () => {
+  it('refuses a tunnel the phone was pointed at, which no exact-value check would catch', () => {
+    expect(() =>
+      assertProdGuardrails(
+        buildEnv({ MEDIA_PUBLIC_BASE_URL: 'https://99sq77jd-3003.brs.devtunnels.ms/media/x' }),
+      ),
+    ).toThrow(/devtunnels\.ms/u);
+  });
+
+  it('refuses loopback and the wildcard-DNS helpers on any guarded url', () => {
+    for (const url of [
+      'http://localhost:9000/bucket',
+      'https://pizza.menu.172.20.10.5.nip.io:3003/media',
+      'https://admin.lvh.me/stripe/return',
+      'http://127.0.0.1:4000',
+    ]) {
+      expect(() => assertProdGuardrails(buildEnv({ MEDIA_PUBLIC_BASE_URL: url }))).toThrow();
+    }
+  });
+
+  it('refuses an apex domain that would be printed onto every QR sticker', () => {
+    expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'localhost' }))).toThrow(
+      /QR sticker/u,
+    );
+  });
+
+  it('lets a real production host through', () => {
+    expect(() => assertProdGuardrails(buildEnv({ PUBLIC_APEX_DOMAIN: 'resto.app' }))).not.toThrow();
   });
 });

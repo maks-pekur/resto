@@ -1,5 +1,6 @@
 import {
   Body,
+  Delete,
   Controller,
   Get,
   HttpCode,
@@ -21,12 +22,15 @@ import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
+import { OpeningHours, WifiAccess } from '@resto/domain';
 import { wrapWith } from '../../../../shared/api/wrap';
 import { LocationNeutral, Permissions, RequireActiveTenant } from '../../../../shared/auth';
 import { ProvisionLocationService } from '../../application/provision-location.service';
 import { ListLocationsService } from '../../application/list-locations.service';
 import { UpdateLocationService } from '../../application/update-location.service';
 import { ArchiveLocationService } from '../../application/archive-location.service';
+import { RestoreLocationService } from '../../application/restore-location.service';
+import { DeleteLocationService } from '../../application/delete-location.service';
 import {
   LocationAddress,
   LocationLatitude,
@@ -60,6 +64,8 @@ const UpdateLocationInputSchema = z.object({
   longitude: LocationLongitude.optional(),
   timezone: LocationTimezone.nullable().optional(),
   contacts: LocationContactsSchema.nullable().optional(),
+  openingHours: OpeningHours.nullable().optional(),
+  wifi: WifiAccess.nullable().optional(),
 });
 class UpdateLocationInputDto extends createZodDto(UpdateLocationInputSchema) {}
 
@@ -72,6 +78,8 @@ const LocationResponseSchema = z.object({
   longitude: z.number().nullable(),
   timezone: z.string().nullable(),
   contacts: LocationContactsSchema.nullable(),
+  openingHours: OpeningHours.nullable(),
+  wifi: WifiAccess.nullable(),
   status: z.enum(['active', 'archived']),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -93,6 +101,8 @@ const toResponse = (s: LocationSnapshot) => ({
   longitude: s.longitude,
   timezone: s.timezone,
   contacts: s.contacts,
+  openingHours: s.openingHours,
+  wifi: s.wifi,
   status: s.status,
   createdAt: s.createdAt.toISOString(),
   updatedAt: s.updatedAt.toISOString(),
@@ -108,6 +118,8 @@ export class LocationsController {
     private readonly provisionLocation: ProvisionLocationService,
     @Inject(ListLocationsService) private readonly listLocations: ListLocationsService,
     @Inject(ArchiveLocationService) private readonly archiveLocation: ArchiveLocationService,
+    @Inject(RestoreLocationService) private readonly restoreLocation: RestoreLocationService,
+    @Inject(DeleteLocationService) private readonly deleteLocation: DeleteLocationService,
     @Inject(UpdateLocationService) private readonly updateLocation: UpdateLocationService,
   ) {}
 
@@ -157,5 +169,26 @@ export class LocationsController {
   @ApiNotFoundResponse({ type: ProblemDetailsDto })
   archive(@Param('id', ParseUUIDPipe) id: string): Promise<ArchiveLocationResponseDto> {
     return wrap(() => this.archiveLocation.execute(id));
+  }
+
+  @Patch(':id/restore')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ location: ['update'] })
+  @RequireActiveTenant()
+  @ApiOkResponse({ type: LocationResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  restore(@Param('id', ParseUUIDPipe) id: string): Promise<LocationResponseDto> {
+    return wrap(async () => toResponse(await this.restoreLocation.execute(id)));
+  }
+
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Permissions({ location: ['delete'] })
+  @RequireActiveTenant()
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
+    return wrap(() => this.deleteLocation.execute(id));
   }
 }

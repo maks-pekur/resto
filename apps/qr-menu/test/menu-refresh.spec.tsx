@@ -7,7 +7,16 @@ const menuWithPhoto = (url: string): MenuDto => ({
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'UAH',
-  tenant: { id: 'tenant-1', slug: 'pizza', displayName: 'Pizza Palace', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'pizza',
+    displayName: 'Pizza Palace',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
   ],
@@ -20,20 +29,27 @@ const menuWithPhoto = (url: string): MenuDto => ({
       description: null,
       basePrice: '189.00',
       currency: 'UAH',
+      weight: null,
+      measureUnit: null,
       imageUrl: url,
       photos: [],
       allergens: [],
+      diets: [],
       proteins: null,
       fats: null,
       carbs: null,
       kcal: null,
-      nutritionEstimated: false,
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 });
 
 const SIGNED_FIRST = 'https://cdn.example.test/margherita.webp?sig=first';
@@ -42,9 +58,13 @@ const SIGNED_SECOND = 'https://cdn.example.test/margherita.webp?sig=second';
 const fetchMenu = vi.fn();
 
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
+  fetchTableSession: () => Promise.resolve(null),
+  openTableSession: () => Promise.reject(new Error('no session')),
   fetchMenu: (signal?: AbortSignal) => fetchMenu(signal) as Promise<MenuDto>,
-  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
+  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [], stoppedIngredientIds: [] }),
 }));
 
 const photoSrc = (): string | null =>

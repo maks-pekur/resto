@@ -1,4 +1,5 @@
 import { authClient } from './auth-client';
+import { adminPath } from './admin-path';
 
 const TIMEOUT_GET_MS = 10_000;
 const TIMEOUT_MUTATION_MS = 30_000;
@@ -77,7 +78,7 @@ export const apiFetch = async <T>(
     });
     if (res.status === 401) {
       void authClient.signOut();
-      window.location.href = '/login?expired=1';
+      window.location.href = adminPath('/login?expired=1');
       return { status: 401, ok: false, data: null };
     }
     if (!isGet || !(res.status >= 500 && res.status <= 504) || attempt >= maxAttempts) {

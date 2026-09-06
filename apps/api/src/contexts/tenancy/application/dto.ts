@@ -1,6 +1,14 @@
 import { z } from 'zod';
 import { createZodDto } from 'nestjs-zod';
-import { CountryCodeValue, TenantSlug } from '@resto/domain';
+import {
+  BrandContactsSchema,
+  CountryCodeValue,
+  LocalizedText,
+  SocialLinksSchema,
+  TenantSlug,
+  COVER_MAX,
+  LegalDocuments,
+} from '@resto/domain';
 
 export const ProvisionTenantInputSchema = z.object({
   slug: TenantSlug,
@@ -41,3 +49,33 @@ export class SuspendTenantInputDto extends createZodDto(SuspendTenantInputSchema
 export const ResumeTenantInputSchema = z.object({});
 export type ResumeTenantInput = z.infer<typeof ResumeTenantInputSchema>;
 export class ResumeTenantInputDto extends createZodDto(ResumeTenantInputSchema) {}
+
+const LOGO_MAX_BYTES = 2_097_152;
+
+export const BrandLogoUploadUrlInputSchema = z.object({
+  contentType: z.enum(['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml']),
+  sizeBytes: z.number().int().positive().max(LOGO_MAX_BYTES),
+});
+export type BrandLogoUploadUrlInput = z.infer<typeof BrandLogoUploadUrlInputSchema>;
+export class BrandLogoUploadUrlInputDto extends createZodDto(BrandLogoUploadUrlInputSchema) {}
+
+export const BrandLogoUploadUrlResponseSchema = z.object({
+  uploadUrl: z.string().url(),
+  s3Key: z.string().min(1).max(1024),
+});
+export type BrandLogoUploadUrlResponse = z.infer<typeof BrandLogoUploadUrlResponseSchema>;
+export class BrandLogoUploadUrlResponseDto extends createZodDto(BrandLogoUploadUrlResponseSchema) {}
+
+export const UpdateBrandInputSchema = z.object({
+  displayName: z.string().trim().min(1).max(120).optional(),
+  description: LocalizedText.nullable().optional(),
+  socials: SocialLinksSchema.optional(),
+  contacts: BrandContactsSchema.optional(),
+  /** The key returned by the logo upload, or null to drop the logo. */
+  logoS3Key: z.string().min(1).max(1024).nullable().optional(),
+  /** The venue's photos, in the order the guest will swipe them. Replaces the whole gallery. */
+  coverS3Keys: z.array(z.string().min(1).max(1024)).max(COVER_MAX).optional(),
+  legalDocuments: LegalDocuments.nullable().optional(),
+});
+export type UpdateBrandRequest = z.infer<typeof UpdateBrandInputSchema>;
+export class UpdateBrandInputDto extends createZodDto(UpdateBrandInputSchema) {}

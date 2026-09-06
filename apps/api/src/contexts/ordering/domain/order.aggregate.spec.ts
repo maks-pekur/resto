@@ -15,7 +15,7 @@ function makeInput(overrides: Partial<CreateOrderInput> = {}): CreateOrderInput 
     locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
-    fulfillmentMode: 'dine_in',
+    orderType: 'dine_in',
     currency: USD,
     shortNumber: 1,
     items: [
@@ -41,8 +41,8 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     locationId: '00000000-0000-0000-0000-000000000099',
     idempotencyKey: '00000000-0000-0000-0000-000000000003',
     orderNumber: 'ORD-001',
-    status: 'paid',
-    fulfillmentMode: 'dine_in',
+    status: 'placed',
+    orderType: 'dine_in',
     tableIdentifier: null,
     tableId: null,
     tableZoneName: null,
@@ -60,6 +60,9 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
     scheduledFor: null,
     shortNumber: 1,
     channel: 'site',
+    paymentType: 'online',
+    paymentStatus: 'pending',
+    paidAt: null,
     acceptedAt: null,
     preparingAt: null,
     readyAt: null,
@@ -80,9 +83,10 @@ function makeSnapshot(overrides: Partial<OrderSnapshot> = {}): OrderSnapshot {
 }
 
 describe('Order.create', () => {
-  it('creates an order with status created', () => {
+  it('creates an order with status placed', () => {
     const order = Order.create(makeInput());
-    expect(order.toSnapshot().status).toBe('created');
+    expect(order.toSnapshot().status).toBe('placed');
+    expect(order.toSnapshot().paymentStatus).toBe('pending');
   });
 
   it('emits exactly one OrderCreated event with required envelope fields', () => {
@@ -97,7 +101,7 @@ describe('Order.create', () => {
     expect(event.tenantId).toBe('00000000-0000-0000-0000-000000000001');
     expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
     expect(event.orderNumber).toBe('ORD-001');
-    expect(event.fulfillmentMode).toBe('dine_in');
+    expect(event.orderType).toBe('dine_in');
     expect(event.totalMinorUnits).toBeTypeOf('number');
     expect(event.currency).toBe('USD');
     expect(event.itemCount).toBe(1);
@@ -119,6 +123,7 @@ describe('Order.create', () => {
                 priceDelta: '0.005',
                 amount: 1,
                 modifierGroupId: null,
+                kind: 'added',
               },
             ],
             quantity: 3,
@@ -136,6 +141,7 @@ describe('Order.create', () => {
                 priceDelta: '0.005',
                 amount: 1,
                 modifierGroupId: null,
+                kind: 'added',
               },
             ],
             quantity: 2,
@@ -170,6 +176,7 @@ describe('Order.create', () => {
                 amount: 3,
                 freeAmount: 1,
                 modifierGroupId: null,
+                kind: 'added',
               },
             ],
             quantity: 2,
@@ -292,11 +299,13 @@ describe('pullEvents', () => {
 });
 
 describe('markPaid', () => {
-  it('transitions created → paid and emits OrderPaid with real total/currency', () => {
+  it('records the payment without moving the order along the kitchen, and emits OrderPaid', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_123');
-    expect(order.toSnapshot().status).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
+    expect(order.toSnapshot().paidAt).toBeInstanceOf(Date);
+    expect(order.toSnapshot().status).toBe('placed');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -311,14 +320,14 @@ describe('markPaid', () => {
     }
   });
 
-  it('throws InvalidOrderTransitionError when called from non-created states', () => {
-    const paidOrder = Order.create(makeInput());
-    paidOrder.pullEvents();
-    paidOrder.markPaid('pi_1');
-    paidOrder.pullEvents();
+  it('refuses payment for a canceled order, and takes it at any kitchen stage', () => {
+    const acceptedOrder = Order.create(makeInput());
+    acceptedOrder.pullEvents();
+    acceptedOrder.accept(null, 'user-1');
+    acceptedOrder.pullEvents();
     expect(() => {
-      paidOrder.markPaid('pi_2');
-    }).toThrow(InvalidOrderTransitionError);
+      acceptedOrder.markPaid('pi_2');
+    }).not.toThrow();
 
     const canceledOrder = Order.create(makeInput());
     canceledOrder.pullEvents();
@@ -352,7 +361,7 @@ describe('accept', () => {
     if (!event) return;
     expect(event.kind).toBe('OrderStatusChanged');
     if (event.kind === 'OrderStatusChanged') {
-      expect(event.previousStatus).toBe('paid');
+      expect(event.previousStatus).toBe('placed');
       expect(event.newStatus).toBe('accepted');
       expect(event.actorUserId).toBe('user-1');
       expect(event.locationId).toBe('00000000-0000-0000-0000-000000000099');
@@ -368,12 +377,12 @@ describe('accept', () => {
     expect(order.toSnapshot().etaAt).toBeNull();
   });
 
-  it('throws InvalidOrderTransitionError from created state', () => {
+  it('confirms an order nobody has paid for yet — the guest pays at the table', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    expect(() => {
-      order.accept(null, 'user-1');
-    }).toThrow(InvalidOrderTransitionError);
+    order.accept(null, 'user-1');
+    expect(order.toSnapshot().status).toBe('accepted');
+    expect(order.toSnapshot().paymentStatus).toBe('pending');
   });
 
   it('throws InvalidOrderTransitionError from canceled state', () => {
@@ -520,7 +529,7 @@ describe('cancel', () => {
     order.cancel('guest_requested', 'customer request', null);
     const snap = order.toSnapshot();
     expect(snap.status).toBe('canceled');
-    expect(snap.canceledFromStatus).toBe('created');
+    expect(snap.canceledFromStatus).toBe('placed');
     expect(snap.cancelReason).toBe('guest_requested');
     expect(snap.cancelNote).toBe('customer request');
     const events = order.pullEvents();
@@ -531,7 +540,7 @@ describe('cancel', () => {
     if (event.kind === 'OrderCanceled') {
       expect(event.reason).toBe('customer request');
       expect(event.reasonCode).toBe('guest_requested');
-      expect(event.canceledFromStatus).toBe('created');
+      expect(event.canceledFromStatus).toBe('placed');
     }
   });
 
@@ -543,7 +552,7 @@ describe('cancel', () => {
     order.cancel('payment_issue', null, 'user-1');
     const snap = order.toSnapshot();
     expect(snap.status).toBe('canceled');
-    expect(snap.canceledFromStatus).toBe('paid');
+    expect(snap.canceledFromStatus).toBe('placed');
     expect(snap.canceledByUserId).toBe('user-1');
     const events = order.pullEvents();
     const [event] = events;
@@ -628,8 +637,8 @@ describe('cancel', () => {
     }).toThrow(InvalidOrderTransitionError);
   });
 
-  it('throws InvalidOrderTransitionError from refunded state', () => {
-    const order = Order.fromSnapshot(makeSnapshot({ status: 'refunded' }));
+  it('throws InvalidOrderTransitionError from a canceled order', () => {
+    const order = Order.fromSnapshot(makeSnapshot({ status: 'canceled' }));
     expect(() => {
       order.cancel('other', null, null);
     }).toThrow(InvalidOrderTransitionError);
@@ -645,13 +654,14 @@ describe('cancel', () => {
 });
 
 describe('refund', () => {
-  it('full refund on a paid order never rewrites order status', () => {
+  it('a full refund settles the money side and leaves the kitchen stage alone', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(1250, 0);
-    expect(order.toSnapshot().status).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('refunded');
+    expect(order.toSnapshot().status).toBe('placed');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -698,7 +708,7 @@ describe('refund', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     expect(() => order.refund(1250, 0)).not.toThrow();
-    expect(order.toSnapshot().status).toBe('created');
+    expect(order.toSnapshot().status).toBe('placed');
   });
 
   it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {
@@ -719,11 +729,11 @@ describe('refund', () => {
 });
 
 describe('markFailed', () => {
-  it('transitions created → failed and emits OrderStatusChanged', () => {
+  it('marks the payment failed and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markFailed('payment gateway error');
-    expect(order.toSnapshot().status).toBe('failed');
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -734,13 +744,14 @@ describe('markFailed', () => {
     }
   });
 
-  it('transitions paid → failed and emits OrderStatusChanged', () => {
+  it('marks a payment failed even after one succeeded, and forgets the paid stamp', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
     order.markFailed('webhook timeout');
-    expect(order.toSnapshot().status).toBe('failed');
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
+    expect(order.toSnapshot().paidAt).toBeNull();
     const events = order.pullEvents();
     const [event] = events;
     expect(event).toBeDefined();
@@ -748,29 +759,29 @@ describe('markFailed', () => {
     expect(event.kind).toBe('OrderStatusChanged');
   });
 
-  it('throws InvalidOrderTransitionError from completed state', () => {
+  it('can fail after the food went out — a chargeback is the operator\u2019s problem to see', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
-    order.pullEvents();
     order.accept(null, 'user-1');
-    order.pullEvents();
     order.startPreparing('user-1');
-    order.pullEvents();
     order.markReady('user-1');
-    order.pullEvents();
     order.complete('user-1');
     order.pullEvents();
-    expect(() => {
-      order.markFailed('test');
-    }).toThrow(InvalidOrderTransitionError);
+
+    order.markFailed('chargeback');
+
+    expect(order.toSnapshot().paymentStatus).toBe('failed');
+    expect(order.toSnapshot().status).toBe('completed');
   });
 
-  it('throws InvalidOrderTransitionError from canceled state', () => {
+  it('refuses to fail money that was already given back', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
-    order.cancel('other', null, null);
+    order.markPaid('pi_1');
+    order.refund(1250, 0);
     order.pullEvents();
+
     expect(() => {
       order.markFailed('test');
     }).toThrow(InvalidOrderTransitionError);
@@ -778,11 +789,11 @@ describe('markFailed', () => {
 });
 
 describe('requireAction (D-08 SCA state)', () => {
-  it('transitions created → requires_action and emits OrderStatusChanged', () => {
+  it('moves the payment to requires_action and emits OrderStatusChanged', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.requireAction('pi_sca_1');
-    expect(order.toSnapshot().status).toBe('requires_action');
+    expect(order.toSnapshot().paymentStatus).toBe('requires_action');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -790,7 +801,7 @@ describe('requireAction (D-08 SCA state)', () => {
     if (!event) return;
     expect(event.kind).toBe('OrderStatusChanged');
     if (event.kind === 'OrderStatusChanged') {
-      expect(event.previousStatus).toBe('created');
+      expect(event.previousStatus).toBe('placed');
       expect(event.newStatus).toBe('requires_action');
     }
   });
@@ -809,7 +820,7 @@ describe('requireAction (D-08 SCA state)', () => {
     order.requireAction('pi_sca_1');
     order.pullEvents();
     order.markPaid('pi_sca_1');
-    expect(order.toSnapshot().status).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -825,7 +836,7 @@ describe('partial refund (D-04)', () => {
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(500, 0);
-    expect(order.toSnapshot().status).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     const events = order.pullEvents();
     expect(events).toHaveLength(1);
     const [event] = events;
@@ -837,15 +848,16 @@ describe('partial refund (D-04)', () => {
     }
   });
 
-  it('cumulative full refund keeps status paid (refund never transitions to refunded)', () => {
+  it('a refund that finally covers the whole total marks the money returned', () => {
     const order = Order.create(makeInput());
     order.pullEvents();
     order.markPaid('pi_1');
     order.pullEvents();
     order.refund(500, 0);
+    expect(order.toSnapshot().paymentStatus).toBe('paid');
     order.pullEvents();
     order.refund(750, 500);
-    expect(order.toSnapshot().status).toBe('paid');
+    expect(order.toSnapshot().paymentStatus).toBe('refunded');
   });
 
   it('throws RefundExceedsCapturedError when cumulative exceeds total', () => {
@@ -882,6 +894,7 @@ describe('totals formula (ORD-05 per-line rounding vs round-at-total divergence)
                 priceDelta: '0.005',
                 amount: 1,
                 modifierGroupId: null,
+                kind: 'added',
               },
             ],
             quantity: 2,
@@ -899,6 +912,7 @@ describe('totals formula (ORD-05 per-line rounding vs round-at-total divergence)
                 priceDelta: '0.005',
                 amount: 1,
                 modifierGroupId: null,
+                kind: 'added',
               },
             ],
             quantity: 2,

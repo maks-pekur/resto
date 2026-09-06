@@ -22,7 +22,12 @@
     "notFound": "No encontrado.",
     "forbiddenTitle": "No tienes acceso a esta página.",
     "forbiddenBody": "Tu rol no incluye el permiso que esta página necesita. Pide a un propietario que te lo conceda.",
-    "backToDashboard": "Volver al panel"
+    "backToDashboard": "Volver al panel",
+    "archive": "Archivar",
+    "localizedField": {
+      "translatedCount": "Traducido {{done}} de {{total}}",
+      "primaryMark": "★"
+    }
   },
   "auth": {
     "signInTitle": "Iniciar sesión en Resto",
@@ -59,12 +64,10 @@
     "settings": "Configuración",
     "payments": "Pagos",
     "orders": "Pedidos",
+    "tables": "Salas y mesas",
+    "themeLabel": "Tema",
     "user": {
       "accountItem": "Cuenta",
-      "themeLabel": "Tema",
-      "themeLight": "Claro",
-      "themeDark": "Oscuro",
-      "themeSystem": "Sistema",
       "logout": "Cerrar sesión",
       "languageLabel": "Idioma",
       "localeRu": "Русский",
@@ -72,8 +75,7 @@
       "switchTenantItem": "Cambiar de restaurante",
       "localeEs": "Español"
     },
-    "groupOperations": "Operación",
-    "groupAdministration": "Administración"
+    "transactions": "Transacciones"
   },
   "pickTenant": {
     "title": "Elige tu restaurante",
@@ -136,7 +138,6 @@
       "allergens": "Alérgenos",
       "allergensPlaceholder": "Leche, frutos secos, gluten",
       "nutritionTitle": "Información nutricional por 100 g",
-      "nutritionAiBadge": "Estimación por IA",
       "nutritionPer100g": "por 100 g",
       "nutritionProteinsShort": "P",
       "nutritionFatsShort": "G",
@@ -169,9 +170,13 @@
       "priceSectionHint": "Los tamaños se guardan por separado",
       "compositionSectionTitle": "Composición",
       "compositionSectionHint": "Los grupos de modificadores se guardan automáticamente",
-      "ingredientsLabel": "Ingredientes",
-      "ingredientsPlaceholder": "Pollo, tomate, salsa teriyaki",
-      "ingredientsHint": "Separado por comas. Se muestra en la tarjeta del plato.",
+      "compositionModeText": "Como texto",
+      "compositionModeAssembled": "Desde modificadores",
+      "compositionTextPlaceholder": "Pollo, tomate, salsa teriyaki",
+      "compositionTextHint": "Separado por comas. Se muestra en la tarjeta del plato.",
+      "compositionAddLineBtn": "+ Añadir modificador",
+      "compositionRemovableLabel": "Se puede quitar",
+      "compositionRemoveLineAriaLabel": "Quitar «{{name}}» de la composición",
       "seoSectionTitle": "SEO",
       "seoSectionHint": "Afecta a los resultados del motor de búsqueda",
       "metaTitleLabel": "Meta título",
@@ -182,7 +187,36 @@
       "statusReadonlyHint": "Se gestiona desde la lista de platos.",
       "techInfoSectionTitle": "Información técnica",
       "slugLabel": "Slug",
-      "newItemTitle": "Nuevo plato"
+      "newItemTitle": "Nuevo plato",
+      "nameRequired": "Rellena el nombre en el idioma principal",
+      "dietary": "Dieta y alérgenos",
+      "diets": "Etiquetas",
+      "dietsHint": "Se muestran al cliente y funcionan como filtros del menú",
+      "allergensHint": "La lista del reglamento UE 1169/2011 — el cliente las ve en el plato",
+      "diet": {
+        "vegetarian": "Vegetariano",
+        "vegan": "Vegano",
+        "gluten_free": "Sin gluten",
+        "lactose_free": "Sin lactosa",
+        "spicy": "Picante",
+        "halal": "Halal"
+      },
+      "allergen": {
+        "gluten": "gluten",
+        "crustaceans": "crustáceos",
+        "eggs": "huevos",
+        "fish": "pescado",
+        "peanuts": "cacahuetes",
+        "soy": "soja",
+        "milk": "leche",
+        "nuts": "frutos secos",
+        "celery": "apio",
+        "mustard": "mostaza",
+        "sesame": "sésamo",
+        "sulphites": "sulfitos",
+        "lupin": "altramuces",
+        "molluscs": "moluscos"
+      }
     },
     "sizes": {
       "title": "Tamaños",
@@ -203,29 +237,47 @@
       "validateSize": "Revisa los campos del tamaño."
     },
     "modifiers": {
-      "newItemHint": "Guarda primero el plato — los modificadores se pueden añadir después del primer guardado.",
-      "cardTitle": "Grupos de modificadores",
-      "cardDescription": "Añade grupos desde la biblioteca o crea uno nuevo — las opciones se pueden editar dentro del grupo.",
-      "emptyHint": "No hay grupos añadidos — toca «+ Añadir grupo».",
-      "chipRemoveAriaLabel": "Quitar grupo {{name}}",
-      "addGroupBtn": "+ Añadir grupo",
-      "sheetTitle": "Añadir un grupo de modificadores",
-      "searchPlaceholder": "Buscar",
-      "sheetEmpty": "No se encontró nada.",
-      "optionCount": "{{count}} opciones",
-      "addToItem": "+ Añadir",
-      "alreadyAdded": "Añadido",
-      "createNewLink": "+ Crear nuevo grupo",
-      "createDialogTitle": "Crear grupo de modificadores",
-      "createDialogDescription": "El grupo se añade a la biblioteca y queda disponible para asociarlo.",
+      "tabModifiers": "Modificadores",
+      "tabGroups": "Grupos",
+      "emptyTitle": "Aún no hay modificadores",
+      "emptyDescription": "Añade el primero — aparecerá aquí y podrás reutilizarlo en cualquier grupo o plato.",
+      "addBtn": "+ Añadir modificador",
+      "editorTitleNew": "Nuevo modificador",
+      "editorTitleEdit": "Modificador",
+      "createBtn": "Crear modificador",
+      "saveBtn": "Guardar cambios",
       "nameLabel": "Nombre",
-      "minLabel": "Mín",
-      "maxLabel": "Máx",
-      "nameRequired": "Introduce el nombre del grupo.",
-      "createFailed": "No se pudo crear el grupo.",
-      "updateFailed": "No se pudieron actualizar los modificadores.",
-      "validateGroup": "Revisa los campos del grupo.",
-      "validateOption": "Revisa los campos de la opción."
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Línea corta bajo la foto",
+      "priceLabel": "Precio",
+      "saveFailed": "No se pudo guardar el modificador.",
+      "archiveBtn": "Archivar",
+      "archiveDialogTitle": "¿Archivar este modificador?",
+      "archiveDialogDescription": "«{{name}}» se ocultará del menú y se eliminará de {{groupCount}} grupos y {{dishCount}} platos. Es reversible — quita el filtro de archivados para deshacerlo.",
+      "usedInGroups": "Grupos: {{names}}",
+      "usedInDishes": "Platos: {{names}}",
+      "tableNameHeader": "Nombre",
+      "tablePriceHeader": "Precio",
+      "tableGroupsHeader": "Grupos",
+      "tableDishesHeader": "Platos",
+      "rowOpenAriaLabel": "Abrir modificador {{name}}"
+    },
+    "groups": {
+      "displayLabel": "Visualización",
+      "displayTiles": "En tarjetas",
+      "displayTabs": "En pestañas",
+      "behaviourLabel": "Elección",
+      "behaviourOne": "Una opción",
+      "behaviourSeveral": "Varias",
+      "requiredLabel": "Grupo obligatorio",
+      "maxSelectableLabel": "No más de",
+      "maxSelectablePlaceholder": "sin límite"
+    },
+    "itemModifiers": {
+      "groupsRowLabel": "Grupos",
+      "singlesRowLabel": "Modificadores individuales",
+      "addSingleBtn": "+ Modificador",
+      "duplicateError": "«{{name}}» ya está añadido mediante «{{groupName}}»."
     },
     "categories": {
       "addCategory": "+ Añadir categoría",
@@ -255,7 +307,8 @@
       "archiveFailed": "No se pudo archivar la categoría.",
       "pageTitle": "Categorías",
       "nameRequired": "Introduce un nombre",
-      "reorderFailed": "No se pudo reordenar"
+      "reorderFailed": "No se pudo reordenar",
+      "rowActionsAriaLabel": "Acciones para «{{name}}»"
     },
     "modifierGroups": {
       "createGroup": "+ Crear grupo",
@@ -294,7 +347,8 @@
       "pageTitle": "Grupos de modificadores",
       "addGroup": "+ Crear grupo",
       "newGroupTitle": "Nuevo grupo",
-      "tableStatus": "Estado"
+      "tableStatus": "Estado",
+      "defaultAriaLabel": "Preseleccionar:"
     },
     "stopList": {
       "title": "La lista de pausados está vacía",
@@ -321,7 +375,13 @@
       "aggregateReadOnlyHint": "Mostrando todos los locales. Selecciona un local para pausar o reanudar platos.",
       "aggregateBadge": "{{count}}/{{total}} locales",
       "aggregateBadgeAria": "Pausado en {{count}} de {{total}} locales",
-      "aggregateTruncatedNote": "Mostrando los primeros {{shown}} de {{total}} platos pausados"
+      "aggregateTruncatedNote": "Mostrando los primeros {{shown}} de {{total}} platos pausados",
+      "modifiersHeading": "Modificadores",
+      "stopModifierDialogTitle": "Hay platos con este modificador",
+      "stopModifierDialogBody": "Marca los platos que también quieras pausar, para que un cliente no pida algo que no se puede preparar.",
+      "stopSelectedDishesBtn": "Pausar los marcados",
+      "stopModifierOnlyBtn": "Solo el modificador",
+      "stopAriaLabel": "Pausar {{name}}"
     },
     "status": {
       "draft": "Borrador",
@@ -355,33 +415,10 @@
   },
   "orders": {
     "feed": {
-      "groupWaiting": "En espera",
-      "groupInProgress": "En curso",
-      "groupDone": "Completados",
       "live": "En vivo",
       "reconnecting": "Reconectando…",
       "staleNotice": "No se pudo actualizar la lista — mostrando datos de {{time}}",
-      "staleRetry": "Actualizar",
-      "refundBanner_one": "{{count}} reembolso fallido — se requiere acción",
-      "refundBanner_few": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBanner_many": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBanner_other": "{{count}} reembolsos fallidos — se requiere acción",
-      "refundBannerAction": "Mostrar"
-    },
-    "filters": {
-      "statusLabel": "Estado",
-      "statusActive": "Activos",
-      "statusAllToday": "Todos hoy",
-      "statusCompleted": "Completados",
-      "statusCanceled": "Cancelados",
-      "statusRefundFailed": "Reembolso fallido",
-      "dateLabel": "Fecha",
-      "dateToday": "Hoy",
-      "dateYesterday": "Ayer",
-      "dateWeek": "7 días",
-      "channelLabel": "Canal",
-      "channelSiteOnly": "Sitio web",
-      "channelHint": "Aparecerán más canales cuando se conecte el pedido por QR"
+      "staleRetry": "Actualizar"
     },
     "card": {
       "newBadge": "Nuevo",
@@ -404,10 +441,18 @@
       "itemCount_few": "{{count}} artículos",
       "itemCount_many": "{{count}} artículos",
       "itemCount_other": "{{count}} artículos",
-      "fulfillmentDineIn": "En el local",
-      "fulfillmentPickup": "Recogida",
-      "fulfillmentDelivery": "Entrega a domicilio",
-      "statusUpdateFailed": "No se pudo actualizar el estado del pedido."
+      "orderTypeDineIn": "En el local",
+      "orderTypePickup": "Recogida",
+      "orderTypeDelivery": "Entrega a domicilio",
+      "tableLabel": "{{zone}} · Mesa {{number}}",
+      "statusUpdateFailed": "No se pudo actualizar el estado del pedido.",
+      "remainingAria": "Queda: {{duration}}",
+      "overdueByAria": "Retraso: {{duration}}",
+      "unitMinutes": "m",
+      "unitHours": "h",
+      "unitDays": "d",
+      "noCustomer": "Sin nombre",
+      "etaUnknownAria": "La hora de entrega se fija al aceptar el pedido"
     },
     "accept": {
       "title": "¿En cuánto tiempo estará listo?",
@@ -464,7 +509,8 @@
       "totalsSubtotal": "Subtotal",
       "totalsService": "Cargo por servicio",
       "totalsDiscount": "Descuento",
-      "totalsTotal": "Total"
+      "totalsTotal": "Total",
+      "excludedLabel": "Sin"
     },
     "refund": {
       "title": "Reembolso",
@@ -479,31 +525,79 @@
       "failedBanner": "Reembolso de {{amount}} fallido"
     },
     "alerts": {
-      "enableSoundTitle": "Activa las notificaciones de pedidos",
-      "enableSoundBody": "Permite el sonido en esta pestaña para no perderte un nuevo pedido.",
-      "enableSoundBtn": "Activar sonido",
       "soundBlockedHint": "Es posible que el sonido no funcione en este navegador.",
       "muteToggleLabel": "Sonido",
       "muteOnAria": "Sonido activado",
-      "muteOffAria": "Sonido desactivado"
+      "muteOffAria": "Sonido desactivado",
+      "enableAlertsTitle": "Activa los avisos de pedidos",
+      "enableAlertsBody": "Sonido y notificaciones del navegador, para no perder un pedido con la pestaña en segundo plano.",
+      "enableAlertsBtn": "Permitir",
+      "alertsBlockedHint": "Las notificaciones están bloqueadas en los ajustes del navegador.",
+      "newOrderTitle": "Nuevo pedido n.º {{number}}",
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "El sonido de nuevo pedido está activado: haz clic para desactivarlo",
+      "muteOffHint": "El sonido de nuevo pedido está desactivado: haz clic para activarlo"
     },
     "empty": {
-      "activationTitle": "Aquí aparecerán tus primeros pedidos",
-      "activationBody": "Comparte el enlace de pedidos y todo lo que paguen los clientes aparecerá aquí.",
-      "checklistPayments": "Pagos conectados",
-      "checklistMenu": "Menú publicado",
-      "checklistLocation": "Local abierto",
-      "copyLinkBtn": "Copiar enlace",
-      "linkCopiedToast": "Enlace copiado",
-      "noDomainHint": "Todavía no se ha configurado un dominio de pedidos para clientes.",
-      "filteredTitle": "No se encontró nada",
-      "filteredBody": "Cambia los filtros o prueba con otra fecha.",
       "pickLocationTitle": "Elige un local",
-      "pickLocationBody": "La lista de pedidos muestra un local a la vez. Elige uno en el selector de arriba."
+      "pickLocationBody": "La lista de pedidos muestra un local a la vez. Elige uno en el selector de arriba.",
+      "noOrders": "Aún no hay pedidos"
     },
     "error": {
       "initialLoadTitle": "No se pudieron cargar los pedidos",
       "initialLoadBody": "Revisa tu conexión e inténtalo de nuevo."
+    },
+    "tabs": {
+      "all": "Todos los pedidos",
+      "dine_in": "En sala",
+      "delivery": "Entrega",
+      "pickup": "Recogida",
+      "unaccepted": "Sin confirmar",
+      "accepted": "Nuevos",
+      "preparing": "En cocina",
+      "ready": "Listos",
+      "completed": "Cerrados",
+      "canceled": "Cancelados",
+      "refundFailed": "Reembolso fallido"
+    },
+    "dateNav": {
+      "today": "Hoy",
+      "tomorrow": "Mañana",
+      "yesterday": "Ayer",
+      "previous": "Día anterior",
+      "next": "Día siguiente"
+    },
+    "payment": {
+      "online": "En línea",
+      "cash": "Efectivo",
+      "card_on_delivery": "Tarjeta al repartidor",
+      "refunded": "Reembolsado",
+      "unpaid": "Sin pagar"
+    },
+    "channel": {
+      "site": "Sitio web",
+      "qrMenu": "Menú QR",
+      "unknown": "Otro",
+      "glovo": "Glovo",
+      "uberEats": "Uber Eats",
+      "bolt": "Bolt Food",
+      "wolt": "Wolt"
+    },
+    "columns": {
+      "order": "Pedido",
+      "remaining": "Queda",
+      "placed": "Recibido",
+      "type": "Tipo",
+      "for": "Para quién",
+      "total": "Total"
+    },
+    "review": {
+      "rating": "Valoración del cliente: {{rating}} de 5"
+    },
+    "service": {
+      "waiter": "{{zone}}, mesa {{number}} — llaman al camarero",
+      "bill": "{{zone}}, mesa {{number}} — piden la cuenta",
+      "done": "Hecho"
     }
   },
   "dashboard": {
@@ -520,7 +614,103 @@
     "editItemTitle": "Editar plato",
     "newItemTitle": "Nuevo plato",
     "editGroupTitle": "Editar grupo de modificadores",
-    "newGroupTitle": "Nuevo grupo de modificadores"
+    "newGroupTitle": "Nuevo grupo de modificadores",
+    "kpiRevenue": "Ingresos",
+    "kpiOrders": "Pedidos completados",
+    "kpiNewGuests": "Nuevos clientes",
+    "kpiRefunds": "Reembolsos",
+    "kpiPrevious": "{{value}} periodo anterior",
+    "kpiNoBaseline": "sin datos del periodo anterior",
+    "noReportsTitle": "Informes no disponibles",
+    "noReportsDescription": "Las cifras de ingresos y pedidos las ven el propietario y los administradores.",
+    "kpiVsPrevious": "frente al periodo anterior",
+    "filterLocationLabel": "Local",
+    "filterLocationAll": "Todos los locales",
+    "range": {
+      "today": "Hoy",
+      "yesterday": "Ayer",
+      "last7": "Últimos 7 días",
+      "last28": "Últimos 28 días",
+      "thisMonth": "Este mes",
+      "lastMonth": "Mes pasado"
+    }
+  },
+  "tables": {
+    "pageTitle": "Salas y mesas",
+    "emptyTitle": "Todavía no hay zonas",
+    "emptyDescription": "Crea una zona para empezar a imprimir los códigos QR de las mesas del salón.",
+    "createZoneBtn": "Nueva zona",
+    "createZoneDialogTitle": "Nueva zona",
+    "zoneNameLabel": "Nombre de la zona",
+    "tableCountLabel": "Número de mesas",
+    "tableCountHint": "Introduce un número entre 0 y {{max}}.",
+    "createZoneSubmit": "Crear zona",
+    "createZoneSuccess": "Zona creada.",
+    "cancelAction": "Cancelar",
+    "addTablesAction": "Añadir mesas",
+    "addTablesDialogTitle": "Añadir mesas",
+    "addTablesCountLabel": "Cuántas mesas añadir",
+    "addTablesSubmit": "Añadir",
+    "addTablesSuccess": "Mesas añadidas.",
+    "renameZoneSubmit": "Guardar",
+    "renameZoneSuccess": "Zona renombrada.",
+    "archiveZoneAction": "Archivar zona",
+    "archiveZoneConfirmTitle": "¿Archivar esta zona?",
+    "archiveZoneConfirmDescription": "Esto también archivará {{count}} mesa(s) de esta zona. No se puede deshacer.",
+    "archiveZoneConfirm": "Archivar zona",
+    "archiveZoneSuccess": "Zona archivada.",
+    "renameTableAction": "Renombrar",
+    "renameTableDialogTitle": "Renombrar mesa",
+    "renameTableLabel": "Número de mesa",
+    "renameTableSubmit": "Guardar",
+    "renameTableSuccess": "Mesa renombrada.",
+    "archiveTableAction": "Archivar",
+    "archiveTableConfirmTitle": "¿Archivar esta mesa?",
+    "archiveTableConfirmDescription": "No se puede deshacer.",
+    "archiveTableConfirm": "Archivar",
+    "archiveTableSuccess": "Mesa archivada.",
+    "printAction": "Imprimir hoja",
+    "printOrderingLine": "Los códigos se imprimen en el orden de las mesas, de izquierda a derecha y de arriba abajo, una zona por hoja.",
+    "printVerifyLine": "Puedes comprobar una pegatina dudosa escaneándola con cualquier teléfono y leyendo la mesa que indica.",
+    "downloadAction": "Descargar QR",
+    "tableNumberHeader": "Mesa",
+    "tableStatusHeader": "Estado",
+    "tableActionsHeader": "Acciones",
+    "statusActive": "Activa",
+    "statusArchived": "Archivada",
+    "errors": {
+      "tableBulkLimitExceeded": "Una sola solicitud puede crear como máximo {{max}} mesas — divídela en lotes más pequeños.",
+      "locationTableLimitReached": "Este local ha alcanzado su límite de {{max}} mesas activas.",
+      "tableNumberTaken": "El número de mesa \"{{number}}\" ya está en uso en esta zona.",
+      "tableZoneNotFound": "No se pudo encontrar esta zona. Puede que haya sido archivada.",
+      "tableNotFound": "No se pudo encontrar esta mesa. Puede que ya haya sido archivada.",
+      "tableZoneAlreadyArchived": "Esta zona ya está archivada.",
+      "tableAlreadyArchived": "Esta mesa ya está archivada.",
+      "generic": "Algo salió mal. Inténtalo de nuevo."
+    },
+    "backToZones": "Volver a las zonas",
+    "editZoneAction": "Editar zona",
+    "zoneNotFoundTitle": "Zona no encontrada",
+    "zoneNotFoundDescription": "Puede que se haya archivado o que el enlace esté obsoleto.",
+    "tableCountAria": "Mesas en la zona",
+    "zoneNameDescription": "El cliente verá este nombre en el pedido: «Terraza», «Segunda planta».",
+    "tableCountDescription": "Las mesas se crean dentro de la zona. Podrás añadirlas o renombrarlas después.",
+    "form": {
+      "createTitle": "Nueva zona",
+      "createDescription": "Una zona es una parte de la sala: terraza, segunda planta, patio. Las mesas se crean dentro.",
+      "editTitle": "Ajustes de la zona",
+      "editDescription": "El cliente ve este nombre en el pedido y el operador en la lista.",
+      "summaryTitle": "Revisa el formulario:",
+      "nameRequired": "Introduce un nombre de zona.",
+      "nameTooLong": "El nombre supera los 60 caracteres.",
+      "countInvalid": "Introduce un número entero de mesas, cero o más.",
+      "countTooMany": "Como máximo se pueden crear 200 mesas a la vez.",
+      "save": "Guardar",
+      "create": "Crear zona",
+      "saving": "Guardando…"
+    },
+    "zoneStatusHeader": "Estado",
+    "rowActionsAriaLabel": "Acciones para «{{name}}»"
   },
   "format": {
     "ago": "hace {{n}}{{unit}}",
@@ -528,5 +718,182 @@
     "minutesShort": "min",
     "hoursShort": "h",
     "daysShort": "d"
+  },
+  "transactions": {
+    "title": "Transacciones",
+    "tabs": {
+      "all": "Todas",
+      "paid": "Pagadas",
+      "refunded": "Reembolsadas",
+      "refund_failed": "Reembolso fallido"
+    },
+    "status": {
+      "paid": "Pagada",
+      "refunded": "Reembolsada",
+      "failed": "Reembolso fallido: requiere acción"
+    },
+    "columnDate": "Fecha",
+    "columnOrder": "Pedido",
+    "columnAmount": "Importe",
+    "columnRefunded": "Reembolso",
+    "columnStatus": "Estado",
+    "orderNumber": "n.º {{n}}",
+    "retryBtn": "Reintentar reembolso",
+    "retrySucceeded": "Reembolso reenviado",
+    "retryFailed": "No se pudo reintentar el reembolso.",
+    "empty": "No hay transacciones en este periodo",
+    "failedBadgeAria": "Reembolsos que requieren acción: {{count}}",
+    "columnActions": "Acciones",
+    "rowActionsAriaLabel": "Acciones del pedido n.º {{n}}"
+  },
+  "settings": {
+    "contentLocales": {
+      "title": "Idiomas del menú",
+      "description": "Los idiomas en los que los invitados ven el menú, en la web y en el menú QR.",
+      "fallbackHint": "Si un plato no está traducido, el invitado lo verá en el idioma principal.",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "reset": "Descartar",
+      "saved": "Idiomas del menú actualizados",
+      "saveFailed": "No se pudieron guardar los idiomas del menú",
+      "languagesLabel": "Idiomas del menú",
+      "languagesPlaceholder": "Elige los idiomas",
+      "primaryLabel": "Idioma principal"
+    },
+    "pageTitle": "Ajustes",
+    "brand": {
+      "profileTitle": "Perfil del restaurante",
+      "profileDescription": "Cómo ve el restaurante un invitado: en la web, en el menú QR y en los correos.",
+      "logoChoose": "Subir logotipo",
+      "logoUploading": "Subiendo…",
+      "logoRemove": "Quitar",
+      "logoHint": "PNG, JPG, WebP o SVG, hasta 2 MB. Una imagen cuadrada queda mejor.",
+      "logoRejected": "Ese archivo no sirve: solo PNG, JPG, WebP o SVG de hasta 2 MB.",
+      "logoUploadFailed": "No se pudo subir el logotipo",
+      "nameLabel": "Nombre",
+      "nameHint": "El invitado lo ve en la cabecera de la web y del menú.",
+      "nameRequired": "Escribe un nombre",
+      "nameTooLong": "El nombre es demasiado largo",
+      "descriptionLabel": "Descripción",
+      "descriptionHint": "Una o dos frases sobre el restaurante: se muestran en el pie.",
+      "descriptionTooLong": "La descripción es demasiado larga",
+      "contactsTitle": "Contacto",
+      "contactsDescription": "Contactos públicos del restaurante, no de una sola ubicación.",
+      "phoneLabel": "Teléfono",
+      "phoneInvalid": "No parece un teléfono",
+      "emailLabel": "Email",
+      "emailInvalid": "No parece un email",
+      "websiteLabel": "Sitio web",
+      "urlInvalid": "No parece un enlace",
+      "socialsTitle": "Redes sociales",
+      "socialsDescription": "Enlaces a los perfiles del restaurante: el invitado los ve en el pie.",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "reset": "Descartar",
+      "saved": "Ajustes de marca guardados",
+      "saveFailed": "No se pudieron guardar los ajustes de marca",
+      "socialsEmpty": "Todavía no hay enlaces.",
+      "socialAdd": "Añadir perfil",
+      "socialRemove": "Quitar {{name}}",
+      "coverTitle": "Fotos del local",
+      "coverDescription": "El cliente las desliza en la información del local. La primera manda.",
+      "coverRejected": "JPG, PNG o WebP de hasta 2 MB",
+      "coverUploadFailed": "No se pudo subir",
+      "coverUploading": "Subiendo…",
+      "coverChoose": "Elegir foto",
+      "coverRemove": "Quitar",
+      "coverHint": "Fotos horizontales, hasta {{max}}, cada una menos de 2 MB",
+      "coverTooMany": "No más de {{max}} fotos",
+      "coverPrimary": "Principal"
+    },
+    "pageDescription": "El perfil del restaurante, los idiomas, los dominios y los cobros.",
+    "navLabel": "Secciones de ajustes",
+    "tabGeneral": "General",
+    "tabLanguages": "Idiomas",
+    "tabDomains": "Dominios",
+    "domains": {
+      "title": "Dominios",
+      "description": "Las direcciones donde el invitado abre la web y el menú.",
+      "empty": "Todavía no hay ningún dominio propio.",
+      "columnDomain": "Dominio",
+      "columnKind": "Tipo",
+      "columnStatus": "Verificado",
+      "primary": "principal",
+      "pending": "pendiente"
+    },
+    "tabIntegrations": "Integraciones",
+    "tabApps": "Aplicaciones",
+    "apps": {
+      "title": "Aplicaciones",
+      "description": "Las superficies por las que te ve el cliente.",
+      "live": "activo",
+      "open": "Abrir",
+      "qr-menu": {
+        "name": "Menú QR",
+        "description": "El menú en la mesa: escanear, pedir, pagar."
+      },
+      "website": {
+        "name": "Sitio web",
+        "description": "Tu página pública con el menú y pedidos para llevar."
+      },
+      "settingsLink": {
+        "languages": "Idiomas",
+        "domains": "Dominios"
+      }
+    },
+    "tabLegal": "Documentos",
+    "legal": {
+      "title": "Documentos e información",
+      "description": "Los textos que el cliente lee en el menú. Los vacíos no se muestran.",
+      "save": "Guardar",
+      "saving": "Guardando…",
+      "saved": "Guardado",
+      "saveFailed": "No se pudo guardar",
+      "doc": {
+        "about": "Sobre la empresa",
+        "payment": "Formas de pago",
+        "returns": "Devoluciones",
+        "cookies": "Cookies",
+        "terms": "Condiciones de uso",
+        "privacy": "Política de privacidad"
+      },
+      "hint": {
+        "about": "Razón social, registro, dirección, NIF",
+        "payment": "Qué tarjetas y métodos aceptas y cuándo se cobra",
+        "returns": "Cuándo devuelves el importe y cómo se solicita",
+        "cookies": "Qué cookies usas y para qué",
+        "terms": "Las reglas de uso del menú y del pedido",
+        "privacy": "Qué datos recoges y cómo los guardas"
+      }
+    }
+  },
+  "account": {
+    "pageTitle": "Cuenta",
+    "pageDescription": "Tu acceso al panel, independiente de los ajustes del restaurante.",
+    "identityTitle": "Acceso",
+    "identityDescription": "El correo con el que entras al panel.",
+    "emailLabel": "Correo",
+    "roleLabel": "Rol"
+  },
+  "locations": {
+    "hours": {
+      "title": "Horario",
+      "description": "El cliente lo ve en el menú y sabe si estás abierto.",
+      "closed": "cerrado",
+      "weekday": {
+        "mon": "Lunes",
+        "tue": "Martes",
+        "wed": "Miércoles",
+        "thu": "Jueves",
+        "fri": "Viernes",
+        "sat": "Sábado",
+        "sun": "Domingo"
+      }
+    },
+    "wifiTitle": "Wi-Fi para clientes",
+    "wifiDescription": "Se muestra en el menú para no preguntar al camarero.",
+    "ssidLabel": "Nombre de la red",
+    "ssidHint": "Déjalo vacío para ocultar el wi-fi",
+    "passwordLabel": "Contraseña"
   }
 }

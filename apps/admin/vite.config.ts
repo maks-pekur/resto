@@ -9,8 +9,10 @@ import tailwindcss from '@tailwindcss/vite';
 const API_TARGET = process.env.API_PROXY_TARGET ?? 'http://localhost:5001';
 
 export default defineConfig({
+  base: '/admin/',
   plugins: [tailwindcss(), react()],
   build: {
+    outDir: 'dist/admin',
     target: 'es2022',
     sourcemap: 'hidden',
     rollupOptions: {
@@ -24,13 +26,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 4000,
-    // D-21: per-tenant dev hosts, e.g. pizza.admin.localhost:4000.
-    // `host: true` binds beyond loopback so a `*.localhost` subdomain
-    // request reaches this server; `allowedHosts` is Vite's own separate
-    // check against the incoming Host header (CVE-2025-24010 class of fix).
     host: true,
-    allowedHosts: ['.admin.localhost'],
+    // Same reasoning as qr-menu: the tunnel's apex is the founder's, not the repo's.
+    allowedHosts: [
+      '.localhost',
+      ...(process.env.DEV_TUNNEL_APEX ? [`.${process.env.DEV_TUNNEL_APEX}`] : []),
+    ],
+    port: 4000,
     proxy: {
       '/api': { target: API_TARGET, changeOrigin: false },
       '/v1': { target: API_TARGET, changeOrigin: false },

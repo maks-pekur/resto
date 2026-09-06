@@ -24,6 +24,6 @@ export default [
     },
   },
   {
-    ignores: ['eslint.config.mjs', 'vitest.config.ts'],
+    ignores: ['eslint.config.mjs', 'vitest.config.ts', 'audit/**/*.mjs'],
   },
 ];

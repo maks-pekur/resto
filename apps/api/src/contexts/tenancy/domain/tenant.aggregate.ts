@@ -3,8 +3,13 @@ import {
   currencyForCountry,
   defaultLocaleForCountry,
   defaultTimezoneForCountry,
+  EMPTY_BRAND_CONTACTS,
   TenantId,
   TenantSlug,
+  type BrandContacts,
+  type LocalizedText,
+  type LegalDocuments,
+  type SocialLinks,
   type TenantTheme,
   type CountryCodeValue,
   type Currency,
@@ -59,11 +64,19 @@ export interface TenantSnapshot {
   readonly displayName: string;
   readonly status: TenantStatus;
   readonly locale: string;
+  /** Every language this tenant publishes content in; `locale` is one of them. */
+  readonly contentLocales: readonly string[];
   /** Default inherited by every new location; a location may override it. */
   readonly timezone: string;
   readonly country: CountryCodeValue;
   readonly defaultCurrency: Currency;
   readonly theme: TenantTheme | null;
+  /** What the restaurant says about itself, in every language it publishes in. */
+  readonly description: LocalizedText | null;
+  readonly socials: SocialLinks;
+  /** Cookie policy, terms, refunds — whatever this market asks the venue to publish. */
+  readonly legalDocuments: LegalDocuments | null;
+  readonly contacts: BrandContacts;
   readonly legalName: string | null;
   readonly legalForm: TenantLegalForm | null;
   readonly taxId: string | null;
@@ -100,7 +113,7 @@ export interface ProvisionInput {
   readonly timezone?: string;
   /** Defaults to `defaultLocaleForCountry(country)` (D-35) when omitted. */
   readonly locale?: string;
-  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  /** Hostname format `<slug>.<PUBLIC_APEX_DOMAIN>` (07.5-13) — passed by the application service. */
   readonly primaryDomainHostname: string;
   /**
    * D-25/D-30 (10.2 plan 13): defaults to `'active'`. Signup provisions
@@ -115,7 +128,7 @@ export interface ProvisionInput {
 export interface FinalizeSetupInput {
   readonly displayName: string;
   readonly slug: TenantSlug;
-  /** Hostname format `<slug>.menu.resto.app` — passed by the application service. */
+  /** Hostname format `<slug>.<PUBLIC_APEX_DOMAIN>` (07.5-13) — passed by the application service. */
   readonly primaryDomainHostname: string;
 }
 
@@ -155,10 +168,16 @@ export class Tenant {
       displayName: input.displayName,
       status: input.status ?? 'active',
       locale: input.locale ?? defaultLocaleForCountry(input.country),
+      // A new tenant publishes in one language; adding more is a settings decision, not a default.
+      contentLocales: [input.locale ?? defaultLocaleForCountry(input.country)],
       timezone: input.timezone ?? defaultTimezoneForCountry(input.country),
       country: input.country,
       defaultCurrency,
       theme: null,
+      description: null,
+      socials: {},
+      legalDocuments: null,
+      contacts: EMPTY_BRAND_CONTACTS,
       legalName: null,
       legalForm: null,
       taxId: null,

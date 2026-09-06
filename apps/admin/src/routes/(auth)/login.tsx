@@ -11,7 +11,7 @@ import { authClient } from '@/lib/auth-client';
 import { apiFetch } from '@/lib/api-client';
 import type { MeResponse } from '@/lib/queries/identity';
 import { meTenantsQuery } from '@/lib/queries/identity';
-import { adminUrlForTenant } from '@/lib/admin-host';
+import { switchTenant } from '@/lib/switch-tenant';
 import { safeNext } from '@/lib/auth/safe-next';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,11 +49,6 @@ const SearchSchema = z.object({
     .transform((v) => String(v))
     .optional(),
 });
-
-interface SwitchTenantResponse {
-  readonly organizationId: string;
-  readonly slug: string;
-}
 
 export const Route = createRoute({
   getParentRoute: () => authLayoutRoute,
@@ -101,32 +96,24 @@ function LoginPage() {
       return;
     }
 
-    // D-15/D-21: bind through the same revoke-and-reissue endpoint the
-    // picker uses — its response carries the slug the final hard
-    // navigation needs, and every tenant-bind on this session goes
-    // through one mechanism, not two.
-    const switchRes = await apiFetch<SwitchTenantResponse>('/api/auth/switch-organization', {
-      method: 'POST',
-      body: { organizationId: only.id },
-    });
-    if (!switchRes.ok || !switchRes.data) {
+    try {
+      await switchTenant(only.id, async () => {
+        const meResult = await apiFetch<MeResponse>('/v1/me');
+        const baseRole = meResult.data?.baseRole;
+        const session = await authClient.getSession();
+        const sessionData =
+          session.data !== null
+            ? (session.data as { session?: { activeLocationId?: string | null } }).session
+            : undefined;
+        const activeLocationId = sessionData?.activeLocationId ?? null;
+        if (baseRole !== undefined && baseRole !== 'owner' && activeLocationId === null) {
+          return `/pick-location?next=${encodeURIComponent(next ?? '/dashboard')}`;
+        }
+        return safeNext(next ?? '/dashboard');
+      });
+    } catch {
       setError('Could not sign in. Please try again.');
-      return;
     }
-
-    const meResult = await apiFetch<MeResponse>('/v1/me');
-    const baseRole = meResult.data?.baseRole;
-    const session = await authClient.getSession();
-    const sessionData =
-      session.data !== null
-        ? (session.data as { session?: { activeLocationId?: string | null } }).session
-        : undefined;
-    const activeLocationId = sessionData?.activeLocationId ?? null;
-    if (baseRole !== undefined && baseRole !== 'owner' && activeLocationId === null) {
-      void navigate({ to: '/pick-location', search: { next } });
-      return;
-    }
-    window.location.assign(adminUrlForTenant(switchRes.data.slug, safeNext(next ?? '/dashboard')));
   };
 
   return (

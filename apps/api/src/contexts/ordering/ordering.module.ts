@@ -5,12 +5,15 @@ import { RequireActiveTenantGuard } from '../../shared/auth/require-active-tenan
 import {
   MENU_PRICING_PORT,
   ORDER_FEED_REPOSITORY,
+  ORDER_FEEDBACK_REPOSITORY,
   ORDER_REPOSITORY,
   ORDER_SEQUENCE_PORT,
   ORDER_TABLE_LOOKUP_PORT,
 } from './domain/ports';
 import { PAYMENT_REPOSITORY } from '../payments/domain/ports';
 import { OrderDrizzleRepository } from './infrastructure/order-drizzle.repository';
+import { OrderFeedbackDrizzleRepository } from './infrastructure/order-feedback-drizzle.repository';
+import { SubmitOrderFeedbackService } from './application/submit-order-feedback.service';
 import { OrderSequenceDrizzleRepository } from './infrastructure/order-sequence-drizzle.repository';
 import { OrderFeedDrizzleRepository } from './infrastructure/order-feed-drizzle.repository';
 import { CatalogMenuPricingAdapter } from './infrastructure/catalog-menu-pricing.adapter';
@@ -21,6 +24,7 @@ import { GetOrderService } from './application/get-order.service';
 import { AcceptOrderService } from './application/accept-order.service';
 import { AdvanceOrderStatusService } from './application/advance-order-status.service';
 import { ListOrdersService } from './application/list-orders.service';
+import { CountOrdersService } from './application/count-orders.service';
 import { GetOrderDetailService } from './application/get-order-detail.service';
 import { OrdersController } from './interfaces/http/orders.controller';
 import { OperatorOrdersController } from './interfaces/http/operator-orders.controller';
@@ -30,6 +34,8 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
   controllers: [OrdersController, OperatorOrdersController],
   providers: [
     { provide: ORDER_REPOSITORY, useClass: OrderDrizzleRepository },
+    { provide: ORDER_FEEDBACK_REPOSITORY, useClass: OrderFeedbackDrizzleRepository },
+    SubmitOrderFeedbackService,
     { provide: MENU_PRICING_PORT, useClass: CatalogMenuPricingAdapter },
     { provide: ORDER_TABLE_LOOKUP_PORT, useClass: TenancyTableLookupAdapter },
     { provide: ORDER_SEQUENCE_PORT, useClass: OrderSequenceDrizzleRepository },
@@ -40,6 +46,7 @@ import { OperatorOrdersController } from './interfaces/http/operator-orders.cont
     AcceptOrderService,
     AdvanceOrderStatusService,
     ListOrdersService,
+    CountOrdersService,
     GetOrderDetailService,
     RequireActiveTenantGuard,
   ],

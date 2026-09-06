@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
 import { CategorySelect } from '@/components/menu/category-select';
 import { showError } from '@/lib/ui/toast-helpers';
 import { upsertCategory } from '@/lib/queries/catalog';
-import { fromLocalizedText } from '@/lib/menu/localized';
+import { fromLocalizedText, type LocalizedText } from '@/lib/menu/localized';
+import { LocalizedField } from '@/components/common/localized-field';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import type { CategoryListItemApi } from '@/lib/queries/catalog';
 
 export interface CategoryFormProps {
@@ -26,7 +27,8 @@ export function CategoryForm({
   const { t } = useTranslation('translation', { keyPrefix: 'menu.categories' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
-  const [name, setName] = React.useState(category ? fromLocalizedText(category.name) : '');
+  const { defaultLocale, locales } = useContentLocales();
+  const [name, setName] = React.useState<LocalizedText>(category ? { ...category.name } : {});
   const [parentId, setParentId] = React.useState<string | null>(category?.parentId ?? null);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -66,7 +68,7 @@ export function CategoryForm({
   const handleSubmit = (e: React.SyntheticEvent): void => {
     e.preventDefault();
     setError(null);
-    if (!name.trim()) {
+    if ((name[defaultLocale] ?? '').trim().length === 0) {
       setError(t('nameRequired'));
       return;
     }
@@ -76,18 +78,17 @@ export function CategoryForm({
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-6">
       <FieldGroup>
-        <Field>
-          <FieldLabel htmlFor="cat-name">{t('name')}</FieldLabel>
-          <Input
-            id="cat-name"
-            required
-            maxLength={255}
-            value={name}
-            onChange={(e) => {
-              setName(e.target.value);
-            }}
-          />
-        </Field>
+        <LocalizedField
+          id="cat-name"
+          label={t('name')}
+          value={name}
+          onChange={(next) => {
+            setName(next ?? {});
+          }}
+          locales={locales}
+          defaultLocale={defaultLocale}
+          maxLength={255}
+        />
         <Field>
           <FieldLabel htmlFor="cat-parent">{t('parent')}</FieldLabel>
           <CategorySelect

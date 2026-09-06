@@ -6,8 +6,8 @@ import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import { rolesQuery, archiveRole, friendlyRoleError, type RoleView } from '@/lib/queries/roles';
-import { PageHeading } from '@/components/page-heading';
-import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/common/page-heading';
+import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
 import { RoleList, RoleListSkeleton } from '@/components/roles/role-list';
 import {

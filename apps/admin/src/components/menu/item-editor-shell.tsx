@@ -1,13 +1,12 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import { ItemDetailForm, type ItemDetailFormState } from '@/components/menu/item-detail-form';
 import { ItemAside } from '@/components/menu/item-aside';
 import type { AvailableGroup } from '@/components/menu/item-modifier-groups-card';
 import type { CategoryListItemApi, ItemDetailApi, ItemSizeApi } from '@/lib/queries/catalog';
 import type { ItemEditorForm } from '@/lib/menu/zod-schemas';
-import { fromLocalizedText } from '@/lib/menu/localized';
 
 export interface ItemEditorShellProps {
   readonly title: string;
@@ -22,37 +21,43 @@ const ITEM_FORM_ID = 'item-form';
 const NIL_UUID = '00000000-0000-0000-0000-000000000000';
 
 const emptyValues = (currency: string): ItemEditorForm => ({
-  name: '',
+  name: {},
   description: null,
   categoryId: NIL_UUID,
   basePrice: 0,
   currency,
   allergens: [],
-  ingredients: [],
+  diets: [],
+  compositionMode: 'text',
+  compositionText: [],
+  compositionAssembled: [],
   metaTitle: null,
   metaDescription: null,
   proteins: null,
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
 });
 
 const valuesFromItem = (item: ItemDetailApi): ItemEditorForm => ({
-  name: fromLocalizedText(item.name),
-  description: item.description ? fromLocalizedText(item.description) : null,
+  name: { ...item.name },
+  description: item.description ? { ...item.description } : null,
   categoryId: item.categoryId,
   basePrice: Number.parseFloat(item.basePrice),
   currency: item.currency,
-  allergens: [...item.allergens],
-  ingredients: [...item.ingredients],
-  metaTitle: item.metaTitle ? fromLocalizedText(item.metaTitle) : null,
-  metaDescription: item.metaDescription ? fromLocalizedText(item.metaDescription) : null,
+  allergens: [...(item.allergens ?? [])],
+  diets: [...(item.diets ?? [])],
+  compositionMode: item.compositionMode,
+  compositionText: [...(item.composition ?? [])],
+  compositionAssembled: item.compositionAssembled.map((line) => ({ ...line })),
+  // Plain strings in the contract, unlike `name`/`description` — the api stores one SEO
+  // string per item, not one per locale. They were being run through fromLocalizedText.
+  metaTitle: item.metaTitle,
+  metaDescription: item.metaDescription,
   proteins: item.proteins,
   fats: item.fats,
   carbs: item.carbs,
   kcal: item.kcal,
-  nutritionEstimated: item.nutritionEstimated,
 });
 
 export function ItemEditorShell({
@@ -66,12 +71,17 @@ export function ItemEditorShell({
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const [currentItemId, setCurrentItemId] = React.useState(itemId);
-  const initialPhotoS3Key = initialItem?.photoS3Key ?? null;
+  // The contract carries `photos: [{ s3Key, sortOrder }]`; `photoS3Key` and `photoUrl`
+  // never existed on the response. Reading the phantom key meant the editor always
+  // started with "no photo" and then saved that emptiness over the real one.
+  const initialPhotoS3Key = initialItem?.photos[0]?.s3Key ?? null;
   const [currentPhotoS3Key, setCurrentPhotoS3Key] = React.useState<string | null>(
     initialPhotoS3Key,
   );
+  // Reads carry a short-lived presigned url beside the key; the key is what goes back
+  // on save, the url is only for the preview.
   const [currentPhotoUrl, setCurrentPhotoUrl] = React.useState<string | null>(
-    initialItem?.photoUrl ?? null,
+    initialItem?.photos[0]?.url ?? null,
   );
   const [currentSizes, setCurrentSizes] = React.useState<readonly ItemSizeApi[]>(
     initialItem?.sizes ?? [],
@@ -123,6 +133,7 @@ export function ItemEditorShell({
               onSizesChange={setCurrentSizes}
               availableModifierGroups={availableModifierGroups}
               initialModifierGroupIds={initialItem?.modifierGroupIds ?? []}
+              initialModifierIds={initialItem?.modifierOptionIds ?? []}
               onSaved={(savedId) => {
                 setCurrentItemId(savedId);
               }}

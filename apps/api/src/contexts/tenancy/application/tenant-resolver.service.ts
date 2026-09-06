@@ -6,7 +6,6 @@ import { TENANT_REPOSITORY, type TenantRepository } from '../domain/ports';
 import { isPubliclyServable, type TenantSnapshot } from '../domain/tenant.aggregate';
 
 const RESERVED_HOSTS = new Set(['api', 'www']);
-const GUEST_HOST_LABEL = 'menu';
 
 // Labels that mark an operator or infrastructure host. `<slug>.admin.<domain>` is the operator
 // dashboard and must never resolve on the guest path, whatever the first label says.
@@ -67,11 +66,19 @@ export class TenantResolverService {
   }
 
   /**
-   * Guest host resolution. Two shapes reach a tenant: `<slug>.menu.<domain>` (the QR menu, D-22)
-   * and `<slug>.<apex>` (the restaurant's own public site). The website host was reserved-but-
-   * unreachable until PUBLIC_APEX_DOMAIN existed to gate it; `resolveByHost`'s generic subdomain
-   * match still accepts more than this does, which is why the guest controllers call this one.
+   * Guest host resolution. One shape reaches a tenant: `<slug>.<PUBLIC_APEX_DOMAIN>` (07.5-13:
+   * the QR menu and the restaurant's own public site collapsed onto a single apex). `resolveByHost`'s
+   * generic subdomain match still accepts more than this does, which is why the guest controllers
+   * call this one.
    */
+  // A tunnel host (VS Code port forwarding, cloudflared) carries no tenant label, so a phone
+  // reaching dev through one has no way to name a tenant. The env schema rejects the fallback
+  // outside development.
+  private devFallbackSlug(): string | null {
+    if (this.env.NODE_ENV !== 'development') return null;
+    return this.env.TENANT_DEV_FALLBACK_SLUG ?? null;
+  }
+
   async resolveByCustomerHost(host: string | undefined): Promise<TenantSnapshot | null> {
     if (!host) return null;
     const hostname = host.split(':')[0]?.toLowerCase().replace(/\.$/, '');
@@ -80,7 +87,7 @@ export class TenantResolverService {
     const byDomain = await this.repo.findByDomainHost(hostname);
     if (byDomain && isPubliclyServable(byDomain.status)) return byDomain;
 
-    const candidate = this.guestSlugLabel(hostname.split('.'));
+    const candidate = this.guestSlugLabel(hostname.split('.')) ?? this.devFallbackSlug();
     if (!candidate) return null;
 
     const slug = TenantSlug.safeParse(candidate);
@@ -92,21 +99,22 @@ export class TenantResolverService {
   }
 
   /**
-   * The slug label of a guest host, or null when the host is not one. Two shapes qualify:
-   * `<slug>.menu.<rest>` (QR menu) and `<slug>.<apex>` (the restaurant's own site). The second is
-   * gated on PUBLIC_APEX_DOMAIN so an unregistered custom domain whose first label happens to match
-   * a tenant slug cannot resolve — `findByDomainHost` above is the only way a custom domain serves.
+   * The slug label of a guest host, or null when the host is not one. The qualifying shape is
+   * `<slug>.<rest>` where `<rest>` equals PUBLIC_APEX_DOMAIN exactly — an apex equality test, not
+   * a shape test (T-07.5-13-01). Neither an unregistered custom domain nor a host on some other
+   * apex can resolve this way — `findByDomainHost` above is the only way a custom domain serves.
    */
   private guestSlugLabel(labels: readonly string[]): string | null {
     const first = labels[0];
     if (!first || RESERVED_SLUG_SET.has(first)) return null;
 
     const second = labels[1];
-    if (second === GUEST_HOST_LABEL) return labels.length >= 3 ? first : null;
     if (!second || NON_GUEST_SECOND_LABELS.has(second)) return null;
 
-    const apex = this.env.PUBLIC_APEX_DOMAIN;
-    if (!apex) return null;
-    return labels.slice(1).join('.') === apex ? first : null;
+    const remainder = labels.slice(1).join('.');
+    const publicApex = this.env.PUBLIC_APEX_DOMAIN;
+    if (publicApex && remainder === publicApex) return first;
+
+    return null;
   }
 }

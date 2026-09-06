@@ -30,6 +30,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 5: Customer Site** - Scaffold `apps/website` with menu display, delivery/pickup mode selection, address validation, cart entry — checkout button disabled until Phase 8 completes _(reordered to precede QR-menu on 2026-05-27 — web shopfront is the primary customer surface)_ (completed 2026-06-12)
 - [x] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding) (completed 2026-06-13)
 - [x] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11) (completed 2026-06-14)
+- [x] **Phase 7.4: Admin Tenant in Path** - Move the operator's tenant out of the hostname and into the Better Auth session: `<apex>/admin` replaces `<slug>.admin.<apex>`, `AuthGuard` starts requiring positive agreement instead of absence of disagreement, the browser stops sending `x-forwarded-host`, and tenant switching stays a full document load enforced by lint _(added 2026-09-05 after the single-apex URL decision — `.planning/notes/url-scheme-single-apex.md`; application code on a trust boundary, so it is its own phase and a prerequisite for the remaining 7.5 deploy plans)_
 - [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
@@ -40,6 +41,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [ ] **Phase 10.3: Table zones, tables and QR codes** - Table zones and tables per location, a printable QR per table carrying a stable table id, and the guest menu resolving the table from the scanned link so a dine-in order reaches the right table _(inserted 2026-08-29 — founder; "zone" is qualified as **table zones** because Phase 9 already owns delivery zones)_
 - [ ] **Phase 10.4: QR-menu ordering and dine-in checkout** - Cart screen, checkout form, Stripe payment and guest order-status screen in `apps/qr-menu`, so a dine-in guest can actually place the order 10.3 makes identifiable; sequenced immediately after 10.3 _(inserted 2026-08-29 at `/gsd-plan-phase 10.3` per 10.3-CONTEXT D-02 — 10.3 delivers the platform and this is the phase that makes it pay off)_
 - [ ] **Phase 10.5: Location as a filter, not a mode** - Retire the location switcher as a context you switch into. Operational screens (orders, dashboard, stop list) get a plain `?location=` filter that defaults to all points; configuration screens keep naming their location in the path. _(inserted 2026-08-29 — founder, during 10.3 planning: "везде будет просто фильтр")_
+- [x] **Phase 10.6: Ingredient library, groups and how they reach the order** - A guest picks toppings on a dish — each with a photo, a name and a price — and every choice reaches the kitchen as a priced line, including the default one they took off. The operator builds the ingredients once in the Menu tab and reuses them across dishes _(inserted 2026-09-02 — founder; 16 plans, all executed)_ (completed 2026-09-06 — the browser checkpoint closed on the founder's sign-off; see `10.6-16-SUMMARY.md` for what that attestation does and does not cover)
 
 > **Moved to MVP-2 "Operational Completeness" (2026-06-12 rebalance)** — nothing deleted, full detail under the MVP-2 section: Phase 9 Delivery Zones · Phase 11 Promo & Discounts · Phase 12 CRM · Phase 13 Analytics · Phase 14 Finance · Phase 15 Content & SEO · Phase 16 Self-serve Onboarding.
 
@@ -345,6 +347,54 @@ Plans:
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-skeptic, persona-investor
 
+### Phase 7.4: Admin Tenant in Path
+
+**Goal**: The operator's tenant stops being carried by the URL. `<apex>/admin` replaces `<slug>.admin.<apex>`, and the Better Auth session's `activeOrganizationId` becomes the sole tenant selector — validated by a guard that requires agreement rather than merely the absence of disagreement.
+
+> **Why a phase and not a plan inside 7.5 (2026-09-05):** every other plan in 7.5 changes infrastructure, configuration or CI. This one changes which input the server trusts to select a tenant. 7.5's four review rounds are calibrated for deployment risk ("does the box come up", "does the certificate cover the host"), not for reviewing a tenancy change — and the reviewers observed that each round's defects clustered in whichever subsystem the plans treated as incidental. It is also a prerequisite, not a peer: 7.5 plan 08's `verify-prod-origin.sh --stage full` has a mandatory tenant assertion that cannot pass until the admin and the API agree on where the tenant comes from. And it has its own rollback story — a revert of an application commit with no infrastructure implication.
+
+**Depends on**: Phase 7.6 (the Vite admin), Phase 10.2 (brand-pinned sessions — this phase re-closes T-10.2-14-02 / T-10.2-16-02 under a scheme where the origin no longer changes)
+
+**Requirements**: [TP-01, TP-02, TP-03, TP-04, TP-05, TP-06]
+
+| ID | Requirement |
+|----|-------------|
+| TP-01 | `AuthGuard` requires positive agreement between the operator principal's tenant and the request-bound tenant; a session with no active organization can bind no tenant, and an operator with no `member` row for the bound tenant is rejected |
+| TP-02 | The set of routes carrying `@RequiresTenantContext` without `@Permissions` is enumerated, committed and drift-gated |
+| TP-03 | No browser-executed module sends `x-forwarded-host`; guest checkout calls the API same-origin |
+| TP-04 | The admin carries no tenant in its URL; tenant switching is a single helper performing a full document load, confined by an ESLint rule |
+| TP-05 | The admin serves from the `/admin` base path with working deep links and base-path-aware absolute navigation |
+| TP-06 | Server env reflects the single apex: `ADMIN_WEB_ORIGIN_WILDCARD` deleted, `AUTH_COOKIE_DOMAIN` unset (host-only cookie), `ADMIN_WEB_URL` carries `/admin` while Better Auth receives its origin only |
+
+**Success Criteria**:
+
+1. An operator whose session names tenant A cannot reach tenant B's data by a forged `x-tenant-id`, a forged `x-forwarded-host`, a tenant-B resource id in the path, a session outliving its membership, or a session with no active organization at all — proven by six assertions against a real stack, five negative and one positive control
+2. `grep -rl '/api/auth/switch-organization' apps/admin/src` returns exactly one module, and ESLint has been observed rejecting an attempt from elsewhere
+3. Deep links under `/admin/...` resolve against the real route tree, proven by a test that fails when `basepath` is absent
+4. The API boots in production with `AUTH_COOKIE_DOMAIN` unset; no dangling reference to a deleted env var remains in code, env examples or infra scripts
+5. Every assertion added by this phase has been shown failing before it was shown passing, with the transcript in its plan's SUMMARY
+
+   **Plans**: 6 plans in 3 waves
+
+Plans:
+**Wave 1** _(the trust boundary and the browser's tenant selector — file-disjoint, parallel)_
+
+- [x] 07.4-01-PLAN.md — `AuthGuard` requires agreement and membership, not absence of disagreement; plus the `@RequiresTenantContext`-without-`@Permissions` route census and its drift gate (TP-01, TP-02)
+- [x] 07.4-02-PLAN.md — delete the browser's `x-forwarded-host` from `apps/website` checkout; move the confirmation page's read into the `server-only` client; pin the property with a source-tree test (TP-03)
+
+**Wave 2** _(the proof, and the admin's tenant removal — file-disjoint, parallel)_
+
+- [x] 07.4-03-PLAN.md — six-assertion cross-tenant e2e: forged header, forged host, no active organization, revoked membership, tenant-B resource id, and a positive control (TP-01)
+- [x] 07.4-04-PLAN.md — delete `admin-host.ts` / `VITE_ADMIN_HOST_SUFFIX` / `reconcileHostWithSession`; one `switchTenant()` helper doing a full document load; ESLint rule confining the switch endpoint; `adminPath` helper (TP-04)
+
+**Wave 3** _(mounting and the env collapse — file-disjoint, parallel)_
+
+- [x] 07.4-05-PLAN.md — `base: '/admin/'` + router `basepath` + extracted route tree + deep-link tests; base-path-aware 401 redirect and password-reset link (TP-05)
+- [x] 07.4-06-PLAN.md — `AUTH_COOKIE_DOMAIN` host-only, `ADMIN_WEB_ORIGIN_WILDCARD` deleted, `ADMIN_WEB_URL` origin-vs-path split (M-12), one module owning every API-emitted admin deep link (TP-06)
+
+      **UI hint**: no — no new operator-facing surface; the admin's existing screens move to a new path
+      **Persona reviewers**: persona-cto, persona-skeptic
+
 ### Phase 7.5: Production Deploy
 
 **Goal**: Stand up the first real production environment so the MVP-1 spine is actually shippable and Stripe webhooks (Phase 8) have a public HTTPS URL to call. Pragmatic over ideal — managed services, not a full k8s build-out _(added 2026-06-12 scope rebalance — closes the CTO review HIGH finding that no production deploy existed; `infra/k8s` and `infra/terraform` were stubs)_
@@ -352,6 +402,16 @@ Plans:
 > **Scope change (2026-06-21):** `apps/admin` is being migrated to a Vite SPA (Phase 7.6) and will deploy as **static**, not an ECS service. The admin ECS service / admin Dockerfile / admin CD path are dropped. Plan 07.5-11's admin Dockerfile (already written) is superseded; its website Dockerfile stays. The api Docker-boot fix (07.5-02) is done and unaffected. Stack locked via 07.5-CONTEXT.md.
 >
 > **Re-plan (2026-06-26):** Admin static deploy **folds back into 7.5** (it had been deferred to 7.6). 7.5 now stands up **all four surfaces** — **api + website (ECS/Fargate) + qr-menu + admin (both static on Cloudflare Pages/CDN)** — making SC#1/SC#5's four-surface smoke self-consistent and **superseding Phase 7.6 plan 07.6-07**. The 9 stale 2026-06-21 plans (admin-as-ECS, `01`/`03`–`10`) are archived under `_superseded-2026-06-21/` and re-planned fresh; `07.5-02` + the website Dockerfile (`07.5-11`) stay as done anchors. The plan list below is regenerated by this re-plan.
+>
+> **Single-apex re-plan of 08-10, plus three new Wave-1 plans (2026-09-05):** the founder replaced the three-apex scheme with **one apex** (`.planning/notes/url-scheme-single-apex.md`) — `<apex>` marketing, `<apex>/admin`, `<slug>.<apex>` storefront, `<slug>.<apex>/qr`, `api.<apex>`, every hostname at depth ≤ 1 and so covered by the same free Universal SSL certificate, measured live. Phase **7.4** shipped the application half (admin tenancy out of the URL, `activeOrganizationId` as the only trusted selector, `AuthGuard` requiring agreement plus membership, admin mounted at `/admin`, the browser's `x-forwarded-host` deleted). What remained is subtraction, not addition: under one apex the SPA hostnames are ordinary Caddy-served hostnames, so the two reverse-proxy Workers built in plan 07 are **deleted** rather than rewritten (~700 committed lines), and the tenant-keyed edge cache they hand-rolled becomes the Cloudflare zone cache's default behaviour. That unwind, the API's collapse to a single `PUBLIC_APEX_DOMAIN`, and the origin's new path routing are three new Wave-1 plans (`12`, `13`, `14`); `08`, `09` and `10` keep their identities — the box, CD, the go-live gate — retargeted at one zone. Two research assumptions that had never been executed are now each owned by a plan with a red-then-green procedure: **A7** (does Cloudflare deliver a client-supplied `X-Forwarded-Host`?) in `08`, **A9** (does a Cache Rule produce MISS→HIT on `/v1/menu`?) in `10`.
+>
+> **Hostname map reworked for free TLS coverage (2026-09-05):** Cloudflare's free Universal SSL covers an apex and its **first-level subdomains only** — "deeper subdomains … are not covered" (`developers.cloudflare.com/ssl/edge-certificates/universal-ssl/limitations/`). Two of the four surfaces sat at depth 2 (`<slug>.menu.<apex>`, `<slug>.admin.<apex>`) and would have failed the TLS handshake outright — unreachable, not degraded — while `/healthz`, the API and the marketing site all stayed green. Advanced Certificate Manager ($10/mo per zone) and per-subdomain zones (Enterprise-only) were both rejected on cost. **The founder registered three apex domains, one per surface family**, so every hostname sits at depth <= 1 of its own free zone: main (`<apex>`, `*.<apex>`, `api.<apex>`), admin (`<admin-apex>`, `*.<admin-apex>`), guest (`*.<guest-apex>`). Admin moved with configuration alone — all three validators accept a bare apex as the suffix — and the guest menu cost four lines, replacing the hardcoded `GUEST_HOST_LABEL` with a `GUEST_APEX_DOMAIN` parameter and making the resolver's two guest branches apex-tested rather than shape-tested (tighter than what it replaced). Cookie isolation improved: `AUTH_COOKIE_DOMAIN` is now a different registrable domain from every guest surface. New regression nets: `assert-hostname-depth.sh` in CI, and a real per-zone TLS handshake in `verify-prod-origin.sh --stage full` that fails on certificate error specifically and prints the SAN list — the check whose absence let this survive a research pass and five plans.
+>
+> **Round 2 re-verification (2026-09-04):** all 14 round-1 blockers confirmed closed at assertion level; plans `07` and `10` passed outright. The remediation itself introduced three defects, now fixed: the Caddy `client_ip` gate added for `/internal*` was bypassable — with blanket `trusted_proxies`, Caddy falls back to the leftmost `X-Forwarded-For` entry and Cloudflare *appends* rather than replaces that header, so a forged value wins (fixed with `client_ip_headers CF-Connecting-IP`, and every plan now describes `InternalTokenGuard` as the actual control with the IP gate as defence in depth); the CI apex guard was scoped to `apps`, where 264 pre-existing `resto.app` occurrences would have turned CI permanently red had the founder picked that apex (now scoped to the paths the guarantee covers); and the local rehearsal wrongly demanded live Stripe/Resend keys — both SDK constructors are inert and both guardrails are string checks, so it runs on synthetic values and no live secret enters a transcript. `TRUST_PROXY` now includes Cloudflare's ranges so rate limiting keys on the visitor rather than on a Cloudflare PoP. Standing rule adopted phase-wide: **any sentence asserting how a third-party component behaves needs either a citation or a command.**
+>
+> **Verification and remediation (2026-09-04):** the first cut of the re-planned `06`-`10` was reviewed and came back **BLOCK** — 14 blockers, 13 flags (`07.5-VERIFICATION.md`). The wave graph, `depends_on` and file-disjointness were confirmed correct; the failures were in execution detail. The heaviest four, all now closed in the plans: role provisioning was ordered before migrations, which `packages/db/sql/auth-role.sql`'s unguarded `GRANT` makes impossible on a fresh database; Caddy overwrites `X-Forwarded-Host` unless `trusted_proxies` is set, which would have left every guest menu request tenant-less; the destructive-compose guard as first specified rejected four of the phase's own deliverables; and nothing verified tenant resolution before go-live, so the phase could have reached green CD with the guest menu dead. Also closed: `RESEND_FROM`/`RESEND_REPLY_TO` default to an unowned apex and now fail the boot instead of failing every email; committed infra files now reach the box on every deploy instead of once by hand; the restore drill compares real row counts against a manifest rather than trusting a `pg_restore` exit code; and tenant provisioning no longer hardcodes `menu.resto.app`.
+>
+> **Re-plan of 06-10 for the VPS + Cloudflare stack (2026-09-04):** the founder triggered go-live, so plans `06`-`10` were rewritten from scratch against `07.5-RESEARCH.md` (2026-09-04). The AWS shape they previously described (RDS / NATS-on-EC2 / ECS / ECR-CD) is gone. New shape: one Hetzner VPS running `docker-compose.prod.yml` (postgres + nats + api + website + caddy, Cloudflare Origin CA cert, nothing published but 80/443) behind Cloudflare, with **two Cloudflare Workers with Static Assets** — not classic Pages, which cannot serve the `*.admin.<apex>` / `*.menu.<apex>` wildcards the committed code requires — each serving its SPA bundle and its own same-origin `/v1/*` proxy; R2 for media and for nightly `pg_dump` backups with a proven restore; GitHub Actions `deploy.yml` (GHCR → gated migration over SSH → targeted service recreate → `wrangler deploy` → `/healthz` poll). The apex domain is a parameter (`PUBLIC_APEX_DOMAIN`) in every one of them, never a literal. Plans `01`-`05` and `11` are executed and untouched.
 >
 > **DEFERRED to first customer + VPS target (2026-06-26):** Two founder decisions superseded the AWS direction: (1) the hosting target is a **single VPS + Cloudflare** (Docker Compose: api+postgres+nats; Cloudflare Pages for admin/qr-menu; R2 for media) — **NOT AWS** (RDS/ECS dropped; the half-built AWS resources were torn down); (2) the live prod stand-up is **DEFERRED until the first paying customer** (no boxed infra months before revenue). **Done now:** Wave 0 code prod-readiness (`01`–`05`, `11`). **Deferred (`06`–`10`):** the live server stand-up — re-plan for the VPS stack at go-live. **Interim:** MVP is built locally; the only public-URL need (Stripe webhooks, Phase 8) is covered free by **Stripe CLI / Cloudflare Tunnel**; static (Pages) + media (R2) are free anytime.
 
@@ -364,7 +424,7 @@ Plans:
 3. CD deploys on merge to `main` on top of the existing nx-affected CI; database migrations run as a pre-rollout step (`pnpm db:migrate`)
 4. Boot-time preflight assertions (`assertProdGuardrails`, RLS-bypass checks) pass in the real prod environment — the process refuses to start on misconfiguration
 5. A public HTTPS endpoint exists for Stripe webhooks before Phase 8 begins; an external smoke confirms all four surfaces are reachable over HTTPS (api `/healthz`, admin login page, website tenant menu, qr-menu SPA) and a tenant menu renders end-to-end
-   **Plans**: 9 plans (7 re-planned 2026-06-26 + 2 done anchors `02`/`11`; numbers `05` unused, `01`/`03`/`04`/`06`–`10` reused from the archived set)
+   **Plans**: 14 plans — `01`–`05`, `06`, `07` and `11` executed (see their SUMMARYs); `12`–`14` added and `08`–`10` rewritten 2026-09-05 for the single-apex URL scheme. Plan numbers are identifiers, not order: waves are authoritative, and `12`–`14` run in Wave 1 ahead of `08`, exactly as `11` already runs in Wave 0
 
 Plans:
 **Wave 0** _(gating — code-side readiness + the DB BLOCK spike; run in parallel, no file overlap)_
@@ -375,22 +435,25 @@ Plans:
 - [x] 07.5-04-PLAN.md — D-06 NATS DLQ/max_deliver live verify + outbox-decouples-NATS proof + qr-menu same-origin requirement → PRE-DEPLOY-VERIFY
 - [x] 07.5-11-PLAN.md — website production Dockerfile (Next output:standalone, NEXT_PUBLIC_API_ORIGIN build arg) — DONE ANCHOR (admin Dockerfile half superseded; admin is static)
 
-**Wave 1** _(provider provisioning — depends on the Wave 0 DB decision + NATS verify)_
+**Wave 1** _(repo artifacts — no server needed; 06/07 executed, 12/13/14 re-plan their output for one apex and are file-disjoint, so all three run in parallel)_
 
-- [ ] 07.5-06-PLAN.md — Provision managed Postgres (provider per 07.5-01): 3 roles + extensions + migrations + backups + tested restore (G-02) + preflight dry-check (SC#1/#4)
-- [ ] 07.5-07-PLAN.md — NATS JetStream on EC2+EBS (D-06) + Cloudflare R2 wiring (D-07); degraded-mode + presigned-PUT verified (SC#2)
+- [x] 07.5-06-PLAN.md — `docker-compose.prod.yml` + Caddyfile + apex-parameterized env templates + `-v` guard + `migrate` image stage + backup/restore-drill scripts, all proven by a local end-to-end rehearsal; names the founder prerequisites (apex domain, Hetzner, Stripe/Resend — the two `assertProdGuardrails` refuses to boot without)
+- [x] 07.5-07-PLAN.md — the two Cloudflare Workers (admin + qr-menu): same-origin `/v1/*` (+`/api/*`) proxy, `X-Forwarded-Host` tenant preservation, and per-tenant edge cache keys with cross-tenant isolation proven by test; retires the admin Dockerfile — **the Worker half is undone by 07.5-12 under the single-apex scheme; the `GUEST_APEX_DOMAIN` half by 07.5-13**
+- [x] 07.5-12-PLAN.md — both Worker proxies deleted (~250 lines of source, 440 of tests), both projects assets-only, admin bundle nested under `dist/admin/` and qr-menu under `dist/qr/` with the root-index copy Cloudflare's SPA fallback needs, qr-menu route regexes and `pushState` targets prefixed `/qr`, the two guest apps given distinct cart namespaces now that they share an origin, and the bare apex serving a deliberate marketing placeholder instead of "Restaurant not found" (SC#1/#5; NEW-2; OQ-4)
+- [x] 07.5-13-PLAN.md — the API collapses to one apex: `GUEST_APEX_DOMAIN` deleted from schema, guardrails, resolver and six test files; one `guest-links.ts` composing every guest-facing URL, so the QR sticker carries the `/qr` base and opens the menu instead of the storefront; both tenancy writers stop hardcoding `menu.resto.app`; the guest order-confirmation link becomes per-tenant (APEX-1; OQ-5)
+- [x] 07.5-14-PLAN.md — Caddy routes by path (`/internal*` 404, `/v1/*` and `/api/*` to the api, everything else to the website) with `header_up X-Forwarded-Host {host}` on every block, closing the measured client-forgeable-host defect; `API_INTERNAL_ORIGIN` takes the website's SSR call off the public internet; templates, both guards and the local rehearsal collapse to one apex; the rehearsal seeds rows so its restore drill stops comparing zero to zero; G-07 retirement of the AWS-era `infra/CLAUDE.md`, `infra/terraform` and `infra/k8s` (NEW-3; APEX-1; G-07)
 
-**Wave 2** _(hosting surface — depends on bootable api image + website Dockerfile + DB + NATS/R2)_
+**Wave 2** _(the live box — depends on the whole of Wave 1)_
 
-- [ ] 07.5-08-PLAN.md — ECS api+website + static admin+qr-menu (Cloudflare Pages) + ALB/ACM + Secrets Manager + Cloudflare DNS/TLS/CDN/routing + qr-menu same-origin rewrite (SC#1/#2/#5; D-01/02/03/05/08/09; G-05)
+- [ ] 07.5-08-PLAN.md — VPS + one-zone Cloudflare stand-up: bootstrap + outside-in verifier scripts, founder provisioning (Hetzner, five DNS records, Origin CA, Full-strict, R2 ×2, repository variables collapsed to `PUBLIC_APEX_DOMAIN` alone), then first live bring-up — migrations then roles, preflights under real credentials, both asset bundles on air, two probe tenants, and the first tenant-resolving request. Settles research assumption **A7** (does Cloudflare deliver a client-supplied `X-Forwarded-Host`?) by removing and restoring the pin around two curls (SC#1/#2/#4/#5; NEW-3; APEX-2)
 
-**Wave 3** _(CD — depends on the live hosting surface)_
+**Wave 3** _(CD — depends on the live box)_
 
-- [ ] 07.5-09-PLAN.md — GitHub Actions CD on merge to main (nx-affected): build api/website → ECR + admin/qr-menu static → gated db:migrate → deploy all four + live /healthz (SC#3; D-10; G-06 strategy)
+- [ ] 07.5-09-PLAN.md — `deploy.yml` on merge to main: GHCR build ×3 → fail-closed input assertion (`DATABASE_ADMIN_URL` only warns in `migrate.ts`) → both SPA bundles built and their nested layout asserted → infra rsync → tag persist → gated migration over SSH → `up -d --no-deps` → two assets-only `wrangler deploy` → `/healthz` poll; all three guards wired into CI with their `--self-test`; app-only rollback proven with machine-readable evidence and the SPA-bundles-do-not-roll-back caveat stated (SC#3; D-10; G-06)
 
 **Wave 4** _(go-live gate)_
 
-- [ ] 07.5-10-PLAN.md — SC#5 external four-surface E2E smoke (api/website/qr-menu/admin + ported ADM-00 Playwright) + G-02 restore proof + G-06 app-only rollback proof + G-07 infra-stub supersession (no Redis)
+- [ ] 07.5-10-PLAN.md — nightly backups on cron + a restore drill performed from a real R2 object against non-zero counts (G-02); production data audit clearing the rows the pre-fix writer created, in a category the tunnel patterns cannot see; external smoke with cross-tenant body comparison, the host-only cookie assertion, the forged-host control and webhook reachability; then the founder gate that creates the `/v1/menu*` Cache Rule and the R2 lifecycle rule **between a recorded failing and a passing run of the same assertion**, settling research assumption **A9**; go-live checklist naming its evidence and its gaps (SC#5; G-02; D-08)
       **UI hint**: no
       **Persona reviewers**: persona-cto, persona-investor
 
@@ -766,6 +829,63 @@ Plans:
 **Wave 8** _(blocked on Wave 7)_
 
 - [ ] 10.3-14-PLAN.md — Regenerate the published OpenAPI contract and the typed client; scan a real printed code
+
+### Phase 10.6: Ingredient library, groups and how they reach the order (INSERTED)
+
+**Goal**: A guest picks toppings on a dish — each with a photo, a name and a price — and every choice reaches the kitchen as a priced line, including the default one they took off. The operator builds the ingredients once in the Menu tab and reuses them across dishes
+**Depends on**: Phase 4a / 4b (the catalog schema and its admin UX are what this extends), Phase 8 (the order the priced rows land in)
+**Requirements**: ING-01, ING-02, ING-03, ING-04, ING-05, ING-08, ING-09, ING-10, ING-11, ING-12, ING-13, ING-14, ING-15 _(ING-06 default-in and ING-07 the stepper were deferred to the backlog at `/gsd-discuss-phase 10.6`; ING-13 … ING-15 added there for the composition. Five of the remaining requirements were rewritten in the same session — read `10.6-CONTEXT.md` before `.planning/notes/ingredients.md`.)_
+
+**Design source**: `.planning/notes/ingredients.md` (2026-09-02) — the model, the API surface, both UIs, the test list and the out-of-scope list are written there. Read it first; do not re-derive it.
+
+**Decided before planning** (do not re-litigate):
+
+1. **This is a modifier in the code and an Ingredient in the UI.** iiko / Syrve separate an *ingredient* — an assembly-chart line that exists for costing and write-off and that the guest never sees — from a *modifier*, a nomenclature product with its own id, name, image and price, which is the only thing that reaches the order. What is being built here is the second one. The database, the domain and the iiko mapping keep saying `modifier`; the admin and the guest say **Ingredients**.
+2. **`menu_items.ingredients` is renamed to `menu_items.composition`** so the two meanings stop sharing one word. It is admin-only — the published menu DTO never exposed it — so the rename costs one migration, one DTO field and one form label.
+3. **Membership moves out of the option row.** `menu_modifier_options` loses `modifier_group_id`; `menu_modifier_group_options` and `menu_item_modifier_options` carry it instead, both with `tenant_id` and composite tenant FKs per ADR-0020 I-2, both leading every index with `tenant_id`.
+4. **Shape and behaviour are independent axes, and neither is a flag on the group.** A block renders as tiles when at least one of its ingredients has a photo; radio-vs-checkbox comes from effective max alone, not from `is_required`. Existing dough and sauce groups carry no photos, so nothing about them changes on the day this ships.
+5. **The breaking `/v1/menu` change ships coordinated, not versioned.** Both consumers go through `packages/ui/src/guest` and `packages/api-client`, and both ship inside this phase.
+6. **Nothing goes into the order comment.** `order_modifiers` already stores `option_id`, `name_snapshot`, `price_delta`, `amount` and a nullable `modifier_group_id` — the last being `NULL` for a single ingredient attached straight to the dish.
+
+**Open questions for `/gsd-spec-phase` and `/gsd-discuss-phase`:**
+
+1. The migration backfills one `menu_modifier_group_options` row per existing option and then drops `modifier_group_id`. What proves that backfill against a live database — and does any tenant hold options today, or is the dev-reset allowance (10.2 D-12) still open? Note 10.4's decision that the allowance is void once a tenant has printed a QR sheet.
+2. Group `max_selectable` versus per-option `max_amount`: the note defines both, and the admin exposes the per-option one as "how many times it can be added". Where does the operator set the group's own maximum, and what is the reading when the two disagree?
+3. The stop-list cascade — a dish whose required group is emptied by a stopped ingredient is stopped with it — lives in `loadPublishedMenu`'s stop overlay. Computed per read, or materialised at publish?
+
+**Deliberately not in this phase** (each already has a home): price per size (`.planning/notes/modifier-pricing.md`), per-dish group rules (iiko's min / max on the dish-to-group link), assembly charts with grams and cost, nested modifiers.
+
+**Layers touched**: `packages/db` (library columns, two link tables, `menu_option_stop_list`, the `composition` rename, the backfill migration), `packages/domain` (option and group schemas, the amount rules), api catalog context (library CRUD, membership writes, stop list, published-menu payload), api ordering context (allowed-set union, amount and zero-amount pricing), `packages/api-client` + `docs/api/openapi.yaml`, `apps/admin` (Ingredients sub-tab, group picker, item-card block, stop-list section), `packages/ui/src/guest` + `apps/qr-menu` + `apps/website` (tile grid, stepper, `useItemSelection`).
+
+**Superseded before planning:** decision 4 above ("shape comes from photos, behaviour from effective
+max") and all three open questions were answered and overridden at `/gsd-discuss-phase 10.6`. Read
+`10.6-CONTEXT.md` first — display and behaviour are now explicit group settings (D-07), there is no
+stop cascade (D-20), the stop overlay is computed per read (D-23), `min_selectable` /
+`max_selectable` are dropped (D-33), and an excluded composition line is discriminated by
+`order_modifiers.kind` (D-34).
+
+**Plans**: 16 plans in 11 waves
+**UI hint**: yes — both the admin and the guest surface
+**Persona reviewers**: persona-cto, persona-skeptic
+
+Plans:
+
+- [x] 10.6-01-PLAN.md — Drizzle schema: ingredient identity, two link tables, ingredient stop table, group enums, two-mode composition, `order_modifiers.kind`
+- [x] 10.6-02-PLAN.md — Hand-written migration 0019 + journal + grants, applied against a reset dev database, with cross-tenant regression tests
+- [x] 10.6-03-PLAN.md — Published menu read model: ingredients travel once, groups carry display/behaviour, availability answers a second list
+- [x] 10.6-04-PLAN.md — Ordering: union allowed-set, behaviour validation, stopped-ingredient refusal, exclusions as their own rows
+- [x] 10.6-05-PLAN.md — Catalog contracts and every existing write/list path moved onto the new columns
+- [x] 10.6-06-PLAN.md — Catalog writes: library list/archive/usage, group and dish membership with the duplicate refusal, composition write
+- [x] 10.6-07-PLAN.md — Ingredient stop list, the eight application services, module wiring, ingredient photo prefix
+- [x] 10.6-08-PLAN.md — Nine catalog routes, OpenAPI + client regeneration, e2e for the refusals, the stop and the dedupe
+- [x] 10.6-09-PLAN.md — Guest wire types in all three hand-written files, availability threading, selection hook rewrite with exclusion state
+- [x] 10.6-10-PLAN.md — Guest rendering: ingredient tiles, the tabs+several pill strip, the composition line, guest copy
+- [x] 10.6-11-PLAN.md — Admin foundation: radio-group, every copy string, typed queries, both form schemas, the shared picker
+- [x] 10.6-12-PLAN.md — Admin Ingredients screen: two-tab route, card grid, editor sheet, archive warning
+- [x] 10.6-13-PLAN.md — Admin Groups tab: display/behaviour/required form, ordered membership picker
+- [x] 10.6-14-PLAN.md — Admin item editor: single-ingredient chip row, composition editor with both modes
+- [x] 10.6-15-PLAN.md — Admin stop list section, the D-22 dish offer, exclusions on the order detail
+- [ ] 10.6-16-PLAN.md — Phase verification sweep and the founder's browser walk-through
 
 ### Phase 10.5: Location as a filter, not a mode (INSERTED)
 
@@ -1189,7 +1309,7 @@ Notes:
 | 5. Customer Site                              | 6/6            | Complete      | 2026-06-12 |
 | 6. QR-Menu Customer                           | 5/5            | Complete      | 2026-06-13 |
 | 7. Ordering                                   | 5/5            | Complete      | 2026-06-14 |
-| 7.5. Production Deploy                        | 6/11           | In Progress   |            |
+| 7.5. Production Deploy                        | 11/14 | In Progress|  |
 | 8. Payments (Stripe Connect)                  | 8/8            | Complete      | 2026-06-27 |
 | 8.1. Payments — Provider Layer & Onboarding   | 5/5            | Complete      | 2026-06-28 |
 | 10. Admin Order Intake                        | 12/13          | In Progress   |            |

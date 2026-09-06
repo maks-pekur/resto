@@ -20,7 +20,7 @@ import {
   RouterProvider,
 } from '@tanstack/react-router';
 import i18n from '@/lib/i18n';
-import { Forbidden, RouteError } from '@/components/route-error';
+import { Forbidden, RouteError } from '@/components/common/route-error';
 import { isForbiddenRouteError, requirePermission } from '@/lib/auth/permissions';
 import type { MeResponse } from '@/lib/queries/identity';
 

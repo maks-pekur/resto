@@ -2,18 +2,27 @@ import { useState } from 'react';
 import { createRoute, Link } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Archive, Plus } from 'lucide-react';
+import { Archive, ArchiveRestore, Plus, Trash2 } from 'lucide-react';
 import { Route as protectedLayoutRoute } from './_layout';
 import { requirePermission } from '@/lib/auth/permissions';
 import { meQuery } from '@/lib/queries/identity';
 import {
   tenantLocationsQuery,
   archiveLocationMutation,
+  restoreLocationMutation,
+  deleteLocationMutation,
   friendlyLocationError,
   type LocationView,
 } from '@/lib/queries/locations';
-import { PageHeading } from '@/components/page-heading';
-import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/common/page-heading';
+import { EmptyState } from '@/components/common/empty-state';
+import {
+  DataTable,
+  DataTableCell,
+  DataTableHead,
+  DataTableRow,
+} from '@/components/common/data-table';
+import { RowActions } from '@/components/common/row-actions';
 import { Button } from '@/components/ui/button';
 import {
   AlertDialog,
@@ -43,11 +52,44 @@ function LocationsPage() {
   const { data: meResult } = useSuspenseQuery(meQuery());
   const { data: locationsResult, isPending } = useQuery(tenantLocationsQuery());
   const [archiveTarget, setArchiveTarget] = useState<LocationView | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<LocationView | null>(null);
 
   const invalidateLocations = () => {
     void qc.invalidateQueries({ queryKey: ['locations'] });
     void qc.invalidateQueries({ queryKey: ['identity', 'me-locations'] });
   };
+
+  const restoreMutation = useMutation({
+    mutationFn: (location: LocationView) => restoreLocationMutation(location.id),
+    onSuccess: (res, location) => {
+      if (!res.ok) {
+        toast.error(friendlyLocationError(res.status, res.data as { detail?: string } | null));
+        return;
+      }
+      toast.success(`"${location.name}" restored.`);
+      invalidateLocations();
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (location: LocationView) => deleteLocationMutation(location.id),
+    onSuccess: (res, location) => {
+      if (!res.ok) {
+        toast.error(friendlyLocationError(res.status, res.data));
+      } else {
+        toast.success(`"${location.name}" deleted.`);
+        invalidateLocations();
+      }
+      setDeleteTarget(null);
+    },
+    onError: () => {
+      toast.error('Something went wrong. Please try again.');
+      setDeleteTarget(null);
+    },
+  });
 
   const archiveMutation = useMutation({
     mutationFn: (location: LocationView) => archiveLocationMutation(location.id),
@@ -87,15 +129,18 @@ function LocationsPage() {
 
   return (
     <>
-      <PageHeading title="Locations" description="Create and manage your locations." />
-      <div className="flex justify-end px-4 lg:px-6">
-        <Button asChild>
-          <Link to="/locations/$slug" params={{ slug: 'new' }}>
-            <Plus className="size-4" />
-            Add new
-          </Link>
-        </Button>
-      </div>
+      <PageHeading
+        title="Locations"
+        description="Create and manage your locations."
+        action={
+          <Button asChild>
+            <Link to="/locations/$slug" params={{ slug: 'new' }}>
+              <Plus className="size-4" />
+              Add new
+            </Link>
+          </Button>
+        }
+      />
       <div className="flex flex-1 flex-col gap-4 px-4 lg:px-6">
         {isPending ? null : locations.length === 0 ? (
           <EmptyState
@@ -104,65 +149,117 @@ function LocationsPage() {
             description="Add your first location to start taking orders there."
           />
         ) : (
-          <div className="rounded-md border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Name
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Web address
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Address
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Status
-                  </th>
-                  <th scope="col" className="px-4 py-2 text-left font-medium">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {locations.map((location) => (
-                  <tr key={location.id} className="border-b last:border-0">
-                    <td className="px-4 py-2 font-medium">
-                      <Link
-                        className="underline-offset-4 hover:underline"
-                        to="/locations/$slug"
-                        params={{ slug: location.slug }}
-                      >
-                        {location.name}
-                      </Link>
-                    </td>
-                    <td className="text-muted-foreground px-4 py-2">
-                      <code>{location.slug}</code>
-                    </td>
-                    <td className="px-4 py-2 text-muted-foreground">{location.address ?? '—'}</td>
-                    <td className="px-4 py-2 capitalize">{location.status}</td>
-                    <td className="px-4 py-2">
-                      {location.status === 'active' ? (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          aria-label={`Archive ${location.name}`}
-                          onClick={() => {
-                            setArchiveTarget(location);
-                          }}
-                        >
-                          <Archive className="size-4" />
-                        </Button>
-                      ) : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable>
+            <DataTableHead
+              columns={[
+                { label: 'Name' },
+                { label: 'Web address' },
+                { label: 'Address' },
+                { label: 'Status' },
+                { label: 'Actions', className: 'w-12 text-right', srOnly: true },
+              ]}
+            />
+            <tbody>
+              {locations.map((location) => (
+                <DataTableRow key={location.id}>
+                  <DataTableCell className="font-medium">
+                    <Link
+                      className="underline-offset-4 hover:underline"
+                      to="/locations/$slug"
+                      params={{ slug: location.slug }}
+                    >
+                      {location.name}
+                    </Link>
+                  </DataTableCell>
+                  <DataTableCell className="text-muted-foreground">
+                    <code>{location.slug}</code>
+                  </DataTableCell>
+                  <DataTableCell className="text-muted-foreground">
+                    {location.address ?? '—'}
+                  </DataTableCell>
+                  <DataTableCell className="capitalize">{location.status}</DataTableCell>
+                  <DataTableCell className="text-right">
+                    <RowActions
+                      label={`Actions for ${location.name}`}
+                      actions={
+                        location.status === 'active'
+                          ? [
+                              {
+                                key: 'archive',
+                                label: 'Archive',
+                                icon: Archive,
+                                onSelect: () => {
+                                  setArchiveTarget(location);
+                                },
+                              },
+                              {
+                                key: 'delete',
+                                label: 'Delete',
+                                icon: Trash2,
+                                tone: 'destructive' as const,
+                                onSelect: () => {
+                                  setDeleteTarget(location);
+                                },
+                              },
+                            ]
+                          : [
+                              {
+                                key: 'restore',
+                                label: 'Restore',
+                                icon: ArchiveRestore,
+                                disabled: restoreMutation.isPending,
+                                onSelect: () => {
+                                  restoreMutation.mutate(location);
+                                },
+                              },
+                              {
+                                key: 'delete',
+                                label: 'Delete',
+                                icon: Trash2,
+                                tone: 'destructive' as const,
+                                onSelect: () => {
+                                  setDeleteTarget(location);
+                                },
+                              },
+                            ]
+                      }
+                    />
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </tbody>
+          </DataTable>
         )}
       </div>
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete &quot;{deleteTarget?.name}&quot;?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the location, its zones and its tables for good. A location that has ever
+              taken an order cannot be deleted — archive it instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={deleteMutation.isPending}
+              onClick={(e) => {
+                e.preventDefault();
+                if (deleteTarget) deleteMutation.mutate(deleteTarget);
+              }}
+            >
+              {deleteMutation.isPending ? 'Deleting…' : 'Delete location'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog
         open={archiveTarget !== null}

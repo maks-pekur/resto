@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import type { LocationId, TenantId } from '@resto/domain';
-import { LocationAlreadyArchivedError } from './errors';
+import type { LocationId, OpeningHours, TenantId, WifiAccess } from '@resto/domain';
+import { LocationNotArchivedError, LocationAlreadyArchivedError } from './errors';
 
 export const LocationName = z.string().min(1).max(200);
 
@@ -46,6 +46,9 @@ export interface LocationSnapshot {
   readonly longitude: number | null;
   readonly timezone: string | null;
   readonly contacts: LocationContacts | null;
+  /** Hours and guest wi-fi belong to the address, not the company: a chain's points differ. */
+  readonly openingHours: OpeningHours | null;
+  readonly wifi: WifiAccess | null;
   readonly status: 'active' | 'archived';
   readonly createdAt: Date;
   readonly updatedAt: Date;
@@ -77,6 +80,8 @@ export class Location {
       readonly longitude?: number | null | undefined;
       readonly timezone?: string | null | undefined;
       readonly contacts?: LocationContacts | null | undefined;
+      readonly openingHours?: OpeningHours | null | undefined;
+      readonly wifi?: WifiAccess | null | undefined;
     },
     now: Date = new Date(),
   ): void {
@@ -91,6 +96,8 @@ export class Location {
       ...(input.longitude !== undefined ? { longitude: input.longitude } : {}),
       ...(input.timezone !== undefined ? { timezone: input.timezone } : {}),
       ...(input.contacts !== undefined ? { contacts: input.contacts } : {}),
+      ...(input.openingHours !== undefined ? { openingHours: input.openingHours } : {}),
+      ...(input.wifi !== undefined ? { wifi: input.wifi } : {}),
       updatedAt: now,
     };
   }
@@ -111,6 +118,19 @@ export class Location {
       tenantId: this.snapshot.tenantId,
       occurredAt: now,
     });
+  }
+
+  /** Archiving is our delete, so un-archiving has to exist — otherwise a slip is permanent. */
+  restore(now: Date = new Date()): void {
+    if (this.snapshot.status !== 'archived') {
+      throw new LocationNotArchivedError(this.snapshot.id);
+    }
+    this.snapshot = {
+      ...this.snapshot,
+      status: 'active',
+      archivedAt: null,
+      updatedAt: now,
+    };
   }
 
   pullEvents(): LocationDomainEvent[] {

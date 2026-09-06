@@ -28,6 +28,10 @@ import {
   type ItemStatusFilter,
   type ModifierGroupDetailRow,
   type ModifierGroupListRow,
+  type ModifierOptionListRow,
+  type ModifierOptionUsageRow,
+  type OptionStopListEntryRow,
+  type OptionStopListInsertRow,
   type StopListEntryRow,
   type StopListInsertRow,
   type UpsertCategoryRow,
@@ -40,10 +44,12 @@ import {
   CatalogCodeConflictError,
   CategoryNestingDepthError,
   MenuCategoryNotFoundError,
+  MenuIngredientAlreadyAttachedError,
   MenuItemNotFoundError,
   MenuItemSizeNotFoundError,
   MenuModifierGroupNotFoundError,
   MenuModifierOptionNotFoundError,
+  TooManyGroupDefaultsError,
 } from '../domain/errors';
 import type {
   PublishedMenu,
@@ -59,6 +65,13 @@ const AGGREGATE_STOP_LIST_PAGE_SIZE = 50;
 
 @Injectable()
 export class CatalogDrizzleRepository implements CatalogRepository {
+  /** Operator-surface photos live in the private upload prefix, so a browser cannot
+   * fetch them by key — reads carry a presigned url. Same 300s ceiling the upload URL
+   * uses (OWASP V12); a page view never outlives it, and presigning is local SigV4
+   * arithmetic, not an S3 round trip. `presignGet` degrades to '' rather than throwing,
+   * so an S3 outage blanks a thumbnail instead of failing the list. */
+  static readonly PHOTO_URL_TTL_SECONDS = 300;
+
   constructor(
     @Inject(TenantAwareDb) private readonly db: TenantAwareDb,
     @Inject(IMAGE_URL_PORT) private readonly imageUrl: ImageUrlPort,
@@ -99,26 +112,58 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         scoped.selectFrom(schema.menuItems, eq(schema.menuItems.status, 'published')),
       ]);
 
-      const [sizesRows, itemModifierRows, modifierGroupsRows] = await Promise.all([
-        scoped.selectFrom(schema.menuItemSizes),
-        scoped.selectFrom(schema.menuItemModifierGroups),
-        scoped.selectFrom(schema.menuModifierGroups),
-      ]);
+      const [sizesRows, itemModifierRows, modifierGroupsRows, groupOptionsRows, itemOptionsRows] =
+        await Promise.all([
+          scoped.selectFrom(schema.menuItemSizes),
+          scoped.selectFrom(schema.menuItemModifierGroups),
+          scoped.selectFrom(schema.menuModifierGroups),
+          scoped.selectFrom(schema.menuModifierGroupOptions),
+          scoped.selectFrom(schema.menuItemModifierOptions),
+        ]);
 
-      const optionsRows =
-        modifierGroupsRows.length === 0
+      const unionOptionIds = new Set<string>();
+      for (const row of groupOptionsRows) unionOptionIds.add(row.optionId);
+      for (const row of itemOptionsRows) unionOptionIds.add(row.optionId);
+      for (const item of allItemsRows) {
+        for (const line of item.compositionAssembled) unionOptionIds.add(line.optionId);
+      }
+
+      const optionRows =
+        unionOptionIds.size === 0
           ? []
           : await scoped.selectFrom(
               schema.menuModifierOptions,
-              inArray(
-                schema.menuModifierOptions.modifierGroupId,
-                modifierGroupsRows.map((m) => m.id),
-              ),
+              inArray(schema.menuModifierOptions.id, [...unionOptionIds]),
             );
+      // A Map keyed by option id is what makes "one bacon in three groups is one payload
+      // entry and one price" true by construction (D-03).
+      const modifierOptionsById = new Map<string, PublishedMenuModifierOption>(
+        optionRows.map((o) => [
+          o.id,
+          {
+            id: o.id,
+            name: o.name,
+            description: o.description ?? null,
+            imageUrl: o.imageS3Key ? this.imageUrl.publicUrl(o.imageS3Key) : null,
+            priceDelta: MoneyAmount.parse(o.priceDelta),
+            freeAmount: o.freeAmount,
+            minAmount: o.minAmount ?? null,
+            maxAmount: o.maxAmount ?? null,
+          },
+        ]),
+      );
 
       const sizesByItem = groupBy(sizesRows, (r) => r.menuItemId);
       const modifierGroupsByItem = groupBy(itemModifierRows, (r) => r.menuItemId);
-      const optionsByModifierGroup = groupBy(optionsRows, (r) => r.modifierGroupId);
+      const optionIdsByGroup = groupBy(groupOptionsRows, (r) => r.modifierGroupId);
+      const defaultOptionIdsByGroup = new Map<string, string[]>();
+      for (const r of groupOptionsRows) {
+        if (!r.isDefault) continue;
+        const acc = defaultOptionIdsByGroup.get(r.modifierGroupId) ?? [];
+        acc.push(r.optionId);
+        defaultOptionIdsByGroup.set(r.modifierGroupId, acc);
+      }
+      const extraOptionIdsByItem = groupBy(itemOptionsRows, (r) => r.menuItemId);
 
       const items = allItemsRows.map<PublishedMenuItem>((r) => {
         const photos = this.publicPhotos(r.photos);
@@ -136,12 +181,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           imageUrl: photos[0]?.url ?? null,
           photos,
           allergens: r.allergens ?? [],
+          diets: r.diets ?? [],
           sortOrder: r.sortOrder,
           proteins: r.proteins ?? null,
           fats: r.fats ?? null,
           carbs: r.carbs ?? null,
           kcal: r.kcal ?? null,
-          nutritionEstimated: r.nutritionEstimated,
           sizes: (sizesByItem.get(r.id) ?? []).map<PublishedMenuItemSize>((v) => ({
             id: MenuVariantId.parse(v.id),
             name: v.name,
@@ -149,9 +194,19 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             isDefault: v.isDefault,
             sortOrder: v.sortOrder,
           })),
-          modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? []).map((m) =>
-            MenuModifierId.parse(m.modifierGroupId),
-          ),
+          // The link table stores the order the operator arranged; without this the guest sees
+          // whatever order the rows came back in.
+          modifierGroupIds: (modifierGroupsByItem.get(r.id) ?? [])
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((m) => MenuModifierId.parse(m.modifierGroupId)),
+          extraOptionIds: (extraOptionIdsByItem.get(r.id) ?? [])
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map((o) => o.optionId),
+          compositionMode: r.compositionMode as 'text' | 'assembled',
+          composition: r.composition ?? [],
+          compositionLines: r.compositionAssembled,
         };
       });
 
@@ -167,19 +222,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const modifierGroups = modifierGroupsRows.map<PublishedMenuModifierGroup>((r) => ({
         id: MenuModifierId.parse(r.id),
         name: r.name,
-        minSelectable: r.minSelectable,
-        maxSelectable: r.maxSelectable,
+        display: r.display as 'tiles' | 'tabs',
+        behaviour: r.behaviour as 'one' | 'several',
         isRequired: r.isRequired,
-        options: (optionsByModifierGroup.get(r.id) ?? []).map<PublishedMenuModifierOption>((o) => ({
-          id: o.id,
-          name: o.name,
-          priceDelta: MoneyAmount.parse(o.priceDelta),
-          defaultAmount: o.defaultAmount,
-          freeAmount: o.freeAmount,
-          sortOrder: o.sortOrder,
-          minAmount: o.minAmount ?? null,
-          maxAmount: o.maxAmount ?? null,
-        })),
+        maxSelectable: r.maxSelectable ?? null,
+        defaultOptionIds: defaultOptionIdsByGroup.get(r.id) ?? [],
+        optionIds: (optionIdsByGroup.get(r.id) ?? [])
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((o) => o.optionId),
       }));
 
       const currency = items[0]?.currency ?? Currency.parse('USD');
@@ -191,6 +242,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         categories: categories.sort((a, b) => a.sortOrder - b.sortOrder),
         items: items.sort((a, b) => a.sortOrder - b.sortOrder),
         modifierGroups,
+        modifierOptions: [...modifierOptionsById.values()],
       };
     });
   }
@@ -202,11 +254,15 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const row = items[0];
       if (!row) return null;
 
-      const [sizes, links] = await Promise.all([
+      const [sizes, links, itemOptions] = await Promise.all([
         scoped.selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, row.id)),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
           eq(schema.menuItemModifierGroups.menuItemId, row.id),
+        ),
+        scoped.selectFrom(
+          schema.menuItemModifierOptions,
+          eq(schema.menuItemModifierOptions.menuItemId, row.id),
         ),
       ]);
       const photos = this.publicPhotos(row.photos);
@@ -224,12 +280,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         imageUrl: photos[0]?.url ?? null,
         photos,
         allergens: row.allergens ?? [],
+        diets: row.diets ?? [],
         sortOrder: row.sortOrder,
         proteins: row.proteins ?? null,
         fats: row.fats ?? null,
         carbs: row.carbs ?? null,
         kcal: row.kcal ?? null,
-        nutritionEstimated: row.nutritionEstimated,
         sizes: sizes.map<PublishedMenuItemSize>((v) => ({
           id: MenuVariantId.parse(v.id),
           name: v.name,
@@ -238,6 +294,13 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: v.sortOrder,
         })),
         modifierGroupIds: links.map((m) => MenuModifierId.parse(m.modifierGroupId)),
+        extraOptionIds: itemOptions
+          .slice()
+          .sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((o) => o.optionId),
+        compositionMode: row.compositionMode as 'text' | 'assembled',
+        composition: row.composition ?? [],
+        compositionLines: row.compositionAssembled,
       };
     });
   }
@@ -318,14 +381,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                   currency: input.currency,
                   photos,
                   allergens: input.allergens ? [...input.allergens] : null,
-                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  diets: input.diets ? [...input.diets] : null,
+                  composition: input.composition ? [...input.composition] : null,
+                  compositionMode: input.compositionMode,
+                  compositionAssembled: [...input.compositionAssembled],
                   metaTitle: input.metaTitle,
                   metaDescription: input.metaDescription,
                   proteins: input.proteins === null ? null : input.proteins.toString(),
                   fats: input.fats === null ? null : input.fats.toString(),
                   carbs: input.carbs === null ? null : input.carbs.toString(),
                   kcal: input.kcal,
-                  nutritionEstimated: input.nutritionEstimated,
                   source: input.source,
                   needsReview: input.needsReview,
                   sourceExternalId: input.sourceExternalId,
@@ -357,14 +422,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                   currency: input.currency,
                   photos,
                   allergens: input.allergens ? [...input.allergens] : null,
-                  ingredients: input.ingredients ? [...input.ingredients] : null,
+                  diets: input.diets ? [...input.diets] : null,
+                  composition: input.composition ? [...input.composition] : null,
+                  compositionMode: input.compositionMode,
+                  compositionAssembled: [...input.compositionAssembled],
                   metaTitle: input.metaTitle,
                   metaDescription: input.metaDescription,
                   proteins: input.proteins === null ? null : input.proteins.toString(),
                   fats: input.fats === null ? null : input.fats.toString(),
                   carbs: input.carbs === null ? null : input.carbs.toString(),
                   kcal: input.kcal,
-                  nutritionEstimated: input.nutritionEstimated,
                   source: input.source,
                   needsReview: input.needsReview,
                   sourceExternalId: input.sourceExternalId,
@@ -392,14 +459,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
               currency: input.currency,
               photos,
               allergens: input.allergens ? [...input.allergens] : null,
-              ingredients: input.ingredients ? [...input.ingredients] : null,
+              diets: input.diets ? [...input.diets] : null,
+              composition: input.composition ? [...input.composition] : null,
+              compositionMode: input.compositionMode,
+              compositionAssembled: [...input.compositionAssembled],
               metaTitle: input.metaTitle,
               metaDescription: input.metaDescription,
               proteins: input.proteins === null ? null : input.proteins.toString(),
               fats: input.fats === null ? null : input.fats.toString(),
               carbs: input.carbs === null ? null : input.carbs.toString(),
               kcal: input.kcal,
-              nutritionEstimated: input.nutritionEstimated,
               source: input.source,
               needsReview: input.needsReview,
               sourceExternalId: input.sourceExternalId,
@@ -419,14 +488,16 @@ export class CatalogDrizzleRepository implements CatalogRepository {
                 currency: input.currency,
                 photos,
                 allergens: input.allergens ? [...input.allergens] : null,
-                ingredients: input.ingredients ? [...input.ingredients] : null,
+                diets: input.diets ? [...input.diets] : null,
+                composition: input.composition ? [...input.composition] : null,
+                compositionMode: input.compositionMode,
+                compositionAssembled: [...input.compositionAssembled],
                 metaTitle: input.metaTitle,
                 metaDescription: input.metaDescription,
                 proteins: input.proteins === null ? null : input.proteins.toString(),
                 fats: input.fats === null ? null : input.fats.toString(),
                 carbs: input.carbs === null ? null : input.carbs.toString(),
                 kcal: input.kcal,
-                nutritionEstimated: input.nutritionEstimated,
                 source: input.source,
                 needsReview: input.needsReview,
                 sourceExternalId: input.sourceExternalId,
@@ -471,9 +542,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             schema.menuModifierGroups,
             {
               name: input.name,
-              minSelectable: input.minSelectable,
-              maxSelectable: input.maxSelectable,
+              display: input.display,
+              behaviour: input.behaviour,
               isRequired: input.isRequired,
+              maxSelectable: input.maxSelectable,
               updatedAt: new Date(),
             },
             eq(schema.menuModifierGroups.id, input.id),
@@ -485,9 +557,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const [row] = await scoped
         .insertInto(schema.menuModifierGroups, {
           name: input.name,
-          minSelectable: input.minSelectable,
-          maxSelectable: input.maxSelectable,
+          display: input.display,
+          behaviour: input.behaviour,
           isRequired: input.isRequired,
+          maxSelectable: input.maxSelectable,
         })
         .returning({ id: schema.menuModifierGroups.id });
       if (!row) throw new Error('upsertModifierGroup: insert returned no row');
@@ -497,29 +570,22 @@ export class CatalogDrizzleRepository implements CatalogRepository {
 
   async upsertModifierOption(input: UpsertModifierOptionRow): Promise<{ id: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
-      const parentGroup = await scoped
-        .selectFrom(
-          schema.menuModifierGroups,
-          eq(schema.menuModifierGroups.id, input.modifierGroupId),
-        )
-        .limit(1);
-      if (!parentGroup[0]) {
-        throw new MenuModifierGroupNotFoundError(input.modifierGroupId);
-      }
-
       if (input.id) {
         const [row] = await scoped
           .updateTable(
             schema.menuModifierOptions,
             {
-              modifierGroupId: input.modifierGroupId,
               name: input.name,
+              description: input.description,
+              imageS3Key: input.imageS3Key,
               priceDelta: input.priceDelta,
               defaultAmount: input.defaultAmount,
               freeAmount: input.freeAmount,
               sortOrder: input.sortOrder,
               minAmount: input.minAmount,
               maxAmount: input.maxAmount,
+              source: input.source,
+              sourceExternalId: input.sourceExternalId,
               updatedAt: new Date(),
             },
             eq(schema.menuModifierOptions.id, input.id),
@@ -530,14 +596,17 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       }
       const [row] = await scoped
         .insertInto(schema.menuModifierOptions, {
-          modifierGroupId: input.modifierGroupId,
           name: input.name,
+          description: input.description,
+          imageS3Key: input.imageS3Key,
           priceDelta: input.priceDelta,
           defaultAmount: input.defaultAmount,
           freeAmount: input.freeAmount,
           sortOrder: input.sortOrder,
           minAmount: input.minAmount,
           maxAmount: input.maxAmount,
+          source: input.source,
+          sourceExternalId: input.sourceExternalId,
         })
         .returning({ id: schema.menuModifierOptions.id });
       if (!row) throw new Error('upsertModifierOption: insert returned no row');
@@ -636,6 +705,198 @@ export class CatalogDrizzleRepository implements CatalogRepository {
     });
   }
 
+  async replaceGroupModifierOptions(input: {
+    modifierGroupId: string;
+    optionIds: readonly string[];
+    defaultOptionIds: readonly string[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const groupRows = await scoped
+        .selectFrom(
+          schema.menuModifierGroups,
+          eq(schema.menuModifierGroups.id, input.modifierGroupId),
+        )
+        .limit(1);
+      if (!groupRows[0]) {
+        throw new MenuModifierGroupNotFoundError(input.modifierGroupId);
+      }
+
+      const dedupedIds = [...new Set(input.optionIds)];
+      if (dedupedIds.length > 0) {
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, dedupedIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuModifierGroupOptions)
+        .where(
+          and(
+            eq(schema.menuModifierGroupOptions.tenantId, ctx.tenantId),
+            eq(schema.menuModifierGroupOptions.modifierGroupId, input.modifierGroupId),
+          ),
+        );
+
+      const defaults = new Set(input.defaultOptionIds.filter((id) => dedupedIds.includes(id)));
+      if (groupRows[0].behaviour === 'one' && defaults.size > 1) {
+        throw new TooManyGroupDefaultsError(input.modifierGroupId);
+      }
+
+      for (const [i, optionId] of dedupedIds.entries()) {
+        await scoped.insertInto(schema.menuModifierGroupOptions, {
+          modifierGroupId: input.modifierGroupId,
+          optionId,
+          sortOrder: i,
+          isDefault: defaults.has(optionId),
+        });
+      }
+
+      return { id: input.modifierGroupId };
+    });
+  }
+
+  async replaceItemModifierOptions(input: {
+    itemId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const itemRows = await scoped
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
+        .limit(1);
+      if (!itemRows[0]) {
+        throw new MenuItemNotFoundError(input.itemId);
+      }
+
+      const dedupedIds = [...new Set(input.optionIds)];
+      if (dedupedIds.length > 0) {
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, dedupedIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = dedupedIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      // D-04: refuse a duplicate single-ingredient attachment before writing, naming the
+      // group the ingredient already reaches the dish through.
+      if (dedupedIds.length > 0) {
+        const assignedGroupLinks = await scoped.selectFrom(
+          schema.menuItemModifierGroups,
+          eq(schema.menuItemModifierGroups.menuItemId, input.itemId),
+        );
+        if (assignedGroupLinks.length > 0) {
+          const assignedGroupIds = assignedGroupLinks.map((l) => l.modifierGroupId);
+          const [groupOptionLinks, groupRows] = await Promise.all([
+            scoped.selectFrom(
+              schema.menuModifierGroupOptions,
+              inArray(schema.menuModifierGroupOptions.modifierGroupId, assignedGroupIds),
+            ),
+            scoped.selectFrom(
+              schema.menuModifierGroups,
+              inArray(schema.menuModifierGroups.id, assignedGroupIds),
+            ),
+          ]);
+          const groupIdByOptionId = new Map(
+            groupOptionLinks.map((l) => [l.optionId, l.modifierGroupId]),
+          );
+          const groupNameById = new Map(groupRows.map((g) => [g.id, g.name]));
+          for (const optionId of dedupedIds) {
+            const groupId = groupIdByOptionId.get(optionId);
+            if (groupId === undefined) continue;
+            const groupName = groupNameById.get(groupId);
+            throw new MenuIngredientAlreadyAttachedError(
+              optionId,
+              groupName ? pickLocaleName(groupName) : groupId,
+            );
+          }
+        }
+      }
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuItemModifierOptions)
+        .where(
+          and(
+            eq(schema.menuItemModifierOptions.tenantId, ctx.tenantId),
+            eq(schema.menuItemModifierOptions.menuItemId, input.itemId),
+          ),
+        );
+
+      for (const [i, optionId] of dedupedIds.entries()) {
+        await scoped.insertInto(schema.menuItemModifierOptions, {
+          menuItemId: input.itemId,
+          optionId,
+          sortOrder: i,
+        });
+      }
+
+      return { id: input.itemId };
+    });
+  }
+
+  async setItemComposition(input: {
+    itemId: string;
+    mode: 'text' | 'assembled';
+    text: readonly string[];
+    lines: readonly { optionId: string; removable: boolean }[];
+  }): Promise<{ id: string }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const itemRows = await scoped
+        .selectFrom(schema.menuItems, eq(schema.menuItems.id, input.itemId))
+        .limit(1);
+      if (!itemRows[0]) {
+        throw new MenuItemNotFoundError(input.itemId);
+      }
+
+      if (input.lines.length > 0) {
+        const optionIds = [...new Set(input.lines.map((l) => l.optionId))];
+        const foundOptions = await scoped.selectFrom(
+          schema.menuModifierOptions,
+          and(
+            inArray(schema.menuModifierOptions.id, optionIds),
+            isNull(schema.menuModifierOptions.archivedAt),
+          ),
+        );
+        const foundSet = new Set(foundOptions.map((o) => o.id));
+        const firstMissing = optionIds.find((id) => !foundSet.has(id));
+        if (firstMissing !== undefined) {
+          throw new MenuModifierOptionNotFoundError(firstMissing);
+        }
+      }
+
+      // D-15/D-16: both payloads are always written together, so a mode switch
+      // can never leave the other one stale. Array position is the line order.
+      await scoped.updateTable(
+        schema.menuItems,
+        {
+          compositionMode: input.mode,
+          composition: [...input.text],
+          compositionAssembled: [...input.lines],
+          updatedAt: new Date(),
+        },
+        eq(schema.menuItems.id, input.itemId),
+      );
+
+      return { id: input.itemId };
+    });
+  }
+
   async addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }> {
     return this.db.withTenant(async (_tx, scoped) => {
       // slug is captured before insert so it can ride in the outbox event payload for slug-keyed consumers.
@@ -713,6 +974,68 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       await this.#bumpStopVersion(scoped, input.locationId);
 
       return { removed: result.length > 0, itemSlug };
+    });
+  }
+
+  async addOptionToStopList(input: OptionStopListInsertRow): Promise<{ id: string }> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const inserted = await scoped
+        .insertInto(schema.menuOptionStopList, {
+          locationId: input.locationId,
+          optionId: input.optionId,
+          reason: input.reason,
+          stoppedByUserId: input.stoppedByUserId,
+        })
+        .onConflictDoNothing({
+          target: [
+            schema.menuOptionStopList.tenantId,
+            schema.menuOptionStopList.locationId,
+            schema.menuOptionStopList.optionId,
+          ],
+        })
+        .returning({ id: schema.menuOptionStopList.id });
+      await this.#bumpStopVersion(scoped, input.locationId);
+      if (inserted[0]) {
+        return { id: inserted[0].id };
+      }
+      const existing = await scoped
+        .selectFrom(
+          schema.menuOptionStopList,
+          and(
+            eq(schema.menuOptionStopList.optionId, input.optionId),
+            eq(schema.menuOptionStopList.locationId, input.locationId),
+          ),
+        )
+        .limit(1);
+      const existingRow = existing[0];
+      if (!existingRow) {
+        throw new Error('addOptionToStopList: conflict path could not locate existing row');
+      }
+      return { id: existingRow.id };
+    });
+  }
+
+  async removeOptionFromStopList(input: {
+    optionId: string;
+    locationId: string;
+  }): Promise<{ removed: boolean }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      // Same sanctioned hard DELETE family as removeFromStopList — migration 0019 grants the privilege.
+      const ctx = requireTenantContext();
+      const result = await tx
+        .delete(schema.menuOptionStopList)
+        .where(
+          and(
+            eq(schema.menuOptionStopList.tenantId, ctx.tenantId),
+            eq(schema.menuOptionStopList.locationId, input.locationId),
+            eq(schema.menuOptionStopList.optionId, input.optionId),
+          ),
+        )
+        .returning({ id: schema.menuOptionStopList.id });
+
+      await this.#bumpStopVersion(scoped, input.locationId);
+
+      return { removed: result.length > 0 };
     });
   }
 
@@ -963,29 +1286,38 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       void tx;
 
       return {
-        rows: sliced.map<ItemListRow>((r) => {
-          const cat = categoryById.get(r.categoryId);
-          const parentName = cat?.parentId ? (parentNameById.get(cat.parentId) ?? null) : null;
-          const stoppedAt = stopByItem.get(r.id) ?? null;
-          const primaryPhoto = r.photos.find((p) => p.isPrimary) ?? r.photos[0] ?? null;
-          return {
-            id: r.id,
-            slug: r.slug,
-            name: r.name,
-            categoryId: r.categoryId,
-            categoryName: cat?.name ?? null,
-            parentCategoryName: parentName,
-            photo: primaryPhoto
-              ? { s3Key: primaryPhoto.s3Key, sortOrder: primaryPhoto.sortOrder }
-              : null,
-            basePrice: r.basePrice,
-            currency: r.currency,
-            status: r.status as 'draft' | 'published' | 'archived',
-            hasSizes: sizeByItem.has(r.id),
-            stoppedAt: stoppedAt ? stoppedAt.toISOString() : null,
-            sortOrder: r.sortOrder,
-          };
-        }),
+        rows: await Promise.all(
+          sliced.map<Promise<ItemListRow>>(async (r) => {
+            const cat = categoryById.get(r.categoryId);
+            const parentName = cat?.parentId ? (parentNameById.get(cat.parentId) ?? null) : null;
+            const stoppedAt = stopByItem.get(r.id) ?? null;
+            const primaryPhoto = r.photos.find((p) => p.isPrimary) ?? r.photos[0] ?? null;
+            return {
+              id: r.id,
+              slug: r.slug,
+              name: r.name,
+              categoryId: r.categoryId,
+              categoryName: cat?.name ?? null,
+              parentCategoryName: parentName,
+              photo: primaryPhoto
+                ? {
+                    s3Key: primaryPhoto.s3Key,
+                    sortOrder: primaryPhoto.sortOrder,
+                    url: await this.imageUrl.presignGet(
+                      primaryPhoto.s3Key,
+                      CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                    ),
+                  }
+                : null,
+              basePrice: r.basePrice,
+              currency: r.currency,
+              status: r.status as 'draft' | 'published' | 'archived',
+              hasSizes: sizeByItem.has(r.id),
+              stoppedAt: stoppedAt ? stoppedAt.toISOString() : null,
+              sortOrder: r.sortOrder,
+            };
+          }),
+        ),
         total,
       };
     });
@@ -996,7 +1328,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       const rows = await scoped.selectFrom(schema.menuItems, eq(schema.menuItems.id, id)).limit(1);
       const r = rows[0];
       if (!r) return null;
-      const [sizes, links] = await Promise.all([
+      const [sizes, links, optionLinks] = await Promise.all([
         scoped
           .selectFrom(schema.menuItemSizes, eq(schema.menuItemSizes.menuItemId, id))
           .orderBy(asc(schema.menuItemSizes.sortOrder)),
@@ -1004,6 +1336,12 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           schema.menuItemModifierGroups,
           eq(schema.menuItemModifierGroups.menuItemId, id),
         ),
+        scoped
+          .selectFrom(
+            schema.menuItemModifierOptions,
+            eq(schema.menuItemModifierOptions.menuItemId, id),
+          )
+          .orderBy(asc(schema.menuItemModifierOptions.sortOrder)),
       ]);
       return {
         id: r.id,
@@ -1013,16 +1351,26 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         description: r.description ?? null,
         basePrice: r.basePrice,
         currency: r.currency,
-        photos: r.photos,
+        photos: await Promise.all(
+          r.photos.map(async (ph) => ({
+            ...ph,
+            url: await this.imageUrl.presignGet(
+              ph.s3Key,
+              CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+            ),
+          })),
+        ),
         allergens: r.allergens ?? null,
-        ingredients: r.ingredients ?? null,
+        diets: r.diets ?? null,
+        composition: r.composition ?? null,
+        compositionMode: r.compositionMode as 'text' | 'assembled',
+        compositionAssembled: r.compositionAssembled,
         metaTitle: r.metaTitle ?? null,
         metaDescription: r.metaDescription ?? null,
         proteins: r.proteins === null ? null : Number(r.proteins),
         fats: r.fats === null ? null : Number(r.fats),
         carbs: r.carbs === null ? null : Number(r.carbs),
         kcal: r.kcal,
-        nutritionEstimated: r.nutritionEstimated,
         source: r.source as 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv',
         needsReview: r.needsReview,
         sourceExternalId: r.sourceExternalId,
@@ -1036,6 +1384,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
           sortOrder: s.sortOrder,
         })),
         modifierGroupIds: links.map((m) => m.modifierGroupId),
+        modifierOptionIds: optionLinks.map((m) => m.optionId),
       };
     });
   }
@@ -1047,10 +1396,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .orderBy(asc(schema.menuModifierGroups.id));
       if (groups.length === 0) return [];
       const groupIds = groups.map((g) => g.id);
-      const [options, links] = await Promise.all([
+      const [groupOptions, links] = await Promise.all([
         scoped.selectFrom(
-          schema.menuModifierOptions,
-          inArray(schema.menuModifierOptions.modifierGroupId, groupIds),
+          schema.menuModifierGroupOptions,
+          inArray(schema.menuModifierGroupOptions.modifierGroupId, groupIds),
         ),
         scoped.selectFrom(
           schema.menuItemModifierGroups,
@@ -1058,7 +1407,7 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         ),
       ]);
       const optionCount = new Map<string, number>();
-      for (const o of options)
+      for (const o of groupOptions)
         optionCount.set(o.modifierGroupId, (optionCount.get(o.modifierGroupId) ?? 0) + 1);
       const usageCount = new Map<string, number>();
       for (const l of links)
@@ -1066,9 +1415,10 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return groups.map<ModifierGroupListRow>((g) => ({
         id: g.id,
         name: g.name,
-        minSelectable: g.minSelectable,
-        maxSelectable: g.maxSelectable,
+        display: g.display as 'tiles' | 'tabs',
+        behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
+        maxSelectable: g.maxSelectable ?? null,
         optionCount: optionCount.get(g.id) ?? 0,
         usageCount: usageCount.get(g.id) ?? 0,
       }));
@@ -1082,23 +1432,153 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         .limit(1);
       const g = rows[0];
       if (!g) return null;
-      const options = await scoped
-        .selectFrom(schema.menuModifierOptions, eq(schema.menuModifierOptions.modifierGroupId, id))
-        .orderBy(asc(schema.menuModifierOptions.sortOrder));
+      const links = await scoped
+        .selectFrom(
+          schema.menuModifierGroupOptions,
+          eq(schema.menuModifierGroupOptions.modifierGroupId, id),
+        )
+        .orderBy(asc(schema.menuModifierGroupOptions.sortOrder));
+      const optionRows =
+        links.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuModifierOptions,
+              inArray(
+                schema.menuModifierOptions.id,
+                links.map((l) => l.optionId),
+              ),
+            );
+      const optionById = new Map(optionRows.map((o) => [o.id, o]));
+      const options = (
+        await Promise.all(
+          links.map(async (l) => {
+            const o = optionById.get(l.optionId);
+            if (!o) return null;
+            return {
+              id: o.id,
+              name: o.name,
+              description: o.description ?? null,
+              imageUrl: o.imageS3Key
+                ? await this.imageUrl.presignGet(
+                    o.imageS3Key,
+                    CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                  )
+                : null,
+              priceDelta: o.priceDelta,
+              defaultAmount: o.defaultAmount,
+              freeAmount: o.freeAmount,
+              sortOrder: l.sortOrder,
+            };
+          }),
+        )
+      ).filter((o): o is NonNullable<typeof o> => o !== null);
       return {
         id: g.id,
         name: g.name,
-        minSelectable: g.minSelectable,
-        maxSelectable: g.maxSelectable,
+        display: g.display as 'tiles' | 'tabs',
+        behaviour: g.behaviour as 'one' | 'several',
         isRequired: g.isRequired,
-        options: options.map((o) => ({
+        maxSelectable: g.maxSelectable ?? null,
+        defaultOptionIds: links.filter((l) => l.isDefault).map((l) => l.optionId),
+        options,
+      };
+    });
+  }
+
+  // D-27: no search, no paging — a restaurant has tens of ingredients.
+  async listModifierOptions(): Promise<ModifierOptionListRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const options = await scoped.selectFrom(
+        schema.menuModifierOptions,
+        isNull(schema.menuModifierOptions.archivedAt),
+      );
+      if (options.length === 0) return [];
+
+      const [groupOptionsRows, itemOptionsRows, itemsRows] = await Promise.all([
+        scoped.selectFrom(schema.menuModifierGroupOptions),
+        scoped.selectFrom(schema.menuItemModifierOptions),
+        scoped.selectFrom(schema.menuItems),
+      ]);
+
+      const groupCountByOption = new Map<string, number>();
+      for (const row of groupOptionsRows) {
+        groupCountByOption.set(row.optionId, (groupCountByOption.get(row.optionId) ?? 0) + 1);
+      }
+
+      // D-22: dishCount is the union of direct attachment and composition
+      // membership — being reachable through a group is not being "in" the dish.
+      const dishIdsByOption = new Map<string, Set<string>>();
+      const addDish = (optionId: string, dishId: string): void => {
+        const set = dishIdsByOption.get(optionId);
+        if (set) set.add(dishId);
+        else dishIdsByOption.set(optionId, new Set([dishId]));
+      };
+      for (const row of itemOptionsRows) addDish(row.optionId, row.menuItemId);
+      for (const item of itemsRows) {
+        for (const line of item.compositionAssembled) addDish(line.optionId, item.id);
+      }
+
+      const rows = await Promise.all(
+        options.map(async (o) => ({
           id: o.id,
           name: o.name,
+          description: o.description ?? null,
           priceDelta: o.priceDelta,
-          defaultAmount: o.defaultAmount,
-          freeAmount: o.freeAmount,
-          sortOrder: o.sortOrder,
+          imageUrl: o.imageS3Key
+            ? await this.imageUrl.presignGet(
+                o.imageS3Key,
+                CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+              )
+            : null,
+          imageS3Key: o.imageS3Key,
+          groupCount: groupCountByOption.get(o.id) ?? 0,
+          dishCount: dishIdsByOption.get(o.id)?.size ?? 0,
         })),
+      );
+
+      return rows.sort((a, b) => pickLocaleName(a.name).localeCompare(pickLocaleName(b.name)));
+    });
+  }
+
+  async getModifierOptionUsage(optionId: string): Promise<ModifierOptionUsageRow> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const groupLinks = await scoped.selectFrom(
+        schema.menuModifierGroupOptions,
+        eq(schema.menuModifierGroupOptions.optionId, optionId),
+      );
+      const groupIds = [...new Set(groupLinks.map((l) => l.modifierGroupId))];
+      const groupRows =
+        groupIds.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuModifierGroups,
+              inArray(schema.menuModifierGroups.id, groupIds),
+            );
+
+      const itemLinks = await scoped.selectFrom(
+        schema.menuItemModifierOptions,
+        eq(schema.menuItemModifierOptions.optionId, optionId),
+      );
+      const attachedItemIds = [...new Set(itemLinks.map((l) => l.menuItemId))];
+      const attachedItemRows =
+        attachedItemIds.length === 0
+          ? []
+          : await scoped.selectFrom(
+              schema.menuItems,
+              inArray(schema.menuItems.id, attachedItemIds),
+            );
+
+      // D-22: composition membership, expressed as jsonb containment against a
+      // one-element array — the same `sql` fragment shape listItems uses for ILIKE.
+      const compositionItemRows = await scoped.selectFrom(
+        schema.menuItems,
+        sql`${schema.menuItems.compositionAssembled} @> ${JSON.stringify([{ optionId }])}::jsonb`,
+      );
+
+      return {
+        groups: groupRows.map((g) => ({ id: g.id, name: g.name })),
+        dishesAttached: attachedItemRows.map((i) => ({ id: i.id, name: i.name })),
+        dishesInComposition: compositionItemRows.map((i) => ({ id: i.id, name: i.name })),
       };
     });
   }
@@ -1124,17 +1604,32 @@ export class CatalogDrizzleRepository implements CatalogRepository {
             )
           : [];
       const catById = new Map(categories.map((c) => [c.id, c.name]));
-      return stopRows.map<StopListEntryRow>((s) => {
-        const item = itemById.get(s.itemId);
-        return {
-          id: s.id,
-          itemId: s.itemId,
-          itemName: item?.name ?? null,
-          categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
-          stoppedAt: s.stoppedAt.toISOString(),
-          reason: s.reason ?? null,
-        };
-      });
+      return Promise.all(
+        stopRows.map<Promise<StopListEntryRow>>(async (s) => {
+          const item = itemById.get(s.itemId);
+          const primaryPhoto = item
+            ? (item.photos.find((ph) => ph.isPrimary) ?? item.photos[0] ?? null)
+            : null;
+          return {
+            id: s.id,
+            itemId: s.itemId,
+            itemName: item?.name ?? null,
+            categoryName: item ? (catById.get(item.categoryId) ?? null) : null,
+            photo: primaryPhoto
+              ? {
+                  s3Key: primaryPhoto.s3Key,
+                  sortOrder: primaryPhoto.sortOrder,
+                  url: await this.imageUrl.presignGet(
+                    primaryPhoto.s3Key,
+                    CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                  ),
+                }
+              : null,
+            stoppedAt: s.stoppedAt.toISOString(),
+            reason: s.reason ?? null,
+          };
+        }),
+      );
     });
   }
 
@@ -1145,6 +1640,50 @@ export class CatalogDrizzleRepository implements CatalogRepository {
         eq(schema.menuStopList.locationId, locationId),
       );
       return rows.map((r) => r.itemId);
+    });
+  }
+
+  // D-23: computed per read, never materialised at publish.
+  async listStoppedIngredientIds(locationId: string): Promise<string[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const rows = await scoped.selectFrom(
+        schema.menuOptionStopList,
+        eq(schema.menuOptionStopList.locationId, locationId),
+      );
+      return rows.map((r) => r.optionId);
+    });
+  }
+
+  async listOptionStopListWithStoppedAt(locationId: string): Promise<OptionStopListEntryRow[]> {
+    return this.db.withTenant(async (_tx, scoped) => {
+      const stopRows = await scoped
+        .selectFrom(schema.menuOptionStopList, eq(schema.menuOptionStopList.locationId, locationId))
+        .orderBy(desc(schema.menuOptionStopList.stoppedAt));
+      if (stopRows.length === 0) return [];
+      const optionIds = stopRows.map((s) => s.optionId);
+      const options = await scoped.selectFrom(
+        schema.menuModifierOptions,
+        inArray(schema.menuModifierOptions.id, optionIds),
+      );
+      const optionById = new Map(options.map((o) => [o.id, o]));
+      return Promise.all(
+        stopRows.map<Promise<OptionStopListEntryRow>>(async (s) => {
+          const option = optionById.get(s.optionId);
+          return {
+            id: s.id,
+            optionId: s.optionId,
+            optionName: option?.name ?? null,
+            imageUrl: option?.imageS3Key
+              ? await this.imageUrl.presignGet(
+                  option.imageS3Key,
+                  CatalogDrizzleRepository.PHOTO_URL_TTL_SECONDS,
+                )
+              : null,
+            stoppedAt: s.stoppedAt.toISOString(),
+            reason: s.reason ?? null,
+          };
+        }),
+      );
     });
   }
 
@@ -1289,6 +1828,56 @@ export class CatalogDrizzleRepository implements CatalogRepository {
       return { found: rows.length > 0 };
     });
   }
+
+  // D-28: archive strips the ingredient from every group, every dish attachment
+  // and every composition line, in the same tenant-bound transaction.
+  async archiveModifierOption(id: string): Promise<{ found: boolean }> {
+    return this.db.withTenant(async (tx, scoped) => {
+      const rows = await scoped
+        .updateTable(
+          schema.menuModifierOptions,
+          { archivedAt: new Date(), updatedAt: new Date() },
+          eq(schema.menuModifierOptions.id, id),
+        )
+        .returning({ id: schema.menuModifierOptions.id });
+      if (rows.length === 0) return { found: false };
+
+      const ctx = requireTenantContext();
+      await tx
+        .delete(schema.menuModifierGroupOptions)
+        .where(
+          and(
+            eq(schema.menuModifierGroupOptions.tenantId, ctx.tenantId),
+            eq(schema.menuModifierGroupOptions.optionId, id),
+          ),
+        );
+      await tx
+        .delete(schema.menuItemModifierOptions)
+        .where(
+          and(
+            eq(schema.menuItemModifierOptions.tenantId, ctx.tenantId),
+            eq(schema.menuItemModifierOptions.optionId, id),
+          ),
+        );
+
+      const composedItems = await scoped.selectFrom(
+        schema.menuItems,
+        sql`${schema.menuItems.compositionAssembled} @> ${JSON.stringify([{ optionId: id }])}::jsonb`,
+      );
+      for (const item of composedItems) {
+        await scoped.updateTable(
+          schema.menuItems,
+          {
+            compositionAssembled: item.compositionAssembled.filter((line) => line.optionId !== id),
+            updatedAt: new Date(),
+          },
+          eq(schema.menuItems.id, item.id),
+        );
+      }
+
+      return { found: true };
+    });
+  }
 }
 
 const isCodeUniqueViolation = (err: unknown, constraintName: string): boolean => {
@@ -1309,6 +1898,17 @@ const isCodeUniqueViolation = (err: unknown, constraintName: string): boolean =>
     cur = e.cause;
   }
   return false;
+};
+
+// Mirrors application/slug-util.ts's pickDefaultLocaleValue — kept local here so
+// infrastructure does not reach into the application layer for a one-line pick.
+const pickLocaleName = (name: Record<string, string>): string => {
+  if (typeof name.ru === 'string' && name.ru.length > 0) return name.ru;
+  if (typeof name.en === 'string' && name.en.length > 0) return name.en;
+  for (const value of Object.values(name)) {
+    if (typeof value === 'string' && value.length > 0) return value;
+  }
+  return '';
 };
 
 const groupBy = <T, K>(items: readonly T[], keyOf: (item: T) => K): Map<K, T[]> => {

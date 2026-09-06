@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Minus } from 'lucide-react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +10,9 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { formatDuration } from '@/lib/menu/format-age';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { formatMoney, toMinorUnits } from '@/lib/utils';
-import { usePermissions } from '@/lib/hooks/use-permissions';
+import { toMinorUnits } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
+import { usePermissions } from '@/hooks/use-permissions';
 import {
   orderDetailQuery,
   advanceOrderStatusMutation,
@@ -21,23 +22,17 @@ import {
   type OrderFeedRowApi,
 } from '@/lib/queries/orders';
 import { OrderStatusBadge } from './order-status-badge';
-import { AGE_BAND_CLASS, deriveOrderCardState } from './order-card';
+import { AGE_BAND_CLASS, deriveOrderRowState } from './order-row';
 import { REASON_LABEL_KEYS, type OrderCancelReasonCode } from './reject-popover';
 import { CancelDialog } from './cancel-dialog';
 
-const CANCELABLE_STATUSES: readonly string[] = [
-  'created',
-  'paid',
-  'accepted',
-  'preparing',
-  'ready',
-];
+const CANCELABLE_STATUSES: readonly string[] = ['placed', 'accepted', 'preparing', 'ready'];
 const REFUNDABLE_STATUSES: readonly string[] = ['completed'];
 
-const FULFILLMENT_LABEL_KEY: Record<OrderDetailApi['fulfillmentMode'], string> = {
-  dine_in: 'card.fulfillmentDineIn',
-  pickup: 'card.fulfillmentPickup',
-  delivery: 'card.fulfillmentDelivery',
+const ORDER_TYPE_LABEL_KEY: Record<OrderDetailApi['orderType'], string> = {
+  dine_in: 'card.orderTypeDineIn',
+  pickup: 'card.orderTypePickup',
+  delivery: 'card.orderTypeDelivery',
 };
 
 const ADVANCE_TRANSITIONS: Record<
@@ -73,6 +68,7 @@ interface OrderDetailBodyProps {
 
 function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const { can } = usePermissions();
@@ -122,7 +118,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         return;
       }
       showSuccess(
-        t('refund.successToast', { amount: formatMoney(refundAmount, detail?.currency ?? '') }),
+        t('refund.successToast', { amount: money(refundAmount, detail?.currency ?? '') }),
       );
       setRefundReason('');
       void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
@@ -142,7 +138,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
       }
       showSuccess(
         t('refund.successToast', {
-          amount: formatMoney(res.data.amountMinor / 100, detail?.currency ?? ''),
+          amount: money(res.data.amountMinor / 100, detail?.currency ?? ''),
         }),
       );
       void queryClient.invalidateQueries({ queryKey: ['orders', 'feed'] });
@@ -157,7 +153,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
     return <div className="p-4 text-sm text-muted-foreground">{tCommon('loading')}</div>;
   }
 
-  const state = deriveOrderCardState(detail, now);
+  const state = deriveOrderRowState(detail, now);
   const stateEnteredAt =
     state === 'new'
       ? detail.createdAt
@@ -192,13 +188,27 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
 
   return (
     <div className="flex flex-1 flex-col gap-4 overflow-y-auto">
+      {detail.review === null ? null : (
+        <div className="bg-muted flex flex-col gap-1 rounded-md p-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <span aria-hidden>{'★'.repeat(detail.review.rating)}</span>
+            <span className="text-muted-foreground">
+              {t('review.rating', { rating: detail.review.rating })}
+            </span>
+          </div>
+          {detail.review.comment === null ? null : (
+            <p className="text-sm whitespace-pre-line">{detail.review.comment}</p>
+          )}
+        </div>
+      )}
+
       {detail.hasFailedRefund ? (
         <div className="flex flex-col gap-1 rounded-md border border-destructive bg-destructive/10 p-3 text-destructive">
           <div className="flex items-center justify-between gap-2">
             <span className="flex items-center gap-1.5 text-sm">
               <AlertTriangle className="size-4" />
               {t('refund.failedBanner', {
-                amount: formatMoney(detail.failedRefundAmount ?? detail.total, detail.currency),
+                amount: money(detail.failedRefundAmount ?? detail.total, detail.currency),
               })}
             </span>
             {canRetry ? (
@@ -262,8 +272,13 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         ) : null}
 
         <div className="flex flex-col gap-1 text-sm">
-          <span>{t(FULFILLMENT_LABEL_KEY[detail.fulfillmentMode])}</span>
-          {detail.tableIdentifier !== null ? (
+          <span>{t(ORDER_TYPE_LABEL_KEY[detail.orderType])}</span>
+          {detail.tableZoneName !== null && detail.tableNumber !== null ? (
+            <span className="text-muted-foreground">
+              {t('detail.tableIdentifierLabel')}:{' '}
+              {t('card.tableLabel', { zone: detail.tableZoneName, number: detail.tableNumber })}
+            </span>
+          ) : detail.tableIdentifier !== null ? (
             <span className="text-muted-foreground">
               {t('detail.tableIdentifierLabel')}: {detail.tableIdentifier}
             </span>
@@ -294,42 +309,58 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">{t('detail.itemsTitle')}</h3>
           <div className="flex flex-col gap-2">
-            {detail.items.map((item) => (
-              <div key={item.id} className="flex flex-col gap-0.5 text-sm">
-                <div className="flex items-center justify-between gap-2">
-                  <span>
-                    {item.nameSnapshot} × {item.quantity}
-                  </span>
-                  <span>{formatMoney(item.lineTotal, item.currency)}</span>
+            {detail.items.map((item) => {
+              const addedModifiers = item.modifiers.filter((modifier) => modifier.kind === 'added');
+              const excludedModifiers = item.modifiers.filter(
+                (modifier) => modifier.kind === 'excluded',
+              );
+              return (
+                <div key={item.id} className="flex flex-col gap-0.5 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>
+                      {item.nameSnapshot} × {item.quantity}
+                    </span>
+                    <span>{money(item.lineTotal, item.currency)}</span>
+                  </div>
+                  {addedModifiers.map((modifier, index) => (
+                    <span
+                      key={`${item.id}-${index.toString()}`}
+                      className="pl-4 text-xs text-muted-foreground"
+                    >
+                      {modifier.nameSnapshot}
+                    </span>
+                  ))}
+                  {excludedModifiers.length > 0 ? (
+                    <span
+                      data-testid={`order-item-excluded-${item.id}`}
+                      className="flex items-center gap-1 pl-4 text-xs text-muted-foreground"
+                    >
+                      <Minus className="size-3" aria-hidden="true" />
+                      {t('detail.excludedLabel')}{' '}
+                      {excludedModifiers.map((modifier) => modifier.nameSnapshot).join(', ')}
+                    </span>
+                  ) : null}
                 </div>
-                {item.modifiers.map((modifier, index) => (
-                  <span
-                    key={`${item.id}-${index.toString()}`}
-                    className="pl-4 text-xs text-muted-foreground"
-                  >
-                    {modifier.nameSnapshot}
-                  </span>
-                ))}
-              </div>
-            ))}
+              );
+            })}
           </div>
           <Separator />
           <div className="flex flex-col gap-1 text-sm">
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsSubtotal')}</span>
-              <span>{formatMoney(detail.subtotal, detail.currency)}</span>
+              <span>{money(detail.subtotal, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsService')}</span>
-              <span>{formatMoney(detail.serviceFee, detail.currency)}</span>
+              <span>{money(detail.serviceFee, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-muted-foreground">{t('detail.totalsDiscount')}</span>
-              <span>{formatMoney(detail.discount, detail.currency)}</span>
+              <span>{money(detail.discount, detail.currency)}</span>
             </div>
             <div className="flex items-center justify-between font-semibold">
               <span>{t('detail.totalsTotal')}</span>
-              <span>{formatMoney(detail.total, detail.currency)}</span>
+              <span>{money(detail.total, detail.currency)}</span>
             </div>
           </div>
         </div>
@@ -361,7 +392,7 @@ function OrderDetailBody({ order, onClose }: OrderDetailBodyProps): React.ReactE
           <div className="flex flex-col gap-2">
             <h3 className="text-sm font-semibold">{t('refund.title')}</h3>
             <p className="text-xs text-muted-foreground">
-              {t('refund.remainingHint', { amount: formatMoney(detail.total, detail.currency) })}
+              {t('refund.remainingHint', { amount: money(detail.total, detail.currency) })}
             </p>
             <label className="text-sm" htmlFor="refund-amount">
               {t('refund.amountLabel')}

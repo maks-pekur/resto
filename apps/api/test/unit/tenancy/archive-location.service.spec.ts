@@ -18,6 +18,8 @@ const buildSnapshot = (over: Partial<LocationSnapshot> = {}): LocationSnapshot =
   longitude: null,
   timezone: null,
   contacts: null,
+  openingHours: null,
+  wifi: null,
   status: 'active',
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
@@ -30,6 +32,7 @@ const buildRepo = (): LocationRepository => ({
   listForTenant: vi.fn().mockResolvedValue([]),
   save: vi.fn().mockResolvedValue(undefined),
   countScopedMembers: vi.fn().mockResolvedValue(0),
+  deleteEmpty: vi.fn().mockResolvedValue(undefined),
 });
 
 describe('ArchiveLocationService', () => {

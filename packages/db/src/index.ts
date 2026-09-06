@@ -47,4 +47,4 @@ export { TenantScopedRepository } from './repository-base';
 export { deleteInboxProcessedOlderThan } from './inbox-retention';
 export { WITHOUT_TENANT_ALLOWLIST, type WithoutTenantAllowedFile } from './withoutTenant.allowlist';
 export type { LocalizedText } from './schema/_types';
-export type { MenuItemPhoto } from './schema/menu';
+export type { MenuItemCompositionLine, MenuItemPhoto } from './schema/menu';

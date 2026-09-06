@@ -1,7 +1,9 @@
 import { z } from 'zod';
 
+export const LocalizedTextFormSchema = z.record(z.string().max(4096));
+
 export const CategoryFormSchema = z.object({
-  name: z.string().trim().min(1).max(255),
+  name: LocalizedTextFormSchema,
   parentId: z.string().uuid().nullable(),
   sortOrder: z.number().int().nonnegative(),
 });
@@ -42,23 +44,36 @@ export const coerceStatusFilter = (raw: string | undefined): ItemListStatusFilte
 };
 
 export const ItemEditorFormSchema = z.object({
-  name: z.string().trim().min(1).max(255),
-  description: z.string().max(4096).nullable(),
+  name: LocalizedTextFormSchema,
+  description: LocalizedTextFormSchema.nullable(),
   categoryId: z.string().uuid(),
   basePrice: z.number().min(0),
   currency: z.string().regex(/^[A-Z]{3}$/u),
   allergens: z.array(z.string().min(1).max(100)).max(50),
-  ingredients: z.array(z.string().min(1).max(100)).max(50),
+  diets: z.array(z.string().min(1).max(50)).max(20),
+  compositionMode: z.enum(['text', 'assembled']),
+  compositionText: z.array(z.string().min(1).max(100)).max(50),
+  compositionAssembled: z
+    .array(z.object({ optionId: z.string().uuid(), removable: z.boolean() }))
+    .max(50),
   metaTitle: z.string().max(70).nullable(),
   metaDescription: z.string().max(160).nullable(),
   proteins: z.number().min(0).max(999.99).nullable(),
   fats: z.number().min(0).max(999.99).nullable(),
   carbs: z.number().min(0).max(999.99).nullable(),
   kcal: z.number().int().min(0).max(32000).nullable(),
-  nutritionEstimated: z.boolean(),
 });
 
 export type ItemEditorForm = z.infer<typeof ItemEditorFormSchema>;
+
+/** The other languages are optional; the one everything falls back to is not. */
+export const itemEditorFormSchema = (defaultLocale: string) =>
+  ItemEditorFormSchema.extend({
+    name: LocalizedTextFormSchema.refine(
+      (value) => (value[defaultLocale] ?? '').trim().length > 0,
+      'nameRequired',
+    ),
+  });
 
 export const SizeFormSchema = z.object({
   name: z.string().trim().min(1).max(100),
@@ -68,18 +83,21 @@ export const SizeFormSchema = z.object({
 
 export type SizeForm = z.infer<typeof SizeFormSchema>;
 
-export const ModifierGroupFormSchema = z
-  .object({
-    name: z.string().trim().min(1).max(255),
-    minSelectable: z.number().int().min(0).max(99),
-    maxSelectable: z.number().int().min(0).max(99),
-  })
-  .refine((m) => m.maxSelectable === 0 || m.maxSelectable >= m.minSelectable, {
-    message: 'Максимум должен быть больше или равен минимуму, либо 0 (без ограничений).',
-    path: ['maxSelectable'],
-  });
+export const ModifierGroupFormSchema = z.object({
+  name: LocalizedTextFormSchema,
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
+  isRequired: z.boolean(),
+  maxSelectable: z.number().int().positive().max(50).nullable(),
+});
 
 export type ModifierGroupForm = z.infer<typeof ModifierGroupFormSchema>;
+
+export const modifierGroupFormSchema = (defaultLocale: string) =>
+  ModifierGroupFormSchema.refine(
+    (values) => (values.name[defaultLocale] ?? '').trim().length > 0,
+    'nameRequired',
+  );
 
 export const ModifierOptionFormSchema = z.object({
   name: z.string().trim().min(1).max(255),
@@ -89,3 +107,18 @@ export const ModifierOptionFormSchema = z.object({
 });
 
 export type ModifierOptionForm = z.infer<typeof ModifierOptionFormSchema>;
+
+export const ModifierFormSchema = z.object({
+  name: LocalizedTextFormSchema,
+  description: z.string().max(140).nullable(),
+  priceDelta: z.number().min(0),
+  imageS3Key: z.string().nullable(),
+});
+
+export type ModifierForm = z.infer<typeof ModifierFormSchema>;
+
+export const modifierFormSchema = (defaultLocale: string) =>
+  ModifierFormSchema.refine(
+    (values) => (values.name[defaultLocale] ?? '').trim().length > 0,
+    'nameRequired',
+  );

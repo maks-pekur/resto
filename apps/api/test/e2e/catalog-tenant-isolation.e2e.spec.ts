@@ -133,7 +133,7 @@ suite('Catalog — cross-tenant write isolation (AUDIT #2/#3)', () => {
       method: 'POST',
       url: '/v1/catalog/modifier-groups',
       headers: hdrA(),
-      payload: { name: { en: 'Sauce' }, minSelectable: 0, maxSelectable: 1, isRequired: false },
+      payload: { name: { en: 'Sauce' }, display: 'tiles', behaviour: 'several', isRequired: false },
     });
     expect(created.statusCode).toBe(200);
     const groupId = created.json<{ id: string }>().id;
@@ -145,8 +145,8 @@ suite('Catalog — cross-tenant write isolation (AUDIT #2/#3)', () => {
       payload: {
         id: groupId,
         name: { en: 'Hijacked' },
-        minSelectable: 0,
-        maxSelectable: 1,
+        display: 'tiles',
+        behaviour: 'several',
         isRequired: false,
       },
     });

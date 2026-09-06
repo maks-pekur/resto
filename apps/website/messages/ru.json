@@ -13,7 +13,6 @@
     "itemCount": "Корзина · {n}",
     "open": "Корзина",
     "subtotal": "Итого",
-    "table": "Стол {table}",
     "title": "Ваша корзина"
   },
   "menu": {
@@ -78,6 +77,11 @@
     "contactHeading": "Контакты",
     "faqHeading": "Частые вопросы"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "Цифровой дом для вашего ресторана — меню, заказы и многое другое в одном месте.",
+    "adminCta": "Вход для сотрудников"
+  },
   "errors": {
     "tenantNotFound": "Ресторан не найден",
     "tenantNotFoundBody": "Этого ресторана пока нет на RestOS. Если вы перешли по ссылке, возможно, она изменилась.",
@@ -94,7 +98,31 @@
     "qtyIncrease": "Увеличить количество {name}",
     "remove": "Удалить {name} из корзины",
     "size": "Размер",
-    "unavailable": "Сегодня недоступно"
+    "unavailable": "Сегодня недоступно",
+    "composition": "Состав",
+    "compositionExcludeAriaLabel": "Убрать «{name}»",
+    "compositionIncludeAriaLabel": "Вернуть «{name}»",
+    "choose": "Выбрать {name}",
+    "addNamed": "Добавить {name} за {price}",
+    "nutrition": "Пищевая ценность",
+    "nutritionOpen": "Пищевая ценность",
+    "nutritionPer100g": "Пищевая ценность на 100 г",
+    "calories": "Калории",
+    "protein": "Белки",
+    "fat": "Жиры",
+    "carbs": "Углеводы",
+    "kcal": "ккал",
+    "gram": "г",
+    "unit": {
+      "g": "г",
+      "kg": "кг",
+      "ml": "мл",
+      "l": "л",
+      "pcs": "шт"
+    },
+    "chooseFirst": "Выберите: {group}",
+    "weight": "Вес",
+    "added": "В корзине"
   },
   "locale": {
     "label": "Язык"
@@ -104,12 +132,54 @@
     "contact": "Контакты",
     "delivery": "Доставка",
     "faq": "Вопросы",
-    "poweredBy": "Работает на RestOS"
+    "poweredBy": "Работает на RestOS",
+    "socialsLabel": "Мы в соцсетях"
   },
   "theme": {
     "dark": "Тёмное",
     "label": "Оформление",
     "light": "Светлое",
     "system": "Как в системе"
+  },
+  "nav": {
+    "label": "Навигация",
+    "menu": "Меню",
+    "cart": "Корзина",
+    "info": "Инфо"
+  },
+  "info": {
+    "contacts": "Контакты",
+    "socials": "Мы в соцсетях"
+  },
+  "finder": {
+    "searchLabel": "Поиск по меню",
+    "searchPlaceholder": "Найти блюдо",
+    "clear": "Очистить",
+    "nothingFound": "Ничего не нашлось",
+    "searchToggle": "Поиск"
+  },
+  "diet": {
+    "vegetarian": "Вегетарианское",
+    "vegan": "Веганское",
+    "gluten_free": "Без глютена",
+    "lactose_free": "Без лактозы",
+    "spicy": "Острое",
+    "halal": "Халяль"
+  },
+  "allergen": {
+    "gluten": "глютен",
+    "crustaceans": "ракообразные",
+    "eggs": "яйца",
+    "fish": "рыба",
+    "peanuts": "арахис",
+    "soy": "соя",
+    "milk": "молоко",
+    "nuts": "орехи",
+    "celery": "сельдерей",
+    "mustard": "горчица",
+    "sesame": "кунжут",
+    "sulphites": "сульфиты",
+    "lupin": "люпин",
+    "molluscs": "моллюски"
   }
 }

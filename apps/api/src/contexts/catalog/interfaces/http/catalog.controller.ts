@@ -36,13 +36,20 @@ import {
   ItemListResponseDto,
   ModifierGroupDetailResponseDto,
   ModifierGroupListResponseDto,
+  ModifierOptionListResponseDto,
+  ModifierOptionUsageResponseDto,
+  OptionStopListResponseDto,
   PhotoUploadUrlInputDto,
   PhotoUploadUrlResponseDto,
   ReorderCategoriesInputDto,
   ReorderCategoriesResponseDto,
+  SetGroupModifierOptionsInputDto,
+  SetItemCompositionInputDto,
   SetItemModifierGroupsInputDto,
+  SetItemModifierOptionsInputDto,
   StopItemInputDto,
   StopListResponseDto,
+  StopOptionInputDto,
   UpsertCategoryInputDto,
   UpsertItemInputDto,
   UpsertItemSizeInputDto,
@@ -51,17 +58,25 @@ import {
 } from '../../application/dto';
 import { ArchiveCategoryService } from '../../application/categories/archive-category.service';
 import { ArchiveItemService } from '../../application/items/archive-item.service';
+import { ArchiveModifierOptionService } from '../../application/modifiers/archive-modifier-option.service';
 import { DelayedPublishService } from '../../application/publishing/delayed-publish.service';
 import { GetDraftDiffService } from '../../application/publishing/get-draft-diff.service';
 import { GetItemService } from '../../application/items/get-item.service';
 import { GetModifierGroupService } from '../../application/modifiers/get-modifier-group.service';
+import { GetModifierOptionUsageService } from '../../application/modifiers/get-modifier-option-usage.service';
+import { GetOptionStopListService } from '../../application/availability/get-option-stop-list.service';
 import { GetPhotoUploadUrlService } from '../../application/get-photo-upload-url.service';
 import { GetStopListAggregateService } from '../../application/availability/get-stop-list-aggregate.service';
 import { GetStopListService } from '../../application/availability/get-stop-list.service';
 import { ListCategoriesService } from '../../application/categories/list-categories.service';
 import { ListItemsService } from '../../application/items/list-items.service';
 import { ListModifierGroupsService } from '../../application/modifiers/list-modifier-groups.service';
+import { ListModifierOptionsService } from '../../application/modifiers/list-modifier-options.service';
+import { OptionStopListService } from '../../application/availability/option-stop-list.service';
 import { ReorderCategoriesService } from '../../application/categories/reorder-categories.service';
+import { SetGroupModifierOptionsService } from '../../application/modifiers/set-group-modifier-options.service';
+import { SetItemCompositionService } from '../../application/items/set-item-composition.service';
+import { SetItemModifierOptionsService } from '../../application/modifiers/set-item-modifier-options.service';
 import { StopListService } from '../../application/availability/stop-list.service';
 import { UpsertCategoryService } from '../../application/categories/upsert-category.service';
 import { UpsertItemService } from '../../application/items/upsert-item.service';
@@ -120,6 +135,21 @@ export class CatalogController {
     @Inject(GetStopListAggregateService)
     private readonly getStopListAggregateService: GetStopListAggregateService,
     @Inject(GetDraftDiffService) private readonly getDraftDiffService: GetDraftDiffService,
+    @Inject(ListModifierOptionsService)
+    private readonly listModifierOptionsService: ListModifierOptionsService,
+    @Inject(ArchiveModifierOptionService)
+    private readonly archiveModifierOptionService: ArchiveModifierOptionService,
+    @Inject(GetModifierOptionUsageService)
+    private readonly getModifierOptionUsageService: GetModifierOptionUsageService,
+    @Inject(SetGroupModifierOptionsService)
+    private readonly setGroupModifierOptionsService: SetGroupModifierOptionsService,
+    @Inject(SetItemModifierOptionsService)
+    private readonly setItemModifierOptionsService: SetItemModifierOptionsService,
+    @Inject(SetItemCompositionService)
+    private readonly setItemCompositionService: SetItemCompositionService,
+    @Inject(OptionStopListService) private readonly optionStopList: OptionStopListService,
+    @Inject(GetOptionStopListService)
+    private readonly getOptionStopListService: GetOptionStopListService,
   ) {}
 
   @Post('categories')
@@ -219,6 +249,66 @@ export class CatalogController {
     );
   }
 
+  @Put('modifier-groups/:id/options')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @LocationNeutral()
+  @ApiBody({ type: SetGroupModifierOptionsInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  setGroupModifierOptionsRoute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new RestoZodValidationPipe(SetGroupModifierOptionsInputDto))
+    input: SetGroupModifierOptionsInputDto,
+  ): Promise<IdResponseDto> {
+    return wrap(() =>
+      this.setGroupModifierOptionsService.execute({
+        modifierGroupId: id,
+        optionIds: input.optionIds,
+        defaultOptionIds: input.defaultOptionIds,
+      }),
+    );
+  }
+
+  @Put('items/:id/modifier-options')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @LocationNeutral()
+  @ApiBody({ type: SetItemModifierOptionsInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  setItemModifierOptionsRoute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new RestoZodValidationPipe(SetItemModifierOptionsInputDto))
+    input: SetItemModifierOptionsInputDto,
+  ): Promise<IdResponseDto> {
+    return wrap(() =>
+      this.setItemModifierOptionsService.execute({ itemId: id, optionIds: input.optionIds }),
+    );
+  }
+
+  @Put('items/:id/composition')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @LocationNeutral()
+  @ApiBody({ type: SetItemCompositionInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  setItemCompositionRoute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body(new RestoZodValidationPipe(SetItemCompositionInputDto))
+    input: SetItemCompositionInputDto,
+  ): Promise<IdResponseDto> {
+    return wrap(() =>
+      this.setItemCompositionService.execute({
+        itemId: id,
+        mode: input.mode,
+        text: input.text,
+        lines: input.lines,
+      }),
+    );
+  }
+
   @Post('stop-list')
   @HttpCode(HttpStatus.OK)
   @Permissions({ menu: ['update'] })
@@ -229,6 +319,35 @@ export class CatalogController {
     @Body(new RestoZodValidationPipe(StopItemInputDto)) input: StopItemInputDto,
   ): Promise<IdResponseDto> {
     return wrap(() => this.stopList.stop(input));
+  }
+
+  @Post('stop-list/options')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @ApiBody({ type: StopOptionInputDto })
+  @ApiOkResponse({ type: IdResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  optionStopListAdd(
+    @Body(new RestoZodValidationPipe(StopOptionInputDto)) input: StopOptionInputDto,
+  ): Promise<IdResponseDto> {
+    return wrap(() => this.optionStopList.stop(input));
+  }
+
+  @Delete('stop-list/options/:optionId')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @Permissions({ menu: ['update'] })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  optionStopListRemove(@Param('optionId', ParseUUIDPipe) optionId: string): Promise<void> {
+    return wrap(() => this.optionStopList.unstop(optionId)).then(() => undefined);
+  }
+
+  @Get('stop-list/options')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @ApiOkResponse({ type: OptionStopListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  getOptionStopList(): Promise<OptionStopListResponseDto> {
+    return wrap(() => this.getOptionStopListService.execute());
   }
 
   @Delete('stop-list/:itemId')
@@ -301,6 +420,18 @@ export class CatalogController {
   @ApiForbiddenResponse({ type: ProblemDetailsDto })
   archiveItem(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return wrap(() => this.archiveItemService.execute(id));
+  }
+
+  @Patch('modifier-options/:id/archive')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['update'] })
+  @LocationNeutral()
+  @ApiOkResponse({ type: ModifierOptionUsageResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  archiveModifierOption(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ModifierOptionUsageResponseDto> {
+    return wrap(() => this.archiveModifierOptionService.execute(id));
   }
 
   @Get('categories')
@@ -386,6 +517,28 @@ export class CatalogController {
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<ModifierGroupDetailResponseDto> {
     return wrap(() => this.getModifierGroupService.execute({ id }));
+  }
+
+  @Get('modifier-options')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @LocationNeutral()
+  @ApiOkResponse({ type: ModifierOptionListResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  listModifierOptions(): Promise<ModifierOptionListResponseDto> {
+    return wrap(() => this.listModifierOptionsService.execute());
+  }
+
+  @Get('modifier-options/:id/usage')
+  @HttpCode(HttpStatus.OK)
+  @Permissions({ menu: ['read'] })
+  @LocationNeutral()
+  @ApiOkResponse({ type: ModifierOptionUsageResponseDto })
+  @ApiForbiddenResponse({ type: ProblemDetailsDto })
+  getModifierOptionUsage(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<ModifierOptionUsageResponseDto> {
+    return wrap(() => this.getModifierOptionUsageService.execute(id));
   }
 
   @Get('stop-list')

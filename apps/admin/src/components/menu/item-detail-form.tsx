@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { useTranslation } from 'react-i18next';
+import { ALLERGENS, DIETS } from '@resto/domain';
 import { useNavigate } from '@tanstack/react-router';
 import { FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,10 +25,13 @@ import {
   ItemModifierGroupsCard,
   type AvailableGroup,
 } from '@/components/menu/item-modifier-groups-card';
+import { CompositionEditor } from '@/components/menu/composition-editor';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { upsertItem } from '@/lib/queries/catalog';
-import { ItemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
+import { upsertItem, setItemComposition, type ItemCompositionPayload } from '@/lib/queries/catalog';
+import { itemEditorFormSchema, type ItemEditorForm } from '@/lib/menu/zod-schemas';
 import { fromLocalizedText } from '@/lib/menu/localized';
+import { LocalizedField } from '@/components/common/localized-field';
+import { useContentLocales } from '@/hooks/use-content-locales';
 import type { CategoryListItemApi, ItemSizeApi } from '@/lib/queries/catalog';
 
 export interface ItemDetailFormState {
@@ -44,6 +48,7 @@ export interface ItemDetailFormProps {
   readonly onSizesChange: (sizes: readonly ItemSizeApi[]) => void;
   readonly availableModifierGroups: readonly AvailableGroup[];
   readonly initialModifierGroupIds: readonly string[];
+  readonly initialModifierIds: readonly string[];
   readonly onSaved: (savedId: string) => void;
   readonly slug: string;
   readonly formId: string;
@@ -51,12 +56,6 @@ export interface ItemDetailFormProps {
   readonly currentPhotoS3Key: string | null;
   readonly initialPhotoS3Key: string | null;
 }
-
-const commaListFromInput = (raw: string): string[] =>
-  raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
 
 export function ItemDetailForm({
   initialValues,
@@ -66,6 +65,7 @@ export function ItemDetailForm({
   onSizesChange,
   availableModifierGroups,
   initialModifierGroupIds,
+  initialModifierIds,
   onSaved,
   slug,
   formId,
@@ -78,8 +78,9 @@ export function ItemDetailForm({
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const queryClient = useQueryClient();
   const [pending, setPending] = React.useState(false);
+  const { defaultLocale } = useContentLocales();
   const form = useForm<ItemEditorForm>({
-    resolver: zodResolver(ItemEditorFormSchema),
+    resolver: zodResolver(itemEditorFormSchema(defaultLocale)),
     defaultValues: initialValues,
     mode: 'onChange',
   });
@@ -106,6 +107,11 @@ export function ItemDetailForm({
     },
   });
 
+  const compositionMutation = useMutation({
+    mutationFn: (input: { itemId: string; payload: ItemCompositionPayload }) =>
+      setItemComposition(input.itemId, input.payload),
+  });
+
   const onSubmit = form.handleSubmit(async (values) => {
     setPending(true);
     try {
@@ -114,8 +120,20 @@ export function ItemDetailForm({
         showError(null, t('saveFailed'));
         return;
       }
-      showSuccess(isNew ? t('itemCreated') : tCommon('saved'), { duration: 1500 });
       const savedId = res.data?.id ?? '';
+      const compositionRes = await compositionMutation.mutateAsync({
+        itemId: savedId,
+        payload: {
+          mode: values.compositionMode,
+          text: values.compositionText,
+          lines: values.compositionAssembled,
+        },
+      });
+      if (!compositionRes.ok) {
+        showError(null, t('saveFailed'));
+        return;
+      }
+      showSuccess(isNew ? t('itemCreated') : tCommon('saved'), { duration: 1500 });
       onSaved(savedId);
       if (isNew) {
         void navigate({
@@ -141,6 +159,7 @@ export function ItemDetailForm({
         className="flex flex-col gap-6"
       >
         <ItemBasicsCard categories={categories} slug={slug} />
+        <CompositionEditor />
         <ItemSizesCard
           itemId={currentItemId}
           sizes={initialItemSizes}
@@ -149,10 +168,11 @@ export function ItemDetailForm({
         <ItemModifierGroupsCard
           itemId={currentItemId}
           initialModifierGroupIds={initialModifierGroupIds}
+          initialModifierIds={initialModifierIds}
           availableGroups={availableModifierGroups}
         />
         <ItemNutritionCard />
-        <ItemAllergensCard initialAllergens={initialValues.allergens} />
+        <ItemDietaryCard />
         <ItemSeoCard />
       </form>
     </FormProvider>
@@ -167,6 +187,7 @@ function ItemBasicsCard({
   readonly slug: string;
 }): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
+  const { defaultLocale, locales } = useContentLocales();
   const form = useFormContext<ItemEditorForm>();
   const categoryOptions = categories.map((c) => ({
     id: c.id,
@@ -184,39 +205,38 @@ function ItemBasicsCard({
             control={form.control}
             name="name"
             render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>{t('name')}</FieldLabel>
-                <Input
-                  id={field.name}
-                  maxLength={255}
-                  aria-invalid={fieldState.error ? true : undefined}
-                  {...field}
-                />
-                <FieldDescription>{slug || t('slugPlaceholder')}</FieldDescription>
-                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
-              </Field>
+              <LocalizedField
+                id="item-name"
+                label={t('name')}
+                value={field.value}
+                onChange={(next) => {
+                  field.onChange(next ?? {});
+                }}
+                onBlur={field.onBlur}
+                locales={locales}
+                defaultLocale={defaultLocale}
+                maxLength={255}
+                description={slug || t('slugPlaceholder')}
+                {...(fieldState.error ? { error: t('nameRequired') } : {})}
+              />
             )}
           />
           <FormField
             control={form.control}
             name="description"
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.error ? true : undefined}>
-                <FieldLabel htmlFor={field.name}>{t('description')}</FieldLabel>
-                <Textarea
-                  id={field.name}
-                  maxLength={4096}
-                  rows={4}
-                  aria-invalid={fieldState.error ? true : undefined}
-                  value={field.value ?? ''}
-                  onChange={(e) => {
-                    field.onChange(e.target.value.length === 0 ? null : e.target.value);
-                  }}
-                  onBlur={field.onBlur}
-                  name={field.name}
-                />
-                {fieldState.error ? <FieldError>{fieldState.error.message}</FieldError> : null}
-              </Field>
+            render={({ field }) => (
+              <LocalizedField
+                id="item-description"
+                label={t('description')}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                locales={locales}
+                defaultLocale={defaultLocale}
+                multiline
+                nullable
+                maxLength={4096}
+              />
             )}
           />
           <FormField
@@ -259,7 +279,6 @@ function ItemNutritionCard(): React.ReactElement {
             fats={form.watch('fats')}
             carbs={form.watch('carbs')}
             kcal={form.watch('kcal')}
-            nutritionEstimated={form.watch('nutritionEstimated')}
             onChange={(name: BjuField, value: number | null) => {
               form.setValue(name, value, { shouldDirty: true, shouldTouch: true });
             }}
@@ -270,39 +289,91 @@ function ItemNutritionCard(): React.ReactElement {
   );
 }
 
-function ItemAllergensCard({
-  initialAllergens,
-}: {
-  readonly initialAllergens: readonly string[];
-}): React.ReactElement {
+function ItemDietaryCard(): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
-  const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const form = useFormContext<ItemEditorForm>();
-  const [allergensText, setAllergensText] = React.useState(initialAllergens.join(', '));
+  const allergens = form.watch('allergens');
+  const diets = form.watch('diets');
+
+  const toggle = (field: 'allergens' | 'diets', value: string, list: readonly string[]): void => {
+    const next = list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
+    form.setValue(field, next, { shouldDirty: true, shouldTouch: true });
+  };
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{t('allergens')}</CardTitle>
+        <CardTitle>{t('dietary')}</CardTitle>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
         <Field>
-          <FieldLabel htmlFor="allergens">{t('allergens')}</FieldLabel>
-          <Input
-            id="allergens"
-            value={allergensText}
-            placeholder={t('allergensPlaceholder')}
-            onChange={(e) => {
-              setAllergensText(e.target.value);
-              form.setValue('allergens', commaListFromInput(e.target.value), {
-                shouldDirty: true,
-                shouldTouch: true,
-              });
+          <FieldLabel>{t('diets')}</FieldLabel>
+          <ChipGroup
+            options={DIETS}
+            selected={diets}
+            label={(diet) => t(`diet.${diet}`)}
+            onToggle={(diet) => {
+              toggle('diets', diet, diets);
             }}
           />
-          <FieldDescription>{tCommon('comma')}</FieldDescription>
+          <FieldDescription>{t('dietsHint')}</FieldDescription>
+        </Field>
+
+        <Field>
+          <FieldLabel>{t('allergens')}</FieldLabel>
+          <ChipGroup
+            options={ALLERGENS}
+            selected={allergens}
+            label={(allergen) => t(`allergen.${allergen}`)}
+            onToggle={(allergen) => {
+              toggle('allergens', allergen, allergens);
+            }}
+          />
+          <FieldDescription>{t('allergensHint')}</FieldDescription>
         </Field>
       </CardContent>
     </Card>
+  );
+}
+
+/** The vocabulary is fixed, so the control is a set of switches rather than a text field:
+ * a typo in "gluten" is a dish a guest with coeliac disease cannot filter out. */
+function ChipGroup<T extends string>({
+  options,
+  selected,
+  label,
+  onToggle,
+}: {
+  readonly options: readonly T[];
+  readonly selected: readonly string[];
+  readonly label: (option: T) => string;
+  readonly onToggle: (option: T) => void;
+}): React.ReactElement {
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {options.map((option) => {
+        const active = selected.includes(option);
+        return (
+          <li key={option}>
+            <button
+              type="button"
+              aria-pressed={active}
+              data-testid={`chip-${option}`}
+              onClick={() => {
+                onToggle(option);
+              }}
+              className={
+                active
+                  ? 'bg-primary text-primary-foreground flex h-9 cursor-pointer items-center rounded-full px-3 text-sm font-semibold'
+                  : 'bg-muted text-muted-foreground hover:text-foreground flex h-9 cursor-pointer items-center rounded-full px-3 text-sm font-semibold'
+              }
+            >
+              {label(option)}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
   );
 }
 

@@ -1,7 +1,7 @@
 import { createRoute } from '@tanstack/react-router';
 import { useSuspenseQuery, useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '@/components/empty-state';
+import { EmptyState } from '@/components/common/empty-state';
 import { Route as menuLayoutRoute } from './_layout';
 import { itemQuery, categoriesQuery, modifierGroupsQuery } from '@/lib/queries/catalog';
 import { ItemEditorShell } from '@/components/menu/item-editor-shell';
@@ -36,10 +36,13 @@ function ItemDetailPage() {
   });
 
   const categories = catResult.data?.items ?? [];
+  // A group's `name` is localized text in the contract; handing the object straight to
+  // a component that renders it makes React throw "Objects are not valid as a React
+  // child" — which is what stopped this page opening at all.
   const modifierGroups = (mgResult.data?.items ?? []).map((g) => ({
     id: g.id,
-    name: g.name,
-    optionCount: 0,
+    name: fromLocalizedText(g.name),
+    optionCount: g.optionCount,
   }));
 
   const item = isNew ? null : (itemResult?.data ?? null);

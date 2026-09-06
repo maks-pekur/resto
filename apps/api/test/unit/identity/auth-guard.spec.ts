@@ -55,6 +55,36 @@ const authDb = {
   },
 };
 
+const buildGuardWithRole = (roleValue: string | undefined, tenantId = 't-1') => {
+  const reflector = new Reflector();
+  vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+  const limitMock = vi.fn().mockResolvedValue(roleValue ? [{ role: roleValue }] : []);
+  const db = {
+    db: {
+      select: vi.fn().mockReturnValue({
+        from: vi.fn().mockReturnValue({
+          where: vi.fn().mockReturnValue({ limit: limitMock }),
+        }),
+      }),
+    },
+  };
+  const auth = {
+    api: {
+      getSession: vi.fn().mockResolvedValue({
+        user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
+        session: { activeOrganizationId: tenantId, token: 'tok' },
+      }),
+    },
+  };
+  const lookup: TenantLookupPort = {
+    findBySlug: vi.fn().mockResolvedValue(null),
+    findById: vi
+      .fn()
+      .mockResolvedValue({ id: tenantId, slug: 'demo', displayName: 'D', archivedAt: null }),
+  };
+  return { guard: new AuthGuard(reflector, auth as never, lookup, db as never) };
+};
+
 describe('AuthGuard', () => {
   it('skips when @Public metadata is set', async () => {
     mockGetTenantContext.mockReturnValue(undefined);
@@ -231,37 +261,92 @@ describe('AuthGuard', () => {
   });
 });
 
-describe('AuthGuard.lookupBaseRole (D-15 CSV parsing)', () => {
-  const buildGuardWithRole = (roleValue: string | undefined) => {
+describe('AuthGuard tenant agreement (07.4 D-02)', () => {
+  it('T1: operator session with no activeOrganizationId cannot bind a tenant', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 'tenant-b' });
     const reflector = new Reflector();
     vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
-    const limitMock = vi.fn().mockResolvedValue(roleValue ? [{ role: roleValue }] : []);
-    const db = {
-      db: {
-        select: vi.fn().mockReturnValue({
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({ limit: limitMock }),
-          }),
-        }),
-      },
-    };
-    const auth = {
-      api: {
-        getSession: vi.fn().mockResolvedValue({
-          user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
-          session: { activeOrganizationId: 't-1', token: 'tok' },
-        }),
-      },
-    };
-    const lookup: TenantLookupPort = {
-      findBySlug: vi.fn().mockResolvedValue(null),
-      findById: vi
-        .fn()
-        .mockResolvedValue({ id: 't-1', slug: 'demo', displayName: 'D', archivedAt: null }),
-    };
-    return { guard: new AuthGuard(reflector, auth as never, lookup, db as never) };
-  };
+    const auth = buildAuthStub({
+      user: { id: 'u1', email: 'op@example.com', phoneNumber: null },
+      session: { activeOrganizationId: null },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    const ctx = buildContext(req);
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({
+      response: { code: 'auth.tenant_mismatch' },
+    });
+  });
 
+  it('T2: operator session bound to tenant A cannot bind tenant B', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 'tenant-b' });
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const auth = buildAuthStub({
+      user: { id: 'u2', email: 'op2@example.com', phoneNumber: null },
+      session: { activeOrganizationId: 'tenant-a' },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    const ctx = buildContext(req);
+    await expect(guard.canActivate(ctx)).rejects.toMatchObject({
+      response: { code: 'auth.tenant_mismatch' },
+    });
+  });
+
+  it('T3: operator with no member row for the bound tenant is rejected', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
+    const { guard } = buildGuardWithRole(undefined);
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    await expect(guard.canActivate(buildContext(req))).rejects.toMatchObject({
+      response: { code: 'auth.tenant_membership_missing' },
+    });
+  });
+
+  it('T4: operator whose member row carries only a custom role slug is admitted with no baseRole', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
+    const { guard } = buildGuardWithRole('kitchen-lead');
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    await expect(guard.canActivate(buildContext(req))).resolves.toBe(true);
+    expect((req.principal as { baseRole?: string }).baseRole).toBeUndefined();
+  });
+
+  it('T5: operator with no ALS tenant is still enriched and not rejected', async () => {
+    mockGetTenantContext.mockReturnValue(undefined);
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const auth = buildAuthStub({
+      user: { id: 'u5', email: 'op5@example.com', phoneNumber: null },
+      session: { activeOrganizationId: 'tenant-a' },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const req = { headers: {}, url: '/v1/me/tenants' } as Record<string, unknown>;
+    const ctx = buildContext(req);
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect((req.principal as { baseRole?: string }).baseRole).toBe('owner');
+  });
+
+  it('T6: customer principal cross-check is unchanged', async () => {
+    mockGetTenantContext.mockReturnValue({ tenantId: 't-host' });
+    const reflector = new Reflector();
+    vi.spyOn(reflector, 'getAllAndOverride').mockReturnValue(undefined);
+    const auth = buildAuthStub({
+      user: { id: 'u6', email: 'fake6@phone.local', phoneNumber: '+380000000006' },
+      session: { activeOrganizationId: null },
+    });
+    const lookup = buildLookupStub();
+    const guard = new AuthGuard(reflector, auth as never, lookup, authDb as never);
+    const req = { headers: {}, url: '/v1/me' } as Record<string, unknown>;
+    const ctx = buildContext(req);
+    await expect(guard.canActivate(ctx)).resolves.toBe(true);
+    expect(req.principal).toMatchObject({ kind: 'customer', tenantId: 't-host' });
+  });
+});
+
+describe('AuthGuard.lookupMembership (D-15 CSV parsing)', () => {
   it("resolves 'staff' from CSV 'staff,gm'", async () => {
     mockGetTenantContext.mockReturnValue({ tenantId: 't-1' });
     const { guard } = buildGuardWithRole('staff,gm');

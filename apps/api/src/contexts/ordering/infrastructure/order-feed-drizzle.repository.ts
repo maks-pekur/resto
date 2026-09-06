@@ -1,8 +1,14 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { schema, TenantAwareDb, type RestoTx } from '@resto/db';
-import { and, desc, eq, gt, gte, inArray, lt, or, type SQL } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, inArray, isNull, lt, or, sql, type SQL } from 'drizzle-orm';
 import type { OrderStatus } from '../domain/order.aggregate';
-import { type OrderFeedQuery, type OrderFeedRepository, type OrderFeedRow } from '../domain/ports';
+import {
+  type OrderFeedCounts,
+  type OrderFeedCountsQuery,
+  type OrderFeedQuery,
+  type OrderFeedRepository,
+  type OrderFeedRow,
+} from '../domain/ports';
 
 type OrderRow = typeof schema.orders.$inferSelect;
 
@@ -20,6 +26,35 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
     return this.#listAcrossLocations(input);
   }
 
+  async counts(input: OrderFeedCountsQuery): Promise<OrderFeedCounts> {
+    if (input.locationIds.length === 0) return EMPTY_COUNTS;
+
+    return this.db.withTenant(async (tx) => {
+      const rows = await tx
+        .select({
+          unaccepted: sql<number>`(count(*) filter (where ${schema.orders.status} = 'placed' and ${schema.orders.acceptedAt} is null))::int`,
+          accepted: sql<number>`(count(*) filter (where ${schema.orders.status} = 'accepted'))::int`,
+          preparing: sql<number>`(count(*) filter (where ${schema.orders.status} = 'preparing'))::int`,
+          ready: sql<number>`(count(*) filter (where ${schema.orders.status} = 'ready'))::int`,
+          completed: sql<number>`(count(*) filter (where ${schema.orders.status} = 'completed'))::int`,
+          canceled: sql<number>`(count(*) filter (where ${schema.orders.status} = 'canceled'))::int`,
+        })
+        .from(schema.orders)
+        .where(
+          and(
+            eq(schema.orders.tenantId, input.tenantId),
+            inArray(schema.orders.locationId, [...input.locationIds]),
+            gte(schema.orders.createdAt, input.createdFrom),
+            lt(schema.orders.createdAt, input.createdTo),
+            ...(input.orderType !== undefined
+              ? [eq(schema.orders.orderType, input.orderType)]
+              : []),
+          ),
+        );
+      return rows[0] ?? EMPTY_COUNTS;
+    });
+  }
+
   async #listSingleLocation(
     input: OrderFeedQuery,
   ): Promise<{ rows: OrderFeedRow[]; total: number }> {
@@ -32,7 +67,7 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
       const predicate = and(eq(schema.orders.locationId, locationId), buildFilterPredicate(input));
       const orderRows = await scoped
         .selectFrom(schema.orders, predicate)
-        .orderBy(desc(schema.orders.createdAt), desc(schema.orders.id));
+        .orderBy(...feedOrder(input));
       return this.#toPagedResult(tx, input, orderRows);
     });
   }
@@ -50,7 +85,7 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
         .select()
         .from(schema.orders)
         .where(predicate)
-        .orderBy(desc(schema.orders.createdAt), desc(schema.orders.id));
+        .orderBy(...feedOrder(input));
       return this.#toPagedResult(tx, input, orderRows);
     });
   }
@@ -119,6 +154,24 @@ export class OrderFeedDrizzleRepository implements OrderFeedRepository {
   }
 }
 
+const EMPTY_COUNTS: OrderFeedCounts = {
+  unaccepted: 0,
+  accepted: 0,
+  preparing: 0,
+  ready: 0,
+  completed: 0,
+  canceled: 0,
+};
+
+// The daily number is what an operator reads a floor by, but it restarts every day — so the day
+// is the coarse key and the number the fine one, or Monday's №3 would sort inside Tuesday.
+function feedOrder(input: OrderFeedQuery): [SQL, SQL] {
+  const day = sql`date_trunc('day', ${schema.orders.createdAt} at time zone ${input.timezone ?? 'UTC'})`;
+  return input.sort === 'oldest_first'
+    ? [asc(day), asc(schema.orders.shortNumber)]
+    : [desc(day), desc(schema.orders.shortNumber)];
+}
+
 function buildFilterPredicate(input: OrderFeedQuery): SQL | undefined {
   const parts: SQL[] = [
     inArray(schema.orders.status, [...input.statuses]),
@@ -127,6 +180,12 @@ function buildFilterPredicate(input: OrderFeedQuery): SQL | undefined {
   ];
   if (input.channel !== undefined) {
     parts.push(eq(schema.orders.channel, input.channel));
+  }
+  if (input.unacceptedOnly === true) {
+    parts.push(isNull(schema.orders.acceptedAt));
+  }
+  if (input.orderType !== undefined) {
+    parts.push(eq(schema.orders.orderType, input.orderType));
   }
   if (input.since !== undefined) {
     const since = input.since;
@@ -146,8 +205,14 @@ function toFeedRow(row: OrderRow, locationName: string, itemCount: number): Orde
     status: row.status as OrderStatus,
     locationId: row.locationId,
     locationName,
-    fulfillmentMode: row.fulfillmentMode as OrderFeedRow['fulfillmentMode'],
+    orderType: row.orderType as OrderFeedRow['orderType'],
     tableIdentifier: row.tableIdentifier ?? null,
+    tableZoneName: row.tableZoneName ?? null,
+    tableNumber: row.tableNumber ?? null,
+    customerName: row.customerName ?? null,
+    customerPhone: row.customerPhone ?? null,
+    paymentType: row.paymentType as OrderFeedRow['paymentType'],
+    paymentStatus: row.paymentStatus as OrderFeedRow['paymentStatus'],
     total: row.total,
     currency: row.currency,
     itemCount,

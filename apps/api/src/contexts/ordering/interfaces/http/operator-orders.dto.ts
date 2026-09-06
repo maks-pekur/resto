@@ -12,11 +12,16 @@ import {
 } from '../../application/order-feed-dto';
 
 const ChannelSchema = z.enum(['site', 'qr-menu']);
-const FulfillmentModeSchema = z.enum(['dine_in', 'pickup', 'delivery']);
+const OrderTypeSchema = z.enum(['dine_in', 'pickup', 'delivery']);
+
+const CalendarDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected a YYYY-MM-DD date.');
 
 export const OrderFeedQueryInputSchema = z.object({
   statusFilter: OrderStatusPresetSchema.optional(),
   datePreset: OrderDatePresetSchema.optional(),
+  from: CalendarDate.optional(),
+  to: CalendarDate.optional(),
+  orderType: OrderTypeSchema.optional(),
   channel: ChannelSchema.optional(),
   sinceCreatedAt: z.string().datetime({ offset: true }).optional(),
   sinceId: z.string().uuid().optional(),
@@ -25,6 +30,26 @@ export const OrderFeedQueryInputSchema = z.object({
 });
 export type OrderFeedQueryInput = z.infer<typeof OrderFeedQueryInputSchema>;
 export class OrderFeedQueryDto extends createZodDto(OrderFeedQueryInputSchema) {}
+
+export const OrderFeedCountsQueryInputSchema = z.object({
+  datePreset: OrderDatePresetSchema.optional(),
+  from: CalendarDate.optional(),
+  to: CalendarDate.optional(),
+  orderType: OrderTypeSchema.optional(),
+});
+export type OrderFeedCountsQueryInput = z.infer<typeof OrderFeedCountsQueryInputSchema>;
+export class OrderFeedCountsQueryDto extends createZodDto(OrderFeedCountsQueryInputSchema) {}
+
+export const OrderFeedCountsResponseSchema = z.object({
+  unaccepted: z.number().int().nonnegative(),
+  accepted: z.number().int().nonnegative(),
+  preparing: z.number().int().nonnegative(),
+  ready: z.number().int().nonnegative(),
+  completed: z.number().int().nonnegative(),
+  canceled: z.number().int().nonnegative(),
+});
+export type OrderFeedCountsResponse = z.infer<typeof OrderFeedCountsResponseSchema>;
+export class OrderFeedCountsResponseDto extends createZodDto(OrderFeedCountsResponseSchema) {}
 
 export const AcceptOrderInputSchema = z.object({
   prepMinutes: z.number().int().min(5).max(180),
@@ -44,8 +69,13 @@ export const OrderFeedRowResponseSchema = z.object({
   status: OrderStatusSchema,
   locationId: z.string().uuid(),
   locationName: z.string(),
-  fulfillmentMode: FulfillmentModeSchema,
+  orderType: OrderTypeSchema,
   tableIdentifier: z.string().nullable(),
+  tableZoneName: z.string().nullable(),
+  tableNumber: z.string().nullable(),
+  customerName: z.string().nullable(),
+  customerPhone: z.string().nullable(),
+  paymentType: z.enum(['online', 'cash', 'card_on_delivery']),
   total: z.string(),
   currency: z.string(),
   itemCount: z.number().int(),
@@ -84,6 +114,7 @@ const OrderModifierResponseSchema = z.object({
   priceDelta: z.string(),
   amount: z.number().int(),
   modifierGroupId: z.string().nullable(),
+  kind: z.enum(['added', 'excluded']),
 });
 
 const OrderItemResponseSchema = z.object({
@@ -104,8 +135,10 @@ export const OrderSnapshotResponseSchema = z.object({
   locationId: z.string(),
   orderNumber: z.string(),
   status: OrderStatusSchema,
-  fulfillmentMode: FulfillmentModeSchema,
+  orderType: OrderTypeSchema,
   tableIdentifier: z.string().nullable(),
+  tableZoneName: z.string().nullable(),
+  tableNumber: z.string().nullable(),
   customerName: z.string().nullable(),
   customerPhone: z.string().nullable(),
   customerEmail: z.string().nullable(),
@@ -140,6 +173,10 @@ export class OrderSnapshotResponseDto extends createZodDto(OrderSnapshotResponse
 
 export const OrderDetailResponseSchema = OrderSnapshotResponseSchema.extend({
   hasFailedRefund: z.boolean(),
+  /** What the guest said about this order, once it was served. */
+  review: z
+    .object({ rating: z.number().int().min(1).max(5), comment: z.string().nullable() })
+    .nullable(),
   failedRefundAmount: z.string().nullable(),
   failedRefundReason: z.string().nullable(),
 });
@@ -152,8 +189,10 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
   locationId: s.locationId,
   orderNumber: s.orderNumber,
   status: s.status,
-  fulfillmentMode: s.fulfillmentMode,
+  orderType: s.orderType,
   tableIdentifier: s.tableIdentifier,
+  tableZoneName: s.tableZoneName,
+  tableNumber: s.tableNumber,
   customerName: s.customerName,
   customerPhone: s.customerPhone,
   customerEmail: s.customerEmail,
@@ -169,6 +208,7 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
       priceDelta: m.priceDelta,
       amount: m.amount,
       modifierGroupId: m.modifierGroupId,
+      kind: m.kind,
     })),
     quantity: item.quantity,
     lineTotal: item.lineTotal,
@@ -203,6 +243,7 @@ export const toOrderSnapshotResponse = (s: OrderSnapshot): OrderSnapshotResponse
 export const toOrderDetailResponse = (result: OrderDetailResult): OrderDetailResponse => ({
   ...toOrderSnapshotResponse(result.order),
   hasFailedRefund: result.hasFailedRefund,
+  review: result.review,
   failedRefundAmount: result.failedRefundAmount,
   failedRefundReason: result.failedRefundReason,
 });

@@ -16,6 +16,7 @@ export interface PhotoUploadProps {
   readonly currentS3Key: string | null;
   readonly currentPhotoUrl?: string | null;
   readonly onUploaded: (s3Key: string) => void;
+  readonly kind?: 'item' | 'ingredient';
 }
 
 type UploadState =
@@ -29,6 +30,7 @@ export function PhotoUpload({
   currentS3Key,
   currentPhotoUrl,
   onUploaded,
+  kind = 'item',
 }: PhotoUploadProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'menu.editor' });
   const inputRef = React.useRef<HTMLInputElement | null>(null);
@@ -46,9 +48,7 @@ export function PhotoUpload({
     };
   }, [previewUrl]);
 
-  const urlMutation = useMutation({
-    mutationFn: () => getPhotoUploadUrl(_itemId),
-  });
+  const urlMutation = useMutation({ mutationFn: getPhotoUploadUrl });
 
   const handleFile = async (file: File): Promise<void> => {
     if (!ALLOWED_TYPES.has(file.type) || file.size > MAX_SIZE_BYTES) {
@@ -56,14 +56,18 @@ export function PhotoUpload({
       return;
     }
     setState({ kind: 'requesting' });
-    const urlRes = await urlMutation.mutateAsync();
+    const urlRes = await urlMutation.mutateAsync({
+      contentType: file.type,
+      sizeBytes: file.size,
+      kind,
+    });
     if (!urlRes.ok || !urlRes.data) {
       setState({ kind: 'error', message: t('photoUploadFailed') });
       return;
     }
     setState({ kind: 'uploading' });
     try {
-      const putRes = await fetch(urlRes.data.url, {
+      const putRes = await fetch(urlRes.data.uploadUrl, {
         method: 'PUT',
         body: file,
         headers: { 'content-type': file.type },
@@ -137,7 +141,7 @@ export function PhotoUpload({
           <img
             src={visiblePhoto}
             alt={t('photoAlt')}
-            className="absolute inset-0 size-full object-cover"
+            className="absolute inset-0 size-full object-contain"
           />
         ) : (
           <>

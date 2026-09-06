@@ -148,6 +148,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/tenants/me/locales": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TenantsController_setLocales"];
+        trace?: never;
+    };
+    "/v1/tenants/me/brand": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["TenantsController_setBrand"];
+        trace?: never;
+    };
+    "/v1/tenants/me/brand/logo-upload-url": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["TenantsController_brandLogoUpload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tenants/me/domains": {
         parameters: {
             query?: never;
@@ -286,7 +334,7 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        delete?: never;
+        delete: operations["LocationsController_remove"];
         options?: never;
         head?: never;
         patch: operations["LocationsController_update"];
@@ -306,6 +354,22 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["LocationsController_archive"];
+        trace?: never;
+    };
+    "/v1/tenancy/locations/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["LocationsController_restore"];
         trace?: never;
     };
     "/v1/tenancy/table-zones": {
@@ -404,6 +468,38 @@ export interface paths {
         patch: operations["TableZonesController_archiveTable"];
         trace?: never;
     };
+    "/v1/tables/service-request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PublicTableResolutionController_requestService"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tables/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicTableResolutionController_currentSession"];
+        put?: never;
+        post: operations["PublicTableResolutionController_openSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/tables/{id}": {
         parameters: {
             query?: never;
@@ -418,6 +514,70 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/v1/venue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicVenueController_venue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/legal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicLegalController_documents"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/service-requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ServiceRequestsController_listOpen"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/tenancy/service-requests/{id}/resolve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["ServiceRequestsController_resolve"];
         trace?: never;
     };
     "/v1/me": {
@@ -763,7 +923,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        get: operations["CatalogController_listModifierOptions"];
         put?: never;
         post: operations["CatalogController_modifierOption"];
         delete?: never;
@@ -804,6 +964,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/catalog/modifier-groups/{id}/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CatalogController_setGroupModifierOptionsRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/items/{id}/modifier-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CatalogController_setItemModifierOptionsRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/items/{id}/composition": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put: operations["CatalogController_setItemCompositionRoute"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/catalog/stop-list": {
         parameters: {
             query?: never;
@@ -815,6 +1023,38 @@ export interface paths {
         put?: never;
         post: operations["CatalogController_stopListAdd"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/stop-list/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_getOptionStopList"];
+        put?: never;
+        post: operations["CatalogController_optionStopListAdd"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/stop-list/options/{optionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete: operations["CatalogController_optionStopListRemove"];
         options?: never;
         head?: never;
         patch?: never;
@@ -900,6 +1140,22 @@ export interface paths {
         patch: operations["CatalogController_archiveItem"];
         trace?: never;
     };
+    "/v1/catalog/modifier-options/{id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["CatalogController_archiveModifierOption"];
+        trace?: never;
+    };
     "/v1/catalog/items/{id}": {
         parameters: {
             query?: never;
@@ -924,6 +1180,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["CatalogController_getModifierGroup"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/catalog/modifier-options/{id}/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["CatalogController_getModifierOptionUsage"];
         put?: never;
         post?: never;
         delete?: never;
@@ -980,6 +1252,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/orders/{id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["OrdersController_review"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/orders/{id}/status": {
         parameters: {
             query?: never;
@@ -1004,6 +1292,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["OperatorOrdersController_feed"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/orders/feed/counts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["OperatorOrdersController_feedCounts"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1054,6 +1358,22 @@ export interface paths {
         get?: never;
         put?: never;
         post: operations["OperatorOrdersController_advance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/analytics/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AnalyticsController_dashboard"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1140,6 +1460,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/payments/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/v1/payments/transactions/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["TransactionsController_alerts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1160,6 +1512,7 @@ export interface components {
             displayName: string;
             status: string;
             locale: string;
+            contentLocales: string[];
             /** @enum {string} */
             country: "UA" | "GB" | "ES";
             defaultCurrency: string;
@@ -1169,11 +1522,59 @@ export interface components {
                  * @default null
                  */
                 logoUrl: string | null;
+                /** @default [] */
+                coverUrls: string[];
                 /** @default null */
                 primaryColor: string | null;
                 /** @default null */
                 font: string | null;
             } | null;
+            description: {
+                [key: string]: string;
+            } | null;
+            socials: {
+                [key: string]: string;
+            };
+            legalDocuments: {
+                /** @default null */
+                about: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                payment: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                returns: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                cookies: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                terms: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                privacy: {
+                    [key: string]: string;
+                } | null;
+            } | null;
+            contacts: {
+                /** @default null */
+                phone: string | null;
+                /**
+                 * Format: email
+                 * @default null
+                 */
+                email: string | null;
+                /**
+                 * Format: uri
+                 * @default null
+                 */
+                website: string | null;
+            };
             legalName: string | null;
             /** @enum {string|null} */
             legalForm: "IP" | "OOO" | "LLC" | "SOLE_PROP" | "OTHER" | null;
@@ -1211,6 +1612,67 @@ export interface components {
         };
         SuspendTenantInputDto: {
             requestedBy: string;
+        };
+        UpdateBrandInputDto: {
+            displayName?: string;
+            description?: {
+                [key: string]: string;
+            } | null;
+            socials?: {
+                [key: string]: string;
+            };
+            contacts?: {
+                /** @default null */
+                phone: string | null;
+                /**
+                 * Format: email
+                 * @default null
+                 */
+                email: string | null;
+                /**
+                 * Format: uri
+                 * @default null
+                 */
+                website: string | null;
+            };
+            logoS3Key?: string | null;
+            coverS3Keys?: string[];
+            legalDocuments?: {
+                /** @default null */
+                about: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                payment: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                returns: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                cookies: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                terms: {
+                    [key: string]: string;
+                } | null;
+                /** @default null */
+                privacy: {
+                    [key: string]: string;
+                } | null;
+            } | null;
+        };
+        BrandLogoUploadUrlInputDto: {
+            /** @enum {string} */
+            contentType: "image/jpeg" | "image/png" | "image/webp" | "image/svg+xml";
+            sizeBytes: number;
+        };
+        BrandLogoUploadUrlResponseDto: {
+            /** Format: uri */
+            uploadUrl: string;
+            s3Key: string;
         };
         TenantDomainDto: {
             /** Format: uuid */
@@ -1268,6 +1730,48 @@ export interface components {
                 /** Format: email */
                 email?: string;
             } | null;
+            openingHours: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
+            } | null;
             /** @enum {string} */
             status: "active" | "archived";
             createdAt: string;
@@ -1284,6 +1788,48 @@ export interface components {
                 phone?: string;
                 /** Format: email */
                 email?: string;
+            } | null;
+            openingHours?: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi?: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
             } | null;
         };
         ArchiveLocationResponseDto: {
@@ -1340,11 +1886,105 @@ export interface components {
         UpdateTableInputDto: {
             number: string;
         };
+        ServiceRequestResponseDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "waiter" | "bill";
+        };
         TableResolutionDto: {
             /** Format: uuid */
             tableId: string;
             zoneName: string;
             number: string;
+        };
+        VenueDto: {
+            /** Format: uuid */
+            locationId: string | null;
+            name: string | null;
+            address: string | null;
+            latitude: number | null;
+            longitude: number | null;
+            phone: string | null;
+            openingHours: {
+                /** @default [] */
+                mon: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                tue: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                wed: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                thu: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                fri: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sat: {
+                    from: string;
+                    to: string;
+                }[];
+                /** @default [] */
+                sun: {
+                    from: string;
+                    to: string;
+                }[];
+            } | null;
+            wifi: {
+                ssid: string;
+                /** @default null */
+                password: string | null;
+            } | null;
+        };
+        LegalDocumentsDto: {
+            /** @default null */
+            about: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            payment: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            returns: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            cookies: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            terms: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            privacy: {
+                [key: string]: string;
+            } | null;
+        };
+        ServiceRequestListDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                kind: "waiter" | "bill";
+                zoneName: string;
+                tableNumber: string;
+                createdAt: string;
+            }[];
         };
         MeTenantsResponseDto: {
             tenants: {
@@ -1410,6 +2050,7 @@ export interface components {
         };
         MenuAvailabilityDto: {
             stoppedItemIds: string[];
+            stoppedIngredientIds: string[];
         };
         PublishedMenuDto: {
             /** Format: uuid */
@@ -1419,12 +2060,28 @@ export interface components {
                 id: string;
                 slug: string;
                 displayName: string;
+                description: {
+                    [key: string]: string;
+                } | null;
+                socials: {
+                    [key: string]: string;
+                };
+                contacts: {
+                    phone: string | null;
+                    email: string | null;
+                    website: string | null;
+                };
                 theme: {
                     /** Format: uri */
                     logoUrl: string | null;
+                    coverUrls: string[];
                     primaryColor: string | null;
                     font: string | null;
                 } | null;
+                locales: {
+                    default: string;
+                    supported: string[];
+                };
             } | null;
             version: number;
             currency: string;
@@ -1472,12 +2129,12 @@ export interface components {
                     url: string;
                 }[];
                 allergens: string[];
+                diets: string[];
                 sortOrder: number;
                 proteins: string | null;
                 fats: string | null;
                 carbs: string | null;
                 kcal: number | null;
-                nutritionEstimated: boolean;
                 sizes: {
                     /** Format: uuid */
                     id: string;
@@ -1489,6 +2146,15 @@ export interface components {
                     sortOrder: number;
                 }[];
                 modifierGroupIds: string[];
+                extraOptionIds: string[];
+                /** @enum {string} */
+                compositionMode: "text" | "assembled";
+                composition: string[];
+                compositionLines: {
+                    /** Format: uuid */
+                    optionId: string;
+                    removable: boolean;
+                }[];
             }[];
             modifierGroups: {
                 /** Format: uuid */
@@ -1496,21 +2162,27 @@ export interface components {
                 name: {
                     [key: string]: string;
                 };
-                minSelectable: number;
-                maxSelectable: number;
+                /** @enum {string} */
+                display: "tiles" | "tabs";
+                /** @enum {string} */
+                behaviour: "one" | "several";
                 isRequired: boolean;
-                options: {
-                    id: string;
-                    name: {
-                        [key: string]: string;
-                    };
-                    priceDelta: string;
-                    defaultAmount: number;
-                    freeAmount: number;
-                    sortOrder: number;
-                    minAmount: number | null;
-                    maxAmount: number | null;
-                }[];
+                optionIds: string[];
+            }[];
+            modifierOptions: {
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                description: {
+                    [key: string]: string;
+                } | null;
+                /** Format: uri */
+                imageUrl: string | null;
+                priceDelta: string;
+                freeAmount: number;
+                minAmount: number | null;
+                maxAmount: number | null;
             }[];
         };
         PublishedMenuItemDto: {
@@ -1544,12 +2216,12 @@ export interface components {
                 url: string;
             }[];
             allergens: string[];
+            diets: string[];
             sortOrder: number;
             proteins: string | null;
             fats: string | null;
             carbs: string | null;
             kcal: number | null;
-            nutritionEstimated: boolean;
             sizes: {
                 /** Format: uuid */
                 id: string;
@@ -1561,6 +2233,15 @@ export interface components {
                 sortOrder: number;
             }[];
             modifierGroupIds: string[];
+            extraOptionIds: string[];
+            /** @enum {string} */
+            compositionMode: "text" | "assembled";
+            composition: string[];
+            compositionLines: {
+                /** Format: uuid */
+                optionId: string;
+                removable: boolean;
+            }[];
         };
         UpsertCategoryInputDto: {
             /** Format: uuid */
@@ -1626,7 +2307,20 @@ export interface components {
             /** @default null */
             allergens: string[] | null;
             /** @default null */
-            ingredients: string[] | null;
+            diets: ("vegetarian" | "vegan" | "gluten_free" | "lactose_free" | "spicy" | "halal")[] | null;
+            /** @default null */
+            composition: string[] | null;
+            /**
+             * @default text
+             * @enum {string}
+             */
+            compositionMode: "text" | "assembled";
+            /** @default [] */
+            compositionAssembled: {
+                /** Format: uuid */
+                optionId: string;
+                removable: boolean;
+            }[];
             /** @default null */
             metaTitle: string | null;
             /** @default null */
@@ -1639,8 +2333,6 @@ export interface components {
             carbs: number | null;
             /** @default null */
             kcal: number | null;
-            /** @default false */
-            nutritionEstimated: boolean;
             /**
              * @default manual
              * @enum {string}
@@ -1673,21 +2365,27 @@ export interface components {
             name: {
                 [key: string]: string;
             };
-            /** @default 0 */
-            minSelectable: number;
-            /** @default 1 */
-            maxSelectable: number;
+            /** @enum {string} */
+            display: "tiles" | "tabs";
+            /** @enum {string} */
+            behaviour: "one" | "several";
             /** @default false */
             isRequired: boolean;
+            /** @default null */
+            maxSelectable: number | null;
         };
         UpsertModifierOptionInputDto: {
             /** Format: uuid */
             id?: string;
-            /** Format: uuid */
-            modifierGroupId: string;
             name: {
                 [key: string]: string;
             };
+            /** @default null */
+            description: {
+                [key: string]: string;
+            } | null;
+            /** @default null */
+            imageS3Key: string | null;
             priceDelta: string;
             /** @default 0 */
             defaultAmount: number;
@@ -1717,16 +2415,62 @@ export interface components {
         SetItemModifierGroupsInputDto: {
             modifierGroupIds: string[];
         };
+        SetGroupModifierOptionsInputDto: {
+            optionIds: string[];
+            /** @default [] */
+            defaultOptionIds: string[];
+        };
+        SetItemModifierOptionsInputDto: {
+            optionIds: string[];
+        };
+        SetItemCompositionInputDto: {
+            /** @enum {string} */
+            mode: "text" | "assembled";
+            /** @default [] */
+            text: string[];
+            /** @default [] */
+            lines: {
+                /** Format: uuid */
+                optionId: string;
+                removable: boolean;
+            }[];
+        };
         StopItemInputDto: {
             /** Format: uuid */
             itemId: string;
             /** @default null */
             reason: string | null;
         };
+        StopOptionInputDto: {
+            /** Format: uuid */
+            optionId: string;
+            /** @default null */
+            reason: string | null;
+        };
+        OptionStopListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                optionId: string;
+                optionName: {
+                    [key: string]: string;
+                } | null;
+                imageUrl: string | null;
+                /** Format: date-time */
+                stoppedAt: string;
+                reason: string | null;
+            }[];
+        };
         PhotoUploadUrlInputDto: {
             /** @enum {string} */
             contentType: "image/jpeg" | "image/png" | "image/webp";
             sizeBytes: number;
+            /**
+             * @default item
+             * @enum {string}
+             */
+            kind: "item" | "ingredient";
         };
         PhotoUploadUrlResponseDto: {
             /** Format: uri */
@@ -1739,6 +2483,29 @@ export interface components {
         };
         PublishCancelResponseDto: {
             cancelled: boolean;
+        };
+        ModifierOptionUsageResponseDto: {
+            groups: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+            }[];
+            dishesAttached: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+            }[];
+            dishesInComposition: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+            }[];
         };
         CategoryListResponseDto: {
             items: {
@@ -1777,6 +2544,7 @@ export interface components {
                 photo: {
                     s3Key: string;
                     sortOrder: number;
+                    url: string;
                 } | null;
                 basePrice: string;
                 currency: string;
@@ -1812,16 +2580,24 @@ export interface components {
                 width?: number;
                 height?: number;
                 isPrimary?: boolean;
+                url: string;
             }[];
             allergens: string[] | null;
-            ingredients: string[] | null;
+            diets: string[] | null;
+            composition: string[] | null;
+            /** @enum {string} */
+            compositionMode: "text" | "assembled";
+            compositionAssembled: {
+                /** Format: uuid */
+                optionId: string;
+                removable: boolean;
+            }[];
             metaTitle: string | null;
             metaDescription: string | null;
             proteins: number | null;
             fats: number | null;
             carbs: number | null;
             kcal: number | null;
-            nutritionEstimated: boolean;
             /** @enum {string} */
             source: "manual" | "ai_generated" | "imported_iiko" | "imported_csv";
             needsReview: boolean;
@@ -1840,6 +2616,7 @@ export interface components {
                 sortOrder: number;
             }[];
             modifierGroupIds: string[];
+            modifierOptionIds: string[];
         };
         ModifierGroupListResponseDto: {
             items: {
@@ -1848,9 +2625,12 @@ export interface components {
                 name: {
                     [key: string]: string;
                 };
-                minSelectable: number;
-                maxSelectable: number;
+                /** @enum {string} */
+                display: "tiles" | "tabs";
+                /** @enum {string} */
+                behaviour: "one" | "several";
                 isRequired: boolean;
+                maxSelectable: number | null;
                 optionCount: number;
                 usageCount: number;
             }[];
@@ -1861,19 +2641,44 @@ export interface components {
             name: {
                 [key: string]: string;
             };
-            minSelectable: number;
-            maxSelectable: number;
+            /** @enum {string} */
+            display: "tiles" | "tabs";
+            /** @enum {string} */
+            behaviour: "one" | "several";
             isRequired: boolean;
+            maxSelectable: number | null;
+            defaultOptionIds: string[];
             options: {
                 /** Format: uuid */
                 id: string;
                 name: {
                     [key: string]: string;
                 };
+                description: {
+                    [key: string]: string;
+                } | null;
+                imageUrl: string | null;
                 priceDelta: string;
                 defaultAmount: number;
                 freeAmount: number;
                 sortOrder: number;
+            }[];
+        };
+        ModifierOptionListResponseDto: {
+            items: {
+                /** Format: uuid */
+                id: string;
+                name: {
+                    [key: string]: string;
+                };
+                description: {
+                    [key: string]: string;
+                } | null;
+                priceDelta: string;
+                imageUrl: string | null;
+                imageS3Key: string | null;
+                groupCount: number;
+                dishCount: number;
             }[];
         };
         StopListResponseDto: {
@@ -1887,6 +2692,11 @@ export interface components {
                 } | null;
                 categoryName: {
                     [key: string]: string;
+                } | null;
+                photo: {
+                    s3Key: string;
+                    sortOrder: number;
+                    url: string;
                 } | null;
                 /** Format: date-time */
                 stoppedAt: string;
@@ -1937,11 +2747,16 @@ export interface components {
                     optionId: string;
                     name: string;
                     amount?: number;
+                    /**
+                     * @default added
+                     * @enum {string}
+                     */
+                    kind: "added" | "excluded";
                 }[];
                 quantity: number;
             }[];
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             /** Format: uuid */
             tableId?: string;
             customerName?: string;
@@ -1957,6 +2772,11 @@ export interface components {
              * @enum {string}
              */
             channel: "site" | "qr-menu";
+            /**
+             * @default online
+             * @enum {string}
+             */
+            paymentType: "online" | "cash" | "card_on_delivery";
             /** @default false */
             marketingConsent: boolean;
         };
@@ -1971,8 +2791,17 @@ export interface components {
             /** @enum {string} */
             channel: "site" | "qr-menu";
         };
+        OrderFeedbackInputDto: {
+            rating: number;
+            comment?: string | null;
+        };
+        OrderFeedbackResponseDto: {
+            rating: number;
+            comment: string | null;
+        };
         OrderStatusResponseDto: {
             status: string;
+            paymentStatus: string;
             shortNumber: number | null;
             orderNumber: string;
             total: string;
@@ -1980,9 +2809,10 @@ export interface components {
             /** Format: date-time */
             etaAt: string | null;
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             cancelReason: string | null;
             canceledFromStatus: string | null;
+            reviewed: boolean;
         };
         OrderFeedListResponseDto: {
             rows: {
@@ -1990,13 +2820,19 @@ export interface components {
                 id: string;
                 shortNumber: number;
                 /** @enum {string} */
-                status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+                status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
                 /** Format: uuid */
                 locationId: string;
                 locationName: string;
                 /** @enum {string} */
-                fulfillmentMode: "dine_in" | "pickup" | "delivery";
+                orderType: "dine_in" | "pickup" | "delivery";
                 tableIdentifier: string | null;
+                tableZoneName: string | null;
+                tableNumber: string | null;
+                customerName: string | null;
+                customerPhone: string | null;
+                /** @enum {string} */
+                paymentType: "online" | "cash" | "card_on_delivery";
                 total: string;
                 currency: string;
                 itemCount: number;
@@ -2017,16 +2853,26 @@ export interface components {
             limit: number;
             offset: number;
         };
+        OrderFeedCountsResponseDto: {
+            unaccepted: number;
+            accepted: number;
+            preparing: number;
+            ready: number;
+            completed: number;
+            canceled: number;
+        };
         OrderDetailResponseDto: {
             id: string;
             tenantId: string;
             locationId: string;
             orderNumber: string;
             /** @enum {string} */
-            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
+            tableZoneName: string | null;
+            tableNumber: string | null;
             customerName: string | null;
             customerPhone: string | null;
             customerEmail: string | null;
@@ -2042,6 +2888,8 @@ export interface components {
                     priceDelta: string;
                     amount: number;
                     modifierGroupId: string | null;
+                    /** @enum {string} */
+                    kind: "added" | "excluded";
                 }[];
                 quantity: number;
                 lineTotal: string;
@@ -2067,13 +2915,17 @@ export interface components {
             cancelReason: string | null;
             cancelNote: string | null;
             /** @enum {string|null} */
-            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            canceledFromStatus: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | null;
             etaAt: string | null;
             marketingConsent: boolean;
             marketingConsentAt: string | null;
             createdAt: string;
             updatedAt: string;
             hasFailedRefund: boolean;
+            review: {
+                rating: number;
+                comment: string | null;
+            } | null;
             failedRefundAmount: string | null;
             failedRefundReason: string | null;
         };
@@ -2086,10 +2938,12 @@ export interface components {
             locationId: string;
             orderNumber: string;
             /** @enum {string} */
-            status: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed";
+            status: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled";
             /** @enum {string} */
-            fulfillmentMode: "dine_in" | "pickup" | "delivery";
+            orderType: "dine_in" | "pickup" | "delivery";
             tableIdentifier: string | null;
+            tableZoneName: string | null;
+            tableNumber: string | null;
             customerName: string | null;
             customerPhone: string | null;
             customerEmail: string | null;
@@ -2105,6 +2959,8 @@ export interface components {
                     priceDelta: string;
                     amount: number;
                     modifierGroupId: string | null;
+                    /** @enum {string} */
+                    kind: "added" | "excluded";
                 }[];
                 quantity: number;
                 lineTotal: string;
@@ -2130,7 +2986,7 @@ export interface components {
             cancelReason: string | null;
             cancelNote: string | null;
             /** @enum {string|null} */
-            canceledFromStatus: "created" | "requires_action" | "paid" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | "refunded" | "failed" | null;
+            canceledFromStatus: "placed" | "accepted" | "preparing" | "ready" | "completed" | "canceled" | null;
             etaAt: string | null;
             marketingConsent: boolean;
             marketingConsentAt: string | null;
@@ -2140,6 +2996,29 @@ export interface components {
         AdvanceOrderStatusInputDto: {
             /** @enum {string} */
             targetStatus: "preparing" | "ready" | "completed";
+        };
+        DashboardKpisResponseDto: {
+            range: {
+                from: string;
+                to: string;
+            };
+            currency: string;
+            revenue: {
+                value: string;
+                previous: string;
+            };
+            completedOrders: {
+                value: number;
+                previous: number;
+            };
+            newGuests: {
+                value: number;
+                previous: number;
+            };
+            refunds: {
+                value: string;
+                previous: string;
+            };
         };
         CreatePaymentIntentInputDto: {
             /** Format: uuid */
@@ -2173,6 +3052,29 @@ export interface components {
             stripeRefundId: string;
             amountMinor: number;
             fullyRefunded: boolean;
+        };
+        TransactionsResponseDto: {
+            rows: {
+                /** Format: uuid */
+                paymentId: string;
+                /** Format: uuid */
+                orderId: string;
+                orderShortNumber: number;
+                /** Format: uuid */
+                locationId: string;
+                status: string;
+                amount: string;
+                refundedAmount: string;
+                currency: string;
+                hasFailedRefund: boolean;
+                createdAt: string;
+            }[];
+            total: number;
+            limit: number;
+            offset: number;
+        };
+        TransactionAlertsResponseDto: {
+            refundFailed: number;
         };
     };
     responses: never;
@@ -2516,6 +3418,95 @@ export interface operations {
             };
         };
     };
+    TenantsController_setLocales: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TenantsController_setBrand: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBrandInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TenantResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TenantsController_brandLogoUpload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BrandLogoUploadUrlInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandLogoUploadUrlResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     TenantsController_getMeDomains: {
         parameters: {
             query?: never;
@@ -2752,6 +3743,33 @@ export interface operations {
             };
         };
     };
+    LocationsController_remove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     LocationsController_update: {
         parameters: {
             query?: never;
@@ -2806,6 +3824,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ArchiveLocationResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    LocationsController_restore: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LocationResponseDto"];
                 };
             };
             403: {
@@ -3071,6 +4124,87 @@ export interface operations {
             };
         };
     };
+    PublicTableResolutionController_requestService: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestResponseDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicTableResolutionController_currentSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableResolutionDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicTableResolutionController_openSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TableResolutionDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     PublicTableResolutionController_resolve: {
         parameters: {
             query?: never;
@@ -3089,6 +4223,106 @@ export interface operations {
                 };
             };
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicVenueController_venue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VenueDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicLegalController_documents: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDocumentsDto"];
+                };
+            };
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ServiceRequestsController_listOpen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRequestListDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ServiceRequestsController_resolve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -3805,6 +5039,33 @@ export interface operations {
             };
         };
     };
+    CatalogController_listModifierOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOptionListResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     CatalogController_modifierOption: {
         parameters: {
             query?: never;
@@ -3898,6 +5159,99 @@ export interface operations {
             };
         };
     };
+    CatalogController_setGroupModifierOptionsRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetGroupModifierOptionsInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_setItemModifierOptionsRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetItemModifierOptionsInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_setItemCompositionRoute: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetItemCompositionInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     CatalogController_listStopList: {
         parameters: {
             query?: never;
@@ -3946,6 +5300,83 @@ export interface operations {
                     "application/json": components["schemas"]["IdResponseDto"];
                 };
             };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_getOptionStopList: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OptionStopListResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_optionStopListAdd: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StopOptionInputDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IdResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_optionStopListRemove: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
             403: {
                 headers: {
                     [name: string]: unknown;
@@ -4098,6 +5529,33 @@ export interface operations {
             };
         };
     };
+    CatalogController_archiveModifierOption: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOptionUsageResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     CatalogController_getItem: {
         parameters: {
             query?: never;
@@ -4140,6 +5598,33 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ModifierGroupDetailResponseDto"];
+                };
+            };
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    CatalogController_getModifierOptionUsage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ModifierOptionUsageResponseDto"];
                 };
             };
             403: {
@@ -4229,6 +5714,29 @@ export interface operations {
             };
         };
     };
+    OrdersController_review: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrderFeedbackInputDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderFeedbackResponseDto"];
+                };
+            };
+        };
+    };
     OrdersController_getStatus: {
         parameters: {
             query?: never;
@@ -4263,6 +5771,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderFeedListResponseDto"];
+                };
+            };
+        };
+    };
+    OperatorOrdersController_feedCounts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrderFeedCountsResponseDto"];
                 };
             };
         };
@@ -4328,6 +5855,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrderSnapshotResponseDto"];
+                };
+            };
+        };
+    };
+    AnalyticsController_dashboard: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DashboardKpisResponseDto"];
                 };
             };
         };
@@ -4431,6 +5977,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RetryRefundResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionsResponseDto"];
+                };
+            };
+        };
+    };
+    TransactionsController_alerts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionAlertsResponseDto"];
                 };
             };
         };

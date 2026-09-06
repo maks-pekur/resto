@@ -38,6 +38,7 @@ const UNGATED_FULL_PATHS = new Set([
   '/$locationSlug', // resolves the slug and hands it to its children; refusal is theirs
   '/$locationSlug/dashboard', // one location's dashboard
   '/onboarding', // pre-tenant setup; the layout redirects here before any gate matters
+  '/account', // an operator's own sign-in and 2FA — theirs to manage, whatever their role
   '/dashboard/$', // legacy-path redirect, resolves before it renders
   '/orders', // legacy address; redirects to /$locationSlug/orders, which is guarded
 ]);
@@ -105,11 +106,14 @@ describe('admin route tree — every protected route decides who may open it', (
       '/menu': { resource: 'menu', action: 'read' },
       '/locations': { resource: 'location', action: 'create' },
       '/locations/$slug': { resource: 'location', action: 'create' },
+      '/locations/$slug/tables': { resource: 'table', action: 'read' },
+      '/locations/$slug/tables/$zoneId': { resource: 'table', action: 'read' },
       '/roles': { resource: 'ac', action: 'read' },
       '/roles/$roleId': { resource: 'ac', action: 'read' },
       '/team': { resource: 'staff', action: 'invite' },
       '/settings': { resource: 'settings', action: 'update' },
       '/tenant/payouts': { resource: 'billing', action: 'read' },
+      '/tenant/transactions': { resource: 'billing', action: 'read' },
       '/tenant/domains': { resource: 'settings', action: 'update' },
       '/tenant/theme': { resource: 'settings', action: 'update' },
     });

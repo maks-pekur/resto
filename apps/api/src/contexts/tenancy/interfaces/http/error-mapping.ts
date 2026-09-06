@@ -7,7 +7,11 @@ import {
   type HttpException,
 } from '@nestjs/common';
 import {
+  BrandLogoNotOwnedError,
+  DefaultLocaleNotSupportedError,
   LocationAlreadyArchivedError,
+  LocationHasOrdersError,
+  LocationNotArchivedError,
   LocationNotFoundError,
   LocationTableLimitReachedError,
   RestaurantTableAlreadyArchivedError,
@@ -106,11 +110,26 @@ export const mapDomainError = (err: unknown): unknown => {
       message: err.message,
     });
   }
+  if (err instanceof BrandLogoNotOwnedError) {
+    return new ForbiddenException({ code: 'tenancy.brand_logo_not_owned', message: err.message });
+  }
+  if (err instanceof DefaultLocaleNotSupportedError) {
+    return new BadRequestException({
+      code: 'tenancy.default_locale_not_supported',
+      message: err.message,
+    });
+  }
   if (err instanceof LocationNotFoundError) {
     return new NotFoundException({
       code: 'tenancy.location_not_found',
       message: err.message,
     });
+  }
+  if (err instanceof LocationHasOrdersError) {
+    return new ConflictException({ code: 'location.has_orders', message: err.message });
+  }
+  if (err instanceof LocationNotArchivedError) {
+    return new ConflictException({ code: 'location.not_archived', message: err.message });
   }
   if (err instanceof LocationAlreadyArchivedError) {
     return new ConflictException({

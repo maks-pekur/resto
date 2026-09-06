@@ -9,6 +9,7 @@ const CartModifierSchema = z.object({
   optionId: z.string().uuid(),
   name: z.string().min(1).max(200),
   amount: z.number().int().positive().optional(),
+  kind: z.enum(['added', 'excluded']).optional().default('added'),
 });
 
 const CartLineItemSchema = z.object({
@@ -24,7 +25,8 @@ const OrderChannelSchema = z.enum(['site', 'qr-menu']);
 export const CreateOrderInputSchema = z
   .object({
     items: z.array(CartLineItemSchema).min(1),
-    fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+    orderType: z.enum(['dine_in', 'pickup', 'delivery']),
+    /** Only trusted from an operator; a guest's table comes from their scanned session. */
     tableId: z.string().uuid().optional(),
     customerName: z.string().max(200).optional(),
     customerPhone: z.string().max(30).optional(),
@@ -39,18 +41,14 @@ export const CreateOrderInputSchema = z
       })
       .optional(),
     channel: OrderChannelSchema.optional().default('site'),
+    /** How the guest intends to pay. The money itself arrives later, on its own path. */
+    paymentType: z.enum(['online', 'cash', 'card_on_delivery']).optional().default('online'),
     marketingConsent: z.boolean().optional().default(false),
   })
+
   .refine(
     (data) => {
-      if (data.fulfillmentMode === 'dine_in') return data.tableId !== undefined;
-      return true;
-    },
-    { message: 'tableId is required for dine_in orders', path: ['tableId'] },
-  )
-  .refine(
-    (data) => {
-      if (data.fulfillmentMode === 'pickup' || data.fulfillmentMode === 'delivery') {
+      if (data.orderType === 'pickup' || data.orderType === 'delivery') {
         return (
           data.customerName !== undefined &&
           data.customerName !== '' &&
@@ -64,7 +62,11 @@ export const CreateOrderInputSchema = z
       message: 'customerName and customerPhone are required for pickup/delivery orders',
       path: ['customerName'],
     },
-  );
+  )
+  .refine((data) => data.paymentType !== 'card_on_delivery' || data.orderType === 'delivery', {
+    message: 'card_on_delivery is only for delivery orders',
+    path: ['paymentType'],
+  });
 
 export type CreateOrderInput = z.infer<typeof CreateOrderInputSchema>;
 export class CreateOrderInputDto extends createZodDto(CreateOrderInputSchema) {}

@@ -22,7 +22,12 @@
     "notFound": "Not found.",
     "forbiddenTitle": "You do not have access to this page.",
     "forbiddenBody": "Your role does not include the permission this page needs. Ask an owner to grant it.",
-    "backToDashboard": "Back to dashboard"
+    "backToDashboard": "Back to dashboard",
+    "archive": "Archive",
+    "localizedField": {
+      "translatedCount": "Translated {{done}} of {{total}}",
+      "primaryMark": "★"
+    }
   },
   "auth": {
     "signInTitle": "Sign in to Resto",
@@ -59,12 +64,10 @@
     "settings": "Settings",
     "payments": "Payments",
     "orders": "Orders",
+    "tables": "Halls & tables",
+    "themeLabel": "Theme",
     "user": {
       "accountItem": "Account",
-      "themeLabel": "Theme",
-      "themeLight": "Light",
-      "themeDark": "Dark",
-      "themeSystem": "System",
       "logout": "Log out",
       "languageLabel": "Language",
       "localeRu": "Русский",
@@ -72,8 +75,7 @@
       "switchTenantItem": "Switch restaurant",
       "localeEs": "Español"
     },
-    "groupOperations": "Operations",
-    "groupAdministration": "Administration"
+    "transactions": "Transactions"
   },
   "pickTenant": {
     "title": "Choose your restaurant",
@@ -136,7 +138,6 @@
       "allergens": "Allergens",
       "allergensPlaceholder": "Milk, nuts, gluten",
       "nutritionTitle": "Nutrition per 100 g",
-      "nutritionAiBadge": "AI estimate",
       "nutritionPer100g": "per 100 g",
       "nutritionProteinsShort": "P",
       "nutritionFatsShort": "F",
@@ -169,9 +170,13 @@
       "priceSectionHint": "Sizes save separately",
       "compositionSectionTitle": "Composition",
       "compositionSectionHint": "Modifier groups save automatically",
-      "ingredientsLabel": "Ingredients",
-      "ingredientsPlaceholder": "Chicken, tomato, teriyaki sauce",
-      "ingredientsHint": "Comma-separated. Shown on the item card.",
+      "compositionModeText": "Free text",
+      "compositionModeAssembled": "From modifiers",
+      "compositionTextPlaceholder": "Chicken, tomato, teriyaki sauce",
+      "compositionTextHint": "Comma-separated. Shown on the item card.",
+      "compositionAddLineBtn": "+ Add modifier",
+      "compositionRemovableLabel": "Removable",
+      "compositionRemoveLineAriaLabel": "Remove \"{{name}}\" from the composition",
       "seoSectionTitle": "SEO",
       "seoSectionHint": "Affects search engine results",
       "metaTitleLabel": "Meta title",
@@ -182,7 +187,36 @@
       "statusReadonlyHint": "Managed from the items list.",
       "techInfoSectionTitle": "Tech info",
       "slugLabel": "Slug",
-      "newItemTitle": "New item"
+      "newItemTitle": "New item",
+      "nameRequired": "Fill in the name in the primary language",
+      "dietary": "Diet and allergens",
+      "diets": "Labels",
+      "dietsHint": "Shown to the guest as badges and used as menu filters",
+      "allergensHint": "The list from EU regulation 1169/2011 — the guest sees them on the dish",
+      "diet": {
+        "vegetarian": "Vegetarian",
+        "vegan": "Vegan",
+        "gluten_free": "Gluten free",
+        "lactose_free": "Lactose free",
+        "spicy": "Spicy",
+        "halal": "Halal"
+      },
+      "allergen": {
+        "gluten": "gluten",
+        "crustaceans": "crustaceans",
+        "eggs": "eggs",
+        "fish": "fish",
+        "peanuts": "peanuts",
+        "soy": "soy",
+        "milk": "milk",
+        "nuts": "nuts",
+        "celery": "celery",
+        "mustard": "mustard",
+        "sesame": "sesame",
+        "sulphites": "sulphites",
+        "lupin": "lupin",
+        "molluscs": "molluscs"
+      }
     },
     "sizes": {
       "title": "Sizes",
@@ -203,29 +237,47 @@
       "validateSize": "Please check the size fields."
     },
     "modifiers": {
-      "newItemHint": "Save the item first — modifiers can be attached after the first save.",
-      "cardTitle": "Modifier groups",
-      "cardDescription": "Attach groups from the library or create a new one — options can be edited inside the group.",
-      "emptyHint": "No attached groups — tap «+ Add group».",
-      "chipRemoveAriaLabel": "Remove group {{name}}",
-      "addGroupBtn": "+ Add group",
-      "sheetTitle": "Add a modifier group",
-      "searchPlaceholder": "Search",
-      "sheetEmpty": "Nothing found.",
-      "optionCount": "{{count}} options",
-      "addToItem": "+ Add",
-      "alreadyAdded": "Added",
-      "createNewLink": "+ Create new group",
-      "createDialogTitle": "Create modifier group",
-      "createDialogDescription": "The group is added to the library and available to attach.",
+      "tabModifiers": "Modifiers",
+      "tabGroups": "Groups",
+      "emptyTitle": "No modifiers yet",
+      "emptyDescription": "Add your first one — it will show up here and can be reused across any group or dish.",
+      "addBtn": "+ Add modifier",
+      "editorTitleNew": "New modifier",
+      "editorTitleEdit": "Modifier",
+      "createBtn": "Create modifier",
+      "saveBtn": "Save changes",
       "nameLabel": "Name",
-      "minLabel": "Min",
-      "maxLabel": "Max",
-      "nameRequired": "Enter the group name.",
-      "createFailed": "Couldn't create the group.",
-      "updateFailed": "Couldn't update modifiers.",
-      "validateGroup": "Please check the group fields.",
-      "validateOption": "Please check the option fields."
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Short line under the photo",
+      "priceLabel": "Price",
+      "saveFailed": "Couldn't save the modifier.",
+      "archiveBtn": "Archive",
+      "archiveDialogTitle": "Archive this modifier?",
+      "archiveDialogDescription": "\"{{name}}\" will be hidden from the menu and removed from {{groupCount}} groups and {{dishCount}} dishes. This is reversible — clear the archive filter to undo it.",
+      "usedInGroups": "Groups: {{names}}",
+      "usedInDishes": "Dishes: {{names}}",
+      "tableNameHeader": "Name",
+      "tablePriceHeader": "Price",
+      "tableGroupsHeader": "Groups",
+      "tableDishesHeader": "Dishes",
+      "rowOpenAriaLabel": "Open modifier {{name}}"
+    },
+    "groups": {
+      "displayLabel": "Display",
+      "displayTiles": "Tiles",
+      "displayTabs": "Tabs",
+      "behaviourLabel": "Choice",
+      "behaviourOne": "One",
+      "behaviourSeveral": "Several",
+      "requiredLabel": "Required group",
+      "maxSelectableLabel": "No more than",
+      "maxSelectablePlaceholder": "unlimited"
+    },
+    "itemModifiers": {
+      "groupsRowLabel": "Groups",
+      "singlesRowLabel": "Single modifiers",
+      "addSingleBtn": "+ Modifier",
+      "duplicateError": "\"{{name}}\" is already attached via \"{{groupName}}\"."
     },
     "categories": {
       "addCategory": "+ Add category",
@@ -255,7 +307,8 @@
       "archiveFailed": "Couldn't archive the category.",
       "pageTitle": "Categories",
       "nameRequired": "Enter a name",
-      "reorderFailed": "Could not reorder"
+      "reorderFailed": "Could not reorder",
+      "rowActionsAriaLabel": "Actions for “{{name}}”"
     },
     "modifierGroups": {
       "createGroup": "+ Create group",
@@ -294,7 +347,8 @@
       "pageTitle": "Modifier groups",
       "addGroup": "+ Create group",
       "newGroupTitle": "New group",
-      "tableStatus": "Status"
+      "tableStatus": "Status",
+      "defaultAriaLabel": "Pre-select:"
     },
     "stopList": {
       "title": "Stop list is empty",
@@ -321,7 +375,13 @@
       "aggregateReadOnlyHint": "Showing all locations. Select a location to stop or resume items.",
       "aggregateBadge": "{{count}}/{{total}} locations",
       "aggregateBadgeAria": "Stopped at {{count}} of {{total}} locations",
-      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items"
+      "aggregateTruncatedNote": "Showing first {{shown}} of {{total}} stopped items",
+      "modifiersHeading": "Modifiers",
+      "stopModifierDialogTitle": "Dishes use this modifier",
+      "stopModifierDialogBody": "Check the dishes you also want to stop, so a guest can't order something that can't be assembled.",
+      "stopSelectedDishesBtn": "Stop the checked ones",
+      "stopModifierOnlyBtn": "Modifier only",
+      "stopAriaLabel": "Stop {{name}}"
     },
     "status": {
       "draft": "Draft",
@@ -355,33 +415,10 @@
   },
   "orders": {
     "feed": {
-      "groupWaiting": "Waiting",
-      "groupInProgress": "In progress",
-      "groupDone": "Done",
       "live": "Live",
       "reconnecting": "Reconnecting…",
       "staleNotice": "Couldn't refresh the list — showing data from {{time}}",
-      "staleRetry": "Refresh",
-      "refundBanner_one": "{{count}} refund failed — action required",
-      "refundBanner_few": "{{count}} refunds failed — action required",
-      "refundBanner_many": "{{count}} refunds failed — action required",
-      "refundBanner_other": "{{count}} refunds failed — action required",
-      "refundBannerAction": "Show"
-    },
-    "filters": {
-      "statusLabel": "Status",
-      "statusActive": "Active",
-      "statusAllToday": "All today",
-      "statusCompleted": "Completed",
-      "statusCanceled": "Canceled",
-      "statusRefundFailed": "Refund failed",
-      "dateLabel": "Date",
-      "dateToday": "Today",
-      "dateYesterday": "Yesterday",
-      "dateWeek": "7 days",
-      "channelLabel": "Channel",
-      "channelSiteOnly": "Website",
-      "channelHint": "More channels appear once QR ordering is connected"
+      "staleRetry": "Refresh"
     },
     "card": {
       "newBadge": "New",
@@ -404,10 +441,18 @@
       "itemCount_few": "{{count}} items",
       "itemCount_many": "{{count}} items",
       "itemCount_other": "{{count}} items",
-      "fulfillmentDineIn": "Dine-in",
-      "fulfillmentPickup": "Pickup",
-      "fulfillmentDelivery": "Delivery",
-      "statusUpdateFailed": "Couldn't update the order status."
+      "orderTypeDineIn": "Dine-in",
+      "orderTypePickup": "Pickup",
+      "orderTypeDelivery": "Delivery",
+      "tableLabel": "{{zone}} · Table {{number}}",
+      "statusUpdateFailed": "Couldn't update the order status.",
+      "remainingAria": "Left: {{duration}}",
+      "overdueByAria": "Overdue by {{duration}}",
+      "unitMinutes": "m",
+      "unitHours": "h",
+      "unitDays": "d",
+      "noCustomer": "No name",
+      "etaUnknownAria": "The due time is set when the order is accepted"
     },
     "accept": {
       "title": "How soon will it be ready?",
@@ -464,7 +509,8 @@
       "totalsSubtotal": "Subtotal",
       "totalsService": "Service fee",
       "totalsDiscount": "Discount",
-      "totalsTotal": "Total"
+      "totalsTotal": "Total",
+      "excludedLabel": "Without"
     },
     "refund": {
       "title": "Refund",
@@ -479,31 +525,79 @@
       "failedBanner": "Refund of {{amount}} failed"
     },
     "alerts": {
-      "enableSoundTitle": "Turn on order notifications",
-      "enableSoundBody": "Allow sound in this tab so you don't miss a new order.",
-      "enableSoundBtn": "Turn on sound",
       "soundBlockedHint": "Sound may not work in this browser.",
       "muteToggleLabel": "Sound",
       "muteOnAria": "Sound on",
-      "muteOffAria": "Sound off"
+      "muteOffAria": "Sound off",
+      "enableAlertsTitle": "Turn on order alerts",
+      "enableAlertsBody": "Sound and browser notifications, so a new order reaches you even with the tab in the background.",
+      "enableAlertsBtn": "Allow",
+      "alertsBlockedHint": "Notifications are blocked in the browser settings.",
+      "newOrderTitle": "New order #{{number}}",
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "New-order sound is on — click to turn it off",
+      "muteOffHint": "New-order sound is off — click to turn it on"
     },
     "empty": {
-      "activationTitle": "Your first orders will show up here",
-      "activationBody": "Share the ordering link and everything guests pay for will appear here.",
-      "checklistPayments": "Payments connected",
-      "checklistMenu": "Menu published",
-      "checklistLocation": "Location open",
-      "copyLinkBtn": "Copy link",
-      "linkCopiedToast": "Link copied",
-      "noDomainHint": "No guest ordering domain configured yet.",
-      "filteredTitle": "Nothing found",
-      "filteredBody": "Change the filters or check a different date.",
       "pickLocationTitle": "Choose a location",
-      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above."
+      "pickLocationBody": "The order feed shows one location at a time. Pick one in the switcher above.",
+      "noOrders": "No orders yet"
     },
     "error": {
       "initialLoadTitle": "Couldn't load orders",
       "initialLoadBody": "Check your connection and try again."
+    },
+    "tabs": {
+      "all": "All orders",
+      "dine_in": "Dine-in",
+      "delivery": "Delivery",
+      "pickup": "Pickup",
+      "unaccepted": "Unconfirmed",
+      "accepted": "New",
+      "preparing": "Cooking",
+      "ready": "Ready",
+      "completed": "Closed",
+      "canceled": "Canceled",
+      "refundFailed": "Refund failed"
+    },
+    "dateNav": {
+      "today": "Today",
+      "tomorrow": "Tomorrow",
+      "yesterday": "Yesterday",
+      "previous": "Previous day",
+      "next": "Next day"
+    },
+    "payment": {
+      "online": "Online",
+      "cash": "Cash",
+      "card_on_delivery": "Card on delivery",
+      "refunded": "Refunded",
+      "unpaid": "Unpaid"
+    },
+    "channel": {
+      "site": "Website",
+      "qrMenu": "QR menu",
+      "unknown": "Other",
+      "glovo": "Glovo",
+      "uberEats": "Uber Eats",
+      "bolt": "Bolt Food",
+      "wolt": "Wolt"
+    },
+    "columns": {
+      "order": "Order",
+      "remaining": "Left",
+      "placed": "Placed",
+      "type": "Type",
+      "for": "For",
+      "total": "Total"
+    },
+    "review": {
+      "rating": "Guest's rating: {{rating}} of 5"
+    },
+    "service": {
+      "waiter": "{{zone}}, table {{number}} — calling a waiter",
+      "bill": "{{zone}}, table {{number}} — asking for the bill",
+      "done": "Done"
     }
   },
   "dashboard": {
@@ -520,7 +614,103 @@
     "editItemTitle": "Edit item",
     "newItemTitle": "New item",
     "editGroupTitle": "Edit modifier group",
-    "newGroupTitle": "New modifier group"
+    "newGroupTitle": "New modifier group",
+    "kpiRevenue": "Revenue",
+    "kpiOrders": "Orders fulfilled",
+    "kpiNewGuests": "New guests",
+    "kpiRefunds": "Refunds",
+    "kpiPrevious": "{{value}} previous period",
+    "kpiNoBaseline": "no data for the previous period",
+    "noReportsTitle": "Reports are not available",
+    "noReportsDescription": "Revenue and order figures are visible to the owner and administrators.",
+    "kpiVsPrevious": "vs previous period",
+    "filterLocationLabel": "Location",
+    "filterLocationAll": "All locations",
+    "range": {
+      "today": "Today",
+      "yesterday": "Yesterday",
+      "last7": "Last 7 days",
+      "last28": "Last 28 days",
+      "thisMonth": "This month",
+      "lastMonth": "Last month"
+    }
+  },
+  "tables": {
+    "pageTitle": "Halls & tables",
+    "emptyTitle": "No zones yet",
+    "emptyDescription": "Create a zone to start printing table QR codes for the floor.",
+    "createZoneBtn": "New zone",
+    "createZoneDialogTitle": "New zone",
+    "zoneNameLabel": "Zone name",
+    "tableCountLabel": "Number of tables",
+    "tableCountHint": "Enter a number between 0 and {{max}}.",
+    "createZoneSubmit": "Create zone",
+    "createZoneSuccess": "Zone created.",
+    "cancelAction": "Cancel",
+    "addTablesAction": "Add tables",
+    "addTablesDialogTitle": "Add tables",
+    "addTablesCountLabel": "How many tables to add",
+    "addTablesSubmit": "Add",
+    "addTablesSuccess": "Tables added.",
+    "renameZoneSubmit": "Save",
+    "renameZoneSuccess": "Zone renamed.",
+    "archiveZoneAction": "Archive zone",
+    "archiveZoneConfirmTitle": "Archive this zone?",
+    "archiveZoneConfirmDescription": "This will also archive {{count}} table(s) in this zone. This cannot be undone.",
+    "archiveZoneConfirm": "Archive zone",
+    "archiveZoneSuccess": "Zone archived.",
+    "renameTableAction": "Rename",
+    "renameTableDialogTitle": "Rename table",
+    "renameTableLabel": "Table number",
+    "renameTableSubmit": "Save",
+    "renameTableSuccess": "Table renamed.",
+    "archiveTableAction": "Archive",
+    "archiveTableConfirmTitle": "Archive this table?",
+    "archiveTableConfirmDescription": "This cannot be undone.",
+    "archiveTableConfirm": "Archive",
+    "archiveTableSuccess": "Table archived.",
+    "printAction": "Print sheet",
+    "printOrderingLine": "Codes are printed in table order, left to right then top to bottom, one zone per sheet.",
+    "printVerifyLine": "You can check a stuck sticker by scanning it with any phone and reading the table it names.",
+    "downloadAction": "Download QR",
+    "tableNumberHeader": "Table",
+    "tableStatusHeader": "Status",
+    "tableActionsHeader": "Actions",
+    "statusActive": "Active",
+    "statusArchived": "Archived",
+    "errors": {
+      "tableBulkLimitExceeded": "A single request can create at most {{max}} tables — split it into smaller batches.",
+      "locationTableLimitReached": "This location has reached its limit of {{max}} active tables.",
+      "tableNumberTaken": "Table number \"{{number}}\" is already in use in this zone.",
+      "tableZoneNotFound": "This zone could not be found. It may have been archived.",
+      "tableNotFound": "This table could not be found. It may have already been archived.",
+      "tableZoneAlreadyArchived": "This zone has already been archived.",
+      "tableAlreadyArchived": "This table has already been archived.",
+      "generic": "Something went wrong. Please try again."
+    },
+    "backToZones": "Back to zones",
+    "editZoneAction": "Edit zone",
+    "zoneNotFoundTitle": "Zone not found",
+    "zoneNotFoundDescription": "It may have been archived, or the link is out of date.",
+    "tableCountAria": "Tables in the zone",
+    "zoneNameDescription": "The guest sees this name on the order — \"Terrace\", \"Second floor\".",
+    "tableCountDescription": "Tables live inside the zone. You can add or rename them later.",
+    "form": {
+      "createTitle": "New zone",
+      "createDescription": "A zone is a part of the room — terrace, second floor, summer patio. Tables live inside it.",
+      "editTitle": "Zone settings",
+      "editDescription": "The guest sees this name on the order and the operator sees it in the feed.",
+      "summaryTitle": "Check the form:",
+      "nameRequired": "Enter a zone name.",
+      "nameTooLong": "The name is longer than 60 characters.",
+      "countInvalid": "Enter a whole number of tables, zero or more.",
+      "countTooMany": "At most 200 tables can be created at once.",
+      "save": "Save",
+      "create": "Create zone",
+      "saving": "Saving…"
+    },
+    "zoneStatusHeader": "Status",
+    "rowActionsAriaLabel": "Actions for “{{name}}”"
   },
   "format": {
     "ago": "{{n}}{{unit}} ago",
@@ -528,5 +718,182 @@
     "minutesShort": "m",
     "hoursShort": "h",
     "daysShort": "d"
+  },
+  "transactions": {
+    "title": "Transactions",
+    "tabs": {
+      "all": "All",
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "refund_failed": "Refund failed"
+    },
+    "status": {
+      "paid": "Paid",
+      "refunded": "Refunded",
+      "failed": "Refund failed — action needed"
+    },
+    "columnDate": "Date",
+    "columnOrder": "Order",
+    "columnAmount": "Amount",
+    "columnRefunded": "Refunded",
+    "columnStatus": "Status",
+    "orderNumber": "#{{n}}",
+    "retryBtn": "Retry refund",
+    "retrySucceeded": "Refund sent again",
+    "retryFailed": "Could not retry the refund.",
+    "empty": "No transactions in this period",
+    "failedBadgeAria": "Refunds needing action: {{count}}",
+    "columnActions": "Actions",
+    "rowActionsAriaLabel": "Actions for order #{{n}}"
+  },
+  "settings": {
+    "contentLocales": {
+      "title": "Menu languages",
+      "description": "The languages guests see the menu in, on the website and in the QR menu.",
+      "fallbackHint": "When a dish has no translation, guests see it in the primary language.",
+      "save": "Save",
+      "saving": "Saving…",
+      "reset": "Reset",
+      "saved": "Menu languages updated",
+      "saveFailed": "Could not save the menu languages",
+      "languagesLabel": "Menu languages",
+      "languagesPlaceholder": "Pick the languages",
+      "primaryLabel": "Primary language"
+    },
+    "pageTitle": "Settings",
+    "brand": {
+      "profileTitle": "Restaurant profile",
+      "profileDescription": "How the restaurant looks to a guest — on the site, in the QR menu and in emails.",
+      "logoChoose": "Upload a logo",
+      "logoUploading": "Uploading…",
+      "logoRemove": "Remove",
+      "logoHint": "PNG, JPG, WebP or SVG, up to 2 MB. A square image works best.",
+      "logoRejected": "That file will not do: PNG, JPG, WebP or SVG up to 2 MB only.",
+      "logoUploadFailed": "Could not upload the logo",
+      "nameLabel": "Name",
+      "nameHint": "Guests see it in the header of the site and the menu.",
+      "nameRequired": "Enter a name",
+      "nameTooLong": "Name is too long",
+      "descriptionLabel": "Description",
+      "descriptionHint": "A sentence or two about the restaurant — shown in the footer.",
+      "descriptionTooLong": "Description is too long",
+      "contactsTitle": "Contacts",
+      "contactsDescription": "Public contacts for the restaurant, not for one location.",
+      "phoneLabel": "Phone",
+      "phoneInvalid": "That does not look like a phone number",
+      "emailLabel": "Email",
+      "emailInvalid": "That does not look like an email",
+      "websiteLabel": "Website",
+      "urlInvalid": "That does not look like a link",
+      "socialsTitle": "Social profiles",
+      "socialsDescription": "Links to the restaurant's profiles — guests see them in the footer.",
+      "save": "Save",
+      "saving": "Saving…",
+      "reset": "Reset",
+      "saved": "Brand settings saved",
+      "saveFailed": "Could not save the brand settings",
+      "socialsEmpty": "No links yet.",
+      "socialAdd": "Add a profile",
+      "socialRemove": "Remove {{name}}",
+      "coverTitle": "Venue photos",
+      "coverDescription": "A guest swipes through them in the venue details. The first one leads.",
+      "coverRejected": "JPG, PNG or WebP up to 2 MB",
+      "coverUploadFailed": "Upload failed",
+      "coverUploading": "Uploading…",
+      "coverChoose": "Choose photo",
+      "coverRemove": "Remove",
+      "coverHint": "Landscape shots, up to {{max}}, each under 2 MB",
+      "coverTooMany": "No more than {{max}} photos",
+      "coverPrimary": "First"
+    },
+    "pageDescription": "The restaurant profile, languages, domains and payouts.",
+    "navLabel": "Settings sections",
+    "tabGeneral": "General",
+    "tabLanguages": "Languages",
+    "tabDomains": "Domains",
+    "domains": {
+      "title": "Domains",
+      "description": "The addresses guests open the site and the menu at.",
+      "empty": "No custom domain connected yet.",
+      "columnDomain": "Domain",
+      "columnKind": "Kind",
+      "columnStatus": "Verified",
+      "primary": "primary",
+      "pending": "pending"
+    },
+    "tabIntegrations": "Integrations",
+    "tabApps": "Apps",
+    "apps": {
+      "title": "Apps",
+      "description": "The surfaces a guest meets you through.",
+      "live": "live",
+      "open": "Open",
+      "qr-menu": {
+        "name": "QR menu",
+        "description": "The menu at the table: scan, order, pay."
+      },
+      "website": {
+        "name": "Website",
+        "description": "Your public page with the menu and takeaway orders."
+      },
+      "settingsLink": {
+        "languages": "Languages",
+        "domains": "Domains"
+      }
+    },
+    "tabLegal": "Documents",
+    "legal": {
+      "title": "Documents and information",
+      "description": "The texts a guest reads in the menu. Empty ones are not shown.",
+      "save": "Save",
+      "saving": "Saving…",
+      "saved": "Saved",
+      "saveFailed": "Could not save",
+      "doc": {
+        "about": "About the company",
+        "payment": "Ways to pay",
+        "returns": "Refunds",
+        "cookies": "Cookies",
+        "terms": "Terms of use",
+        "privacy": "Privacy policy"
+      },
+      "hint": {
+        "about": "Legal name, registration, address, tax number",
+        "payment": "Which cards and methods you take, when money is charged",
+        "returns": "When you refund an order and how a guest asks",
+        "cookies": "Which cookies you set and why",
+        "terms": "The rules for using the menu and ordering",
+        "privacy": "What data you collect and how you keep it"
+      }
+    }
+  },
+  "account": {
+    "pageTitle": "Account",
+    "pageDescription": "Your own sign-in — separate from the restaurant settings.",
+    "identityTitle": "Sign-in",
+    "identityDescription": "The address you sign in to the panel with.",
+    "emailLabel": "Email",
+    "roleLabel": "Role"
+  },
+  "locations": {
+    "hours": {
+      "title": "Opening hours",
+      "description": "Guests see them in the menu and know whether you are open.",
+      "closed": "closed",
+      "weekday": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "wifiTitle": "Guest wi-fi",
+    "wifiDescription": "Shown in the menu so nobody has to ask a waiter.",
+    "ssidLabel": "Network name",
+    "ssidHint": "Leave empty to hide wi-fi",
+    "passwordLabel": "Password"
   }
 }

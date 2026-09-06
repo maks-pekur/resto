@@ -14,10 +14,10 @@ export const GuestHeader = ({ tenantName, logoUrl, actions }: GuestHeaderProps) 
 
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/80 sticky top-0 z-50 h-(--header-height) w-full border-b backdrop-blur">
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
         <a href="/" className="flex min-w-0 items-center gap-2.5 focus-visible:outline-none">
           {logoUrl ? (
-            <span className="relative size-9 shrink-0 overflow-hidden rounded-xl">
+            <span className="relative size-8 shrink-0 overflow-hidden rounded-xl xs:size-9">
               <Image
                 src={logoUrl}
                 alt={tenantName}
@@ -27,12 +27,14 @@ export const GuestHeader = ({ tenantName, logoUrl, actions }: GuestHeaderProps) 
               />
             </span>
           ) : null}
-          <span className="truncate text-lg leading-tight font-extrabold sm:text-xl">
+          <span className="truncate text-base leading-tight font-extrabold xs:text-lg sm:text-xl">
             {tenantName}
           </span>
         </a>
 
-        <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        {/* The controls are 44px targets around 36px discs, so their own 4px of air would otherwise
+            read as a wider margin than the content's. Pulling them out lines the discs up with it. */}
+        <div className="-me-1 flex shrink-0 items-center gap-1">{actions}</div>
       </div>
     </header>
   );

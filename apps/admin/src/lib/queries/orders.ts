@@ -1,21 +1,23 @@
 import { apiFetch } from '@/lib/api-client';
 
-export type OrderStatus =
-  | 'created'
-  | 'requires_action'
-  | 'paid'
+/** How far the kitchen has taken the order. Money is `OrderPaymentStatus`'s business. */
+export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled';
+
+export type OrderPaymentStatus = 'pending' | 'requires_action' | 'paid' | 'failed' | 'refunded';
+
+export type OrderStatusPreset =
+  | 'active'
+  | 'all_today'
+  | 'unaccepted'
   | 'accepted'
   | 'preparing'
   | 'ready'
   | 'completed'
   | 'canceled'
-  | 'refunded'
-  | 'failed';
-
-export type OrderStatusPreset = 'active' | 'all_today' | 'completed' | 'canceled' | 'refund_failed';
+  | 'refund_failed';
 export type OrderDatePreset = 'today' | 'yesterday' | 'week';
 export type OrderChannel = 'site' | 'qr-menu';
-export type OrderFulfillmentMode = 'dine_in' | 'pickup' | 'delivery';
+export type OrderOrderType = 'dine_in' | 'pickup' | 'delivery';
 
 export interface OrderFeedRowApi {
   readonly id: string;
@@ -23,8 +25,14 @@ export interface OrderFeedRowApi {
   readonly status: OrderStatus;
   readonly locationId: string;
   readonly locationName: string;
-  readonly fulfillmentMode: OrderFulfillmentMode;
+  readonly orderType: OrderOrderType;
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
+  readonly customerName: string | null;
+  readonly customerPhone: string | null;
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
+  readonly paymentStatus: OrderPaymentStatus;
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -56,6 +64,9 @@ export interface OrderFeedSinceCursor {
 export interface OrderFeedFilters {
   readonly statusFilter?: OrderStatusPreset;
   readonly datePreset?: OrderDatePreset;
+  readonly from?: string;
+  readonly to?: string;
+  readonly orderType?: OrderOrderType;
   readonly channel?: OrderChannel;
   readonly since?: OrderFeedSinceCursor;
   readonly limit?: number;
@@ -63,7 +74,7 @@ export interface OrderFeedFilters {
 }
 
 export const DEFAULT_ORDER_FEED_FILTERS: OrderFeedFilters = {
-  statusFilter: 'active',
+  statusFilter: 'unaccepted',
   datePreset: 'today',
 };
 
@@ -71,6 +82,9 @@ const buildFeedQueryString = (filters: OrderFeedFilters): string => {
   const params = new URLSearchParams();
   if (filters.statusFilter) params.set('statusFilter', filters.statusFilter);
   if (filters.datePreset) params.set('datePreset', filters.datePreset);
+  if (filters.from) params.set('from', filters.from);
+  if (filters.to) params.set('to', filters.to);
+  if (filters.orderType) params.set('orderType', filters.orderType);
   if (filters.channel) params.set('channel', filters.channel);
   if (filters.since) {
     params.set('sinceCreatedAt', filters.since.createdAt);
@@ -92,12 +106,47 @@ export const ordersFeedQuery = (
     apiFetch<OrderFeedResponse>(buildFeedQueryString(filters), { locationId, signal }),
 });
 
+export interface OrderFeedCountsApi {
+  readonly unaccepted: number;
+  readonly accepted: number;
+  readonly preparing: number;
+  readonly ready: number;
+  readonly completed: number;
+  readonly canceled: number;
+}
+
+export interface OrderCountsFilters {
+  readonly from?: string;
+  readonly to?: string;
+  readonly orderType?: OrderOrderType;
+}
+
+export const ordersCountsQuery = (
+  // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
+  locationId: string | 'all',
+  filters: OrderCountsFilters,
+) => ({
+  queryKey: ['orders', 'counts', locationId, filters] as const,
+  queryFn: ({ signal }: { signal: AbortSignal }) => {
+    const params = new URLSearchParams();
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    if (filters.orderType) params.set('orderType', filters.orderType);
+    const qs = params.toString();
+    return apiFetch<OrderFeedCountsApi>(
+      qs ? `/v1/orders/feed/counts?${qs}` : '/v1/orders/feed/counts',
+      { locationId, signal },
+    );
+  },
+});
+
 export interface OrderModifierApi {
   readonly optionId: string;
   readonly nameSnapshot: string;
   readonly priceDelta: string;
   readonly amount: number;
   readonly modifierGroupId: string | null;
+  readonly kind: 'added' | 'excluded';
 }
 
 export interface OrderItemApi {
@@ -118,8 +167,10 @@ export interface OrderDetailApi {
   readonly locationId: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
-  readonly fulfillmentMode: OrderFulfillmentMode;
+  readonly orderType: OrderOrderType;
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
   readonly customerName: string | null;
   readonly customerPhone: string | null;
   readonly customerEmail: string | null;
@@ -149,6 +200,7 @@ export interface OrderDetailApi {
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly hasFailedRefund: boolean;
+  readonly review: { readonly rating: number; readonly comment: string | null } | null;
   readonly failedRefundAmount: string | null;
   readonly failedRefundReason: string | null;
 }

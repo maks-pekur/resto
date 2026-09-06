@@ -8,7 +8,16 @@ const menu: MenuDto = {
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'UAH',
-  tenant: { id: 'tenant-1', slug: 'pizza', displayName: 'Pizza Palace', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'pizza',
+    displayName: 'Pizza Palace',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizzas', name: { en: 'Pizzas' }, description: null, sortOrder: 0 },
   ],
@@ -21,30 +30,46 @@ const menu: MenuDto = {
       description: null,
       basePrice: '189.00',
       currency: 'UAH',
+      weight: null,
+      measureUnit: null,
       imageUrl: null,
       photos: [],
       allergens: [],
+      diets: [],
       proteins: null,
       fats: null,
       carbs: null,
       kcal: null,
-      nutritionEstimated: false,
       sortOrder: 0,
       sizes: [],
       modifierGroupIds: [],
+      extraOptionIds: [],
+      compositionMode: 'text',
+      composition: [],
+      compositionLines: [],
     },
   ],
   modifierGroups: [],
+  modifierOptions: [],
 };
 
 vi.mock('../src/api/client', () => ({
+  fetchVenue: vi.fn(() => Promise.resolve(null)),
+  fetchLegalDocuments: vi.fn(() => Promise.resolve(null)),
   MenuNotFoundError: class extends Error {},
+  fetchTableSession: () => Promise.resolve(null),
+  openTableSession: () => Promise.reject(new Error('no session')),
   fetchMenu: () => Promise.resolve(menu),
-  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [] }),
+  fetchAvailability: () => Promise.resolve({ stoppedItemIds: [], stoppedIngredientIds: [] }),
 }));
 
-const themeGroup = () =>
-  within(screen.getByRole('contentinfo')).getByRole('group', { name: t('theme.label') });
+// The choice lives in the drawer now, as one segmented control among three answers.
+const chooseTheme = (label: string): void => {
+  if (screen.queryAllByRole('radio', { name: label }).length === 0) {
+    fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
+  }
+  fireEvent.click(screen.getByRole('radio', { name: label }));
+};
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -62,21 +87,37 @@ describe('qr-menu colour theme', () => {
 
     expect(document.documentElement.getAttribute('data-theme')).toBe('system');
     expect(window.localStorage.getItem('resto.theme')).toBeNull();
-    expect(
-      within(themeGroup()).getByRole('button', { name: t('theme.system'), pressed: true }),
-    ).toBeInTheDocument();
+    fireEvent.click(within(screen.getByRole('banner')).getByTestId('drawer-trigger'));
+    // Nothing was chosen, so the control simply shows what the system resolved to.
+    expect(await screen.findByRole('radio', { name: t('theme.light') })).toBeChecked();
   });
 
   it('applies and remembers an explicit dark choice', async () => {
     render(<App />);
     await screen.findByRole('contentinfo');
 
-    fireEvent.click(within(themeGroup()).getByRole('button', { name: t('theme.dark') }));
+    chooseTheme(t('theme.dark'));
 
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
     });
     expect(window.localStorage.getItem('resto.theme')).toBe('dark');
+  });
+
+  it('lets the guest change their mind and go back to light', async () => {
+    render(<App />);
+    await screen.findByRole('contentinfo');
+
+    chooseTheme(t('theme.dark'));
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    });
+
+    chooseTheme(t('theme.light'));
+    await waitFor(() => {
+      expect(document.documentElement.getAttribute('data-theme')).toBe('light');
+    });
+    expect(window.localStorage.getItem('resto.theme')).toBe('light');
   });
 
   it('restores the remembered choice on the next visit', async () => {
@@ -87,9 +128,6 @@ describe('qr-menu colour theme', () => {
     await waitFor(() => {
       expect(document.documentElement.getAttribute('data-theme')).toBe('light');
     });
-    expect(
-      within(themeGroup()).getByRole('button', { name: t('theme.light'), pressed: true }),
-    ).toBeInTheDocument();
   });
 
   it('ignores a corrupted stored value rather than breaking the page', async () => {

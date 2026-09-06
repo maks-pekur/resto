@@ -118,17 +118,19 @@ export class AuthGuard implements CanActivate {
     };
     const principal = buildPrincipal(sessionData, alsTenantId);
 
-    // Existing cross-check: when BOTH the principal and the request
-    // resolved a tenant, they MUST match — otherwise an operator with
-    // session active-org=A could hit a tenant-B host (operator session
-    // injection).
-    if (
-      principal.kind !== 'anonymous' &&
-      'tenantId' in principal &&
-      principal.tenantId &&
-      alsTenantId &&
-      principal.tenantId !== alsTenantId
-    ) {
+    const principalTenantId =
+      principal.kind !== 'anonymous' && 'tenantId' in principal ? principal.tenantId : undefined;
+
+    // 07.4 D-02: a session with no activeOrganizationId used to skip this
+    // check entirely, binding whatever x-tenant-id the request carried.
+    const tenantMismatch =
+      principal.kind === 'operator'
+        ? alsTenantId !== undefined && principalTenantId !== alsTenantId
+        : principalTenantId !== undefined &&
+          alsTenantId !== undefined &&
+          principalTenantId !== alsTenantId;
+
+    if (tenantMismatch) {
       throw new ForbiddenException({
         code: 'auth.tenant_mismatch',
         message: 'Principal tenant does not match request tenant.',
@@ -152,9 +154,18 @@ export class AuthGuard implements CanActivate {
       });
     }
 
-    if (principal.kind === 'operator' && principal.tenantId) {
-      const role = await this.lookupBaseRole(principal.userId, principal.tenantId);
-      if (role) principal.baseRole = role;
+    if (principal.kind === 'operator' && alsTenantId !== undefined) {
+      const membership = await this.lookupMembership(principal.userId, alsTenantId);
+      if (membership === null) {
+        throw new ForbiddenException({
+          code: 'auth.tenant_membership_missing',
+          message: 'Principal is not a member of the request tenant.',
+        });
+      }
+      if (membership.role) principal.baseRole = membership.role;
+    } else if (principal.kind === 'operator' && principal.tenantId) {
+      const membership = await this.lookupMembership(principal.userId, principal.tenantId);
+      if (membership?.role) principal.baseRole = membership.role;
     }
 
     req.principal = principal;
@@ -163,24 +174,26 @@ export class AuthGuard implements CanActivate {
     return true;
   }
 
-  private async lookupBaseRole(
+  private async lookupMembership(
     userId: string,
     tenantId: string,
-  ): Promise<'owner' | 'admin' | 'staff' | undefined> {
+  ): Promise<{ role: 'owner' | 'admin' | 'staff' | undefined } | null> {
     const rows = await this.authDb.db
       .select({ role: memberTable.role })
       .from(memberTable)
       .where(and(eq(memberTable.userId, userId), eq(memberTable.tenantId, tenantId)))
       .limit(1);
-    const role = rows[0]?.role;
-    if (!role) return undefined;
+    const row = rows[0];
+    if (!row) return null;
+    const role = row.role;
+    if (!role) return { role: undefined };
     // D-15 (08.3): BA stores member.role as CSV when a member holds both a system
     // role and a custom role slug. Split and return the highest system role present.
     const parts = role.split(',').map((r) => r.trim());
-    if (parts.includes('owner')) return 'owner';
-    if (parts.includes('admin')) return 'admin';
-    if (parts.includes('staff')) return 'staff';
-    return undefined;
+    if (parts.includes('owner')) return { role: 'owner' };
+    if (parts.includes('admin')) return { role: 'admin' };
+    if (parts.includes('staff')) return { role: 'staff' };
+    return { role: undefined };
   }
 }
 

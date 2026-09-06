@@ -10,17 +10,31 @@ import {
   InvalidCancelReasonError,
   InvalidOrderTransitionError,
   InvalidPrepMinutesError,
+  OrderIngredientUnavailableError,
   OrderItemNotOrderableError,
   OrderItemUnavailableError,
   OrderModifierNotAvailableError,
   OrderModifierSelectionInvalidError,
+  OrderFeedbackAlreadyLeftError,
+  OrderFeedbackNotYoursError,
   OrderNotFoundError,
+  OrderNotServedYetError,
   OrderTableNotResolvedError,
 } from '../../domain/errors';
 
 export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof NoLocationForTenantError) {
     return new NotFoundException({ code: 'catalog.no_location_for_tenant', message: err.message });
+  }
+  if (err instanceof OrderFeedbackNotYoursError) {
+    // Deliberately a 404: a guest at another table learns nothing about this order's existence.
+    return new NotFoundException({ code: 'ordering.order_not_found', message: err.message });
+  }
+  if (err instanceof OrderNotServedYetError) {
+    return new ConflictException({ code: 'ordering.order_not_served_yet', message: err.message });
+  }
+  if (err instanceof OrderFeedbackAlreadyLeftError) {
+    return new ConflictException({ code: 'ordering.feedback_already_left', message: err.message });
   }
   if (err instanceof OrderNotFoundError) {
     return new NotFoundException({ code: 'ordering.order_not_found', message: err.message });
@@ -46,6 +60,12 @@ export const mapOrderError = (err: unknown): unknown => {
   if (err instanceof OrderModifierNotAvailableError) {
     return new UnprocessableEntityException({
       code: 'ordering.modifier_not_available',
+      message: err.message,
+    });
+  }
+  if (err instanceof OrderIngredientUnavailableError) {
+    return new UnprocessableEntityException({
+      code: 'ordering.modifier_unavailable',
       message: err.message,
     });
   }

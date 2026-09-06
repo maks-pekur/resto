@@ -1,10 +1,14 @@
 import {
+  Body,
   Controller,
   Get,
   Headers,
+  HttpCode,
+  HttpStatus,
   Inject,
   NotFoundException,
   Param,
+  Post,
   Req,
   Res,
 } from '@nestjs/common';
@@ -13,9 +17,16 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
+import { RestoZodValidationPipe } from '../../../../shared/api/zod-validation.pipe';
 import { ResolveTableService } from '../../application/resolve-table.service';
+import { TableSessionService, TABLE_SESSION_TTL_MS } from '../../application/table-session.service';
+import { buildTableSessionCookie, readTableSessionCookie } from '../../../../shared/table-session';
 import type { TenantSnapshot } from '../../domain/tenant.aggregate';
 import { TenantResolverService } from '../../application/tenant-resolver.service';
+import {
+  SERVICE_REQUEST_REPOSITORY,
+  type ServiceRequestRepository,
+} from '../../domain/service-request';
 import { mapDomainError } from './error-mapping';
 import { LocationNeutral, Public } from '../../../../shared/auth';
 import { wrapWith } from '../../../../shared/api/wrap';
@@ -37,6 +48,19 @@ type TableResolution = z.infer<typeof TableResolutionSchema>;
 
 class TableResolutionDto extends createZodDto(TableResolutionSchema) {}
 
+const OpenTableSessionSchema = z.object({ token: z.string().min(8).max(128) });
+
+const ServiceRequestInputSchema = z.object({ kind: z.enum(['waiter', 'bill']) });
+class ServiceRequestInputDto extends createZodDto(ServiceRequestInputSchema) {}
+
+const ServiceRequestResponseSchema = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(['waiter', 'bill']),
+});
+type ServiceRequestResponse = z.infer<typeof ServiceRequestResponseSchema>;
+class ServiceRequestResponseDto extends createZodDto(ServiceRequestResponseSchema) {}
+class OpenTableSessionDto extends createZodDto(OpenTableSessionSchema) {}
+
 const wrap = wrapWith(mapDomainError);
 
 /**
@@ -52,9 +76,82 @@ const wrap = wrapWith(mapDomainError);
 export class PublicTableResolutionController {
   constructor(
     @Inject(ResolveTableService) private readonly resolveTable: ResolveTableService,
+    @Inject(TableSessionService) private readonly sessions: TableSessionService,
     @Inject(TenantResolverService) private readonly tenants: TenantResolverService,
     @Inject(ENV_TOKEN) private readonly env: Env,
+    @Inject(SERVICE_REQUEST_REPOSITORY)
+    private readonly serviceRequests: ServiceRequestRepository,
   ) {}
+
+  /**
+   * Catching a waiter's eye, from the table the guest actually scanned. Without a session there
+   * is no table to call anyone to, so the request is simply not there to make.
+   */
+  @Post('service-request')
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOkResponse({ type: ServiceRequestResponseDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  async requestService(
+    @Body(new RestoZodValidationPipe(ServiceRequestInputDto)) input: ServiceRequestInputDto,
+    @Req() req: FastifyRequest,
+  ): Promise<ServiceRequestResponse> {
+    await this.requireGuestTenantOr404(req);
+
+    const sessionId = readTableSessionCookie(req.headers);
+    const session = sessionId === undefined ? null : await this.sessions.resolve(sessionId);
+    if (!session) throw new NotFoundException();
+
+    const opened = await this.serviceRequests.open({
+      kind: input.kind,
+      tableId: session.tableId,
+      locationId: session.locationId,
+    });
+    return { id: opened.id, kind: opened.kind };
+  }
+
+  /**
+   * The scanned code, exchanged for a session. The response says which table it was so the guest
+   * sees it; the id itself never has to travel back — the cookie is what an order is read from.
+   */
+  @Post('session')
+  @HttpCode(HttpStatus.OK)
+  @ApiOkResponse({ type: TableResolutionDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  async openSession(
+    @Body() body: OpenTableSessionDto,
+    @Req() req: FastifyRequest,
+    @Res({ passthrough: true }) reply: FastifyReply,
+  ): Promise<TableResolution> {
+    await this.requireGuestTenantOr404(req);
+    const parsed = OpenTableSessionSchema.safeParse(body);
+    if (!parsed.success) throw new NotFoundException();
+
+    const session = await wrap(() => this.sessions.open(parsed.data.token));
+    reply.header(
+      'set-cookie',
+      buildTableSessionCookie(session.sessionId, {
+        secure: this.env.NODE_ENV === 'production',
+        maxAgeSeconds: Math.floor(TABLE_SESSION_TTL_MS / 1000),
+      }),
+    );
+    return { tableId: session.tableId, zoneName: session.zoneName, number: session.number };
+  }
+
+  /** What the app asks on boot: is this browser still sitting at a table? */
+  @Get('session')
+  @ApiOkResponse({ type: TableResolutionDto })
+  @ApiNotFoundResponse({ type: ProblemDetailsDto })
+  async currentSession(@Req() req: FastifyRequest): Promise<TableResolution> {
+    await this.requireGuestTenantOr404(req);
+    const sessionId = readTableSessionCookie(req.headers);
+    const resolved = sessionId === undefined ? null : await this.sessions.resolve(sessionId);
+    if (resolved === null) throw new NotFoundException();
+    return {
+      tableId: resolved.tableId,
+      zoneName: resolved.zoneName,
+      number: resolved.number,
+    };
+  }
 
   @Get(':id')
   @ApiOkResponse({ type: TableResolutionDto })

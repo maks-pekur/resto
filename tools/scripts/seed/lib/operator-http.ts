@@ -37,8 +37,12 @@ export class OperatorHttpClient {
     return this.request<TResponse>('POST', path, body);
   }
 
+  async patch<TResponse>(path: string, body?: unknown): Promise<TResponse> {
+    return this.request<TResponse>('PATCH', path, body);
+  }
+
   private async request<TResponse>(
-    method: 'GET' | 'POST',
+    method: 'GET' | 'POST' | 'PATCH',
     path: string,
     body?: unknown,
   ): Promise<TResponse> {

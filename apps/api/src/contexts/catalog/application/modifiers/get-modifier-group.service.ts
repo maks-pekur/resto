@@ -15,12 +15,16 @@ export class GetModifierGroupService {
     return {
       id: row.id,
       name: row.name,
-      minSelectable: row.minSelectable,
-      maxSelectable: row.maxSelectable,
+      display: row.display,
+      behaviour: row.behaviour,
       isRequired: row.isRequired,
+      maxSelectable: row.maxSelectable,
+      defaultOptionIds: [...row.defaultOptionIds],
       options: row.options.map((o) => ({
         id: o.id,
         name: o.name,
+        description: o.description,
+        imageUrl: o.imageUrl,
         priceDelta: o.priceDelta,
         defaultAmount: o.defaultAmount,
         freeAmount: o.freeAmount,

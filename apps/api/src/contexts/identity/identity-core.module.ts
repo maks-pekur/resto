@@ -1,3 +1,4 @@
+import { ADMIN_ACCEPT_INVITATION_PATH, adminLink, adminOrigin } from '../../shared/admin-links';
 import { Logger, Module, type Provider } from '@nestjs/common';
 import { TenantAwareDb } from '@resto/db';
 import { TenantId } from '@resto/domain';
@@ -156,7 +157,7 @@ const emailAdapterProvider: Provider = {
  *     intentionally `undefined` there, which the adapter handles via
  *     `db.withoutTenant(...)` on terminal failure.
  *   - Constructs the public URL from `data.url` (BA-supplied for reset/
- *     verification) or `${ADMIN_WEB_URL}/accept-invitation/${data.id}`
+ *     verification) or the invitation link composed by `adminLink`
  *     for invitations.
  */
 const buildBaCallbacks = (
@@ -169,10 +170,8 @@ const buildBaCallbacks = (
 } => {
   const sendInvitationEmail: SendInvitationEmail = async (data, request) => {
     const locale = getLocale(request?.headers);
-    const url =
-      env.ADMIN_WEB_URL !== undefined
-        ? `${env.ADMIN_WEB_URL}/accept-invitation/${data.id}`
-        : `/accept-invitation/${data.id}`;
+    const invitePath = `${ADMIN_ACCEPT_INVITATION_PATH}/${data.id}`;
+    const url = adminLink(env, invitePath) || invitePath;
     await emailAdapter.sendInvitation({
       to: data.email,
       locale,
@@ -225,20 +224,14 @@ export const buildAuthFromEnv = (
   locationResolver: InitialLocationDrizzleRepository,
 ): Auth => {
   const cookieDomain = env.AUTH_COOKIE_DOMAIN;
-  // Admin (and other browser callers) hit BA from a different origin
-  // than the api's `baseURL`; BA enforces an Origin allowlist on
-  // mutating requests. ADMIN_WEB_URL is the apex (pre-tenant
-  // sign-in/signup); ADMIN_WEB_ORIGIN_WILDCARD (D-21) is the
-  // per-tenant SPA host — both are needed, not either/or.
-  // BA's own static-array `matchesOriginPattern` does the matching (its
-  // `*` may span dots within the matched segment, looser than this repo's
-  // `buildOriginMatcher`, which forbids that via `[^./:]+`) — safe here
-  // only because tenant slugs cannot contain dots (`TenantSlugValue`).
-  // trustedOrigins stays a plain array, never a function, so D-39 is not
-  // reintroducing the matcher BA already provides.
+  // Admin hits BA from a different origin than the api's `baseURL`, and BA
+  // enforces an Origin allowlist on mutating requests. Since 07.4 the admin is
+  // one origin — a path on the apex — so there is no per-tenant host to allow
+  // and no wildcard to match. trustedOrigins stays a plain array, never a
+  // function, so D-39 is not reintroducing a matcher BA already provides.
   const trustedOrigins: string[] = [];
-  if (env.ADMIN_WEB_URL) trustedOrigins.push(env.ADMIN_WEB_URL);
-  if (env.ADMIN_WEB_ORIGIN_WILDCARD) trustedOrigins.push(env.ADMIN_WEB_ORIGIN_WILDCARD);
+  const trustedAdminOrigin = adminOrigin(env);
+  if (trustedAdminOrigin) trustedOrigins.push(trustedAdminOrigin);
 
   const { sendInvitationEmail, sendResetPassword, sendVerificationEmail } = buildBaCallbacks(
     env,
@@ -267,6 +260,10 @@ export const buildAuthFromEnv = (
     // shape as identity-event-emitter.adapter.ts — no new per-event
     // callback abstraction added to BuildOpts (W-2 2026-05-30).
     emitter,
+    // Both or neither: a half-configured provider fails at the redirect, not at boot.
+    ...(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET
+      ? { google: { clientId: env.GOOGLE_CLIENT_ID, clientSecret: env.GOOGLE_CLIENT_SECRET } }
+      : {}),
     secret: env.BETTER_AUTH_SECRET ?? DEV_BA_SECRET_FALLBACK,
     baseUrl: env.BETTER_AUTH_BASE_URL ?? 'http://localhost:4000',
     trustedOrigins,

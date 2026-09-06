@@ -1,15 +1,15 @@
 import { LocaleSwitcher } from '@resto/ui';
 import { getActiveLocale, setLocale } from '../i18n';
 
-const LOCALES: readonly string[] = ['en', 'ru'];
-
 interface Props {
+  readonly locales: readonly string[];
   readonly className?: string;
 }
 
-export const LocaleControl = ({ className = '' }: Props) => (
+/** The languages come from the restaurant's own configuration, not from a list baked in here. */
+export const LocaleControl = ({ locales, className = '' }: Props) => (
   <LocaleSwitcher
-    locales={LOCALES}
+    locales={locales}
     activeLocale={getActiveLocale()}
     className={className}
     onSelect={(locale) => {

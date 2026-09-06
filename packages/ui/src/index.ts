@@ -1,4 +1,8 @@
 export { cn } from './lib/utils';
+export * from './icons';
+export { BrandIcon, type BrandIconProps } from './guest/brand-icon';
+export { DietMarks, type DietMarksProps } from './guest/diet-marks';
+export { dietsOf, visibleDiets } from './guest/diet-rules';
 export { localized } from './lib/localized';
 export { formatPrice } from './lib/format-price';
 
@@ -31,17 +35,25 @@ export {
 export type { GuestUiKey } from './guest/messages';
 export { GuestShell, type GuestShellProps } from './guest/guest-shell';
 export { GuestHeader, type GuestHeaderProps } from './guest/guest-header';
-export { GuestFooter, type GuestFooterLink, type GuestFooterProps } from './guest/guest-footer';
+export {
+  GuestFooter,
+  type GuestFooterContacts,
+  type GuestFooterLink,
+  type GuestFooterProps,
+} from './guest/guest-footer';
 export { LocaleSwitcher, type LocaleSwitcherProps } from './guest/locale-switcher';
 export { CategoryRail, sectionElementId, type CategoryRailProps } from './guest/category-rail';
 export { MenuItemCard, type MenuItemCardProps } from './guest/menu-item-card';
+export { NutritionInfo, hasNutrition, type NutritionInfoProps } from './guest/nutrition-info';
 export { MenuScreen, type MenuScreenProps } from './guest/menu-screen';
-export { CartBar, type CartBarProps } from './guest/cart-bar';
-export { CartButton, type CartButtonProps } from './guest/cart-button';
-export { ThemeSwitcher, type ThemeSwitcherProps } from './guest/theme-switcher';
+export { ItemDetail, type ItemDetailProps } from './guest/item-detail';
 export {
-  GUEST_THEMES,
-  useGuestTheme,
-  type GuestTheme,
-  type GuestThemeState,
-} from './guest/use-guest-theme';
+  SegmentedChoice,
+  type SegmentedChoiceProps,
+  type SegmentedOption,
+} from './guest/segmented-choice';
+export { CartBar, type CartBarProps } from './guest/cart-bar';
+export { useDragToDismiss, type DragToDismiss } from './guest/use-drag-to-dismiss';
+export { CartButton, type CartButtonProps } from './guest/cart-button';
+export { ThemeToggle, type ThemeToggleProps } from './guest/theme-toggle';
+export { useGuestTheme, type GuestTheme, type GuestThemeState } from './guest/use-guest-theme';

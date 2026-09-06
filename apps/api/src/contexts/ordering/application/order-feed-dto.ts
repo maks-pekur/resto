@@ -4,6 +4,10 @@ import type { OrderFeedRow } from '../domain/ports';
 export const OrderStatusPresetSchema = z.enum([
   'active',
   'all_today',
+  'unaccepted',
+  'accepted',
+  'preparing',
+  'ready',
   'completed',
   'canceled',
   'refund_failed',
@@ -23,10 +27,16 @@ export interface OrderFeedResponseRow {
   readonly id: string;
   readonly shortNumber: number;
   readonly status: string;
+  readonly paymentStatus: string;
   readonly locationId: string;
   readonly locationName: string;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
+  readonly tableZoneName: string | null;
+  readonly tableNumber: string | null;
+  readonly customerName: string | null;
+  readonly customerPhone: string | null;
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
   readonly total: string;
   readonly currency: string;
   readonly itemCount: number;
@@ -50,14 +60,23 @@ export interface OrderFeedListResponse {
   readonly offset: number;
 }
 
+// Table label precedence (CONTEXT D-22): tableZoneName + tableNumber when both
+// present, else legacy tableIdentifier, else nothing. table_identifier has had
+// no writer since the free-text create-order field was removed (10.3-09).
 export const toOrderFeedResponseRow = (row: OrderFeedRow): OrderFeedResponseRow => ({
   id: row.id,
   shortNumber: row.shortNumber,
   status: row.status,
+  paymentStatus: row.paymentStatus,
   locationId: row.locationId,
   locationName: row.locationName,
-  fulfillmentMode: row.fulfillmentMode,
+  orderType: row.orderType,
   tableIdentifier: row.tableIdentifier,
+  tableZoneName: row.tableZoneName,
+  tableNumber: row.tableNumber,
+  customerName: row.customerName,
+  customerPhone: row.customerPhone,
+  paymentType: row.paymentType,
   total: row.total,
   currency: row.currency,
   itemCount: row.itemCount,

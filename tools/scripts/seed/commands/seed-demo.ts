@@ -7,7 +7,7 @@ import { log } from '../lib/logger';
 import type { RuntimeOptions } from '../lib/options';
 import { OperatorHttpClient, signInAsOperator } from '../lib/operator-http';
 import { createAppDb, seedDemoOrder, DEMO_ORDER_SPECS } from '../lib/demo-orders';
-import { uploadPhotoFromUrl } from '../lib/photo-upload';
+import { uploadBrandCover, uploadPhotoFromUrl } from '../lib/photo-upload';
 import {
   assertPaymentsReadyAllowed,
   markTenantPaymentsReady,
@@ -98,6 +98,8 @@ interface ItemDef {
   readonly name: Localized;
   readonly description?: Localized;
   readonly price: string;
+  readonly diets?: readonly string[];
+  readonly allergens?: readonly string[];
   /** Public photo pulled into our own S3 on first seed — see PIZZA_PHOTO. */
   readonly photoUrl?: string;
   readonly sizes?: readonly SizeDef[];
@@ -124,11 +126,114 @@ const PIZZA_PHOTO = (id: string): string =>
 const PIZZA_PHOTO_CUTOUT = (id: string): string =>
   `https://media.dodostatic.net/image/r:1875x1875/${id}.webp`;
 
+/** Studio shots on white from a Kurgan delivery menu, cut out on upload like the pizzas above.
+ * Development fixture only — the photography is theirs, and must never ship in a public demo. */
+const SNACK_PHOTO = (file: string): string => `https://image.yapoki.net/img/${file}`;
+
 const PIZZA_SIZES = (small: string, medium: string, large: string): readonly SizeDef[] => [
   { name: { en: '25 cm', uk: '25 см', ru: '25 см' }, price: small, isDefault: true },
   { name: { en: '30 cm', uk: '30 см', ru: '30 см' }, price: medium },
   { name: { en: '35 cm', uk: '35 см', ru: '35 см' }, price: large },
 ];
+
+interface LegalDef {
+  readonly about: string;
+  readonly payment: string;
+  readonly returns: string;
+  readonly cookies: string;
+  readonly terms: string;
+  readonly privacy: string;
+}
+
+interface VenueDef {
+  /** Repo-relative, so a fresh clone seeds the same room. First one leads the gallery. */
+  readonly coverFiles: readonly string[];
+  readonly logoFile: string;
+  readonly openingHours: Readonly<Record<string, readonly { from: string; to: string }[]>>;
+  readonly wifi: { readonly ssid: string; readonly password: string };
+  readonly address: string;
+  readonly phone: string;
+  readonly socials: Readonly<Record<string, string>>;
+  readonly legal: LegalDef;
+}
+
+/** What a guest sees in the info sheet: the room, the hours, the wi-fi. */
+const VENUE: Readonly<Record<string, VenueDef>> = {
+  pizza: {
+    logoFile: 'tools/scripts/seed/fixtures/venue-logo.svg',
+    coverFiles: [
+      'tools/scripts/seed/fixtures/venue-cover.jpg',
+      'tools/scripts/seed/fixtures/venue-hall.jpg',
+      'tools/scripts/seed/fixtures/venue-bar.jpg',
+    ],
+    openingHours: {
+      mon: [{ from: '10:00', to: '23:00' }],
+      tue: [{ from: '10:00', to: '23:00' }],
+      wed: [{ from: '10:00', to: '23:00' }],
+      thu: [{ from: '10:00', to: '23:00' }],
+      fri: [{ from: '10:00', to: '02:00' }],
+      sat: [{ from: '11:00', to: '02:00' }],
+      sun: [{ from: '11:00', to: '22:00' }],
+    },
+    wifi: { ssid: 'PizzaPalace_Guest', password: 'margherita2026' },
+    address: 'Київ, вул. Хрещатик, 10',
+    phone: '+380 44 200 10 10',
+    socials: {
+      instagram: 'https://instagram.com/pizzapalace',
+      telegram: 'https://t.me/pizzapalace',
+      // The listing, not a profile: this is where a guest reads reviews and taps "route".
+      googleMaps: 'https://maps.app.goo.gl/demo-pizza-palace',
+    },
+    legal: {
+      about:
+        'ООО «Пицца Палас», ЕГРПОУ 41234567.\nЮридический адрес: Киев, ул. Крещатик, 10.\nРаботаем с 2019 года.',
+      payment:
+        'Принимаем Visa и Mastercard онлайн, а также оплату за столом — наличными или картой.\nДеньги списываются после того, как заведение подтвердит заказ.',
+      returns:
+        'Если блюдо приготовили не так, как вы просили, скажите официанту — переделаем или вернём деньги за эту позицию.\nВозврат на карту идёт до 5 банковских дней.',
+      cookies:
+        'В браузере мы храним язык меню, тему оформления и корзину.\nСторонней аналитики в меню нет.',
+      terms:
+        'Меню предназначено для заказа за столом заведения.\nЗаказ считается принятым после подтверждения заведением.',
+      privacy:
+        'Мы храним имя и телефон, которые вы указываете при оформлении, чтобы принести заказ именно вам.\nТретьим лицам данные не передаём, кроме платёжного провайдера.',
+    },
+  },
+  burger: {
+    logoFile: 'tools/scripts/seed/fixtures/venue-logo.svg',
+    coverFiles: ['tools/scripts/seed/fixtures/venue-cover.jpg'],
+    openingHours: {
+      mon: [{ from: '11:00', to: '22:00' }],
+      tue: [{ from: '11:00', to: '22:00' }],
+      wed: [{ from: '11:00', to: '22:00' }],
+      thu: [{ from: '11:00', to: '22:00' }],
+      fri: [{ from: '11:00', to: '23:00' }],
+      sat: [{ from: '11:00', to: '23:00' }],
+      sun: [],
+    },
+    wifi: { ssid: 'BurgerBarn_Guest', password: 'doublecheese' },
+    address: '14 High Street, London',
+    phone: '+44 20 7000 0000',
+    socials: {
+      instagram: 'https://instagram.com/burgerbarn',
+      googleMaps: 'https://maps.app.goo.gl/demo-burger-barn',
+    },
+    legal: {
+      about: 'Burger Barn Ltd, company number 09876543.\nRegistered at 14 High Street, London.',
+      payment: 'Cards online, cash or card at the table. Money is taken once the kitchen accepts.',
+      returns: 'Something wrong with the order? Tell the counter — we remake it or refund it.',
+      cookies: 'We keep your language, theme and basket in the browser. Nothing else.',
+      terms: 'The menu is for ordering at the venue. An order stands once we accept it.',
+      privacy: 'We keep the name and phone you leave at checkout, and share them with nobody.',
+    },
+  },
+};
+
+/** Items an earlier fixture created and this one replaced. Archived on every run so a demo
+ * menu never keeps a photoless leftover next to its replacement. */
+const RETIRED_ITEMS: Readonly<Record<string, readonly string[]>> = {
+  pizza: ['dodster', 'cheese-balls', 'three-chocolate-muffin', 'sweet-and-sour-sauce'],
+};
 
 const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
   pizza: [
@@ -145,6 +250,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Томаты, моцарелла, итальянские травы, томатный соус',
           },
           price: '189.00',
+          diets: ['vegetarian'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('d48003cd-902c-420d-9f28-92d9dc5f73b4'),
           sizes: PIZZA_SIZES('189.00', '249.00', '309.00'),
         },
@@ -157,6 +264,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Пикантная пепперони, моцарелла, томатный соус',
           },
           price: '239.00',
+          diets: ['spicy'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('d2e337e9-e07a-4199-9cc1-501cc44cb8f8'),
           sizes: PIZZA_SIZES('239.00', '309.00', '379.00'),
         },
@@ -169,6 +278,8 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Моцарелла, чеддер, пармезан, сливочный соус',
           },
           price: '219.00',
+          diets: ['vegetarian'],
+          allergens: ['gluten', 'milk'],
           photoUrl: PIZZA_PHOTO('2ffc31bb-132c-4c99-b894-53f7107a1441'),
           sizes: PIZZA_SIZES('219.00', '289.00', '349.00'),
         },
@@ -267,6 +378,7 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
         },
         {
           slug: 'veggie-and-mushrooms',
+          diets: ['vegetarian'],
           name: { en: 'Veggie and Mushrooms', uk: 'Овочі та гриби', ru: 'Овощи и грибы' },
           description: {
             en: 'Mushrooms, sweet pepper, tomatoes, red onion, mozzarella, tomato sauce',
@@ -280,6 +392,196 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
       ],
     },
     {
+      slug: 'snacks',
+      name: { en: 'Snacks', uk: 'Закуски', ru: 'Закуски' },
+      items: [
+        {
+          slug: 'chicken-roti',
+          name: {
+            en: 'BBQ chicken roti',
+            uk: 'Роті з курчам барбекю',
+            ru: 'Роти с цыплёнком барбекю',
+          },
+          description: {
+            en: 'Chicken, mozzarella, red onion and BBQ sauce in a roti flatbread',
+            uk: 'Курча, моцарела, червона цибуля та соус барбекю в коржі роті',
+            ru: 'Цыплёнок, моцарелла, красный лук и соус барбекю в лепёшке роти',
+          },
+          price: '189.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_4d0a3236a61baa128c05cd751c8339e2352824441cf430de9c3e3826f53418a9.webp',
+          ),
+        },
+        {
+          slug: 'chicken-nuggets',
+          allergens: ['gluten', 'eggs'],
+          name: {
+            en: 'Chicken nuggets, 5 pcs',
+            uk: 'Курячі нагетси, 5 шт.',
+            ru: 'Наггетсы, 5 шт.',
+          },
+          description: {
+            en: 'Chicken fillet in a crisp breading',
+            uk: 'Куряче філе в хрусткій паніровці',
+            ru: 'Куриное филе в хрустящей панировке',
+          },
+          price: '149.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_a2f5d76290deb006216744684b61b07ea5a564b15cd94f6c2748ad4c541de410.webp',
+          ),
+        },
+        {
+          slug: 'oven-potatoes',
+          diets: ['vegan', 'gluten_free'],
+          name: { en: 'Oven potatoes', uk: 'Картопля з печі', ru: 'Картофель из печи' },
+          description: {
+            en: 'Baked to order, salted while hot',
+            uk: 'Запікається на замовлення, солиться гарячою',
+            ru: 'Запекается под заказ, солится горячим',
+          },
+          price: '129.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_0eaf34cc2f5392a03363e0d048e1a2206476b71904799886e07e310e82820fc0.webp',
+          ),
+        },
+        {
+          slug: 'potato-wedges',
+          diets: ['vegan', 'gluten_free'],
+          name: {
+            en: 'Potato wedges',
+            uk: 'Картопляні часточки з печі',
+            ru: 'Картофельные дольки из печи',
+          },
+          description: {
+            en: 'Wedges with the skin on, Provence herbs',
+            uk: 'Часточки в шкірці, прованські трави',
+            ru: 'Дольки в кожуре, прованские травы',
+          },
+          price: '139.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_97c008069b5ebc1573913f99e9a1bb3c35499082335298a4a36f35fa11cb6bf0.webp',
+          ),
+        },
+        {
+          slug: 'pork-gyoza',
+          name: { en: 'Pork gyoza', uk: 'Гедза зі свининою', ru: 'Гедза со свининой' },
+          description: {
+            en: 'Pan-fried dumplings, soy dip on the side',
+            uk: 'Смажені вареники, соєвий соус окремо',
+            ru: 'Жареные пельмешки, соевый соус отдельно',
+          },
+          price: '199.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_fbf9bae36684ff8b6e626f82b80a4d7b1f505b09f514933850ac5cf39b2fc216.webp',
+          ),
+        },
+      ],
+    },
+    {
+      slug: 'desserts',
+      name: { en: 'Desserts', uk: 'Десерти', ru: 'Десерты' },
+      items: [
+        {
+          slug: 'cheesecake-new-york',
+          name: { en: 'New York cheesecake', uk: 'Чізкейк Нью-Йорк', ru: 'Чизкейк Нью-Йорк' },
+          description: {
+            en: 'The classic American cheesecake',
+            uk: 'Класичний американський чізкейк',
+            ru: 'Классический американский чизкейк',
+          },
+          price: '149.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_ae6d43a948e7f958aa1473498732d02ef04a5477baa8e5eaf796243bf5ad04ce.webp',
+          ),
+        },
+        {
+          slug: 'salted-caramel-cheesecake',
+          name: {
+            en: 'Salted caramel cheesecake',
+            uk: 'Чізкейк із солоною карамеллю',
+            ru: 'Чизкейк с солёной карамелью',
+          },
+          description: {
+            en: 'The classic under a salted caramel topping',
+            uk: 'Класичний під топінгом із солоної карамелі',
+            ru: 'Классический под топингом из солёной карамели',
+          },
+          price: '159.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_09d7f81206d47ad539196b1f9a08edab8d23bdabf2ce0b929854a66cfd826f68.webp',
+          ),
+        },
+        {
+          slug: 'walnut-brownie',
+          name: {
+            en: 'Walnut brownie',
+            uk: 'Брауні з волоськими горіхами',
+            ru: 'Брауни с грецкими орехами',
+          },
+          description: {
+            en: 'Dense chocolate, walnuts through it',
+            uk: 'Щільний шоколад, волоські горіхи всередині',
+            ru: 'Плотный шоколад, грецкие орехи внутри',
+          },
+          price: '119.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_02a3b7b4c1f90c79d9d33fa7733e56ac21acaab8522062da5106cd01f67aeb2e.webp',
+          ),
+        },
+        {
+          slug: 'glazed-donut',
+          name: { en: 'Strawberry donut', uk: 'Пончик полуничний', ru: 'Пончик клубничный' },
+          description: {
+            en: 'Strawberry filling, coloured sprinkles',
+            uk: 'Полунична начинка, кольорове посипання',
+            ru: 'Клубничная начинка, разноцветная посыпка',
+          },
+          price: '89.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_514612f3762ac3fca1848b834388bda3da3e72921c7f63e5799974f0dce05783.webp',
+          ),
+        },
+      ],
+    },
+    {
+      slug: 'sauces',
+      name: { en: 'Sauces', uk: 'Соуси', ru: 'Соусы' },
+      items: [
+        {
+          slug: 'cheese-sauce',
+          name: { en: 'Cheese sauce', uk: 'Сирний соус', ru: 'Сырный соус' },
+          price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_40b7aeb7d5f3ba156fac3863498d07b30f7332693e052998dde21c4923a1f719.webp',
+          ),
+        },
+        {
+          slug: 'bbq-sauce',
+          name: { en: 'BBQ sauce', uk: 'Соус барбекю', ru: 'Соус барбекю' },
+          price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_5124252fd5c63270aa414e8789f53a3b53b5ee15372c842871a54f14c8bd9271.webp',
+          ),
+        },
+        {
+          slug: 'garlic-sauce',
+          name: { en: 'Garlic sauce', uk: 'Часниковий соус', ru: 'Чесночный соус' },
+          price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_e9e75ce9fcdab2489c117c4478ccd18f2592c1e8885a2a56e02e18246a20e32b.webp',
+          ),
+        },
+        {
+          slug: 'caesar-sauce',
+          name: { en: 'Caesar sauce', uk: 'Соус цезар', ru: 'Соус цезарь' },
+          price: '25.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_cdc6e8b47ac2a47855f8c4e8a70267656176d0d51943b72d8c2d1f5376b7f02f.webp',
+          ),
+        },
+      ],
+    },
+    {
       slug: 'drinks',
       name: { en: 'Drinks', uk: 'Напої', ru: 'Напитки' },
       items: [
@@ -287,6 +589,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
           slug: 'cola',
           name: { en: 'Cola 0.5 l', uk: 'Кола 0,5 л', ru: 'Кола 0,5 л' },
           price: '45.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_905623bd1c3c321b06e840f8fff5b6ddecb72826f218986820b5c84731bbcc6a.jpg',
+          ),
         },
         {
           slug: 'orange-juice',
@@ -296,6 +601,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Сок апельсиновый 0,3 л',
           },
           price: '55.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_29eaf8709a7af360e6cb1f8f0205e3490821c4eaad22cf17436ad6bfe7cb5fcb.jpg',
+          ),
         },
         {
           slug: 'water',
@@ -305,6 +613,9 @@ const CATALOG: Readonly<Record<string, readonly CategoryDef[]>> = {
             ru: 'Вода негазированная 0,5 л',
           },
           price: '30.00',
+          photoUrl: SNACK_PHOTO(
+            'menu_809eb01d1b933696410b48372bc7bcd0df55a896918a4d64af035c523b1cc9d1.webp',
+          ),
         },
       ],
     },
@@ -449,6 +760,69 @@ const ensureItemSizes = async (
   log('seed-demo.item.sizes', { tenant: tenantSlug, menuItemId, sizes: item.sizes.length });
 };
 
+const ensureVenueInfo = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {
+  const venue = VENUE[tenantSlug];
+  if (!venue) return;
+
+  const current = await op.get<{
+    theme: { coverUrls: readonly string[]; logoUrl: string | null } | null;
+  }>('/v1/tenants/me');
+  const logoS3Key =
+    current.theme?.logoUrl == null ? await uploadBrandCover(op, venue.logoFile) : null;
+  const alreadyPublished = current.theme?.coverUrls ?? [];
+  const coverS3Keys =
+    alreadyPublished.length > 0
+      ? null
+      : (await Promise.all(venue.coverFiles.map((file) => uploadBrandCover(op, file)))).filter(
+          (key): key is string => key !== null,
+        );
+
+  await op.patch('/v1/tenants/me/brand', {
+    socials: venue.socials,
+    legalDocuments: {
+      about: { ru: venue.legal.about },
+      payment: { ru: venue.legal.payment },
+      returns: { ru: venue.legal.returns },
+      cookies: { ru: venue.legal.cookies },
+      terms: { ru: venue.legal.terms },
+      privacy: { ru: venue.legal.privacy },
+    },
+    ...(coverS3Keys === null ? {} : { coverS3Keys }),
+    ...(logoS3Key === null ? {} : { logoS3Key }),
+  });
+
+  const locations =
+    await op.get<readonly { id: string; name: string; status: string }[]>('/v1/tenancy/locations');
+  const live = locations.filter((location) => location.status === 'active');
+  for (const location of live) {
+    await op.patch(`/v1/tenancy/locations/${location.id}`, {
+      openingHours: venue.openingHours,
+      wifi: venue.wifi,
+      address: venue.address,
+      contacts: { phone: venue.phone },
+    });
+  }
+  log('seed-demo.venue.ready', {
+    tenant: tenantSlug,
+    covers: coverS3Keys?.length ?? 0,
+    logo: logoS3Key !== null,
+    locations: live.length,
+  });
+};
+
+const archiveRetiredItems = async (op: OperatorHttpClient, tenantSlug: string): Promise<void> => {
+  const slugs = RETIRED_ITEMS[tenantSlug] ?? [];
+  if (slugs.length === 0) return;
+
+  const live = await op.get<ItemListResponse>('/v1/catalog/items?status=published&limit=200');
+  for (const slug of slugs) {
+    const item = live.items.find((i) => i.slug === slug);
+    if (!item) continue;
+    await op.patch(`/v1/catalog/items/${item.id}/archive`, {});
+    log('seed-demo.item.archived', { tenant: tenantSlug, slug });
+  }
+};
+
 const ensureCatalog = async (
   op: OperatorHttpClient,
   tenantSlug: string,
@@ -459,25 +833,22 @@ const ensureCatalog = async (
   const categoryBySlug = new Map(existingCategories.items.map((c) => [c.slug, c.id]));
 
   for (const [categoryIndex, category] of (CATALOG[tenantSlug] ?? []).entries()) {
-    let categoryId = categoryBySlug.get(category.slug);
-    if (categoryId) {
-      log('seed-demo.category.exists', { tenant: tenantSlug, slug: category.slug });
-    } else {
-      const created = await op.post<{ id: string }>('/v1/catalog/categories', {
-        slug: category.slug,
-        name: category.name,
-        parentId: null,
-        description: null,
-        sortOrder: categoryIndex,
-        code: null,
-      });
-      categoryId = created.id;
-      log('seed-demo.category.created', {
-        tenant: tenantSlug,
-        slug: category.slug,
-        id: categoryId,
-      });
-    }
+    const known = categoryBySlug.get(category.slug);
+    const saved = await op.post<{ id: string }>('/v1/catalog/categories', {
+      ...(known ? { id: known } : {}),
+      slug: category.slug,
+      name: category.name,
+      parentId: null,
+      description: null,
+      sortOrder: categoryIndex,
+      code: null,
+    });
+    const categoryId = saved.id;
+    log(known ? 'seed-demo.category.updated' : 'seed-demo.category.created', {
+      tenant: tenantSlug,
+      slug: category.slug,
+      id: categoryId,
+    });
 
     const existingItems = await op.get<ItemListResponse>(
       `/v1/catalog/items?categoryId=${categoryId}&status=all`,
@@ -500,6 +871,8 @@ const ensureCatalog = async (
         slug: item.slug,
         name: item.name,
         description: item.description ?? null,
+        diets: item.diets ?? null,
+        allergens: item.allergens ?? null,
         basePrice: item.price,
         currency,
         photos: s3Key ? [{ s3Key, sortOrder: 0, isPrimary: true }] : [],
@@ -515,6 +888,8 @@ const ensureCatalog = async (
       await ensureItemSizes(op, tenantSlug, saved.id, item);
     }
   }
+
+  await archiveRetiredItems(op, tenantSlug);
 
   await op.post('/v1/catalog/publish', {}).catch((err: unknown) => {
     log('seed-demo.publish.skipped', { tenant: tenantSlug, err: String(err) });
@@ -690,6 +1065,7 @@ export const runSeedDemo = async (
 
       const locationsByName = await ensureLocations(op, tenantDef);
       await ensureCatalog(op, tenantDef.slug, currencyForCountry(tenantDef.country), refreshPhotos);
+      await ensureVenueInfo(op, tenantDef.slug);
 
       for (const staff of staffForTenant) {
         const memberId = memberIdByEmail.get(staff.email);

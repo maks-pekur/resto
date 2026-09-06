@@ -6,7 +6,7 @@ export interface OrderCreatedDomainEvent {
   readonly tenantId: TenantId;
   readonly locationId: string;
   readonly orderNumber: string;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly totalMinorUnits: number;
   readonly currency: Currency;
   readonly itemCount: number;

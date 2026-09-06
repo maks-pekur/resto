@@ -17,17 +17,23 @@ const makeItem = (overrides: Partial<MenuItemDto>): MenuItemDto => ({
   description: null,
   basePrice: '5.00',
   currency: 'EUR',
+  weight: null,
+  measureUnit: null,
   imageUrl: null,
   photos: [],
   allergens: [],
+  diets: [],
   proteins: null,
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...overrides,
 });
 
@@ -35,7 +41,16 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
   tenantId: 'tenant-1',
   version: 1,
   currency: 'EUR',
-  tenant: { id: 'tenant-1', slug: 'demo', displayName: 'Cafe Demo', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'demo',
+    displayName: 'Cafe Demo',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
+  },
   categories: [
     { id: 'cat-1', slug: 'starters', name: { en: 'Starters' }, description: null, sortOrder: 0 },
     { id: 'cat-2', slug: 'mains', name: { en: 'Mains' }, description: null, sortOrder: 1 },
@@ -51,13 +66,23 @@ const makeMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
     }),
   ],
   modifierGroups: [],
+  modifierOptions: [],
   ...overrides,
 });
 
-const renderMenu = (menu: MenuDto, stoppedItemIds: readonly string[] = []) =>
+const renderMenu = (
+  menu: MenuDto,
+  stoppedItemIds: readonly string[] = [],
+  stoppedIngredientIds: readonly string[] = [],
+) =>
   render(
     <GuestUi>
-      <MenuPageClient menu={menu} stoppedItemIds={stoppedItemIds} footerLinks={[]} />
+      <MenuPageClient
+        menu={menu}
+        stoppedItemIds={stoppedItemIds}
+        stoppedIngredientIds={stoppedIngredientIds}
+        footerLinks={[]}
+      />
     </GuestUi>,
   );
 
@@ -79,7 +104,9 @@ describe('MenuPageClient', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Soup' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Soup' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: en.item.addToCart })).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole('button', { name: new RegExp(en.item.addToCart, 'u') }),
+    ).toBeInTheDocument();
   });
 
   it('renders the empty state when the menu has no items', () => {

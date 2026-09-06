@@ -13,7 +13,7 @@ import { ApiNotFoundResponse, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { MenuItemId, TenantId } from '@resto/domain';
+import { MenuItemId, TenantId, resolveThemeMedia } from '@resto/domain';
 import { ProblemDetailsDto } from '../../../../shared/api/problem-details.dto';
 import { GetMenuAvailabilityService } from '../../application/availability/get-menu-availability.service';
 import { GetMenuItemService } from '../../application/items/get-menu-item.service';
@@ -52,6 +52,11 @@ const PublishedMenuItemPhotoSchema = z.object({
   url: z.string().url(),
 });
 
+const PublishedMenuCompositionLineSchema = z.object({
+  optionId: z.string().uuid(),
+  removable: z.boolean(),
+});
+
 const PublishedMenuItemSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
@@ -66,14 +71,18 @@ const PublishedMenuItemSchema = z.object({
   imageUrl: z.string().url().nullable(),
   photos: z.array(PublishedMenuItemPhotoSchema),
   allergens: z.array(z.string()),
+  diets: z.array(z.string()),
   sortOrder: z.number().int().nonnegative(),
   proteins: z.string().nullable(),
   fats: z.string().nullable(),
   carbs: z.string().nullable(),
   kcal: z.number().int().nullable(),
-  nutritionEstimated: z.boolean(),
   sizes: z.array(PublishedMenuItemSizeSchema),
   modifierGroupIds: z.array(z.string().uuid()),
+  extraOptionIds: z.array(z.string().uuid()),
+  compositionMode: z.enum(['text', 'assembled']),
+  composition: z.array(z.string().max(100)).max(50),
+  compositionLines: z.array(PublishedMenuCompositionLineSchema).max(50),
 });
 
 const PublishedMenuCategorySchema = z.object({
@@ -88,10 +97,10 @@ const PublishedMenuCategorySchema = z.object({
 const PublishedMenuModifierOptionSchema = z.object({
   id: z.string(),
   name: LocalizedTextSchema,
+  description: LocalizedTextSchema.nullable(),
+  imageUrl: z.string().url().nullable(),
   priceDelta: z.string(),
-  defaultAmount: z.number().int().nonnegative(),
   freeAmount: z.number().int().nonnegative(),
-  sortOrder: z.number().int().nonnegative(),
   minAmount: z.number().int().nonnegative().nullable(),
   maxAmount: z.number().int().nonnegative().nullable(),
 });
@@ -99,18 +108,20 @@ const PublishedMenuModifierOptionSchema = z.object({
 const PublishedMenuModifierGroupSchema = z.object({
   id: z.string().uuid(),
   name: LocalizedTextSchema,
-  minSelectable: z.number().int().nonnegative(),
-  maxSelectable: z.number().int().nonnegative(),
+  display: z.enum(['tiles', 'tabs']),
+  behaviour: z.enum(['one', 'several']),
   isRequired: z.boolean(),
-  options: z.array(PublishedMenuModifierOptionSchema),
+  optionIds: z.array(z.string().uuid()),
 });
 
 const MenuAvailabilitySchema = z.object({
   stoppedItemIds: z.array(z.string().uuid()),
+  stoppedIngredientIds: z.array(z.string().uuid()),
 });
 
 const MenuTenantThemeSchema = z.object({
   logoUrl: z.string().url().nullable(),
+  coverUrls: z.array(z.string().url()),
   primaryColor: z.string().nullable(),
   font: z.string().nullable(),
 });
@@ -119,7 +130,19 @@ const MenuTenantSchema = z.object({
   id: z.string().uuid(),
   slug: z.string(),
   displayName: z.string(),
+  description: LocalizedTextSchema.nullable(),
+  socials: z.record(z.string(), z.string()),
+  contacts: z.object({
+    phone: z.string().nullable(),
+    email: z.string().nullable(),
+    website: z.string().nullable(),
+  }),
   theme: MenuTenantThemeSchema.nullable(),
+  /** The languages this menu exists in — guest surfaces build their switcher from these. */
+  locales: z.object({
+    default: z.string(),
+    supported: z.array(z.string()),
+  }),
 });
 
 const PublishedMenuSchema = z.object({
@@ -130,6 +153,7 @@ const PublishedMenuSchema = z.object({
   categories: z.array(PublishedMenuCategorySchema),
   items: z.array(PublishedMenuItemSchema),
   modifierGroups: z.array(PublishedMenuModifierGroupSchema),
+  modifierOptions: z.array(PublishedMenuModifierOptionSchema),
 });
 
 type GuestMenuTenant = z.infer<typeof MenuTenantSchema>;
@@ -142,17 +166,25 @@ const wrap = wrapWith(mapCatalogError);
 
 /** The subset of a tenant the guest surfaces render as chrome — name, logo,
  * brand colour. Deliberately narrow: this response is edge-cached and public. */
-const guestTenant = (tenant: TenantSnapshot): GuestMenuTenant => ({
+const guestTenant = (tenant: TenantSnapshot, mediaBaseUrl: string): GuestMenuTenant => ({
   id: tenant.id,
   slug: tenant.slug,
   displayName: tenant.displayName,
+  description: tenant.description,
+  socials: tenant.socials,
+  contacts: tenant.contacts,
   theme: tenant.theme
     ? {
-        logoUrl: tenant.theme.logoUrl,
+        logoUrl:
+          tenant.theme.logoUrl === null
+            ? null
+            : resolveThemeMedia(tenant.theme.logoUrl, mediaBaseUrl),
+        coverUrls: tenant.theme.coverUrls.map((c) => resolveThemeMedia(c, mediaBaseUrl)),
         primaryColor: tenant.theme.primaryColor,
         font: tenant.theme.font,
       }
     : null,
+  locales: { default: tenant.locale, supported: [...tenant.contentLocales] },
 });
 
 /**
@@ -192,11 +224,12 @@ export class PublicMenuController {
     @Res({ passthrough: true }) reply: FastifyReply,
     @Query('t') t?: string,
     @Headers('if-none-match') ifNoneMatch?: string,
-  ): Promise<{ stoppedItemIds: string[] } | undefined> {
+  ): Promise<{ stoppedItemIds: string[]; stoppedIngredientIds: string[] } | undefined> {
     await this.requireGuestTenantOr404(req);
     const locationId = await this.resolveTableLocationId(t);
     const {
       stoppedItemIds,
+      stoppedIngredientIds,
       stopVersion,
       locationId: answeringLocationId,
     } = await wrap(() => this.getAvailability.execute(locationId));
@@ -209,7 +242,7 @@ export class PublicMenuController {
     }
     reply.header('ETag', etag);
     reply.header('Cache-Control', MENU_AVAILABILITY_CACHE_CONTROL);
-    return { stoppedItemIds };
+    return { stoppedItemIds, stoppedIngredientIds };
   }
 
   /**
@@ -247,7 +280,7 @@ export class PublicMenuController {
     // The ETag is the menu version, so a rename or a new logo is only picked up
     // after s-maxage expires. Guest chrome tolerates that; menu content does not,
     // which is why the tenant block is attached here and not versioned separately.
-    return { ...menu, tenant: guestTenant(ctx) };
+    return { ...menu, tenant: guestTenant(ctx, this.env.MEDIA_PUBLIC_BASE_URL) };
   }
 
   @Get('items/:id')

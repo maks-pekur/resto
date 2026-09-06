@@ -13,9 +13,10 @@ export class UpsertModifierGroupService {
       ...(input.id ? { id: input.id } : {}),
       tenantId: ctx.tenantId,
       name: input.name,
-      minSelectable: input.minSelectable,
-      maxSelectable: input.maxSelectable,
+      display: input.display,
+      behaviour: input.behaviour,
       isRequired: input.isRequired,
+      maxSelectable: input.maxSelectable,
     });
   }
 }

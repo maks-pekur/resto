@@ -18,11 +18,41 @@ const DEV_DEFAULTS = {
   S3_ENDPOINT: 'http://localhost:9000',
   MEDIA_PUBLIC_BASE_URL: 'http://localhost:9000/resto-dev',
   INTERNAL_API_TOKEN: 'internal_dev_token_change_me',
-  STRIPE_CONNECT_RETURN_URL: 'http://localhost:3001/stripe/return',
-  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:3001/stripe/refresh',
+  STRIPE_CONNECT_RETURN_URL: 'http://localhost:4000/admin/tenant/payouts?stripe=return',
+  STRIPE_CONNECT_REFRESH_URL: 'http://localhost:4000/admin/tenant/payouts?stripe=refresh',
+  RESEND_FROM: 'RestOS <noreply@resto.app>',
+  RESEND_REPLY_TO: 'support@resto.app',
 } as const;
 
 type GuardedKey = keyof typeof DEV_DEFAULTS;
+
+/**
+ * Hosts that only ever exist while someone is developing: loopback, the wildcard-DNS helpers, and
+ * the ephemeral tunnels a phone is pointed at. Exact-value checks miss these — a tunnel URL is
+ * nobody's documented default, so it sails through and a deploy silently serves media, QR stickers
+ * or auth redirects from a host that stops existing when the laptop closes.
+ */
+const EPHEMERAL_HOST_RE =
+  /(^|\.)(localhost|devtunnels\.ms|nip\.io|lvh\.me|trycloudflare\.com|ngrok(-free)?\.(app|io|dev))$|^(127\.|0\.0\.0\.0|\[?::1)/iu;
+
+const URL_KEYS = [
+  'MEDIA_PUBLIC_BASE_URL',
+  'S3_ENDPOINT',
+  'ADMIN_WEB_URL',
+  'WEBSITE_PUBLIC_URL',
+  'BETTER_AUTH_BASE_URL',
+  'STRIPE_CONNECT_RETURN_URL',
+  'STRIPE_CONNECT_REFRESH_URL',
+] as const satisfies readonly (keyof Env)[];
+
+const ephemeralHost = (value: string): string | null => {
+  try {
+    const { hostname } = new URL(value);
+    return EPHEMERAL_HOST_RE.test(hostname) ? hostname : null;
+  } catch {
+    return null;
+  }
+};
 
 /**
  * API review 2026-06-15 BLOCK-4: the two highest-value secrets were fail-open.
@@ -121,6 +151,19 @@ export const assertProdGuardrails = (
     if (PLACEHOLDER_MARKERS.some((marker) => lower.includes(marker))) {
       violations.push(`${key} contains an unreplaced placeholder marker`);
     }
+  }
+  for (const key of URL_KEYS) {
+    const value = env[key];
+    if (typeof value !== 'string' || value.length === 0) continue;
+    const host = ephemeralHost(value);
+    if (host !== null) {
+      violations.push(`${key} points at "${host}", a host that only exists during development`);
+    }
+  }
+  if (env.PUBLIC_APEX_DOMAIN !== undefined && EPHEMERAL_HOST_RE.test(env.PUBLIC_APEX_DOMAIN)) {
+    violations.push(
+      `PUBLIC_APEX_DOMAIN is "${env.PUBLIC_APEX_DOMAIN}" — every QR sticker would carry it`,
+    );
   }
   // D-01 / Skeptic HIGH-2.
   if (env.RESEND_API_KEY === undefined || env.RESEND_API_KEY.trim().length === 0) {

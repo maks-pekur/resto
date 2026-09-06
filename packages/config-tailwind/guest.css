@@ -18,7 +18,7 @@
   --popover-foreground: #1f1f1f;
 
   --primary: #ff6900;
-  --primary-foreground: #241100;
+  --primary-foreground: #ffffff;
   /* Derived from --primary AND the surrounding page, so both a tenant override
    * and a theme switch carry through: --primary at brand saturation fails 4.5:1
    * as text on either ground, --primary-strong passes on both. */
@@ -27,7 +27,7 @@
 
   --secondary: #f4f4f5;
   --secondary-foreground: #1f1f1f;
-  --muted: #f6f6f7;
+  --muted: #fafafa;
   --muted-foreground: #5c5c5c;
   --accent: var(--primary-tint);
   --accent-foreground: var(--primary-strong);
@@ -50,7 +50,7 @@
     sans-serif;
 
   --header-height: 3.5rem;
-  --category-rail-height: 3.5rem;
+  --category-rail-height: 2.75rem;
 }
 
 html[data-theme='light'] {
@@ -77,7 +77,7 @@ html[data-theme='dark'] {
 
   --secondary: #232323;
   --secondary-foreground: #f2f2f2;
-  --muted: #1f1f1f;
+  --muted: #1a1a1a;
   --muted-foreground: #a1a1a1;
 
   --destructive: #ff6b6b;
@@ -102,7 +102,7 @@ html[data-theme='dark'] {
 
     --secondary: #232323;
     --secondary-foreground: #f2f2f2;
-    --muted: #1f1f1f;
+    --muted: #1a1a1a;
     --muted-foreground: #a1a1a1;
 
     --destructive: #ff6b6b;
@@ -120,6 +120,27 @@ html[data-theme='dark'] {
 @media (min-width: 640px) {
   :root {
     --header-height: 4rem;
-    --category-rail-height: 3.25rem;
+    --category-rail-height: 2.75rem;
   }
+}
+
+/**
+ * Opening a sheet locks the page scroll, and the vanishing scrollbar takes the layout with it:
+ * the header and the floating nav are fixed, so they shift while the body does not. Reserving
+ * the gutter permanently keeps the width constant, and the library's own compensation — which
+ * would now double-count — is turned off.
+ */
+html {
+  scrollbar-gutter: stable;
+}
+
+/* Beaten on specificity, not on order: react-remove-scroll injects its own
+   `body[data-scroll-locked] { padding-right: … !important }` after ours. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
+html body.with-scroll-bars-hidden {
+  padding-right: 0 !important;
 }

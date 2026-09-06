@@ -13,7 +13,6 @@
     "itemCount": "Кошик · {n}",
     "open": "Кошик",
     "subtotal": "Разом",
-    "table": "Стіл {table}",
     "title": "Ваш кошик"
   },
   "menu": {
@@ -78,6 +77,11 @@
     "contactHeading": "Контакти",
     "faqHeading": "Поширені запитання"
   },
+  "marketing": {
+    "title": "RestOS",
+    "tagline": "Цифровий дім для вашого ресторану — меню, замовлення та багато іншого в одному місці.",
+    "adminCta": "Вхід для персоналу"
+  },
   "errors": {
     "tenantNotFound": "Ресторан не знайдено",
     "tenantNotFoundBody": "Цього ресторану поки немає на RestOS. Якщо ви перейшли за посиланням, можливо, воно змінилося.",
@@ -94,7 +98,30 @@
     "qtyIncrease": "Збільшити кількість {name}",
     "remove": "Видалити {name} з кошика",
     "size": "Розмір",
-    "unavailable": "Сьогодні недоступно"
+    "unavailable": "Сьогодні недоступно",
+    "composition": "Склад",
+    "compositionExcludeAriaLabel": "Прибрати {name}",
+    "compositionIncludeAriaLabel": "Повернути {name}",
+    "choose": "Обрати {name}",
+    "addNamed": "Додати {name} за {price}",
+    "nutrition": "Харчова цінність",
+    "nutritionOpen": "Харчова цінність",
+    "nutritionPer100g": "Харчова цінність на 100 г",
+    "calories": "Калорії",
+    "protein": "Білки",
+    "fat": "Жири",
+    "carbs": "Вуглеводи",
+    "kcal": "ккал",
+    "gram": "г",
+    "unit": {
+      "g": "г",
+      "kg": "кг",
+      "ml": "мл",
+      "l": "л",
+      "pcs": "шт"
+    },
+    "chooseFirst": "Оберіть: {group}",
+    "weight": "Вага"
   },
   "locale": {
     "label": "Мова"
@@ -104,12 +131,23 @@
     "contact": "Контакти",
     "delivery": "Доставка",
     "faq": "Питання",
-    "poweredBy": "Працює на RestOS"
+    "poweredBy": "Працює на RestOS",
+    "socialsLabel": "Ми в соцмережах"
   },
   "theme": {
     "dark": "Темне",
     "label": "Оформлення",
     "light": "Світле",
     "system": "Як у системі"
+  },
+  "nav": {
+    "label": "Навігація",
+    "menu": "Меню",
+    "cart": "Кошик",
+    "info": "Інфо"
+  },
+  "info": {
+    "contacts": "Контакти",
+    "socials": "Ми в соцмережах"
   }
 }

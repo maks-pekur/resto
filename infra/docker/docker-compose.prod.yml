@@ -1,0 +1,92 @@
+name: resto-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    # Unmeasured CX32 starting values (4 vCPU / 8 GB) — see
+    # docs/runbooks/production-stack.md for the tuning note.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - max_connections=40
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_ADMIN_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  nats:
+    image: nats:2.10-alpine
+    restart: unless-stopped
+    command:
+      - "--jetstream"
+      - "--store_dir=/data"
+      - "--http_port=8222"
+      - "--user"
+      - "${NATS_USERNAME}"
+      - "--pass"
+      - "${NATS_PASSWORD}"
+    volumes:
+      - nats-data:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://localhost:8222/healthz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    image: ghcr.io/${GHCR_OWNER}/resto-api:${API_IMAGE_TAG}
+    restart: unless-stopped
+    env_file: .env.api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+
+  website:
+    image: ghcr.io/${GHCR_OWNER}/resto-website:${WEBSITE_IMAGE_TAG}
+    restart: unless-stopped
+    env_file: .env.website
+
+  caddy:
+    image: caddy:2.11-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_HOST: ${API_HOST}
+      WEBSITE_HOST: ${WEBSITE_HOST}
+      INTERNAL_ALLOWED_IPS: ${INTERNAL_ALLOWED_IPS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./certs:/etc/caddy/certs:ro
+      - caddy-data:/data
+    depends_on:
+      - api
+      - website
+
+  # profiles: [tools] keeps `docker compose up -d` from ever starting this.
+  # No restart:, no env_file: — DATABASE_ADMIN_URL is injected per invocation
+  # (`docker compose run --rm -e DATABASE_ADMIN_URL=... migrate`) and never
+  # stored on the box.
+  migrate:
+    image: ghcr.io/${GHCR_OWNER}/resto-migrate:${API_IMAGE_TAG}
+    profiles: ["tools"]
+
+volumes:
+  postgres-data:
+  nats-data:
+  caddy-data:

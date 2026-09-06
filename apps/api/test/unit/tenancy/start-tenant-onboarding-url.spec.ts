@@ -34,7 +34,7 @@ function makeService(
 }
 
 describe('StartTenantOnboardingService.handleOAuthCallback — Stripe return URL', () => {
-  it('redirects to ${ADMIN_WEB_URL}/payouts — no per-tenant slug segment (D-20)', async () => {
+  it('redirects to ${ADMIN_WEB_URL}/tenant/payouts — no per-tenant slug segment (D-20)', async () => {
     const tenantSnap = makeTenantSnap('acme');
     const nonce = randomUUID();
     const state = encodeOAuthState({ tenantId: tenantSnap.id, nonce }, SECRET);
@@ -59,7 +59,7 @@ describe('StartTenantOnboardingService.handleOAuthCallback — Stripe return URL
     const service = makeService(repo, provider, env);
     const result = await service.handleOAuthCallback({ code: 'code', state, nonce });
 
-    expect(result.redirectUrl).toBe(`${ADMIN_WEB_URL}/payouts`);
+    expect(result.redirectUrl).toBe(`${ADMIN_WEB_URL}/tenant/payouts`);
   });
 
   it('redirectUrl does NOT contain "/dashboard/"', async () => {

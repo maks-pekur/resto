@@ -71,7 +71,11 @@ describe('loadEnv', () => {
     expect(() => loadEnv({ ...baseEnv, DATABASE_URL: 'not-a-url' })).toThrow(/DATABASE_URL/);
   });
 
-  it('rejects production boot when AUTH_COOKIE_DOMAIN is missing', () => {
+  it('still rejects a production boot missing a genuinely required key', () => {
+    // 07.4 D-05 removed AUTH_COOKIE_DOMAIN from the required set: the admin lives on a path
+    // of the apex, so an unset value gives a host-only cookie, which is narrower than any
+    // dotted one. WEBSITE_PUBLIC_URL takes its place here so the required-set still has a
+    // guard; the cookie's own shape rule is covered in admin-web-url.spec.ts.
     const productionEnv: NodeJS.ProcessEnv = {
       ...baseEnv,
       NODE_ENV: 'production',
@@ -81,7 +85,7 @@ describe('loadEnv', () => {
       ADMIN_WEB_URL: 'https://admin.resto.app',
     };
     expect(() => loadEnv(productionEnv)).toThrow(EnvValidationError);
-    expect(() => loadEnv(productionEnv)).toThrow(/AUTH_COOKIE_DOMAIN/);
+    expect(() => loadEnv(productionEnv)).toThrow(/WEBSITE_PUBLIC_URL/);
   });
 
   it('accepts a production environment with a properly-shaped AUTH_COOKIE_DOMAIN', () => {

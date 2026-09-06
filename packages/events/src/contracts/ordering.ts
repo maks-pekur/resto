@@ -7,7 +7,7 @@ export const OrderCreatedV1Payload = z.object({
   tenantId: TenantId,
   locationId: z.string().uuid(),
   orderNumber: z.string().min(1).max(20),
-  fulfillmentMode: z.enum(['dine_in', 'pickup', 'delivery']),
+  orderType: z.enum(['dine_in', 'pickup', 'delivery']),
   total: z.number().int().nonnegative(),
   currency: z.string().regex(/^[A-Z]{3}$/),
   itemCount: z.number().int().positive(),

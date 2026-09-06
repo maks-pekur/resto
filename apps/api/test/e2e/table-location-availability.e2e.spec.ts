@@ -112,12 +112,12 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
   const orderPayload = (params: {
     itemId: string;
     tableId?: string;
-    fulfillmentMode?: 'dine_in' | 'pickup';
+    orderType?: 'dine_in' | 'pickup';
   }): Record<string, unknown> => ({
     items: [{ itemId: params.itemId, sizeId: null, name: 'Test item', modifiers: [], quantity: 1 }],
-    fulfillmentMode: params.fulfillmentMode ?? 'dine_in',
+    orderType: params.orderType ?? 'dine_in',
     ...(params.tableId !== undefined ? { tableId: params.tableId } : {}),
-    ...(params.fulfillmentMode === 'pickup'
+    ...(params.orderType === 'pickup'
       ? { customerName: 'Guest', customerPhone: '+1234567890' }
       : {}),
     idempotencyKey: randomUUID(),
@@ -170,11 +170,13 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
     process.env.REQUIRE_EMAIL_VERIFICATION = 'false';
     // GuestMenuUrlService throws building a table's qrUrl without this (10.3-07/08 precedent) —
     // this plan's own case 12 renumbers a table through the admin route, which renders one.
+    // 07.5-13: PUBLIC_APEX_DOMAIN is the only apex — tenantHost below matches it so
+    // /v1/menu/availability keeps resolving this fixture's tenant.
     process.env.PUBLIC_APEX_DOMAIN = 'resto.app';
     stack = await startRealStack({ natsEnabledInApp: false });
 
     tenantSlug = `tbl-avail-${randomUUID().slice(0, 8)}`;
-    tenantHost = `${tenantSlug}.menu.resto.app`;
+    tenantHost = `${tenantSlug}.resto.app`;
     const ownerEmail = `owner-${randomUUID().slice(0, 8)}@example.com`;
     const tenant = await provisionTenant(stack.app, tenantSlug, INTERNAL_TOKEN);
     tenantId = tenant.id;
@@ -335,7 +337,7 @@ suite('Table-location availability + order rejection e2e (Plan 10.3-12)', () => 
   });
 
   it('case 9 — a pickup order with no table still lands on the default location', async () => {
-    const res = await postOrder(orderPayload({ itemId: otherItemId, fulfillmentMode: 'pickup' }));
+    const res = await postOrder(orderPayload({ itemId: otherItemId, orderType: 'pickup' }));
     expect(res.statusCode).toBe(201);
     const orderId = res.json<OrderResponseBody>().orderId;
     const row = await readOrderRow(orderId);

@@ -7,7 +7,26 @@ export interface CartModifier {
   readonly priceDelta: string;
   readonly modifierGroupId?: string;
   readonly amount?: number;
+  readonly kind?: 'added' | 'excluded';
 }
+
+/**
+ * Two lines are the same line only when the guest would receive the same thing: a pizza with
+ * bacon and one without are different dishes to the kitchen, and merging them loses a choice
+ * the guest made. Modifier order is not part of the identity, so it is sorted away.
+ */
+export const cartLineKey = (line: {
+  readonly itemId: string;
+  readonly sizeId: string | null;
+  readonly modifiers: readonly CartModifier[];
+}): string =>
+  [
+    line.itemId,
+    line.sizeId ?? '',
+    ...line.modifiers
+      .map((m) => `${m.kind ?? 'added'}:${m.optionId}:${String(m.amount ?? 1)}`)
+      .sort(),
+  ].join('|');
 
 export interface CartLineItem {
   readonly itemId: string;
@@ -15,6 +34,10 @@ export interface CartLineItem {
   readonly name: string;
   readonly unitPrice: string;
   readonly currency: string;
+  /** Kept on the line: the cart outlives the menu payload it was built from. */
+  readonly imageUrl?: string | null;
+  /** The size the guest chose, spelled out — `sizeId` alone means nothing to a reader. */
+  readonly sizeName?: string | null;
   readonly modifiers: readonly CartModifier[];
   quantity: number;
 }
@@ -34,8 +57,8 @@ interface CartState {
   setMode: (mode: 'delivery' | 'pickup') => void;
   setTable: (table: ResolvedCartTable | null) => void;
   addItem: (item: Omit<CartLineItem, 'quantity'>) => void;
-  updateQuantity: (itemId: string, sizeId: string | null, delta: number) => void;
-  removeItem: (itemId: string, sizeId: string | null) => void;
+  updateQuantity: (lineKey: string, delta: number) => void;
+  removeItem: (lineKey: string) => void;
   clearCart: () => void;
 }
 
@@ -73,6 +96,20 @@ export function selectItemCount(state: CartState): number {
   return state.items.reduce((sum, item) => sum + item.quantity, 0);
 }
 
+const QR_BASE = '/qr';
+
+const isQrDocument = (pathname: string): boolean =>
+  pathname === QR_BASE || pathname.startsWith(`${QR_BASE}/`);
+
+// Storefront and QR menu share one origin under the single-apex scheme (07.5-12); without a
+// distinct key here a guest's table cart and delivery cart would silently merge.
+export const CART_STORAGE_NAME =
+  typeof document === 'undefined'
+    ? 'resto-cart'
+    : isQrDocument(document.location.pathname)
+      ? 'resto-cart-qr'
+      : 'resto-cart';
+
 export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
@@ -90,36 +127,41 @@ export const useCartStore = create<CartState>()(
         ),
       addItem: (newItem) =>
         set((state) => {
-          const existing = state.items.find(
-            (i) => i.itemId === newItem.itemId && i.sizeId === newItem.sizeId,
-          );
+          const key = cartLineKey(newItem);
+          const existing = state.items.find((i) => cartLineKey(i) === key);
           if (existing) {
             return {
               items: state.items.map((i) =>
-                i === existing ? { ...i, quantity: i.quantity + 1 } : i,
+                i === existing
+                  ? {
+                      ...i,
+                      // A line stored before the menu carried an image would otherwise never get
+                      // one: adding the same dish again only ever bumped the quantity.
+                      ...(i.imageUrl == null && newItem.imageUrl != null
+                        ? { imageUrl: newItem.imageUrl }
+                        : {}),
+                      quantity: i.quantity + 1,
+                    }
+                  : i,
               ),
             };
           }
           return { items: [...state.items, { ...newItem, quantity: 1 }] };
         }),
-      updateQuantity: (itemId, sizeId, delta) =>
+      updateQuantity: (lineKey, delta) =>
         set((state) => ({
           items: state.items
-            .map((i) =>
-              i.itemId === itemId && i.sizeId === sizeId
-                ? { ...i, quantity: i.quantity + delta }
-                : i,
-            )
+            .map((i) => (cartLineKey(i) === lineKey ? { ...i, quantity: i.quantity + delta } : i))
             .filter((i) => i.quantity > 0),
         })),
-      removeItem: (itemId, sizeId) =>
+      removeItem: (lineKey) =>
         set((state) => ({
-          items: state.items.filter((i) => !(i.itemId === itemId && i.sizeId === sizeId)),
+          items: state.items.filter((i) => cartLineKey(i) !== lineKey),
         })),
       clearCart: () => set({ items: [] }),
     }),
     {
-      name: 'resto-cart',
+      name: CART_STORAGE_NAME,
       storage: createJSONStorage(() => sessionStorage),
     },
   ),

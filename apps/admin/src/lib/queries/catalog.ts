@@ -1,6 +1,12 @@
+import type { components } from '@resto/api-client';
+
+// Catalog response shapes are DERIVED from the committed OpenAPI contract, never
+// re-declared by hand. A hand-written copy silently drifted in five fields and
+// crashed the item editor on the api's real `allergens: null`; deriving makes any
+// future drift a compile error instead.
+type Schemas = components['schemas'];
 import { apiFetch } from '@/lib/api-client';
-import { toLocalizedText } from '@/lib/menu/localized';
-import type { Status } from '@/lib/menu/types';
+import type { LocalizedText } from '@/lib/menu/localized';
 import type { ItemListStatusFilter } from '@/lib/menu/zod-schemas';
 import type {
   CategoryForm,
@@ -8,36 +14,19 @@ import type {
   SizeForm,
   ModifierGroupForm,
   ModifierOptionForm,
+  ModifierForm,
 } from '@/lib/menu/zod-schemas';
 
 const STALE_STABLE = 30_000;
 const STALE_DRAFT_DIFF = 10_000;
 
-export interface CategoryListItemApi {
-  readonly id: string;
-  readonly parentId: string | null;
-  readonly name: Record<string, string>;
-  readonly sortOrder: number;
-  readonly status: Status;
-}
+export type CategoryListItemApi = Schemas['CategoryListResponseDto']['items'][number];
 
 export interface CategoryListResponse {
   readonly items: readonly CategoryListItemApi[];
 }
 
-export interface ItemListItemApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly categoryId: string;
-  readonly categoryName: Record<string, string>;
-  readonly parentCategoryName: Record<string, string> | null;
-  readonly photoUrl: string | null;
-  readonly basePrice: string;
-  readonly currency: string;
-  readonly status: Status;
-  readonly hasSizes: boolean;
-  readonly stoppedAt: string | null;
-}
+export type ItemListItemApi = Schemas['ItemListResponseDto']['items'][number];
 
 export interface ItemListResponse {
   readonly items: readonly ItemListItemApi[];
@@ -46,75 +35,43 @@ export interface ItemListResponse {
   readonly offset: number;
 }
 
-export interface ItemSizeApi {
-  readonly id: string;
-  readonly name: string;
-  readonly price: number;
-  readonly isDefault: boolean;
-  readonly sortOrder: number;
-}
+export type ItemSizeApi = Schemas['ItemDetailResponseDto']['sizes'][number];
 
-export interface ModifierOptionApi {
-  readonly id: string;
-  readonly name: string;
-  readonly priceDelta: number;
-  readonly defaultAmount: number;
-  readonly freeAmount: number;
-  readonly sortOrder: number;
-}
+export type ModifierOptionApi = Schemas['ModifierGroupDetailResponseDto']['options'][number];
+export type ModifierGroupApi = Schemas['ModifierGroupListResponseDto']['items'][number];
 
-export interface ModifierGroupApi {
-  readonly id: string;
-  readonly name: string;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
-  readonly status: Status;
-}
-
-export interface ItemDetailApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly description: Record<string, string> | null;
-  readonly categoryId: string;
-  readonly basePrice: string;
-  readonly currency: string;
-  readonly status: Status;
-  readonly allergens: string[];
-  readonly ingredients: string[];
-  readonly metaTitle: Record<string, string> | null;
-  readonly metaDescription: Record<string, string> | null;
-  readonly proteins: number | null;
-  readonly fats: number | null;
-  readonly carbs: number | null;
-  readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
-  readonly photoUrl: string | null;
-  readonly photoS3Key: string | null;
-  readonly sizes: readonly ItemSizeApi[];
-  readonly modifierGroupIds: readonly string[];
-  readonly slug: string;
-}
+export type ItemDetailApi = Schemas['ItemDetailResponseDto'];
 
 export interface ModifierGroupDetailApi extends ModifierGroupApi {
   readonly options: readonly ModifierOptionApi[];
+  readonly defaultOptionIds: readonly string[];
 }
 
 export interface ModifierGroupListResponse {
   readonly items: readonly ModifierGroupApi[];
 }
 
-export interface StopListItemApi {
-  readonly id: string;
-  readonly name: Record<string, string>;
-  readonly categoryName: Record<string, string>;
-  readonly parentCategoryName: Record<string, string> | null;
-  readonly photoUrl: string | null;
-  readonly stoppedAt: string;
-}
+export type StopListItemApi = Schemas['StopListResponseDto']['items'][number];
 
 export interface StopListResponse {
   readonly items: readonly StopListItemApi[];
 }
+
+export type ModifierApi = Schemas['ModifierOptionListResponseDto']['items'][number];
+
+export interface ModifierListResponse {
+  readonly items: readonly ModifierApi[];
+}
+
+export type ModifierUsageApi = Schemas['ModifierOptionUsageResponseDto'];
+
+export type OptionStopListItemApi = Schemas['OptionStopListResponseDto']['items'][number];
+
+export interface OptionStopListResponse {
+  readonly items: readonly OptionStopListItemApi[];
+}
+
+export type IdResponseApi = Schemas['IdResponseDto'];
 
 export interface AggregateStopListItemApi {
   readonly itemId: string;
@@ -144,7 +101,7 @@ export interface DraftDiffResponse {
 }
 
 export interface PhotoUploadUrlResponse {
-  readonly url: string;
+  readonly uploadUrl: string;
   readonly s3Key: string;
   readonly expiresAt: string;
 }
@@ -200,6 +157,24 @@ export const modifierGroupQuery = (id: string) => ({
   staleTime: STALE_STABLE,
 });
 
+export const modifiersQuery = () => ({
+  queryKey: ['catalog', 'modifiers'] as const,
+  queryFn: () => apiFetch<ModifierListResponse>('/v1/catalog/modifier-options'),
+  staleTime: STALE_STABLE,
+});
+
+export const modifierUsageQuery = (id: string) => ({
+  queryKey: ['catalog', 'modifier-usage', id] as const,
+  queryFn: () => apiFetch<ModifierUsageApi>(`/v1/catalog/modifier-options/${id}/usage`),
+  staleTime: STALE_STABLE,
+});
+
+export const modifierStopListQuery = (locationId: string) => ({
+  queryKey: ['catalog', 'modifier-stop-list', locationId] as const,
+  queryFn: () => apiFetch<OptionStopListResponse>('/v1/catalog/stop-list/options', { locationId }),
+  staleTime: STALE_STABLE,
+});
+
 export const stopListQuery = (locationId: string) => ({
   queryKey: ['catalog', 'stop-list', locationId] as const,
   queryFn: () => apiFetch<StopListResponse>('/v1/catalog/stop-list', { locationId }),
@@ -233,7 +208,7 @@ const toMoney = (value: number): string => value.toFixed(2);
 export const upsertCategory = (id: string | null, data: CategoryForm) =>
   apiFetch<CategoryListItemApi>('/v1/catalog/categories', {
     method: 'POST',
-    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
+    body: { ...data, id: id ?? undefined },
   });
 
 export const reorderCategories = (
@@ -252,29 +227,36 @@ export const archiveCategory = (id: string) =>
 export const upsertItem = (
   id: string | null,
   data: ItemEditorForm & { readonly photoS3Key?: string | null },
-) =>
-  apiFetch<{ readonly id: string }>('/v1/catalog/items', {
+) => {
+  // The api's UpsertItemInputSchema declares `photos` with `.default([])` and the
+  // repository writes it unconditionally on both the insert and the update path. A body
+  // without `photos` therefore does not "leave photos alone" — it erases them. The
+  // editor tracks a single photo, so send it in the contract's own shape.
+  const { photoS3Key, ...rest } = data;
+  return apiFetch<{ readonly id: string }>('/v1/catalog/items', {
     method: 'POST',
     body: {
-      ...data,
-      name: toLocalizedText(data.name),
-      description: data.description === null ? null : toLocalizedText(data.description),
+      ...rest,
       basePrice: toMoney(data.basePrice),
+      photos: photoS3Key ? [{ s3Key: photoS3Key, sortOrder: 0 }] : [],
       id: id ?? undefined,
     },
   });
+};
 
 export const archiveItem = (id: string) =>
   apiFetch(`/v1/catalog/items/${id}/archive`, {
     method: 'PATCH',
   });
 
-export const upsertItemSize = (itemId: string, data: SizeForm & { readonly id?: string }) =>
+export const upsertItemSize = (
+  itemId: string,
+  data: Omit<SizeForm, 'name'> & { readonly name: LocalizedText; readonly id?: string },
+) =>
   apiFetch<ItemSizeApi>('/v1/catalog/item-sizes', {
     method: 'POST',
     body: {
       ...data,
-      name: toLocalizedText(data.name),
       price: toMoney(data.price),
       menuItemId: itemId,
     },
@@ -310,7 +292,18 @@ export const resetStopList = async (locationId: string): Promise<{ ok: boolean }
   const res = await apiFetch<StopListResponse>('/v1/catalog/stop-list', { locationId });
   if (!res.ok) return { ok: false };
   for (const item of res.data?.items ?? []) {
-    const del = await apiFetch(`/v1/catalog/stop-list/${item.id}`, {
+    const del = await apiFetch(`/v1/catalog/stop-list/${item.itemId}`, {
+      method: 'DELETE',
+      locationId,
+    });
+    if (!del.ok) return { ok: false };
+  }
+  const optionsRes = await apiFetch<OptionStopListResponse>('/v1/catalog/stop-list/options', {
+    locationId,
+  });
+  if (!optionsRes.ok) return { ok: false };
+  for (const item of optionsRes.data?.items ?? []) {
+    const del = await apiFetch(`/v1/catalog/stop-list/options/${item.optionId}`, {
       method: 'DELETE',
       locationId,
     });
@@ -319,30 +312,99 @@ export const resetStopList = async (locationId: string): Promise<{ ok: boolean }
   return { ok: true };
 };
 
-export const upsertModifierGroup = (id: string | null, data: ModifierGroupForm) =>
+export const upsertModifierGroup = (
+  id: string | null,
+  data: Omit<ModifierGroupForm, 'name'> & { readonly name: LocalizedText },
+) =>
   apiFetch<ModifierGroupApi>('/v1/catalog/modifier-groups', {
     method: 'POST',
-    body: { ...data, name: toLocalizedText(data.name), id: id ?? undefined },
+    body: { ...data, id: id ?? undefined },
   });
 
 export const upsertModifierOption = (
   groupId: string,
-  data: ModifierOptionForm & { readonly id?: string },
+  data: Omit<ModifierOptionForm, 'name'> & { readonly name: LocalizedText; readonly id?: string },
 ) =>
   apiFetch<ModifierOptionApi>('/v1/catalog/modifier-options', {
     method: 'POST',
     body: {
       ...data,
-      name: toLocalizedText(data.name),
       priceDelta: toMoney(data.priceDelta),
       modifierGroupId: groupId,
     },
   });
 
-export const getPhotoUploadUrl = (itemId: string) =>
+// UpsertModifierOptionInputDto.description is LocalizedText on the wire (apps/api dto.ts) —
+// ModifierFormSchema.description is a plain string for the sheet's single, unlocalized field.
+export const upsertModifier = (
+  id: string | null,
+  data: Omit<ModifierForm, 'name' | 'description'> & {
+    readonly name: LocalizedText;
+    readonly description: LocalizedText | null;
+  },
+) =>
+  apiFetch<IdResponseApi>('/v1/catalog/modifier-options', {
+    method: 'POST',
+    body: { ...data, priceDelta: toMoney(data.priceDelta), id: id ?? undefined },
+  });
+
+export const archiveModifier = (id: string) =>
+  apiFetch<ModifierUsageApi>(`/v1/catalog/modifier-options/${id}/archive`, {
+    method: 'PATCH',
+  });
+
+export const setGroupModifiers = (
+  groupId: string,
+  optionIds: readonly string[],
+  defaultOptionIds: readonly string[] = [],
+) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/modifier-groups/${groupId}/options`, {
+    method: 'PUT',
+    body: { optionIds, defaultOptionIds },
+  });
+
+export const setItemModifiers = (itemId: string, optionIds: readonly string[]) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/items/${itemId}/modifier-options`, {
+    method: 'PUT',
+    body: { optionIds },
+  });
+
+export interface ItemCompositionPayload {
+  readonly mode: 'text' | 'assembled';
+  readonly text: readonly string[];
+  readonly lines: readonly { optionId: string; removable: boolean }[];
+}
+
+export const setItemComposition = (itemId: string, payload: ItemCompositionPayload) =>
+  apiFetch<IdResponseApi>(`/v1/catalog/items/${itemId}/composition`, {
+    method: 'PUT',
+    body: payload,
+  });
+
+// D-20: only the operator stops an modifier — locationId is required (never
+// 'all') and is the operator's currently selected location, same as toggleStopList.
+export const toggleModifierStopList = (optionId: string, stopped: boolean, locationId: string) => {
+  if (stopped) {
+    return apiFetch<IdResponseApi>('/v1/catalog/stop-list/options', {
+      method: 'POST',
+      body: { optionId },
+      locationId,
+    });
+  }
+  return apiFetch(`/v1/catalog/stop-list/options/${optionId}`, {
+    method: 'DELETE',
+    locationId,
+  });
+};
+
+export const getPhotoUploadUrl = (input: {
+  contentType: string;
+  sizeBytes: number;
+  kind?: 'item' | 'ingredient';
+}) =>
   apiFetch<PhotoUploadUrlResponse>('/v1/catalog/photo-upload-url', {
     method: 'POST',
-    body: { itemId },
+    body: input,
   });
 
 export const schedulePublish = () =>

@@ -4,6 +4,7 @@ import { z } from 'zod';
 const WebsiteEnvSchema = z.object({
   NEXT_PUBLIC_API_ORIGIN: z.string().url(),
   WEBSITE_URL: z.string().url(),
+  API_INTERNAL_ORIGIN: z.string().url().optional(),
 });
 
 type WebsiteEnv = z.infer<typeof WebsiteEnvSchema>;
@@ -34,10 +35,11 @@ const loadWebsiteEnv = (raw: NodeJS.ProcessEnv = process.env): WebsiteEnv => {
   const candidate: Record<string, string | undefined> = {
     NEXT_PUBLIC_API_ORIGIN: raw.NEXT_PUBLIC_API_ORIGIN,
     WEBSITE_URL: raw.WEBSITE_URL,
+    API_INTERNAL_ORIGIN: raw.API_INTERNAL_ORIGIN === '' ? undefined : raw.API_INTERNAL_ORIGIN,
   };
 
   if (isPermissive(raw.NODE_ENV)) {
-    for (const key of Object.keys(candidate) as (keyof WebsiteEnv)[]) {
+    for (const key of ['NEXT_PUBLIC_API_ORIGIN', 'WEBSITE_URL'] as const) {
       const v = candidate[key];
       if (v === undefined || v === '') {
         candidate[key] = DEV_DEFAULTS[key];
@@ -51,9 +53,9 @@ const loadWebsiteEnv = (raw: NodeJS.ProcessEnv = process.env): WebsiteEnv => {
   }
 
   if (!isPermissive(raw.NODE_ENV)) {
-    for (const key of ['NEXT_PUBLIC_API_ORIGIN', 'WEBSITE_URL'] as const) {
+    for (const key of ['NEXT_PUBLIC_API_ORIGIN', 'WEBSITE_URL', 'API_INTERNAL_ORIGIN'] as const) {
       const val = parsed.data[key];
-      if (isLocalhostUrl(val)) {
+      if (val !== undefined && isLocalhostUrl(val)) {
         throw new WebsiteEnvValidationError([
           {
             code: z.ZodIssueCode.custom,
@@ -71,4 +73,6 @@ const loadWebsiteEnv = (raw: NodeJS.ProcessEnv = process.env): WebsiteEnv => {
 const env = loadWebsiteEnv();
 
 export const apiOrigin = (): string => env.NEXT_PUBLIC_API_ORIGIN;
+export const internalApiOrigin = (): string =>
+  env.API_INTERNAL_ORIGIN ?? env.NEXT_PUBLIC_API_ORIGIN;
 export const websiteUrl = (): string => env.WEBSITE_URL;

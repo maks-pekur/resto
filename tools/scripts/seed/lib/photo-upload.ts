@@ -1,9 +1,11 @@
+import { readFile } from 'node:fs/promises';
 import { log } from './logger';
 import type { OperatorHttpClient } from './operator-http';
 import { prepareMenuPhoto } from './prepare-menu-photo';
 
 const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_PHOTO_BYTES = 5_242_880;
+const MAX_COVER_BYTES = 2_097_152;
 const FETCH_TIMEOUT_MS = 20_000;
 const UPLOAD_TIMEOUT_MS = 30_000;
 
@@ -76,6 +78,52 @@ export const uploadPhotoFromUrl = async (
     return s3Key;
   } catch (err) {
     log('seed-demo.photo.failed', { sourceUrl, err: String(err) });
+    return null;
+  }
+};
+
+/**
+ * The venue photo the guest sees above the details. Uploaded whole — unlike a dish, a room is
+ * not cut out of its background.
+ */
+const brandContentType = (file: string): string => {
+  if (file.endsWith('.png')) return 'image/png';
+  if (file.endsWith('.svg')) return 'image/svg+xml';
+  if (file.endsWith('.webp')) return 'image/webp';
+  return 'image/jpeg';
+};
+
+export const uploadBrandCover = async (
+  op: OperatorHttpClient,
+  file: string,
+): Promise<string | null> => {
+  const sourceUrl = file;
+  try {
+    const contentType = brandContentType(file);
+    const body = await readFile(file);
+    if (body.byteLength === 0 || body.byteLength > MAX_COVER_BYTES) {
+      log('seed-demo.cover.skipped', { sourceUrl, sizeBytes: body.byteLength });
+      return null;
+    }
+
+    const { uploadUrl, s3Key } = await op.post<PhotoUploadUrlResponse>(
+      '/v1/tenants/me/brand/logo-upload-url',
+      { contentType, sizeBytes: body.byteLength },
+    );
+    const upload = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: new Uint8Array(body),
+      headers: { 'content-type': contentType },
+      signal: AbortSignal.timeout(UPLOAD_TIMEOUT_MS),
+    });
+    if (!upload.ok) {
+      log('seed-demo.cover.uploadFailed', { sourceUrl, status: upload.status });
+      return null;
+    }
+    log('seed-demo.cover.uploaded', { sourceUrl, s3Key, sizeBytes: body.byteLength });
+    return s3Key;
+  } catch (err) {
+    log('seed-demo.cover.failed', { sourceUrl, err: String(err) });
     return null;
   }
 };

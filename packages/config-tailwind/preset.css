@@ -2,6 +2,9 @@
  * Import AFTER `@import 'tailwindcss'` and AFTER tokens.css in a Tailwind app.
  * Maps the shared CSS variables into Tailwind's color/radius/font namespaces. */
 @theme inline {
+  /* The QR menu is opened on a phone, and the smallest one still sold is 320px wide. Base styles
+   * are written for it; `xs` is where a normal handset starts and the comfortable sizes return. */
+  --breakpoint-xs: 22.5rem;
   --font-sans: var(--font-brand, var(--font-inter, var(--font-sans)));
   --color-background: var(--background);
   --color-foreground: var(--foreground);

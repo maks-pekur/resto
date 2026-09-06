@@ -2,16 +2,16 @@ import * as React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { PageHeading } from '@/components/page-heading';
+import { PageHeading } from '@/components/common/page-heading';
 import {
   ModifierGroupFormComponent,
   type ModifierGroupFormState,
 } from '@/components/menu/modifier-group-form';
 import {
-  ModifierOptionsList,
-  type ModifierOptionApi,
-} from '@/components/menu/modifier-options-list';
-import type { ModifierGroupDetailApi } from '@/lib/queries/catalog';
+  GroupModifiersPicker,
+  type GroupModifierRow,
+} from '@/components/menu/group-modifiers-picker';
+import type { ModifierGroupDetailApi, ModifierOptionApi } from '@/lib/queries/catalog';
 import type { ModifierGroupForm } from '@/lib/menu/zod-schemas';
 
 export interface GroupEditorShellProps {
@@ -23,15 +23,30 @@ export interface GroupEditorShellProps {
 const FORM_ID = 'modifier-group-form';
 
 const emptyValues = (): ModifierGroupForm => ({
-  name: '',
-  minSelectable: 0,
-  maxSelectable: 1,
+  name: {},
+  display: 'tiles',
+  behaviour: 'several',
+  isRequired: false,
+  maxSelectable: null,
 });
 
 const valuesFromGroup = (g: ModifierGroupDetailApi): ModifierGroupForm => ({
-  name: g.name,
-  minSelectable: g.minSelectable,
+  name: { ...g.name },
+  display: g.display,
+  behaviour: g.behaviour,
+  isRequired: g.isRequired,
   maxSelectable: g.maxSelectable,
+});
+
+const rowFromOption = (
+  option: ModifierOptionApi,
+  defaultOptionIds: readonly string[],
+): GroupModifierRow => ({
+  id: option.id,
+  name: option.name,
+  imageUrl: option.imageUrl,
+  priceDelta: option.priceDelta,
+  isDefault: defaultOptionIds.includes(option.id),
 });
 
 export function GroupEditorShell({
@@ -42,8 +57,10 @@ export function GroupEditorShell({
   const { t } = useTranslation('translation', { keyPrefix: 'menu.modifierGroups' });
   const { t: tCommon } = useTranslation('translation', { keyPrefix: 'common' });
   const [currentGroupId, setCurrentGroupId] = React.useState(groupId);
-  const [currentOptions, setCurrentOptions] = React.useState<readonly ModifierOptionApi[]>(
-    initialGroup?.options ?? [],
+  const [currentOptions, setCurrentOptions] = React.useState<readonly GroupModifierRow[]>(
+    (initialGroup?.options ?? []).map((o) =>
+      rowFromOption(o, initialGroup?.defaultOptionIds ?? []),
+    ),
   );
   const [formState, setFormState] = React.useState<ModifierGroupFormState>({
     isNew: groupId === 'new',
@@ -99,8 +116,9 @@ export function GroupEditorShell({
             <CardDescription>{t('groupVariantsDescription')}</CardDescription>
           </CardHeader>
           <CardContent>
-            <ModifierOptionsList
+            <GroupModifiersPicker
               groupId={currentGroupId}
+              behaviour={initialValues.behaviour}
               options={currentOptions}
               onOptionsChange={setCurrentOptions}
             />

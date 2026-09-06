@@ -17,11 +17,31 @@ export interface CatalogRepository {
     itemId: string;
     modifierGroupIds: readonly string[];
   }): Promise<{ id: string }>;
+  replaceGroupModifierOptions(input: {
+    modifierGroupId: string;
+    optionIds: readonly string[];
+    defaultOptionIds: readonly string[];
+  }): Promise<{ id: string }>;
+  replaceItemModifierOptions(input: {
+    itemId: string;
+    optionIds: readonly string[];
+  }): Promise<{ id: string }>;
+  setItemComposition(input: {
+    itemId: string;
+    mode: 'text' | 'assembled';
+    text: readonly string[];
+    lines: readonly { optionId: string; removable: boolean }[];
+  }): Promise<{ id: string }>;
   addToStopList(input: StopListInsertRow): Promise<{ id: string; itemSlug: string }>;
   removeFromStopList(input: {
     itemId: string;
     locationId: string;
   }): Promise<{ removed: boolean; itemSlug: string | null }>;
+  addOptionToStopList(input: OptionStopListInsertRow): Promise<{ id: string }>;
+  removeOptionFromStopList(input: {
+    optionId: string;
+    locationId: string;
+  }): Promise<{ removed: boolean }>;
 
   listCategoriesByParent(parentId: string | null | undefined): Promise<CategoryListRow[]>;
   listItems(input: {
@@ -34,8 +54,12 @@ export interface CatalogRepository {
   getItemById(id: string): Promise<ItemDetailRow | null>;
   listModifierGroups(): Promise<ModifierGroupListRow[]>;
   getModifierGroupById(id: string): Promise<ModifierGroupDetailRow | null>;
+  listModifierOptions(): Promise<ModifierOptionListRow[]>;
+  getModifierOptionUsage(optionId: string): Promise<ModifierOptionUsageRow>;
   listStopListWithStoppedAt(locationId: string): Promise<StopListEntryRow[]>;
   listStoppedItemIds(locationId: string): Promise<string[]>;
+  listStoppedIngredientIds(locationId: string): Promise<string[]>;
+  listOptionStopListWithStoppedAt(locationId: string): Promise<OptionStopListEntryRow[]>;
   listStopListAggregateAcrossLocations(
     tenantId: TenantId,
     activeLocationIds: readonly string[],
@@ -47,6 +71,7 @@ export interface CatalogRepository {
 
   archiveCategory(id: string): Promise<{ found: boolean }>;
   archiveItem(id: string): Promise<{ found: boolean }>;
+  archiveModifierOption(id: string): Promise<{ found: boolean }>;
 
   applyCategoryMoves(input: {
     moves: readonly { id: string; parentId: string | null; sortOrder: number }[];
@@ -116,14 +141,16 @@ export interface UpsertItemRow {
   readonly currency: string;
   readonly photos: readonly MenuItemPhoto[];
   readonly allergens: readonly string[] | null;
-  readonly ingredients: readonly string[] | null;
+  readonly diets: readonly string[] | null;
+  readonly composition: readonly string[] | null;
+  readonly compositionMode: 'text' | 'assembled';
+  readonly compositionAssembled: readonly { optionId: string; removable: boolean }[];
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;
   readonly proteins: number | null;
   readonly fats: number | null;
   readonly carbs: number | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
   readonly needsReview: boolean;
   readonly sourceExternalId: string | null;
@@ -138,22 +165,26 @@ export interface UpsertModifierGroupRow {
   readonly id?: string;
   readonly tenantId: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
 }
 
 export interface UpsertModifierOptionRow {
   readonly id?: string;
   readonly tenantId: string;
-  readonly modifierGroupId: string;
   readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly imageS3Key: string | null;
   readonly priceDelta: string;
   readonly defaultAmount: number;
   readonly freeAmount: number;
   readonly sortOrder: number;
   readonly minAmount: number | null;
   readonly maxAmount: number | null;
+  readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
+  readonly sourceExternalId: string | null;
 }
 
 export interface UpsertItemSizeRow {
@@ -168,6 +199,14 @@ export interface UpsertItemSizeRow {
 
 export interface StopListInsertRow {
   readonly itemId: string;
+  readonly tenantId: string;
+  readonly locationId: string;
+  readonly reason: string | null;
+  readonly stoppedByUserId: string | null;
+}
+
+export interface OptionStopListInsertRow {
+  readonly optionId: string;
   readonly tenantId: string;
   readonly locationId: string;
   readonly reason: string | null;
@@ -193,7 +232,7 @@ export interface ItemListRow {
   readonly categoryId: string;
   readonly categoryName: Record<string, string> | null;
   readonly parentCategoryName: Record<string, string> | null;
-  readonly photo: { s3Key: string; sortOrder: number } | null;
+  readonly photo: { s3Key: string; sortOrder: number; url: string } | null;
   readonly basePrice: string;
   readonly currency: string;
   readonly status: 'draft' | 'published' | 'archived';
@@ -213,20 +252,23 @@ export interface ItemDetailRow {
   readonly photos: readonly {
     s3Key: string;
     sortOrder: number;
+    url: string;
     alt?: string;
     width?: number;
     height?: number;
     isPrimary?: boolean;
   }[];
   readonly allergens: readonly string[] | null;
-  readonly ingredients: readonly string[] | null;
+  readonly diets: readonly string[] | null;
+  readonly composition: readonly string[] | null;
+  readonly compositionMode: 'text' | 'assembled';
+  readonly compositionAssembled: readonly { optionId: string; removable: boolean }[];
   readonly metaTitle: string | null;
   readonly metaDescription: string | null;
   readonly proteins: number | null;
   readonly fats: number | null;
   readonly carbs: number | null;
   readonly kcal: number | null;
-  readonly nutritionEstimated: boolean;
   readonly source: 'manual' | 'ai_generated' | 'imported_iiko' | 'imported_csv';
   readonly needsReview: boolean;
   readonly sourceExternalId: string | null;
@@ -240,14 +282,16 @@ export interface ItemDetailRow {
     sortOrder: number;
   }[];
   readonly modifierGroupIds: readonly string[];
+  readonly modifierOptionIds: readonly string[];
 }
 
 export interface ModifierGroupListRow {
   readonly id: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
   readonly optionCount: number;
   readonly usageCount: number;
 }
@@ -255,12 +299,16 @@ export interface ModifierGroupListRow {
 export interface ModifierGroupDetailRow {
   readonly id: string;
   readonly name: Record<string, string>;
-  readonly minSelectable: number;
-  readonly maxSelectable: number;
+  readonly display: 'tiles' | 'tabs';
+  readonly behaviour: 'one' | 'several';
   readonly isRequired: boolean;
+  readonly maxSelectable: number | null;
+  readonly defaultOptionIds: readonly string[];
   readonly options: readonly {
     id: string;
     name: Record<string, string>;
+    description: Record<string, string> | null;
+    imageUrl: string | null;
     priceDelta: string;
     defaultAmount: number;
     freeAmount: number;
@@ -268,11 +316,43 @@ export interface ModifierGroupDetailRow {
   }[];
 }
 
+// The ingredients-library grid row (D-26/D-27); groupCount/dishCount feed the
+// archive warning (D-28) without a second round trip.
+export interface ModifierOptionListRow {
+  readonly id: string;
+  readonly name: Record<string, string>;
+  readonly description: Record<string, string> | null;
+  readonly priceDelta: string;
+  readonly imageUrl: string | null;
+  readonly imageS3Key: string | null;
+  readonly groupCount: number;
+  readonly dishCount: number;
+}
+
+// D-28: the archive warning unions all three; the D-22 stop dialog reads
+// dishesInComposition alone — being an add-on is not being part of the dish.
+export interface ModifierOptionUsageRow {
+  readonly groups: readonly { id: string; name: Record<string, string> }[];
+  readonly dishesAttached: readonly { id: string; name: Record<string, string> }[];
+  readonly dishesInComposition: readonly { id: string; name: Record<string, string> }[];
+}
+
 export interface StopListEntryRow {
   readonly id: string;
   readonly itemId: string;
   readonly itemName: Record<string, string> | null;
   readonly categoryName: Record<string, string> | null;
+  readonly photo: { s3Key: string; sortOrder: number; url: string } | null;
+  readonly stoppedAt: string;
+  readonly reason: string | null;
+}
+
+// Item version minus categoryName — an ingredient has no category (UI-SPEC item 8).
+export interface OptionStopListEntryRow {
+  readonly id: string;
+  readonly optionId: string;
+  readonly optionName: Record<string, string> | null;
+  readonly imageUrl: string | null;
   readonly stoppedAt: string;
   readonly reason: string | null;
 }

@@ -12,17 +12,23 @@ const item = (overrides: Partial<MenuItemDto> = {}): MenuItemDto => ({
   description: null,
   basePrice: '12.50',
   currency: 'USD',
+  weight: null,
+  measureUnit: null,
   imageUrl: 'https://cdn.example.test/margherita.jpg',
   photos: [],
   allergens: [],
+  diets: [],
   proteins: null,
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   sortOrder: 0,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
   ...overrides,
 });
 
@@ -30,19 +36,37 @@ const buildMenu = (overrides: Partial<MenuDto> = {}): MenuDto => ({
   tenantId: '11111111-1111-4111-8111-111111111111',
   version: 1,
   currency: 'USD',
-  tenant: { id: 'tenant-1', slug: 'demo', displayName: 'Cafe Demo', theme: null },
+  tenant: {
+    id: 'tenant-1',
+    slug: 'demo',
+    displayName: 'Cafe Demo',
+    theme: null,
+    locales: { default: 'ru', supported: ['ru', 'en'] },
+    description: null,
+    socials: {},
+    contacts: { phone: null, email: null, website: null },
+  },
   categories: [
     { id: 'cat-1', slug: 'pizza', name: { en: 'Pizza' }, description: null, sortOrder: 0 },
   ],
   items: [item()],
   modifierGroups: [],
+  modifierOptions: [],
   ...overrides,
 });
 
-const renderMenu = (menu: MenuDto, stoppedItemIds: readonly string[] = []) =>
+const renderMenu = (
+  menu: MenuDto,
+  stoppedItemIds: readonly string[] = [],
+  stoppedIngredientIds: readonly string[] = [],
+) =>
   render(
     <GuestUiProvider locale="en" t={t}>
-      <MenuScreen menu={menu} stoppedItemIds={stoppedItemIds} />
+      <MenuScreen
+        menu={menu}
+        stoppedItemIds={stoppedItemIds}
+        stoppedIngredientIds={stoppedIngredientIds}
+      />
     </GuestUiProvider>,
   );
 
@@ -62,9 +86,14 @@ describe('MenuScreen on qr-menu', () => {
           displayName: 'Cafe Demo',
           theme: {
             logoUrl: 'https://cdn.example.test/logo.png',
+            coverUrls: [],
             primaryColor: null,
             font: null,
           },
+          locales: { default: 'ru', supported: ['ru', 'en'] },
+          description: null,
+          socials: {},
+          contacts: { phone: null, email: null, website: null },
         },
       }),
     );
@@ -94,7 +123,10 @@ describe('MenuScreen on qr-menu', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Margherita' }));
     const dialog = await screen.findByRole('dialog');
     expect(within(dialog).getByRole('heading', { name: 'Margherita' })).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: t('item.addToCart') })).toBeInTheDocument();
+    // The button carries the price beside the words, so its name is the pair.
+    expect(
+      within(dialog).getByRole('button', { name: new RegExp(t('item.addToCart'), 'u') }),
+    ).toBeInTheDocument();
   });
 
   it('marks a stopped item unavailable and refuses to open it', () => {

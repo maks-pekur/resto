@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { createRoute, useNavigate } from '@tanstack/react-router';
+import { useTranslation } from 'react-i18next';
+import { createRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,13 +15,19 @@ import {
   tenantLocationsQuery,
   updateLocationMutation,
 } from '@/lib/queries/locations';
-import { PageHeading } from '@/components/page-heading';
-import { EmptyState } from '@/components/empty-state';
+import { PageHeading } from '@/components/common/page-heading';
+import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LocationPointPicker, type Point } from '@/components/locations/location-point-picker';
+import {
+  OpeningHoursEditor,
+  toHours,
+  toWeek,
+  type Week,
+} from '@/components/locations/opening-hours-editor';
 
 const FormSchema = z.object({
   name: z.string().trim().min(1, 'Give the location a name').max(200),
@@ -43,7 +50,11 @@ function LocationFormPage() {
   const isNew = slug === 'new';
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { t: tLoc } = useTranslation('translation', { keyPrefix: 'locations' });
   const [point, setPoint] = useState<Point | null>(null);
+  const [week, setWeek] = useState<Week>(() => toWeek(null));
+  const [wifiSsid, setWifiSsid] = useState('');
+  const [wifiPassword, setWifiPassword] = useState('');
 
   const { data: locationsResult, isPending } = useQuery(tenantLocationsQuery());
   const existing = (locationsResult?.data ?? []).find((location) => location.slug === slug);
@@ -70,6 +81,9 @@ function LocationFormPage() {
     if (existing.latitude !== null && existing.longitude !== null) {
       setPoint({ latitude: existing.latitude, longitude: existing.longitude });
     }
+    setWeek(toWeek(existing.openingHours));
+    setWifiSsid(existing.wifi?.ssid ?? '');
+    setWifiPassword(existing.wifi?.password ?? '');
   }, [existing, reset]);
 
   const nameValue = watch('name');
@@ -92,6 +106,11 @@ function LocationFormPage() {
         longitude: point.longitude,
         ...(data.timezone ? { timezone: data.timezone } : {}),
         contacts,
+        openingHours: toHours(week),
+        wifi:
+          wifiSsid.trim().length === 0
+            ? null
+            : { ssid: wifiSsid.trim(), password: wifiPassword.trim() || null },
       };
       return isNew
         ? createLocationMutation(payload)
@@ -146,6 +165,15 @@ function LocationFormPage() {
           isNew
             ? 'Name it after the district or street people use — "Воскресенка", "Podil", "High Street".'
             : 'The web address of a location never changes, even when its name does.'
+        }
+        action={
+          !isNew && existing ? (
+            <Button variant="outline" asChild>
+              <Link to="/locations/$slug/tables" params={{ slug: existing.slug }}>
+                View tables
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
       <div className="flex flex-1 flex-col gap-4 px-4 pb-8 lg:px-6">
@@ -227,6 +255,48 @@ function LocationFormPage() {
                   id="loc-tz"
                   placeholder="Inherited from the restaurant"
                   {...register('timezone')}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{tLoc('hours.title')}</CardTitle>
+              <CardDescription>{tLoc('hours.description')}</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <OpeningHoursEditor value={week} onChange={setWeek} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>{tLoc('wifiTitle')}</CardTitle>
+              <CardDescription>{tLoc('wifiDescription')}</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-1.5">
+                <Label htmlFor="loc-wifi-ssid">{tLoc('ssidLabel')}</Label>
+                <Input
+                  id="loc-wifi-ssid"
+                  maxLength={64}
+                  value={wifiSsid}
+                  onChange={(event) => {
+                    setWifiSsid(event.target.value);
+                  }}
+                />
+                <p className="text-muted-foreground text-xs">{tLoc('ssidHint')}</p>
+              </div>
+              <div className="grid gap-1.5">
+                <Label htmlFor="loc-wifi-password">{tLoc('passwordLabel')}</Label>
+                <Input
+                  id="loc-wifi-password"
+                  maxLength={128}
+                  value={wifiPassword}
+                  onChange={(event) => {
+                    setWifiPassword(event.target.value);
+                  }}
                 />
               </div>
             </CardContent>

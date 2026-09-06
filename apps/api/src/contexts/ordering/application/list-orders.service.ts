@@ -9,23 +9,36 @@ import {
   type OrderFeedRow,
 } from '../domain/ports';
 import type { OrderStatus } from '../domain/order.aggregate';
+import { addDays, zonedMidnightUtc } from '../../../shared/zoned-day';
 import type { OrderDatePreset, OrderStatusPreset } from './order-feed-dto';
 
-const ACTIVE_STATUSES: readonly OrderStatus[] = ['paid', 'accepted', 'preparing', 'ready'];
+const ACTIVE_STATUSES: readonly OrderStatus[] = ['placed', 'accepted', 'preparing', 'ready'];
 const ALL_STATUSES: readonly OrderStatus[] = [
-  'created',
-  'requires_action',
-  'paid',
+  'placed',
   'accepted',
   'preparing',
   'ready',
   'completed',
   'canceled',
-  'refunded',
-  'failed',
 ];
 const COMPLETED_STATUSES: readonly OrderStatus[] = ['completed'];
-const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled', 'refunded'];
+// An order waiting for staff to take it on, paid or not — the unpaid ones are exactly why this
+// queue exists (migration 0010).
+const PLACED_STATUSES: readonly OrderStatus[] = ['placed'];
+const ACCEPTED_STATUSES: readonly OrderStatus[] = ['accepted'];
+const PREPARING_STATUSES: readonly OrderStatus[] = ['preparing'];
+const READY_STATUSES: readonly OrderStatus[] = ['ready'];
+const CANCELED_STATUSES: readonly OrderStatus[] = ['canceled'];
+
+// The tabs an operator works from are queues: the order waiting longest sits at the top. A
+// finished list is history and reads the other way round, newest first.
+const QUEUE_PRESETS: readonly OrderStatusPreset[] = [
+  'active',
+  'unaccepted',
+  'accepted',
+  'preparing',
+  'ready',
+];
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
@@ -33,7 +46,10 @@ const MAX_LIMIT = 200;
 export interface ListOrdersInput {
   readonly statusPreset?: OrderStatusPreset;
   readonly channel?: 'site' | 'qr-menu';
+  readonly orderType?: 'dine_in' | 'pickup' | 'delivery';
   readonly datePreset?: OrderDatePreset;
+  readonly from?: string;
+  readonly to?: string;
   readonly since?: { readonly createdAt: Date; readonly id: string };
   readonly limit?: number;
   readonly offset?: number;
@@ -79,7 +95,7 @@ export class ListOrdersService {
     const statuses = resolveStatusPreset(statusPreset);
     const limit = Math.min(Math.max(input.limit ?? DEFAULT_LIMIT, 1), MAX_LIMIT);
     const offset = Math.max(input.offset ?? 0, 0);
-    const { from, to } = resolveDateRange(input.datePreset ?? 'today', referenceTimezone);
+    const { from, to } = resolveWindow(input, referenceTimezone);
     const isRefundFailedPreset = statusPreset === 'refund_failed';
 
     const { rows, total } = await this.feedRepo.list({
@@ -87,6 +103,10 @@ export class ListOrdersService {
       locationIds,
       statuses: [...statuses],
       ...(input.channel !== undefined ? { channel: input.channel } : {}),
+      ...(input.orderType !== undefined ? { orderType: input.orderType } : {}),
+      ...(statusPreset === 'unaccepted' ? { unacceptedOnly: true } : {}),
+      sort: QUEUE_PRESETS.includes(statusPreset) ? 'oldest_first' : 'newest_first',
+      ...(referenceTimezone !== null ? { timezone: referenceTimezone } : {}),
       createdFrom: from,
       createdTo: to,
       ...(input.since !== undefined ? { since: input.since } : {}),
@@ -134,7 +154,30 @@ function resolveStatusPreset(preset: OrderStatusPreset): readonly OrderStatus[] 
       return CANCELED_STATUSES;
     case 'refund_failed':
       return ALL_STATUSES;
+    case 'unaccepted':
+      return PLACED_STATUSES;
+    case 'accepted':
+      return ACCEPTED_STATUSES;
+    case 'preparing':
+      return PREPARING_STATUSES;
+    case 'ready':
+      return READY_STATUSES;
   }
+}
+
+export function resolveWindow(
+  input: { readonly from?: string; readonly to?: string; readonly datePreset?: OrderDatePreset },
+  timezone: string | null,
+): { from: Date; to: Date } {
+  if (input.from !== undefined && input.to !== undefined) {
+    const tz = timezone ?? 'UTC';
+    // Noon, not midnight: the instant only has to land inside the requested calendar day for
+    // any timezone, and midnight UTC does not on a negative offset.
+    const from = zonedMidnightUtc(new Date(`${input.from}T12:00:00.000Z`), tz);
+    const to = addDays(zonedMidnightUtc(new Date(`${input.to}T12:00:00.000Z`), tz), 1);
+    return { from, to };
+  }
+  return resolveDateRange(input.datePreset ?? 'today', timezone);
 }
 
 function resolveDateRange(
@@ -152,54 +195,4 @@ function resolveDateRange(
     return { from: yesterdayStart, to: todayStart };
   }
   return { from: addDays(todayStart, -6), to: addDays(todayStart, 1) };
-}
-
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * 86_400_000);
-}
-
-function zonedMidnightUtc(reference: Date, timeZone: string): Date {
-  const dateKey = formatDateKeyInTimeZone(reference, timeZone);
-  const guess = new Date(`${dateKey}T00:00:00.000Z`);
-
-  const wallClock = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  }).formatToParts(guess);
-  const get = (type: string): number =>
-    Number(wallClock.find((p) => p.type === type)?.value ?? '0');
-  const hour = get('hour');
-
-  const asUtc = Date.UTC(
-    get('year'),
-    get('month') - 1,
-    get('day'),
-    hour === 24 ? 0 : hour,
-    get('minute'),
-    get('second'),
-  );
-  const offsetMs = asUtc - guess.getTime();
-  return new Date(guess.getTime() - offsetMs);
-}
-
-function formatDateKeyInTimeZone(date: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date);
-  const year = parts.find((p) => p.type === 'year')?.value;
-  const month = parts.find((p) => p.type === 'month')?.value;
-  const day = parts.find((p) => p.type === 'day')?.value;
-  if (!year || !month || !day) {
-    throw new Error(`resolveDateRange: could not format a date key for timeZone=${timeZone}.`);
-  }
-  return `${year}-${month}-${day}`;
 }

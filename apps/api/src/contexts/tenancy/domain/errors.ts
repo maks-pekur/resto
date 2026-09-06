@@ -121,6 +121,22 @@ export class LocationAlreadyArchivedError extends Error {
   }
 }
 
+export class LocationHasOrdersError extends Error {
+  readonly kind = 'LocationHasOrdersError' as const;
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" has orders and cannot be deleted — archive it instead.`);
+    this.name = 'LocationHasOrdersError';
+  }
+}
+
+export class LocationNotArchivedError extends Error {
+  readonly kind = 'LocationNotArchivedError' as const;
+  constructor(public readonly locationId: string) {
+    super(`Location "${locationId}" is not archived, so it cannot be restored.`);
+    this.name = 'LocationNotArchivedError';
+  }
+}
+
 export class StripeOnboardingFailedError extends Error {
   constructor(
     public readonly tenantId: string,
@@ -197,5 +213,21 @@ export class LocationTableLimitReachedError extends Error {
   ) {
     super(`Location "${locationId}" has reached its active-table cap of ${cap}.`);
     this.name = 'LocationTableLimitReachedError';
+  }
+}
+
+export class DefaultLocaleNotSupportedError extends Error {
+  readonly kind = 'DefaultLocaleNotSupportedError' as const;
+  constructor(public readonly locale: string) {
+    super(`Default locale "${locale}" must be one of the tenant's content languages.`);
+    this.name = 'DefaultLocaleNotSupportedError';
+  }
+}
+
+export class BrandLogoNotOwnedError extends Error {
+  readonly kind = 'BrandLogoNotOwnedError' as const;
+  constructor(public readonly tenantId: string) {
+    super(`Logo key does not belong to tenant "${tenantId}".`);
+    this.name = 'BrandLogoNotOwnedError';
   }
 }

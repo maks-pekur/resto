@@ -6,14 +6,17 @@ const getHeader = vi.fn();
 vi.mock('next/headers', () => ({
   headers: () => Promise.resolve({ get: getHeader }),
 }));
-vi.mock('../lib/env', () => ({ apiOrigin: () => 'http://api.test' }));
+vi.mock('../lib/env', () => ({
+  apiOrigin: () => 'http://api.test',
+  internalApiOrigin: () => 'http://api.internal.test',
+}));
 
 import { fetchMenuPublic, TenantNotFoundError } from '../lib/api-client';
 
 afterEach(() => vi.restoreAllMocks());
 
 describe('fetchMenuPublic', () => {
-  it('forwards the incoming host as x-forwarded-host and sends no tenant header', async () => {
+  it('targets internalApiOrigin(), not the public apiOrigin(), and forwards the incoming host as x-forwarded-host (07.5-14)', async () => {
     getHeader.mockReturnValue('cafe-demo.lvh.me');
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -29,7 +32,7 @@ describe('fetchMenuPublic', () => {
       string,
       RequestInit & { headers: Record<string, string> },
     ];
-    expect(url).toBe('http://api.test/v1/menu');
+    expect(url).toBe('http://api.internal.test/v1/menu');
     expect(init.headers).toEqual({ 'x-forwarded-host': 'cafe-demo.lvh.me' });
     expect(init.headers['x-tenant-slug']).toBeUndefined();
   });

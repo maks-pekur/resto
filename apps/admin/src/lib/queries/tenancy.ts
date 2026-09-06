@@ -1,18 +1,30 @@
 import { apiFetch } from '@/lib/api-client';
 
+export interface TenantContacts {
+  readonly phone: string | null;
+  readonly email: string | null;
+  readonly website: string | null;
+}
+
 export interface TenantResponse {
   readonly id: string;
   readonly slug: string;
   readonly displayName: string;
   readonly status: string;
   readonly locale: string;
+  readonly contentLocales: readonly string[];
   readonly country: string;
   readonly defaultCurrency: string;
   readonly theme: {
     logoUrl: string | null;
+    coverUrls: readonly string[];
     primaryColor: string | null;
     font: string | null;
   } | null;
+  readonly description: Record<string, string> | null;
+  readonly socials: Readonly<Record<string, string>>;
+  readonly contacts: TenantContacts;
+  readonly legalDocuments: LegalDocuments | null;
   readonly legalName: string | null;
   readonly legalForm: 'IP' | 'OOO' | 'LLC' | 'SOLE_PROP' | 'OTHER' | null;
   readonly taxId: string | null;
@@ -57,6 +69,49 @@ export const tenantDomainsQuery = () => ({
   queryFn: () => apiFetch<TenantDomainItem[]>('/v1/tenants/me/domains'),
   staleTime: 30_000,
 });
+
+export const setContentLocales = async (input: {
+  defaultLocale: string;
+  contentLocales: readonly string[];
+}) =>
+  apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/locales', {
+    method: 'PATCH',
+    body: input,
+  });
+
+export type LegalDocuments = Readonly<
+  Record<
+    'about' | 'payment' | 'returns' | 'cookies' | 'terms' | 'privacy',
+    Record<string, string> | null
+  >
+>;
+
+export interface UpdateBrandBody {
+  readonly displayName?: string;
+  readonly description?: Record<string, string> | null;
+  readonly socials?: Record<string, string>;
+  readonly contacts?: TenantContacts;
+  readonly logoS3Key?: string | null;
+  readonly coverS3Keys?: readonly string[];
+  readonly legalDocuments?: LegalDocuments | null;
+}
+
+export const updateBrand = async (body: UpdateBrandBody) =>
+  apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/brand', {
+    method: 'PATCH',
+    body,
+  });
+
+export interface BrandLogoUploadUrl {
+  readonly uploadUrl: string;
+  readonly s3Key: string;
+}
+
+export const getBrandLogoUploadUrl = async (input: { contentType: string; sizeBytes: number }) =>
+  apiFetch<BrandLogoUploadUrl>('/v1/tenants/me/brand/logo-upload-url', {
+    method: 'POST',
+    body: input,
+  });
 
 export const scheduleOffboard = async (userId: string) =>
   apiFetch<TenantResponse | ProblemDetails>('/v1/tenants/me/offboard', {

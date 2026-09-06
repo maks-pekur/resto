@@ -302,8 +302,8 @@ describe('TenantsController E2E', () => {
       expect(Array.isArray(body)).toBe(true);
       expect(body.length).toBeGreaterThan(0);
 
-      // ProvisionTenantService creates a primary subdomain: <slug>.menu.resto.app
-      const expectedDomain = `${slug}.menu.resto.app`;
+      // ProvisionTenantService creates a primary subdomain: <slug>.<PUBLIC_APEX_DOMAIN>
+      const expectedDomain = `${slug}.resto.app`;
       const primary = body.find((d) => d.domain === expectedDomain);
       expect(primary).toBeDefined();
       expect(primary?.isPrimary).toBe(true);

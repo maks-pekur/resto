@@ -9,17 +9,11 @@ import {
 import { toMinorUnits, fromMinorUnits } from './money-utils';
 import { applyDiscount, type DiscountSpec } from './discount';
 
-export type OrderStatus =
-  | 'created'
-  | 'requires_action'
-  | 'paid'
-  | 'accepted'
-  | 'preparing'
-  | 'ready'
-  | 'completed'
-  | 'canceled'
-  | 'refunded'
-  | 'failed';
+/** How far the kitchen has taken the order. Money is `OrderPaymentStatus`'s business. */
+export type OrderStatus = 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled';
+
+/** Whether the money arrived, which a guest may settle before or after staff confirm the order. */
+export type OrderPaymentStatus = 'pending' | 'requires_action' | 'paid' | 'failed' | 'refunded';
 
 const CANCEL_REASON_CODES = [
   'guest_no_show',
@@ -36,13 +30,7 @@ function isCancelReasonCode(value: string): value is CancelReasonCode {
   return (CANCEL_REASON_CODES as readonly string[]).includes(value);
 }
 
-const CANCELABLE_STATUSES: readonly OrderStatus[] = [
-  'created',
-  'paid',
-  'accepted',
-  'preparing',
-  'ready',
-];
+const CANCELABLE_STATUSES: readonly OrderStatus[] = ['placed', 'accepted', 'preparing', 'ready'];
 
 export interface OrderModifierSnapshot {
   readonly optionId: string;
@@ -50,6 +38,7 @@ export interface OrderModifierSnapshot {
   readonly priceDelta: string;
   readonly amount: number;
   readonly modifierGroupId: string | null;
+  readonly kind: 'added' | 'excluded';
 }
 
 export interface OrderItemSnapshot {
@@ -71,7 +60,9 @@ export interface OrderSnapshot {
   readonly idempotencyKey: string;
   readonly orderNumber: string;
   readonly status: OrderStatus;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly paymentStatus: OrderPaymentStatus;
+  readonly paidAt: Date | null;
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier: string | null;
   readonly tableId: string | null;
   readonly tableZoneName: string | null;
@@ -89,6 +80,8 @@ export interface OrderSnapshot {
   readonly scheduledFor: Date | null;
   readonly shortNumber: number;
   readonly channel: 'site' | 'qr-menu';
+  /** How the guest means to pay; whether they have is the payments table's business. */
+  readonly paymentType: 'online' | 'cash' | 'card_on_delivery';
   readonly acceptedAt: Date | null;
   readonly preparingAt: Date | null;
   readonly readyAt: Date | null;
@@ -111,7 +104,7 @@ export interface CreateOrderInput {
   readonly locationId: string;
   readonly idempotencyKey: string;
   readonly orderNumber: string;
-  readonly fulfillmentMode: 'dine_in' | 'pickup' | 'delivery';
+  readonly orderType: 'dine_in' | 'pickup' | 'delivery';
   readonly tableIdentifier?: string | null;
   readonly tableId?: string | null;
   readonly tableZoneName?: string | null;
@@ -131,6 +124,7 @@ export interface CreateOrderInput {
       readonly amount: number;
       readonly freeAmount?: number;
       readonly modifierGroupId: string | null;
+      readonly kind: 'added' | 'excluded';
     }[];
     readonly quantity: number;
     readonly categoryId: string;
@@ -140,6 +134,7 @@ export interface CreateOrderInput {
   readonly scheduledFor?: Date | null;
   readonly shortNumber: number;
   readonly channel?: 'site' | 'qr-menu';
+  readonly paymentType?: 'online' | 'cash' | 'card_on_delivery';
   readonly marketingConsent?: boolean;
 }
 
@@ -176,6 +171,7 @@ function computeTotals(
         priceDelta: m.priceDelta,
         amount: m.amount,
         modifierGroupId: m.modifierGroupId,
+        kind: m.kind,
       })),
       quantity: item.quantity,
       lineTotal: fromMinorUnits(lineCostMinor),
@@ -221,8 +217,10 @@ export class Order {
       locationId: input.locationId,
       idempotencyKey: input.idempotencyKey,
       orderNumber: input.orderNumber,
-      status: 'created',
-      fulfillmentMode: input.fulfillmentMode,
+      status: 'placed',
+      paymentStatus: 'pending',
+      paidAt: null,
+      orderType: input.orderType,
       tableIdentifier: input.tableIdentifier ?? null,
       tableId: input.tableId ?? null,
       tableZoneName: input.tableZoneName ?? null,
@@ -240,6 +238,7 @@ export class Order {
       scheduledFor: input.scheduledFor ?? null,
       shortNumber: input.shortNumber,
       channel: input.channel ?? 'site',
+      paymentType: input.paymentType ?? 'online',
       acceptedAt: null,
       preparingAt: null,
       readyAt: null,
@@ -264,7 +263,7 @@ export class Order {
       tenantId: input.tenantId,
       locationId: input.locationId,
       orderNumber: input.orderNumber,
-      fulfillmentMode: input.fulfillmentMode,
+      orderType: input.orderType,
       totalMinorUnits: totalMinor,
       currency: input.currency,
       itemCount: itemSnapshots.length,
@@ -274,10 +273,12 @@ export class Order {
   }
 
   markPaid(paymentId: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'requires_action') {
+    // Money can arrive before staff confirm the order or long after: only a cancelled order
+    // refuses it, and where the kitchen has got to is none of this method's business.
+    if (this.snapshot.status === 'canceled') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'paid');
     }
-    this.snapshot = { ...this.snapshot, status: 'paid', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentStatus: 'paid', paidAt: now, updatedAt: now };
     this.#events.push({
       kind: 'OrderPaid',
       orderId: this.snapshot.id,
@@ -291,7 +292,7 @@ export class Order {
   }
 
   requireAction(paymentIntentId: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created') {
+    if (this.snapshot.paymentStatus !== 'pending') {
       throw new InvalidOrderTransitionError(
         this.snapshot.id,
         this.snapshot.status,
@@ -299,7 +300,7 @@ export class Order {
       );
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'requires_action', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentStatus: 'requires_action', updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,
@@ -314,7 +315,9 @@ export class Order {
   }
 
   accept(etaAt: Date | null, actorUserId: string | null, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'paid') {
+    // Confirmation is about the kitchen taking the order on, which a guest paying at the table
+    // does after this point, not before.
+    if (this.snapshot.status !== 'placed') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'accepted');
     }
     const previousStatus = this.snapshot.status;
@@ -438,7 +441,12 @@ export class Order {
         capturedMinor,
       );
     }
-    this.snapshot = { ...this.snapshot, updatedAt: now };
+    const fullyRefunded = amountMinor + alreadyRefundedMinor >= capturedMinor;
+    this.snapshot = {
+      ...this.snapshot,
+      ...(fullyRefunded ? { paymentStatus: 'refunded' as const, paidAt: null } : {}),
+      updatedAt: now,
+    };
     this.#events.push({
       kind: 'OrderRefunded',
       orderId: this.snapshot.id,
@@ -451,11 +459,11 @@ export class Order {
   }
 
   markFailed(reason: string, now: Date = new Date()): void {
-    if (this.snapshot.status !== 'created' && this.snapshot.status !== 'paid') {
+    if (this.snapshot.paymentStatus === 'refunded') {
       throw new InvalidOrderTransitionError(this.snapshot.id, this.snapshot.status, 'failed');
     }
     const previousStatus = this.snapshot.status;
-    this.snapshot = { ...this.snapshot, status: 'failed', updatedAt: now };
+    this.snapshot = { ...this.snapshot, paymentStatus: 'failed', paidAt: null, updatedAt: now };
     this.#events.push({
       kind: 'OrderStatusChanged',
       orderId: this.snapshot.id,

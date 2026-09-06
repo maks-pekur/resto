@@ -29,9 +29,12 @@ const buildItem = (): PublishedMenuItem => ({
   fats: null,
   carbs: null,
   kcal: null,
-  nutritionEstimated: false,
   sizes: [],
   modifierGroupIds: [],
+  extraOptionIds: [],
+  compositionMode: 'text',
+  composition: [],
+  compositionLines: [],
 });
 
 const buildRepo = (): CatalogRepository =>

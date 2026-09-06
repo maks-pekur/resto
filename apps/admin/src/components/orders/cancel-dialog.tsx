@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { showError, showSuccess } from '@/lib/ui/toast-helpers';
-import { formatMoney } from '@/lib/utils';
+import { useMoney } from '@/hooks/use-money';
 import { cancelOrderMutation } from '@/lib/queries/orders';
 import {
   ORDER_CANCEL_REASON_CODES,
@@ -44,10 +44,11 @@ export interface CancelDialogProps {
 
 export function CancelDialog({ order, onCanceled }: CancelDialogProps): React.ReactElement {
   const { t } = useTranslation('translation', { keyPrefix: 'orders' });
+  const money = useMoney();
   const queryClient = useQueryClient();
   const [open, setOpen] = React.useState(false);
   const [reasonCode, setReasonCode] = React.useState<OrderCancelReasonCode | ''>('');
-  const amount = formatMoney(order.total, order.currency);
+  const amount = money(order.total, order.currency);
 
   const mutation = useMutation({
     mutationFn: (selectedReasonCode: OrderCancelReasonCode) =>

@@ -112,3 +112,36 @@ BEGIN
   END IF;
 END
 $$;
+
+-- Migration 0019 grants DELETE on the ingredient-library link tables so
+-- membership can be written delete-then-reinsert. Restating it here keeps
+-- the end state convergent on fresh setups regardless of order.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'menu_modifier_group_options') THEN
+    EXECUTE 'GRANT DELETE ON menu_modifier_group_options TO resto_app';
+  END IF;
+END
+$$;
+
+-- Migration 0019 grants DELETE on the ingredient-library link tables so
+-- membership can be written delete-then-reinsert. Restating it here keeps
+-- the end state convergent on fresh setups regardless of order.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'menu_item_modifier_options') THEN
+    EXECUTE 'GRANT DELETE ON menu_item_modifier_options TO resto_app';
+  END IF;
+END
+$$;
+
+-- Migration 0019 grants DELETE on menu_option_stop_list so unstop can delete
+-- the stop row (the menu_stop_list precedent). Restating it here keeps the
+-- end state convergent on fresh setups regardless of order.
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_tables WHERE schemaname = 'public' AND tablename = 'menu_option_stop_list') THEN
+    EXECUTE 'GRANT DELETE ON menu_option_stop_list TO resto_app';
+  END IF;
+END
+$$;

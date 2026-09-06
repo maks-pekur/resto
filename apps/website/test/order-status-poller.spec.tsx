@@ -11,29 +11,32 @@ import { getOrderStatus } from '@/lib/checkout-api';
 const mockGetOrderStatus = vi.mocked(getOrderStatus);
 
 const base: OrderStatusResponse = {
-  status: 'requires_action',
+  status: 'placed',
+  paymentStatus: 'requires_action',
   shortNumber: 12,
   orderNumber: '20260627-ABC',
   total: '12.00',
   currency: 'USD',
   etaAt: null,
-  fulfillmentMode: 'pickup',
+  orderType: 'pickup',
   cancelReason: null,
   canceledFromStatus: null,
 };
 
-const paid: OrderStatusResponse = { ...base, status: 'paid' };
+const paid: OrderStatusResponse = { ...base, status: 'placed', paymentStatus: 'paid' };
 const accepted: OrderStatusResponse = {
   ...base,
+  paymentStatus: 'paid',
   status: 'accepted',
   etaAt: '2026-06-27T18:30:00Z',
 };
-const completed: OrderStatusResponse = { ...base, status: 'completed' };
-const failed: OrderStatusResponse = { ...base, status: 'failed' };
+const completed: OrderStatusResponse = { ...base, paymentStatus: 'paid', status: 'completed' };
+const failed: OrderStatusResponse = { ...base, paymentStatus: 'failed' };
 const declined: OrderStatusResponse = {
   ...base,
+  paymentStatus: 'paid',
   status: 'canceled',
-  canceledFromStatus: 'paid',
+  canceledFromStatus: 'placed',
   cancelReason: 'kitchen_out_of_stock',
 };
 const canceledAfterAccept: OrderStatusResponse = {
@@ -85,7 +88,7 @@ describe('OrderStatusPoller', () => {
     expect(screen.getByText('status.etaLabel')).toBeDefined();
   });
 
-  it.each([completed, { ...base, status: 'canceled' }, { ...base, status: 'failed' }])(
+  it.each([completed, { ...base, paymentStatus: 'paid', status: 'canceled' }, failed])(
     'does not poll when initialStatus %o is already terminal',
     (terminalStatus) => {
       render(<OrderStatusPoller orderId="order-123" initialStatus={terminalStatus} />);

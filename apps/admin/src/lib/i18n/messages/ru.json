@@ -22,7 +22,12 @@
     "notFound": "Не найдено.",
     "forbiddenTitle": "У вас нет доступа к этой странице.",
     "forbiddenBody": "В вашей роли нет права, которое нужно этой странице. Попросите владельца его выдать.",
-    "backToDashboard": "Вернуться на дашборд"
+    "backToDashboard": "Вернуться на дашборд",
+    "archive": "Архивировать",
+    "localizedField": {
+      "translatedCount": "Переведено {{done}} из {{total}}",
+      "primaryMark": "★"
+    }
   },
   "auth": {
     "signInTitle": "Вход в Resto",
@@ -59,12 +64,10 @@
     "settings": "Настройки",
     "payments": "Платежи",
     "orders": "Заказы",
+    "tables": "Залы и столы",
+    "themeLabel": "Тема",
     "user": {
       "accountItem": "Аккаунт",
-      "themeLabel": "Тема",
-      "themeLight": "Светлая",
-      "themeDark": "Тёмная",
-      "themeSystem": "Системная",
       "logout": "Выйти",
       "languageLabel": "Язык",
       "localeRu": "Русский",
@@ -72,8 +75,7 @@
       "switchTenantItem": "Сменить ресторан",
       "localeEs": "Español"
     },
-    "groupOperations": "Работа",
-    "groupAdministration": "Администрирование"
+    "transactions": "Транзакции"
   },
   "pickTenant": {
     "title": "Выберите ресторан",
@@ -136,7 +138,6 @@
       "allergens": "Аллергены",
       "allergensPlaceholder": "Молоко, орехи, глютен",
       "nutritionTitle": "Питание на 100 г",
-      "nutritionAiBadge": "AI-оценка",
       "nutritionPer100g": "на 100 г",
       "nutritionProteinsShort": "Б",
       "nutritionFatsShort": "Ж",
@@ -169,9 +170,13 @@
       "priceSectionHint": "Размеры сохраняются отдельно",
       "compositionSectionTitle": "Состав",
       "compositionSectionHint": "Группы модификаторов сохраняются автоматически",
-      "ingredientsLabel": "Ингредиенты",
-      "ingredientsPlaceholder": "Курица, помидоры, соус терияки",
-      "ingredientsHint": "Через запятую. Отображается в карточке блюда.",
+      "compositionModeText": "Текстом",
+      "compositionModeAssembled": "Из модификаторов",
+      "compositionTextPlaceholder": "Курица, помидоры, соус терияки",
+      "compositionTextHint": "Через запятую. Отображается в карточке блюда.",
+      "compositionAddLineBtn": "+ Добавить модификатор",
+      "compositionRemovableLabel": "Можно убрать",
+      "compositionRemoveLineAriaLabel": "Убрать «{{name}}» из состава",
       "seoSectionTitle": "SEO",
       "seoSectionHint": "Влияет на выдачу поисковика",
       "metaTitleLabel": "Meta title",
@@ -182,7 +187,36 @@
       "statusReadonlyHint": "Управляется из списка блюд.",
       "techInfoSectionTitle": "Тех. информация",
       "slugLabel": "Slug",
-      "newItemTitle": "Новое блюдо"
+      "newItemTitle": "Новое блюдо",
+      "nameRequired": "Заполните название на основном языке",
+      "dietary": "Питание и аллергены",
+      "diets": "Особенности",
+      "dietsHint": "Показываются гостю метками и работают фильтрами в меню",
+      "allergensHint": "Список из регламента ЕС 1169/2011 — гость видит их в карточке блюда",
+      "diet": {
+        "vegetarian": "Вегетарианское",
+        "vegan": "Веганское",
+        "gluten_free": "Без глютена",
+        "lactose_free": "Без лактозы",
+        "spicy": "Острое",
+        "halal": "Халяль"
+      },
+      "allergen": {
+        "gluten": "глютен",
+        "crustaceans": "ракообразные",
+        "eggs": "яйца",
+        "fish": "рыба",
+        "peanuts": "арахис",
+        "soy": "соя",
+        "milk": "молоко",
+        "nuts": "орехи",
+        "celery": "сельдерей",
+        "mustard": "горчица",
+        "sesame": "кунжут",
+        "sulphites": "сульфиты",
+        "lupin": "люпин",
+        "molluscs": "моллюски"
+      }
     },
     "sizes": {
       "title": "Размеры",
@@ -203,29 +237,47 @@
       "validateSize": "Проверьте поля размера."
     },
     "modifiers": {
-      "newItemHint": "Сначала сохраните блюдо — модификаторы можно прикрепить после первой записи.",
-      "cardTitle": "Группы модификаторов",
-      "cardDescription": "Прикрепите группы из библиотеки или создайте новую — варианты можно отредактировать в самой группе.",
-      "emptyHint": "Нет прикреплённых групп — нажмите «+ Добавить группу».",
-      "chipRemoveAriaLabel": "Убрать группу {{name}}",
-      "addGroupBtn": "+ Добавить группу",
-      "sheetTitle": "Добавить группу модификаторов",
-      "searchPlaceholder": "Поиск",
-      "sheetEmpty": "Ничего не найдено.",
-      "optionCount": "{{count}} вариантов",
-      "addToItem": "+ Добавить",
-      "alreadyAdded": "Добавлено",
-      "createNewLink": "+ Создать новую группу",
-      "createDialogTitle": "Создать группу модификаторов",
-      "createDialogDescription": "Эта группа сразу появится в библиотеке и будет доступна для прикрепления.",
+      "tabModifiers": "Модификаторы",
+      "tabGroups": "Группы",
+      "emptyTitle": "Пока нет модификаторов",
+      "emptyDescription": "Добавьте первый — он появится здесь и будет доступен для любой группы или блюда.",
+      "addBtn": "+ Добавить модификатор",
+      "editorTitleNew": "Новый модификатор",
+      "editorTitleEdit": "Модификатор",
+      "createBtn": "Создать модификатор",
+      "saveBtn": "Сохранить изменения",
       "nameLabel": "Название",
-      "minLabel": "Мин",
-      "maxLabel": "Макс",
-      "nameRequired": "Введите название группы.",
-      "createFailed": "Не удалось создать группу.",
-      "updateFailed": "Не удалось обновить модификаторы.",
-      "validateGroup": "Проверьте поля группы.",
-      "validateOption": "Проверьте поля варианта."
+      "descriptionLabel": "Описание",
+      "descriptionPlaceholder": "Короткая строка под фото",
+      "priceLabel": "Цена",
+      "saveFailed": "Не удалось сохранить модификатор.",
+      "archiveBtn": "Архивировать",
+      "archiveDialogTitle": "Архивировать модификатор?",
+      "archiveDialogDescription": "«{{name}}» будет скрыт из меню и удалён из {{groupCount}} групп и {{dishCount}} блюд. Действие обратимо — снимите архивацию в фильтре.",
+      "usedInGroups": "Группы: {{names}}",
+      "usedInDishes": "Блюда: {{names}}",
+      "tableNameHeader": "Название",
+      "tablePriceHeader": "Цена",
+      "tableGroupsHeader": "Группы",
+      "tableDishesHeader": "Блюда",
+      "rowOpenAriaLabel": "Открыть модификатор {{name}}"
+    },
+    "groups": {
+      "displayLabel": "Отображение",
+      "displayTiles": "Плитками",
+      "displayTabs": "Вкладками",
+      "behaviourLabel": "Выбор",
+      "behaviourOne": "Один вариант",
+      "behaviourSeveral": "Несколько",
+      "requiredLabel": "Обязательная группа",
+      "maxSelectableLabel": "Не больше, чем",
+      "maxSelectablePlaceholder": "без ограничений"
+    },
+    "itemModifiers": {
+      "groupsRowLabel": "Группы",
+      "singlesRowLabel": "Отдельные модификаторы",
+      "addSingleBtn": "+ Модификатор",
+      "duplicateError": "«{{name}}» уже добавлен через «{{groupName}}»."
     },
     "categories": {
       "addCategory": "+ Добавить категорию",
@@ -255,7 +307,8 @@
       "archiveFailed": "Не удалось архивировать категорию.",
       "pageTitle": "Категории",
       "nameRequired": "Введите название",
-      "reorderFailed": "Не удалось изменить порядок"
+      "reorderFailed": "Не удалось изменить порядок",
+      "rowActionsAriaLabel": "Действия для «{{name}}»"
     },
     "modifierGroups": {
       "createGroup": "+ Создать группу",
@@ -294,7 +347,8 @@
       "pageTitle": "Группы модификаторов",
       "addGroup": "+ Создать группу",
       "newGroupTitle": "Новая группа",
-      "tableStatus": "Статус"
+      "tableStatus": "Статус",
+      "defaultAriaLabel": "Выбрать по умолчанию:"
     },
     "stopList": {
       "title": "Стоп-лист пуст",
@@ -321,7 +375,13 @@
       "aggregateReadOnlyHint": "Показаны все точки. Выберите точку, чтобы остановить или возобновить позиции.",
       "aggregateBadge": "{{count}}/{{total}} точек",
       "aggregateBadgeAria": "Остановлено в {{count}} из {{total}} точек",
-      "aggregateTruncatedNote": "Показаны первые {{shown}} из {{total}} остановленных позиций"
+      "aggregateTruncatedNote": "Показаны первые {{shown}} из {{total}} остановленных позиций",
+      "modifiersHeading": "Модификаторы",
+      "stopModifierDialogTitle": "Есть блюда с этим модификатором",
+      "stopModifierDialogBody": "Отметьте блюда, которые тоже стоит остановить, чтобы гость не заказал то, что нельзя собрать.",
+      "stopSelectedDishesBtn": "Остановить отмеченное",
+      "stopModifierOnlyBtn": "Только модификатор",
+      "stopAriaLabel": "Остановить {{name}}"
     },
     "status": {
       "draft": "Черновик",
@@ -355,33 +415,10 @@
   },
   "orders": {
     "feed": {
-      "groupWaiting": "Ждут",
-      "groupInProgress": "В работе",
-      "groupDone": "Завершены",
       "live": "В сети",
       "reconnecting": "Переподключение…",
       "staleNotice": "Не удалось обновить список — показаны данные на {{time}}",
-      "staleRetry": "Обновить",
-      "refundBanner_one": "{{count}} возврат не прошёл — требуется действие",
-      "refundBanner_few": "{{count}} возврата не прошли — требуется действие",
-      "refundBanner_many": "{{count}} возвратов не прошли — требуется действие",
-      "refundBanner_other": "{{count}} возвратов не прошли — требуется действие",
-      "refundBannerAction": "Показать"
-    },
-    "filters": {
-      "statusLabel": "Статус",
-      "statusActive": "Активные",
-      "statusAllToday": "Все за сегодня",
-      "statusCompleted": "Завершены",
-      "statusCanceled": "Отменены",
-      "statusRefundFailed": "Возврат не прошёл",
-      "dateLabel": "Дата",
-      "dateToday": "Сегодня",
-      "dateYesterday": "Вчера",
-      "dateWeek": "7 дней",
-      "channelLabel": "Канал",
-      "channelSiteOnly": "Сайт",
-      "channelHint": "Появятся другие каналы, когда подключим QR-меню"
+      "staleRetry": "Обновить"
     },
     "card": {
       "newBadge": "Новый",
@@ -404,10 +441,18 @@
       "itemCount_few": "{{count}} товара",
       "itemCount_many": "{{count}} товаров",
       "itemCount_other": "{{count}} товаров",
-      "fulfillmentDineIn": "В зале",
-      "fulfillmentPickup": "Самовывоз",
-      "fulfillmentDelivery": "Доставка",
-      "statusUpdateFailed": "Не удалось обновить статус заказа."
+      "orderTypeDineIn": "В зале",
+      "orderTypePickup": "Самовывоз",
+      "orderTypeDelivery": "Доставка",
+      "tableLabel": "{{zone}} · стол {{number}}",
+      "statusUpdateFailed": "Не удалось обновить статус заказа.",
+      "remainingAria": "Осталось: {{duration}}",
+      "overdueByAria": "Опоздание: {{duration}}",
+      "unitMinutes": "м",
+      "unitHours": "ч",
+      "unitDays": "д",
+      "noCustomer": "Без имени",
+      "etaUnknownAria": "Время отдачи назначается при подтверждении"
     },
     "accept": {
       "title": "Через сколько будет готово?",
@@ -464,7 +509,8 @@
       "totalsSubtotal": "Сумма",
       "totalsService": "Сервисный сбор",
       "totalsDiscount": "Скидка",
-      "totalsTotal": "Итого"
+      "totalsTotal": "Итого",
+      "excludedLabel": "Без"
     },
     "refund": {
       "title": "Возврат",
@@ -479,31 +525,79 @@
       "failedBanner": "Возврат {{amount}} не прошёл"
     },
     "alerts": {
-      "enableSoundTitle": "Включите звук уведомлений",
-      "enableSoundBody": "Чтобы не пропустить новый заказ, разрешите звук в этой вкладке.",
-      "enableSoundBtn": "Включить звук",
       "soundBlockedHint": "Звук может не работать в этом браузере.",
       "muteToggleLabel": "Звук",
       "muteOnAria": "Звук включён",
-      "muteOffAria": "Звук выключен"
+      "muteOffAria": "Звук выключен",
+      "enableAlertsTitle": "Включите оповещения о заказах",
+      "enableAlertsBody": "Звук и уведомления браузера — чтобы не пропустить заказ, даже когда вкладка свёрнута.",
+      "enableAlertsBtn": "Разрешить",
+      "alertsBlockedHint": "Уведомления отключены в настройках браузера.",
+      "newOrderTitle": "Новый заказ №{{number}}",
+      "newOrderBody": "{{total}} · {{mode}}",
+      "muteOnHint": "Звук нового заказа включён — нажмите, чтобы выключить",
+      "muteOffHint": "Звук нового заказа выключен — нажмите, чтобы включить"
     },
     "empty": {
-      "activationTitle": "Здесь появятся ваши первые заказы",
-      "activationBody": "Поделитесь ссылкой на заказ, и всё, что оплатят гости, появится здесь.",
-      "checklistPayments": "Приём платежей подключен",
-      "checklistMenu": "Меню опубликовано",
-      "checklistLocation": "Точка открыта",
-      "copyLinkBtn": "Скопировать ссылку",
-      "linkCopiedToast": "Ссылка скопирована",
-      "noDomainHint": "Домен для гостевых заказов ещё не настроен.",
-      "filteredTitle": "Ничего не найдено",
-      "filteredBody": "Измените фильтры или проверьте другую дату.",
       "pickLocationTitle": "Выберите точку",
-      "pickLocationBody": "Лента заказов показывает одну точку за раз. Выберите её в переключателе сверху."
+      "pickLocationBody": "Лента заказов показывает одну точку за раз. Выберите её в переключателе сверху.",
+      "noOrders": "Пока нет заказов"
     },
     "error": {
       "initialLoadTitle": "Не удалось загрузить заказы",
       "initialLoadBody": "Проверьте соединение и попробуйте снова."
+    },
+    "tabs": {
+      "all": "Все заказы",
+      "dine_in": "В зале",
+      "delivery": "Доставка",
+      "pickup": "Самовывоз",
+      "unaccepted": "Неподтверждённые",
+      "accepted": "Новые",
+      "preparing": "Готовятся",
+      "ready": "Готовы",
+      "completed": "Закрытые",
+      "canceled": "Отменённые",
+      "refundFailed": "Возврат не прошёл"
+    },
+    "dateNav": {
+      "today": "Сегодня",
+      "tomorrow": "Завтра",
+      "yesterday": "Вчера",
+      "previous": "Предыдущий день",
+      "next": "Следующий день"
+    },
+    "payment": {
+      "online": "Онлайн",
+      "cash": "Наличные",
+      "card_on_delivery": "Картой курьеру",
+      "refunded": "Возврат",
+      "unpaid": "Не оплачен"
+    },
+    "channel": {
+      "site": "Сайт",
+      "qrMenu": "QR-меню",
+      "unknown": "Другой",
+      "glovo": "Glovo",
+      "uberEats": "Uber Eats",
+      "bolt": "Bolt Food",
+      "wolt": "Wolt"
+    },
+    "columns": {
+      "order": "Заказ",
+      "remaining": "Время",
+      "placed": "Создан",
+      "type": "Тип",
+      "for": "Для",
+      "total": "Сумма"
+    },
+    "review": {
+      "rating": "Оценка гостя: {{rating}} из 5"
+    },
+    "service": {
+      "waiter": "Зал {{zone}}, стол {{number}} — зовут официанта",
+      "bill": "Зал {{zone}}, стол {{number}} — просят счёт",
+      "done": "Готово"
     }
   },
   "dashboard": {
@@ -520,7 +614,103 @@
     "editItemTitle": "Редактирование блюда",
     "newItemTitle": "Новое блюдо",
     "editGroupTitle": "Редактирование группы модификаторов",
-    "newGroupTitle": "Новая группа модификаторов"
+    "newGroupTitle": "Новая группа модификаторов",
+    "kpiRevenue": "Выручка",
+    "kpiOrders": "Выполненные заказы",
+    "kpiNewGuests": "Новые гости",
+    "kpiRefunds": "Возвраты",
+    "kpiPrevious": "{{value}} за предыдущий период",
+    "kpiNoBaseline": "нет данных за прошлый период",
+    "noReportsTitle": "Показатели недоступны",
+    "noReportsDescription": "Цифры по выручке и заказам видят владелец и администратор.",
+    "kpiVsPrevious": "к предыдущему периоду",
+    "filterLocationLabel": "Точка",
+    "filterLocationAll": "Все точки",
+    "range": {
+      "today": "Сегодня",
+      "yesterday": "Вчера",
+      "last7": "Последние 7 дней",
+      "last28": "Последние 28 дней",
+      "thisMonth": "Этот месяц",
+      "lastMonth": "Прошлый месяц"
+    }
+  },
+  "tables": {
+    "pageTitle": "Залы и столы",
+    "emptyTitle": "Пока нет зон",
+    "emptyDescription": "Создайте зону, чтобы начать печатать QR-коды столов зала.",
+    "createZoneBtn": "Новая зона",
+    "createZoneDialogTitle": "Новая зона",
+    "zoneNameLabel": "Название зоны",
+    "tableCountLabel": "Количество столов",
+    "tableCountHint": "Введите число от 0 до {{max}}.",
+    "createZoneSubmit": "Создать зону",
+    "createZoneSuccess": "Зона создана.",
+    "cancelAction": "Отмена",
+    "addTablesAction": "Добавить столы",
+    "addTablesDialogTitle": "Добавить столы",
+    "addTablesCountLabel": "Сколько столов добавить",
+    "addTablesSubmit": "Добавить",
+    "addTablesSuccess": "Столы добавлены.",
+    "renameZoneSubmit": "Сохранить",
+    "renameZoneSuccess": "Зона переименована.",
+    "archiveZoneAction": "Архивировать зону",
+    "archiveZoneConfirmTitle": "Архивировать эту зону?",
+    "archiveZoneConfirmDescription": "Это также архивирует {{count}} стол(ов) в этой зоне. Действие необратимо.",
+    "archiveZoneConfirm": "Архивировать зону",
+    "archiveZoneSuccess": "Зона архивирована.",
+    "renameTableAction": "Переименовать",
+    "renameTableDialogTitle": "Переименовать стол",
+    "renameTableLabel": "Номер стола",
+    "renameTableSubmit": "Сохранить",
+    "renameTableSuccess": "Стол переименован.",
+    "archiveTableAction": "Архивировать",
+    "archiveTableConfirmTitle": "Архивировать этот стол?",
+    "archiveTableConfirmDescription": "Действие необратимо.",
+    "archiveTableConfirm": "Архивировать",
+    "archiveTableSuccess": "Стол архивирован.",
+    "printAction": "Печать листа",
+    "printOrderingLine": "Коды печатаются в порядке столов, слева направо и сверху вниз, одна зона на лист.",
+    "printVerifyLine": "Проверить наклейку можно, отсканировав её любым телефоном и посмотрев, какой стол она называет.",
+    "downloadAction": "Скачать QR",
+    "tableNumberHeader": "Стол",
+    "tableStatusHeader": "Статус",
+    "tableActionsHeader": "Действия",
+    "statusActive": "Активен",
+    "statusArchived": "В архиве",
+    "errors": {
+      "tableBulkLimitExceeded": "За один запрос можно создать не более {{max}} столов — разбейте на партии поменьше.",
+      "locationTableLimitReached": "Эта точка достигла лимита в {{max}} активных столов.",
+      "tableNumberTaken": "Номер стола «{{number}}» уже используется в этой зоне.",
+      "tableZoneNotFound": "Зона не найдена. Возможно, она была архивирована.",
+      "tableNotFound": "Стол не найден. Возможно, он уже архивирован.",
+      "tableZoneAlreadyArchived": "Эта зона уже архивирована.",
+      "tableAlreadyArchived": "Этот стол уже архивирован.",
+      "generic": "Что-то пошло не так. Попробуйте ещё раз."
+    },
+    "backToZones": "К списку зон",
+    "editZoneAction": "Редактировать зону",
+    "zoneNotFoundTitle": "Зона не найдена",
+    "zoneNotFoundDescription": "Возможно, её архивировали или ссылка устарела.",
+    "tableCountAria": "Столов в зоне",
+    "zoneNameDescription": "Гость увидит это название в заказе — «Терраса», «Второй этаж».",
+    "tableCountDescription": "Столы создаются внутри зоны. Позже их можно добавить или переименовать.",
+    "form": {
+      "createTitle": "Новая зона",
+      "createDescription": "Зона — это часть зала: терраса, второй этаж, летняя площадка. Столы заводятся внутри неё.",
+      "editTitle": "Настройки зоны",
+      "editDescription": "Название видит гость в заказе и оператор в ленте.",
+      "summaryTitle": "Проверьте форму:",
+      "nameRequired": "Введите название зоны.",
+      "nameTooLong": "Название длиннее 60 символов.",
+      "countInvalid": "Укажите целое число столов, начиная с нуля.",
+      "countTooMany": "За один раз можно создать не больше 200 столов.",
+      "save": "Сохранить",
+      "create": "Создать зону",
+      "saving": "Сохраняем…"
+    },
+    "zoneStatusHeader": "Статус",
+    "rowActionsAriaLabel": "Действия для «{{name}}»"
   },
   "format": {
     "ago": "{{n}}{{unit}} назад",
@@ -528,5 +718,182 @@
     "minutesShort": "м",
     "hoursShort": "ч",
     "daysShort": "д"
+  },
+  "transactions": {
+    "title": "Транзакции",
+    "tabs": {
+      "all": "Все",
+      "paid": "Оплаченные",
+      "refunded": "С возвратом",
+      "refund_failed": "Возврат не прошёл"
+    },
+    "status": {
+      "paid": "Оплачен",
+      "refunded": "Возврат оформлен",
+      "failed": "Возврат не прошёл — нужно действие"
+    },
+    "columnDate": "Дата",
+    "columnOrder": "Заказ",
+    "columnAmount": "Сумма",
+    "columnRefunded": "Возврат",
+    "columnStatus": "Статус",
+    "orderNumber": "№{{n}}",
+    "retryBtn": "Повторить возврат",
+    "retrySucceeded": "Возврат отправлен повторно",
+    "retryFailed": "Не удалось повторить возврат.",
+    "empty": "За выбранный период транзакций нет",
+    "failedBadgeAria": "Возвратов, требующих действия: {{count}}",
+    "columnActions": "Действия",
+    "rowActionsAriaLabel": "Действия по заказу №{{n}}"
+  },
+  "settings": {
+    "contentLocales": {
+      "title": "Языки меню",
+      "description": "На каких языках гости видят меню на сайте и в QR-меню.",
+      "fallbackHint": "Если перевод блюда не заполнен, гость увидит его на основном языке.",
+      "save": "Сохранить",
+      "saving": "Сохраняем…",
+      "reset": "Отменить",
+      "saved": "Языки меню обновлены",
+      "saveFailed": "Не удалось сохранить языки меню",
+      "languagesLabel": "Языки меню",
+      "languagesPlaceholder": "Выберите языки",
+      "primaryLabel": "Основной язык"
+    },
+    "pageTitle": "Настройки",
+    "brand": {
+      "profileTitle": "Профиль ресторана",
+      "profileDescription": "Как ресторан выглядит для гостя — на сайте, в QR-меню и в письмах.",
+      "logoChoose": "Загрузить логотип",
+      "logoUploading": "Загружаем…",
+      "logoRemove": "Убрать",
+      "logoHint": "PNG, JPG, WebP или SVG, до 2 МБ. Квадратное изображение выглядит лучше всего.",
+      "logoRejected": "Такой файл не подойдёт: только PNG, JPG, WebP или SVG до 2 МБ.",
+      "logoUploadFailed": "Не удалось загрузить логотип",
+      "nameLabel": "Название",
+      "nameHint": "Гость видит его в шапке сайта и меню.",
+      "nameRequired": "Введите название",
+      "nameTooLong": "Слишком длинное название",
+      "descriptionLabel": "Описание",
+      "descriptionHint": "Пара предложений о ресторане — выводится в футере.",
+      "descriptionTooLong": "Слишком длинное описание",
+      "contactsTitle": "Контакты",
+      "contactsDescription": "Публичные контакты ресторана, а не отдельной локации.",
+      "phoneLabel": "Телефон",
+      "phoneInvalid": "Похоже, это не телефон",
+      "emailLabel": "Email",
+      "emailInvalid": "Похоже, это не email",
+      "websiteLabel": "Сайт",
+      "urlInvalid": "Похоже, это не ссылка",
+      "socialsTitle": "Соцсети",
+      "socialsDescription": "Ссылки на профили ресторана — гость видит их в футере.",
+      "save": "Сохранить",
+      "saving": "Сохраняем…",
+      "reset": "Отменить",
+      "saved": "Настройки бренда сохранены",
+      "saveFailed": "Не удалось сохранить настройки бренда",
+      "socialsEmpty": "Пока ни одной ссылки.",
+      "socialAdd": "Добавить соцсеть",
+      "socialRemove": "Убрать {{name}}",
+      "coverTitle": "Фото заведения",
+      "coverDescription": "Гость листает их в информации о ресторане. Первое — главное.",
+      "coverRejected": "Подойдут JPG, PNG или WebP до 2 МБ",
+      "coverUploadFailed": "Не удалось загрузить",
+      "coverUploading": "Загружаем…",
+      "coverChoose": "Выбрать фото",
+      "coverRemove": "Удалить",
+      "coverHint": "Горизонтальные снимки, до {{max}} штук, каждый до 2 МБ",
+      "coverTooMany": "Не больше {{max}} фотографий",
+      "coverPrimary": "Главное"
+    },
+    "pageDescription": "Профиль ресторана, языки, домены и оплата.",
+    "navLabel": "Разделы настроек",
+    "tabGeneral": "Основные",
+    "tabLanguages": "Языки",
+    "tabDomains": "Домены",
+    "domains": {
+      "title": "Домены",
+      "description": "Адреса, по которым гость открывает сайт и меню.",
+      "empty": "Свой домен пока не подключён.",
+      "columnDomain": "Домен",
+      "columnKind": "Тип",
+      "columnStatus": "Подтверждён",
+      "primary": "основной",
+      "pending": "ожидает"
+    },
+    "tabIntegrations": "Интеграции",
+    "tabApps": "Приложения",
+    "apps": {
+      "title": "Приложения",
+      "description": "Поверхности, через которые вас видит гость.",
+      "live": "работает",
+      "open": "Открыть",
+      "qr-menu": {
+        "name": "QR-меню",
+        "description": "Меню за столом: гость сканирует код и заказывает."
+      },
+      "website": {
+        "name": "Сайт",
+        "description": "Публичная страница ресторана с меню и заказом навынос."
+      },
+      "settingsLink": {
+        "languages": "Языки",
+        "domains": "Домены"
+      }
+    },
+    "tabLegal": "Документы",
+    "legal": {
+      "title": "Документы и информация",
+      "description": "Тексты, которые гость видит в меню. Пустые разделы не показываются.",
+      "save": "Сохранить",
+      "saving": "Сохраняем…",
+      "saved": "Сохранено",
+      "saveFailed": "Не удалось сохранить",
+      "doc": {
+        "about": "О компании",
+        "payment": "Способы оплаты",
+        "returns": "Возврат и обмен",
+        "cookies": "Файлы cookie",
+        "terms": "Условия пользования",
+        "privacy": "Политика конфиденциальности"
+      },
+      "hint": {
+        "about": "Юридическое название, регистрация, адрес, налоговый номер",
+        "payment": "Какие карты и способы принимаете, когда списываются деньги",
+        "returns": "В каких случаях возвращаете деньги за заказ и как это сделать",
+        "cookies": "Какие cookie ставите и зачем",
+        "terms": "Правила пользования меню и заказа",
+        "privacy": "Какие данные собираете и как их храните"
+      }
+    }
+  },
+  "account": {
+    "pageTitle": "Аккаунт",
+    "pageDescription": "Ваш вход в панель — он не зависит от настроек ресторана.",
+    "identityTitle": "Учётная запись",
+    "identityDescription": "Под этой почтой вы входите в панель.",
+    "emailLabel": "Почта",
+    "roleLabel": "Роль"
+  },
+  "locations": {
+    "hours": {
+      "title": "Часы работы",
+      "description": "Гость видит их в информации и понимает, открыты ли вы сейчас.",
+      "closed": "выходной",
+      "weekday": {
+        "mon": "Понедельник",
+        "tue": "Вторник",
+        "wed": "Среда",
+        "thu": "Четверг",
+        "fri": "Пятница",
+        "sat": "Суббота",
+        "sun": "Воскресенье"
+      }
+    },
+    "wifiTitle": "Wi-Fi для гостей",
+    "wifiDescription": "Показываем сеть и пароль в меню, чтобы не спрашивали официанта.",
+    "ssidLabel": "Название сети",
+    "ssidHint": "Оставьте пустым, чтобы не показывать Wi-Fi",
+    "passwordLabel": "Пароль"
   }
 }
