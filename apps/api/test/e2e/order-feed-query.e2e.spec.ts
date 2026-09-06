@@ -78,7 +78,8 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
   const seedOrder = async (opts: {
     tenantIdOverride?: string;
     locationId: string;
-    status: string;
+    status: 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled';
+    paid?: boolean;
     channel?: 'site' | 'qr-menu';
     orderType?: 'dine_in' | 'pickup' | 'delivery';
     acceptedAt?: Date;
@@ -94,6 +95,7 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         idempotencyKey: randomUUID(),
         orderNumber: `ORD-FEED-${orderId.slice(0, 8)}`,
         status: opts.status,
+        ...(opts.paid === true ? { paymentStatus: 'paid' as const, paidAt: opts.createdAt } : {}),
         orderType: opts.orderType ?? 'dine_in',
         acceptedAt: opts.acceptedAt ?? null,
         etaAt: opts.etaAt ?? null,
@@ -160,12 +162,14 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const now = new Date();
     const waitingId = await seedOrder({
       locationId: locationBId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       createdAt: now,
     });
     const takenId = await seedOrder({
       locationId: locationBId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       acceptedAt: now,
       createdAt: now,
     });
@@ -238,14 +242,20 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
         slug: `counts-${location.slice(0, 8)}`,
       }),
     );
-    await seedOrder({ locationId: location, status: 'paid', createdAt: now });
-    await seedOrder({ locationId: location, status: 'paid', acceptedAt: now, createdAt: now });
+    await seedOrder({ locationId: location, status: 'placed', paid: true, createdAt: now });
+    await seedOrder({
+      locationId: location,
+      status: 'placed',
+      paid: true,
+      acceptedAt: now,
+      createdAt: now,
+    });
     await seedOrder({ locationId: location, status: 'accepted', createdAt: now });
     await seedOrder({ locationId: location, status: 'preparing', createdAt: now });
     await seedOrder({ locationId: location, status: 'ready', createdAt: now });
     await seedOrder({ locationId: location, status: 'completed', createdAt: now });
     await seedOrder({ locationId: location, status: 'canceled', createdAt: now });
-    await seedOrder({ locationId: location, status: 'refunded', createdAt: now });
+    await seedOrder({ locationId: location, status: 'canceled', createdAt: now });
 
     const counts = await runInTenantContext({ tenantId, locationId: location }, () =>
       makeCountOrdersService().execute({}),
@@ -294,7 +304,12 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
   it('status preset "active" filters to paid/accepted/preparing/ready within a location', async () => {
     const now = new Date();
-    const paidId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
+    const paidId = await seedOrder({
+      locationId: locationAId,
+      status: 'placed',
+      paid: true,
+      createdAt: now,
+    });
     const acceptedId = await seedOrder({
       locationId: locationAId,
       status: 'accepted',
@@ -321,13 +336,15 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const now = new Date();
     const siteId = await seedOrder({
       locationId: locationAId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       channel: 'site',
       createdAt: now,
     });
     const qrId = await seedOrder({
       locationId: locationAId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       channel: 'qr-menu',
       createdAt: now,
     });
@@ -352,12 +369,14 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
     const todayOrderId = await seedOrder({
       locationId: locationAId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       createdAt: withinToday,
     });
     const yesterdayOrderId = await seedOrder({
       locationId: locationAId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       createdAt: yesterday,
     });
 
@@ -379,11 +398,17 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
   it('since cursor returns only rows newer than the cursor', async () => {
     const base = new Date();
-    const olderId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: base });
+    const olderId = await seedOrder({
+      locationId: locationAId,
+      status: 'placed',
+      paid: true,
+      createdAt: base,
+    });
     const newerCreatedAt = new Date(base.getTime() + 1_000);
     const newerId = await seedOrder({
       locationId: locationAId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       createdAt: newerCreatedAt,
     });
 
@@ -402,8 +427,18 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
 
   it('each location sees only its own rows, labelled with its own name', async () => {
     const now = new Date();
-    const orderAId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
-    const orderBId = await seedOrder({ locationId: locationBId, status: 'paid', createdAt: now });
+    const orderAId = await seedOrder({
+      locationId: locationAId,
+      status: 'placed',
+      paid: true,
+      createdAt: now,
+    });
+    const orderBId = await seedOrder({
+      locationId: locationBId,
+      status: 'placed',
+      paid: true,
+      createdAt: now,
+    });
 
     const service = makeListOrdersService();
     const resultA = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
@@ -491,10 +526,16 @@ suite('Order feed query e2e — filters, cursor, all-mode merge, cross-tenant is
     const otherTenantOrderId = await seedOrder({
       tenantIdOverride: otherTenantId,
       locationId: otherLocationId,
-      status: 'paid',
+      status: 'placed',
+      paid: true,
       createdAt: now,
     });
-    const ownOrderId = await seedOrder({ locationId: locationAId, status: 'paid', createdAt: now });
+    const ownOrderId = await seedOrder({
+      locationId: locationAId,
+      status: 'placed',
+      paid: true,
+      createdAt: now,
+    });
 
     const service = makeListOrdersService();
     const result = await runInTenantContext({ tenantId, locationId: locationAId }, () =>
