@@ -65,7 +65,10 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
     if (stack) await stopDbStack(stack);
   });
 
-  const seedOrder = async (status: string, total = '20.00'): Promise<string> => {
+  const seedOrder = async (
+    status: 'placed' | 'accepted' | 'preparing' | 'ready' | 'completed' | 'canceled',
+    total = '20.00',
+  ): Promise<string> => {
     const orderId = randomUUID();
     await stack.db.withoutTenant('seed order for cancel/refund e2e', async (tx) => {
       await tx.insert(schema.orders).values({
@@ -222,8 +225,8 @@ suite('Order cancel + refund e2e — payment-derived refundability, D-11 restruc
     },
   );
 
-  it('cancel from created (unpaid) — no refund attempted, no ledger row', async () => {
-    const orderId = await seedOrder('created', '20.00');
+  it('cancel from placed (unpaid) — no refund attempted, no ledger row', async () => {
+    const orderId = await seedOrder('placed', '20.00');
 
     const orderRepo = new OrderDrizzleRepository(stack.db);
     const paymentRepo = new PaymentDrizzleRepository(stack.db);
