@@ -48,7 +48,16 @@ export default defineConfig({
     // real phone: `pizza.menu.192.168.1.5.nip.io` resolves to 192.168.1.5. A tunnel host
     // (VS Code port forwarding, cloudflared) carries no tenant label at all — the api falls
     // back to TENANT_DEV_FALLBACK_SLUG there.
-    allowedHosts: ['.lvh.me', '.localhost', '.nip.io', '.devtunnels.ms', '.trycloudflare.com'],
+    // A dev tunnel serves this app under the founder's own apex; naming it here would put a
+    // domain literal in the repo, so it arrives through the environment instead.
+    allowedHosts: [
+      '.lvh.me',
+      '.localhost',
+      '.nip.io',
+      '.devtunnels.ms',
+      '.trycloudflare.com',
+      ...(process.env.DEV_TUNNEL_APEX ? [`.${process.env.DEV_TUNNEL_APEX}`] : []),
+    ],
     ...devTls,
     // Dev only: forward the public/internal api paths to the api on :3000.
     // `changeOrigin: false` keeps the tenant subdomain Host (e.g.

@@ -26,6 +26,12 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
+    // Same reasoning as qr-menu: the tunnel's apex is the founder's, not the repo's.
+    allowedHosts: [
+      '.localhost',
+      ...(process.env.DEV_TUNNEL_APEX ? [`.${process.env.DEV_TUNNEL_APEX}`] : []),
+    ],
     port: 4000,
     proxy: {
       '/api': { target: API_TARGET, changeOrigin: false },
