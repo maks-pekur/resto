@@ -80,3 +80,48 @@ not a demo. Three separate symptoms, one cause.
   `apps/api/test/unit/prod-guardrails.spec.ts`
 - `apps/api/src/contexts/tenancy/application/guest-menu-url.service.ts` — why the domain row
   outranks the apex
+
+
+---
+
+## Update 2026-09-06 — the dev environment now runs behind a Cloudflare Tunnel
+
+The founder needed a free, phone-reachable setup, so the four dev servers are exposed through a
+named tunnel (`resto-dev`, config in `~/.cloudflared/config.yml`) on the real single apex. That
+replaced the VS Code devtunnel this file was originally written about, and the stale
+`MEDIA_PUBLIC_BASE_URL` pointing at it — item 2 above — is now corrected rather than pending.
+
+**None of it is in the repository**, which is the point: `~/.cloudflared/` and `.env` are local, and
+the one code change (`DEV_TUNNEL_APEX` in both `vite.config.ts` files) takes the apex from the
+environment so no domain literal was committed.
+
+What is now hand-set in the local `.env`, and what it replaced:
+
+| Key | Now | Was | Why it matters |
+|---|---|---|---|
+| `PUBLIC_APEX_DOMAIN` | the tunnel apex | `localhost` | the apex would otherwise not be recognised as itself |
+| `ADMIN_WEB_URL` | `https://<apex>/admin` | `http://admin.localhost:4000` | pre-07.4 subdomain shape |
+| `BETTER_AUTH_BASE_URL` | `https://<apex>` | `http://localhost:5001` | |
+| `AUTH_COOKIE_DOMAIN` | **commented out** | `.admin.localhost` | 07.4 D-05: unset gives a host-only cookie |
+| `TENANT_DEV_FALLBACK_SLUG` | **commented out** | `pizza` | see below |
+| `MEDIA_PUBLIC_BASE_URL` | `https://<apex>/resto-dev` | a dead VS Code devtunnel | images 404'd |
+
+`apps/website/.env.local`: `WEBSITE_URL` and `NEXT_PUBLIC_API_ORIGIN` both moved to the apex.
+
+**`TENANT_DEV_FALLBACK_SLUG` deserves its own note.** It turns *any* unresolved host into one fixed
+tenant. On `localhost` that is a convenience; behind a real domain it made the apex serve a
+restaurant's storefront instead of the landing, and it took three separate causes to diagnose
+because each one alone produced the same symptom. It is `NODE_ENV === 'development'`-gated
+(`tenant-context.middleware.ts`), so it cannot reach production — but anyone reviving it while a
+tunnel is up should know what it does to the apex.
+
+**Two things that will bite whoever picks this up:**
+
+- The website caches `fetchMenuPublic` for 300s (`api-client.ts:26`). After changing
+  `MEDIA_PUBLIC_BASE_URL` the old image URLs keep being served for five minutes, which looks
+  exactly like the change not working. Restart the website rather than concluding the fix failed.
+- Verifying a media URL with `curl` **from the same machine** proves nothing: `localhost:9000`
+  resolves there and returns 200 whatever the public base says. Check that the emitted URL is the
+  public one before trusting the status code.
+
+Restore points for the two local files were left at `/tmp/env.backup` and `/tmp/web-env.backup`.
