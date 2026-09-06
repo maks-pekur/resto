@@ -107,8 +107,9 @@ export const envSchema = z
      * The platform's own apex, without scheme or port — `resto.app` in
      * production, `localhost` in dev. Gates the `<slug>.<apex>` guest host
      * (the restaurant's public site) so an unregistered custom domain whose
-     * first label happens to match a tenant slug cannot resolve. Unset means
-     * only `<slug>.menu.<domain>` resolves on the guest path.
+     * first label happens to match a tenant slug cannot resolve. 07.5-13 deleted
+     * the `<slug>.menu.<domain>` shape this once fell back to, so unset now makes
+     * `guestHostForTenant` throw for any tenant without a verified custom domain.
      */
     PUBLIC_APEX_DOMAIN: z
       .string()

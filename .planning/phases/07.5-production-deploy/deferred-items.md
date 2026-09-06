@@ -61,3 +61,58 @@ contained this exact self-referential default. A verify command choosing a demo 
 collides with the codebase's own standing test fixture is a verify-tooling gap, not a domain-leak
 finding; the adjusted-but-equivalent command above (a non-colliding dummy apex) is the correct way
 to exercise the real invariant.
+
+---
+
+## Found by CI on 2026-09-06 — the phase's own e2e regression, never measured before
+
+Phase 7.5's plans were verified by typecheck, lint, targeted unit specs and a local production
+rehearsal. **The API e2e suite was never run against them.** CI only runs on PRs targeting `main`,
+`main` has not moved since 2026-08-29, and no PR existed — so nothing compared the branch to
+anything until #281/#282 were opened.
+
+Measured across three runs of the same job:
+
+| branch | failing e2e spec files | failing tests |
+|---|---|---|
+| `main` (2a3958db) | 7 | 39 |
+| `phase-10.6-ingredients` | 16 | 44 |
+| `phase-7.5-deploy` | 44 | 92 |
+
+The 28-file jump between 10.6 and 7.5 has one dominant cause.
+
+### `guestHostForTenant` made an optional env var load-bearing
+
+`apps/api/src/shared/guest-links.ts:24` throws when `PUBLIC_APEX_DOMAIN` is unset and the tenant
+has no primary verified custom domain. The throw is deliberate and the reasoning in its docblock is
+sound — an emailed link on a broken host is worse than one that failed to build.
+
+But `PUBLIC_APEX_DOMAIN` is `.optional()` in `env.schema.ts:113` and is not in the `superRefine`
+required-outside-dev list, and **nothing in `apps/api/test/e2e` sets it**. There is no vitest setup
+file and no shared env fixture — each spec wires its own services — so every e2e path that composes
+a guest URL now 500s. That is most of tenancy, catalog and identity, because tenant provisioning
+emits the menu URL.
+
+Before 07.5-13 an unset apex simply meant the `<slug>.menu.<domain>` shape resolved instead. That
+shape was deleted; the fallback went with it. The schema's docblock still described the old
+behaviour until 2026-09-06, when it was corrected.
+
+**Not a design flaw — an unfinished migration.** Either the e2e specs get an apex, or the var joins
+the required list and the specs get one anyway. The work is spread across ~28 files that each build
+their own env, so it is a plan, not a one-liner.
+
+### Two smaller findings from the same runs
+
+- **`bundle-no-dev-leak.spec.ts` read `dist/assets`** after 07.5-12 moved the qr-menu bundle to
+  `dist/qr/`. Four assertions failed. Fixed 2026-09-06 (`90ad5755`); the admin's matching move to
+  `dist/admin/` has no test looking at it, so nothing else was affected — swept and confirmed.
+- **`Docker API boot smoke` passes on 7.5 and fails on both `main` and 10.6** (`Cannot find module
+  'pino'`). The phase fixes a runtime image that had never been bootable. Worth stating plainly:
+  this is the phase delivering, and it was invisible until a PR existed.
+
+### What this changes about the phase's evidence
+
+`07.5-VERIFICATION.md` records four adversarial review rounds. None of them ran the e2e suite, and
+the local rehearsal exercises the production compose stack rather than the test harness. The
+phase's own verification gate should require the e2e job before 7.5 closes — otherwise plans 08-10
+will be built on a branch whose regression surface has still never been measured.
