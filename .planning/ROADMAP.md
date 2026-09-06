@@ -31,7 +31,7 @@ MVP-2 and MVP-3 are seeded in `.planning/seeds/mvp2-ai-platform.md` and `.planni
 - [x] **Phase 6: QR-Menu Customer** - Real customer-facing ordering UI over the working `/v1/menu` endpoint (cart, modifiers, table binding) (completed 2026-06-13)
 - [x] **Phase 7: Ordering** - New `ordering` bounded context: cart, order aggregate, state machine, event contracts, DB tables; includes pure discount engine (PROMO-06) and outbox claim-token fix (ORD-11) (completed 2026-06-14)
 - [x] **Phase 7.4: Admin Tenant in Path** - Move the operator's tenant out of the hostname and into the Better Auth session: `<apex>/admin` replaces `<slug>.admin.<apex>`, `AuthGuard` starts requiring positive agreement instead of absence of disagreement, the browser stops sending `x-forwarded-host`, and tenant switching stays a full document load enforced by lint _(added 2026-09-05 after the single-apex URL decision — `.planning/notes/url-scheme-single-apex.md`; application code on a trust boundary, so it is its own phase and a prerequisite for the remaining 7.5 deploy plans)_
-- [ ] **Phase 7.5: Production Deploy** - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
+- [~] **Phase 7.5: Production Deploy** _(11 of 14 plans merged; Wave 2 — the live box — deferred by the founder 2026-09-06 in favour of running on the Mac behind the Cloudflare Tunnel)_ - Stand up the first real production environment so the spine is shippable and Stripe webhooks have a public URL: AWS ECS hosting, Neon (→RDS fallback) Postgres, self-hosted NATS, Cloudflare R2 + DNS/TLS/CDN, CD on the existing CI, runtime secrets _(added 2026-06-12; stack locked 2026-06-21 — see Phase 7.5 detail)_ — **admin deploy moved to Phase 7.6** after the Vite migration; 7.5 now ships api + website (ECS) + qr-menu (static)
 - [ ] **Phase 7.6: Admin → Vite SPA** - Migrate `apps/admin` from Next.js to React + Vite + shadcn (internal auth-gated dashboard — no SSR/SEO need); deploy as static (Cloudflare Pages/R2 + CDN, like qr-menu); retire `INTERNAL_API_TOKEN`/server-actions → operator-authenticated API (better-auth session + RBAC, closes review HIGH-7) _(decided 2026-06-21 — Next standalone-Docker friction + RSC complexity unjustified for an internal admin; do while admin is small)_
 - [x] **Phase 8: Payments (Stripe Connect)** - Replace `NoopStripeConnectAdapter` with real Stripe Connect Express; includes pending-KYC UX state, outbox leader health probe, order confirmation page (SITE-08), and guest notification emails (GNOTIF) (completed 2026-06-27)
 - [x] **Phase 8.1: Payments — Provider Layer & Onboarding UX** - Embedded Connect onboarding (no off-domain redirect), Connect Standard OAuth ("connect existing Stripe" one-click), and a provider-agnostic `PaymentProviderPort` so Mollie/Adyen/local acquirers slot in via adapter + config only _(inserted 2026-06-28; pulled into MVP-1 — extends Phase 8, does not block Phase 10)_ (completed 2026-06-28)
@@ -443,7 +443,23 @@ Plans:
 - [x] 07.5-13-PLAN.md — the API collapses to one apex: `GUEST_APEX_DOMAIN` deleted from schema, guardrails, resolver and six test files; one `guest-links.ts` composing every guest-facing URL, so the QR sticker carries the `/qr` base and opens the menu instead of the storefront; both tenancy writers stop hardcoding `menu.resto.app`; the guest order-confirmation link becomes per-tenant (APEX-1; OQ-5)
 - [x] 07.5-14-PLAN.md — Caddy routes by path (`/internal*` 404, `/v1/*` and `/api/*` to the api, everything else to the website) with `header_up X-Forwarded-Host {host}` on every block, closing the measured client-forgeable-host defect; `API_INTERNAL_ORIGIN` takes the website's SSR call off the public internet; templates, both guards and the local rehearsal collapse to one apex; the rehearsal seeds rows so its restore drill stops comparing zero to zero; G-07 retirement of the AWS-era `infra/CLAUDE.md`, `infra/terraform` and `infra/k8s` (NEW-3; APEX-1; G-07)
 
-**Wave 2** _(the live box — depends on the whole of Wave 1)_
+> **Deferred by the founder (2026-09-06): Wave 2 waits.** The founder chose to keep running on the
+> Mac behind the Cloudflare Tunnel rather than rent a box for now — no server, no monthly cost, no
+> provisioning. Waves 0 and 1 are merged to `main`, so every repo-side artifact (compose file,
+> Caddyfile, env templates, backup and restore-drill scripts, both static bundles, the single-apex
+> collapse) is done and proven by the local rehearsal. What is missing is only the live box.
+>
+> **This is a decision, not a blocker — do not re-plan it.** Re-open Wave 2 when the founder says
+> to rent a machine, not because a session found the phase unchecked. Everything Wave 2 needs from
+> a human is listed in `07.5-08-PLAN.md`'s `user_setup`.
+>
+> **What the Mac arrangement cannot do**, stated once so nobody discovers it under a real customer:
+> it is up only while that Mac and the tunnel are up; nothing backs the database up; and
+> `assertProdGuardrails` only refuses dev values outside `development`, so the guardrails that
+> protect a real deploy are not the ones running here. Fine for building and showing. Not a place
+> to take a stranger's card.
+
+**Wave 2** _(the live box — deferred 2026-09-06; depends on the whole of Wave 1)_
 
 - [ ] 07.5-08-PLAN.md — VPS + one-zone Cloudflare stand-up: bootstrap + outside-in verifier scripts, founder provisioning (Hetzner, five DNS records, Origin CA, Full-strict, R2 ×2, repository variables collapsed to `PUBLIC_APEX_DOMAIN` alone), then first live bring-up — migrations then roles, preflights under real credentials, both asset bundles on air, two probe tenants, and the first tenant-resolving request. Settles research assumption **A7** (does Cloudflare deliver a client-supplied `X-Forwarded-Host`?) by removing and restoring the pin around two curls (SC#1/#2/#4/#5; NEW-3; APEX-2)
 
